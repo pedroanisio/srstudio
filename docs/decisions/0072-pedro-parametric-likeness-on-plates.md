@@ -63,17 +63,33 @@ it enters the scene, so eyes, mouth, brows, nose, ears, hair and beard go in tog
 in the sculpt's units. Only irises and highlights are drawn wide to compensate, so they stand round. The rest of the
 correction is shape:
 
-- The face tapers from the cheekbones to the chin, with flat temples, a hollow under the cheekbones and no jowl. The back
-  of the head falls away towards the nape, so it is not a block from the side.
+- The face tapers from the cheekbones to the chin, with a hollow under the cheekbones and no jowl.
 - A real neck shows above the tee, narrower than the jaw, and his head sits on it instead of on his shoulders.
 - The eyes sit deep under a strong ridge. The forehead is smooth: its lines are gone.
 - The nose is straight and longer, broad at the tip. The mouth is smaller, with fuller lips.
 - The hair is a short textured crop, salt and pepper, low on the skull, with a soft peak on a high forehead. The sides
   are a close, greying shave, painted on the skin no expression moves.
 - The beard is a goatee only: a moustache joined to a chin beard that runs past the chin to a soft point, grey towards
-  the tip, leaving bare cheeks and a bare jawline. Past the jaw it leaves his skin and curls under the chin.
+  the tip, leaving bare cheeks and a bare jawline. Past the jaw it leaves his skin and hangs below the chin.
 - The default outfit is a navy blazer with notched lapels over a black crew-neck tee, on a lean figure with sloping
   shoulders. The tee is cut from the same figure, so the blazer is one layer over it.
+
+**The head is built for a full turn, not for the lens.** His verdict on the lean head was that the side view looked like
+a deformed person. The cause was structural: the head had been sculpted as a face mask with a shallow back, 29 units
+deep against 50 tall, so from the side it was a slab. A plate fix could not reach that, so the field changed:
+
+- A cranium, `pedro_sculpt.SKULL`, carries his depth behind the ear. Glabella to occiput is now 41 of 50, the proportion
+  of a human head. The skull melts in softly behind the temple and not at all on the face, so sockets and brows keep
+  their shape and every feature still lies on `front`.
+- The neck is a column in the same field, so the nape and the throat are one skin with the head, not a peg under it. The
+  mesh in the wardrobe only fills what the column leaves at the crew. The jaw's moving field stops above the neck's foot.
+- The jaw's underside rises from the chin to its angle, cut by a plane, so the head has a jawline and is not a ball.
+- The face is rounder across, so it turns away at the sides instead of ending on a corner, and the forehead slopes back.
+- The ears have a helix, a fold, a concha and a lobe, stand behind the middle of the head from brow to nose, and tilt back.
+- The hair grows from the skin itself, found by casting from the middle of the skull, so it follows the skull at every
+  angle. The shave runs down the temple to a sideburn before the ear and round the ear to a fade on the nape.
+- The chest and shoulders are deeper, because a body 26 deep under a head 33 deep is a bobble head from the side. The
+  back collar takes its height from the shoulders, so it covers the edge of the neck's opening at every turn.
 
 Options exist on the turntable only: `view(dress="tee")`, `view(dress="puffer")` and `view(glasses=True)`. Reels draw
 none of them, so they add no plate to a clip. Glasses are the frames alone, because a material here has no glass.
@@ -107,6 +123,12 @@ ship and its licence needs no notice here.
   the default, and none comes free with the sculpt. May and April were used to judge strand direction, grey and skin
   tone instead.
 
+- **Thicken the head with a scale in z.** Rejected: it would have swollen the face and left the jaw, ears, neck and hair
+  where they were. Depth belongs behind the ear, and the face should not move.
+- **Fix the side view in the plates.** Rejected: he asked for one head through a turn, and a patch holds at one angle.
+- **Keep a separate neck mesh under the skull.** Tried first. The join shows as an arch on the nape at every angle that
+  sees it, and a soft ball there reads as a pillar beside the throat.
+
 ## Consequences
 
 - **Only a head and chest.** The port has no trousers, shoes or hands: the frame does not show them. A standing or
@@ -117,8 +139,12 @@ ship and its licence needs no notice here.
 - **He moved away from the sculpt on purpose.** The head's width, the hair, beard, eyes and clothes are no longer the
   sculpt's. The sculpt stays the start of the numbers, and the photographs are the reason for each change.
 - **The puffer stays as code.** It costs nothing to keep because it was already built, and no reel draws it.
-- **Lapels and collar are thin meshes on a contoured shell.** At the reel's angles they are clean. At three-quarter a small
-  jag remains where the collar meets the shoulder.
+- **Lapels and collar are thin meshes on a contoured shell.** The back collar now hides the neck's opening at every turn;
+  the lapels still lie close to the chest and read low in contrast.
+- **The puffer did not get the deeper body.** It keeps its older, shallower shell. It is seen from the front only.
+- **An eye seen edge-on is still the weakest part of the profile.** The open eye has no lid surface, so at 90 degrees it
+  shows as a small dome.
+- **The face patch box grew down to take in the neck.** A patch covers the whole head, neck included.
 - **The first build is slow and a change of geometry rebuilds everything.** Plates are keyed by what they draw.
 - **A second plate host exists until `rafa_host` adopts `plate_host`.**
 - **Approval is his alone.** The part stays `proposed` until he has judged a moving clip, and no one else records it.

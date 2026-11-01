@@ -19,6 +19,7 @@ __all__ = ["blazer", "body", "contour", "jacket", "puffer", "tee"]
 _TETS = ((0, 1, 3, 7), (0, 1, 5, 7), (0, 2, 3, 7), (0, 2, 6, 7), (0, 4, 5, 7), (0, 4, 6, 7))
 _EPS = 0.045  # how far apart the field is read for a surface normal
 _NECK_HOLE = 10.2  # the radius of the jacket's neck
+_NECK_Z, _NECK_DEEP = 2.5, 1.05  # where the neck's opening sits, and how much deeper it is than wide
 Field = Callable[[np.ndarray, np.ndarray, np.ndarray], np.ndarray]
 
 
@@ -123,7 +124,7 @@ def jacket(x, y, z) -> np.ndarray:
     """The jacket as a field: the shell, open down the front and round the neck, cut off at the hem."""
     d = _padded(x, y, z)
     d = np.maximum(d, -np.maximum(np.abs(x) - _gap(y), z + 3.3))
-    d = np.maximum(d, -np.maximum(np.sqrt(x * x + (z - 1.0) ** 2) - _NECK_HOLE, y + 135.0))
+    d = np.maximum(d, -np.maximum(np.hypot(x, (z - _NECK_Z) / _NECK_DEEP) - _NECK_HOLE, y + 135.0))
     return np.maximum(d, y + 78.0)
 
 
@@ -161,7 +162,7 @@ def _collar(m: Model) -> None:
     channel = 1.0 - 0.7 * np.exp(-((sin / 0.16) ** 2))
     thick = np.where(cos > 0.0, 0.8 + 0.9 * share, 0.5) * cos * channel * edge
     radius = 10.3 + 0.9 * (1.0 - share) ** 2 + 0.6 * share + thick
-    rows = np.stack((radius * 1.04 * np.sin(ts), y, 1.0 - radius * np.cos(ts)), axis=2)
+    rows = np.stack((radius * 1.04 * np.sin(ts), y, _NECK_Z - _NECK_DEEP * radius * np.cos(ts)), axis=2)
     _ring(m, "nylon", rows)
 
 
@@ -188,18 +189,24 @@ def _seams(m: Model) -> None:
         m.tube("jacket-shadow", np.stack((pocket, ys, zs - 0.12), axis=1)[found], 0.15, 22, 6)
 
 
-_NECK = ((0.0, -137.0, 1.5), (8.0, 11.5, 7.5))  # his neck: a real one, narrower than his jaw
-_FIGURE = (-44, 44), (-146, -74), (-19, 20)  # the box a coat is contoured in
+_NECK_YS = (-162.0, -147.0, -137.0, -125.0)  # his neck is a column into the skull, leaning a little forward at the top
+_NECK_HALF = (6.5, 7.0, 7.5, 10.0)  # half its width, narrower than his jaw
+_NECK_FRONT = (-0.5, -2.2, -3.0, -3.5)  # the z of its front
+_NECK_BACK = (7.0, 8.0, 8.8, 15.0)  # and of its back, under the nape
+_FIGURE = (-44, 44), (-146, -74), (-21, 27)  # the box a coat is contoured in
 _STEP = 1.06
 
 
 def _figure(x, y, z) -> np.ndarray:
     """A lean man's chest, sloping shoulders and arms, the shape both the blazer and the tee are cut from."""
-    d = _ball(x, y, z, (0, -105, 1), (20.5, 33, 11.2))
+    d = _ball(x, y, z, (0, -104, 2), (20.5, 31, 14.8))
+    d = _union(d, _ball(x, y, z, (0, -124, 6.5), (15, 11, 10)), 3.5)  # the upper back, rising to the nape
+    deep = (z - 2.0) / 1.45 + 2.0  # a shoulder and an arm are deeper than they are wide
     for side in (-1, 1):
-        d = _union(d, _capsule(x, y, z, (side * 8, -132.5, 1.5), (side * 23, -125.5, 1.5), 5.0), 3.5)
-        d = _union(d, _capsule(x, y, z, (side * 24, -124.5, 1.5), (side * 27, -96, 1.5), 5.6), 2.5)
-        d = _union(d, _capsule(x, y, z, (side * 27, -96, 1.5), (side * 26, -70, -2), 5.0), 2.5)
+        d = _union(d, _capsule(x, y, z, (side * 5, -134.5, 7.5), (side * 19, -126, 4.5), 4.4), 4.0)  # the trapezius
+        d = _union(d, _capsule(x, y, deep, (side * 8, -132.5, 2), (side * 23, -125.5, 2), 5.0), 3.5)
+        d = _union(d, _capsule(x, y, deep, (side * 24, -124.5, 2), (side * 27, -96, 2), 5.6), 2.5)
+        d = _union(d, _capsule(x, y, deep, (side * 27, -96, 2), (side * 26, -70, -1), 5.0), 2.5)
     return d
 
 
@@ -214,11 +221,16 @@ def _vee(y) -> np.ndarray:
     return np.interp(y, (-146, -132, -118, -100, -76), (8.2, 7.4, 4.7, 2.8, 2.2))
 
 
+def _cut(d: np.ndarray, hole: np.ndarray) -> np.ndarray:
+    """``d`` with ``hole`` taken out on a soft edge, one a contour of this step can follow without a saw tooth."""
+    return -_union(-d, hole, 0.9)
+
+
 def blazer_field(x, y, z) -> np.ndarray:
     """The blazer as a field: open down the front and round the neck, cut off at the hem."""
     d = _blazer_shell(x, y, z)
-    d = np.maximum(d, -np.maximum(np.abs(x) - _vee(y), z + 2.5))
-    d = np.maximum(d, -np.maximum(np.sqrt(x * x + (z - 1.5) ** 2) - 8.7, y + 131.0))
+    d = _cut(d, np.maximum(np.abs(x) - _vee(y), z + 2.5))
+    d = _cut(d, np.maximum(np.hypot(x, (z - _NECK_Z) / _NECK_DEEP) - 9.4, y + 131.0))
     return np.maximum(d, y + 76.0)
 
 
@@ -235,12 +247,12 @@ def _laid(
     return grid.reshape(rows, inner.shape[0], 3)
 
 
-def _cloth(m: Model, material: str, rows: np.ndarray) -> None:
+def _cloth(m: Model, material: str, rows: np.ndarray, *, up: bool = False) -> None:
     height, width = rows.shape[:2]
     along, across = np.gradient(rows, axis=0), np.gradient(rows, axis=1)
     normals = np.cross(across, along)
     normals /= np.maximum(np.linalg.norm(normals, axis=2, keepdims=True), 1e-9)
-    if normals[..., 2].sum() > 0.0:
+    if normals[..., 1 if up else 2].sum() > 0.0:
         normals = -normals
     tris = []
     for r in range(height - 1):
@@ -275,14 +287,32 @@ def _lapels(m: Model) -> None:
         at = np.array(((side * 11.2, -112.5), (side * 12.8, -113.5)))
         zs, _ = _on_jacket(at[:, 0], at[:, 1], far=4.0, shell=_blazer_shell)
         m.tube("jacket-shadow", list(np.stack((at[:, 0], at[:, 1], zs - 1.0), axis=1)), 0.11, 6, 5)
-    ts = np.linspace(1.0, math.tau - 1.0, 90)[:, None]
-    around = np.linspace(0.0, math.tau, 32, endpoint=False)[None, :]
+    _nape_collar(m)
+
+
+def _shoulder_top(x: np.ndarray, z: np.ndarray) -> np.ndarray:
+    """The y of the blazer's shell under ``x, z``, coming down from above his shoulders."""
+    above, inside = np.full_like(x, -152.0), np.full_like(x, -112.0)
+    for _ in range(24):
+        mid = (above + inside) / 2.0
+        outside = _blazer_shell(x, mid, z) > 0.0
+        above, inside = np.where(outside, mid, above), np.where(outside, inside, mid)
+    return (above + inside) / 2.0
+
+
+def _nape_collar(m: Model) -> None:
+    """The collar round the back of his neck: it stands by the neck and falls on to the shoulders, and it takes its
+    height from them, so it covers the edge of the neck's opening at every turn."""
+    ts = np.linspace(1.0, math.tau - 1.0, 120)[:, None]
+    rs = np.linspace(0.0, 1.0, 12)[None, :]
+    radius = 8.5 + 5.2 * rs
+    x, z = radius * 1.03 * np.sin(ts), _NECK_Z - _NECK_DEEP * radius * np.cos(ts)
     share = (1.0 - np.cos(ts)) / 2.0  # 0 in front, 1 at his nape
-    top = -131.5 - 9.0 * ((share - np.min(share)) / (1.0 - np.min(share))) ** 0.28
-    tall = 2.8 + 1.7 * share  # half the band's height
-    y = top + tall - tall * np.sin(around)
-    radius = 9.5 + 0.55 * np.cos(around)
-    _ring(m, "blazer", np.stack((radius * 1.03 * np.sin(ts), y, 1.5 - radius * np.cos(ts)), axis=2))
+    stand = 1.2 + 3.0 * share
+    rows = np.stack((x, _shoulder_top(x, z) - 0.45 - stand * (1.0 - rs) ** 1.6, z), axis=2)
+    _cloth(m, "blazer", rows, up=True)
+    m.tube("blazer-edge", list(rows[:, 0]), 0.3, 120, 6)
+    m.tube("blazer-edge", list(rows[:, -1]), 0.18, 120, 6)
 
 
 def _ring(m: Model, material: str, rows: np.ndarray) -> None:
@@ -305,26 +335,40 @@ def _tee_field(x, y, z) -> np.ndarray:
     return np.maximum(_figure(x, y, z) - 0.1, y + 74.0)
 
 
+def _neck_at(y) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """His neck at height ``y``: its half width, the z of its middle, and its half depth."""
+    half = np.interp(y, _NECK_YS, _NECK_HALF)
+    front, back = np.interp(y, _NECK_YS, _NECK_FRONT), np.interp(y, _NECK_YS, _NECK_BACK)
+    return half, (front + back) / 2.0, (back - front) / 2.0
+
+
+def _neck(m: Model) -> None:
+    ys = np.linspace(_NECK_YS[0], _NECK_YS[-1], 40)[:, None]
+    around = np.linspace(0.0, math.tau, 48, endpoint=False)[None, :]
+    half, middle, deep = _neck_at(ys)
+    rows = np.stack((half * np.sin(around), ys * np.ones_like(around), middle - deep * np.cos(around)), axis=2)
+    _ring(m, "skin", rows)
+
+
 def _neckline() -> np.ndarray:
     """Where his neck comes out of the tee, round the front and sides: the crew neck follows it."""
-    (cx, cy, cz), (rx, ry, rz) = _NECK
     out = []
     for t in np.linspace(-1.75, 1.75, 40):
         ys = np.linspace(-146.0, -122.0, 241)
-        share = np.sqrt(np.maximum(1.0 - ((ys - cy) / ry) ** 2, 0.0))
-        xs, zs = cx + rx * share * math.sin(t), cz - rz * share * math.cos(t)
+        half, middle, deep = _neck_at(ys)
+        xs, zs = half * math.sin(t), middle - deep * math.cos(t)
         inside = _tee_field(xs, ys, zs) < 0.0
         k = int(np.argmax(inside))
-        out.append((float(xs[k]), float(ys[k]), float(zs[k])))
+        out.append((float(xs[k]), float(ys[k]) + 0.25, float(zs[k])))
     return np.array(out)
 
 
 def _tee_surface(m: Model) -> None:
     """The tee: the figure itself, with a ribbed band where his neck leaves it."""
-    m.ell("skin", *_NECK)
+    _neck(m)
     verts, normals, tris = contour(_tee_field, _FIGURE, _STEP)
     m.surface("shirt", verts, normals, tris)
-    m.tube("shirt", list(_neckline()), 0.5, 60, 7)
+    m.tube("shirt", list(_neckline()), 0.62, 60, 7)
 
 
 def tee(m: Model) -> None:
@@ -342,7 +386,7 @@ def blazer(m: Model) -> None:
 
 def puffer(m: Model) -> None:
     """The quilted puffer: a neck, the tee, the jacket, its zip, seams and collar."""
-    m.ell("skin", *_NECK)
+    _neck(m)
     m.ell("shirt", (0, -109, 1), (22.3, 32.5, 11.9))
     verts, normals, tris = contour(jacket, ((-44, 44), (-146, -76), (-19, 20)), _STEP)
     m.surface("nylon", verts, normals, tris)

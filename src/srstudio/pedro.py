@@ -58,7 +58,7 @@ __all__ = [
 
 SCALE = 0.81
 LEAN = 0.82  # how much narrower than the sculpt his head stands, every feature on it going in with it
-_SEAT = np.array((0.0, -179.5, -1.0))  # where the sculpt's crown goes in the scene: a real neck above the tee
+_SEAT = np.array((0.0, -179.5, -4.0))  # where the sculpt's crown goes in the scene: a real neck above the tee
 NECK = (0.0, -146.5, 0.0)  # where his head turns and nods
 GAZES = ("ahead", "left", "right")
 LIDS = ("open", "half", "shut")
@@ -77,10 +77,15 @@ _STILL_ABOVE, _STILL_BEHIND = 29.0, 7.0  # the skin higher than the first or fur
 _EYE_X, _EYE_Y, _EYE_W = 8.0, 24.3, 3.6
 _LID, _LID_WIDE, _LID_ABOVE = 0.22, 1.14, 0.9  # a lid's thickness over the eye, and how far it spreads past the opening
 _BLINK_BROW = 0.2  # how far a shut eye pulls the brow down
-_STRANDS, _LOCKS = 7500, 260  # the hairs of his top, and the tufts they gather into
+_STRANDS, _LOCKS = 11000, 380  # the hairs of his top, and the tufts they gather into
 _HAIRS = ("hair-dark", "hair-mid", "hair-grey", "hair-silver")
 _BEARD_HAIRS = 3000
 _BEARD_HANGS_FROM = 46.0  # below this the beard leaves his skin and hangs past the chin
+_BEARD_CURL = 0.05  # how fast it goes back under the chin as it hangs
+_EAR_AT = (27.8, 7.4)  # the y and z of an ear's middle: behind the middle of his head's depth, as a head's are
+_EAR_TALL, _EAR_WIDE = 6.5, 3.6  # half an ear's height and width
+_EAR_TILT = math.radians(11.0)  # how far its top leans back
+_EAR_STANDS = 0.47  # how far its back edge stands off the head for each unit back from its root
 _BROW_HAIRS = 130
 _FRAME_Z = -17.4  # where the frames sit, in front of his brow
 _BEARD_DARK = ("hair-mid", "hair-dark")
@@ -240,75 +245,90 @@ def _meshes(parts: Iterable[_Part], moved=None) -> tuple[Mesh, ...]:
     return model.meshes()
 
 
+def _ear_place(u: np.ndarray, v: np.ndarray, height: np.ndarray, side: float) -> np.ndarray:
+    """An ear's point ``u`` back and ``v`` down from its middle, in half sizes, ``height`` off its plane."""
+    sin, cos = math.sin(_EAR_TILT), math.cos(_EAR_TILT)
+    down, back = v * _EAR_TALL, u * _EAR_WIDE
+    y = _EAR_AT[0] + down * cos - back * sin
+    z = _EAR_AT[1] + down * sin + back * cos
+    root = abs(pedro_sculpt.side_of(_EAR_AT[0], _EAR_AT[1], 1.0))
+    return np.stack((side * (root - 0.5 + _EAR_STANDS * (u + 1.0) * _EAR_WIDE + height), y, z), axis=-1)
+
+
+def _ear_outline(a: np.ndarray, r: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """An egg, top up: full at the helix and narrowing to the lobe."""
+    v = -r * np.cos(a)
+    return r * np.sin(a) * (1.0 - 0.34 * np.maximum(v, 0.0)) * (1.0 + 0.06 * np.minimum(v, 0.0)), v
+
+
 def _ears() -> list[_Part]:
+    """His ears: a rolled helix, the fold inside it, the bowl of the concha and a soft lobe, close to his head."""
     out = []
+    rs = np.linspace(0.001, 1.0, 40)[:, None]
+    around = np.linspace(0.0, math.tau, 96, endpoint=False)[None, :]
+    u, v = _ear_outline(around, rs)
+    lobe = _smooth((v - 0.45) / 0.3)
+    root_side = _smooth((u + 0.75) / 0.6)
+    helix = 0.85 * np.exp(-(((rs - 0.9) / 0.085) ** 2)) * (1.0 - lobe) * root_side
+    fold = 0.42 * np.exp(-(((rs - 0.6) / 0.11) ** 2)) * (1.0 - lobe) * root_side
+    bowl = -1.05 * np.exp(-(((u + 0.12) / 0.42) ** 2 + ((v - 0.1) / 0.42) ** 2))
+    falls = -0.5 * np.exp(-(((rs - 0.76) / 0.05) ** 2)) * (1.0 - lobe) * root_side
+    height = helix + fold + bowl + falls + 0.25 * lobe * (1.0 - rs**4) - 0.35 * rs**12
+    ts = np.linspace(0.0, 1.0, 6)[:, None]
     for side in (-1.0, 1.0):
-        polar = np.linspace(0.0, math.pi, 17)
-        around = np.linspace(0.0, math.tau, 33)
-        sin = np.sin(polar)[:, None]
-        volume = np.stack(
-            (
-                side * 18.8 + 1.2 * sin * np.sin(around),
-                26.2 - 4.85 * np.cos(polar)[:, None] * np.ones(33),
-                0.4 + 2.15 * sin * np.cos(around),
-            ),
-            axis=2,
-        )
-        out.append(_sheet("skin", volume))
-        r = np.linspace(0.001, 1.0, 24)[:, None]
-        a = np.linspace(0.0, math.tau, 64, endpoint=False)[None, :]
-        u = 2.0 * r * np.cos(a)
-        w = 0.5 + 0.75 * np.exp(-(((r - 0.8) / 0.14) ** 2)) - 0.34 * np.exp(-((r / 0.5) ** 2))
-        helix = np.stack(
-            (side * (18.8 + 0.3 * u + 0.5 * w), 26.1 + 4.4 * r * np.sin(a), 0.4 + 0.8 * u - 0.6 * w), axis=2
-        )
-        out.append(_sheet("skin-warm", helix, wrap=True))
+        out.append(_sheet("skin-warm", _ear_place(u, v, height, side), wrap=True))
+        rim_u, rim_v = _ear_outline(around, np.ones_like(around))
+        back = _ear_place(rim_u * (1.0 - 0.22 * ts), rim_v * (1.0 - 0.12 * ts), -0.35 - 1.6 * ts, side)
+        back[..., 0] -= side * _EAR_STANDS * ts * (rim_u + 1.0) * _EAR_WIDE
+        out.append(_sheet("skin-warm", back, wrap=True))
+        canal = _ear_place(np.array(-0.2), np.array(0.05), np.array(-0.95), side)
+        out.append(_sheet("nostril", _ball(tuple(canal), (0.12, 0.5, 0.35))))
     return out
 
 
 def _hairline(t: np.ndarray) -> np.ndarray:
-    """How far down from the crown his hair comes, round the head: a peak over the forehead, temples gone back from it,
-    high on the sides, and a tail down the back of the crown."""
+    """How far his hair comes down from the top of the skull, round the head, as a polar angle: a peak over the
+    forehead, temples gone back from it, a level line along the sides, and lower at the back of the crown."""
     cos = np.cos(t)
-    forward = 4.0 + 2.6 * np.abs(cos) ** 6 + 0.9 * np.exp(-((t / 0.22) ** 2))
-    return np.where(cos >= 0.0, forward, 4.0 + 6.5 * np.abs(cos) ** 3)
+    forward = 0.9 + 0.1 * np.sin(t) ** 2 - 0.14 * np.exp(-(((np.abs(t) - 0.72) / 0.3) ** 2))
+    forward = forward + 0.1 * np.exp(-((t / 0.2) ** 2))
+    return np.where(cos >= 0.0, forward, 1.0 + 0.16 * cos**2)
 
 
-def _scalp(u: np.ndarray, t: np.ndarray, lift: float = 1.0) -> tuple[np.ndarray, np.ndarray]:
+def _scalp(u: np.ndarray, t: np.ndarray, lift: float | np.ndarray = 1.0) -> tuple[np.ndarray, np.ndarray]:
     """The hair's root surface at ``u`` from crown (0) to hairline (1), round the head at ``t``, with ``lift`` of its
     height over the skull: its points, and the way out from the head at each."""
-    cos, sin = np.cos(t), np.sin(t)
-    y = np.maximum(0.015, u * _hairline(t))
-    x = pedro_sculpt.width(y) * sin
-    z = np.where(cos >= 0.0, pedro_sculpt.front(x, y), pedro_sculpt._back(y) * np.abs(cos) ** 0.82)
-    point = np.stack((x, y, z), axis=-1)
-    normal = np.stack((x / 18.0, (y - 14.0) / 13.0, z / 16.0), axis=-1)
-    normal = normal / np.linalg.norm(normal, axis=-1, keepdims=True)
-    swell = np.sin(np.pi * np.minimum(u, 1.0)) ** 0.8
+    point, normal = pedro_sculpt.crown(np.maximum(u, 0.01) * _hairline(t), t)
+    cos = np.cos(t)
+    swell = np.maximum(1.0 - np.minimum(u, 1.0) ** 3.0, 0.0) ** 0.8
     rough = 0.2 * np.sin(t * 23.0 + u * 9.0) * np.sin(t * 9.0 - u * 13.0) * swell
-    height = (1.2 + 0.6 * np.maximum(0.0, cos)) * swell * lift
-    return point + normal * (0.1 + height + rough)[..., None], normal
+    height = (1.0 + 0.35 * np.maximum(0.0, cos)) * swell * lift
+    return point + normal * (0.05 + height + rough)[..., None], normal
 
 
 def _hair() -> list[_Part]:
     """The dark mass of the top, cut sharp on the shaved sides, and the salt-and-pepper tufts that stand out of it,
     swept up and back in clumps. Strands near the line stand up, not out, so the line stays a line."""
-    us = np.linspace(0.005, 0.9, 48)[:, None]
+    us = np.linspace(0.005, 0.93, 48)[:, None]
     ts = np.linspace(-math.pi, math.pi, 200)[None, :]
     rows, _ = _scalp(us * np.ones_like(ts), ts * np.ones_like(us), 0.35)
     out = [_sheet("hair-dark", rows)]
     locks = stream(1072, _LOCKS * 5).reshape(_LOCKS, 5)
     draw = stream(1071, _STRANDS * 7).reshape(_STRANDS, 7)
     groom: dict[str, list[tuple[np.ndarray, np.ndarray]]] = {name: [] for name in _HAIRS}
-    for a, b, c, d, e, f, g in draw:
-        lock_u, lock_t, lean, lift, bend = locks[int(a * _LOCKS)]
-        u = float(np.clip(0.1 + 0.92 * lock_u + 0.2 * (b - 0.5), 0.06, 1.0))
-        t = (lock_t * 2.0 - 1.0) * math.pi + 0.5 * (c - 0.5)
+    picked = locks[(draw[:, 0] * _LOCKS).astype(int)]
+    places = np.clip(np.sqrt(picked[:, 0]) * 1.02 + 0.14 * (draw[:, 1] - 0.5), 0.04, 1.0)
+    turns = (picked[:, 1] * 2.0 - 1.0) * math.pi + 0.5 * (draw[:, 2] - 0.5)
+    roots, ways = _scalp(places, turns, 0.2 + 0.8 * draw[:, 6])
+    for (_, b, _, d, e, f, _), (_, _, lean, lift, bend), u, t, root, normal in zip(
+        draw, picked, places, turns, roots, ways, strict=True
+    ):
         forward = max(0.0, math.cos(t))
-        root, normal = _scalp(np.array(u), np.array(t), 0.2 + 0.8 * g)
-        way = normal * (0.45, 0.8, 0.55) + (lean * 0.8 - 0.4, -0.4 * u**2, 0.55 * max(0.0, math.cos(t)) + 0.3)
+        near_line = u**3
+        way = normal * (0.45, 0.8, 0.55) * (1.0 - 0.75 * near_line, 1.0, 1.0 - 0.75 * near_line)
+        way = way + (lean * 0.8 - 0.4, -0.4 * u**2 - 0.5 * near_line, 0.55 * forward + 0.3)
         way = way / np.linalg.norm(way)
-        reach = (1.1 + 1.0 * lift) * (0.85 + 0.4 * forward) * (0.75 + 0.5 * d)
+        reach = (1.1 + 1.0 * lift) * (0.85 + 0.4 * forward) * (0.75 + 0.5 * d) * (1.0 - 0.4 * near_line)
         side = np.array((way[2], 0.0, -way[0])) * (bend - 0.5) * 1.6
         path = np.array(
             (root, root + way * reach * 0.45 + side * 0.5, root + way * reach * 0.8 + side, root + way * reach)
@@ -326,21 +346,11 @@ def _hair() -> list[_Part]:
 
 
 def _nostrils() -> list[_Part]:
+    """Two dark ovals pressed into the underside of his nose, so no turn of the head can lift them off it."""
     out = []
     for side in (-1.0, 1.0):
-        polar = np.linspace(0.0, math.pi, 9)[:, None]
-        around = np.linspace(0.0, math.tau, 17)[None, :]
-        a = math.radians(-side * 12.0)
-        px, py = 0.48 * np.sin(polar) * np.sin(around), -0.20 * np.cos(polar) * np.ones_like(around)
-        rows = np.stack(
-            (
-                side * 3.0 + px * math.cos(a) - py * math.sin(a),
-                34.85 + px * math.sin(a) + py * math.cos(a),
-                -17.35 + 0.13 * np.sin(polar) * np.cos(around),
-            ),
-            axis=2,
-        )
-        out.append(_sheet("nostril", rows))
+        at = (side * 2.1, pedro_sculpt.under_nose(2.1, -15.9) - 0.02, -15.9)
+        out.append(_sheet("nostril", _ball(at, (0.95, 0.16, 0.6))))
     return out
 
 
@@ -386,7 +396,7 @@ def warp(points: np.ndarray, look: Mood, shape: Shape) -> np.ndarray:
     below = y >= line
     opening = _opening(x)
     jaw = np.where(below, opening + (1.0 - opening) * _smooth((y - line) / _JAW_REACH), 0.0)
-    jaw = jaw * _smooth((4.0 - z) / 6.0)
+    jaw = jaw * _smooth((4.0 - z) / 6.0) * _smooth((57.0 - y) / 4.0)
     near = np.exp(-(((y - _LIP_Y) / 3.5) ** 2))
     out = np.exp(-((np.maximum(np.abs(x) - _HALF, 0.0) / 4.5) ** 2))
     along = np.minimum(np.abs(x) / _HALF, 1.0)
@@ -501,7 +511,7 @@ def _hang(x: np.ndarray, y: np.ndarray, off) -> np.ndarray:
     under = np.maximum(y - _BEARD_HANGS_FROM, 0.0)
     points = lay(x, np.minimum(y, _BEARD_HANGS_FROM), off)
     points[..., 1] = y
-    points[..., 2] += 0.2 * under * under
+    points[..., 2] += _BEARD_CURL * under * under
     return points
 
 
@@ -758,9 +768,9 @@ def _eye(side: float, top: float, bottom: float, gaze: str, close: float) -> lis
         path = lay(side * _EYE_X + _EYE_W * wide, _EYE_Y + _margin(top, bottom, close, wide, side), lifted)
         out.append(_tube_part("skin-warm", path, 0.17, 40, 8))
     wide = np.linspace(-1.0, 1.0, 15)
-    fold = lay(side * _EYE_X + 3.4 * wide, _EYE_Y + 1.75 + 0.3 * (1.0 - wide * wide), 0.035)
+    fold = lay(side * _EYE_X + 2.6 * wide, _EYE_Y + 1.75 + 0.3 * (1.0 - wide * wide), 0.035)
     out.append(_tube_part("skin-warm", fold, 0.048, 25, 5))
-    hood = lay(side * _EYE_X + 3.9 * wide, _EYE_Y - top - 0.62 + 0.42 * wide * wide + 0.12 * wide * side, 0.03)
+    hood = lay(side * _EYE_X + 3.2 * wide, _EYE_Y - top - 0.62 + 0.42 * wide * wide + 0.12 * wide * side, 0.03)
     out.append(_tube_part("skin-warm", hood, 0.06, 25, 5))
     return out
 
@@ -853,14 +863,12 @@ def _scalp_uvs() -> np.ndarray:
 
 
 def _shaved(points: np.ndarray) -> np.ndarray:
-    """How much stubble the skin at ``points`` carries, 0 to 1: all of it on the sides and back, none on the face,
-    a soft edge over the temple and down to a fade above the ears and on the nape."""
-    x, y, z = points[..., 0], points[..., 1], points[..., 2]
-    around = np.abs(np.arctan2(x, -z))
-    edge = np.interp(y, (0.0, 8.0, 14.0, 22.0, 30.0), (0.6, 0.95, 1.15, 1.35, 1.45))
-    sides = _smooth((around - edge) / 0.2) + 0.3 * _smooth((7.0 - y) / 4.0)
-    limit = np.interp(around, (1.2, 1.95, 2.3, math.pi), (24.0, 28.5, 37.0, 38.5))  # none where the jaw moves the skin
-    return np.minimum(sides, 1.0) * _smooth((limit - y) / 3.5)
+    """How much stubble the skin at ``points`` carries, 0 to 1: all of it on the sides and back, none on the face. Its
+    front edge runs down the temple to a sideburn before the ear, and its foot round the ear to a fade on the nape."""
+    y, z = points[..., 1], points[..., 2]
+    start = np.interp(y, (6.0, 12.0, 20.0, 27.0), (-6.5, -3.5, 0.0, 2.2))
+    foot = np.interp(z, (2.0, 7.0, 12.0, 20.0), (27.0, 28.5, 33.0, 38.5))
+    return _smooth((z - start) / 5.0) * _smooth((foot - y) / 3.0)
 
 
 @lru_cache(maxsize=1)
@@ -872,7 +880,7 @@ def scalp_picture() -> Texture:
     cols = np.round(np.linspace(0, pedro_sculpt.COLS - 1, size)).astype(int)
     shaved = _shaved(points[np.ix_(rows, cols)])
     speck = stream(1024, size * size).reshape(size, size)
-    amount = shaved * (0.34 + 0.36 * speck * speck)
+    amount = shaved * (0.42 + 0.4 * speck * speck)
     skin = np.array([int(_SKIN[i : i + 2], 16) for i in (1, 3, 5)], float)
     mixed = skin * (1.0 - amount[..., None]) + np.array((86.0, 83.0, 80.0)) * amount[..., None]
     picture = np.empty((size, size, 4), np.uint8)

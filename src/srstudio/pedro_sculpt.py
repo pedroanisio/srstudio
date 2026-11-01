@@ -15,13 +15,58 @@ from functools import lru_cache
 
 import numpy as np
 
-__all__ = ["CENTRE", "COLS", "ROWS", "field", "front", "grid", "lay", "stream", "strokes", "tube", "width"]
+__all__ = [
+    "CENTRE",
+    "COLS",
+    "ROWS",
+    "SKULL",
+    "crown",
+    "field",
+    "front",
+    "grid",
+    "lay",
+    "side_of",
+    "under_nose",
+    "stream",
+    "strokes",
+    "tube",
+    "width",
+]
 
 _YS = np.array((0, 2, 5, 9, 15, 20, 25, 30, 35, 40, 44, 47, 49, 50), float)
-_WIDE = (0.08, 9.2, 14.4, 17.0, 17.9, 18.4, 19.0, 18.9, 17.9, 16.4, 14.5, 11.7, 7.0, 0.08)
-_FORE = (0.08, 7.4, 12.2, 14.0, 14.0, 13.4, 12.7, 12.8, 12.5, 12.2, 11.8, 10.2, 6.0, 0.08)
-_BACK = (0.08, 7.6, 12.0, 14.0, 14.7, 14.7, 14.2, 12.8, 10.0, 7.0, 5.2, 3.6, 1.8, 0.08)
-CENTRE = np.array((0.0, 27.0, 0.0))  # the skin is star-shaped about this point
+_WIDE = (0.08, 6.5, 11.0, 14.6, 17.2, 18.4, 19.0, 18.9, 17.9, 16.4, 14.5, 11.7, 7.0, 0.08)
+_FORE = (0.08, 5.0, 8.6, 11.2, 13.0, 13.4, 12.7, 12.8, 12.5, 12.2, 11.8, 11.0, 8.6, 0.08)
+_BACK = (
+    0.08,
+    6.0,
+    10.0,
+    13.0,
+    14.5,
+    14.5,
+    14.0,
+    12.5,
+    10.5,
+    8.5,
+    6.2,
+    4.4,
+    2.6,
+    0.08,
+)  # the jaw's back edge, not the skull's
+SKULL = (
+    (0.0, 19.6, 7.2),
+    (17.6, 19.6, 19.3),
+)  # the cranium, centre and radii: most of his depth is here, behind the ear
+_NECK = (
+    11.6,
+    8.3,
+    7.6,
+    25.0,
+    60.0,
+)  # half width, middle, half depth, top and foot of the neck the skull comes down into
+_MELT_Z, _MELT = (-8.0, -1.0), (0.3, 5.0)  # how softly the skull melts in: wide behind the temple, nothing on the face
+_JAW_FLOOR = ((50.4, -8.0), (42.0, 7.5))  # the line under his jaw, from the chin up to its angle, as y and z
+_ROUND = 0.44  # how round the face stands across: 0.5 is an ellipse, lower is a flat front with hard corners
+CENTRE = np.array((0.0, 27.0, 3.0))  # the skin is star-shaped about this point, which the neck's column has to contain
 ROWS, COLS = 361, 441
 _FACE_ROWS = (0.6, 2.75, 7.0)  # polar angles the face runs between, and how much denser its rows are than the rest
 _OUTSIDE, _STEP, _BISECTIONS = 40.0, 0.8, 16
@@ -77,7 +122,7 @@ def front(x, y) -> np.ndarray:
     x = np.asarray(x, float)
     y = np.clip(np.asarray(y, float), 0.001, 49.999)
     q = np.minimum(0.99999, np.abs(x) / width(y))
-    base = -_fore(y) * (1.0 - q * q) ** 0.36
+    base = -_fore(y) * (1.0 - q * q) ** _ROUND
     z = base.copy()
     for side in (-1.0, 1.0):
         z = z + 1.3 * _g(x, y, side * 7.6, 24.1, 4.4, 2.8)  # eyes set deep
@@ -114,6 +159,19 @@ def _union(a, b, k: float) -> np.ndarray:
     return b * (1.0 - h) + a * h - k * h * (1.0 - h)
 
 
+def _above_jaw_floor(y, z) -> np.ndarray:
+    """Above 0 under his jaw: a head's underside rises from the chin to the jaw's angle, it does not lie flat."""
+    (y0, z0), (y1, z1) = _JAW_FLOOR
+    return ((y - y0) * (z1 - z0) - (z - z0) * (y1 - y0)) / math.hypot(y1 - y0, z1 - z0)
+
+
+def _neck(x, y, z) -> np.ndarray:
+    """His neck as a column leaning back as it goes down: one skin with the head, so the nape has no join to show."""
+    half, middle, deep, top, foot = _NECK
+    d = (np.hypot(x / half, (z - middle - 0.06 * (y - 40.0)) / deep) - 1.0) * min(half, deep)
+    return np.maximum(d, np.maximum(top - y, y - foot))
+
+
 def _nose(x, y, z) -> np.ndarray:
     d = _ball(x, y, z, (0, 27.4, -13.6), (2.9, 7.2, 2.5))
     d = _union(d, _ball(x, y, z, (0, 32.9, -15.0), (3.6, 2.3, 2.9)), 1.6)
@@ -123,39 +181,79 @@ def _nose(x, y, z) -> np.ndarray:
 
 
 def field(x, y, z) -> np.ndarray:
-    """Below 0 inside his head: the outline, the face on it and the nose, melted together."""
+    """Below 0 inside his head: the face and jaw, cut clean underneath, on a cranium that carries his depth backwards,
+    with the nape and the nose, melted together."""
     x, y, z = np.asarray(x, float), np.asarray(y, float), np.asarray(z, float)
     yc = np.clip(y, 0.001, 49.999)
     rx, fd, bd = width(yc), _fore(yc), _back(yc)
     q = np.minimum(0.99999, np.abs(x) / rx)
-    delta = front(x, yc) + fd * (1.0 - q * q) ** 0.36
+    delta = front(x, yc) + fd * (1.0 - q * q) ** _ROUND
     depth = np.where(z < 0, fd, bd)
-    height = np.where(z < 0, np.maximum(0.0, -z + delta), np.maximum(z, 0.0))
-    radial = (x / rx) ** 2 + (height / depth) ** np.where(z < 0, 1.0 / 0.36, 1.0 / 0.41)
-    base = (np.sqrt(radial) - 1.0) * np.minimum(rx, depth)
+    height = np.where(z < 0, np.maximum(0.0, -z + delta * np.minimum(-z / 5.0, 1.0)), np.maximum(z, 0.0))
+    radial = (x / rx) ** 2 + (height / depth) ** np.where(z < 0, 1.0 / _ROUND, 1.0 / 0.46)
+    base = (np.sqrt(radial) - 1.0) * np.minimum(rx, np.minimum(fd, bd))
     base = np.maximum(base, np.maximum(-y, y - 50.0))
+    base = -_union(-base, -_above_jaw_floor(y, z), 1.5)
+    base = _union(base, _ball(x, y, z, *SKULL), np.interp(z, _MELT_Z, _MELT))
+    base = _union(base, _neck(x, y, z), 3.0)
     return _union(base, _nose(x, y, z), 1.35)
 
 
-def _radius(directions: np.ndarray) -> np.ndarray:
-    """How far from :data:`CENTRE` the head ends along each unit direction: the last crossing, coming from outside."""
+def _radius(directions: np.ndarray, centre: np.ndarray = CENTRE) -> np.ndarray:
+    """How far from ``centre`` the head ends along each unit direction: the last crossing, coming from outside."""
     far = np.full(len(directions), _OUTSIDE)
     near = far.copy()
     active = np.arange(len(directions))
     t = _OUTSIDE
     while len(active) and t > 0.0:
         t -= _STEP
-        p = CENTRE + directions[active] * t
+        p = centre + directions[active] * t
         inside = field(p[:, 0], p[:, 1], p[:, 2]) <= 0.0
         near[active[inside]] = t
         far[active[inside]] = t + _STEP
         active = active[~inside]
     for _ in range(_BISECTIONS):
         mid = (near + far) / 2.0
-        p = CENTRE + directions * mid[:, None]
+        p = centre + directions * mid[:, None]
         inside = field(p[:, 0], p[:, 1], p[:, 2]) <= 0.0
         near, far = np.where(inside, mid, near), np.where(inside, far, mid)
     return (near + far) / 2.0
+
+
+def crown(polar: np.ndarray, around: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """The skin of his crown seen from the middle of the skull, ``polar`` down from the top and ``around`` from the
+    forehead towards his left: its points, and the way out of the head at each."""
+    polar, around = np.broadcast_arrays(np.asarray(polar, float), np.asarray(around, float))
+    sin = np.sin(polar)
+    directions = np.stack((sin * np.sin(around), -np.cos(polar), -sin * np.cos(around)), axis=-1)
+    centre = np.array(SKULL[0])
+    points = centre + directions * _radius(directions.reshape(-1, 3), centre).reshape(*polar.shape, 1)
+    normals = np.stack(
+        [
+            field(*(points + step).reshape(-1, 3).T) - field(*(points - step).reshape(-1, 3).T)
+            for step in 0.05 * np.eye(3)
+        ],
+        axis=-1,
+    ).reshape(points.shape)
+    return points, normals / np.maximum(np.linalg.norm(normals, axis=-1, keepdims=True), 1e-9)
+
+
+def side_of(y: float, z: float, side: float) -> float:
+    """The x of the skin at ``y, z`` on ``side``, coming in from outside: where an ear stands."""
+    near, far = 0.0, 30.0
+    for _ in range(30):
+        mid = (near + far) / 2.0
+        near, far = (mid, far) if field(mid, y, z) <= 0.0 else (near, mid)
+    return side * near
+
+
+def under_nose(x: float, z: float) -> float:
+    """The y of the underside of his nose at ``x, z``, coming up from his lip: where a nostril opens."""
+    near, far = 25.0, 38.0
+    for _ in range(30):
+        mid = (near + far) / 2.0
+        near, far = (mid, far) if _nose(np.asarray(x), np.asarray(mid), np.asarray(z)) <= 0.0 else (near, mid)
+    return near
 
 
 def _polar() -> np.ndarray:
