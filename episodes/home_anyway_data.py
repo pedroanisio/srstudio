@@ -15,7 +15,7 @@ the room.
 
 from __future__ import annotations
 
-from dataclasses import replace
+from dataclasses import astuple, replace
 
 from srstudio import camera, foley, scripting, sketch, toon_house, toon_laptop, toon_pair, toon_sets
 from srstudio.scripting import at, times
@@ -64,6 +64,8 @@ HER_MEDIUM_AT = (400.0, 850.0)
 HALL_AT = (210.0, 850.0)
 FAR_QUAD = Quad((214.0, 664.0), (340.0, 646.0), (346.0, 776.0), (214.0, 768.0))
 NEAR_QUAD = toon_laptop.THREE_QUARTER
+CLOSE_SHIFT = 60.0  # his close: the wide's laptop, its size kept, moved clear of his face and cut by the frame's edge
+CLOSE_QUAD = Quad(*((x + CLOSE_SHIFT, y) for x, y in astuple(NEAR_QUAD)))
 FULL_QUAD = Quad((42.0, 344.0), (548.0, 330.0), (552.0, 742.0), (42.0, 732.0))
 SPOTS = ((0.27, 0.29, -3.0), (0.7, 0.27, 2.0), (0.24, 0.75, 2.0), (0.6, 0.74, -2.0), (0.83, 0.75, 3.0))
 HIS_CHEEK = (214.0, 712.0)
@@ -280,15 +282,17 @@ def _screen(shot) -> None:
     """What he is looking at: the page, gone, but for one corner."""
     cv = shot.cv
     toon_sets.kitchen(cv, shot.back, chair=False)
-    _laptop(shot, FULL_QUAD, foot=46.0, shift=-40.0)
+    _laptop(shot, FULL_QUAD, foot=58.0, shift=-40.0)  # its whole front edge reaches the table
     toon_house.ledge(cv, shot.front)
 
 
 def _close(shot) -> None:
-    """His face. The marks stay where the table has them, so no push loses them."""
+    """His face, the laptop still at his right hand, so this is the same table. The marks stay where the table has
+    them, so no push loses them."""
     cv = shot.cv
     toon_sets.kitchen(cv, shot.back)
     toon_pair.figure(shot, shot.back, "bear", CLOSE_AT, ACTS["bear"], scale=CLOSE_SCALE)
+    _laptop(shot, CLOSE_QUAD)
     toon_house.ledge(cv, shot.front)
 
 
