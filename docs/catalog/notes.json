@@ -1252,6 +1252,8 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "tiny-hat": {"title": "Chapéu minúsculo"},
+    "hat-stack": {"title": "Pilha de chapéus"},
     "soft-hook-card": {"title": "Cartão de gancho"},
     "soft-slippers": {"title": "Pantufas"},
     "soft-scarf": {"title": "Cachecol"},
@@ -8310,6 +8312,19 @@
         "at": 16.0
       },
       "text": "A calçada corre abaixo do quadro: a câmera desce e encontra as pantufas."
+    },
+    {
+      "section": "props",
+      "name": "Pilha de chapéus",
+      "parts": [
+        "hat-stack",
+        "tiny-hat"
+      ],
+      "shot": {
+        "episode": "many-hats",
+        "at": 13.0
+      },
+      "text": "Cada chapéu pousa sobre o anterior com um pequeno achatamento, e a pilha balança e cai inteira. Quando sai do quadro, sobra o menor de todos."
     }
   ]
 }

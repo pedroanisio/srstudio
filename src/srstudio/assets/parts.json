@@ -10842,6 +10842,40 @@
           "rig": null
         }
       ]
+    },
+    "hat-stack": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A column of seven generic hats, each landing on the last, that sways and topples as one; drawn in code, no brand. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "1f9349650776b9d375971a31e8a739711e1c63f9775144894d17085d7b983598",
+          "rig": null
+        }
+      ]
+    },
+    "tiny-hat": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A very small round hat for a grown head; drawn in code, no brand. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "b827ff414c935adaa9500924c9b7feec0e04a1e8d49fcb95ecd04304cdb9279c",
+          "rig": null
+        }
+      ]
     }
   }
 }
