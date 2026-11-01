@@ -70,8 +70,8 @@ PIVOT = (900.0, 900.0)  # at the signature, which the drift keeps in frame
 WIDE = "hamster"  # never seen: the name of the shots the dress draws whole
 FIGURES: dict[str, tuple[float, float]] = {"rabbit": (1.1, 0.0), "hedgehog": (1.1, 0.0)}
 STICKERS = {"hedgehog": toon_cast.headset(toon_cast.HEDGEHOG)}
-PHONE = {"at": (312.0, 640.0), "scale": 0.9, "hand": "#f2e8dc"}
-BOARD = {"at": (424, 756), "scale": 1.1, "hand": "#8a6a4f"}
+PHONE = {"at": (450.0, 814.0), "scale": 0.9}  # stood on her desk, on speaker
+BOARD = {"at": (424, 816), "scale": 1.1}  # stood on the agent's desk
 EYE = (205.0, 545.0)  # where the drops land
 END = 34.35
 ROWS = (  # the floor, far row first: (reference height, scale, who, from left to right)
@@ -158,7 +158,7 @@ def _phone(shot) -> None:
 
 
 def home(shot) -> None:
-    """The caller at home, the phone at her ear."""
+    """The caller at home, the phone on her desk."""
     toon_sets.home(shot.cv, shot.back, end=shot.end)
     toon_house.ledge(shot.cv, shot.front)
     _phone(shot)

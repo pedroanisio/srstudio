@@ -71,7 +71,6 @@ GREEN = "#3f7d4f"
 RED = "#a33b35"
 BLUE = "#3a5f9a"
 WARM = "#e8b45a"
-HAND = "#9c8a6c"
 PUSH = 1.14  # how far the camera goes in on the gnome
 END = 30.96
 
@@ -192,13 +191,11 @@ def window(shot, start: float, stop: float) -> None:
     again = start >= at(shot, "again")
     state = ("Order placed", "9:40") if again else ("Delivered", "9:00")
     screen = toon_everyday.Screen(0.0, "notify", "Noodle App", *state)
-    toon_everyday.phone(
-        cv, front, [screen], measure=shot.measure, at=(330, 838), scale=0.9, hand=HAND, id=cv.uid("phone")
-    )
+    toon_everyday.phone(cv, front, [screen], measure=shot.measure, at=(330, 838), scale=0.9, id=cv.uid("phone"))
 
 
 def street(shot, start: float, stop: float) -> None:
-    """The street, a parked car hiding his slippers, the phone up like a badge."""
+    """The street, a parked car hiding his slippers, the phone stood on its boot like a badge."""
     cv = shot.cv
     back, front = (
         cv.group(shot.back, cv.uid("g"), start=start, end=stop),
@@ -207,9 +204,7 @@ def street(shot, start: float, stop: float) -> None:
     toon_world.night_street(cv, back, end=stop)
     toon_cars.side_car(cv, front, at=(200.0, 1040.0), scale=2.0, colour="#30445c")
     screen = toon_everyday.Screen(0.0, "notify", "Delivered", "Green door", "9:06")
-    toon_everyday.phone(
-        cv, front, [screen], measure=shot.measure, at=(440, 800), scale=0.9, hand=HAND, id=cv.uid("phone")
-    )
+    toon_everyday.phone(cv, front, [screen], measure=shot.measure, at=(440, 880), scale=0.9, id=cv.uid("phone"))
     toon_inserts.rain(cv, front, start=start, end=stop)
     night(cv, front)
 

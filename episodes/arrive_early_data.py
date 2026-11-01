@@ -165,21 +165,19 @@ def reader(shot, screens, landed: float) -> None:
     toon_world.placed(cv, drop, READER_AT, READER_SCALE, draw, pivot=READER_AT)
 
 
-def form(shot, landed: float, hand: str | None = None, at=None, scale: float | None = None) -> None:
-    """The clipboard she slides across: from the frame's edge onto the ledge, or already in his hand."""
+def form(shot, landed: float, slides: bool = True, at=None, scale: float | None = None) -> None:
+    """The clipboard she slides across, from the frame's edge onto the ledge, or already lying there."""
     cv = shot.cv
     fields = [toon_everyday.Field("Side", "1 of 2", 0.0)]
     place = {"at": at or FORM["at"], "scale": scale or FORM["scale"]}
     slide = cv.group(shot.front, cv.uid("g"), start=landed, x=0.0, y=0.0)
-    if hand is None:
+    if slides:
         cv.keys(slide, "x", [(landed, toon.fh(400)), (landed + BIT * 1.6, 0.0)], kind="cubic-out", local=False)
-    toon_everyday.clipboard(
-        cv, slide, "NEW PATIENT", fields, measure=shot.measure, hand=hand, id=cv.uid("board"), **place
-    )
+    toon_everyday.clipboard(cv, slide, "NEW PATIENT", fields, measure=shot.measure, id=cv.uid("board"), **place)
 
 
 def flipped(shot) -> None:
-    """The swap: the waiting room, and him small on its chair with the clipboard, filling in both sides."""
+    """The swap: the waiting room, and him small on its chair with the clipboard before him, filling in both sides."""
     cv, app = shot.cv, shot.app
     toon_house.hallway(cv, shot.back)
     toon_world.hall_chair(cv, shot.back)
@@ -191,7 +189,7 @@ def flipped(shot) -> None:
 
     toon_world.placed(cv, shot.front, at, scale, draw)
     toon_house.ledge(cv, shot.front)
-    form(shot, app.start, hand="#b8bcc4", at=(350.0, 826.0), scale=0.9)
+    form(shot, app.start, slides=False, at=(350.0, 826.0), scale=0.9)
 
 
 def dress(shot) -> None:

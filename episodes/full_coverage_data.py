@@ -57,7 +57,7 @@ MOUTH = replace(sketch.MOUTH_STYLE, spelling=True, close_bilabials=True, lead=0.
 
 WIDE = "hamster"  # never seen: the name of the shots the dress draws whole
 FIGURES = {"goat": (1.1, 30.0), "bear": (1.0, 0.0)}
-BOARD = {"at": (424, 826), "scale": 1.1, "hand": "#e6e0d0"}
+BOARD = {"at": (424, 826), "scale": 1.1}  # lying up against the counter's back edge
 CAR = {"at": (320.0, 905.0), "scale": 1.3}
 ROOF = (330.0, 745.0)  # where the gull stands on it
 LOT = "#b8b2a6"

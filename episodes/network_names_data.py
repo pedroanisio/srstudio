@@ -53,7 +53,9 @@ SEAT = (165.0, 840.0)
 CLOSER = 1.08  # how much bigger the last shot holds them
 LEAN = (-14.0, -7.0)  # sideways and degrees: her head on his shoulder
 SETTLE = 1.2  # seconds it takes her
-PHONE = {"at": (130, 960), "scale": 0.9, "hand": "#a97850"}
+PHONE = {"at": (296, 776), "scale": 1.5}
+INSERT = "#3a2c4e"  # the sofa's plum, dark, behind the phone when the shot cuts to it
+INSERT_CODE = "#e8dff0"
 SCREEN = "#10202c"
 RENAMED = 0.7  # the neighbor has just renamed his network
 DRIFT = 1.04
@@ -160,8 +162,11 @@ def listening(shot, who: str) -> tuple[str, str]:
 
 
 def typing(shot, start: float, stop: float, screen: str) -> None:
-    """His phone in his hand, for as long as he types."""
-    g = shot.cv.group(shot.front, shot.cv.uid("g"), start=start, end=stop)
+    """The insert: his phone, whole frame, for as long as he types."""
+    cv = shot.cv
+    g = cv.group(shot.front, cv.uid("g"), start=start, end=stop)
+    cv.rect(g, 0, 0, cv.width, cv.height, INSERT, cv.clear, 0, radius=0)
+    toon_world.marks(cv, g, code=INSERT_CODE)
     toon_everyday.phone(
         shot.cv,
         g,
