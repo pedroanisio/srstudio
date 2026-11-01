@@ -37,11 +37,19 @@ SCRIPT = [  # role, text, caption, speed
 ]  # fmt: skip
 LEAD = 0.25  # the handshake is already going
 CUE = 0.92  # a line's start to the next, so its caption holds its 0.84 s
+CUE_LEAD, CUE_TAIL = (
+    0.03,
+    0.30,
+)  # a caption comes up this long before a line and stays this long after: the cuts sit there
 ACROSS = 1.80  # after his thanks: he goes in, shuts it with authority, and the shut door holds before the dark
 DARK = 1.20  # the held bracket in the closet: the mop goes over and nobody speaks
 SAT = 0.60  # after "That's a closet.": the chair creaks outside
-LATER = 0.70  # after "I live here now.": the door opens on Wednesday
-NEXT_DOOR = 2.20  # after "You got the job.": Bo shuts the closet, the handshake, Pip strides to the next door
+LATER = 0.85  # after "I live here now.": the caption goes, and the door opens on Wednesday
+SEEN_SHUT = 0.42  # on the wide after "You got the job.": Pip steps out and the closet shuts
+SHUT_HOLDS = 0.40  # the shut door, before the handshake
+SHAKE = 0.66  # the handshake
+STRIDE = 0.76  # to the next door
+NEXT_DOOR = CUE_TAIL + SEEN_SHUT + SHUT_HOLDS + SHAKE + STRIDE + 0.58  # after "You got the job.", until the hold on Bo
 ALONE = 0.90  # the held bracket on Bo, and the clatter behind the door
 ENDING = 0.35  # out on the last word
 INTERVIEW = Interview(
@@ -75,13 +83,17 @@ def extra(t: Timing) -> dict:
     dark = p[2]["start"] - DARK
     opens = p[1]["start"] + 1.0  # his hand is on the door by 3.0 s
     alone = p[9]["start"] - ALONE
+    wide = p[8]["end"] + CUE_TAIL
+    shuts = wide + SEEN_SHUT
     return {
         "dark_start": dark,
         "shut_start": p[1]["end"] + 0.65,
         "in_start": opens + 0.25,
         "opens_start": opens,
         "wednesday_start": p[5]["start"] - 0.55,
-        "bo_shuts_start": p[8]["end"] + 0.12,
+        "wide_start": wide,
+        "bo_shuts_start": shuts,
+        "again_start": shuts + SHUT_HOLDS,
         "next_shut_start": alone - 0.08,
         "alone_start": alone,
         "clatter_start": alone + 0.42,

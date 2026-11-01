@@ -3,11 +3,13 @@
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "episodes"))
 
 from srstudio.releases import load  # noqa: E402
-from wrong_door_audio import ALONE, CUE, DARK, SCRIPT, VOICES, extra, schedule  # noqa: E402
+from wrong_door_audio import ALONE, CUE, CUE_TAIL, DARK, SCRIPT, VOICES, extra, schedule  # noqa: E402
 
 SECONDS = [1.6, 1.6, 1.3, 1.3, 1.2, 0.9, 1.7, 0.4, 2.3, 0.7]
 
@@ -65,6 +67,20 @@ def test_the_door_opens_on_wednesday_after_the_dark():
     p = phrases()
     beats = extra(Timing(p))
     assert p[4]["end"] < beats["wednesday_start"] < p[5]["start"]
+
+
+def test_the_door_waits_for_the_caption_of_the_line_before_it():
+    p = phrases()
+    assert extra(Timing(p))["wednesday_start"] >= p[4]["end"] + CUE_TAIL - 1e-9
+
+
+def test_the_wide_waits_for_his_caption_and_the_closet_is_seen_shutting_before_the_handshake():
+    p = phrases()
+    beats = extra(Timing(p))
+    assert beats["wide_start"] == pytest.approx(p[8]["end"] + CUE_TAIL)
+    assert beats["bo_shuts_start"] - beats["wide_start"] >= 0.4 - 1e-9
+    assert beats["again_start"] - beats["bo_shuts_start"] >= 0.4 - 1e-9
+    assert beats["again_start"] + 0.66 + 0.76 <= beats["next_shut_start"] - 0.4
 
 
 def test_the_holdout_keeps_its_position_arm_and_names_no_recipient():

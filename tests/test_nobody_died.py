@@ -89,7 +89,7 @@ def test_the_release_sits_in_both_tests_and_tells_nobody_to_send_it():
 
 
 def test_a_cut_after_a_line_waits_for_its_caption_cue():
-    """A cue stays CUE_TAIL after its line, as far as the next cue: Episode.spoken_captions' rule; no cut falls in one."""
+    """A cue stays CUE_TAIL after its line, as far as the next cue: spoken_captions' rule; no cut falls in one."""
     assert CUE_TAIL == 0.2
     p = phrases()
     cues = [
