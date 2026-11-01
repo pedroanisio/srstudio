@@ -2,7 +2,7 @@
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 ---
 
-# ADR 0087: The News anchors' hands are a pair
+# ADR 0089: The News anchors' hands are a pair
 
 - Status: accepted (2026-11-01), on arc4d3's order of that day
 - Deciders: arc4d3; written by Claude Opus 5.5 in Claude Code
