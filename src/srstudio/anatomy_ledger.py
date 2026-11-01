@@ -20,27 +20,36 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, NamedTuple
 
 from . import anatomy_parts
-from .anatomy import AnatomyError
+from .anatomy import AnatomyError, Side
 
 if TYPE_CHECKING:
     from .canvas import Canvas
 
 __all__ = [
+    "ARM_THIRD",
+    "BUST_OPEN",
+    "HAND_NO_ARM",
     "HAND_NO_SIDE",
     "HAND_UNPAIRED",
     "RECORD",
     "RULES",
     "SCHEMA",
     "AnatomyRefusedError",
+    "Build",
     "Exemption",
     "ExemptionError",
+    "Limb",
     "Note",
     "built",
     "exemptions",
+    "limb",
+    "loose_hand",
     "note_part",
     "notes",
+    "on_arm",
     "parse_exemptions",
     "read",
+    "read_limbs",
     "recording",
     "refuse",
     "unexcused",
@@ -49,14 +58,18 @@ __all__ = [
 
 HAND_UNPAIRED = "hand-unpaired"  # one drawing of a hand on both arms, so one arm has the other's hand
 HAND_NO_SIDE = "hand-no-side"  # a hand that does not say which arm it is on
+HAND_NO_ARM = "hand-no-arm"  # a hand part that no character's arm holds (ADR 0106)
+ARM_THIRD = "arm-third"  # two hands on one arm of one character on one frame (ADR 0106)
+BUST_OPEN = "bust-open"  # a figure drawn to the waist ending in the open, where it would need legs (ADR 0106)
 
-RULES = frozenset({HAND_UNPAIRED, HAND_NO_SIDE})
+RULES = frozenset({HAND_UNPAIRED, HAND_NO_SIDE, HAND_NO_ARM, ARM_THIRD, BUST_OPEN})
 RECORD = "anatomy.json"
 SCHEMA = "1.0.0"
 EXEMPTIONS = "anatomy_published.json"
 _ROW = frozenset({"reel", "rule", "part", "why"})
 
-_building: ContextVar[list[Note] | None] = ContextVar("srstudio_anatomy_build", default=None)
+_building: ContextVar[Build | None] = ContextVar("srstudio_anatomy_build", default=None)
+_holding: ContextVar[tuple[str, Side] | None] = ContextVar("srstudio_anatomy_arm", default=None)
 
 
 class AnatomyRefusedError(AnatomyError):
@@ -76,6 +89,14 @@ class Note(NamedTuple):
 
     def __str__(self) -> str:
         return f"{self.rule} on {self.part}: {self.detail}"
+
+
+class Limb(NamedTuple):
+    """The hand of ``owner``'s arm on ``side``, drawn as node ``id``."""
+
+    owner: str
+    side: Side
+    id: str
 
 
 class Exemption(NamedTuple):
@@ -128,6 +149,29 @@ def note_part(cv: Canvas, part: str, number: int) -> None:
         cv.note_anatomy(HAND_UNPAIRED, part, f"version {number} draws one hand on both arms: use a paired version")
 
 
+@contextmanager
+def on_arm(owner: str, side: Side) -> Iterator[None]:
+    """Say that the loose hands drawn in the block are on the arm of ``owner`` on ``side``. It changes no drawing."""
+    if not (isinstance(owner, str) and owner.strip()):
+        raise AnatomyError(f"a hand says whose arm it is on, got {owner!r}")
+    token = _holding.set((owner, Side.of(side.value if isinstance(side, Side) else side)))
+    try:
+        yield
+    finally:
+        _holding.reset(token)
+
+
+def loose_hand(cv: Canvas, part: str) -> None:
+    """Note on ``cv`` that ``part`` drew a hand with no arm, unless the caller said whose it is (:func:`on_arm`)."""
+    if _holding.get() is None:
+        cv.note_anatomy(HAND_NO_ARM, part, "a hand exists only on an arm: draw it in anatomy_ledger.on_arm")
+
+
+def limb(cv: Canvas, owner: str, side: int, node: str) -> None:
+    """Record on ``cv`` that node ``node`` is the hand of ``owner``'s arm on ``side``."""
+    cv.limbs[node] = Limb(owner, Side.of(side), node)
+
+
 def notes(cv: Canvas) -> list[Note]:
     """What was noted on ``cv``, in a fixed order."""
     return sorted(Note(rule, part, detail) for (rule, part), detail in cv.anatomy.items())
@@ -147,10 +191,17 @@ def refuse(reel: str, noted: Iterable[Note]) -> None:
         raise AnatomyRefusedError(f"{reel}: the anatomy rules refuse this build: {said}")
 
 
+class Build(NamedTuple):
+    """What the finished builds of a recorded block noted, and the hands they placed."""
+
+    notes: list[Note]
+    limbs: list[Limb]
+
+
 @contextmanager
-def recording() -> Iterator[list[Note]]:
+def recording() -> Iterator[Build]:
     """Collect what each finished build in the block noted; :func:`srstudio.usage.recorded` keeps it."""
-    collected: list[Note] = []
+    collected = Build([], [])
     token = _building.set(collected)
     try:
         yield collected
@@ -158,28 +209,52 @@ def recording() -> Iterator[list[Note]]:
         _building.reset(token)
 
 
-def built(noted: Iterable[Note]) -> None:
+def built(noted: Iterable[Note], limbs: Iterable[Limb] = ()) -> None:
     """Hand what a finished build noted to the block recording it, if there is one."""
     collected = _building.get()
     if collected is not None:
-        collected.extend(noted)
+        collected.notes.extend(noted)
+        collected.limbs.extend(limbs)
 
 
-def write(project: Path, noted: Iterable[Note]) -> None:
-    """Record ``noted`` in ``project``."""
+def write(project: Path, noted: Iterable[Note], limbs: Iterable[Limb] = ()) -> None:
+    """Record ``noted`` and ``limbs`` in ``project``."""
     rows = [note._asdict() for note in noted]
-    (Path(project) / RECORD).write_text(json.dumps({"schema": SCHEMA, "notes": rows}) + "\n", encoding="utf-8")
+    hands = [{"owner": limb.owner, "side": limb.side.value, "id": limb.id} for limb in limbs]
+    document = {"schema": SCHEMA, "notes": rows, "limbs": hands}
+    (Path(project) / RECORD).write_text(json.dumps(document) + "\n", encoding="utf-8")
 
 
-def read(project: Path) -> list[Note] | None:
-    """What the build in ``project`` noted, or None for a project built before records."""
+def _document(project: Path) -> dict[str, Any] | None:
     path = Path(project) / RECORD
     if not path.is_file():
         return None
     try:
         document = json.loads(path.read_text(encoding="utf-8"))
-        if document["schema"] != SCHEMA:
-            raise ExemptionError(f"{path}: schema {document['schema']!r}, this srstudio reads {SCHEMA}")
-        return [Note(str(row["rule"]), str(row["part"]), str(row["detail"])) for row in document["notes"]]
-    except (OSError, ValueError, KeyError, TypeError) as e:
+    except (OSError, ValueError) as e:
         raise ExemptionError(f"{path}: not a {SCHEMA} record of a build's anatomy: {e!r}") from None
+    if not isinstance(document, dict) or document.get("schema") != SCHEMA:
+        raise ExemptionError(f"{path}: not a {SCHEMA} record of a build's anatomy")
+    return document
+
+
+def read(project: Path) -> list[Note] | None:
+    """What the build in ``project`` noted, or None for a project built before records."""
+    document = _document(project)
+    if document is None:
+        return None
+    try:
+        return [Note(str(row["rule"]), str(row["part"]), str(row["detail"])) for row in document["notes"]]
+    except (KeyError, TypeError) as e:
+        raise ExemptionError(f"{project}: not a {SCHEMA} record of a build's anatomy: {e!r}") from None
+
+
+def read_limbs(project: Path) -> list[Limb]:
+    """The hands the build in ``project`` placed; none for a project built before records."""
+    document = _document(project)
+    if document is None:
+        return []
+    try:
+        return [Limb(str(row["owner"]), Side(row["side"]), str(row["id"])) for row in document.get("limbs", [])]
+    except (KeyError, TypeError, ValueError) as e:
+        raise ExemptionError(f"{project}: not a {SCHEMA} record of a build's anatomy: {e!r}") from None

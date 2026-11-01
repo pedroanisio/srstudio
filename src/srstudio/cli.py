@@ -51,6 +51,9 @@ from . import (
 )
 from .episode import SceneCheckError
 from .errors import SrstudioError, diagnostic
+from .frame_gates import FrameGateError
+from .framegraph import FrameGraphError
+from .layout import LayoutError, find_engine
 from .social import MANIFEST, DeliveryError, read_manifest
 from .soundtrack import INK_MOUTH
 from .styles import STYLES
@@ -560,6 +563,8 @@ def main(argv=None):
                     runpy.run_path(script, run_name="__main__")
                 else:
                     runpy.run_module(script, run_name="__main__")
+            if args.root:
+                return _anatomy_frames(Path(args.root))
         except (SceneCheckError, parts.PartError) as exc:
             print(exc, file=sys.stderr)
             return 1
@@ -798,6 +803,23 @@ def _strict(args: argparse.Namespace) -> int:
         return 2
     print("\n".join(lines))
     return 0
+
+
+def _anatomy_frames(project: Path) -> int:
+    """Rule 2 of the anatomy rules on what was just built: 1 for a fault. Measuring takes the engine's frames, so a
+    build with no engine says it did not measure, and the first delivery still does (ADR 0106)."""
+    scenes = sorted(project.glob("*.scene.xml"))
+    if not scenes:
+        return 0
+    try:
+        slug = scenes[0].name.removesuffix(".scene.xml")
+        faults = anatomy_gate.after_build(project, slug, scenes[0], find_engine())
+    except (LayoutError, FrameGraphError, FrameGateError) as exc:
+        print(f"srstudio build: the anatomy frames were not measured: {exc}", file=sys.stderr)
+        return 0
+    for fault in faults:
+        print(f"{slug}: {fault}", file=sys.stderr)
+    return 1 if faults else 0
 
 
 def _anatomy(args: argparse.Namespace) -> int:

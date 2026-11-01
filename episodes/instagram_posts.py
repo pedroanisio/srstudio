@@ -220,6 +220,7 @@ def write_all(
             *frame_gates.signature_hidden(chosen, _beside(renders), first, engine),
             *figure_gates.figure_defects(chosen, _beside(renders), first, engine),
             *anatomy_gate.hand_defects(chosen, _beside(renders), first),
+            *anatomy_gate.body_defects(chosen, _beside(renders), first, engine),
             *show_gate.show_defects(
                 RELEASES,
                 _beside(renders),

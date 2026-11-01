@@ -15,15 +15,19 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Final
 
-from .anatomy import AnatomyError, Drawing, Facing, Side
+from .anatomy import AnatomyError, Body, Drawing, Facing, Framing, Side
 
 __all__ = [
+    "BODIES",
     "CHARACTERS",
     "HAND_PROPS",
     "HAND_WORDS",
+    "LOOSE_CALLS",
+    "LOOSE_HANDS",
     "NOT_A_HAND",
     "NOT_MIRRORED",
     "UNPAIRED",
+    "body",
     "Hands",
     "Kind",
     "unpaired",
@@ -156,6 +160,72 @@ CHARACTERS: Final = MappingProxyType(
     }
 )
 
+_DESK = Body(Framing.BUST)  # drawn to the waist or the chest: behind a desk, a counter or the frame's foot
+_LEGS = Body(Framing.FULL)
+_DOLL = Body(Framing.WHOLE, why="a peg doll, its body ending in one round foot")
+_THING = Body(Framing.WHOLE, arms=0, why="an appliance with a face")
+
+BODIES: Final = MappingProxyType(
+    {
+        "barista": _DESK,  # a Cutout actor's legs are an option: one that draws them is noted by its ``-legs`` group
+        "bo": _LEGS,
+        "candidate": _DESK,
+        "cel-traced": _DESK,
+        "collage-brent": _DESK,
+        "collage-deb": _DESK,
+        "collage-feld": _DESK,
+        "collage-flush": Body(Framing.WHOLE, arms=0, why="a toilet"),
+        "collage-gary": _DESK,
+        "collage-jun": _DESK,
+        "collage-kai": _DESK,
+        "collage-omar": _DESK,
+        "collage-priya": _DESK,
+        "collage-rosa": _DESK,
+        "customer": _DESK,
+        "doodle": _LEGS,
+        "gloss-gus": _DOLL,
+        "gloss-nadia": _DOLL,
+        "gloss-sunny": _DOLL,
+        "gloss-tamsin": _DOLL,
+        "host-lint": _DESK,
+        "juno": _LEGS,
+        "manager": _DESK,
+        "news-gus": _DESK,
+        "news-vera": _DESK,
+        "pedro": _DESK,
+        "pigeon": Body(Framing.WHOLE, arms=0, why="a bird"),
+        "pip": _LEGS,
+        "rafa": _DESK,
+        "remy": _LEGS,
+        "rosa": _DESK,
+        "saga-droid": _LEGS,
+        "saga-enforcer": _LEGS,
+        "saga-gloom": _LEGS,
+        "saga-juno": _LEGS,
+        "saga-mabel": _LEGS,
+        "saga-rook": _LEGS,
+        "stick-figure": _LEGS,
+        "stick-rig": _LEGS,
+        "talking-doorbell": _THING,
+        "talking-meter": _THING,
+        "talking-printer": _THING,
+        "talking-router": _THING,
+        "talking-vacuum": _THING,
+        "toon-bear": _DESK,
+        "toon-bento": _DESK,
+        "toon-cat": _DESK,
+        "toon-dog": _DESK,
+        "toon-fox": _DESK,
+        "toon-frog": _DESK,
+        "toon-goat": _DESK,
+        "toon-hamster": _DESK,
+        "toon-hedgehog": _DESK,
+        "toon-rabbit": _DESK,
+        "toon-raccoon": _DESK,
+        "toon-sloth": _DESK,
+    }
+)
+
 # A pair whose thumb follows its arm but whose other fingers do not mirror. Each is an approved look, so it stays as
 # drawn until the operator says otherwise; ADR 0105 names it.
 NOT_MIRRORED: Final = MappingProxyType(
@@ -190,10 +260,36 @@ HAND_PROPS: Final = MappingProxyType(
         "toon-folded-sheet": _thumbless("two mitts under a sheet"),
         "toon-highlighter": _thumbless("a mitt round a pen"),
         "toon-lasagna": _thumbless("two oven gloves"),
+        "toon-phone": _thumbless("its hand is a mitt over the phone's edge"),
         "toon-paw": _thumbless("a mitt on an arm from the edge ``side`` names"),
         "toon-rolled-towel": _thumbless("a mitt round a towel"),
         "toon-swung-arm": _thumbless("a coat-coloured arm ending round"),
         "toon-watering-can": _thumbless("a dark glove over the handle"),
+    }
+)
+
+# Hand parts that draw a hand and no arm. A character has to be holding it, so a build says whose with
+# anatomy_ledger.on_arm, or the hand is refused. True: only when the call passes ``hand``.
+LOOSE_HANDS: Final = MappingProxyType(
+    {
+        "crayon-cv": False,
+        "toon-clipboard": True,
+        "toon-folded-sheet": False,
+        "toon-highlighter": False,
+        "toon-lasagna": False,
+        "toon-phone": True,
+        "toon-watering-can": False,
+    }
+)
+LOOSE_CALLS: Final = MappingProxyType(
+    {
+        ("cutout_hiring", "crayon_cv"): "crayon-cv",
+        ("toon_everyday", "clipboard"): "toon-clipboard",
+        ("toon_everyday", "phone"): "toon-phone",
+        ("toon_homeware", "lasagna"): "toon-lasagna",
+        ("toon_house", "watering_can"): "toon-watering-can",
+        ("toon_odds", "folded_sheet"): "toon-folded-sheet",
+        ("toon_study", "highlighter"): "toon-highlighter",
     }
 )
 
@@ -264,6 +360,14 @@ NOT_A_HAND: Final = MappingProxyType(
 
 # The words a name or a summary has when it may draw a hand. The table is read against it, so it errs wide.
 HAND_WORDS: Final = re.compile(r"hand|finger|thumb|paw|palm|fist|grip|\barms?\b|arm\b|mitt|glove", re.IGNORECASE)
+
+
+def body(part: str) -> Body:
+    """The body of the character ``part``, pinned or not. An undeclared character is refused, never taken for a body."""
+    name = part.partition("@")[0]
+    if name not in BODIES:
+        raise AnatomyError(f"{name!r} declares no body in anatomy_parts.BODIES")
+    return BODIES[name]
 
 
 def unpaired(part: str, number: int) -> bool:

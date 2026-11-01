@@ -94,9 +94,9 @@ def recorded(project: Path) -> Iterator[None]:
     def write(used: set[str]) -> None:
         parts.write_record(project, parts.drawn(used))
         figure_record.write(project, figures)
-        anatomy_ledger.write(project, noted)
+        anatomy_ledger.write(project, build.notes, build.limbs)
 
-    with trace(figures) as used, anatomy_ledger.recording() as noted:
+    with trace(figures) as used, anatomy_ledger.recording() as build:
         try:
             yield
         except SystemExit as stop:

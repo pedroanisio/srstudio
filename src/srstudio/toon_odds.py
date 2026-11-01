@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from . import checks
+from . import anatomy_ledger, checks
 from .canvas import Canvas
 from .registry import register
 from .toon import FINE_W, INK_W, ToonDataError, fh, fx, fy
@@ -254,6 +254,7 @@ def folded_sheet(
     """A folded sheet with knife edges, its bottom edge on reference ``at``, resting on two paws of ``coat``."""
     if not (checks.number(start) and checks.number(end) and 0 <= start < end):
         raise ToonDataError(f"a sheet is held over 0 <= start < end, got {start!r}..{end!r}")
+    anatomy_ledger.loose_hand(cv, "toon-folded-sheet")
     x, y = at
     g = cv.group(parent, cv.uid("g"), start=start, end=end)
     cv.rect(g, fx(x - 110), fy(y - 120), fh(220), fh(120), "#fbfbf5", cv.ink, INK_W, radius=fh(4))

@@ -1070,7 +1070,7 @@ class Episode:
                 raise error from exc
             raise error
         report_data = (json.dumps(report_rows, indent=2) + "\n").encode()
-        anatomy_ledger.built(noted)
+        anatomy_ledger.built(noted, self.cv.limbs.values())
         write_outputs(
             [(target_out, document), (target_report, report_data)],
             overwrite=overwrite,

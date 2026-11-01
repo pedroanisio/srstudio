@@ -17,7 +17,7 @@ import math
 import re
 from collections.abc import Callable, Mapping, Sequence
 
-from . import checks
+from . import anatomy_ledger, checks
 from .canvas import Canvas
 from .registry import register
 from .toon import FINE_W, INK_W, ToonDataError, fh, fx, fy
@@ -262,6 +262,7 @@ def highlighter(
     if any(not (checks.number(t) and checks.number(v)) for t, v in path) or times != sorted(set(times)):
         raise ToonDataError(f"a marker's path is (seconds, x) pairs at rising times, got {path!r}")
     g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    anatomy_ledger.loose_hand(cv, "toon-highlighter")
     tilt = cv.group(g, cv.uid("g"), rotation=28)
     cv.path(tilt, "M -11 -6 L 11 -6 L 18 -36 L -18 -36 Z", MARKER_BODY, cv.ink, FINE_W)
     cv.rect(tilt, -22, -176, 44, 142, MARKER_BODY, cv.ink, INK_W, radius=9)

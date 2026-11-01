@@ -40,6 +40,8 @@ __all__ = [
     "Thumbless",
     "View",
     "pair",
+    "Body",
+    "Framing",
 ]
 
 
@@ -236,3 +238,31 @@ def pair(left: Hand | Thumbless | None, right: Hand | Thumbless | None) -> tuple
         if hand is not None and (not isinstance(hand, Hand | Thumbless) or hand.arm.side is not side):
             raise HandError(f"a pair is the left arm's hand, then the right arm's, not {left!r} and {right!r}")
     return left, right
+
+
+class Framing(enum.Enum):
+    """What a character's drawing has of a body."""
+
+    FULL = "full"  # legs and feet: it may stand anywhere
+    BUST = "bust"  # it stops at the waist or the chest, so its bottom is off the frame or behind something
+    WHOLE = "whole"  # a thing that is all there as drawn: an appliance, a bird, a peg doll on its round foot
+
+
+@dataclass(frozen=True)
+class Body:
+    """A character's ``framing`` and its ``arms``: one pair, or none and ``why`` not. ``WHOLE`` says what it is."""
+
+    framing: Framing
+    arms: int = 2
+    why: str = ""
+
+    def __post_init__(self) -> None:
+        if self.arms not in (0, 2):
+            raise AnatomyError(f"a character has one pair of arms or none, not {self.arms!r}")
+        if (self.arms == 0 or self.framing is Framing.WHOLE) and not self.why.strip():
+            raise AnatomyError(f"a {self.framing.value} body with {self.arms} arms says why")
+
+    @property
+    def needs_cover(self) -> bool:
+        """Whether it has an end that nothing may show: a bust has no legs to stand on."""
+        return self.framing is Framing.BUST

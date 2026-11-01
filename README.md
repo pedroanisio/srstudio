@@ -235,6 +235,8 @@ New Okayville reels and News and Host pilots have a comedy floor: the lower of t
 
 A hand is drawn through the shared `srstudio.anatomy` contract: the right is the mirror of the left, the arm decides the thumb's side, and a build refuses a hand on the wrong arm, a hand with no side, or a version with one drawing on both arms. `srstudio anatomy` lists the published reels exempted by name. See [ADR 0105](docs/decisions/0105-hand-chirality-is-a-build-error.md).
 
+A body is declared too: `anatomy_parts.BODIES` says whether a character has legs, stops at the waist, or is a thing that is whole as drawn. A hand exists only on an arm, so a prop that draws one runs in `anatomy_ledger.on_arm`. `srstudio build` then reads the frames for a bust ending in the open and two hands on one arm, and first delivery reads them either way. See [ADR 0106](docs/decisions/0106-anatomy-is-a-build-error.md).
+
 Render with `scene-render encode --strict`. A reel's first delivery through `episodes/instagram_posts.py` also passes the frame gates, which refuse measured defects such as captions that run sentences together or signature marks the camera hides, and someone who is not the author reviews frames at full size. `publish_pilots.py` does not run these gates. See [ADR 0073](docs/decisions/0073-frame-gates-and-standing-review.md).
 
 ## Lanes

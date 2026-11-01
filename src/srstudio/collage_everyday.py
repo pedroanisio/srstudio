@@ -739,6 +739,8 @@ def arm(
     draw_shapes(cv, g, _sleeve(look, "reach", frm, to, width) + (_reaching(look, *to) if drawn else []))
     if hand and mirrored:
         _mirrored_hand(cv, g, look, *to)
+    if hand:
+        anatomy_ledger.limb(cv, look.name, chosen, g.id)
     return g
 
 
@@ -804,6 +806,7 @@ def reach(
         _mirrored_hand(cv, held, look, 0.0, 0.0)
     else:
         draw_shapes(cv, held, _reaching(look, 0.0, 0.0))
+    anatomy_ledger.limb(cv, look.name, chosen, held.id)
     return held
 
 
