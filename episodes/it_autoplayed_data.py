@@ -20,6 +20,7 @@ from srstudio import (
     foley,
     look,
     scripting,
+    signature,
     sketch,
     toon_bed,
     toon_everyday,
@@ -68,15 +69,19 @@ OVERLAY = "OUR SHOW: EPISODE 2"
 MENU_LABEL, MENU_SEEN = "EPISODE 8", 0.92
 MAE_AT, BRUNO_AT, PAIR_SCALE = (84.0, 850.0), (258.0, 850.0), 0.66
 MAE_CLOSE, BRUNO_CLOSE = (165.0, 880.0), (235.0, 880.0)
+TILE_CACTUS, TILE_CODE, TILE_CODE_INK = (860.0, 1322.0), (112.0, 1346.0), "#b7bed2"  # canvas pixels, on the menu's tile
 FAR_BLUR = 5.0
 LIGHTS = {"lamp": ((0, "off"),)}
 FROM_MAE, FROM_BRUNO = (108.0, 760.0), (219.0, 772.0)  # the two-shot's shoulders that meet on the cushion
 WOW_HANDS = (((222.0, 800.0), (168.0, 640.0)), ((322.0, 800.0), (374.0, 640.0)))
 WOW_LATE, WOW_DOWN = 0.5, 1.15  # seconds after the sting that his hands go up, and come down
 REMOTE_ROOT, REMOTE_HAND = (-14.0, 800.0), (36.0, 752.0)
-PAT_ROOT, PAT_DEG, PAT_LEN = (196.0, 760.0), 150.0, 120.0
+PAT_ROOT, PAT_PAW = (172.0, 736.0), (92.0, 800.0)  # his shoulder, and where his paw comes down on hers
+HER_PAW_ROOT, HER_PAW_LEN = (-28.0, 812.0), 118.0  # her arm, in from the frame's edge along the sofa's front
+PAT_RISE, PAT_EVERY = 13.0, 0.1  # degrees his paw lifts and seconds to each lift and fall: three pats
 JUMP = 34.0  # reference pixels, a full inch of rabbit
-FLINCH = 12.0
+GASP_LIFT, GASP_TILT = 70.0, -5.0  # canvas pixels up and degrees back: the first frame's jerk
+GASP_SNAPS, GASP_HOLDS, GASP_ENDS = 0.08, 0.36, 1.0  # up, held on the breath in, then the breath out
 STING_GLOW = 0.4  # seconds the white flash lasts
 PAUSE_TAKES = 0.5  # seconds from the start of the hold to the click
 
@@ -109,6 +114,7 @@ M_HAND = Act("down", "flat", "desk")
 M_STILL = Act("half", "flat", "desk")
 # Bruno
 B_FRONT = Act("wide", "flat", "desk")
+B_GASP = Act("wide", "o", "desk")
 B_FIXED = Act("narrow", "flat", "desk")
 B_SMUG = Act("half", "smirk", "desk")
 B_KIND = Act("left", "smirk", "desk")
@@ -117,7 +123,7 @@ B_CAUGHT = Act("wide", "flat", "desk")
 B_DEAD = Act("half", "flat", "desk")
 
 ROWS = (
-    (hold(0.0, TWO, "", *TOP, "gasp"), M_FRONT, B_FIXED),
+    (hold(0.0, TWO, "", *TOP, "gasp"), M_FRONT, B_GASP),
     (say(0.3, TWO, 0, *TOP), M_AT_HIM, B_FIXED),
     (say(1.7, TWO, 1, *TOP), M_AT_HIM, B_FIXED),  # he does not look away
     (say(2.5, TWO, 2, *TOP), M_FRONT, B_FIXED),
@@ -218,6 +224,14 @@ def _lifted(cv, g, rest: tuple[float, float], t: float, by: float, rise: float, 
     cv.keys(g, "y", keys, hold=False, kind="sine-out", local=False)
 
 
+def _gasps(cv, g, rest: tuple[float, float]) -> None:
+    """His jerk back on the first frame, the breath held, and let out through the first second."""
+    y = fy(rest[1])
+    for name, off, on in (("y", y, y - GASP_LIFT), ("rotation", 0.0, GASP_TILT)):
+        keys = [(0.0, off), (GASP_SNAPS, on), (GASP_HOLDS, on), (GASP_ENDS, off)]
+        cv.keys(g, name, keys, hold=False, kind="sine-out", local=False)
+
+
 def _two(shot) -> None:
     """Both of them on the sofa: the jump, his late hands, the hand he takes, her remote."""
     cv, app, beats = shot.cv, shot.app, shot.beats
@@ -230,8 +244,8 @@ def _two(shot) -> None:
             toon_bed.swung_arm(cv, shot.back, root, BEAR_COAT, swing, sting + WOW_LATE, sting + WOW_DOWN, length=length,
                                width=toon_bed.ARM_WIDTH * PAIR_SCALE)  # fmt: skip
     bruno = toon_pair.figure(shot, shot.back, "bear", BRUNO_AT, ACTS["bear"], scale=PAIR_SCALE)
-    if app.start <= 0.05 < app.end:
-        _lifted(cv, bruno, BRUNO_AT, 0.05, FLINCH, 0.06, 0.2)
+    if app.start <= 0.0 < app.end:
+        _gasps(cv, bruno, BRUNO_AT)
     if app.start <= sting < app.end:
         _lifted(cv, mae, MAE_AT, sting, JUMP, 0.1, 0.24)
     if hand <= app.start < menu:
@@ -252,20 +266,41 @@ def _mae(shot) -> None:
     toon_world.sofa(shot.cv, shot.front, "rug")
 
 
+def pat_swing(pat: float) -> list[tuple[float, float]]:
+    """His arm's angles over the line: down on her paw, up, three times."""
+    degrees, _ = toon_pair.aim(PAT_ROOT, PAT_PAW)
+    return [(round(pat + 0.04 + k * PAT_EVERY, 3), degrees + (PAT_RISE if k % 2 else 0.0)) for k in range(7)]
+
+
+def _pat(cv, parent, pat: float, start: float, end: float) -> tuple:
+    """Her paw along the sofa's front, in from the frame's edge, and his arm patting it, in front of the sofa."""
+    her = toon_bed.swung_arm(cv, parent, HER_PAW_ROOT, RABBIT_COAT, [(start, 2.0)], start, end, length=HER_PAW_LEN,
+                             width=46.0)  # fmt: skip
+    _, length = toon_pair.aim(PAT_ROOT, PAT_PAW)
+    him = toon_bed.swung_arm(cv, parent, PAT_ROOT, BEAR_COAT, pat_swing(pat), start, end, length=length, width=52.0)
+    return her, him
+
+
 def _bruno(shot) -> None:
-    """Bruno alone, and the arm that pats the hand below the frame's edge."""
+    """Bruno alone, and on the pat her paw and the arm that pats it."""
     cv, app, beats = shot.cv, shot.app, shot.beats
     toon_pair.figure(shot, shot.back, "bear", BRUNO_CLOSE, ACTS["bear"], scale=1.0)
+    toon_world.sofa(cv, shot.front, "rug")
     pat = at(beats, "pat")
     if app.start <= pat < app.end:
-        swing = [(pat + k * 0.16, PAT_DEG + (8.0 if k % 2 else 0.0)) for k in range(1, 6)]
-        toon_bed.swung_arm(cv, shot.back, PAT_ROOT, BEAR_COAT, swing, app.start, app.end, length=PAT_LEN, width=52.0)
-    toon_world.sofa(cv, shot.front, "rug")
+        _pat(cv, shot.front, pat, app.start, app.end)
+
+
+def mark_the_tile(cv, parent) -> None:
+    """The marks in the show's own still: a pot on the floor by the door, the code along the floor."""
+    signature.cactus(cv, parent, *TILE_CACTUS, 0.62)
+    signature.code(cv, parent, *TILE_CODE, 20, color=TILE_CODE_INK, opacity=0.9)
 
 
 def _menu(shot) -> None:
-    """The TV, full frame."""
+    """The TV, full frame, with the marks on its tile."""
     toon_everyday.tv_menu(shot.cv, shot.front, MENU_LABEL, MENU_SEEN, measure=shot.measure, id=shot.cv.uid("menu"))
+    mark_the_tile(shot.cv, shot.front)
 
 
 def dress(shot) -> None:
