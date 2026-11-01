@@ -13261,10 +13261,13 @@
         {
           "number": 1,
           "date": "2026-11-01",
-          "note": "A forwarded article on a phone: a headline the caller supplies, a faceless picture box and grey bars. No masthead, byline or date; the headline is measured and refused if it would clip or not read. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A forwarded article on a phone: a headline the caller supplies, a faceless picture box and grey bars. No masthead, byline or date; the headline is measured and refused if it would clip or not read..",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793515120.026389: \"Faceless graphics pass under the same conditions as props.\""
+          },
           "drawing": "8597f6fd75e211330b1a32b4e096680f8811e09b796fac2b40323e6067002b2b",
           "rig": null
         }
@@ -13278,10 +13281,13 @@
         {
           "number": 1,
           "date": "2026-11-01",
-          "note": "An open laptop seen from its screen side, three quarters, a page of bars on it and square notes that land on it one by one and can lift. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "An open laptop seen from its screen side, three quarters, a page of bars on it and square notes that land on it one by one and can lift..",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793515120.026389: \"Faceless graphics pass under the same conditions as props.\""
+          },
           "drawing": "0e7bccdffcb3c3831780d4aa22a3f312e7c81bdb9a90beae36f5ddca3f33ce0f",
           "rig": null
         }

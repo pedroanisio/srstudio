@@ -35,6 +35,7 @@ RELEASE = Release(
     parts={
         "collage-alarm-clock": 1,
         "collage-arm": 1,
+        "collage-article": 1,
         "collage-bedroom": 1,
         "collage-duvet": 1,
         "collage-gary": 1,

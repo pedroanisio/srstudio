@@ -266,6 +266,10 @@ class Staging:
     # caption leaves with no cut and its blank end matches the wall's brightness, until the next keyframe clears it: a
     # reel whose captions do that sets the interval that lands a keyframe on them
     keyframes: float = 0
+    # B frames between references, None for the encoder's 3. 0 hands x264's scene-cut check its cuts back on a reel
+    # whose grain makes neighbouring frames look nearly unrelated: with B frames its flash guard drops those cuts.
+    # Set it with a long ``keyframes``, so the check's bias stays below what the grain alone reaches (ADR 0083)
+    bframes: int | None = None
     loudness: str | None = None  # the master's integrated LUFS, when a reel departs from its style's
     # a caption of several sentences breaks at a sentence end; False keeps a published reel's rows
     sentence_rows: bool = False
@@ -369,6 +373,8 @@ def check_staging(staging: Staging) -> None:
         raise StagingError(f"{sk.slug}: bitrate {staging.bitrate!r} is not a whole number of bits a second")
     if not (checks.number(staging.keyframes) and staging.keyframes >= 0):
         raise StagingError(f"{sk.slug}: keyframes {staging.keyframes!r} is not a number of seconds")
+    if not (staging.bframes is None or (type(staging.bframes) is int and staging.bframes >= 0)):
+        raise StagingError(f"{sk.slug}: bframes {staging.bframes!r} is not a whole number of frames")
 
 
 def zooms(beats: Sequence[sketch.Beat], app: sketch.Appearance) -> list[float]:
@@ -422,6 +428,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
                 **(dict(audioCodec="aac", audioBitrate="192000") if voiced else {}),
                 **(dict(bitrate=str(staging.bitrate), twoPass=True) if staging.bitrate else {}),
                 **(dict(keyframeInterval=f"{staging.keyframes:.4f}") if staging.keyframes else {}),
+                **(dict(bFrames=str(staging.bframes)) if staging.bframes is not None else {}),
             ),
             accessibility=dict(
                 description=staging.accessibility
