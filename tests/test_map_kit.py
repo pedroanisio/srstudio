@@ -399,12 +399,15 @@ def test_a_ring_with_a_tag_needs_the_fonts_measure():
 
 
 def test_the_map_kit_carries_the_operators_approval():
-    kit = [name for name in parts.load() if name.startswith("map-")]
+    proposed = {"map-clock", "map-daylight", "map-far-side"}  # drawn after the approval, which does not reach them
+    kit = [name for name in parts.load() if name.startswith("map-") and name not in proposed]
     assert len(kit) == 10
     for name in kit:
         record = parts.latest(name)
         assert record.status == "approved", name
         assert record.approval.date == "2026-10-31" and record.approval.words == "map kit approved"
+    for name in proposed:
+        assert parts.get(name).versions[-1].status == "proposed", name
 
 
 def test_the_far_side_turns_land_through_the_middle_of_the_earth():
