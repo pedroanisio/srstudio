@@ -9,9 +9,9 @@ python3 tell_us.py PROJECT --voice    # the narrated master from the recording (
 import sys
 
 from _common import project_root
-from tell_us_data import STAGING
 from instagram_posts import POSTS
 from srstudio.collage_sketch import build
+from tell_us_data import STAGING
 
 ep = build(project_root(__file__), STAGING, set(sys.argv[2:]))
 if ep is not None:  # None: --init wrote the project files

@@ -13,8 +13,8 @@ from __future__ import annotations
 
 import sys
 
-from tell_us_data import NOTE, STAGING
 from srstudio.collage_sketch import MOUTH, recorder
+from tell_us_data import NOTE, STAGING
 
 main = recorder(STAGING, NOTE, __doc__, mouth=MOUTH)
 
