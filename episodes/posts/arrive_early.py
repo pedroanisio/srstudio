@@ -19,7 +19,7 @@ RELEASE = Release(
             "effects synthesized in code."
         ),
         hashtags=("#doctor", "#waitingroom", "#relatable", "#animatedshorts", "#comedy"),
-        thumbnail=Thumbnail("Take a seat.", 17.0, "Toon"),
+        thumbnail=Thumbnail("Take a seat.", 14.85, "Toon"),
     ),
     tags=Tags("money-services", "institution", "triumph", test="sp-hook_motion", arm="b"),
     style="Toon",
