@@ -331,6 +331,7 @@ STICK = Style(
         "stick_school",
         "stick_shop",
         "stick_street",
+        "stick_table",
         "stick_windshield",
     ),
     namer=partial(flat_counter, "n"),
