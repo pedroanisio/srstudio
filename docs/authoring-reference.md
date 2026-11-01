@@ -2161,6 +2161,14 @@ still passes up to `social.PUBLISHED_HASHTAG_LIMIT`, and `check` does not ask.
   so `pilots/../ready-to-publish` is refused. No systemd unit watches the staging folder and none runs this tool.
   `FOLDER` is the whole set: staging replaces the last stage.
 
+### Strict findings at first delivery
+
+`srstudio.strict_gate` reads a new reel's `qa/render-report.json` at first delivery
+([ADR 0078](decisions/0078-strict-findings-at-first-delivery.md)). A `--strict` finding refuses the reel unless
+`episodes/strict/<slug>.json` proves it false on the master's own frames, signed off by a reviewer who is not the
+author. `srstudio strict` lists the reels shipped that way, with their numbers and frames, and how many of the delivered
+reels that is.
+
 ## Verification
 
 - `tests/test_build.py` builds an office and a café episode from a synthetic project and asserts the SDK, the XSD and

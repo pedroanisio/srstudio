@@ -43,6 +43,7 @@ from srstudio.social import (
     take_frame,
     video_size,
 )
+from srstudio.strict_gate import strict_defects
 from srstudio.thumbnail import Thumbnail
 from support.social import FONT, engine, post, tall, video
 
@@ -1056,6 +1057,7 @@ def _new_reel(posts, monkeypatch, tmp_path, repo, comedy=ON_THE_FLOOR, hashtags=
     monkeypatch.setattr(posts.releases, "unpinned", lambda *a, **kw: [])
     monkeypatch.setattr(posts.releases, "doubled_captions", lambda *a, **kw: [])
     monkeypatch.setattr(posts.releases, "caption_on_cover", lambda *a, **kw: [])
+    monkeypatch.setattr(posts.strict_gate, "strict_defects", lambda *a, **kw: [])
     monkeypatch.setattr(posts, "publish", lambda *a, **kw: ["written"])
     return renders
 
@@ -1136,6 +1138,88 @@ def test_a_first_delivery_with_a_run_together_caption_is_refused_before_it_write
     argv = ["deliver", str(renders / "ig"), str(renders), "--fonts", str(tmp_path), "--engine", "engine"]
     with pytest.raises(SystemExit, match="deliver: the frame gates refuse: New_Reel"):
         posts.main([*argv, "--only", "New_Reel"])
+
+
+def _reported_reel(posts, monkeypatch, tmp_path, findings):
+    """A new reel past every other gate, built and rendered with these ``findings`` in its report."""
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path, ON_THE_FLOOR)
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    project = tmp_path / "episodes" / "new-reel"
+    (project / "qa").mkdir(parents=True)
+    scene = b'<scene><project width="1080" height="1920" fps="24" duration="2"/></scene>'
+    (project / "new-reel.scene.xml").write_bytes(scene)
+    report = {
+        "format": "scene-render-report/1",
+        "scene": {"sha256": hashlib.sha256(scene).hexdigest()},
+        "output": {"start": 0.0, "end": 2.0},
+        "findings": findings,
+    }
+    (project / "qa" / "render-report.json").write_text(json.dumps(report))
+    monkeypatch.setattr(posts.strict_gate, "strict_defects", strict_defects)
+    monkeypatch.setattr(posts, "STRICT", tmp_path / "strict")
+    monkeypatch.setattr(posts.frame_gates, "signature_hidden", lambda *a, **kw: [])
+    monkeypatch.setattr(posts.figure_gates, "figure_defects", lambda *a, **kw: [])
+    return renders
+
+
+FINDING = {
+    "code": "LEG-SHORT",
+    "severity": "warning",
+    "path": "/scene/composition/layer",
+    "node": "card-layer",
+    "time": [0.0, 0.375],
+    "measured": 0.375,
+    "limit": 0.8333,
+    "unit": "s",
+}
+
+
+def test_a_first_delivery_with_a_strict_finding_is_refused_before_it_writes(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _reported_reel(posts, monkeypatch, tmp_path, [FINDING])
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
+    with pytest.raises(frame_gates.FrameGateError, match="New_Reel: --strict warning: LEG-SHORT card-layer at 0.000"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+    argv = ["deliver", str(renders / "ig"), str(renders), "--fonts", str(tmp_path), "--engine", "engine"]
+    with pytest.raises(SystemExit, match="deliver: the frame gates refuse: New_Reel: --strict warning"):
+        posts.main([*argv, "--only", "New_Reel"])
+
+
+def test_a_first_delivery_reads_the_reel_s_record_from_the_episodes_folder(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _reported_reel(posts, monkeypatch, tmp_path, [FINDING])
+    (tmp_path / "strict").mkdir()
+    (tmp_path / "strict" / "new-reel.json").write_text("{")
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
+    with pytest.raises(frame_gates.FrameGateError, match="New_Reel: new-reel.json: not JSON"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+
+
+def test_a_first_delivery_with_no_render_report_is_refused(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _reported_reel(posts, monkeypatch, tmp_path, [])
+    (tmp_path / "episodes" / "new-reel" / "qa" / "render-report.json").unlink()
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
+    with pytest.raises(frame_gates.FrameGateError, match="New_Reel: no render report"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+
+
+def test_a_first_delivery_with_a_clean_report_delivers(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _reported_reel(posts, monkeypatch, tmp_path, [])
+    assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"]) == [
+        "written"
+    ]
+
+
+def test_a_published_reel_with_a_strict_finding_stays_as_it_went_out(monkeypatch, tmp_path):
+    """Delivered reels carry findings, and published content is frozen: the gate is for first deliveries alone."""
+    posts = shipped_posts()
+    renders = _reported_reel(posts, monkeypatch, tmp_path, [FINDING])
+    monkeypatch.setattr(posts, "read_manifest", lambda out: {"New_Reel": {}})
+    assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"]) == [
+        "written"
+    ]
 
 
 def test_a_published_reel_with_a_run_together_caption_stays_as_it_went_out(monkeypatch, tmp_path):

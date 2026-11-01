@@ -35,7 +35,17 @@ import os
 import shutil
 from pathlib import Path
 
-from srstudio import auto_enhance, caption_gate, comedy_floor, figure_gates, fonts, frame_gates, outbox, releases
+from srstudio import (
+    auto_enhance,
+    caption_gate,
+    comedy_floor,
+    figure_gates,
+    fonts,
+    frame_gates,
+    outbox,
+    releases,
+    strict_gate,
+)
 from srstudio.social import (
     MANIFEST,
     MANIFEST_VERSION,
@@ -56,6 +66,7 @@ THUMBNAIL_FONT = fonts.GoogleFont("Anton", 400)  # a condensed display face: two
 
 REPO = Path(__file__).resolve().parent.parent  # its history holds the enhancements, its settings the mode (ADR 0056)
 RELEASES = releases.load(Path(__file__).resolve().parent / "posts")  # one file per episode: posts/<slug>.py
+STRICT = Path(__file__).resolve().parent / "strict"  # strict/<slug>.json: a reel's findings proven false (ADR 0078)
 GRANDFATHERED = releases.grandfathered(Path(__file__).resolve().parent / "posts")  # published before the caption gate
 POSTS: dict[str, InstagramPost] = {slug: r.post for slug, r in RELEASES.items()}
 VIDEOS = {slug: r.video_name for slug, r in RELEASES.items()}  # project slug -> its rendered video's file name
@@ -105,9 +116,9 @@ def write_all(
     """Deliver every post whose video drifted (or only the ``only`` ones) and record the delivery; returns the
     folders written. A video the caption gate refuses, a release that does not pin what it draws, or captions that
     print over each other, or a first delivery with no enhancement behind it (ADR 0056), under the comedy floor
-    (ADR 0064), over the hashtag limit (ADR 0065) or refused by a frame gate (ADR 0073), is a :class:`DeliveryError`
-    before anything is written. A video in the manifest is past all of these: what was published stays as it went
-    out."""
+    (ADR 0064), over the hashtag limit (ADR 0065), refused by a frame gate (ADR 0073) or with a --strict finding not
+    proven false (ADR 0078), is a :class:`DeliveryError` before anything is written. A video in the manifest is past
+    all of these: what was published stays as it went out."""
     refused = caption_drift(renders, only=only)
     if refused:
         raise DeliveryError("the caption gate refuses: " + "; ".join(str(d) for d in refused))
@@ -129,6 +140,7 @@ def write_all(
             *frame_gates.captions_run_together(chosen, _beside(renders), first),
             *frame_gates.signature_hidden(chosen, _beside(renders), first, engine),
             *figure_gates.figure_defects(chosen, _beside(renders), first, engine),
+            *strict_gate.strict_defects(chosen, _beside(renders), renders, first, STRICT),
         ]
     )
     refused = auto_enhance.refused(first, REPO)

@@ -2,8 +2,8 @@
 Font; ``srstudio build`` runs an episode, ``srstudio usage`` measures which parts the episodes use, ``srstudio lipsync``
 scores the mouths over aligned takes, ``srstudio craft`` measures camera moves and pauses, ``srstudio overlap`` finds
 lines another episode already said, ``srstudio page`` rebuilds the catalog site, ``srstudio serve`` serves it,
-``srstudio parts`` lists the part versions and checks the pins, and ``srstudio enhance`` shows the auto-enhance mode
-and ledger."""
+``srstudio parts`` lists the part versions and checks the pins, ``srstudio enhance`` shows the auto-enhance mode and
+ledger, and ``srstudio strict`` lists the reels shipped with findings proven false."""
 
 from __future__ import annotations
 
@@ -36,10 +36,12 @@ from . import (
     proof,
     registry,
     releases,
+    strict_gate,
     usage,
 )
 from .episode import SceneCheckError
 from .errors import SrstudioError
+from .social import MANIFEST, DeliveryError, read_manifest
 from .soundtrack import INK_MOUTH
 from .styles import STYLES
 from .timeline import Timeline
@@ -83,6 +85,9 @@ def main(argv=None):
     detail.add_argument("name")
     detail.add_argument("--json", action="store_true")
     detail.add_argument("--plugins", nargs="*", default=(), help="extra modules to import before inspection")
+    strict = sub.add_parser("strict", help="list the reels shipped with findings proven false (ADR 0078)")
+    strict.add_argument("--scripts", type=Path, default=_scripts_default(), help="the episodes folder")
+    strict.add_argument("--delivery", type=Path, default=_delivery_default(), help="the delivery folder")
     enhance = sub.add_parser(
         "enhance", help="the auto-enhance mode, its ledger and the kinds of enhancement (ADR 0056)"
     )
@@ -218,6 +223,8 @@ def main(argv=None):
         for example in info['examples']:
             print(f"\nExample (ep is an existing Episode):\n{example}")
         return 0
+    if args.cmd == "strict":
+        return _strict(args)
     if args.cmd == "enhance":
         return _enhance(args.action, args.scripts.resolve().parent)
     if args.cmd == "lip-proof":
@@ -604,6 +611,25 @@ def _episode_script(scripts: Path, slug: str, suffix: str) -> Path | None:
     if known or (suffix and (scripts / f"{stem}.py").is_file()):
         raise releases.ReleaseError(f"episode {slug!r} has no {script.name} in {scripts}")
     return None
+
+
+def _delivery_default() -> Path:
+    return Path(os.environ.get("SRSTUDIO_RENDERS") or "generated/renders") / "ig"
+
+
+def _strict(args: argparse.Namespace) -> int:
+    try:
+        if not (args.delivery / MANIFEST).is_file():
+            raise DeliveryError(f"no delivery manifest in {args.delivery}")
+        known = releases.load(args.scripts / "posts")
+        lines = strict_gate.listing(
+            strict_gate.read_all(args.scripts / "strict", known), known, read_manifest(args.delivery)
+        )
+    except (DeliveryError, releases.ReleaseError) as exc:
+        print(f"srstudio strict: {exc}", file=sys.stderr)
+        return 2
+    print("\n".join(lines))
+    return 0
 
 
 def _run_script(script: Path, argv: list[str]) -> int:
