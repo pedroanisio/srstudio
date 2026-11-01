@@ -2,7 +2,7 @@
 generated-by: OpenAI Codex (GPT-6)
 ---
 
-# ADR 0078: Sample the channel before quantizing the drawing
+# ADR 0081: Sample the channel before quantizing the drawing
 
 - Status: accepted (2026-11-01)
 - Back to the [library README](../../README.md)

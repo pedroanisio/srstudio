@@ -1694,7 +1694,7 @@ semantics match the renderer, including emitted key precision. Empty channels sa
 keys hold the nearest value. Sampling order does not matter. `channel.during(start, end)` retains the curve history
 and spline neighbors needed for continuity across cuts. Rafa samples this same motion before selecting the nearest
 plate and holding it on twos. Its valid `up` gaze maps explicitly to `ahead` because no upward plate exists; unknown
-states are refused. See [ADR 0078](decisions/0078-shared-channel-sampling.md).
+states are refused. See [ADR 0081](decisions/0081-shared-channel-sampling.md).
 Linear, hold, and endpoint-bounded easing check their key values; Catmull-Rom, default TCB, back, and elastic
 curves also check analytic extrema between keys. Unknown curve names raise `HeadMotionError`.
 Short spring curves use sampled extrema plus a conservative
