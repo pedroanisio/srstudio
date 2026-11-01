@@ -90,6 +90,7 @@ class Spoken:
     seed: int | None = None  # this line's own take: a re-take changes it; None keeps the interview's seed
     heard: tuple[str, ...] = ()  # hearings the operator approved for this line, besides its own words
     gain: float = 0.0  # dB against the others in the mix; the take stays the same (:data:`LEVELS`)
+    phone: bool = False  # heard through a phone; the speech check still hears the clean take
 
 
 @dataclass(frozen=True)
@@ -377,6 +378,7 @@ def place(iv: Interview, pins: Mapping[str, Resolved], schedule: ScheduleFn) -> 
             gain_db=round(voice_gain + line.gain, 4),
             role="dialogue",
             language="en",
+            phone=line.phone,
         )
         clips.append(PlacedClip(item, pins[item.id].sha256, placement))
     sound_effects = []
