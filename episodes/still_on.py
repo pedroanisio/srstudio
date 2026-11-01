@@ -51,7 +51,7 @@ HUGGED = OUT + ARRIVE
 GONE = HUGGED + 0.55  # over each shoulder, the smile goes
 DOWN = HUGGED + HUG
 UP = DOWN + TILT + SLIPPERS
-DROP = 690.0
+DROP = 620.0
 
 foley.write_typing(ROOT / "assets" / "keys.wav", [0.1, 0.3, 0.5, 0.7], DURATION, seed=3325)
 foley.write_bursts(ROOT / "assets" / "sent.wav", [P[0].end + 0.05, P[1].end + 0.03], DURATION, foley.CHIRP, seed=3326)

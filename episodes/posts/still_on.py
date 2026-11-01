@@ -18,11 +18,19 @@ RELEASE = Release(
             " synthesized in code."
         ),
         hashtags=('#friendship', '#canceledplans', '#relatable', '#animatedshorts', '#okayville'),
-        thumbnail=ShowCover("Four slippers", 17.8, number=216),
+        thumbnail=ShowCover("Both already in blankets", 2.0, number=216),
     ),
     tags=Tags("relationships", "protagonist", "relief", test="sp-speakers", arm="a"),
     style="Soft",
-    parts={},
+    parts={
+        "captions": 1,
+        "juno": 1,
+        "pip": 1,
+        "show-bug": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "soft-phone": 1,
+    },
     comedy=Scores(author=15, reviewer=18),
     cover=True,
 )
