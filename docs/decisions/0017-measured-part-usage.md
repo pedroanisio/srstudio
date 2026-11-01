@@ -8,6 +8,9 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
   `tests/test_usage.py`, `tests/test_catalog_page.py`)
 - Deciders: the operator (pedroanisio), implementation drafted by Claude Opus 5.5 in Claude Code
 - Back to the [library README](../../README.md)
+- The profiler mechanism in decision 1 is superseded by
+  [ADR 0094](0094-explicit-drawing-execution.md) (2026-11-01). Usage remains measured from execution;
+  registered builders and shared performers now emit explicit events.
 
 ## Context
 

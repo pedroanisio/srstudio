@@ -20,7 +20,7 @@
     "P3": "Integration, documentation, evidence or maintainability improvement",
     "P4": "Broader capability or measurement-led optimization"
   },
-  "assessment": "Strong reusable primitives, explicit character discovery, common non-character drawing contracts, coordinated acting with opt-in transition policies, executable cross-system recipes and scoped numeric regression envelopes. Core callback and prop-option defects have atomic preflight and repairable failures. Common authoring failures now expose explicit repair fields with bounded SDK/CLI payloads. Head mechanics, records, seeded noise, speech analysis and behavioral planning now have separate implementation owners behind the existing public API. Remaining priorities include explicit usage events, drawing adoption evidence and broader body/gaze capabilities. Discovery deliberately retains unknown semantics for other non-character families. Numeric validity does not establish perceptual quality.",
+  "assessment": "Strong reusable primitives, explicit character discovery, common non-character drawing contracts, coordinated acting with opt-in transition policies, executable cross-system recipes and scoped numeric regression envelopes. Core callback and prop-option defects have atomic preflight and repairable failures. Common authoring failures now expose explicit repair fields with bounded SDK/CLI payloads. Head mechanics, records, seeded noise, speech analysis and behavioral planning now have separate implementation owners behind the existing public API. Explicit drawing events now cover synchronous and deferred execution without profiler inference. Remaining priorities include broader contracts, bounded scene composition, cache identity, continuity guarantees, drawing adoption evidence and broader body/gaze capabilities. Discovery deliberately retains unknown semantics for other non-character families. Numeric validity does not establish perceptual quality.",
   "catalog_observation": {
     "parts": 701,
     "characters": 70,
@@ -38,6 +38,59 @@
     "qualification": "Fresh-process registry.entries() observation at the reviewed checkout. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates."
   },
   "review_verification": {
+    "explicit_drawing_events": {
+      "baseline_source_commit": "ea60f48d",
+      "deferred_execution_red": {
+        "failed": 7
+      },
+      "catalog_entry_red": {
+        "failed": 6,
+        "passed": 1
+      },
+      "late_observation_red": {
+        "failed": 3,
+        "passed": 9
+      },
+      "default_metadata_red": {
+        "failed": 4
+      },
+      "transitive_source_measurement_red": {
+        "failed": 1
+      },
+      "earlier_broad_run": {
+        "passed": 768,
+        "failed": 1,
+        "qualification": "Gloss default metadata inspection failed; positional and keyword default metadata are now retained."
+      },
+      "final_engine_enabled_selection": {
+        "passed": 801,
+        "skipped": 0
+      },
+      "additional_engine_enabled_regressions": {
+        "passed": 282,
+        "skipped": 0
+      },
+      "direct_inked_versions": {
+        "passed": 8
+      },
+      "branch_inclusive_coverage_percent": {
+        "drawing_events": 100,
+        "gloss": 98,
+        "host_kit": 92,
+        "limbs_evaluation": 99,
+        "news_inked": 94,
+        "news_kit": 87,
+        "registry": 94,
+        "usage": 92
+      },
+      "repository_collection": {
+        "collected": 20082,
+        "errors": 0
+      },
+      "ruff_formatted_files": 1556,
+      "mypy_source_files": 244,
+      "qualification": "Selected regressions preserve attribution, emission, introspection and deferred execution. These results do not represent a full-suite run or new perceptual quality evidence."
+    },
     "head_module_refactor": {
       "baseline_source_commit": "fdae9a22",
       "repository_collection": {"collected": 20020, "errors": 0},
@@ -223,8 +276,10 @@
     },
     {
       "id": "SDK-P1-04",
+      "resolution": "Registered generators and async generators now scope each resume, send, throw and close; coroutines scope awaited execution and cancellation cleanup. Function kinds and default metadata remain inspectable. Entry calls bind raw replacements even when created before observation. Context-local figure ownership separates interleaved tasks, and closed observers reject late copied-context events.",
+      "verification": ["tests/test_drawing_deferred.py", "tests/test_usage_event_migration.py", "tests/test_drawing_events.py", "tests/test_usage.py", "tests/test_limbs_evaluation.py", "docs/decisions/0094-explicit-drawing-execution.md"],
       "priority": "P1",
-      "status": "open",
+      "status": "complete",
       "title": "Preserve deferred drawing execution in the event migration",
       "problem": "The uncommitted registered-builder wrapper closes its drawing scope before a generator executes, losing figure IDs while reporting the part as used.",
       "evidence": [
@@ -480,8 +535,10 @@
     },
     {
       "id": "SDK-P3-04",
+      "resolution": "Registered function and class-method instrumentation plus explicit Gloss, News, Inked News and Host ownership replace all profiler, source, closure and frame-local inference in usage tracing. Nine pre-migration builder cases retain exact used parts, figure IDs and scene XML. All eight direct Inked News version combinations are attributed explicitly. Nested and failing drawings preserve scope behavior. Source measurements unwrap functions to retain transitive helper counts.",
+      "verification": ["tests/test_drawing_deferred.py", "tests/test_usage_event_migration.py", "tests/test_drawing_events.py", "tests/test_usage.py", "tests/test_limbs_evaluation.py", "docs/decisions/0094-explicit-drawing-execution.md"],
       "priority": "P3",
-      "status": "open",
+      "status": "complete",
       "title": "Complete explicit drawing-event instrumentation",
       "problem": "Drawing events now identify rig drawings and IDs, but usage tracing still installs a profiler and inspects function source/frames to identify legacy calls and delegates.",
       "evidence": ["src/srstudio/usage.py:_tail_call", "src/srstudio/usage.py:_performed", "src/srstudio/usage.py:trace", "src/srstudio/drawing_events.py"],
@@ -547,7 +604,7 @@
       "complexity": "M"
     }
   ],
-  "recommended_order": [ "SDK-P1-04", "SDK-P3-04", "SDK-P3-06", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02", "SDK-P2-06", "SDK-P2-07", "SDK-P2-08", "SDK-P2-09", "SDK-P3-07", "SDK-P3-08", "SDK-P4-04"],
+  "recommended_order": ["SDK-P2-09", "SDK-P2-08", "SDK-P2-06", "SDK-P2-07", "SDK-P3-06", "SDK-P3-07", "SDK-P3-08", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02", "SDK-P4-04"],
   "agent_authoring_guidance": [
     "Discover registered versions, explicit capabilities, coordinate spaces and clocks before choosing a builder; keep unknown metadata unknown.",
     "Use parse_score and compile_performance for supported coordinated intent, character clips for placement, and windows of one performance for cuts. Inspect family capabilities before requesting a channel.",

@@ -246,6 +246,22 @@ def test_source_comparison_requires_two_distinct_measurements():
         compare_sources(one, one)
 
 
+def test_registered_builders_keep_transitive_source_measurements(monkeypatch):
+    import sys
+
+    from srstudio import registry
+
+    monkeypatch.setattr(registry, '_REGISTRY', {kind: dict(rows) for kind, rows in registry._REGISTRY.items()})
+    baseline = measure('baseline', one_sided, repeats=1)
+    helper = registry.register('prop', 'measured-helper', style='')(_exclusive_helper)
+    monkeypatch.setattr(sys.modules[__name__], '_exclusive_helper', helper)
+    decorated = registry.register('prop', 'measured-builder', style='')(one_sided)
+    measured = measure('decorated', decorated, repeats=1)
+    assert measured.scene_sha256 == baseline.scene_sha256
+    assert measured.source_functions == baseline.source_functions
+    assert measured.source_lines == baseline.source_lines
+
+
 def _generated_module(tmp_path, monkeypatch, name, source):
     import importlib.util
     import sys

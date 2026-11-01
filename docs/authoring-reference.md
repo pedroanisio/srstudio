@@ -512,14 +512,25 @@ rebuilds every episode project on a copy and records each registered part its bu
 ([ADR 0017](../docs/decisions/0017-measured-part-usage.md)). It prints the used and unused parts per kind and writes the
 report that `srstudio page --usage` reads:
 
-Rig drawing and Canvas ID allocation emit explicit `drawing_events` notifications. Custom performers can use
-`with drawing_events.drawing(registered_part_name):` around their drawing calls; `usage.trace()` then records
-the part and the IDs allocated by `cv.uid()`, including IDs from custom namers. Nested scopes count every used
-part and associate IDs with the outermost character. An unknown explicit name raises `UsageError` while tracing.
-`drawing_events.observe(callback)` receives paired begin/end events and ID events in the current execution
-context; end events include `successful`. Observation and profiler state are restored on exceptional exit.
-Existing registered functions and class methods retain automatic tracing, including the legacy delegate fallback.
-The head emitter's private name, signature and code object no longer identify the character.
+Registered builders, rig drawings and Canvas ID allocation emit explicit `drawing_events` notifications.
+Keep the callable returned by `register`; it preserves signatures and function kind. Classes retain their
+identity, with instrumentation on their own methods and preserved static/class descriptors. Shared performers
+use `with drawing_events.drawing(owner):`, where `owner` is their registered callable or rig. Callable identity
+prevents a retired builder from claiming the replacement registration. Explicit registered-name strings are
+also accepted when attribution to that current name is intentional; unknown strings raise `UsageError`.
+
+`usage.trace()` records parts and IDs allocated by `cv.uid()`, including custom namers. Nested scopes count
+every part and assign IDs to the outermost character in that execution context. Independent coroutine tasks
+keep separate figure ownership. A child task created inside a character scope inherits that ownership; await
+its drawing before leaving the enclosing scope. Tracing does not make concurrent mutation of one Canvas safe.
+
+Generators and async generators attribute each resume, including send, throw and close; yielded caller code
+is outside their scope. Coroutines attribute awaited execution and cancellation cleanup. Merely creating a
+deferred object is not usage. Join all drawing tasks before a trace closes: copied contexts cannot append to a
+closed observer. `drawing_events.observe(callback)` receives begin/ID/end events; end events include
+`successful`. Failed drawing still records attempted usage and allocated IDs, while `usage.recorded()` refuses
+to publish records for a failed build. Nested traces both observe inner work. Existing profilers remain active;
+there is no source, frame-local, closure or delegate inference.
 
 ```bash
 srstudio usage --episodes ../generated/episodes --packages ../generated/packages --scripts episodes \

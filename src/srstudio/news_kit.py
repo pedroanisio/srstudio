@@ -30,7 +30,7 @@ from pathlib import Path
 from typing import Any
 
 from . import _character_contracts as cc
-from . import checks, foley, look, signature, toon
+from . import checks, drawing_events, foley, look, signature, toon
 from .canvas import Canvas
 from .errors import SrstudioError
 from .fonts import GoogleFont
@@ -839,24 +839,25 @@ def perform(
         raise NewsKitError(f"the desk seats vera and gus, not {who!r}")
     if not acts or acts[0][0] > start:
         raise NewsKitError(f"an anchor needs a pose from {start} s, got {acts[:1]!r}")
-    size = scale if scale else 1.0
-    g = cv.group(parent, id or cv.uid("anchor"), x=x, y=DESK_Y, scaleX=size, scaleY=size)
-    arms = _spans([(at, pose.arms) for at, pose in acts], start, end)
-    eyes = eye_track(acts, end, 4.3 if who == "vera" else 2.4, 1.7 if who == "vera" else 0.9)
-    mouth = mouth_track(acts, mouths, end)
-    neck = dict(x=0.0, y=NECK_Y, anchorX=0.0, anchorY=CHIN_Y)  # the head turns on the neck, over the collar
-    if who == "vera":
-        _vera_body(cv, g, "#0f6466")
-        head = cv.group(g, cv.uid("g"), **neck)
-        _vera_head(cv, head, eyes, mouth, start, end)
-        _vera_arms(cv, g, "#0f6466", "#8a5636", arms)
-    else:
-        _gus_body(cv, g)
-        head = cv.group(g, cv.uid("g"), **neck)
-        _gus_head(cv, head, eyes, mouth, start, end)
-        _gus_arms(cv, g, "#f0c39a", arms)
-    cv.keys(head, "rotation", _head_keys(acts), hold=False, kind="sine-in-out", local=False)
-    return g
+    with drawing_events.drawing(vera if who == 'vera' else gus):
+        size = scale if scale else 1.0
+        g = cv.group(parent, id or cv.uid("anchor"), x=x, y=DESK_Y, scaleX=size, scaleY=size)
+        arms = _spans([(at, pose.arms) for at, pose in acts], start, end)
+        eyes = eye_track(acts, end, 4.3 if who == "vera" else 2.4, 1.7 if who == "vera" else 0.9)
+        mouth = mouth_track(acts, mouths, end)
+        neck = dict(x=0.0, y=NECK_Y, anchorX=0.0, anchorY=CHIN_Y)  # the head turns on the neck, over the collar
+        if who == "vera":
+            _vera_body(cv, g, "#0f6466")
+            head = cv.group(g, cv.uid("g"), **neck)
+            _vera_head(cv, head, eyes, mouth, start, end)
+            _vera_arms(cv, g, "#0f6466", "#8a5636", arms)
+        else:
+            _gus_body(cv, g)
+            head = cv.group(g, cv.uid("g"), **neck)
+            _gus_head(cv, head, eyes, mouth, start, end)
+            _gus_arms(cv, g, "#f0c39a", arms)
+        cv.keys(head, "rotation", _head_keys(acts), hold=False, kind="sine-in-out", local=False)
+        return g
 
 
 @register(

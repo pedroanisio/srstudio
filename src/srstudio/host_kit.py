@@ -33,7 +33,7 @@ from pathlib import Path
 from typing import Any
 
 from . import _character_contracts as cc
-from . import camera, checks, foley, head_motion, look, native, signature, sketch, toon
+from . import camera, checks, drawing_events, foley, head_motion, look, native, signature, sketch, toon
 from .canvas import Canvas
 from .errors import SrstudioError
 from .fonts import GoogleFont
@@ -851,57 +851,58 @@ def perform(
     plan = plan or HeadPlan()
     style = MOTION
     plan.check_bounds(style, frozen=bool(cv._frozen))
-    seat = dict(x=540.0, y=SEAT_Y)
-    outer = cv.group(head_parent, cv.uid("lint"), **seat)
-    arm_outer = cv.group(arms_parent, cv.uid("lint-arms"), **seat)
-    for group in (outer, arm_outer):
-        cv.keys(
-            group,
-            "y",
-            [(t, SEAT_Y + v * PULL_PX) for t, v in _eased(acts, lambda p: p.pull)],
-            hold=False,
-            kind="sine-in-out",
-            local=False,
-        )
-    lean = cv.group(outer, cv.uid("lean"))
-    _animate(cv, lean, "rotation", plan.lean)
-    arm_lean = cv.group(arm_outer, cv.uid("lean"))
-    _animate(cv, arm_lean, "rotation", plan.lean)
-    breath = cv.group(lean, cv.uid("breath"))
-    _animate(cv, breath, "scaleY", plan.breath, style.breath_scale, 1.0)
-    wings = pull_spans or []
-    _wing(cv, breath, -1.0, wings)
-    _wing(cv, breath, 1.0, wings)
-    neck = dict(x=0.0, y=NECK_Y, anchorX=0.0, anchorY=NECK_Y)
-    turn = cv.group(breath, cv.uid("turn"), **neck)
-    tilt = _eased(acts, lambda p: p.head + p.pull * PULL_TILT)
-    merged = _merge(plan.turn, tilt)
-    cv.keys(turn, "rotation", merged, hold=False, kind="sine-in-out", local=False)
-    nod = cv.group(turn, cv.uid("nod"), **neck)
-    _animate(cv, nod, "rotation", plan.roll)
-    _animate(cv, nod, "y", plan.nod, 1.0, NECK_Y)
-    idle = cv.group(nod, cv.uid("idle"), **neck)
-    _animate(cv, idle, "rotation", plan.idle_roll)
-    _animate(cv, idle, "y", plan.idle_y, 1.0, NECK_Y)
-    lift = cv.group(idle, cv.uid("lift"))
-    _animate(cv, lift, "y", plan.breath, -style.breath_px)
-    head = cv.group(lift, cv.uid("head"), y=HEAD_Y)
-    _antennae(cv, head, acts, buzzes)
-    _skull(cv, head)
-    face = cv.group(head, cv.uid("face"))
-    _animate(cv, face, "x", plan.face_x)
-    _animate(cv, face, "y", plan.nod, 0.8)
-    _muzzle(cv, face)
-    _eyes(cv, face, acts, plan, end)
-    for state, spans in _spans(mouth_track(acts, mouths, end), start, end).items():
-        g = cv.group(face, cv.uid("g"), opacity=0.0)
-        cv.gate(g, spans)
-        _mouth(cv, g, state)
-    body = cv.group(breath, cv.uid("body"), y=BODY_DROP)
-    _body(cv, body)
-    _ruff(cv, body)
-    _arms(cv, arm_lean, _spans([(at, pose.arm) for at, pose in acts], start, end))
-    return outer
+    with drawing_events.drawing(lint):
+        seat = dict(x=540.0, y=SEAT_Y)
+        outer = cv.group(head_parent, cv.uid("lint"), **seat)
+        arm_outer = cv.group(arms_parent, cv.uid("lint-arms"), **seat)
+        for group in (outer, arm_outer):
+            cv.keys(
+                group,
+                "y",
+                [(t, SEAT_Y + v * PULL_PX) for t, v in _eased(acts, lambda p: p.pull)],
+                hold=False,
+                kind="sine-in-out",
+                local=False,
+            )
+        lean = cv.group(outer, cv.uid("lean"))
+        _animate(cv, lean, "rotation", plan.lean)
+        arm_lean = cv.group(arm_outer, cv.uid("lean"))
+        _animate(cv, arm_lean, "rotation", plan.lean)
+        breath = cv.group(lean, cv.uid("breath"))
+        _animate(cv, breath, "scaleY", plan.breath, style.breath_scale, 1.0)
+        wings = pull_spans or []
+        _wing(cv, breath, -1.0, wings)
+        _wing(cv, breath, 1.0, wings)
+        neck = dict(x=0.0, y=NECK_Y, anchorX=0.0, anchorY=NECK_Y)
+        turn = cv.group(breath, cv.uid("turn"), **neck)
+        tilt = _eased(acts, lambda p: p.head + p.pull * PULL_TILT)
+        merged = _merge(plan.turn, tilt)
+        cv.keys(turn, "rotation", merged, hold=False, kind="sine-in-out", local=False)
+        nod = cv.group(turn, cv.uid("nod"), **neck)
+        _animate(cv, nod, "rotation", plan.roll)
+        _animate(cv, nod, "y", plan.nod, 1.0, NECK_Y)
+        idle = cv.group(nod, cv.uid("idle"), **neck)
+        _animate(cv, idle, "rotation", plan.idle_roll)
+        _animate(cv, idle, "y", plan.idle_y, 1.0, NECK_Y)
+        lift = cv.group(idle, cv.uid("lift"))
+        _animate(cv, lift, "y", plan.breath, -style.breath_px)
+        head = cv.group(lift, cv.uid("head"), y=HEAD_Y)
+        _antennae(cv, head, acts, buzzes)
+        _skull(cv, head)
+        face = cv.group(head, cv.uid("face"))
+        _animate(cv, face, "x", plan.face_x)
+        _animate(cv, face, "y", plan.nod, 0.8)
+        _muzzle(cv, face)
+        _eyes(cv, face, acts, plan, end)
+        for state, spans in _spans(mouth_track(acts, mouths, end), start, end).items():
+            g = cv.group(face, cv.uid("g"), opacity=0.0)
+            cv.gate(g, spans)
+            _mouth(cv, g, state)
+        body = cv.group(breath, cv.uid("body"), y=BODY_DROP)
+        _body(cv, body)
+        _ruff(cv, body)
+        _arms(cv, arm_lean, _spans([(at, pose.arm) for at, pose in acts], start, end))
+        return outer
 
 
 def _merge(channel: Channel, tilt: Sequence[tuple[float, float]]) -> list[tuple[float, float]]:
