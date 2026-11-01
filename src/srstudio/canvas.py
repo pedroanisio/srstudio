@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from sr_core.scene import Animate, Scene
+from sr_core.scene import Animate, Scene, SchemaValueError
 
 from . import checks, drawing_events
 from ._counter import Counter
@@ -27,6 +27,15 @@ CLEAR = "#00000000"
 class CanvasError(SrstudioError, ValueError):
     """A drawing call the canvas cannot make: an unnamed effect, an undefined symbol, text without a font, a
     visibility span that runs backwards."""
+
+
+class KeyTimeError(CanvasError, SchemaValueError):
+    """Invalid key time with SDK repair fields and the existing schema-error catch contract."""
+
+    def __reduce__(self):
+        # SchemaValueError's reducer rebuilds only the base schema exception. Keep
+        # this subtype and its explicit SDK repair fields when crossing processes.
+        return type(self), self.args, self.__dict__
 
 
 Align = Literal["start", "center", "end", "justify"]
@@ -456,7 +465,7 @@ class Canvas:
                 )
             time, value = row
             if not checks.number(time):
-                raise CanvasError(
+                raise KeyTimeError(
                     f'keys on {_brief(prop)}: time must be finite',
                     code='canvas.keys.time',
                     path=path + '[0]',

@@ -27,6 +27,8 @@ SDK failures expose `to_dict()` using `srstudio.diagnostic/1.0.0`. CLI commands 
 fields on stderr and add `context.command`, including SDK failures while importing plugins. Catch the
 documented exception type; use `code`, `path`, `actual`, `expected` and `remedy` to identify the repair rather
 than parsing the human message. Older validation sites that have not declared these facts retain null fields.
+Invalid canvas key times raise `KeyTimeError`, catchable as both `CanvasError` and the existing
+`sr_core.scene.SchemaValueError`; serializing the error preserves its SDK repair fields.
 
 Common explicit paths include `style.breath_period`, `spring.damping`, `channel.keys[1][0]`,
 `speech[0].words`, `heard[0].words`, `facing[0]`, `gaze[0][1]`, `performance.mouth[0][1]`,
