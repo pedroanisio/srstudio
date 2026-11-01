@@ -664,6 +664,7 @@ def test_version_4_is_approved_and_its_specimen_shows_every_mouth(who):
         "security_question",
         "where_to_eat",
         "missing_lid",
+        "came_in_for",
     ],
 )
 def test_a_delivered_reel_names_the_version_it_went_out_on(reel):
