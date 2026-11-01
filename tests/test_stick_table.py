@@ -1,7 +1,9 @@
 """The Stick table: two people sat at it, the clipboard, the brackets on the wall and the bedding, and each refusal."""
 
+import math
 import re
 import xml.etree.ElementTree as ET
+from dataclasses import replace
 
 import pytest
 from sr_core.scene import Scene
@@ -99,6 +101,109 @@ def test_the_pen_is_drawn_about_the_hand_that_holds_it():
     stick_table.pen(cv, cv.comp)
     assert across(cv) == stick_table.PEN_SPAN
     assert stick_table.PEN_SPAN[0] < 0 < stick_table.PEN_SPAN[1]
+
+
+PEN_IN_HAND = {"write-a": 62.0, "write-b": 70.0, "click": -60.0}
+
+
+def placed(node: ET.Element, inherited: tuple) -> tuple:
+    """``inherited``, a frame's (x, y, turn in degrees, x scale, y scale), with ``node``'s own placement applied."""
+    x, y, turn, sx, sy = inherited
+    own_x, own_y = float(node.get("x") or 0), float(node.get("y") or 0)
+    rad = math.radians(turn)
+    dx, dy = own_x * sx, own_y * sy
+    return (
+        x + dx * math.cos(rad) - dy * math.sin(rad),
+        y + dx * math.sin(rad) + dy * math.cos(rad),
+        turn + float(node.get("rotation") or 0) * (1 if sx * sy > 0 else -1),
+        sx * float(node.get("scaleX") or 1),
+        sy * float(node.get("scaleY") or 1),
+    )
+
+
+def strokes(node: ET.Element, frame=(0.0, 0.0, 0.0, 1.0, 1.0)):
+    """Every stroked path under ``node`` in the order it is drawn, as (stroke, its points on the frame)."""
+    for child in node:
+        here = placed(child, frame)
+        if child.get("path") and child.get("stroke"):
+            x, y, turn, sx, sy = here
+            rad = math.radians(turn)
+            points = []
+            for px, py in re.findall(r"[ML] (-?[\d.]+) (-?[\d.]+)", child.get("path")):
+                dx, dy = float(px) * sx, float(py) * sy
+                points.append(
+                    (x + dx * math.cos(rad) - dy * math.sin(rad), y + dx * math.sin(rad) + dy * math.cos(rad))
+                )
+            yield child.get("stroke"), child, points
+        yield from strokes(child, here)
+
+
+def to_segment(point, a, b) -> float:
+    """How far ``point`` is from the segment ``a`` to ``b``."""
+    ax, ay, bx, by = *a, *b
+    run = (bx - ax) ** 2 + (by - ay) ** 2
+    along = max(0.0, min(1.0, ((point[0] - ax) * (bx - ax) + (point[1] - ay) * (by - ay)) / run))
+    return math.dist(point, (ax + along * (bx - ax), ay + along * (by - ay)))
+
+
+def seated(pose: str, *, flip: bool = False):
+    """A figure in ``pose`` with the board and the pen, and each stroke drawn after the board."""
+    cv = canvas()
+    keys = [stick.RigKey(0.0, pose)]
+    place = dict(poses=stick_table.POSES, at=stick_table.RIGHT_AT if flip else stick_table.LEFT_AT, flip=flip)
+    stick.rig(cv, cv.comp, keys, 2.0, **place)
+    stick_table.board_in_hand(cv, cv.comp, keys, 2.0, tilt=PEN_IN_HAND, **place)
+    drawn = list(strokes(xml(cv)))
+    last_board = max(i for i, (_, node, _) in enumerate(drawn) if node.get("fill") == stick_table.BOARD)
+    return drawn[last_board + 1 :], cv
+
+
+@pytest.mark.parametrize("flip", [False, True])
+@pytest.mark.parametrize("pose", stick_table.ON_PAGE)
+def test_on_the_page_the_arm_comes_over_the_board_and_its_tip_touches_the_pen(pose, flip):
+    """The rig draws under the board: an arm that stops at its edge leaves the pen lying on the paper with no hand."""
+    over, cv = seated(pose, flip=flip)
+    arms = [points for stroke, _, points in over if stroke == cv.ink]
+    assert arms, f"no arm is drawn over the board in {pose}"
+    pens = [points for stroke, _, points in over if stroke == stick_table.TAIL]
+    assert len(arms) == 1 and len(pens) == 1
+    assert to_segment(arms[0][-1], *pens[0]) <= (stick.LIMB_FAR + stick_table.PEN_WIDTH) / 2
+
+
+@pytest.mark.parametrize("pose", stick_table.ON_PAGE)
+def test_the_arm_over_the_board_starts_at_the_elbow_and_keeps_the_stroke_of_the_arm_under_it(pose):
+    over, cv = seated(pose)
+    (_, node, points) = next(item for item in over if item[0] == cv.ink)
+    assert points[0] == pytest.approx(
+        stick.hand_at(
+            replace(stick_table.POSES[pose], hands=stick_table.POSES[pose].elbows), far=True, at=stick_table.LEFT_AT
+        )
+    )
+    assert points[-1] == pytest.approx(stick.hand_at(stick_table.POSES[pose], far=True, at=stick_table.LEFT_AT))
+    assert float(node.get("strokeWidth") or node.get("stroke-width")) == stick.LIMB_FAR
+
+
+@pytest.mark.parametrize("pose", ["point", *stick_table.SHUT])
+def test_a_hand_off_the_board_draws_no_arm_over_it(pose):
+    over, cv = seated(pose)
+    assert not [stroke for stroke, _, _ in over if stroke == cv.ink]
+
+
+def test_the_arm_over_the_board_holds_the_spans_of_its_pose_and_no_others():
+    cv = canvas()
+    keys = [stick.RigKey(0.0, "read"), stick.RigKey(0.5, "write-a"), stick.RigKey(1.0, "guard")]
+    stick.forearm(cv, cv.comp, keys, 2.0, over=("write-a",), poses=stick_table.POSES, far=True)
+    assert len(list(xml(cv).iter("shape"))) == 1
+    shown = [(float(k.get("time")), float(k.get("value"))) for k in xml(cv).iter("key")]
+    assert shown == [(0.0, 0.0), (0.5, 1.0), (1.0, 0.0)]
+
+
+def test_a_forearm_refuses_what_a_rig_refuses():
+    cv = canvas()
+    with pytest.raises(stick.StickDataError, match="scale"):
+        stick.forearm(cv, cv.comp, [stick.RigKey(0.0, "read")], 2.0, over=(), poses=stick_table.POSES, scale=0)
+    with pytest.raises(stick.StickDataError, match="unknown pose"):
+        stick.forearm(cv, cv.comp, [stick.RigKey(0.0, "nope")], 2.0, over=(), poses=stick_table.POSES)
 
 
 def test_the_table_stands_between_the_chairs_and_is_narrower_than_the_kitchen_s():

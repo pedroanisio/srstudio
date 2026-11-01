@@ -35,7 +35,7 @@ import json
 import math
 import random
 import re
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass, replace
 from functools import partial
 from pathlib import Path
@@ -92,6 +92,7 @@ __all__ = [
     "ARM",
     "hand_at",
     "held",
+    "forearm",
     "reaching",
     "rig",
     "between",
@@ -1462,6 +1463,36 @@ def held(
     if len({spot for _, spot in spots}) > 1:
         cv.keys(g, "x", [(t, spot[0]) for t, spot in spots])
         cv.keys(g, "y", [(t, spot[1]) for t, spot in spots])
+    return g
+
+
+def forearm(
+    cv: Canvas,
+    parent,
+    keys: Sequence[RigKey],
+    end: float,
+    *,
+    over: Collection[str],
+    poses: Mapping[str, RigPose] = SEATED,
+    far: bool = False,
+    at: Point = (0, 0),
+    scale: float = 1.0,
+    flip: bool = False,
+):
+    """A figure's near forearm (the ``far`` one if asked), elbow to hand, drawn again while its pose is in ``over``: a
+    :func:`rig` is one layer, so a hand that reaches across what is drawn after the figure would go behind it. Draw this
+    after that prop, with the figure's own ``keys``, ``poses``, ``at``, ``scale`` and ``flip``; it holds the same spans
+    and the same stroke, so the arm runs on over the prop's edge with no step."""
+    check_keys(keys, end, poses)
+    if not (_is_number(scale) and scale > 0):
+        raise StickDataError(f"scale must be a positive number, got {scale!r}")
+    i = 0 if far else 1
+    g = _group(cv, parent, x=at[0], y=at[1], scaleX=-scale if flip else scale, scaleY=scale)
+    for k, a, b in _spans(keys, end):
+        if k.pose in over:
+            stroke = _group(cv, g)
+            _limb(cv, stroke, [poses[k.pose].elbows[i], poses[k.pose].hands[i]], LIMB_FAR if far else LIMB)
+            _gate(cv, stroke, a, b, end)
     return g
 
 
