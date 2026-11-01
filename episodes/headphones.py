@@ -19,7 +19,7 @@ import os
 from _common import project_root
 from headphones_audio import INTERVIEW
 from instagram_posts import POSTS
-from srstudio import CAFE, Episode, EpisodeSpec, camera, cast, cutout_odds, cutout_store, foley, locations
+from srstudio import CAFE, Episode, EpisodeSpec, camera, cast, cutout_odds, cutout_store, foley, locations, signature
 from srstudio import interview as iv_audio
 from srstudio.cutout_reach import reach
 
@@ -90,6 +90,9 @@ def rosa_cart(g):
     cutout_odds.store_box(cv, g, -170, -260, id="cart-box")
     cutout_odds.tin_of_peas(cv, g, 20, -230, id="cart-tin-a")
     cutout_odds.tin_of_peas(cv, g, 112, -226, id="cart-tin-b")
+    # The cart stays in the close shots that lose the shelf's own marks.
+    signature.cactus(cv, g, -30, -176, scale=0.5)
+    signature.code(cv, g, -160, -200, 9, color="#FBF8F0")
 
 
 def other_cart(g):
@@ -184,20 +187,19 @@ def shoppers(g):
     people = cv.group(g, "shoppers")
     cv.gate(people, [(WIDE, CLOSE), (LOOK, CHIME)])
     feet = 1262.0
-    row = [
-        (cast.Candidate, -120.0, {"legs": "standing"}, 648.0),
-        (cast.Customer, 60.0, {}, 489.0),
-        (cast.Manager, 330.0, {"legs": "standing"}, 648.0),
-        (cast.Barista, 570.0, {"name": None, "legs": True}, 489.0),
-        (cast.Candidate, 780.0, {"legs": "standing"}, 648.0),
-        (cast.Customer, 1040.0, {}, 489.0),
-        (cast.Manager, 1220.0, {"legs": "standing"}, 648.0),
+    row = [  # three people, once each: Milo and Rosa stand in the same aisle. Spread for the wide, closer for the look.
+        (cast.Manager, -120.0, 330.0, {"legs": "standing"}, 648.0),
+        (cast.Barista, 10.0, 570.0, {"name": None, "legs": True}, 489.0),
+        (cast.Candidate, 1250.0, 780.0, {"legs": "standing"}, 648.0),
     ]
-    for n, (kind, x, extras, tall) in enumerate(row):
+    for n, (kind, wide, close, extras, tall) in enumerate(row):
         scale = 0.9
+        at = cv.group(people, f"shopper-{n}-at", x=wide)
+        cv.keys(at, "x", [(0.0, wide), (LOOK, close)])
         actor = kind(cv, tag=f"shopper-{n}")
-        ep.perform(actor, people, x, feet - tall * scale, scale, mouth=[(0.0, "rest")], **extras)
-    cutout_store.hand_basket(cv, people, 70, feet + 30, scale=0.7, id="shopper-basket")
+        ep.perform(actor, at, 0.0, feet - tall * scale, scale, mouth=[(0.0, "rest")], **extras)
+        if n == 0:
+            cutout_store.hand_basket(cv, at, -70, feet + 30, scale=0.7, id="shopper-basket")
     cutout_store.shopping_cart(cv, people, 790, feet + 60, contents=other_cart, scale=0.6, id="shopper-cart")
 
 
@@ -218,7 +220,7 @@ MEDIUM = (1.0, 0.0, 0.0)
 ON_MILO = (1.28, 540 - 1.28 * 880, 640 - 1.28 * 570)
 AISLE = (0.65, 189.0, 195.0)
 ON_ROSA = (1.8, 540 - 1.8 * 420, 640 - 1.8 * 560)
-LOOKING = (1.0, 0.0, 140.0)
+LOOKING = (1.0, 0.0, 0.0)
 camera.reframe(
     cv,
     shot,
