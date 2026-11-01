@@ -143,10 +143,11 @@ does not confirm them.
   reels of the Toon Pip, who is drawn and voiced as another character than the Soft Pip, the Stick Gary of
   `the-viewing`, the Gloss Gus in `representative`, and one-off names (`brooke`, `theo`, `sam`, `remy`, `feld`) that
   have no sheet. Each is a clash or a name the bible does not yet hold, so a new reel that does the same is stopped.
-  Version 1.1.0, against the 163 published reels after batch C, flags 17: the six Pip reels, `representative`, two
-  reels whose manager or candidate is voiced differently from the bible (`low-balance`, `my-manager`), and eight with
-  a name or a role noun the bible lacks (`cancel-anytime`, `group-nine`, `off-and-on`, `still-bright`, `the-chirp`,
-  `the-noise`, `voice-note`, `text-me`). The Stick Gary and Feld stopped being findings when 1.1.0 gave them records.
+  Version 1.1.1, against the 163 published reels after batch C, flags 13: the six Pip reels, `representative`, two
+  reels whose manager or candidate is voiced differently from the bible (`low-balance`, `my-manager`), and four with
+  a name no sheet holds (`cancel-anytime`: brooke and theo; `group-nine`: sam; `off-and-on`: remy; `still-bright`:
+  dale). The Stick Gary and Feld stopped being findings when 1.1.0 gave them records, and the role nouns of
+  `the-chirp`, `the-noise`, `voice-note` and `text-me` when 1.1.1 listed them.
 - Two characters of one world can share a name (the Collage Gary voiced by Chris, the Stick Gary voiced by Callum):
   the check takes the one whose voice the reel has, else the one whose drawing it pins, else the first, and `gaps`
   counts the reels of a shared name once for all of them. A character drawn by a prop (Keith, by `toon-horse`) has no
