@@ -649,6 +649,13 @@ def test_loaded_right_leaves_theo_to_the_published_reel_that_has_him() -> None:
 
 
 @pytest.mark.usefixtures("reels")
+def test_one_more_pages_pip_keeps_the_voice_of_his_published_reels() -> None:
+    pip = importlib.import_module("one_more_page_audio").VOICES["pip"]
+    published = importlib.import_module("hang_out_audio").VOICES["pip"]
+    assert pip == published
+
+
+@pytest.mark.usefixtures("reels")
 def test_the_hose_in_get_your_mother_stops_short_of_the_cactus() -> None:
     mod = _data("get_your_mother")
     assert fx(max(x for x, _ in mod.HOSE)) + 12.0 <= fx(548.0) - CACTUS_HALF * 0.7
