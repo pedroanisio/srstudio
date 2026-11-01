@@ -12716,6 +12716,57 @@
           "rig": null
         }
       ]
+    },
+    "stick-clipboard": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "Stick clipboard, edge on, angled with unreadable notes, or turned flat to the viewer with a heading, four boxes and a line to sign; no figures. Taken from stick-clipboard on feat/okay-nov01 efc77d9c, the quarter view added. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "298b562933b985957b62480aaf47525ec9965d9bdaa40a44e943e940dc5cdd0e",
+          "rig": null
+        }
+      ]
+    },
+    "stick-wall-brackets": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "Two steel shelf brackets on a wall with a pencilled line between them and nothing on them; no figures. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "02e29a9099e4e5ecae18fa49cefb947218e8422bb7879171ee13896a4382bf05",
+          "rig": null
+        }
+      ]
+    },
+    "stick-folded-bedding": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A pillow on a folded duvet, generic and unbranded, that can slide along a table; no figures. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d96b42205957be1662b853059ae1ec26b649cc0b4c59400757d8631b3973e89e",
+          "rig": null
+        }
+      ]
     }
   }
 }

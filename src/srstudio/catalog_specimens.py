@@ -380,6 +380,8 @@ RECIPES: dict[str, Recipe] = {
     "stick-drill": Recipe(part(480, 960, scale=3.0)),
     "stick-wardrobe": Recipe(part(335, 1400, "half")),
     "stick-planks": Recipe(part(240, 1300)),
+    "stick-wall-brackets": Recipe(part(330, 900, scale=2.0)),
+    "stick-folded-bedding": Recipe(part(540, 1100, scale=2.0)),
     "stick-sparks": Recipe(part(540, 960, SECONDS, scale=3.0)),
     "stick-slipper": Recipe(part(540, 960, scale=3.0)),
     "stick-trash-truck": Recipe(part(40, 1100)),

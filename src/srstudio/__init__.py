@@ -76,6 +76,7 @@ from . import (  # noqa: F401  (registers builders)
     stick_school,
     stick_shop,
     stick_street,
+    stick_table,
     stick_windshield,
     styles,
     subtitles,

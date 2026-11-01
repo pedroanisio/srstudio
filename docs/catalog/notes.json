@@ -1252,6 +1252,9 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "stick-folded-bedding": {"title": "Travesseiro e edredom dobrados"},
+    "stick-wall-brackets": {"title": "Suportes de prateleira vazios"},
+    "stick-clipboard": {"title": "Prancheta do Stick"},
     "held-phone": {"title": "Celular na mão"},
     "table-fork": {"title": "Garfo"},
     "dinner-plate": {"title": "Prato de jantar"},
@@ -8720,6 +8723,42 @@
     {"section": "props", "name": "Crachá com cordão", "parts": ["id-lanyard"], "shot": {"episode": "round-seven", "at": 9.5}, "text": "Um crachá de funcionário com a foto do personagem, estendido por cima do balcão."},
     {"section": "props", "name": "Mapa que entrega", "parts": ["location-chip", "table-phone"], "shot": {"episode": "the-dot", "at": 13.8}, "text": "Um mapa inventado, sem nenhuma letra, com um ponto azul em cada lugar, e o celular em cima da mesa falando no viva-voz."},
     {"section": "props", "name": "Aviso no celular", "parts": ["notice-phone"], "shot": {"episode": "the-dot", "at": 23.0}, "text": "Um celular erguido com o mapa na tela e um aviso que pousa em cima dele."},
-    {"section": "props", "name": "Jantar interrompido", "parts": ["dinner-plate", "table-fork", "held-phone"], "shot": {"episode": "the-dot", "at": 17.5}, "text": "O prato, o garfo que fica nele e o celular que ela tirou da mesa."}
+    {"section": "props", "name": "Jantar interrompido", "parts": ["dinner-plate", "table-fork", "held-phone"], "shot": {"episode": "the-dot", "at": 17.5}, "text": "O prato, o garfo que fica nele e o celular que ela tirou da mesa."},
+    {
+      "section": "props",
+      "name": "Prancheta da entrevista",
+      "parts": [
+        "stick-clipboard"
+      ],
+      "shot": {
+        "episode": "practice-round",
+        "at": 4.0
+      },
+      "text": "A prancheta em que ela anota tudo, inclinada para mostrar que há notas sem deixar ler uma linha."
+    },
+    {
+      "section": "props",
+      "name": "Suportes sem prateleira",
+      "parts": [
+        "stick-wall-brackets"
+      ],
+      "shot": {
+        "episode": "practice-round",
+        "at": 10.3
+      },
+      "text": "Dois suportes na parede, uma linha a lápis e nenhuma prateleira há meses."
+    },
+    {
+      "section": "props",
+      "name": "Roupa de cama dobrada",
+      "parts": [
+        "stick-folded-bedding"
+      ],
+      "shot": {
+        "episode": "practice-round",
+        "at": 29.0
+      },
+      "text": "Travesseiro e edredom dobrados, que chegam deslizando pela mesa quando a conversa acaba."
+    }
   ]
 }
