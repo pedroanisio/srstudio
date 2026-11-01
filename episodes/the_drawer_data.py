@@ -56,7 +56,7 @@ TIP_ANGLE = 112.0  # degrees: her hand comes in from the left
 DRAWER = (300.0, 1056.0)
 DRAWER_TOP = (296.0, 920.0)
 FALLEN = (96.0, 930.0)
-END = 25.6
+END = 25.9
 
 LINES = (
     Line("mae", "We're throwing these out."),
@@ -96,13 +96,13 @@ ROWS = (
     (hold(9.9, PAIR, "", *TOP, "look"), FIRM, ALARMED),  # looks at him
     (hold(10.7, PAIR, "", *TOP, "drop"), DOWN, ALARMED),  # lets go; it lands
     (hold(11.6, PAIR, "", *TOP, "dead"), UP, UP),  # the hum stops, the fridge goes dark
-    (say(12.9, PAIR, 6, *TOP), AT_HIM, ALARMED),
-    (say(14.1, PAIR, 7, *TOP), BLANK, ALARMED),
-    (hold(15.9, WINDOW, "", *TOP, "window"), BLANK, ALARMED),  # lights go out, then two seconds of the town
-    (hold(20.3, PAIR, "", *TOP, "take"), DOWN, ALARMED),  # she takes it back out of the bin
-    (hold(21.8, WINDOW, "", *TOP, "on"), DOWN, ALARMED),  # far off, all the lights come on
-    (hold(22.7, PAIR, "", *TOP, "close"), BLANK, BLANK),  # one finger
-    (say(23.6, PAIR, 8, *TOP), SMALL, BLANK),
+    (say(13.2, PAIR, 6, *TOP), AT_HIM, ALARMED),
+    (say(14.4, PAIR, 7, *TOP), BLANK, ALARMED),
+    (hold(16.2, WINDOW, "", *TOP, "window"), BLANK, ALARMED),  # lights go out, then two seconds of the town
+    (hold(20.6, PAIR, "", *TOP, "take"), DOWN, ALARMED),  # she takes it back out of the bin
+    (hold(22.1, WINDOW, "", *TOP, "on"), DOWN, ALARMED),  # far off, all the lights come on
+    (hold(23.0, PAIR, "", *TOP, "close"), BLANK, BLANK),  # one finger
+    (say(23.9, PAIR, 8, *TOP), SMALL, BLANK),
 )
 BEATS = tuple(row[0] for row in ROWS)
 ACTS = {"rabbit": tuple(row[1] for row in ROWS), "bear": tuple(row[2] for row in ROWS)}
