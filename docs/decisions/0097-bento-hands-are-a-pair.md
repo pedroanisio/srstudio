@@ -4,9 +4,9 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 
 # ADR 0097: Bento's hands are a pair
 
-- Status: proposed (2026-11-01), awaiting a decision on the proof at
-  `generated/character-proofs/bento-hands/index.html`
-- Deciders: arc4d3; written by Claude Opus 5.5 in Claude Code
+- Status: accepted (2026-11-01), by the operator on the proof at
+  `generated/character-proofs/bento-hands/index.html`: "approved"
+- Deciders: the operator; ordered by arc4d3; written by Claude Opus 5.5 in Claude Code
 - Follows [ADR 0062](0062-bento.md), [ADR 0047](0047-character-versions.md) and [ADR 0089](0089-news-hands-are-a-pair.md)
 - Back to the [library README](../../README.md)
 
@@ -23,7 +23,7 @@ arm, so the side of the frame does not answer it either.
 
 ## Decision
 
-Version 2 of `toon-bento`, proposed, makes the hands typed pairs.
+Version 2 of `toon-bento` makes the hands typed pairs.
 
 - `toon_bento.Paw` replaces the tuple. It names its `Arm` and its `Facing`, and `Paw.mirrored` is worked out from them
   against `DRAWN_FOR`: a caller cannot choose it. The back of a hand is the mirror of its palm, and shows no crease.

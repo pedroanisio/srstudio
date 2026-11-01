@@ -292,24 +292,22 @@ def test_version_1_still_draws_one_hand_on_both_arms():
     assert thumb_way(paw_of("panic", LEFT), 1)[0] > 0 and thumb_way(paw_of("panic", RIGHT), 1)[0] > 0
 
 
-# -- version 2 is proposed ---------------------------------------------------------------------------------------------
-def test_version_2_is_proposed_with_no_approval():
+# -- version 2 is approved ---------------------------------------------------------------------------------------------
+def test_version_2_is_approved_in_the_operators_words():
     version = parts.get("toon-bento").version(2)
-    assert version.status == "proposed" and version.approval is None
-    assert version.rig is not None and version.rig.status == "proposed" and version.rig.approval is None
+    assert version.status == "approved" and version.approval.words == "approved"
+    assert version.approval.date == "2026-11-01"
+    assert version.rig is not None and version.rig.status == "approved" and version.rig.approval.words == "approved"
     assert version.proof == "generated/character-proofs/bento-hands/index.html"
 
 
-def test_a_reel_cannot_reach_version_2():
-    assert parts.resolved("toon-bento") == 1
-    assert toon_rigs.rig_of("toon-bento") is toon_bento.BENTO_RIG
-    with pytest.raises(parts.NotApprovedError):
-        parts.pin("toon-bento", 2)
-    with pytest.raises(parts.NotApprovedError):
-        toon_rigs.rig_of("toon-bento", {"toon-bento": 2})
+def test_a_new_reel_gets_version_2_and_a_pin_keeps_version_1():
+    assert parts.resolved("toon-bento") == 2
+    assert toon_rigs.rig_of("toon-bento") is toon_bento.BENTO_RIG_2
+    assert toon_rigs.rig_of("toon-bento", {"toon-bento": 1}) is toon_bento.BENTO_RIG
 
 
-def test_the_recorded_proposal_is_what_version_2_draws():
+def test_the_record_is_what_version_2_draws():
     version = parts.get("toon-bento").version(2)
     assert specimens.digest("toon-bento", 2) == version.drawing != V1_DRAWING
     assert specimens.rig_digest("toon-bento", 2) == version.rig.drawing != V1_RIG
@@ -346,9 +344,9 @@ def test_the_catalog_titles_version_2():
     assert notes["parts"]["toon-bento@2"]["title"]
 
 
-def test_the_adr_records_the_rule_and_that_it_is_proposed():
+def test_the_adr_records_the_rule_and_that_it_is_accepted():
     text = (ROOT / "docs/decisions/0097-bento-hands-are-a-pair.md").read_text(encoding="utf-8")
-    assert "- Status: proposed" in text
+    assert "- Status: accepted" in text
     assert "toon-bento" in text and "generated-by:" in text
 
 

@@ -1929,10 +1929,10 @@ contract. Import `MOODS`, `EYE_STATES` and `GESTURES` from `srstudio.toon_bento`
 builder holds mood tilts; use `toon_head.figure` for a moving head plan. Bento's named gestures supply his arms;
 nonempty `limbs` replacement tracks are unsupported.
 
-`toon-bento@2`, proposed and not yet drawable in a reel, gives him a pair of hands
+`toon-bento@2`, the version new reels draw, gives him a pair of hands
 ([docs/decisions/0097-bento-hands-are-a-pair.md](decisions/0097-bento-hands-are-a-pair.md)). A `Gesture` holds
 `toon_bento.Paw` records, each naming its `Arm` and `Facing`; a paw on the other arm's sleeve, or two on one arm, is
-refused when the gesture is built. Draw the proof with `BENTO_RIG_2`.
+refused when the gesture is built.
 
 ### Toon sketches: *The Report* (T3), *Logo Bigger* (T4) and *Quick Question* (T5)
 

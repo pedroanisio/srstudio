@@ -444,7 +444,7 @@ def test_he_is_registered_in_the_toon_style_with_the_operators_approval():
     assert entry.name == "toon-bento"
     part = parts.get("toon-bento")
     assert part.kind == "character" and part.style == "toon" and part.refused is None
-    assert part.latest().number == 1
+    assert part.latest().number == 2
     version = part.version(1)
     assert version.status == "approved" and version.approval.words == "bento is approved"
     assert version.rig is not None and version.rig.status == "approved"
@@ -471,8 +471,9 @@ def test_the_digest_moves_when_the_drawing_moves(monkeypatch):
 
 
 def test_a_reel_can_draw_and_move_him_now_the_operator_has_approved():
-    assert parts.resolved("toon-bento") == 1
-    assert toon_rigs.rig_of("toon-bento") is RIG
+    assert parts.resolved("toon-bento") == 2
+    assert toon_rigs.rig_of("toon-bento") is toon_bento.BENTO_RIG_2
+    assert toon_rigs.rig_of("toon-bento", {"toon-bento": 1}) is RIG
 
 
 def test_a_limb_track_is_refused_by_name():

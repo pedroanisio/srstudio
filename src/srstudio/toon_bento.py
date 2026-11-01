@@ -22,8 +22,8 @@ His head lies over the body with its own chin, and his muzzle rides in the face 
 (:data:`BENTO_RIG`). The registered drawing is that rig with a still plan: one drawing, whether or not the head moves.
 
 His hands are a pair from version 2 (ADR 0097): a :class:`Paw` is on an :class:`Arm` and shows a :class:`Facing`, and
-the drawing follows from those two, so a thumb follows its side. :data:`BENTO_RIG_2` is that version, proposed; version
-1 keeps its one hand on both arms, as approved.
+the drawing follows from those two, so a thumb follows its side. :data:`BENTO_RIG_2` is that version; version 1 keeps
+its one hand on both arms, as first approved.
 """
 
 from __future__ import annotations
@@ -1924,7 +1924,7 @@ def bento_2(
     *,
     limbs: tuple[LimbTrack, ...] = (),
 ) -> list:
-    """Draw Bento as :func:`bento` does, with his pair of hands: version 2, proposed.
+    """Draw Bento as :func:`bento` does, with his pair of hands: version 2.
 
     For moving heads, pass the poses and a HeadPlan to srstudio.toon_head.figure with BENTO_RIG_2.
     """
