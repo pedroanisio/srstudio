@@ -10519,6 +10519,329 @@
           "rig": null
         }
       ]
+    },
+    "toon-necktie": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A striped necktie, held up by its knot and swinging, or worn on a chest. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "f48b67d34396b2d42babadeccd3c28c03c5a43f6d93496dd14c96ffd8d7a17f2",
+          "rig": null
+        }
+      ]
+    },
+    "toon-lanyard": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A company lanyard with an unlettered white card. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "44488e4ae9571bdbd263472eb9fe2c4fb7cec907857777b59b3afe14322bb646",
+          "rig": null
+        }
+      ]
+    },
+    "toon-laptop-lid": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The back of a laptop lid on a desk, that shuts on cue. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "6c0b1509e9fccef290376df873358733d6f1ec034fe293f2df51382f828e19ee",
+          "rig": null
+        }
+      ]
+    },
+    "toon-notice": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "One short line from a system, on a white card under the desk's edge. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0e9c0f628b732ec4b871843ac60f18fdbcb0fc90b405fda1f6d289b36e5697ee",
+          "rig": null
+        }
+      ]
+    },
+    "toon-wall-sign": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A company's name on a wall plaque, in the set, read on a phone. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4fbdaa0c1121c6dfa0ca0849a5bf4e37e4e1dbd7daa7129768c70de55d023699",
+          "rig": null
+        }
+      ]
+    },
+    "toon-blind": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A slatted blind over the room's window, up or coming down on cue. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "55d32f11d45232202d93d8b96fbc2a2719c0febf071364174f2a4af7c9fae315",
+          "rig": null
+        }
+      ]
+    },
+    "toon-tissue-box": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A box of tissues on a desk. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "f02f9b43fe803c117f8972c507785d428119537c14d582ae4ec52f8a9cff06b0",
+          "rig": null
+        }
+      ]
+    },
+    "toon-sample-tray": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A shallow tray of little sample bars; one can leave on a given second. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c3d3734ac2dae28b9849aa7e6b367b35143244a8b7f0faab83f64fad90591399",
+          "rig": null
+        }
+      ]
+    },
+    "toon-paper": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A resume lying on a desk, its lines a scrawl. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "13b690de0e0ca3ef81bcbc9432be2a7f2ae050787b97c07638d510a936bd357a",
+          "rig": null
+        }
+      ]
+    },
+    "soft-den": {
+      "kind": "location",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A Soft living room with a keyed blind and a night pooled in a screen's blue. Generic and unbranded. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "87bbe7fbbba62934251ab5e6952b22d62e6a86f70fa58eb0c0877f8b93c6aad8",
+          "rig": null
+        }
+      ]
+    },
+    "soft-flats": {
+      "kind": "location",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Two Soft homes side by side with one wall between them. Generic and unbranded. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "993a37af087d35999eef2beb81b2ed8ea186659b0311a8168e82a43b71a8e662",
+          "rig": null
+        }
+      ]
+    },
+    "soft-restaurant": {
+      "kind": "location",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A plain restaurant door at dusk with a pavement that runs below the frame. Generic and unbranded. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "258b0e1989baf1521b887cae243011782e6bb8ce0f87fa2cf6d280d057458777",
+          "rig": null
+        }
+      ]
+    },
+    "soft-television": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A television with no face: voice bars and a one-digit countdown. Invented interface, no real app. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "6317911cc4b36c6e0f5058bbd7d6b846b08e52680c0eff38b09a320d3a543e0e",
+          "rig": null
+        }
+      ]
+    },
+    "soft-chip-bag": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "An unbranded foil chip bag. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "dbd3965e0c54a3111990b77e32dcc99b1519f561d2d697c73f81b05c975f90a9",
+          "rig": null
+        }
+      ]
+    },
+    "soft-chip": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "One chip. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "6ed6feff55a4267fa1f11c22e8a4b83294b9ea39d4b9cd2c7853872f2e069a2d",
+          "rig": null
+        }
+      ]
+    },
+    "soft-blanket": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A checked blanket worn on the shoulders. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "211398c4e21e3cb66209881028afbd5ffa8b79323309a082b63771797e3065f4",
+          "rig": null
+        }
+      ]
+    },
+    "soft-scarf": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A wound scarf. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2978e14631dc629524d5fe4ae43faf35f1f62a3e9e62d0e39fc59e89e63842d8",
+          "rig": null
+        }
+      ]
+    },
+    "soft-slippers": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A pair of fluffy slippers. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2ab91a3271df33317ce06f7aa2d7e715063ed8dbb3db2a490ce712b6e7dfa96b",
+          "rig": null
+        }
+      ]
+    },
+    "soft-hook-card": {
+      "kind": "graphic",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A white card with a few words, shown over a span. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "eb465ba000227485f59a23b3e8347b7a9a7fbe84035214b4d010c60ad57522a1",
+          "rig": null
+        }
+      ]
     }
   }
 }

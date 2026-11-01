@@ -1251,8 +1251,32 @@
     "toon-toothpaste-cone": {"title": "Casquinha de pasta de dente"},
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
-    "toon-chat-phone": {"title": "Celular com conversa"},
+    "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "soft-hook-card": {"title": "Cartão de gancho"},
+    "soft-slippers": {"title": "Pantufas"},
+    "soft-scarf": {"title": "Cachecol"},
+    "soft-blanket": {"title": "Cobertor"},
+    "soft-chip": {"title": "Uma batata"},
+    "soft-chip-bag": {"title": "Saco de batatas"},
+    "soft-television": {"title": "Televisão sem rosto"},
+    "soft-restaurant": {"title": "Porta de restaurante ao anoitecer"},
+    "soft-flats": {"title": "Duas casas cortadas ao meio"},
+    "soft-den": {"title": "Sala com persiana"},
+    "toon-paper": {"title": "Currículo na mesa"},
+    "toon-sample-tray": {"title": "Bandeja de amostras"},
+    "toon-tissue-box": {"title": "Caixa de lenços"},
+    "toon-blind": {"title": "Persiana"},
+    "toon-wall-sign": {"title": "Placa de empresa na parede"},
+    "toon-notice": {"title": "Aviso do sistema"},
+    "toon-laptop-lid": {"title": "Tampa do laptop"},
+    "toon-lanyard": {"title": "Crachá de empresa"},
+    "toon-necktie": {"title": "Gravata"},
+    "stick-clipboard": {"title": "Prancheta"},
+    "stick-tow-truck": {"title": "Guincho de ré"},
+    "stick-front-door": {"title": "Porta da frente de madeira"},
+    "stick-hall": {"title": "Hall de entrada, com o quintal pela porta"},
     "toon-chat-chip": {"title": "Selo sobre o celular"},
+    "toon-chat-phone": {"title": "Celular com conversa"},
     "collage-napkin": {"title": "Guardanapo no colarinho"},
     "collage-toothbrush-mug": {"title": "Caneca com escova"},
     "collage-snowy-window": {"title": "Janela com neve"},
@@ -7309,6 +7333,7 @@
       "section": "locations",
       "name": "Sorveteria, lado do cliente",
       "parts": [
+        "toon-parlour-back"
       ],
       "shot": {
         "episode": "choice-blindness",
@@ -8189,6 +8214,102 @@
         "at": 26.5
       },
       "text": "A prancheta de quem vem cobrar: de lado enquanto ele lê, de frente quando ele vira para você assinar."
+    },
+    {
+      "section": "Toon: adereços",
+      "name": "Gravata e crachá",
+      "parts": [
+        "toon-necktie",
+        "toon-lanyard"
+      ],
+      "shot": {
+        "episode": "firm-handshake",
+        "at": 10.2
+      },
+      "text": "Uma gravata segurada pelo nó, ou vestida, e um crachá sem letras."
+    },
+    {
+      "section": "Toon: adereços",
+      "name": "Laptop e aviso do sistema",
+      "parts": [
+        "toon-laptop-lid",
+        "toon-notice"
+      ],
+      "shot": {
+        "episode": "firm-handshake",
+        "at": 15.0
+      },
+      "text": "A tampa do laptop que fecha no tempo certo e o aviso de uma linha sob a borda da mesa."
+    },
+    {
+      "section": "Toon: adereços",
+      "name": "Sala de entrevista",
+      "parts": [
+        "toon-wall-sign",
+        "toon-blind"
+      ],
+      "shot": {
+        "episode": "since-i-was-six",
+        "at": 10.6
+      },
+      "text": "A placa da empresa na parede e a persiana que desce."
+    },
+    {
+      "section": "Toon: adereços",
+      "name": "Sobre a mesa da entrevista",
+      "parts": [
+        "toon-tissue-box",
+        "toon-sample-tray",
+        "toon-paper"
+      ],
+      "shot": {
+        "episode": "since-i-was-six",
+        "at": 30.4
+      },
+      "text": "A caixa de lenços, a bandeja de amostras e o currículo."
+    },
+    {
+      "section": "Soft: casa",
+      "name": "Sala com persiana e televisão",
+      "parts": [
+        "soft-den",
+        "soft-television",
+        "soft-chip-bag",
+        "soft-chip"
+      ],
+      "shot": {
+        "episode": "still-watching",
+        "at": 7.0
+      },
+      "text": "Uma sala cuja hora do dia é parte do cenário: a persiana sobe, a noite sai. A televisão não tem rosto, só barras de voz e uma contagem."
+    },
+    {
+      "section": "Soft: casa",
+      "name": "Duas casas e um cobertor",
+      "parts": [
+        "soft-flats",
+        "soft-blanket",
+        "soft-hook-card"
+      ],
+      "shot": {
+        "episode": "still-on",
+        "at": 3.0
+      },
+      "text": "Duas casas lado a lado com uma parede entre elas, e o mesmo cobertor nos dois sofás."
+    },
+    {
+      "section": "Soft: casa",
+      "name": "Porta de restaurante",
+      "parts": [
+        "soft-restaurant",
+        "soft-scarf",
+        "soft-slippers"
+      ],
+      "shot": {
+        "episode": "still-on",
+        "at": 16.0
+      },
+      "text": "A calçada corre abaixo do quadro: a câmera desce e encontra as pantufas."
     }
   ]
 }

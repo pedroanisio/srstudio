@@ -374,6 +374,36 @@ def _named(pose: Pose, name: str) -> Pose:
     return Pose(name, pose.head, pose.limbs, pose.front, pose.face)
 
 
+def _showing() -> Pose:
+    """Seated, both hands up in front of the chest with something small between them, held out to be looked at."""
+    sit = _sitting((-170, -112), (-150, -108))
+    arms = {
+        "arm_l": Stroke((-62, -205), (-92, -180), (-140, -200), (-160, -262), *ARM),
+        "arm_r": Stroke((-42, -198), (-72, -172), (-112, -192), (-132, -252), *ARM),
+    }
+    return Pose("sit-show", sit.head, {**sit.limbs, **arms}, sit.front, sit.face)
+
+
+def _glancing() -> Pose:
+    """Seated with the head turned back over the far shoulder, away from what the sit pose is facing."""
+    sit = _sitting((-170, -112), (-150, -108), head=(-8, -326), face=(30, 2))
+    return _named(sit, "sit-back")
+
+
+def _hugging() -> Pose:
+    """Standing, leaning in to the right with both arms across someone there; flip for the other one."""
+    return _pose(
+        "hug",
+        (58, -428),
+        front=ARMS,
+        face=(10, 2),
+        torso=seg((6, -326), (0, -215), *TORSO),
+        **_standing_legs(),
+        arm_l=Stroke((-58, -306), (-30, -270), (30, -270), (84, -292), *ARM),
+        arm_r=Stroke((58, -308), (100, -296), (150, -300), (190, -332), *ARM),
+    )
+
+
 def _raised(shoulder: Point, hand: Point, out: float) -> Stroke:
     """An arm raised from the shoulder, its elbow bowed ``out`` (negative bows to the left)."""
     return Stroke(shoulder, (shoulder[0] + out, shoulder[1] - 40), (hand[0] + out * 0.6, hand[1] + 50), hand, *ARM)
@@ -413,6 +443,9 @@ POSES: dict[str, Pose] = {
         _named(_sitting((-166, -106), (-158, -118), head=(-36, -326)), "type-b"),
         _named(_sitting((-170, -112), (-150, -108), head=(-46, -308), face=(-28, 10)), "nod"),
         _lounging(),
+        _showing(),
+        _glancing(),
+        _hugging(),
         _pose(
             "clasp",
             (0, -432),
