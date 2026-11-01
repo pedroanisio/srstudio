@@ -65,6 +65,7 @@ __all__ = [
     "degree_px",
     "dots",
     "equal_area",
+    "far_side",
     "finish",
     "flat",
     "glide",
@@ -98,6 +99,7 @@ GROUND, GROUND_FAR = "#e4fafd", "#a8e9f2"
 GRID = "#ffffff55"
 BORDER = "#0b3a5370"
 DOT_OUT = "#0b3a53b0"  # a dot outside the circle: there, and not the point
+FAR_FILLS = {"land": "#dc1f478c", "people": PIN}  # the far side: see through to the map under it, and people as dots
 GLOBE_PADDING = 60.0
 COAST_WIDTH, GRID_WIDTH, BORDER_WIDTH = 2.5, 1.5, 1.5
 EARTH_KM = 6371.0088  # IUGG mean radius, the sphere the figures were summed on
@@ -500,6 +502,49 @@ def _whip(cv: Canvas, parent, view, moves: Sequence[Move]) -> None:
     cv.apply(g, cv.effect(f"{view.id}-whip-blur", "blur", radius=WHIP_BLUR))
     g.add_layer(id=f"{view.id}-whip-layer", asset=view.id, x=0, y=0)
     cv.keys(g, "opacity", keys, hold=False, local=False)
+
+
+@register("graphic", "map-far-side", summary="The far side of the Earth laid over a flat map, flipped over")
+def far_side(
+    cv: Canvas,
+    parent,
+    zoom: float,
+    start: float,
+    flip: tuple[float, float],
+    end: float,
+    what: str = "land",
+    id: str = "map-far-side",
+) -> Any:
+    """Over a :func:`flat` world map centred on 0, 0: ``what`` is ``land`` or ``people``, drawn where it really is, and
+    from ``flip[0]`` to ``flip[1]`` turned through the middle of the Earth until each point sits on its antipode. No
+    data is moved. A view centred on longitude 180 and mirrored top to bottom about the equator is the far side, so the
+    mirror and the centre are all that is keyed. Returns the map asset."""
+    _span(start, end, "the far side")
+    if not start <= flip[0] < flip[1] <= end:
+        raise MapKitError(f"a flip happens while the far side is up, got {flip!r}")
+    if what not in FAR_FILLS:
+        raise MapKitError(f"the far side shows {sorted(FAR_FILLS)}, got {what!r}")
+    view = cv.assets.add_map(
+        id=id,
+        width=cv.width,
+        height=cv.height,
+        projection=_PROJECTIONS["flat"],
+        centerLon=0.0,
+        centerLat=0.0,
+        zoom=zoom,
+        background="#00000000",
+    )
+    if what == "land":
+        view.add_geoLayer(geo=_geo(cv, "land"), fill=FAR_FILLS[what], stroke=PIN, strokeWidth=COAST_WIDTH)
+    else:
+        view.add_geoLayer(geo=_geo(cv, "dots"), fill=FAR_FILLS[what], pointRadius=DOT_RADIUS)
+    cv.keys(view, "centerLon", [(flip[0], 0.0), (flip[1], 180.0)], hold=False, kind="sine-in-out", local=False)
+    middle = cv.height / 2
+    g = cv.group(parent, f"{id}-turned", start=start, end=end, x=cv.width / 2, y=middle, anchorX=cv.width / 2,
+                 anchorY=middle)  # fmt: skip
+    cv.keys(g, "scaleY", [(flip[0], 1.0), (flip[1], -1.0)], hold=False, kind="sine-in-out", local=False)
+    g.add_layer(id=f"{id}-layer", asset=view.id, x=0, y=0)
+    return view
 
 
 @register("graphic", "map-equal-area", summary="A Lambert azimuthal equal-area map, re-centred as it moves")

@@ -404,3 +404,34 @@ def test_the_map_kit_carries_the_operators_approval():
         record = parts.latest(name)
         assert record.status == "approved", name
         assert record.approval.date == "2026-10-31" and record.approval.words == "map kit approved"
+
+
+def test_the_far_side_turns_land_through_the_middle_of_the_earth():
+    cv = canvas()
+    view = map_kit.far_side(cv, cv.comp, 0.0, 1.0, (1.5, 3.0), 6.0)
+    text = xml(cv)
+    assert view.id == "map-far-side"
+    assert 'id="map-far-side-turned"' in text and "scaleY" in text and "centerLon" in text
+    assert 'background="#00000000"' in text
+
+
+def test_the_far_side_can_carry_people_instead():
+    cv = canvas()
+    map_kit.far_side(cv, cv.comp, 0.0, 1.0, (1.5, 3.0), 6.0, what="people")
+    assert 'geo="map-dots"' in xml(cv) and 'geo="map-land"' not in xml(cv)
+
+
+@pytest.mark.parametrize(
+    ("start", "flip", "end", "what", "match"),
+    [
+        (3.0, (1.5, 3.0), 2.0, "land", "start < end"),
+        (2.0, (1.5, 3.0), 6.0, "land", "flip"),
+        (1.0, (3.0, 3.0), 6.0, "land", "flip"),
+        (1.0, (2.0, 7.0), 6.0, "land", "flip"),
+        (1.0, (1.5, 3.0), 6.0, "cats", "far side shows"),
+    ],
+)
+def test_the_far_side_refuses_what_it_cannot_show(start, flip, end, what, match):
+    cv = canvas()
+    with pytest.raises(MapKitError, match=match):
+        map_kit.far_side(cv, cv.comp, 0.0, start, flip, end, what=what)
