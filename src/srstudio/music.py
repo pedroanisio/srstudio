@@ -3,22 +3,26 @@
 :class:`Groove` turns bars and beats into seconds; pose changes and lyric lines are placed with
 :meth:`Groove.at` and :meth:`Groove.beats`. :func:`render` plays :class:`Section` s of the grid with
 five parts (kick, snare, hat, bass, keys) over a chord loop, deterministically from ``seed``, and
-levels the result to ``peak``; :func:`write_wav` stores it as 16-bit mono PCM for the mix.
+levels the result to ``peak``; :func:`write_wav` stores it as 16-bit mono PCM for the mix. :func:`measure` reads the
+grid of a track that already exists, so a picture can move to it.
 """
 
 from __future__ import annotations
 
 import math
 import random
+import subprocess
 import wave
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import numpy as np
+
 from . import checks
 from .errors import SrstudioError
 
-__all__ = ["CHOKE", "PARTS", "MusicError", "Groove", "Section", "render", "write_wav", "LOOP"]
+__all__ = ["CHOKE", "PARTS", "MusicError", "Groove", "Section", "measure", "render", "write_wav", "LOOP"]
 
 PARTS = ("kick", "snare", "hat", "bass", "keys")
 # A bouncy I–vi–IV–V loop in C major: (bass root, chord tones) as MIDI notes, one chord per bar.
@@ -28,6 +32,11 @@ LOOP: tuple[tuple[int, tuple[int, ...]], ...] = (
     (29, (53, 57, 60)),
     (31, (55, 59, 62)),
 )
+
+
+_RATE, _HOP, _WINDOW = 22050, 220, 1024  # the measure's sound: 22 kHz mono, about a hundred onset frames a second
+_LEAD = 3 / 4 * _WINDOW / _RATE  # an onset frame leads its sound: measured on click tracks
+_EDGES = (20, 160, 400, 1200, 4000, 10000)  # its bands in Hz; the first holds the kick
 
 
 class MusicError(SrstudioError, ValueError):
@@ -75,6 +84,22 @@ class Groove:
             n += every
         return out
 
+    def between(self, start: float, end: float, every: float = 1) -> list[float]:
+        """The grid's marks in ``[start, end)`` seconds, every ``every`` beats; the grid runs on before ``offset``."""
+        if every <= 0:
+            raise MusicError(f"every {every} must be positive")
+        if end < start:
+            raise MusicError(f"the span {start}..{end} ends before it starts")
+        step = self.beat * every
+        first = math.ceil((start - self.offset) / step - 1e-9)
+        marks = (self.offset + k * step for k in range(first, math.ceil((end - self.offset) / step - 1e-9)))
+        return [round(t, 6) for t in marks]
+
+    def opens_bar(self, t: float) -> bool:
+        """Whether the second ``t`` is a beat that opens a bar."""
+        turns = (t - self.offset) / self.bar
+        return abs(turns - round(turns)) * self.bar < 1e-3
+
 
 @dataclass(frozen=True)
 class Section:
@@ -83,6 +108,77 @@ class Section:
     start_bar: int
     end_bar: int
     parts: frozenset[str] = field(default_factory=lambda: frozenset(PARTS))
+
+
+def _decoded(path: Path, seconds: float | None, ffmpeg: str) -> np.ndarray:
+    take = ["-t", str(seconds)] if seconds is not None else []
+    done = subprocess.run(
+        [ffmpeg, "-v", "error", "-i", str(path), *take, "-ac", "1", "-ar", str(_RATE), "-f", "f32le", "-"],
+        capture_output=True,
+    )
+    if done.returncode != 0:
+        raise MusicError(f"cannot read the sound of {path}: {done.stderr.decode(errors='replace').strip()}")
+    return np.frombuffer(done.stdout, np.float32)
+
+
+def _onsets(samples: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Where sound starts, frame by frame: the rise of every band together and of the low band alone."""
+    count = (len(samples) - _WINDOW) // _HOP + 1
+    frames = samples[np.arange(_WINDOW) + _HOP * np.arange(count)[:, None]] * np.hanning(_WINDOW)
+    power = np.log1p(1000 * np.abs(np.fft.rfft(frames, axis=1)))
+    hz = np.fft.rfftfreq(_WINDOW, 1 / _RATE)
+    bands = np.array([power[:, (hz >= a) & (hz < b)].mean(1) for a, b in zip(_EDGES, _EDGES[1:], strict=False)])
+    rise = np.clip(np.diff(bands, axis=1), 0, None)
+    return rise.sum(0), rise[0]
+
+
+def _folded(onsets: np.ndarray, period: float, bins: int) -> np.ndarray:
+    phase = (np.arange(len(onsets)) / period % 1 * bins).astype(int)
+    return np.bincount(phase, onsets, bins) / np.maximum(np.bincount(phase, minlength=bins), 1)
+
+
+def measure(
+    path: Path | str, *, seconds: float | None = None, beats_per_bar: int = 4, ffmpeg: str = "ffmpeg"
+) -> Groove:
+    """The grid of a recorded track, over its first ``seconds`` when given: the tempo whose beat, double and bar all
+    repeat in its onsets, leaning toward 120 BPM, and the beat that opens a bar, the one with the most low end. Going
+    by the beat alone reads a 3-3-2 rhythm at two thirds of its tempo. A track that changes tempo has no single grid:
+    measure each part of it."""
+    samples = _decoded(Path(path), seconds, ffmpeg)
+    if len(samples) < 2 * _RATE:
+        raise MusicError(f"{path} is too short to hold a tempo: {len(samples) / _RATE:.2f} s")
+    if float(np.abs(samples).max()) < 1e-3:
+        raise MusicError(f"{path} is silent: nothing to measure")
+    onsets, low = _onsets(samples)
+    fps = _RATE / _HOP
+    pulse = onsets - onsets.mean()
+    spectrum = np.fft.rfft(pulse, 2 * len(pulse))
+    echo = np.fft.irfft(spectrum * np.conj(spectrum))[: len(pulse)]
+    best, best_bpm = -math.inf, 0.0
+    for bpm in np.arange(60.0, 200.0, 0.25):
+        period = fps * 60.0 / bpm
+        marks = [period, 2 * period, beats_per_bar * period]
+        if marks[-1] >= len(echo) - 1:
+            continue
+        score = sum(float(np.interp(m, np.arange(len(echo)), echo)) for m in marks)
+        score *= math.exp(-0.5 * (math.log2(bpm / 120.0) / 0.8) ** 2)
+        if score > best:
+            best, best_bpm = score, float(bpm)
+    if best <= 0:
+        raise MusicError(f"{path} has no steady pulse to measure")
+    fine = np.arange(best_bpm - 0.5, best_bpm + 0.51, 0.05)
+    folds = [_folded(onsets, fps * 60.0 / bpm, max(4, round(fps * 60.0 / bpm))) for bpm in fine]
+    index = int(np.argmax([f.max() - f.mean() for f in folds]))
+    best_bpm = round(float(fine[index]), 2)
+    best_phase = int(np.argmax(folds[index]))
+    beat = 60.0 / best_bpm
+    first = best_phase / max(4, round(fps * beat)) * beat + _LEAD
+    period = fps * beat
+    hits = [
+        np.mean([low[int(f)] for f in np.arange(first * fps + k * period, len(low), period * beats_per_bar) if f >= 0])
+        for k in range(beats_per_bar)
+    ]
+    return Groove(best_bpm, beats_per_bar, round(first + beat * int(np.argmax(hits)), 3) % (beat * beats_per_bar))
 
 
 def _check(sections: Sequence[Section]) -> None:

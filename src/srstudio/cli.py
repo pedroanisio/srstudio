@@ -34,6 +34,7 @@ from . import (
     interview,
     lip_proof,
     lipsync,
+    music,
     outbox,
     overlap,
     parts,
@@ -174,6 +175,11 @@ def main(argv=None):
     measured.add_argument("--sheet", type=Path, help="write the frames, in one row, to this image")
     measured.add_argument("--arm", choices=("a", "b"), help="fail unless the master shows this sp-hook_motion arm")
     measured.add_argument("--json", action="store_true")
+    beat = sub.add_parser("beat", help="measure a recorded track's tempo and where its bars open")
+    beat.add_argument("audio", type=Path, help="any file ffmpeg reads; the whole track places the bars best")
+    beat.add_argument("--seconds", type=float, help="measure only the first seconds")
+    beat.add_argument("--beats-per-bar", type=int, default=4)
+    beat.add_argument("--json", action="store_true")
     split = sub.add_parser("arms", help="how an A/B test's releases split, and what keeps the split from being fair")
     split.add_argument("test", choices=releases.TESTS)
     split.add_argument("--order", type=Path, help="the delivery order: a file of slugs, one a line")
@@ -289,6 +295,8 @@ def main(argv=None):
         return _enhance(args.action, args.scripts.resolve().parent)
     if args.cmd == "lip-proof":
         return _lip_proof(args)
+    if args.cmd == "beat":
+        return _beat(args)
     if args.cmd == "proof":
         return _proof(args)
     if args.cmd == "arms":
@@ -563,6 +571,19 @@ def _arms(args: argparse.Namespace) -> int:
     for problem in problems:
         print(f"srstudio arms: {problem}", file=sys.stderr)
     return 1 if problems else 0
+
+
+def _beat(args: argparse.Namespace) -> int:
+    try:
+        groove = music.measure(args.audio, seconds=args.seconds, beats_per_bar=args.beats_per_bar)
+    except music.MusicError as exc:
+        _error("beat", exc, args.json)
+        return 1
+    if args.json:
+        print(json.dumps(asdict(groove)))
+    else:
+        print(f"{groove.bpm:g} BPM, {groove.beats_per_bar} beats to the bar, a bar opens at {groove.offset:g} s")
+    return 0
 
 
 def _proof(args: argparse.Namespace) -> int:

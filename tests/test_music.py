@@ -1,10 +1,14 @@
 """The beat grid and the synthesised groove: timing, determinism, rests, level, and refused input."""
 
+import json
 import math
 import wave
 
+import numpy as np
 import pytest
 
+from srstudio import music
+from srstudio.cli import main
 from srstudio.music import PARTS, Groove, MusicError, Section, render, write_wav
 
 
@@ -101,3 +105,94 @@ def test_parts_are_named_and_the_wav_is_16_bit_mono(tmp_path):
         assert (w.getnchannels(), w.getsampwidth(), w.getframerate(), w.getnframes()) == (1, 2, 8000, len(samples))
     with pytest.raises(MusicError, match="-1..1"):
         write_wav(tmp_path / "bad.wav", [0.0, 1.5], 8000)
+
+
+def clicks(path, bpm, seconds=12.0, first=0.3, rate=22050, every=4):
+    """A click on every beat, longer and louder on the bar's first, as 16-bit mono PCM."""
+    beat, samples = 60.0 / bpm, np.zeros(int(seconds * rate))
+    n = 0
+    while first + n * beat < seconds - 0.2:
+        at, loud = int((first + n * beat) * rate), n % every == 0
+        length = int(0.09 * rate if loud else 0.03 * rate)
+        hz = 70.0 if loud else 1800.0
+        tone = np.sin(2 * np.pi * hz * np.arange(length) / rate) * np.exp(-np.arange(length) / (length / 4))
+        samples[at : at + length] += tone * (0.9 if loud else 0.45)
+        n += 1
+    with wave.open(str(path), "wb") as out:
+        out.setnchannels(1)
+        out.setsampwidth(2)
+        out.setframerate(rate)
+        out.writeframes((samples * 32000).astype("<i2").tobytes())
+    return path
+
+
+@pytest.mark.parametrize("bpm", [96.0, 129.0, 150.0])
+def test_a_track_gives_its_tempo_and_where_its_bars_open(tmp_path, bpm):
+    found = music.measure(clicks(tmp_path / "a.wav", bpm))
+    assert found.bpm == pytest.approx(bpm, abs=0.75)
+    assert found.beats_per_bar == 4
+    off = (0.3 - found.offset + found.bar / 2) % found.bar - found.bar / 2
+    assert abs(off) < 0.021  # within half a frame at 24 fps
+
+
+def test_a_three_three_two_rhythm_is_read_at_its_beat_and_not_at_two_thirds(tmp_path):
+    rate, bpm, seconds = 22050, 129.0, 16.0
+    beat, samples = 60.0 / bpm, np.zeros(int(seconds * rate))
+
+    def hit(at, hz, length, loud):
+        start, n = int(at * rate), int(length * rate)
+        ring = np.arange(n)
+        samples[start : start + n] += loud * np.sin(2 * np.pi * hz * ring / rate) * np.exp(-ring / (n / 4))
+
+    bar = 0
+    while (bar + 1) * 4 * beat < seconds - 0.3:
+        for k in range(4):
+            hit(0.2 + (bar * 4 + k) * beat, 70.0, 0.1, 0.6)
+        for k in (0.0, 1.5, 3.0):  # the snare's 3-3-2 falls on the bar's 16ths 0, 6, 12
+            hit(0.2 + (bar * 4 + k) * beat, 1500.0, 0.05, 0.9)
+        bar += 1
+    path = tmp_path / "dembow.wav"
+    with wave.open(str(path), "wb") as out:
+        out.setnchannels(1)
+        out.setsampwidth(2)
+        out.setframerate(rate)
+        out.writeframes((samples * 30000).astype("<i2").tobytes())
+    assert music.measure(path).bpm == pytest.approx(bpm, abs=0.75)
+
+
+def test_a_measure_is_the_same_on_a_second_run(tmp_path):
+    path = clicks(tmp_path / "a.wav", 129.0)
+    assert music.measure(path) == music.measure(path)
+
+
+def test_silence_and_a_scrap_of_sound_have_no_tempo(tmp_path):
+    quiet = tmp_path / "quiet.wav"
+    with wave.open(str(quiet), "wb") as out:
+        out.setnchannels(1)
+        out.setsampwidth(2)
+        out.setframerate(22050)
+        out.writeframes(bytes(22050 * 2 * 6))
+    with pytest.raises(music.MusicError, match="silent"):
+        music.measure(quiet)
+    with pytest.raises(music.MusicError, match="too short"):
+        music.measure(clicks(tmp_path / "short.wav", 120.0, seconds=1.0))
+
+
+def test_a_file_that_is_no_audio_is_a_typed_error(tmp_path):
+    bad = tmp_path / "bad.wav"
+    bad.write_text("no sound here")
+    with pytest.raises(music.MusicError, match="cannot read"):
+        music.measure(bad)
+
+
+def test_the_beat_command_prints_the_grid_it_measured(tmp_path, capsys):
+    assert main(["beat", str(clicks(tmp_path / "track.wav", 120)), "--json"]) == 0
+    grid = json.loads(capsys.readouterr().out)
+    assert grid["bpm"] == pytest.approx(120, abs=0.5) and grid["beats_per_bar"] == 4
+
+
+def test_the_beat_command_fails_plainly_on_a_file_with_no_sound(tmp_path, capsys):
+    broken = tmp_path / "broken.wav"
+    broken.write_text("not audio")
+    assert main(["beat", str(broken)]) != 0
+    assert "beat" in capsys.readouterr().err

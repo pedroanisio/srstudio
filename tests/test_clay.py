@@ -130,3 +130,60 @@ def test_a_surface_field_is_the_same_on_every_build_and_keeps_to_a_range():
     assert not (a == clay.thumbed(64, 8)).all()
     tile = clay.normal_tile(clay.knit(64, 6), 1.0)
     assert tile.shape == (64, 64, 4) and tile.dtype == np.uint8 and (tile[..., 3] == 255).all()
+
+
+def test_a_revolved_profile_is_round_and_faces_out():
+    model = clay.Model()
+    model.revolve("hub", [(10.0, -5.0), (10.0, 5.0)])
+    mesh = model.meshes()[0]
+    assert np.hypot(*mesh.vertices[:, :2].T) == pytest.approx(10.0)
+    assert (mesh.normals[:, :2] * mesh.vertices[:, :2]).sum(1).min() > 0
+
+
+def test_a_loft_caps_its_ends_and_names_each_panel():
+    model = clay.Model()
+
+    def ring(x):
+        z, y = clay.superellipse(32, 2.0)
+        return z * 10, y * 10
+
+    model.loft(np.linspace(0, 40, 5), ring, lambda centre, normal, i, j: "nose" if centre[0] > 20 else "tail")
+    parts = {mesh.material: mesh for mesh in model.meshes()}
+    assert set(parts) == {"nose", "tail"}
+    assert parts["nose"].vertices[:, 0].max() == pytest.approx(40.0)
+    assert parts["tail"].vertices[parts["tail"].triangles].mean(1)[:, 0].max() <= 20.0
+
+
+def test_a_panel_left_out_of_a_loft_stays_open():
+    model = clay.Model()
+
+    def ring(x):
+        z, y = clay.superellipse(16, 2.0)
+        return z, y
+
+    model.loft(np.linspace(0, 1, 3), ring, lambda centre, normal, i, j: None if centre[1] > 0 else "top")
+    mesh = model.meshes()[0]
+    assert mesh.vertices[mesh.triangles].mean(1)[:, 1].max() < 0.1
+
+
+def test_a_strut_follows_its_path_with_its_face_out():
+    model = clay.Model()
+    model.strut("bar", [(0, 0, 0), (50, 0, 0), (100, 0, 0)], 10.0, 4.0, (0, -1, 0))
+    mesh = model.meshes()[0]
+    assert mesh.vertices[:, 0].min() == pytest.approx(0.0, abs=1e-6)
+    assert mesh.vertices[:, 0].max() == pytest.approx(100.0, abs=1e-6)
+    assert np.ptp(mesh.vertices[:, 2]) == pytest.approx(10.0, abs=0.01)
+    assert np.ptp(mesh.vertices[:, 1]) == pytest.approx(4.0, abs=0.01)
+
+
+@pytest.mark.parametrize("bad", [[(1.0, 2.0)], [(-1.0, 0.0), (1.0, 2.0)]])
+def test_a_profile_that_cannot_revolve_is_refused(bad):
+    with pytest.raises(clay.ClayError):
+        clay.Model().revolve("hub", bad)
+
+
+def test_a_strut_needs_a_path_and_a_face():
+    with pytest.raises(clay.ClayError):
+        clay.Model().strut("bar", [(0, 0, 0)], 1.0, 1.0, (0, 0, 1))
+    with pytest.raises(clay.ClayError):
+        clay.Model().strut("bar", [(0, 0, 0), (1, 0, 0)], 1.0, 1.0, (0, 0, 0))

@@ -183,9 +183,9 @@ Four shows are channels on Toon's road rather than styles of their own. Each is 
 
 `srstudio.look` holds the primitives every style shares, while each style keeps its own numbers: `grade` for bloom, vignette and grain, `depth` for a far plane out of focus, `pool` for a soft light and `fade` for haze or a shade. See [finishing a style](docs/authoring-reference.md#finishing-a-style-srstudiolook) and [ADR 0031](docs/decisions/0031-shared-look-and-caption-primitives.md).
 
-The library draws in 2D, and a clay character is the one thing modelled in 3D. `srstudio.clay` bakes a model to meshes, and `srstudio.plates` path-traces a `Plate`, one camera, one set of lights and some placed meshes, into a still cached by its digest. Rafa, who hosts the Host show, is built this way ([ADR 0068](docs/decisions/0068-rafa-clay-host-on-plates.md)).
+The library draws in 2D, and what it models in 3D is a clay character or a rigid proxy. `srstudio.clay` bakes a model to meshes, and `srstudio.plates` path-traces a `Plate`, one camera, one set of lights and some placed meshes, into a still cached by its digest. Rafa, who hosts the Host show, is built this way ([ADR 0068](docs/decisions/0068-rafa-clay-host-on-plates.md)).
 
-[DRAWING.md](DRAWING.md) proposes a layered drawing kit for every style and show. It is a proposal: its `forms` and `paint` modules are not built, and nothing adopts a layer without an approved proof.
+[DRAWING.md](DRAWING.md) is the default drawing method for new work ([ADR 0088](docs/decisions/0088-hybrid-drawing-is-the-default.md)); published reels and approved drawings stay as they are. Its rigid-object layer is built: `srstudio.proxy` turns a clay model into cel plates, cut into back, front and under so people draw between them; `srstudio.vehicle` adds tyres and turning rims; `srstudio.on_beat` moves a drawing on a `music.Groove`, and `srstudio beat <audio>` measures that groove from a recorded track. Its `forms` and `paint` modules are not built, and a type's first use of a layer needs an approved proof.
 
 ## Extending
 
@@ -251,7 +251,7 @@ The configured coverage gate is 80%. Some integration tests require additional l
 - [episodes/](episodes/) — episode builders, recording scripts and releases.
 - [tests/](tests/) — unit, integration and fidelity tests.
 - [docs/decisions/](docs/decisions/) — architecture decisions.
-- [DRAWING.md](DRAWING.md) — proposed drawing architecture.
+- [DRAWING.md](DRAWING.md) — the default drawing method for new work.
 - [Authoring and episode reference](docs/authoring-reference.md) — detailed style, episode, signature and delivery notes.
 
 The project is licensed under MIT.
