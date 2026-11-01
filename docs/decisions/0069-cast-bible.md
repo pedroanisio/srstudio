@@ -102,6 +102,21 @@ quotation; raise the version in both files; add the changelog section; `bible ve
 A new reel gets its characters by a `Cast: slug, slug` line in the brief, checked by `bible check --brief`, and becomes
 canon only when it is published.
 
+**The rig rule.** arc4d3 ruled (Slack 1793513568.110249) that a recurring figure's base rig stays as published and
+only clothes and props change per reel. `srstudio.bible_rig` holds it as code. For a Stick figure the base rig is the
+`stick.Look` fields `hair` and `neck`; `glasses`, `tie`, `apron`, `cap` and `sunhat` are clothes and props, and a test
+holds the two lists against the dataclass so a new field has to be placed. A figure's look reaches code only at
+`stick.rig`, with no name, so the check runs the reel's builder in a copy of its project with `stick.check_look`
+observed, and flags a drawn look that has Dev's hair (cowlick) or Noor's (bun) with a neck the figure was never
+published with (off). The published base rigs are literal data in the module, so a change to the library's own
+constants cannot move the baseline. `srstudio bible rig` runs it over any set of releases, and the delivery gate runs it
+on a first delivery of a Stick reel that names Dev or Noor. A builder that is missing, fails, runs past 300 s or draws
+no figure refuses the delivery: a rule that read nothing cannot fail. What it cannot see: a figure redrawn with new
+hair (a look with other hair is taken for another person), and a reel whose builder is not named for its slug.
+Over the 165 published reels (17 draw Stick figures) it ran a builder for the 11 that name Dev or Noor and flagged none. On `feat/okay-nov01`
+before `b72f092a` it flagged `consulting` (2), `in-two-hundred` (2) and `pay-in-four` (1), all `neck=True` on Dev or
+Noor; after the fix it flags nothing.
+
 **What stays human.** Which side of a clash wins, who a placeholder becomes, and whether a joke contradicts a canon
 fact in other words.
 

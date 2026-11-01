@@ -16,6 +16,8 @@ the files' schema is a major version.
 - The two rules from arc4d3's standing instructions are marked as decisions with the Slack messages that gave them
   (1793513568.110249 and 1793512208.441779). The schema has no status for a decision, so they stay `proposal`: no
   published reel establishes either. The rule about the base rig now says which Stick fields count as base rig.
+- `srstudio bible rig` and the delivery gate hold a Stick reel's drawn looks to that rule (`srstudio.bible_rig`); the
+  records are unchanged.
 
 ## 1.1.0
 

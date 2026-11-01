@@ -1328,6 +1328,39 @@ def test_a_first_delivery_that_names_only_the_bibles_characters_delivers(monkeyp
     ]
 
 
+def test_a_first_delivery_that_redraws_a_recurring_figures_base_rig_is_refused_before_it_writes(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path)
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    _naming(posts, monkeypatch, "rex", "fern")
+    seen = []
+
+    def drawn(release, episodes, scripts, scratch):
+        seen.append((release.slug, scripts, scratch))
+        return [posts.bible_check.Finding(release.slug, "rig", "'dev' drawn with neck True")]
+
+    monkeypatch.setattr(posts.bible_rig, "check_release", drawn)
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
+    with pytest.raises(DeliveryError, match="cast bible refuses.*new-reel: rig: 'dev' drawn with neck True"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+    assert seen == [("new-reel", Path(posts.__file__).resolve().parent, tmp_path / "_tmp" / "rig")]
+
+
+def test_a_rig_that_cannot_be_read_refuses_the_first_delivery_instead_of_passing_it(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path)
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    _naming(posts, monkeypatch, "rex", "fern")
+
+    def unreadable(*args):
+        raise posts.bible_rig.RigError("new-reel: its builder failed")
+
+    monkeypatch.setattr(posts.bible_rig, "check_release", unreadable)
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
+    with pytest.raises(DeliveryError, match="new-reel: its builder failed"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+
+
 def test_a_video_already_delivered_is_never_refused_by_the_bible(monkeypatch, tmp_path):
     posts = shipped_posts()
     renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path)
