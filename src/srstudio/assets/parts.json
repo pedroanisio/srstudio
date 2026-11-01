@@ -11403,6 +11403,74 @@
           "rig": null
         }
       ]
+    },
+    "stick-interview-room": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Stick small office, door between two chairs, a window with the city out of focus, a plant and the desk's top. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "55e31319e18fd3d1f89560acafd2d8bb6660f2fc080b657b28c23edec34f5f38",
+          "rig": null
+        }
+      ]
+    },
+    "stick-interview-desk": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Stick desk's front with its marks; the bottom drawer stays shut or slides out to a pillow, a folded blanket and delivery menus. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "79e90798d34a1f79d89035b62b1e5708a36ccb3fa3b4b5d7c083f1f54a99b7f4",
+          "rig": null
+        }
+      ]
+    },
+    "stick-desk-page": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Stick sheet lying on a desk, printed side up or face down, a line ringed in red or none. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e706646bd10f1176815c30442f69d948950efcf82a4324c3a9cee9e42e59aba7",
+          "rig": null
+        }
+      ]
+    },
+    "stick-resume-insert": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Stick resume filling the frame, generic lines and one heading ringed in red by hand; it names nobody. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e1857d555577cdb14d55346173278aa3e867a9361981be54518b420feaf7f0a5",
+          "rig": null
+        }
+      ]
     }
   }
 }
