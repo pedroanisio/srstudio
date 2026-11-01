@@ -10,7 +10,7 @@ All LLM output must be treated as untrusted and validated explicitly.
 The pipeline is :mod:`srstudio.interview`; this file is the episode: its script, and where each line sits
 (:data:`GAPS`). Pip is four, in a tie, with a case open on the quilt, and negotiates a bedtime with a man who is tired.
 The deal is signed at eight; at 9:40 Bo falls asleep in the middle of the second story and Pip takes the win to the
-kitchen. Alice is Pip and Eric is Bo. There is no music: the reel's foley is synthesised in the build.
+kitchen. Will is Pip, and Eric is Bo. There is no music: the reel's foley is synthesised in the build.
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from srstudio.styles import SOFT
 
 SEED = 31241
 VOICES = {
-    "pip": Singer("Xb7hH8MSUJpSbSDYk0k2", "Alice", dict(stability=0.5, similarity_boost=0.75, style=0.3)),
+    "pip": Singer("bIHbv24MWmeRgasZH58o", "Will", dict(stability=0.30, similarity_boost=0.75, style=0.45)),
     "bo": Singer("cjVigY5qzO86Huf0OWal", "Eric", dict(stability=0.5, similarity_boost=0.75, style=0.3)),
 }
 SCRIPT = [  # role, text, caption, speed
@@ -54,7 +54,7 @@ INTERVIEW = Interview(
     voices=VOICES,
     lines=SCRIPT,
     effects=[],
-    voice_note="ElevenLabs premade voices Alice and Eric; no reference-voice cloning. Foley synthesized; no music.",
+    voice_note="ElevenLabs premade voices Will and Eric; no reference-voice cloning. Foley synthesized; no music.",
     room_tone_seed=SEED + 10,
     reaction_after=0.05,
     reaction_hold=OUT,
