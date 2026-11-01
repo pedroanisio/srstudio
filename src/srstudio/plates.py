@@ -51,6 +51,7 @@ __all__ = [
     "materials_of",
     "patch",
     "pixels",
+    "place",
     "print_name",
     "print_png",
     "render",
@@ -320,6 +321,16 @@ def digest(plate: Plate) -> str:
     return hashlib.sha256(document(plate)).hexdigest()
 
 
+def place(cv: Canvas, parent, plate: Plate, *, y: float = 0.0):
+    """``plate`` as a picture in ``parent``, by name: a drawing's digest needs no render, and its file comes later.
+    Two faces can be the same picture, so a plate already on the canvas is shown again from its one asset."""
+    name = digest(plate)
+    asset = f"plate-{name[:20]}"
+    if not any(getattr(node, "id", None) == asset for node in cv.assets.nodes):
+        cv.assets.add_image(id=asset, src=f"plates/{name}.png", width=plate.width, height=plate.height)
+    return parent.add_layer(id=cv.uid("plate"), asset=asset, x=0, y=y)
+
+
 def _gauss(rows: np.ndarray, sigma: float, axis: int) -> np.ndarray:
     reach = int(sigma * 3)
     weights = np.exp(-0.5 * (np.arange(-reach, reach + 1) / sigma) ** 2)
@@ -382,7 +393,10 @@ def print_png(printed: Print, *, engine: Path, cache: Path, fonts: Path) -> Path
     if out.exists():
         return out
     family, weight, name, license_ = PRINT_FONT
-    font = (fonts / name).read_bytes()
+    try:
+        font = (fonts / name).read_bytes()
+    except OSError as exc:
+        raise PlateError(f"prints are lettered in {name}, and it is not in {fonts.resolve()}") from exc
     with tempfile.TemporaryDirectory(dir=cache) as work:
         root = Path(work)
         (root / name).write_bytes(font)

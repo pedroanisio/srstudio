@@ -19,7 +19,7 @@ from .canvas import Canvas
 from .errors import SrstudioError
 from .head_motion import HeadPlan, HeadStyle, Spring
 from .pedro import Face
-from .plates import Camera, Light, Patch, Placed, Plate
+from .plates import Camera, Light, Patch, Placed, Plate, place
 from .toon_head import _animate
 
 __all__ = [
@@ -325,10 +325,3 @@ _SPECIMEN_FACES = (
 def part_plates(name: str) -> tuple[Plate, ...]:
     """What a catalog needs on disk to show the part ``name``: his moods, mouths, lids and gazes."""
     return tuple(whole(face) for face in _SPECIMEN_FACES) if name == "pedro" else ()
-
-
-def place(cv: Canvas, parent, plate: Plate, *, y: float = 0.0):
-    """``plate`` as a picture in ``parent``, by name: a drawing's digest needs no render, and its file comes later."""
-    name = plates.digest(plate)
-    cv.assets.add_image(id=f"plate-{name[:20]}", src=f"plates/{name}.png", width=plate.width, height=plate.height)
-    return parent.add_layer(id=cv.uid("plate"), asset=f"plate-{name[:20]}", x=0, y=y)

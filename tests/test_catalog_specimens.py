@@ -28,6 +28,7 @@ def engine() -> Path:
 
 
 NAMES = {e.name for e in registry.entries()}
+PRINT_FONT = "fredoka-600.ttf"
 
 
 def test_every_registered_part_has_a_recipe_or_a_typed_refusal_and_never_both():
@@ -155,7 +156,70 @@ def test_a_recipe_that_draws_nothing_is_an_error_not_an_empty_card(tmp_path, mon
     work = tmp_path / "work" / "cutout"
     document = cs.document(entry, nothing, cs.font_of(cs.style_of(entry), EPISODES), EPISODES, work)
     with pytest.raises(cs.SpecimenRenderError, match="drew nothing"):
-        cs.render_one(cs.Plan(entry, document, 1.0, "k", False), real, tmp_path)
+        cs.render_one(cs.Plan(entry, document, 1.0, "k", False), real, tmp_path, tmp_path)
+
+
+def plated_plan(name: str = "rafa-mug") -> cs.Plan:
+    return cs.Plan(registry.get("prop", name), b'<scene><project width="4" height="4"/></scene>', 1.0, "k", False)
+
+
+def projects_with(tmp_path: Path, font: bytes) -> Path:
+    assets = tmp_path / "episodes" / "a-project" / "assets"
+    assets.mkdir(parents=True)
+    (assets / PRINT_FONT).write_bytes(font)
+    return tmp_path / "episodes"
+
+
+def only_rafa_mug(monkeypatch) -> None:
+    monkeypatch.setattr(cs, "plan", lambda episodes, work: ([plated_plan()], {}))
+    monkeypatch.setattr(cs.shutil, "which", lambda tool: f"/fake/{tool}")
+
+
+def test_a_build_prints_plates_in_the_font_of_its_projects_with_no_fonts_variable(tmp_path, monkeypatch):
+    """The catalog's service has no SRSTUDIO_FONTS, and runs from a folder that holds no font."""
+    monkeypatch.delenv("SRSTUDIO_FONTS", raising=False)
+    monkeypatch.chdir(tmp_path)
+    episodes = projects_with(tmp_path, b"the font's bytes")
+    only_rafa_mug(monkeypatch)
+    seen: list[bytes] = []
+
+    def render(plate, *, engine, cache, fonts):
+        seen.append((fonts / PRINT_FONT).read_bytes())
+        raise cs.plates.PlateError("the plate stops here")
+
+    monkeypatch.setattr(cs.plates, "render", render)
+    with pytest.raises(cs.SpecimenRenderError, match="the plate stops here"):
+        cs.render_all(tmp_path / "engine", tmp_path / "cache", episodes)
+    assert seen == [b"the font's bytes"]
+
+
+def test_a_build_whose_projects_hold_no_print_font_says_so_before_any_render(tmp_path, monkeypatch):
+    (tmp_path / "episodes").mkdir()
+    only_rafa_mug(monkeypatch)
+    monkeypatch.setattr(cs, "render_one", lambda *a: pytest.fail("rendered without its font"))
+    with pytest.raises(cs.SpecimenRenderError, match=r"no project in .*episodes holds assets/fredoka-600\.ttf"):
+        cs.render_all(tmp_path / "engine", tmp_path / "cache", tmp_path / "episodes")
+
+
+def test_every_failed_specimen_is_named_once_and_all_of_them_fail_the_build(tmp_path, monkeypatch):
+    episodes = projects_with(tmp_path, b"font")
+    named, bare = plated_plan("rafa-mug"), plated_plan("rafa-phone")
+    monkeypatch.setattr(cs, "plan", lambda e, w: ([named, replace(bare, key="other")], {}))
+    monkeypatch.setattr(cs.shutil, "which", lambda tool: f"/fake/{tool}")
+
+    def render_one(plan_, engine, folder, fonts):
+        if plan_ is named:
+            raise cs.SpecimenRenderError("rafa-mug: the recipe drew nothing at 1 s")
+        raise FileNotFoundError(2, "No such file or directory", "some-file")
+
+    monkeypatch.setattr(cs, "render_one", render_one)
+    with pytest.raises(cs.SpecimenRenderError) as failure:
+        cs.render_all(tmp_path / "engine", tmp_path / "cache", episodes)
+    assert str(failure.value).splitlines() == [
+        "2 specimens failed:",
+        "rafa-mug: the recipe drew nothing at 1 s",
+        "rafa-phone: [Errno 2] No such file or directory: 'some-file'",
+    ]
 
 
 # -- package posters --------------------------------------------------------------------------------------
@@ -255,6 +319,74 @@ def test_the_digest_of_a_part_is_what_its_record_holds():
 def test_a_refused_part_has_no_digest_to_ask_for():
     with pytest.raises(cs.SpecimenRenderError, match=r"captions is refused \(overlay\)"):
         cs.digest("captions", 1, EPISODES)
+
+
+@pytest.mark.parametrize("name", ["rafa", "pedro"])
+def test_a_character_on_plates_repeats_no_id_and_still_draws_what_was_approved(name):
+    """Rafa's social-battery face is the same plate at mouth rest and closed: one picture, one asset, two layers."""
+    document = specimens.SPECIMENS[name](registry.get("character", name)).scene.to_bytes()
+    ids = [node.get("id") for node in ET.fromstring(document).iter() if node.get("id")]
+    assert len(ids) == len(set(ids))
+    assert specimens.fingerprint(document) == parts.get(name).version(1).drawing
+
+
+def opacity_at(node: ET.Element, second: float) -> float:
+    """A node's opacity at ``second``: stepped when its track holds, and between its keys when it fades."""
+    value = float(node.get("opacity", "1"))
+    for track in node.findall("animate"):
+        if track.get("property") == "opacity":
+            keys = [(float(key.get("time", "0")), float(key.get("value", "1"))) for key in track.findall("key")]
+            stepped = track.get("defaultInterpolation") == "hold"
+            held = next((value for time, value in reversed(keys) if time <= second), keys[0][1])
+            value = held if stepped else float(np.interp(second, *zip(*keys, strict=True)))
+    return value
+
+
+def something_shows(node: ET.Element, second: float) -> bool:
+    """Whether a drawn node under ``node`` is on at ``second``: inside its span and not gated off."""
+    if node.tag in ("animate", "expression") or second < float(node.get("start", "0")):
+        return False
+    if ("end" in node.attrib and second >= float(node.attrib["end"])) or opacity_at(node, second) <= 0:
+        return False
+    return node.tag not in ("group", "composition") or any(something_shows(child, second) for child in node)
+
+
+def shown_at(document: bytes, second: float) -> bool:
+    composition = ET.fromstring(document).find("composition")
+    assert composition is not None
+    return something_shows(composition, second)
+
+
+def drawn_by_itself(name: str, tmp_path: Path, monkeypatch) -> cs.Plan:
+    """A part that needs no font and no project, as a build plans it."""
+    monkeypatch.setattr(cs, "font_of", lambda style, episodes: None)
+    entry = next(e for e in registry.entries() if e.name == name)
+    recipe = cs.recipe_of(entry)
+    built = cs.document(entry, recipe, None, tmp_path, tmp_path)
+    return cs.Plan(entry, built, recipe.at, cs.key(entry, cs.drawing_of(entry, built), recipe.at), False)
+
+
+@pytest.mark.parametrize("name", ["collage-eye-twitch", "location-chip", "map-far-side"])
+def test_a_part_that_is_on_for_a_moment_is_shown_in_that_moment_and_keeps_its_digest(name, tmp_path, monkeypatch):
+    """The engine draws nothing for these at the default second, which fails the whole build."""
+    plan_ = drawn_by_itself(name, tmp_path, monkeypatch)
+    assert shown_at(plan_.document, plan_.at)
+    assert specimens.fingerprint(plan_.document) == parts.get(name).version(1).drawing
+
+
+def test_the_reader_of_a_document_sees_a_gate_a_span_and_its_end():
+    document = b"""<scene><composition>
+      <group id="a"><animate property="opacity" defaultInterpolation="hold">
+        <key time="0" value="0"/><key time="1" value="1"/><key time="2" value="0"/></animate><shape id="s"/></group>
+      <group id="b" start="3" end="4"><shape id="t"/></group>
+    </composition></scene>"""
+    assert [shown_at(document, second) for second in (0.5, 1.5, 2.5, 3.5, 4.0)] == [False, True, False, True, False]
+
+
+@needs_projects
+def test_every_part_is_on_at_the_second_its_specimen_shows(planned):
+    """A dark moment is a failed build, and the engine is the only other thing that would say so."""
+    assert [p.entry.name for p in planned.values() if not shown_at(p.document, p.at)] == []
 
 
 def test_the_splash_is_shown_while_its_beads_are_in_the_air():
