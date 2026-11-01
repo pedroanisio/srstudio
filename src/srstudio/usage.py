@@ -32,7 +32,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from types import CodeType
 
-from . import parts, registry, releases, toon_head, toon_rigs
+from . import figure_record, parts, registry, releases, toon_head, toon_rigs
+from .canvas import Canvas
 from .errors import SrstudioError
 
 SCHEMA = "1.0.0"
@@ -139,14 +140,19 @@ def _performed(frame, parts: Sequence[tuple[str, dict[str, object]]]) -> str | N
 
 
 @contextmanager
-def trace() -> Iterator[set[str]]:
-    """The names of the registered parts called inside the block (the set fills as they run)."""
+def trace(figures: list[figure_record.Figure] | None = None) -> Iterator[set[str]]:
+    """The names of the registered parts called inside the block (the set fills as they run). With ``figures``, each
+    outermost call of a character also leaves the ids of what it drew there."""
     codes, used = _codes(), set()
     delegates = _delegates(registry.entries(), set(codes))
     rigged = {id(rig): name for name, rig in toon_rigs.RIGS.items()}
+    characters = {entry.name for entry in registry.entries() if entry.kind == "character"} | set(rigged.values())
+    uid = Canvas.uid.__code__
+    drawing: tuple[object, str, list[str]] | None = None  # the character's frame, its name and the ids so far
     previous = sys.getprofile()
 
     def hook(frame, event, arg):
+        nonlocal drawing
         if event == "call":
             parts = codes.get(frame.f_code)
             name = _called(frame, parts) if parts else None
@@ -156,6 +162,15 @@ def trace() -> Iterator[set[str]]:
                 name = _performed(frame, delegates[frame.f_code])
             if name is not None:
                 used.add(name)
+                if figures is not None and drawing is None and name in characters:
+                    drawing = (frame, name, [])
+        elif event == "return" and drawing is not None:
+            if frame.f_code is uid:
+                drawing[2].append(arg)
+            elif frame is drawing[0]:
+                if drawing[2]:
+                    figures.append(figure_record.Figure(drawing[1], tuple(drawing[2])))
+                drawing = None
 
     sys.setprofile(hook)
     try:
@@ -166,18 +181,25 @@ def trace() -> Iterator[set[str]]:
 
 @contextmanager
 def recorded(project: Path) -> Iterator[None]:
-    """Trace the build in the block and leave what it drew in ``project``, for the delivery gate
-    (:func:`srstudio.parts.write_record`). A build that fails leaves no record: an older one would no longer say what
-    the project holds."""
+    """Trace the build in the block and leave what it drew in ``project``, for the delivery gates
+    (:func:`srstudio.parts.write_record`, :func:`srstudio.figure_record.write`). A build that fails leaves no record:
+    an older one would no longer say what the project holds."""
     (Path(project) / parts.RECORD).unlink(missing_ok=True)
-    with trace() as used:
+    (Path(project) / figure_record.RECORD).unlink(missing_ok=True)
+    figures: list[figure_record.Figure] = []
+
+    def write(used: set[str]) -> None:
+        parts.write_record(project, parts.drawn(used))
+        figure_record.write(project, figures)
+
+    with trace(figures) as used:
         try:
             yield
         except SystemExit as stop:
             if stop.code in (None, 0):
-                parts.write_record(project, parts.drawn(used))
+                write(used)
             raise
-        parts.write_record(project, parts.drawn(used))
+        write(used)
 
 
 def _probe_here(script: Path, project: Path, args: Sequence[str], out: Path) -> None:

@@ -6,10 +6,11 @@ import json
 import shutil
 import sys
 import types
+import xml.etree.ElementTree as ET
 
 import pytest
 
-from srstudio import Episode, EpisodeSpec, blob, locations, parts, registry, specimens
+from srstudio import Episode, EpisodeSpec, blob, figure_record, locations, parts, registry, specimens
 from srstudio import usage as U
 from srstudio.releases import Release
 from srstudio.social import InstagramPost
@@ -468,3 +469,28 @@ def test_the_anchors_and_the_host_count_when_the_shared_performer_draws_them(pro
     with U.trace() as used:
         host_kit.perform(ep.cv, ep.comp, ep.comp, ((0.0, host_kit.Pose()),), 0.0, 2.0)
     assert "host-lint" in used
+
+
+def test_a_trace_names_the_ids_each_character_drew(project):
+    ep = episode(project)
+    figures: list[figure_record.Figure] = []
+    with U.trace(figures):
+        locations.reception(ep.cv, ep.comp)  # no character: its ids are nobody's
+        canvas = specimens.SPECIMENS["toon-goat"](registry.get("character", "toon-goat"))
+    assert [figure.part for figure in figures] == ["toon-goat"]
+    drawn = set(figures[0].ids)
+    assert len(drawn) == len(figures[0].ids)
+    assert drawn <= {node.get("id") for node in ET.fromstring(canvas.scene.to_bytes(layout="pretty")).iter()}
+
+
+def test_a_recorded_build_leaves_its_figures(project, tmp_path):
+    with U.recorded(tmp_path):
+        specimens.rig_digest("toon-fox", 2)
+    assert {figure.part for figure in figure_record.read(tmp_path)} == {"toon-fox@2"}
+
+
+def test_a_failed_build_leaves_no_older_record_of_its_figures(tmp_path):
+    figure_record.write(tmp_path, [figure_record.Figure("fox", ("k1",))])
+    with pytest.raises(RuntimeError), U.recorded(tmp_path):
+        raise RuntimeError("the build broke")
+    assert figure_record.read(tmp_path) is None
