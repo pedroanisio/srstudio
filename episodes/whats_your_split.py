@@ -59,8 +59,8 @@ POSES = {
                           ((470, 1400), (640, 1000)), ((430, 1540), (700, 760))),
     "ref": arms((540, 750), ((470, 880), (620, 1040)), ((420, 770), (640, 1190))),
 }  # fmt: skip
-TRAINER = stick.Look(hair="spiky", tie=None, cap="#e85d3f")
-MEMBER = stick.Look(hair="side-part", glasses=True)
+TRAINER = stick.Look(hair="spiky", tie=None, cap="#e85d3f", neck=True)
+MEMBER = stick.Look(hair="side-part", glasses=True, neck=True)
 MEMBER_AT = (-240.0, 0.0)
 TRAINER_AT = (60.0, 0.0)
 SPOT_AT, SPOTTER_AT = (-80.0, 0.0), (60.0, -6.0)
