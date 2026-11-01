@@ -86,11 +86,33 @@ def test_a_doorway_tilts_down_only_when_told():
     )
 
 
-@pytest.mark.parametrize("kw", [{"tilt": -1.0}, {"drop": 0.0}, {"drop": 900.0}, {"seconds": 0.0}])
+def test_a_doorway_can_tilt_back_up():
+    cv = canvas()
+    soft_home.doorway(cv, cv.comp, tilt=3.0, back=6.0, drop=500.0, seconds=0.5)
+    assert animated(tree(cv), "soft-restaurant-world", "y")[-2:] == [(6.0, -500.0), (6.5, 0.0)]
+
+
+@pytest.mark.parametrize(
+    "kw",
+    [
+        {"tilt": -1.0},
+        {"tilt": 1.0, "drop": 0.0},
+        {"tilt": 1.0, "drop": 900.0},
+        {"tilt": 1.0, "seconds": 0.0},
+        {"back": 2.0},
+        {"tilt": 3.0, "back": 3.2},
+    ],
+)
 def test_a_doorway_refuses_a_tilt_past_its_pavement(kw):
     cv = canvas()
     with pytest.raises(SoftHomeError):
         soft_home.doorway(cv, cv.comp, **kw)
+
+
+def test_flats_put_a_door_clear_of_each_sofa():
+    cv = canvas()
+    soft_home.flats(cv, cv.comp)
+    assert [g for g in tree(cv).iter("group") if g.get("id") == "soft-flats-room"]
 
 
 def test_a_television_talks_with_bars_and_counts_in_digits():

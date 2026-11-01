@@ -8340,6 +8340,30 @@
         "at": 20.0
       },
       "text": "Espuma nas paredes, nenhuma janela: de onde o recrutador liga."
+    },
+    {
+      "section": "locations",
+      "name": "Estrada que acaba no pasto",
+      "parts": [
+        "stick-rough-road"
+      ],
+      "shot": {
+        "episode": "in-two-hundred",
+        "at": 9.5
+      },
+      "text": "Da visão do motorista, o asfalto vira cascalho, o cascalho vira grama e a grama acaba numa cerca."
+    },
+    {
+      "section": "props",
+      "name": "Celular com o mapa",
+      "parts": [
+        "stick-nav-insert"
+      ],
+      "shot": {
+        "episode": "in-two-hundred",
+        "at": 15.0
+      },
+      "text": "O celular no suporte, em tela cheia: um mapa inventado e uma instrução grande o bastante para ler."
     }
   ]
 }

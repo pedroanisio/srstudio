@@ -170,7 +170,7 @@ def den(
     return g
 
 
-def _flat(cv: Canvas, g, x: float, room: Room, door_x: float, id: str) -> None:
+def _flat(cv: Canvas, g, x: float, room: Room, door_x: float, sofa_x: float, id: str) -> None:
     """One half of :func:`flats`: a wall, a floor, a door on the outer side and a sofa against the middle."""
     w = WIDTH / 2
     wall = cv.grad(f"{id}-wall", [(0.0, room.wall[0]), (1.0, room.wall[1])], (0, 0, 0, 1))
@@ -178,10 +178,10 @@ def _flat(cv: Canvas, g, x: float, room: Room, door_x: float, id: str) -> None:
     floor = cv.grad(f"{id}-floor", [(0.0, room.floor[0]), (1.0, room.floor[1])], (0, 0, 0, 1))
     cv.rect(g, x, 1440, w, 480 + OVER, floor)
     cv.rect(g, x, 1428, w, 16, "#FFFFFF", cv.ink, 3)
-    cv.rect(g, door_x, 760, 190, 672, "#FFFFFF", cv.ink, INK_LINE)
-    cv.rect(g, door_x + 16, 776, 158, 656, "#C98C5C", cv.ink, INK_LINE)
-    cv.ellipse(g, door_x + (136 if door_x < WIDTH / 2 else 30), 1110, 24, 24, "#E9C766", cv.ink, 3)
-    _sofa(cv, g, x + 90, 1040.0, 360.0, 384.0, room)
+    cv.rect(g, door_x, 760, 150, 672, "#FFFFFF", cv.ink, INK_LINE)
+    cv.rect(g, door_x + 14, 774, 122, 658, "#C98C5C", cv.ink, INK_LINE)
+    cv.ellipse(g, door_x + (104 if door_x < WIDTH / 2 else 22), 1110, 24, 24, "#E9C766", cv.ink, 3)
+    _sofa(cv, g, sofa_x, 1040.0, 340.0, 384.0, room)
 
 
 @register(
@@ -204,8 +204,8 @@ def flats(
     planter that holds the signature marks: ``Shot(t, 2, 270, 960)`` is the left home alone."""
     g = cv.group(parent, id)
     room = _framed(cv, g, f"{id}-room", shots)
-    _flat(cv, room, 0.0, left, 40.0, f"{id}-left")
-    _flat(cv, room, WIDTH / 2, right, 850.0, f"{id}-right")
+    _flat(cv, room, 0.0, left, 12.0, 176.0, f"{id}-left")
+    _flat(cv, room, WIDTH / 2, right, 918.0, 564.0, f"{id}-right")
     cv.rect(room, 534, -OVER, 12, HEIGHT + 2 * OVER, cv.ink)
     if cast is not None:
         cast(room)
@@ -228,21 +228,27 @@ def doorway(
     parent,
     *,
     tilt: float | None = None,
+    back: float | None = None,
     drop: float = 640.0,
     seconds: float = TILT,
     cast: Slot = None,
     id: str = "soft-restaurant",
 ):
-    """The door, and from ``tilt`` the camera tilts down ``drop`` px over ``seconds``. The world runs to y 2640, and the
-    marks stand in it on a planter by the door: a tilt carries them up the frame, where a standing cast's feet land."""
+    """The door, and from ``tilt`` the camera tilts down ``drop`` px over ``seconds``, and from ``back`` up again. The
+    world runs to y 2640, and the marks stand in it on a shelf above the cast: a tilt carries them off the top."""
     if tilt is not None and not (checks.number(tilt) and tilt >= 0):
         raise SoftHomeError(f"a tilt starts at a second >= 0, got {tilt!r}")
     if not (checks.number(drop) and 0 < drop <= 720 and checks.number(seconds) and seconds > 0):
         raise SoftHomeError(f"a tilt drops up to 720 px over positive seconds, got {drop!r}, {seconds!r}")
+    if back is not None and (tilt is None or not (checks.number(back) and back >= tilt + seconds)):
+        raise SoftHomeError(f"a tilt comes back after it has gone down, got tilt {tilt!r}, back {back!r}")
     g = cv.group(parent, id)
     world = cv.group(g, f"{id}-world")
     if tilt is not None:
-        cv.keys(world, "y", [(0.0, 0.0), (tilt, 0.0), (tilt + seconds, -drop)], False, kind="sine-in-out")
+        rows = [(0.0, 0.0), (tilt, 0.0), (tilt + seconds, -drop)]
+        if back is not None:
+            rows += [(back, -drop), (back + seconds, 0.0)]
+        cv.keys(world, "y", rows, False, kind="sine-in-out")
     dusk = cv.grad(f"{id}-dusk", [(0.0, "#39406E"), (0.6, "#8A5F86"), (1.0, "#E9A27A")], (0, 0, 0, 1))
     cv.rect(world, -OVER, -OVER, WIDTH + 2 * OVER, 1200 + OVER, dusk)
     far = look.depth(cv, world, f"{id}-far", FAR_BLUR)
@@ -263,10 +269,9 @@ def doorway(
         cv.line(world, -OVER, 1720 + k * 190, WIDTH + OVER, 1720 + k * 190, "#7A7D85", 5)
     if cast is not None:
         cast(world)
-    cv.rect(world, 870, 1600, 220, 170, "#B67B4E", cv.ink, INK_LINE, radius=14)
-    cv.rect(world, 852, 1584, 256, 34, "#C98C5C", cv.ink, INK_LINE, radius=12)
-    signature.cactus(cv, world, 974, 1592, 0.66)
-    signature.code(cv, world, 890, 1640, 15, color="#F3DFCF")
+    cv.rect(world, 736, 760, 200, 58, "#7B5236", cv.ink, INK_LINE, radius=8)  # a shelf above the cast's heads
+    signature.cactus(cv, world, 838, 764, 0.62)
+    signature.code(cv, world, 760, 772, 15, color="#F3DFCF")
     return g
 
 
