@@ -1055,6 +1055,7 @@ def _new_reel(posts, monkeypatch, tmp_path, repo, comedy=ON_THE_FLOOR, hashtags=
     monkeypatch.setattr(posts, "REPO", repo)
     monkeypatch.setattr(posts.releases, "unpinned", lambda *a, **kw: [])
     monkeypatch.setattr(posts.releases, "doubled_captions", lambda *a, **kw: [])
+    monkeypatch.setattr(posts.releases, "caption_on_cover", lambda *a, **kw: [])
     monkeypatch.setattr(posts, "publish", lambda *a, **kw: ["written"])
     return renders
 

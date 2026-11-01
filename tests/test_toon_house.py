@@ -123,6 +123,14 @@ def test_a_still_horse_never_blinks_and_a_timed_one_does():
     assert still.scene.to_bytes(layout="pretty") != timed.scene.to_bytes(layout="pretty")
 
 
+def test_a_horses_neck_is_shorter_only_when_asked():
+    default, named, short = canvas(), canvas(), canvas()
+    toon_house.horse(default, default.comp)
+    toon_house.horse(named, named.comp, neck=640.0)
+    toon_house.horse(short, short.comp, neck=430.0)
+    assert default.scene.to_bytes() == named.scene.to_bytes() != short.scene.to_bytes()
+
+
 def test_a_horse_blinks_where_it_is_told():
     told, default = canvas(), canvas()
     toon_house.horse(told, told.comp, end=8.0, blinks=[2.0])

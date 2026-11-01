@@ -255,11 +255,20 @@ def _wheel(cv: Canvas, parent) -> None:
 
 
 @register("prop", "stick-windshield-dash", tags=("car", "front", "dashboard", "steering-wheel", "phone", "buzz"))
-def dashboard(cv: Canvas, parent, end: float, *, buzz: Sequence[float] = (), down: float | None = None) -> None:
+def dashboard(
+    cv: Canvas,
+    parent,
+    end: float,
+    *,
+    buzz: Sequence[float] = (),
+    down: float | None = None,
+    code: tuple[float, float, float, str] = (70, 1840, 9, BODY_SHADE),
+) -> None:
     """What is between the camera and the couple of :func:`windshield`: the wheel in front of the driver, the
     dashboard across the cabin (its top at :data:`DASH_TOP`), the phone in its mount between the seats, buzzing at
     each time in ``buzz`` and put face down on the dashboard at ``down`` (seconds on the shot clock), the glare on
-    the glass, the wipers, the pillars, the roof's edge and the hood."""
+    the glass, the wipers, the pillars, the roof's edge and the hood. ``code`` is the signature code's x, y, height and
+    colour, on the hood; a reel whose captions darken its foot lifts it clear (ADR 0001)."""
     _check_end(end, "dashboard")
     _check_phone(end, buzz, down)
     s = cv
@@ -292,4 +301,5 @@ def dashboard(cv: Canvas, parent, end: float, *, buzz: Sequence[float] = (), dow
           "L 74 584 Z", BODY, 5)  # fmt: skip
     shape(s, parent, "M 120 500 Q 540 486 960 500", sw=4, stroke=BODY_LIGHT)
     shape(s, parent, GLASS, s.clear, 7, stroke=s.ink)
-    signature.code(s, parent, 70, 1840, 9, color=BODY_SHADE)  # on the hood
+    x, y, height, colour = code
+    signature.code(s, parent, x, y, height, color=colour)  # on the hood

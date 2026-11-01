@@ -36,9 +36,13 @@ def points(shapes):
 # -- the style and the cast -------------------------------------------------------------------------------------------
 def test_the_style_is_registered_with_its_parts_and_font():
     assert STYLES["collage"] is COLLAGE
-    assert COLLAGE.parts == ("collage", "collage_everyday", "collage_photo", "collage_sets") and COLLAGE.palettes == (
-        collage.PAPER,
-    )
+    assert COLLAGE.parts == (
+        "collage",
+        "collage_everyday",
+        "collage_photo",
+        "collage_sets",
+        "collage_things",
+    ) and COLLAGE.palettes == (collage.PAPER,)
     assert (COLLAGE.width, COLLAGE.height, COLLAGE.fps) == (1080, 1920, 24)
     assert COLLAGE.font.google.family == "Luckiest Guy" and COLLAGE.font.id == "luckiest-guy"
     assert COLLAGE.font.src == f"assets/fonts/{COLLAGE.font.google.slug}.ttf"
@@ -307,6 +311,21 @@ def test_a_caption_wraps_into_at_most_two_lines_that_fit_the_frame():
         collage.caption_lines(measure, long * 3, 1080)
     with pytest.raises(collage.CollageError, match="word"):
         collage.caption_lines(measure, "x" * 40, 1080)
+
+
+def test_a_caption_breaks_at_a_sentence_end_only_when_asked():
+    text = "Hi, it's Bella Roma. Love you too. Inside or outside?"
+
+    def narrow(row: str) -> float:
+        return 24.0 * len(row)
+
+    assert collage.caption_lines(narrow, text, 1080, sentences=True)[0] == "Hi, it's Bella Roma."
+    assert collage.caption_lines(narrow, text, 1080)[0] == "Hi, it's Bella Roma. Love"
+
+
+def test_a_sentence_break_that_does_not_fit_keeps_the_ordinary_wrap():
+    text = "We are rebranding the bank as a singing toilet"
+    assert collage.caption_lines(measure, text, 1080, sentences=True) == collage.caption_lines(measure, text, 1080)
 
 
 def test_captions_draw_a_tinted_pill_per_cue_above_the_figure():

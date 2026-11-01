@@ -84,3 +84,14 @@ def test_bad_timings_are_refused():
         stick_flat.murphy_bed(canvas(), None, 3.0, drop_at=3.0)
     with pytest.raises(StickDataError, match="drop"):
         stick_flat.murphy_bed(canvas(), None, 3.0, drop_at=-0.1)
+
+
+def test_a_reel_that_never_frames_the_counter_can_place_the_marks_itself():
+    with_marks, without = canvas(), canvas()
+    stick_flat.studio(with_marks, with_marks.comp)
+    stick_flat.studio(without, without.comp, marks=False)
+    marks = [
+        [g.get("id") for g in xml(cv).iter("group") if (g.get("id") or "").startswith("sig-")]
+        for cv in (with_marks, without)
+    ]
+    assert len(marks[0]) == 2 and marks[1] == []

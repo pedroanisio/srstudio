@@ -49,6 +49,7 @@ PUBLISHED = (
 )
 OFF_SCREEN = {"the_boat": "phone"}  # a voice from a device, never on a set: outside the cast and its voices
 HOOK_SECONDS = 2.0  # funny-reels rubric #1, Hook: the premise reads in the first 1-2 s
+STILL_ARM = 0.45  # the shortest held first frame of the sp-hook_motion test's arm a
 RELEASES = releases.load(EPISODES / "posts")
 
 
@@ -97,13 +98,18 @@ def test_each_sketch_opens_on_its_hook(mods, name):
         return
     # rubric #1: the hook is an opening chosen for the premise, tagged for analytics, with the first line landed by
     # HOOK_SECONDS. Openings move (the sp-hook_motion test decided for motion): on that first line, or on a silent
-    # moving beat cut to it; a still shot is the still arm's, and only its
+    # moving beat cut to it; a still shot is the still arm's, and only its. A reel recorded with a silent lead-in opens
+    # on a push (L7): its takes stand.
     tags = RELEASES[sk.slug].tags
     assert tags is not None, f"{sk.slug}: a new release carries its Tags"
     still = tags.test == "sp-hook_motion" and tags.arm == "a"
-    assert (data[name].STAGING.still >= 1.0) == still, f"{sk.slug}: a still opening is the still arm's, and only its"
+    assert (data[name].STAGING.still >= STILL_ARM) == still, (
+        f"{sk.slug}: a still opening is the still arm's, and only its"
+    )
     first, second = sk.beats[0], sk.beats[1]
-    assert first.start == 0.0 and (first.line is None if still else first.line in (None, 0))
+    pushed = data[name].STAGING.push[1] > 1.0
+    assert not (still and pushed), f"{sk.slug}: a still opening does not push"
+    assert first.start == 0.0 and (first.line is None if still or pushed else first.line in (None, 0))
     assert second.start <= HOOK_SECONDS, f"{sk.slug}: the opening beat runs {second.start} s"
     if first.line is None:
         assert second.line == 0, f"{sk.slug}: a silent opening cuts to the first line"

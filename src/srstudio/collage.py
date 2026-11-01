@@ -72,7 +72,7 @@ __all__ = [
 INK = PAPER.ink
 EYES = ("open", "side", "up", "half", "closed", "wide", "angry", "sad")
 MOUTHS = ("flat", "smile", "frown", "o", "grin", "smug")
-ARMS = ("down", "point", "shrug", "hold", "face", "fist")
+ARMS = ("down", "point", "shrug", "hold", "face", "fist", "free", "free-right")
 HAIRS = ("bald", "balding", "short", "long", "bun", "ponytail", "beanie", "curly")
 BUILDS = ("slim", "broad", "round", "kid")
 ACCENTS = ("tie", "glasses", "cane", "headset", "moustache", "pearls", "hoodie", "blazer")
@@ -745,6 +745,10 @@ def _arms(look: Look, arms: str) -> tuple[list[Shape], list[Shape]]:
         elbow = (CX + hw + 10, sy + 230)
         over += _sleeve(look, "ru", rs, elbow) + _sleeve(look, "rf", elbow, (ex + 40, ey + 110), 66)
         over += _hand(look, "rh", ex - 4, ey + 6, r=74, side=-1)
+    elif arms == "free":
+        under += down(1, rs, low_r, "r")  # the screen-left arm is the scene's to draw, with what it holds
+    elif arms == "free-right":
+        under += down(-1, ls, low_l, "l")  # the same, for a figure whose scene is on its screen-right
     elif arms == "fist":
         under += down(-1, ls, low_l, "l")
         elbow, hand = (CX + hw + 50, sy + 120), (CX + hw + 30, HEAD_Y - 140)
@@ -1231,9 +1235,10 @@ DRAWERS: dict[str, Drawer] = {name: _drawer(look) for name, look in LOOKS.items(
 
 
 # -- captions ---------------------------------------------------------------------------------------------------------
-def caption_lines(measure: Callable[[str], float], text: str, width: float) -> list[str]:
+def caption_lines(measure: Callable[[str], float], text: str, width: float, *, sentences: bool = False) -> list[str]:
     """``text`` as one caption line, or as the two most even lines, every one fitting a pill inside the frame's
-    margins; :class:`CollageError` when a word alone is too wide or two lines are not enough."""
+    margins; :class:`CollageError` when a word alone is too wide or two lines are not enough. With ``sentences`` the
+    break falls at a sentence end whenever one fits, so a row never starts a sentence it cannot finish."""
     room = width - 2 * CAPTION_MARGIN - CAPTION_PAD
     words = text.split()
     too_wide = [w for w in words if measure(w) > room]
@@ -1249,18 +1254,25 @@ def caption_lines(measure: Callable[[str], float], text: str, width: float) -> l
             splits.append((widest, first, second))
     if not splits:
         raise CollageError(f"caption {text!r} does not fit in two lines: split the beat")
-    _, first, second = min(splits, key=lambda split: split[0])
+    ends = [split for split in splits if split[1].endswith((".", "?", "!"))] if sentences else []
+    _, first, second = min(ends or splits, key=lambda split: split[0])
     return [first, second]
 
 
 def captions(
-    cv: Canvas, parent, lines: Sequence[Line], measure: Callable[[str], float], tints: Mapping[str, str] | None = None
+    cv: Canvas,
+    parent,
+    lines: Sequence[Line],
+    measure: Callable[[str], float],
+    tints: Mapping[str, str] | None = None,
+    *,
+    sentences: bool = False,
 ) -> None:
     """One pill per cue, centred under :data:`CAPTION_TOP`, one or two lines (:func:`caption_lines`), sized by
     ``measure(text)`` (the advance width at :data:`CAPTION_SIZE`), tinted by speaker (paper white otherwise)."""
     cv.require_font("the Collage style letters its captions in its font", CollageError)
     for line in lines:
-        rows = caption_lines(measure, line.text, cv.width)
+        rows = caption_lines(measure, line.text, cv.width, sentences=sentences)
         g = cv.group(parent, cv.uid("g"), start=line.start, end=line.end)
         cv.apply(g, cv.effect("collage-caption-shadow", "drop-shadow", **CAPTION_SHADOW))
         width = round(max(measure(r) for r in rows) + CAPTION_PAD, 2)

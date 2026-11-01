@@ -174,6 +174,25 @@ def still_staging(beats=STILL_BEATS, still=1.0, **kw) -> Staging:
     return Staging(sk, 7, "d", "a", "n", collage_sketch.TINTS, sets, still=still, **kw)
 
 
+def test_a_push_runs_from_the_first_frame_across_the_cuts_inside_it(pinned_fonts, tmp_path):
+    ep = built(tmp_path, still_staging(STILL_BEATS, 0.0, push=(2.0, 1.05)), pinned_fonts)
+    xml = ep.scene.to_bytes(layout="pretty")
+    assert xml.count(b'property="scaleX"') >= 2
+
+
+@pytest.mark.parametrize(("push", "match"), [((-1.0, 1.1), "seconds"), ((1.0, 0.9), "scale")])
+def test_a_push_refuses_what_is_no_push(push, match):
+    with pytest.raises(collage_sketch.StagingError, match=match):
+        collage_sketch.check_push(push, STILL_BEATS, "x")
+
+
+def test_a_push_keeps_clear_of_a_zoom():
+    beats = (sketch.Beat(0.0, "gary", "", "h", "f", "d"), sketch.Beat(1.0, "gary", "", "h", "f", "d", event="zoom"))
+    with pytest.raises(collage_sketch.StagingError, match="inside the push"):
+        collage_sketch.check_push((2.0, 1.1), beats, "x")
+    collage_sketch.check_push((1.0, 1.1), beats, "x")
+
+
 def test_a_still_opening_is_checked():
     check_staging(still_staging())
     check_staging(still_staging(still=0.0))  # no still opening: any first beat
@@ -231,3 +250,15 @@ def test_a_thud_beat_plays_a_thud(tmp_path):
         sketch.Beat(1.0, "gary", "", "open", "flat", "down", event="thud"),
     ]
     assert [e["id"] for e in sound_effects(beats, 3.0, tmp_path, 7)] == ["thud"]
+
+
+def test_a_staging_may_set_its_keyframes_and_the_published_ones_do_not(pinned_fonts, tmp_path):
+    def output(ep) -> dict:
+        return dict(next(ET.fromstring(ep.scene.to_bytes(layout="pretty")).iter("output")).attrib)
+
+    assert "keyframeInterval" not in output(built(tmp_path / "default", still_staging(), pinned_fonts))
+    set_ = output(built(tmp_path / "set", still_staging(keyframes=52 / 24), pinned_fonts))
+    assert set_["keyframeInterval"] == "2.1667"
+    for bad in (-1, "2", float("nan")):
+        with pytest.raises(collage_sketch.StagingError, match="keyframes"):
+            check_staging(still_staging(keyframes=bad))

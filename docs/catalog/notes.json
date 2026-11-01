@@ -1251,7 +1251,59 @@
     "toon-toothpaste-cone": {"title": "Casquinha de pasta de dente"},
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
-    "toon-parlour-back": {"title": "Sorveteria, vista do cliente"}
+    "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "soft-quilt-pull": {"title": "Edredom puxado"},
+    "soft-handshake": {"title": "Aperto de mão"},
+    "soft-open-briefcase": {"title": "Maleta aberta"},
+    "soft-bedside-lamp": {"title": "Abajur"},
+    "soft-picture-book": {"title": "Livro infantil"},
+    "soft-wall-clock": {"title": "Relógio de parede, Soft"},
+    "robe-and-blazer": {"title": "Blazer sobre roupão"},
+    "banknotes": {"title": "Duas notas"},
+    "cue-cards": {"title": "Cartões de deixa"},
+    "stick-blinker": {"title": "Seta do carro"},
+    "stick-swim-ring": {"title": "Boia inflável"},
+    "stick-rear-view": {"title": "Retrovisor"},
+    "cafe-door": {"title": "Porta do café"},
+    "coat-over": {"title": "Casaco vestido em cena"},
+    "big-thumb": {"title": "Polegar gigante"},
+    "phone-post": {"title": "Post antigo no celular"},
+    "collage-eye-twitch": {"title": "Tique no olho"},
+    "collage-ring-corner": {"title": "Canto do ringue"},
+    "collage-towel": {"title": "Toalha listrada"},
+    "collage-stool": {"title": "Banquinho"},
+    "collage-till": {"title": "Caixa registradora"},
+    "collage-counter": {"title": "Balcão"},
+    "collage-wallet": {"title": "Carteira aberta"},
+    "collage-receipt": {"title": "Nota da conta"},
+    "collage-bank-card": {"title": "Cartão de banco"},
+    "collage-wine-glass": {"title": "Taça de vinho"},
+    "collage-tiny-cup": {"title": "Xicrinha"},
+    "collage-gravy-boat": {"title": "Molheira com garfos"},
+    "collage-fork": {"title": "Garfo"},
+    "collage-resume": {"title": "Currículo"},
+    "collage-desk-phone": {"title": "Telefone de mesa"},
+    "collage-handset": {"title": "Fone de mesa"},
+    "stick-lights-low": {"title": "Luz baixa"},
+    "stick-recorder": {"title": "Celular gravando"},
+    "stick-eye-mask": {"title": "Máscara de dormir"},
+    "stick-duvet": {"title": "Edredom com monte"},
+    "cv-folder": {"title": "Pasta do currículo"},
+    "toon-plate-of-toast": {"title": "Prato de torradas"},
+    "toon-swing-door": {"title": "Porta vaivém"},
+    "toon-soup-tubs": {"title": "Potes de sopa"},
+    "toon-shampoo": {"title": "Frasco de xampu"},
+    "toon-scribble": {"title": "Rabisco no lugar da legenda"},
+    "toon-rack": {"title": "Cesto da lava-louças"},
+    "toon-profile-list": {"title": "Lista de perfis do streaming"},
+    "toon-mower": {"title": "Cortador de grama"},
+    "toon-monitor-receiver": {"title": "Receptor da babá"},
+    "toon-lasagna": {"title": "Lasanha"},
+    "toon-dishwasher": {"title": "Lava-louças"},
+    "toon-device-list": {"title": "Lista de aparelhos"},
+    "toon-cupcakes": {"title": "Bandeja de cupcakes"},
+    "toon-blower": {"title": "Soprador de folhas"},
+    "toon-baby-monitor": {"title": "Babá eletrônica"}
   },
   "gallery": [
     {
@@ -8044,6 +8096,520 @@
     {"section": "props", "name": "Chuva", "parts": ["toon-rain"], "shot": {"episode": "left-at-door", "at": 2.0}, "text": "Chuva em laço, atrás do que estiver na frente dela."},
     {"section": "props", "name": "Anão de jardim", "parts": ["toon-gnome"], "shot": {"episode": "left-at-door", "at": 2.0}, "text": "O anão de jardim da foto da entrega."},
     {"section": "props", "name": "Caixa de macarrão", "parts": ["toon-noodle-box"], "shot": {"episode": "left-at-door", "at": 8.0}, "text": "A caixa de macarrão, cheia ou pela metade."},
-    {"section": "locations", "name": "Sala de reunião", "parts": ["collage-meeting-room"], "shot": {"episode": "its-gone", "at": 2.0}, "text": "Uma janela para a cidade ao entardecer e uma parede sólida com a prateleira da assinatura."}
+    {"section": "locations", "name": "Sala de reunião", "parts": ["collage-meeting-room"], "shot": {"episode": "its-gone", "at": 2.0}, "text": "Uma janela para a cidade ao entardecer e uma parede sólida com a prateleira da assinatura."},
+    {
+      "section": "props",
+      "name": "Lava-louças aberta",
+      "parts": [
+        "toon-dishwasher"
+      ],
+      "shot": {
+        "episode": "loaded-right",
+        "at": 5.0
+      },
+      "text": "Uma lava-louças aberta que ganha um prato a cada carga."
+    },
+    {
+      "section": "props",
+      "name": "Cesto de canecas",
+      "parts": [
+        "toon-rack"
+      ],
+      "shot": {
+        "episode": "loaded-right",
+        "at": 11.0
+      },
+      "text": "O cesto de cima de perto: fileiras de canecas, todas na mesma inclinação."
+    },
+    {
+      "section": "props",
+      "name": "Potes de sopa",
+      "parts": [
+        "toon-soup-tubs"
+      ],
+      "shot": {
+        "episode": "long-goodbye",
+        "at": 15.3
+      },
+      "text": "Uma pilha de potes de sopa que cresce a cada parada."
+    },
+    {
+      "section": "props",
+      "name": "Cortador de grama",
+      "parts": [
+        "toon-mower"
+      ],
+      "shot": {
+        "episode": "sorry-what",
+        "at": 3.0
+      },
+      "text": "Um cortador de grama que treme enquanto funciona."
+    },
+    {
+      "section": "props",
+      "name": "Soprador de folhas",
+      "parts": [
+        "toon-blower"
+      ],
+      "shot": {
+        "episode": "sorry-what",
+        "at": 22.5
+      },
+      "text": "Um soprador de folhas que treme enquanto funciona."
+    },
+    {
+      "section": "graphics",
+      "name": "Rabisco no lugar da legenda",
+      "parts": [
+        "toon-scribble"
+      ],
+      "shot": {
+        "episode": "sorry-what",
+        "at": 6.5
+      },
+      "text": "Onde estaria a legenda, um rabisco: palavras que ninguém entendeu."
+    },
+    {
+      "section": "props",
+      "name": "Babá eletrônica",
+      "parts": [
+        "toon-baby-monitor",
+        "toon-swing-door"
+      ],
+      "shot": {
+        "episode": "baby-monitor",
+        "at": 3.0
+      },
+      "text": "A babá eletrônica na prateleira, e a porta vaivém entre a cozinha e a sala."
+    },
+    {
+      "section": "props",
+      "name": "Receptor da babá",
+      "parts": [
+        "toon-monitor-receiver"
+      ],
+      "shot": {
+        "episode": "baby-monitor",
+        "at": 23.0
+      },
+      "text": "A metade dos pais: cinco barras verdes que pulam."
+    },
+    {
+      "section": "props",
+      "name": "Lasanha",
+      "parts": [
+        "toon-lasagna"
+      ],
+      "shot": {
+        "episode": "baby-monitor",
+        "at": 24.6
+      },
+      "text": "Uma lasanha numa travessa com alças, servida na mesa."
+    },
+    {
+      "section": "props",
+      "name": "Prato de torradas",
+      "parts": [
+        "toon-plate-of-toast"
+      ],
+      "shot": {
+        "episode": "call-your-mother",
+        "at": 16.0
+      },
+      "text": "Duas torradas num prato."
+    },
+    {
+      "section": "graphics",
+      "name": "Lista de perfis do streaming",
+      "parts": [
+        "toon-profile-list"
+      ],
+      "shot": {
+        "episode": "the-profiles",
+        "at": 0.2
+      },
+      "text": "A tela de quem está no sofá: uma lista de um a seis nomes com avatares redondos."
+    },
+    {
+      "section": "graphics",
+      "name": "Lista de aparelhos",
+      "parts": [
+        "toon-device-list"
+      ],
+      "shot": {
+        "episode": "the-profiles",
+        "at": 14.0
+      },
+      "text": "A lista de aparelhos conectados, em tela cheia."
+    },
+    {
+      "section": "props",
+      "name": "Frasco de xampu",
+      "parts": [
+        "toon-shampoo"
+      ],
+      "shot": {
+        "episode": "shower-argument",
+        "at": 17.0
+      },
+      "text": "Um frasco de xampu que solta uma bolha."
+    },
+    {
+      "section": "props",
+      "name": "Bandeja de cupcakes",
+      "parts": [
+        "toon-cupcakes"
+      ],
+      "shot": {
+        "episode": "pajama-day",
+        "at": 24.5
+      },
+      "text": "Uma bandeja de cupcakes com bandeirinhas, em fileiras."
+    },
+    {
+      "section": "props",
+      "name": "Pasta do currículo",
+      "parts": [
+        "cv-folder"
+      ],
+      "shot": {
+        "episode": "any-questions",
+        "at": 14.6
+      },
+      "text": "A pasta de quem se candidata: fechada na mesa, aberta quando alguém resolve ler."
+    },
+    {
+      "section": "props",
+      "name": "Edredom com monte",
+      "parts": [
+        "stick-duvet"
+      ],
+      "shot": {
+        "episode": "third-snore",
+        "at": 11.5
+      },
+      "text": "Um edredom sobre a cama, com um monte no meio que respira e pode afundar."
+    },
+    {
+      "section": "props",
+      "name": "Máscara de dormir",
+      "parts": [
+        "stick-eye-mask"
+      ],
+      "shot": {
+        "episode": "third-snore",
+        "at": 21.3
+      },
+      "text": "Uma máscara de dormir sobre a cabeça, com os olhos bordados fechados."
+    },
+    {
+      "section": "props",
+      "name": "Celular gravando",
+      "parts": [
+        "stick-recorder"
+      ],
+      "shot": {
+        "episode": "third-snore",
+        "at": 11.5
+      },
+      "text": "Um celular deitado, com um traço na tela para cada som que gravou."
+    },
+    {
+      "section": "props",
+      "name": "Luz baixa",
+      "parts": [
+        "stick-lights-low"
+      ],
+      "shot": {
+        "episode": "third-snore",
+        "at": 21.3
+      },
+      "text": "Qualquer cenário baixado para a noite, com uma poça de luz em volta de um ponto."
+    },
+    {
+      "section": "props",
+      "name": "Telefone e fone",
+      "parts": [
+        "collage-desk-phone",
+        "collage-handset"
+      ],
+      "shot": {
+        "episode": "fluent",
+        "at": 16.9
+      },
+      "text": "Um telefone de mesa com visor e um fone de fio espiral, no gancho ou fora dele."
+    },
+    {
+      "section": "props",
+      "name": "Currículo de verso em branco",
+      "parts": [
+        "collage-resume"
+      ],
+      "shot": {
+        "episode": "fluent",
+        "at": 8.2
+      },
+      "text": "Um currículo que vira e mostra o verso em branco."
+    },
+    {
+      "section": "props",
+      "name": "Tique no olho",
+      "parts": [
+        "collage-eye-twitch"
+      ],
+      "shot": {
+        "episode": "fluent",
+        "at": 5.45
+      },
+      "text": "Uma pálpebra que pisca sozinha por cima de um sorriso parado."
+    },
+    {
+      "section": "props",
+      "name": "Molheira de imprensa",
+      "parts": [
+        "collage-gravy-boat",
+        "collage-fork"
+      ],
+      "shot": {
+        "episode": "any-news",
+        "at": 2.2
+      },
+      "text": "Uma molheira com garfos presos com fita, apontada como microfone de coletiva."
+    },
+    {
+      "section": "props",
+      "name": "Taça de vinho",
+      "parts": [
+        "collage-wine-glass"
+      ],
+      "shot": {
+        "episode": "any-news",
+        "at": 2.8
+      },
+      "text": "Uma taça de vinho para quem não vai responder."
+    },
+    {
+      "section": "props",
+      "name": "Conta rasgada e xicrinha",
+      "parts": [
+        "collage-receipt",
+        "collage-tiny-cup"
+      ],
+      "shot": {
+        "episode": "ill-get-this",
+        "at": 1.6
+      },
+      "text": "A nota do restaurante, inteira ou rasgada, e uma xicrinha de café."
+    },
+    {
+      "section": "props",
+      "name": "Cartão e carteira",
+      "parts": [
+        "collage-bank-card",
+        "collage-wallet"
+      ],
+      "shot": {
+        "episode": "ill-get-this",
+        "at": 23.2
+      },
+      "text": "Um cartão com o nome do dono e a carteira aberta, com um espaço vazio."
+    },
+    {
+      "section": "props",
+      "name": "Balcão e caixa",
+      "parts": [
+        "collage-counter",
+        "collage-till"
+      ],
+      "shot": {
+        "episode": "ill-get-this",
+        "at": 13.7
+      },
+      "text": "O balcão de uma loja e a caixa registradora com o visor aceso."
+    },
+    {
+      "section": "props",
+      "name": "Corner de boxe",
+      "parts": [
+        "collage-ring-corner",
+        "collage-stool",
+        "collage-towel"
+      ],
+      "shot": {
+        "episode": "book-a-table",
+        "at": 0.2
+      },
+      "text": "O canto do ringue com cordas, banquinho e uma toalha listrada."
+    },
+    {
+      "section": "props",
+      "name": "Post antigo no celular",
+      "parts": [
+        "phone-post",
+        "big-thumb"
+      ],
+      "shot": {
+        "episode": "dont-move",
+        "at": 12.0
+      },
+      "text": "Um post de 2016 em tela cheia: a travessa, o coração vazio e o polegar quase em cima dele."
+    },
+    {
+      "section": "props",
+      "name": "Casaco e porta do café",
+      "parts": [
+        "coat-over",
+        "cafe-door"
+      ],
+      "shot": {
+        "episode": "dont-move",
+        "at": 24.4
+      },
+      "text": "O casaco que veste um lado de cada vez, e a porta com a placa lida por dentro."
+    },
+    {
+      "section": "props",
+      "name": "Retrovisor",
+      "parts": [
+        "stick-rear-view"
+      ],
+      "shot": {
+        "episode": "turn-this-car",
+        "at": 1.0
+      },
+      "text": "O quadro inteiro é um retrovisor: só os olhos de quem dirige cabem no vidro."
+    },
+    {
+      "section": "props",
+      "name": "Boia inflável",
+      "parts": [
+        "stick-swim-ring"
+      ],
+      "shot": {
+        "episode": "turn-this-car",
+        "at": 7.5
+      },
+      "text": "Uma boia branca e colorida, amassada contra o vidro do carro."
+    },
+    {
+      "section": "props",
+      "name": "Seta do carro",
+      "parts": [
+        "stick-blinker"
+      ],
+      "shot": {
+        "episode": "turn-this-car",
+        "at": 4.5
+      },
+      "text": "A seta âmbar do painel, que acende a cada clique."
+    },
+    {
+      "section": "props",
+      "name": "Cartões de deixa",
+      "parts": [
+        "cue-cards"
+      ],
+      "shot": {
+        "episode": "the-reference",
+        "at": 7.1
+      },
+      "text": "Uma pilha de cartões com a fala que ele quer ouvir."
+    },
+    {
+      "section": "props",
+      "name": "Duas notas",
+      "parts": [
+        "banknotes"
+      ],
+      "shot": {
+        "episode": "the-reference",
+        "at": 12.0
+      },
+      "text": "Duas notas em leque, com o valor escrito."
+    },
+    {
+      "section": "props",
+      "name": "Blazer sobre roupão",
+      "parts": [
+        "robe-and-blazer"
+      ],
+      "shot": {
+        "episode": "the-reference",
+        "at": 2.0
+      },
+      "text": "O blazer por cima do roupão: a roupa de quem atende em casa."
+    },
+    {
+      "section": "props",
+      "name": "Relógio de parede, Soft",
+      "parts": [
+        "soft-wall-clock"
+      ],
+      "shot": {
+        "episode": "one-more-page",
+        "at": 6.8
+      },
+      "text": "O relógio redondo que o Bo olha antes de ceder."
+    },
+    {
+      "section": "props",
+      "name": "Livro infantil",
+      "parts": [
+        "soft-picture-book"
+      ],
+      "shot": {
+        "episode": "one-more-page",
+        "at": 13.0
+      },
+      "text": "O livro que escorrega do peito do Bo quando ele dorme."
+    },
+    {
+      "section": "props",
+      "name": "Abajur",
+      "parts": [
+        "soft-bedside-lamp"
+      ],
+      "shot": {
+        "episode": "one-more-page",
+        "at": 2.0
+      },
+      "text": "O abajur na mesa de cabeceira, aceso até o clique."
+    },
+    {
+      "section": "props",
+      "name": "Maleta aberta",
+      "parts": [
+        "soft-open-briefcase"
+      ],
+      "shot": {
+        "episode": "one-more-page",
+        "at": 1.0
+      },
+      "text": "A maleta aberta no edredom, com o contrato dentro."
+    },
+    {
+      "section": "props",
+      "name": "Aperto de mão",
+      "parts": [
+        "soft-handshake"
+      ],
+      "shot": {
+        "episode": "one-more-page",
+        "at": 11.0
+      },
+      "text": "O acordo em close: a mão pequena e a mão grande."
+    },
+    {
+      "section": "props",
+      "name": "Edredom puxado",
+      "parts": [
+        "soft-quilt-pull"
+      ],
+      "shot": {
+        "episode": "one-more-page",
+        "at": 19.9
+      },
+      "text": "O edredom sobe até o queixo de quem dormiu."
+    }
   ]
 }

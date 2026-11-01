@@ -101,3 +101,29 @@ def test_a_take_with_no_sentence_end_splits_as_it_did():
 def test_sentences_need_balance():
     with pytest.raises(StickDataError, match="sentences"):
         stick.word_cues([TWO_SENTENCES], sentences=True)
+
+
+def test_a_balanced_split_can_refuse_to_end_a_sentence_on_a_lone_word():
+    spoken = "I was up at three with him".split()
+    late = take(0.0, 3.0, [(w, 0.2 * i, 0.2 * i + 0.1) for i, w in enumerate(spoken[:-1])] + [("him", 1.25, 1.4)])
+    kept = stick.word_cues([late], min_seconds=0.85, linger=0.9, width=chars, max_width=880, balance=True)
+    assert [c.text for c in kept] == ["I was up at three with", "him"]
+    joined = stick.word_cues(
+        [late], min_seconds=0.85, linger=0.9, width=chars, max_width=880, balance=True, alone=False
+    )
+    assert [c.text for c in joined] == ["I was up at three", "with him"]
+
+
+def test_sentences_and_a_refused_lone_word_hold_together():
+    spoken = [("Bro.", 0.0, 0.2), ("I", 0.3, 0.4), ("was", 0.4, 0.5), ("up", 0.5, 0.6), ("late", 1.2, 1.4)]
+    cues = stick.word_cues(
+        [take(0.0, 2.0, spoken)],
+        min_seconds=0.5,
+        linger=0.3,
+        width=chars,
+        max_width=880,
+        balance=True,
+        alone=False,
+        sentences=True,
+    )
+    assert [c.text for c in cues] == ["Bro", "I was up late"]

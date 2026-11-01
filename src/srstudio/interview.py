@@ -107,6 +107,34 @@ class Schedule:
     effects: Mapping[str, float]
 
 
+def beats(speech: Sequence[float], start: float, gaps: Sequence[float]) -> Schedule:
+    """Lines one after another: the first at ``start``, each next one ``gaps[i]`` seconds after line ``i`` ends. A
+    reel's schedule is then its pauses, read in a column, and a slow take moves everything after it."""
+    if len(gaps) != len(speech) - 1:
+        raise InterviewError(f"{len(speech)} lines have {len(speech) - 1} gaps between them, got {len(gaps)}")
+    if not checks.number(start) or start < 0 or any(not checks.number(g) or g < 0 for g in gaps):
+        raise InterviewError(f"a start and its gaps are non-negative seconds, got {start!r} and {list(gaps)!r}")
+    cursor, starts = start, []
+    for i, length in enumerate(speech):
+        starts.append(cursor)
+        cursor += length + (gaps[i] if i < len(gaps) else 0.0)
+    return Schedule(starts, {})
+
+
+def chain(start: float, **gaps: float) -> dict[str, float]:
+    """Named beats one after another: the first ``gaps`` seconds after ``start``, each next one its gap after the last.
+    A wordless stretch of a reel then reads as a column, and moving one beat moves everything after it."""
+    if not checks.number(start) or start < 0 or not gaps:
+        raise InterviewError(f"a chain starts at a time and has beats, got {start!r} and {list(gaps)!r}")
+    cursor, beats_at = start, {}
+    for name, gap in gaps.items():
+        if not checks.number(gap) or gap < 0:
+            raise InterviewError(f"beat {name!r} comes a non-negative number of seconds later, got {gap!r}")
+        cursor += gap
+        beats_at[name] = cursor
+    return beats_at
+
+
 @dataclass(frozen=True)
 class Timing:
     """The placed phrases and effect starts with the beats that follow from them, for the episode's own fields."""
