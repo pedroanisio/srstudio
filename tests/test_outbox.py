@@ -509,6 +509,7 @@ def command(monkeypatch, items, frozen=None, ab=None):
     monkeypatch.setattr(publish_drive.posts, "font_file", lambda folder: FONT)
     monkeypatch.setattr(publish_drive.posts, "FROZEN", dict(frozen or {}))
     monkeypatch.setattr(publish_drive.posts, "AB", dict(ab or {}))
+    monkeypatch.setattr(publish_drive.posts, "NUMBERS", {})
     return publish_drive
 
 
@@ -700,13 +701,15 @@ def test_a_reel_in_no_series_writes_all_three_fields_with_an_empty_series_and_ze
     assert (folder / "a" / EPISODE_NAME).read_text() == '{"number": 193, "series": "", "series_number": 0}\n'
 
 
-def test_no_published_release_has_a_number_so_the_outbox_stays_the_same():
+def test_no_reel_published_before_the_numbers_has_one_so_its_outbox_stays_the_same():
+    """Batch E is the first with numbered releases, so the list of what may not have one is the closed published one."""
     sys.path.insert(0, str(EPISODES))
     try:
         import instagram_posts as posts
     finally:
         sys.path.remove(str(EPISODES))
-    assert posts.NUMBERS == {}
+    numbered = {slug for slug, video in posts.VIDEOS.items() if video in posts.NUMBERS}
+    assert numbered.isdisjoint(posts.GRANDFATHERED)
 
 
 def test_ab_mirrors_the_test_and_arm_of_every_release_in_a_test():
