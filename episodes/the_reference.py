@@ -184,7 +184,10 @@ room = cutout_home.home_study(cv, finish, behind_desk=behind, on_desk=on_desk, s
 
 MILO_CLOSE = (MILO_AT[0] - 30, MILO_AT[1] - 40)
 ROSA_CLOSE = (ROSA_AT[0] + 150, ROSA_AT[1] + 100)
-LAST = 1.75
+FIRST = 1.08
+FIRST_AT = (520, 640)  # pushed in from the first frame, with both marks whole
+LAST = 1.2
+LAST_AT = (498, 760)  # as close as the frame goes with the cactus and the whole paper still in it
 A, B = L[4].start - 0.08, L[4].end + 0.12  # the punch on "What forty dollars?"
 OUT = L[0].end
 
@@ -195,7 +198,7 @@ def framing(size: float, at: tuple[float, float]) -> tuple[float, float, float]:
 
 WIDE = (1.0, 0.0, 0.0)
 keys = [
-    (0.0, framing(1.16, (540, 640))),
+    (0.0, framing(FIRST, FIRST_AT)),
     (OUT, WIDE),
     (A - 0.02, WIDE),
     (A, framing(1.5, MILO_CLOSE)),
@@ -208,7 +211,7 @@ keys = [
     (L[7].end, WIDE),
     (OFFERS, framing(1.12, ROSA_CLOSE)),
     (OFFERS + 0.1, framing(1.12, ROSA_CLOSE)),
-    (DURATION, framing(LAST, OPEN_HAND)),
+    (DURATION, framing(LAST, LAST_AT)),
 ]
 for i, prop in enumerate(("scaleX", "x", "y")):
     cv.keys(room, prop, [(at, frame[i]) for at, frame in keys], hold=False)

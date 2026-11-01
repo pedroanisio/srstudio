@@ -190,13 +190,14 @@ for prop, values in (
     ("y", [(0.0, 0.0), (FALL, y * EARLY), (L[2].start, y), (SWAP - EPS, y), (SWAP, 0.0)]),
 ):
     cv.keys(office, prop, values, hold=False)
-PUSH = (SUNK[0], SUNK[1] + 40)
+PUSH = (460.0, 1012.0)  # left of him: the creep keeps the cactus and the paper in the frame
+CREEP = 1.18
 LAST = spans["chair-after"][-1][0]
 for prop, values in (
-    ("scaleX", [(0.0, 1.0), (LAST, 1.0), (DURATION, 1.22)]),
-    ("scaleY", [(0.0, 1.0), (LAST, 1.0), (DURATION, 1.22)]),
-    ("x", [(0.0, 0.0), (LAST, 0.0), (DURATION, PUSH[0] * -0.22)]),
-    ("y", [(0.0, 0.0), (LAST, 0.0), (DURATION, PUSH[1] * -0.22)]),
+    ("scaleX", [(0.0, 1.0), (LAST, 1.0), (DURATION, CREEP)]),
+    ("scaleY", [(0.0, 1.0), (LAST, 1.0), (DURATION, CREEP)]),
+    ("x", [(0.0, 0.0), (LAST, 0.0), (DURATION, PUSH[0] * (1 - CREEP))]),
+    ("y", [(0.0, 0.0), (LAST, 0.0), (DURATION, PUSH[1] * (1 - CREEP))]),
 ):
     cv.keys(reverse, prop, values, hold=False)
 

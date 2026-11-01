@@ -43,10 +43,10 @@ RAISED = 300.0  # px over the bill that the hands come down from
 REACHING = {"gary": "free-right", "omar": "free"}  # the poses that leave each the arm on the bill
 TUG = 46.0  # px the bill goes each way
 BACK = {"jun": Place(540.0, 1530.0, 0.6)}
-FRONT = {"gary": Place(215.0, 1790.0, 0.74), "omar": Place(865.0, 1790.0, 0.74)}
+FRONT = {"gary": Place(215.0, 1925.0, 0.74), "omar": Place(865.0, 1925.0, 0.74)}  # their bodies run off the frame
 COUNTER_TOP = 1300.0
 ROSA_ELBOW = (262.0, 1590.0)  # just over the table, the arm with the cup
-CARD_Y = 1390.0  # the cards, in the hands of the brothers' shrug
+CARD_Y = 1525.0  # the cards, in the hands of the brothers' shrug
 BOB = (10.0, 0.32)  # out of breath: px and seconds
 HIS_CARD, HER_CARD, OMAR_CARD = "#2a9d8f", "#1d3557", "#e63946"  # the one he brandishes, the one she flicks
 INSERT_CARD = dict(w=640.0)

@@ -42,6 +42,7 @@ CASE = (770.0, 1236.0, 150.0, 104.0)  # at his feet: the ledge line hides its bo
 CASE_HANDLE = 18.0
 ROPE_OUT = [(300, 790), (380, 730), (470, 760), (620, 700)]
 HORSE_DOOR = dict(at=(462, 486), scale=0.92)
+HORSE_LEGS = (252.0, 280.0, 312.0, 340.0)
 END = 31.8
 
 LINES = (
@@ -137,7 +138,12 @@ def dress(shot) -> None:
     spans = [s for s in scrawls(shot.beats) if app.start <= s[0] < app.end]
     if app.who == "hamster":
         toon_world.yard(cv, shot.back, sign=None, table=False)
-        toon_house.horse(cv, shot.back, start=app.start, end=app.end, at=(296, 372), scale=0.66, id=cv.uid("horse"))
+        toon_house.horse(
+            cv, shot.back, start=app.start, end=app.end, at=(296, 372), scale=0.66, id=cv.uid("horse"), neck=430.0
+        )
+        for x in HORSE_LEGS:  # the car hides his chest; his legs stand on the road behind it, between the wheels
+            cv.rect(shot.back, fx(x - 11), fy(735), fh(22), fh(62), toon_house.COAT_DARK, cv.ink, 5.0)
+            cv.rect(shot.back, fx(x - 13), fy(784), fh(26), fh(16), "#2b2d35", cv.ink, 5.0, radius=fh(3))
         toon_cars.side_car(cv, shot.back, at=(296.0, 800.0), scale=1.7)
         for x in (250, 342):
             cv.rect(shot.back, fx(x - 22), fy(590), fh(44), fh(34), "#2b2d35", cv.ink, 5.0, radius=fh(8))
@@ -175,8 +181,7 @@ def lens(shot, setup) -> None:
     camera.anchor(setup, *PIVOT, place=True)
     if shot.app.start == 0.0:
         camera.push_in(shot.cv, setup, scale=[(0.0, 1.0), (shot.app.end, 1.05)])
-    if shot.app.who == "hamster":
-        camera.anchor(setup, 540.0, 800.0, place=True)
+    if shot.app.who == "hamster":  # about the pivot: the push leaves the cactus and the code in the frame
         camera.push_in(shot.cv, setup, scale=[(shot.app.start, 1.0), (shot.app.start + 1.3, 1.08)])
 
 

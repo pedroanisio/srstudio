@@ -209,6 +209,7 @@ _FIRST = _pose(0, "open", "frown", "hold")
 _HELD = Lineup(PLACES, {"priya": [_FIRST], "deb": [_pose(0, "open", "smile", "down")]}, ((0.0, STILL),))
 STAGING = Staging(
     sketch=SKETCH,
+    sentence_rows=True,
     seed=SEED,
     description=DESCRIPTION,
     accessibility=ACCESSIBILITY,

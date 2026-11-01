@@ -3,6 +3,7 @@ shot stands somewhere it can stand, a holder's hand is the holder's, and two clo
 
 import ast
 import importlib
+import math
 import sys
 from collections.abc import Iterator
 from dataclasses import replace
@@ -14,16 +15,21 @@ import pytest
 from srstudio import (
     collage,
     collage_everyday,
+    cutout_handed,
+    locations,
     signature,
     stick,
     stick_reel,
     stick_windshield,
+    toon_everyday,
     toon_extras,
     toon_house,
     toon_sketch,
 )
 from srstudio.collage_group import Place
 from srstudio.sketch import Appearance
+from srstudio.toon import fh, fx
+from support.tip_tablet import canvas
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
 WIDTH, HEIGHT = 1080.0, 1920.0
@@ -217,7 +223,9 @@ def test_deb_answers_the_phone_with_an_arm_she_stops_hanging(monkeypatch: pytest
     lift = next(t for t, what in mod.events(mod.BEATS, "reveal") if what == "lift")
     lineup = mod._lineup(mod.BEATS, mod.END)
     assert lineup.reactions["deb"][-1]["arms"] == "free"
-    assert lineup.reactions["deb"][-1]["start"] > lift  # she keeps the arm until the one with the handset comes in
+    start = lineup.reactions["deb"][-1]["start"]
+    assert start == pytest.approx(lift - mod.REACHES)  # the posed arm goes as the reaching one starts for the handset
+    assert start < lift  # never a handset up with both arms down
     assert collage_everyday.shoulder("deb") == mod.SHOULDER_CLOSE
 
 
@@ -273,6 +281,8 @@ def test_the_baby_monitor_stands_on_the_counter_and_the_mitts_have_arms() -> Non
     mod = _data("baby_monitor")
     door_frame_left = mod.DOOR["at"][0] - 14.0
     assert mod.MONITOR["at"][0] + 36.0 * mod.MONITOR["scale"] <= door_frame_left
+    assert mod.DOOR["legs"], "the silhouette in the doorway stands on the floor"
+    assert mod.MONITOR["at"][0] - 36.0 * mod.MONITOR["scale"] >= 0.0 and mod.MONITOR["scale"] < 1.0, "left of the bear"
     mitts = {side: mod.DISH["at"][0] + side * 196.0 * mod.DISH["scale"] for side in (-1, 1)}
     for shoulder, hand, side in mod.ARMS:
         assert 0 < shoulder[0] < WIDTH and shoulder[1] < hand[1], "from her body, down to the dish"
@@ -526,3 +536,138 @@ def test_dianes_message_hides_the_name_of_the_post_under_it() -> None:
     finally:
         sys.path.remove(str(EPISODES))
     assert -652.0 + audio.MESSAGE_SHIFT <= -690.0  # the top of the post's avatar and name
+
+
+def _literal(script: str, name: str) -> object:
+    """The value a reel's script gives ``name``: a script cannot be imported without its recording."""
+    tree = ast.parse((EPISODES / f"{script}.py").read_text())
+    found = (n for n in tree.body if isinstance(n, ast.Assign) and ast.unparse(n.targets[0]) == name)
+    return ast.literal_eval(next(found).value)
+
+
+def _toward(size: float, at: tuple[float, float], x0: float = 540.0, y0: float = 760.0) -> tuple:
+    """The ``_seen`` framing of a room scaled ``size`` that puts its point ``at`` on the frame's ``(x0, y0)``."""
+    return (at, size, (x0, y0))
+
+
+CACTUS_HALF, CACTUS_TALL = 46.0, 152.0  # half its width and its height, at scale 1
+
+
+def _sheet(x: float, y: float, scale: float, angle: float) -> tuple[float, float, float, float]:
+    """The box of a :func:`srstudio.props.papers` sheet: its far corner turns with it."""
+    turn = math.radians(angle)
+    width, height = 277.0 * math.cos(turn) - 121.0 * math.sin(turn), 277.0 * math.sin(turn) + 143.0 * math.cos(turn)
+    return x, y, x + scale * width, y + scale * height
+
+
+def _marks_seen(framing: tuple, cactus: tuple[float, float, float], code_box: tuple[float, float, float, float]):
+    x, y, scale = cactus
+    left, top, right, bottom = code_box
+    for point in ((x - CACTUS_HALF * scale, y), (x + CACTUS_HALF * scale, y), (x, y - CACTUS_TALL * scale)):
+        assert _seen(framing, *point), "the cactus is whole"
+    for point in ((left, top), (right, top), (left, bottom), (right, bottom)):
+        assert _seen(framing, *point), "the code is whole"
+
+
+def test_any_questions_ends_with_both_marks_in_the_frame_of_its_creep() -> None:
+    creep = _literal("any_questions", "CREEP")
+    push = _literal("any_questions", "PUSH")
+    framing = ((0.0, 0.0), creep, (push[0] * (1 - creep), push[1] * (1 - creep)))
+    _marks_seen(framing, (120.0, 1440.0, 0.9), _sheet(649.0, 1482.0, 1.23, 6.0))  # the whole sheet, not just its code
+
+
+def test_the_reference_opens_and_closes_with_both_marks_in_the_frame() -> None:
+    paper = _sheet(700.0, 1570.0, 0.8, 5.0)
+    for size, at in (
+        (_literal("the_reference", "FIRST"), _literal("the_reference", "FIRST_AT")),
+        (_literal("the_reference", "LAST"), _literal("the_reference", "LAST_AT")),
+    ):
+        _marks_seen(_toward(size, at), (96.0, 1050.0, 0.62), paper)
+
+
+def test_dont_move_opens_and_closes_with_both_marks_and_both_faces_whole() -> None:
+    size, opening_x = _literal("dont_move", "SIZE"), _literal("dont_move", "OPEN_X")
+    clamp, last, face = (_literal("dont_move", n) for n in ("CLAMP", "LAST", "MILO_FACE"))
+    code = (555.0 - signature.text_width("SR-1028", 12.0), 1017.0, 555.0, 1029.0)
+    first = _toward(size, (opening_x, clamp[1]), y0=900.0)
+    _marks_seen(first, (430.0, 1012.0, 0.6), code)
+    _marks_seen(_toward(last, face, y0=900.0), (430.0, 1012.0, 0.6), code)
+    ava, milo = _literal("dont_move", "AVA_AT"), _literal("dont_move", "MILO_AT")
+    assert _seen(first, ava[0] - 165.0, ava[1]) and _seen(first, milo[0] + 165.0, milo[1]), "a head is 110 at scale 1"
+
+
+def test_the_opening_of_dont_move_keeps_her_hair_off_the_code_on_the_shelf() -> None:
+    ava = _literal("dont_move", "AVA_AT")
+    assert 555.0 - signature.text_width("SR-1028", 12.0) > ava[0] + 165.0
+
+
+def test_a_cafe_keeps_its_code_on_the_board_unless_told_to_move_it(monkeypatch: pytest.MonkeyPatch) -> None:
+    drawn: list[tuple[float, float]] = []
+    monkeypatch.setattr(locations.signature, "code", lambda cv, parent, x, y, *a, **k: drawn.append((x, y)))
+    for kwargs in ({}, {"code_on_shelf": True}):
+        cv = canvas()
+        locations.cafe(cv, cv.comp, **kwargs)
+    assert drawn == [(445, 708), (555, 1017)]
+
+
+def test_mitts_come_in_only_when_asked() -> None:
+    def post(**kwargs) -> bytes:
+        cv = canvas()
+        cutout_handed.phone_post(cv, cv.comp, **kwargs)
+        return cv.scene.to_bytes()
+
+    assert post() == post(mitts_in=0) != post(mitts_in=48)
+
+
+@pytest.mark.usefixtures("reels")
+def test_a_second_key_on_the_pajama_phone_stops_short_of_the_cactus() -> None:
+    mod = _data("pajama_day")
+    x, _ = mod.PHONE["at"]
+    half = fh(toon_everyday.PHONE_W / 2.0 * mod.PHONE["scale"])
+    assert fx(x + mod.WALK) + half + 12.0 <= fx(548.0) - CACTUS_HALF * 0.7, "clear from the first frame"
+
+
+@pytest.mark.usefixtures("reels")
+def test_the_profiles_phone_stands_left_of_every_face() -> None:
+    mod = _data("the_profiles")
+    x, _ = mod.PHONE["at"]
+    assert x + 72.0 * mod.PHONE["scale"] <= 165.0, "the muzzle of the near seat starts here under the last push"
+
+
+@pytest.mark.usefixtures("reels")
+def test_the_hose_in_get_your_mother_stops_short_of_the_cactus() -> None:
+    mod = _data("get_your_mother")
+    assert fx(max(x for x, _ in mod.HOSE)) + 12.0 <= fx(548.0) - CACTUS_HALF * 0.7
+
+
+def test_sorry_whats_pushes_turn_about_the_pivot_the_marks_stand_at() -> None:
+    tree = ast.parse((EPISODES / "sorry_what_data.py").read_text())
+    anchors = _calls(tree, "lens", "anchor")
+    assert [ast.unparse(a.args[1]) for a in anchors] == ["*PIVOT"]
+
+
+@pytest.mark.usefixtures("reels")
+def test_the_horse_behind_the_car_shows_legs_under_it() -> None:
+    mod = _data("sorry_what")
+    assert len(mod.HORSE_LEGS) == 4
+    gap = (246.0, 356.0)  # between the car's wheels
+    assert all(gap[0] <= x <= gap[1] for x in mod.HORSE_LEGS)
+
+
+def test_a_title_card_breaks_after_its_sentence() -> None:
+    sys.path.insert(0, str(EPISODES))
+    try:
+        audio = importlib.import_module("third_snore_audio")
+    finally:
+        sys.path.remove(str(EPISODES))
+    first, *rest = audio.HOOK.splitlines()
+    assert first == "3 a.m." and rest == ["The snoring argument."]
+
+
+@pytest.mark.usefixtures("reels")
+def test_book_a_tables_bubble_breaks_at_its_sentence_end() -> None:
+    mod = _data("book_a_table")
+    assert mod.STAGING.sentence_rows
+    said = "Hi, it's Bella Roma. Love you too. Inside or outside?"
+    rows = collage.caption_lines(lambda s: 24.0 * len(s), said, 1080, sentences=True)
+    assert rows[0] == "Hi, it's Bella Roma."

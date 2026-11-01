@@ -46,6 +46,7 @@ TOAST, DOOR = float(t.meta["toast"]), float(t.meta["door"])
 DURATION = t.duration
 L = [ep.P(i) for i in range(len(t.phrases))]
 AVA_AT = (245, 800, 1.5)
+MITTS_IN = 48  # the photo's mitts stay inside the phone's screen
 MILO_AT = (810, 800, 1.5)
 UP = 545  # Ava's y on her feet
 AT_DOOR = (138, 650, 1.2)  # further off, and smaller
@@ -206,7 +207,7 @@ def at_table(g):
 
 
 finish = locations.finish(cv, ep.comp)
-room = locations.cafe(cv, finish, at_counter=at_table, shots=spans["table"])
+room = locations.cafe(cv, finish, at_counter=at_table, shots=spans["table"], code_on_shelf=True)
 
 HEART_X, HEART_Y = cutout_handed.POST_HEART[0] + 540, cutout_handed.POST_HEART[1] + 900
 insert = cv.group(finish, "phone-insert")
@@ -226,9 +227,10 @@ cutout_handed.phone_post(
     cv,
     push,
     liked_at=CRASH + 0.12,
-    message=("Diane", "Thank you, dear. Nobody ever\nlikes my photos. Are you\ncoming Sunday?"),
+    message=("Diane", "Thank you, dear.\nNobody ever likes my photos.\nAre you coming Sunday?"),
     message_at=TOAST + 0.15,
     message_shift=MESSAGE_SHIFT,
+    mitts_in=MITTS_IN,
 )
 thumb = cv.group(insert, "thumb-move")
 shake = [(PHONE_1[0] + k * 0.09, 4.0 if k % 2 else -4.0) for k in range(int((CRASH - PHONE_1[0]) / 0.09))]
@@ -238,13 +240,15 @@ cv.keys(
 cv.gate(thumb, [(0, CRASH + 0.85)])
 cutout_handed.big_thumb(cv, thumb, HEART_X + 34, HEART_Y - 20, rotation=-24)
 
-SIZE, OUT, IN = 1.3, L[1].start + 0.4, L[9].start - 0.3
+SIZE = 1.12
+OUT, IN = L[1].start + 0.4, L[9].start - 0.3
+OPEN_X = 520  # the middle of the two of them: at SIZE both whole faces stay in the frame
 LAST = 1.28
-MILO_FACE = (MILO_AT[0] - 40, MILO_AT[1] + 130)
+MILO_FACE = (770, 930)  # his face, for the last push
 for prop, values in (
     ("scaleX", [(0.0, SIZE), (OUT, 1.0), (IN, 1.0), (DURATION, LAST)]),
     ("scaleY", [(0.0, SIZE), (OUT, 1.0), (IN, 1.0), (DURATION, LAST)]),
-    ("x", [(0.0, 540 - CLAMP[0] * SIZE), (OUT, 0.0), (IN, 0.0), (DURATION, 540 - MILO_FACE[0] * LAST)]),
+    ("x", [(0.0, 540 - OPEN_X * SIZE), (OUT, 0.0), (IN, 0.0), (DURATION, 540 - MILO_FACE[0] * LAST)]),
     ("y", [(0.0, 900 - CLAMP[1] * SIZE), (OUT, 0.0), (IN, 0.0), (DURATION, 900 - MILO_FACE[1] * LAST)]),
 ):
     cv.keys(room, prop, values, hold=False)

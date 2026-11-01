@@ -17,6 +17,7 @@ from srstudio import camera, scripting, sketch, toon_everyday, toon_extras, toon
 from srstudio import foley as synth
 from srstudio.foley import Burst
 from srstudio.sketch import Line, Sketch, Speaker
+from srstudio.toon import fh, fx, fy
 from srstudio.voice import Voice, VoiceSettings
 
 SEED = 3101
@@ -63,7 +64,7 @@ KEY_LINE = "Calling Dad on purpose."
 LEAD = 0.45  # the silence before the first word, the phone ringing
 PHONE = dict(at=(432, 838), scale=0.9)
 HELD = dict(at=(330, 838), scale=0.9, hand="#4b3d5e")
-HOSE = [(610, 792), (556, 830), (512, 770), (478, 778)]
+HOSE = [(470, 830), (500, 806), (504, 772), (486, 768)]  # up from behind the ledge, short of the cactus
 NEIGHBOR_AT = (452, 806)
 PIVOT = (980.0, 1420.0)
 RING = ((1319.0, 1319.0, 0.3),)
@@ -152,6 +153,8 @@ def dress(shot) -> None:
         poses = ((0.0, "half", "flat", "desk"), (talk, "half", "flat", "desk"), (talk + 1.2, "sleepy", "flat", "desk"))
         toon_extras.figure(shot, shot.back, "sloth", NEIGHBOR_AT, 0.84, poses, mirror=True)
         toon_house.rope(cv, shot.back, HOSE, colour="#3f8d5a")
+        x, y = HOSE[-1]
+        cv.rect(shot.back, fx(x - 22), fy(y - 7), fh(26), fh(14), "#c9a24a", cv.ink, 4.0, radius=fh(4))  # the nozzle
         toon_house.ledge(cv, shot.front, "white")
         toon_everyday.phone(
             cv,

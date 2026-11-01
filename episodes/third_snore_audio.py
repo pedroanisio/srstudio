@@ -25,7 +25,7 @@ from srstudio import stick, stick_windshield, takes
 from srstudio.voice import Voice, VoiceSettings
 
 SHOTS = ("close", "pull", "wide")
-HOOK = "3 a.m. The snoring argument."
+HOOK = "3 a.m.\nThe snoring argument."  # the card breaks after the sentence
 SCRIPT = takes.Script(
     title="Third Snore — Stick 15",
     seed=3122,
@@ -144,8 +144,8 @@ CLOSE_FROM = ((CX, CY), 1.8, (540.0, 860.0))
 CLOSE_TO = ((CX, CY), 2.0, (540.0, 860.0))
 WIDE = ((CX, 1400.0), 1.45, (540.0, 900.0))
 # the marks sit on a shelf between the couple's heads: no take frames the counter or the floor the flat keeps them on
-MARKS_AT, MARKS_SCALE = (CX - 20.0, 1262.0), 0.5
-CODE_AT, CODE_H = (CX + 8.0, 1266.0), 11.0
+MARKS_AT, MARKS_SCALE = (CX - 20.0, 1232.0), 0.5
+CODE_AT, CODE_H = (CX + 8.0, 1236.0), 11.0
 PUSH_TAKES = 8  # the push runs through the first eight takes, to the moment they stop
 AT = {"dev": (878.0, 450.0), "noor": (2082.0, 450.0)}  # with scale SCALE, Noor flipped: heads at CX -/+ 170
 SCALE = 0.8

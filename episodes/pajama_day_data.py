@@ -34,7 +34,8 @@ BRUNO = speaker("bruno", "Bill", "bear", "deadpan")
 TINTS = tinted(MAE, BRUNO)
 BARE = ("hamster",)  # the worktop
 PIVOT = (980.0, 1420.0)
-PHONE = dict(at=(452, 838), scale=0.9)
+PHONE = dict(at=(402, 838), scale=0.9)
+WALK = 64.0  # reference px it buzzes across the table, stopping short of the cactus
 COUNTS = (214, 231, 262, 298, 344, 389)
 END = 25.6
 
@@ -108,7 +109,7 @@ def dress(shot) -> None:
     walk = cv.group(shot.front, cv.uid("g"))
     toon_everyday.phone(cv, walk, screens, measure=shot.measure, id=cv.uid("phone"), **PHONE)
     if app.start == 0.0:
-        cv.keys(walk, "x", [(0.0, fh(130)), (app.end, 0.0)], hold=False)
+        cv.keys(walk, "x", [(0.0, fh(WALK)), (app.end, 0.0)], hold=False)
 
 
 def lens(shot, setup) -> None:

@@ -55,6 +55,7 @@ SHOULDER_CLOSE = (286.0, 1390.0)  # and in her close
 ELBOW_NEAR = (572.0, 1377.0)  # the arm with the handset: the elbow, in the two-shot
 ELBOW_CLOSE = (160.0, 1500.0)  # and in her close
 RISE = (0.3, 0.95)  # the handset comes up, after the lift
+REACHES = 0.4  # seconds her arm takes to reach the handset, ending on the lift
 EAR_CLOSE = (336.0, 1090.0)  # and in her close
 
 LINES = (
@@ -126,6 +127,26 @@ def _slide_arm(cv, front, slide: float) -> None:
     cv.rect(held, 20.0, -22.0, 74.0, 28.0, collage.LOOKS["brent"].skin, collage.INK, 3, radius=14)
 
 
+def _reaching_arm(cv, front, lift: float, rest: collage.Point, rise: tuple[float, float]) -> None:
+    """Deb's arm from her shoulder: down to the handset by the lift, then up with it, until the arm at her ear."""
+    start = lift - REACHES
+    by = (rest[0] - 150.0, rest[1] + 40.0)  # her hand comes in from her side
+    to = (EAR_NEAR[0] - 8.0, EAR_NEAR[1] + 70.0)
+
+    def hand(t: float) -> collage.Point:
+        if t <= lift:
+            near = (t - start) / REACHES
+            return by[0] + (rest[0] - by[0]) * near, by[1] + (rest[1] - by[1]) * near
+        along = [(rise[0], 0.0), (rise[1], 1.0)]
+        up = collage_everyday.eased(along, t, "sine-in-out")
+        return rest[0] + (to[0] - rest[0]) * up, rest[1] + (to[1] - rest[1]) * up
+
+    arm = cv.group(front, cv.uid("g"))
+    cv.gate(arm, [(start, rise[1] - 0.1)])
+    times = sorted({start, lift, rise[1] - 0.1, *collage_everyday.frames(rise)})
+    collage_everyday.reach(cv, arm, "deb", SHOULDER_NEAR, hand, times, width=52.0)
+
+
 def _sliding(app: Appearance, slide: float) -> Appearance:
     """Brent speaking over the slide with the arm on the phone freed until it lets go, whatever the recording says."""
     lets_go = _speed(slide)[1] + 0.25 - app.start
@@ -157,8 +178,7 @@ def _lineup(beats: Sequence[Beat], end: float) -> Lineup:
             _pose(breath, "closed", "smile", "hold"),
             _pose(ring, "wide", "o", "hold"),
             _pose(slide, "wide", "flat", "hold"),
-            _pose(lift, "wide", "flat", "down"),
-            _pose(lift + RISE[1] - 0.1, "wide", "flat", "free"),
+            _pose(lift - REACHES, "wide", "flat", "free"),
         ],
     }
     return Lineup(PLACES, reactions, ((0.0, close), (nod, insert), (slide, ear)))
@@ -251,6 +271,7 @@ def dress(shot) -> None:
     cv.keys(hand, "x", [(rise[0], rest[0]), (rise[1], EAR_NEAR[0])], kind="sine-in-out", local=False)
     cv.keys(hand, "y", [(rise[0], rest[1]), (rise[1], EAR_NEAR[1])], kind="sine-in-out", local=False)
     cv.keys(hand, "rotation", [(rise[0], 0.0), (rise[1], 96.0)], kind="sine-in-out", local=False)
+    _reaching_arm(cv, front, lift, rest, rise)
     reach = cv.group(off_hook, cv.uid("g"))
     cv.gate(reach, [(rise[1] - 0.1, app.end)])
     collage_everyday.arm(cv, reach, "deb", SHOULDER_NEAR, ELBOW_NEAR, width=52.0, hand=False)

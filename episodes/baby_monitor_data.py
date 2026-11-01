@@ -43,13 +43,13 @@ BRUNO = speaker("bruno", "Bill", "bear")
 MOTHER = speaker("mother", "Laura", "goat", "deadpan")
 TINTS = tinted(MAE, BRUNO, MOTHER)
 PIVOT = (980.0, 1420.0)
-MONITOR = dict(at=(296.0, 500.0), scale=0.82)  # on the counter, all of it, between her ear and the door frame
+MONITOR = dict(at=(37.0, 500.0), scale=0.82)  # on the counter by the frame's left edge, clear of every ear
 DISH = dict(at=(190.0, 850.0), scale=1.0)
 ARMS = (((196.0, 1120.0), (8.0, 1330.0), -1), ((488.0, 1120.0), (690.0, 1330.0), 1))  # shoulder, mitt, side; screen px
 ARM_W, ARM_INK = 66.0, 7.0
 BRUNO_AT = (470.0, 806.0)
 BRUNO_SCALE = 0.86
-DOOR = dict(at=(346.0, 90.0), size=(210.0, 700.0))
+DOOR = dict(at=(346.0, 90.0), size=(210.0, 700.0), legs=True)
 GUESTS = (("dog", (64.0, 816.0), 0.74), ("hedgehog", (470.0, 816.0), 0.74))
 STEP = synth.KNOCK
 GULP = synth.Burst(0.22, 300.0, attack=0.02, decay=0.4, tone_hz=210.0, tone_end_hz=120.0, tone=0.7)
