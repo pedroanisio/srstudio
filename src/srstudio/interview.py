@@ -55,7 +55,7 @@ from .generated import (
 from .layout import LayoutError, find_engine
 from .provider import CACHE_ENV, CONSENT_ENV, KEY_ENV, NAME, SFX_MODEL, format_voice
 from .sample import SYSTEM_FONTS, copy_dejavu
-from .scripting import SECONDS_A_LINE, SECONDS_A_WORD
+from .scripting import line_seconds
 from .song import MAX_GAIN, Singer, SongError
 from .timeline import Phrase
 from .voice import (
@@ -495,7 +495,7 @@ REHEARSAL_SYLLABLE = 5.0  # Hz: how fast a rehearsal tone opens and shuts, so an
 def spoken_estimate(text: str, speed: float = 1.0) -> float:
     """About how long ``text`` runs at ``speed``, before a take is paid for: an estimate, as
     :func:`srstudio.scripting.spoken_seconds` is, and the recording decides."""
-    return (SECONDS_A_WORD * len(text.split()) + SECONDS_A_LINE) / speed
+    return line_seconds(text, speed)
 
 
 def _write_tone(path: Path, seconds: float, *, syllables: bool) -> Path:

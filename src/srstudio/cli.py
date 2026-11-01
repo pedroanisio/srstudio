@@ -46,6 +46,7 @@ from .episode import SceneCheckError
 from .errors import SrstudioError
 from .soundtrack import INK_MOUTH
 from .styles import STYLES
+from .takes import refuse_rehearsal as refuse_takes_rehearsal
 from .thumbnail import ShowCover
 from .timeline import Timeline
 
@@ -464,6 +465,7 @@ def main(argv=None):
         try:
             if args.root and "--voice" in args.options:
                 interview.refuse_rehearsal(Path(args.root))
+                refuse_takes_rehearsal(Path(args.root))
             with usage.recorded(Path(args.root)) if args.root else nullcontext(), show.stamping(number):
                 if script.endswith(".py"):
                     sys.path.insert(

@@ -18,6 +18,9 @@ rig speaks from and word captions are timed by. A :class:`Bed` is music from the
 for length by :mod:`srstudio.compose`): speech-to-text must hear no words in it, it must last the whole episode,
 and it is cut to the episode with a fade-out. One request per uncached item, no retries.
 
+:func:`rehearse` writes the same ``timeline.json`` from estimated lengths and silent clips, with nothing requested and
+no key, so a reel's stills come before its recording; :func:`refuse_rehearsal` keeps it out of a voiced master.
+
 This is the pipeline of the Stick episodes (``screen_share_audio.py``, ``repeat_after_me_audio.py``); the shared
 steps it uses (voice check, word timings, schedule, conform) are :mod:`srstudio.narration`. Every refusal is a
 :class:`TakesError`; :func:`main` turns one into an exit message.
@@ -52,6 +55,7 @@ from .narration import (
     words_from_alignment,
 )
 from .provider import KEY_ENV
+from .scripting import line_seconds
 from .voice import (
     MODEL,
     RATE,
@@ -68,13 +72,27 @@ from .voice import (
     normalize_words,
 )
 
-__all__ = ["Bed", "FONT", "Script", "Take", "TakesError", "main", "record", "sha256_of"]
+__all__ = [
+    "Bed",
+    "FONT",
+    "Script",
+    "Take",
+    "TakesError",
+    "main",
+    "record",
+    "refuse_rehearsal",
+    "rehearse",
+    "rehearsed",
+    "sha256_of",
+]
 
 FONT = ("Inter-Bold.ttf", "font-license.txt")  # the Stick style's caption font and its licence
 VOICE_PEAK = 0.80  # every line is levelled to this peak; the master's loudness pass does the rest
 SPEECH_LEAD, SPEECH_TAIL = 0.04, 0.08  # kept around the first and last audible sample
 EFFECT = "sfx"  # the actor of an effect take
 STILL_MAX = 3.0  # the longest still opening a script may ask for, in seconds
+TIMELINE = "timeline.json"
+REHEARSAL_DIR = "rehearsal"  # under the project's assets, never audio/, which holds the recorded takes
 
 
 class TakesError(SrstudioError, ValueError):
@@ -384,19 +402,119 @@ def record(
     return timeline
 
 
+def _silence(path: Path, seconds: float) -> None:
+    """``seconds`` of 48 kHz mono silence, the shape of a conformed take."""
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(RATE)
+        w.writeframes(b"\0\0" * round(seconds * RATE))
+
+
+def _clocked(text: str, speech: float, lead: float) -> dict:
+    """``words`` and ``phones`` for ``text`` spread evenly by character over ``speech`` seconds, ``lead`` seconds in."""
+    at = [round(lead + speech * i / len(text), 6) for i in range(len(text) + 1)]
+    return {
+        "words": [{"text": m.group(), "start": at[m.start()], "end": at[m.end()]} for m in re.finditer(r"\S+", text)],
+        "phones": [{"c": c, "start": at[i], "end": at[i + 1]} for i, c in enumerate(text)],
+    }
+
+
+def _rehearsed_item(script: Script, take: Take, folder: Path) -> dict:
+    lead = script.still if take is script.takes[0] else 0.0
+    item: dict = {"id": take.id, "actor": take.actor, "shot": take.shot, "text": take.text, "mood": take.mood}
+    item.update(take.extra)
+    if take.is_effect:
+        length = lead + take.longest
+        item.update(speech_duration=0, seconds=take.seconds, prompt=take.prompt)
+        name = f"fx-{take.id}.wav"
+    else:
+        settings = script.settings_for(take)
+        speech = line_seconds(take.text, settings.speed)
+        length = lead + speech
+        item.update(voice_name=script.voices[take.actor].name, speed=settings.speed, speech_duration=round(length, 6))
+        item.update(_clocked(take.text, speech, lead))
+        name = f"take-{take.id}.wav"
+    item["duration"] = round(length + take.hold, 6)
+    if lead:
+        item["still"] = lead
+    _silence(folder / name, item["duration"])
+    item["audio"] = f"assets/{REHEARSAL_DIR}/{name}"
+    return item
+
+
+def rehearse(script: Script, root: Path) -> dict:
+    """``root/timeline.json`` from each line's estimated length and silent clips: the shots, holds, captions and rigs
+    all run on it as they will on the takes, with nothing requested and no key, so a reel's stills come before any take
+    is paid for. Its times are an estimate and the recording decides. It never replaces a recording; :func:`record`
+    replaces it, and :func:`refuse_rehearsal` keeps it out of a voiced master. A bed is not rehearsed."""
+    script.check()
+    root = Path(root).resolve()
+    if (root / TIMELINE).is_file() and not rehearsed(root):
+        raise TakesError(f"{root / TIMELINE} is a recording: a rehearsal never replaces it")
+    folder = root / "assets" / REHEARSAL_DIR
+    folder.mkdir(parents=True, exist_ok=True)
+    (root / "audio").mkdir(exist_ok=True)  # a reel's foley goes here; no take does until one is recorded
+    items = [_rehearsed_item(script, take, folder) for take in script.takes]
+    duration = schedule(items, script.fps)
+    timeline = {
+        "title": script.title,
+        "language": script.language,
+        "tts_engine": "rehearsal",
+        "model": "none",
+        "voices": {},
+        "voice_note": "A rehearsal: silent clips cut to estimated lengths, no recording.",
+        "rehearsal": True,
+        "duration": duration,
+        "tempo_adjustment": 1.0,
+        "items": items,
+    }
+    (root / TIMELINE).write_text(json.dumps(timeline, indent=2) + "\n")
+    return timeline
+
+
+def rehearsed(root: Path) -> bool:
+    """Whether ``root``'s ``timeline.json`` is a rehearsal, read on the file: a project with none is not one, and one
+    that cannot say either way raises :class:`TakesError`, since a guess could let silence into a master."""
+    path = Path(root) / TIMELINE
+    if not path.is_file():
+        return False
+    try:
+        data = json.loads(path.read_text())
+    except ValueError as exc:
+        raise TakesError(f"{path}: not JSON: {exc}") from None
+    if not isinstance(data, dict):
+        raise TakesError(f"{path}: expected an object, got {type(data).__name__}")
+    flag = data.get("rehearsal", False)
+    if not isinstance(flag, bool):
+        raise TakesError(f"{path}: rehearsal must be true or false, got {flag!r}")
+    return flag
+
+
+def refuse_rehearsal(root: Path) -> None:
+    """Raise :class:`TakesError` when ``root`` holds a rehearsal: its silence never reaches a voiced master."""
+    if rehearsed(root):
+        raise TakesError(f"{root}: timeline.json is a rehearsal: record the episode before a voiced build")
+
+
 def main(script: Script, argv: list[str] | None = None, env: Mapping[str, str] | None = None) -> int:
-    """``python3 EPISODE_audio.py PROJECT [--font DIR] [--ffmpeg PATH]``: record ``script`` into PROJECT."""
+    """``python3 EPISODE_audio.py PROJECT [--font DIR] [--ffmpeg PATH] [--rehearse]``: record ``script`` into PROJECT,
+    or with ``--rehearse`` write its :func:`rehearse` timeline, which needs no consent and no key."""
     parser = argparse.ArgumentParser(description=script.title)
     parser.add_argument("project", type=Path)
     parser.add_argument("--font", type=Path, help=f"folder holding {' and '.join(script.font)} to copy")
     parser.add_argument("--ffmpeg", default=shutil.which("ffmpeg") or "ffmpeg")
+    parser.add_argument(
+        "--rehearse", action="store_true", help="silent clips on estimated lengths: nothing is requested"
+    )
     args = parser.parse_args(argv)
     env = os.environ if env is None else env
     os.umask(0o077)  # generated outputs are private: folders 700, files 600
-    try:
-        require_consent(env)
-    except ConsentError as exc:
-        raise SystemExit(str(exc)) from None
+    if not args.rehearse:
+        try:
+            require_consent(env)
+        except ConsentError as exc:
+            raise SystemExit(str(exc)) from None
     root = args.project.resolve()
     assets = root / "assets"
     assets.mkdir(parents=True, exist_ok=True)
@@ -405,6 +523,13 @@ def main(script: Script, argv: list[str] | None = None, env: Mapping[str, str] |
             shutil.copyfile(args.font / name, assets / name)
     if not (assets / script.font[0]).exists():
         raise SystemExit(f"{assets / script.font[0]} is missing; pass --font DIR")
+    if args.rehearse:
+        try:
+            rehearsal = rehearse(script, root)
+        except TakesError as exc:
+            raise SystemExit(str(exc)) from None
+        print(f"rehearsal: {len(rehearsal['items'])} takes, {rehearsal['duration']:.3f} s, no take requested")
+        return 0
     key = env.get(KEY_ENV, "")
     cache = assets / "elevenlabs"
     client = ElevenLabsClient(cache, key, model=MODEL, seed=script.seed)
