@@ -676,6 +676,19 @@ def test_keiths_rope_ends_in_the_frogs_paw_in_every_pose_it_is_held_in() -> None
     assert held <= set(mod.ROPES)
 
 
+def test_dont_moves_marks_sit_on_the_table_below_the_pushed_phone_and_left_of_the_thumb() -> None:
+    values = {
+        target.id: ast.literal_eval(node.value)
+        for node in ast.parse((EPISODES / "dont_move.py").read_text()).body
+        if isinstance(node, ast.Assign)
+        for target in node.targets
+        if isinstance(target, ast.Name) and target.id in ("MARK_CACTUS", "MARK_CODE")
+    }
+    assert values["MARK_CODE"][1] >= 1832.0  # where the phone's bottom edge stops at the end of the push
+    assert values["MARK_CACTUS"][1] <= 1920.0 and values["MARK_CODE"][1] + 30.0 <= 1920.0
+    assert values["MARK_CACTUS"][0] < values["MARK_CODE"][0] < 500.0  # the thumb stays right of x 780
+
+
 def test_sorry_whats_pushes_turn_about_the_pivot_the_marks_stand_at() -> None:
     tree = ast.parse((EPISODES / "sorry_what_data.py").read_text())
     anchors = _calls(tree, "lens", "anchor")
