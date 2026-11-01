@@ -224,6 +224,8 @@ class Staging:
     # the first pass lets the encoder spend little on a still opening without blurring it
     bitrate: int = 0
     loudness: str | None = None  # the master's integrated LUFS, when a reel departs from its style's
+    # a caption of several sentences breaks at a sentence end; False keeps a published reel's rows
+    sentence_rows: bool = False
 
     def set_of(self, beats: Sequence[Beat], app: Appearance) -> str:
         """The set this appearance plays on."""
@@ -401,7 +403,14 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
     for i, at in enumerate(whips):
         camera.whip_streaks(cv, ep.comp, at, WHIP_PAPER, seed=staging.seed + i)
     lines = toon.load_script(root / ep.spec.dialogue)
-    collage.captions(cv, ep.comp, lines, partial(measure, size=collage.CAPTION_SIZE), tints=staging.tints)
+    collage.captions(
+        cv,
+        ep.comp,
+        lines,
+        partial(measure, size=collage.CAPTION_SIZE),
+        tints=staging.tints,
+        sentences=staging.sentence_rows,
+    )
     if voiced:
         ep.audio(narration=manifest, loudness=staging.loudness)
         for fx in effects:

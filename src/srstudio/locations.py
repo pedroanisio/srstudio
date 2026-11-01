@@ -251,9 +251,12 @@ def cafe(
     cactus: Slot = None,
     *,
     menu: tuple[str, str, str] | None = None,
+    code_on_shelf: bool = False,
 ):
     """``menu`` letters the board's three lines under its title (the two prices and the footer, each 1 to
-    :data:`MENU_CHARS` characters) with an episode's own; ``None`` draws the shipped board, byte for byte."""
+    :data:`MENU_CHARS` characters) with an episode's own; ``None`` draws the shipped board, byte for byte.
+    ``code_on_shelf`` moves the signature code from the board's corner to the shelf's edge, for a reel with someone
+    standing in front of the board."""
     if menu is not None and not (
         isinstance(menu, tuple)
         and len(menu) == 3
@@ -289,7 +292,10 @@ def cafe(
                 ("menu-wifi", footer, 634, 61, 31, "#A9CBB8"),
             ),
         )
-    signature.code(cv, g, 445, 708, 11, color="#C49B68", opacity=0.9, align="end")
+    if code_on_shelf:
+        signature.code(cv, g, 555, 1017, 12, color="#F3DCA4", align="end")
+    else:
+        signature.code(cv, g, 445, 708, 11, color="#C49B68", opacity=0.9, align="end")
     props.cafe_window(cv, g)
     for xx in [300, 850]:
         props.pendant_light(cv, g, xx)

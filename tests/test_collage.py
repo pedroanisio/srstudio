@@ -313,6 +313,21 @@ def test_a_caption_wraps_into_at_most_two_lines_that_fit_the_frame():
         collage.caption_lines(measure, "x" * 40, 1080)
 
 
+def test_a_caption_breaks_at_a_sentence_end_only_when_asked():
+    text = "Hi, it's Bella Roma. Love you too. Inside or outside?"
+
+    def narrow(row: str) -> float:
+        return 24.0 * len(row)
+
+    assert collage.caption_lines(narrow, text, 1080, sentences=True)[0] == "Hi, it's Bella Roma."
+    assert collage.caption_lines(narrow, text, 1080)[0] == "Hi, it's Bella Roma. Love"
+
+
+def test_a_sentence_break_that_does_not_fit_keeps_the_ordinary_wrap():
+    text = "We are rebranding the bank as a singing toilet"
+    assert collage.caption_lines(measure, text, 1080, sentences=True) == collage.caption_lines(measure, text, 1080)
+
+
 def test_captions_draw_a_tinted_pill_per_cue_above_the_figure():
     cv = canvas()
     lines = [

@@ -102,8 +102,9 @@ MESSAGE_LINES = 4
 MESSAGE_CHARS = 30
 
 
-def _photo(cv: Canvas, g, id: str) -> None:
-    """A dish held up to the lens, head out of frame: the way these are taken."""
+def _photo(cv: Canvas, g, id: str, mitts_in: float = 0) -> None:
+    """A dish held up to the lens, head out of frame: the way these are taken. ``mitts_in`` brings the mitts that far
+    towards the dish."""
     ink = cv.ink
     x, y, w, h = POST_PHOTO
     cv.rect(g, x, y, w, h, "#E9D8B4")
@@ -123,8 +124,8 @@ def _photo(cv: Canvas, g, id: str) -> None:
     for bx, by in [(-170, -220), (-60, -232), (70, -222), (170, -228), (-110, -196), (20, -198), (130, -198)]:
         cv.ellipse(g, bx - 32, by - 13, 64, 26, "#B5772C")
     for side in (-1, 1):
-        cv.path(g, f"M{side * 345} -170 Q{side * 400} -160 {side * 390} -70 Q{side * 330} -46 {side * 290} -74 "
-                   f"L{side * 280} -160Z", "#C8564B", ink, 5)  # fmt: skip
+        a, b, c, d, e, f = (side * (v - mitts_in) for v in (345, 400, 390, 330, 290, 280))
+        cv.path(g, f"M{a} -170 Q{b} -160 {c} -70 Q{d} -46 {e} -74 L{f} -160Z", "#C8564B", ink, 5)
 
 
 @register("prop", "phone-post", style="cutout", summary="A phone, full frame, on an old post: a dish, an empty heart")
@@ -142,11 +143,12 @@ def phone_post(
     message_shift: float = 0,
     scale: float = 1.0,
     id: str = "phone-post",
+    mitts_in: float = 0,
 ):
     """The phone's centre is (``x``, ``y``), 780 by 1560. The heart is empty until ``liked_at``, when it fills with a
     tiny pop and the line under it counts one like. ``message`` (sender, text with its own line breaks) slides in from
     the top at ``message_at``, and rests ``message_shift`` lower, negative for higher. Text is the post's own: a date or
-    a sender is any name the reel needs."""
+    a sender is any name the reel needs. ``mitts_in`` (px) keeps the photo's mitts off the bezel."""
     cv.require_font("a post's name and date are set in it", CutoutHandedError)
     _check_scale(scale)
     if not isinstance(name, str) or not 0 < len(name.strip()) <= 16:
@@ -163,7 +165,7 @@ def phone_post(
     cv.rect(g, -360, -744, 720, 1488, PAGE, radius=42)
     cv.ellipse(g, -340, -690, 84, 84, "#D8A7B1", ink, 4)
     cv.text(g, f"{id}-name", name, -232, -688, 460, 80, 50, ink, align="start")
-    _photo(cv, g, id)
+    _photo(cv, g, id, mitts_in)
     hx, hy = POST_HEART
     cv.path(cv.group(g, f"{id}-heart-empty", x=hx, y=hy, scaleX=1.3, scaleY=1.3), HEART, stroke=ink, sw=6)
     never = cv.group(g, f"{id}-no-likes")
