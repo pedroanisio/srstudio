@@ -112,10 +112,19 @@ def _flight(start: float, stop: float) -> list[tuple[float, float, float]]:
     return keys
 
 
+def _her_arm(cv, parent, at: float, end: float) -> None:
+    """Her own arm, behind her, swinging up from her shoulder and out of the frame toward him."""
+    arm = cv.group(parent, cv.uid("g"), start=at, end=end, anchorX=430.0, anchorY=1040.0, x=430.0, y=1040.0)
+    cv.keys(arm, "rotation", [(at, 62.0), (at + 0.24, -6.0)], hold=False, kind="cubic-out", local=False)
+    cv.path(arm, "M0 -46 C220 -66 480 -40 760 -48 L760 44 C480 34 220 52 0 44Z", "#efe8ee", cv.ink, 7)
+
+
 def dress(shot) -> None:
     """The bed under each character, the dark over it, the mosquito in the dark, the towel, her paw."""
     cv, app, beats = shot.cv, shot.app, shot.beats
     toon_house.bedroom(cv, shot.back)
+    if app.who == "rabbit" and app.start <= event(beats, "reach") < app.end:
+        _her_arm(cv, shot.back, event(beats, "reach"), app.end)
     land, whack = event(beats, "land"), event(beats, "whack")
     if app.who == "bear":
         towel, swing = event(beats, "towel"), event(beats, "swing")
@@ -139,11 +148,9 @@ def dress(shot) -> None:
             )  # fmt: skip
         if app.start <= whack < app.end:
             toon_world.paw(
-                cv, shot.front, ((whack - 0.16, whack + 0.9),), "#efe8ee", y=FOREHEAD[1], reach=420.0, holding=""
-            )
-    elif app.start <= event(beats, "reach") < app.end:
-        at = event(beats, "reach")
-        toon_world.paw(cv, shot.front, ((at, app.end),), "#efe8ee", y=640.0, reach=330.0, holding="")
+                cv, shot.front, ((whack - 0.16, whack + 0.9),), "#efe8ee", side=-1.0, y=FOREHEAD[1], reach=240.0,
+                holding="",
+            )  # fmt: skip
     for a, b in dark_spans(beats, shot.end):
         a, b = max(a, app.start), min(b, app.end)
         if b > a:

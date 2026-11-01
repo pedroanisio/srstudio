@@ -8,7 +8,7 @@ Collage (ADR 0026), ElevenLabs premade Will (Jun) and Daniel (Omar); Kai is sile
 
 from __future__ import annotations
 
-from srstudio import collage, collage_everyday, collage_group, collage_odds, foley
+from srstudio import collage, collage_everyday, collage_group, collage_odds, foley, signature
 from srstudio.collage_group import Place
 from srstudio.collage_sketch import TINTS, CastDrawer, Sound, Staging, make_sketch, timed, voices_note
 from srstudio.sketch import Appearance, Line, Mouths, events
@@ -102,6 +102,8 @@ def dress(shot) -> None:
     if app.start >= shut:
         collage_everyday.arm(cv, front, "jun", (800.0, 1500.0), (936.0, 1180.0), width=64.0)
         cv.rect(front, x, y, w, h, "#7a6a55", collage.INK, 5.0)
+        # the slab hides the shelf's code
+        signature.code(cv, front, x + w - 12.0, 760.0, 14.0, color="#fffaf0", opacity=0.85, align="end")
     off, on = moments(beats, "off")[0], moments(beats, "on")[0]
     if app.start <= off < app.end:
         shade = cv.group(front, cv.uid("g"), start=off, end=min(on, app.end))

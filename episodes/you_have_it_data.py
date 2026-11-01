@@ -31,6 +31,7 @@ NARRATION = f"Voiced with ElevenLabs premade voices {voices_note(NAMES)}; synthe
 NOTE = "ElevenLabs premade voices Sarah and Jessica at their natural pace; no reference-voice cloning."
 PLACES = {"priya": Place(285.0, 1920.0, 0.74), "deb": Place(800.0, 1920.0, 0.74)}
 PLATE = (540.0, 1560.0)
+HELD_PLATE = (285.0, 1702.0)  # in Priya's two hands, whose "hold" sits just above it
 SOOT = "#2a2526"
 BOOM = foley.Burst(2.0, 180.0, attack=0.002, decay=0.45)
 PING = foley.Burst(0.5, 4200.0, attack=0.001, decay=0.7, tone_hz=3100.0, tone_end_hz=3100.0, tone=0.9)
@@ -77,8 +78,15 @@ def moments(beats, name: str) -> list[float]:
 
 
 def casting(beats, end: float) -> CastDrawer:
-    """The two of them at the table after the still opening; the listener keeps her eyes on the plate."""
-    lineup = collage_group.pair(PLACES, (STILL, end))
+    """The two of them at the table after the still opening; the listener keeps her eyes on the plate, and when the
+    smoke clears Priya has both hands round what is left of it."""
+    listening = {"eyes": "open", "mouth": "flat", "arms": "down"}
+    smoke = moments(beats, "smoke")[0]
+    reactions = {
+        "priya": [{"start": 0.0, **listening}, {"start": smoke, **listening, "arms": "hold"}],
+        "deb": [{"start": 0.0, **listening}],
+    }
+    lineup = collage_group.Lineup(PLACES, reactions, ((STILL, end),))
 
     def draw(cv, parent, app: Appearance, mouths: Mouths) -> collage.Point:
         return lineup(cv, parent, app, mouths)
@@ -105,7 +113,7 @@ def dress(shot) -> None:
             x, y = collage_group.place_of(place, collage.face(collage.LOOKS[name]))
             for dx, dy, r in ((-90, -40, 70), (40, 30, 84), (-40, 96, 60), (70, -70, 48)):
                 cv.ellipse(front, x + dx, y + dy, r, r * 0.7, SOOT, opacity=0.88)
-        collage_odds.cake_slice(cv, front, 330.0, 1720.0, (0.0, 0.01, 0.02), size=120.0)
+        collage_odds.cake_slice(cv, front, *HELD_PLATE, (0.0, 0.01, 0.02), size=120.0)
 
 
 def sounds(beats, end: float) -> list[Sound]:
