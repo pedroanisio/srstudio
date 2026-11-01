@@ -107,6 +107,9 @@ __all__ = [
     "gus",
     "live_door",
     "lower_third",
+    "corridor_dashes",
+    "corridor_keys",
+    "corridor_map",
     "forecast_map",
     "money_app",
     "oven_clock",
@@ -2539,3 +2542,83 @@ def forecast_map(
         hold=False,
         local=False,
     )
+
+
+CORRIDOR_LEFT, CORRIDOR_RIGHT = 170.0, 530.0  # the walls, in px of the panel
+CORRIDOR_TOP, CORRIDOR_FOOT = 120.0, 640.0  # the floor, from under the title to over the count
+CORRIDOR_DASH, CORRIDOR_DASH_EVERY = 46.0, 110.0  # the centre line on the floor
+CORRIDOR_STEP = 0.22  # seconds a sidestep takes, the same for both, so two men who step together are seen to
+CORRIDOR_DOT = 44.0
+Stop = tuple[float, float, float]  # a second, and where the man reaches from there, in px of the panel
+
+
+def corridor_keys(stops: Sequence[Stop]) -> list[Stop]:
+    """The key frames of one man: he holds where he is until a stop's second, then steps there in one quick move."""
+    keys = [stops[0]]
+    for (_, x, y), (at, nx, ny) in zip(stops, stops[1:], strict=False):
+        keys += [(at, x, y), (at + CORRIDOR_STEP, nx, ny)]
+    return keys
+
+
+def corridor_dashes(top: float, foot: float) -> list[float]:
+    """Where each dash of the centre line starts, every one of them ending before the floor does."""
+    return [
+        top + 40.0 + i * CORRIDOR_DASH_EVERY
+        for i in range(int((foot - top - 40.0) / CORRIDOR_DASH_EVERY) + 1)
+        if top + 40.0 + i * CORRIDOR_DASH_EVERY + CORRIDOR_DASH < foot
+    ]
+
+
+def _man(cv: Canvas, g, id: str, stops: Sequence[Stop], fill: str) -> None:
+    keys = corridor_keys(stops)
+    man = cv.group(g, id, x=PHONE_X + keys[0][1], y=PHONE_Y + keys[0][2])
+    _inked_oval(cv, man, 0.0, 0.0, CORRIDOR_DOT, CORRIDOR_DOT, fill, 5.0)
+    if len(keys) > 1:
+        cv.keys(man, "x", [(round(t, 3), PHONE_X + a) for t, a, _ in keys], hold=False, local=False)
+        cv.keys(man, "y", [(round(t, 3), PHONE_Y + b) for t, _, b in keys], hold=False, local=False)
+
+
+@register(
+    "graphic", "news-corridor-map", summary="A corridor from above: two plain dots that step in sync, and a count"
+)
+def corridor_map(
+    cv: Canvas,
+    parent,
+    title: str,
+    counter: str,
+    one: Sequence[Stop],
+    other: Sequence[Stop],
+    counts: Sequence[tuple[float, str]],
+    start: float,
+    end: float,
+    measure: Measure,
+    id: str = "news-corridor-map",
+) -> None:
+    """A corridor seen from above from ``start`` to ``end``: ``one`` and ``other`` are two men as plain dots, each a
+    list of stops (its second, its x, its y) he steps to in :data:`CORRIDOR_STEP` seconds, with ``counter`` and its
+    ``counts`` under them. It refuses copy the show keeps off the screen, words too wide, a man outside the walls, and
+    stops out of order or off the span."""
+    _panel_copy("the corridor", title, counter, counts, start, end, measure)
+    for stops in (one, other):
+        if not stops or stops[0][0] != start:
+            raise NewsKitError(f"a man in the corridor stands there from {start}")
+        moments = [at for at, _, _ in stops]
+        if any(b <= a for a, b in zip(moments, moments[1:], strict=False)) or moments[-1] + CORRIDOR_STEP > end:
+            raise NewsKitError(f"a man's stops move forward inside {start}..{end}")
+        for _, x, y in stops:
+            if not (
+                CORRIDOR_LEFT + CORRIDOR_DOT <= x <= CORRIDOR_RIGHT - CORRIDOR_DOT
+                and CORRIDOR_TOP + CORRIDOR_DOT <= y <= CORRIDOR_FOOT - CORRIDOR_DOT
+            ):
+                raise NewsKitError(f"({x}, {y}) is outside the corridor")
+    g = _panel(cv, parent, title, id, start, end)
+    left, right = PHONE_X + CORRIDOR_LEFT, PHONE_X + CORRIDOR_RIGHT
+    top, foot = PHONE_Y + CORRIDOR_TOP, PHONE_Y + CORRIDOR_FOOT
+    cv.rect(g, left, top, right - left, foot - top, "#e4dcef")
+    for x in (left - 22.0, right):
+        cv.rect(g, x, top, 22.0, foot - top, PLUM, PLUM_DEEP, 4.0)
+    for y in corridor_dashes(top, foot):
+        cv.rect(g, (left + right) / 2 - 5.0, y, 10.0, CORRIDOR_DASH, "#cfc7db", radius=5.0)
+    _man(cv, g, f"{id}-one", one, TANGERINE)
+    _man(cv, g, f"{id}-other", other, MINT)
+    _counts(cv, g, counter, counts, end, measure, id)

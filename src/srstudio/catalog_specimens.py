@@ -443,6 +443,17 @@ RECIPES: dict[str, Recipe] = {
             rain=(SECONDS * 0.2, SECONDS * 0.7),
         )
     ),
+    "news-corridor-map": Recipe(
+        lettered(
+            "THE CORRIDOR",
+            "SIDESTEPS",
+            ((0.0, 240.0, 480.0), (SECONDS / 3, 460.0, 480.0), (SECONDS * 2 / 3, 240.0, 480.0)),
+            ((0.0, 240.0, 240.0), (SECONDS / 3, 460.0, 240.0), (SECONDS * 2 / 3, 240.0, 240.0)),
+            ((0.0, "1"), (SECONDS / 3, "2"), (SECONDS * 2 / 3, "3")),
+            0.0,
+            SECONDS,
+        )
+    ),
     "news-banner": Recipe(lettered(0.0, SECONDS)),
     "news-ticker": Recipe(lettered(("ONE ITEM", "ANOTHER ITEM"), 0.0, SECONDS)),
     "news-phone": Recipe(lettered("The Chat", (news_kit.Bubble("7:15", "five minutes away"),), 0.0, SECONDS)),
