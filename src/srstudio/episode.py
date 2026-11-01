@@ -382,6 +382,7 @@ class EpisodeSpec:
     signature: bool = True  # False only for packages older than the convention
     signature_code: str = "SR-1028"  # project-wide; changing it is a decision, not a per-episode choice
     # -- the frame's edge ---------------------------------------------------------------------------
+    loudness: str | None = None  # the mix's integrated target for this reel; None: the style's
     bleed: bool = False  # far planes blurred past the frame's edge (srstudio.look.sheet); False redraws published reels
 
     def __post_init__(self) -> None:
@@ -872,7 +873,7 @@ class Episode:
             unknown = ", ".join(f"{k}=" for k in sorted(given - allowed))
             raise EpisodeArgumentError(f"a {source} project takes no {unknown}")
         style = self.spec.style.mix
-        loud, peak = loudness or style.loudness, true_peak or style.true_peak
+        loud, peak = loudness or self.spec.loudness or style.loudness, true_peak or style.true_peak
         if source == "silent":
             return None
         if source == "mixed":

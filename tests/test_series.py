@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import dataclasses
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from types import SimpleNamespace
 
 import pytest
@@ -132,6 +132,26 @@ def test_record_runs_the_takes_recording_on_the_script(monkeypatch):
     monkeypatch.setattr(series.takes, "main", lambda script: seen.setdefault("script", script) and 0)
     assert series.record(reel()) == 0
     assert seen["script"].title == "Demo"
+
+
+def test_a_reel_can_go_without_the_bed_of_its_series():
+    @dataclass(frozen=True)
+    class Scored(Reel):
+        series = replace(SERIES, bed="the-series-bed")
+
+    base = reel()
+    scored = Scored(**{f.name: getattr(base, f.name) for f in dataclasses.fields(Reel)})
+    assert scored.script().bed == "the-series-bed"
+    quiet = dataclasses.replace(scored, bed=False).script()
+    assert quiet.bed is None
+    assert quiet.voice_note.endswith("No music.") and "composed" not in quiet.voice_note
+
+
+def test_a_reel_can_ask_for_its_own_loudness_and_otherwise_leaves_it_to_the_style(project):
+    series.build(reel(loudness="-14"), "unused.py", argv=["demo.py", str(project)])
+    assert FakeEpisode.made[-1].spec.given.loudness == "-14"
+    series.build(reel(), "unused.py", argv=["demo.py", str(project)])
+    assert FakeEpisode.made[-1].spec.given.loudness is None
 
 
 # -- the build --------------------------------------------------------------------------------------------------------
