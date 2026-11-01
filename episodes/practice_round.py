@@ -40,7 +40,6 @@ from practice_round_audio import (
     NOOR_LOOK,
     NOOR_PAGE,
     NOOR_PLAIN,
-    PEN,
     PEN_TILT,
     PLANKS_AT,
     POSES,
@@ -113,7 +112,7 @@ def noor(parent, keys, end: float, take=None) -> None:
         cv.keys(pen, "rotation", [(k.start, PEN_TILT.get(k.pose, 0.0)) for k in keys])
     else:
         pen.rotation = PEN_TILT.get(keys[0].pose, 0.0)
-    stick.shape(cv, pen, "M -14 6 L 64 -14", sw=10, stroke=PEN)
+    st.pen(cv, pen)
 
 
 def dev(parent, keys, end: float, take=None) -> None:

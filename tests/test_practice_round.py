@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import show, stick_reel, stick_table
+from srstudio import show, stick, stick_reel, stick_table
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
 
@@ -93,3 +93,14 @@ def test_the_bedding_comes_from_off_the_end_shot_and_stops_on_the_table(data):
     (fx, _), zoom, (tx, _) = data.CAMERAS["end"]
     assert tx + (data.BEDDING_FROM - 120 - fx) * zoom > 1080
     assert stick_table.TABLE_X[0] < data.BEDDING_TO < stick_table.TABLE_X[1]
+
+
+def test_guarding_the_board_her_pen_lies_as_the_pose_was_checked(data):
+    assert "guard" not in data.PEN_TILT
+
+
+def test_no_bracket_stub_shows_under_the_hook_card(data):
+    """The second bracket stands behind the card and the first left of it, so neither hangs out of its lower edge."""
+    (fx, fy), zoom, (tx, ty) = data.CAMERAS["two"]
+    bottom = ty + (data.BRACKETS_AT[1] + stick_table.BRACKET_DROP - fy) * zoom
+    assert bottom <= stick.CARD[1] + stick.CARD[3]

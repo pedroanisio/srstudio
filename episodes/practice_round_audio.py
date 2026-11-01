@@ -95,9 +95,8 @@ CAMERAS = {
 }
 FACES = {"dev": (302.0, 775.0), "noor": (778.0, 775.0)}  # the heads on the set
 MARKS = {"cactus": (480.0, st.TOP), "code": (470.0, st.TOP + 12)}
-PLANKS_AT, DRILL_AT, BRACKETS_AT = (-30.0, 1400.0), (150.0, 1250.0), (66.0, 540.0)
+PLANKS_AT, DRILL_AT, BRACKETS_AT = (-30.0, 1400.0), (150.0, 1250.0), (66.0, 495.0)
 MUG_AT = (540.0, st.TOP - 40)
-PEN = "#c8362b"
 PEN_TILT = {"point": -14.0, "write-a": 62.0, "write-b": 70.0, "click": -60.0}  # degrees off the arm's line; others 0
 BEDDING_FROM, BEDDING_TO = 1180.0, 672.0  # x along the table
 SCRATCH_RATE = 7.0  # frames of her hand a second, writing
