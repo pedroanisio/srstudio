@@ -270,7 +270,7 @@ SOFT = Style(
         google=GoogleFont("Poppins", 700),
     ),
     mouths={WARM.name: SOFT_MOUTH},
-    parts=("blob", "soft_props", "soft_sets"),
+    parts=("blob", "soft_props", "soft_sets", "soft_home"),
 )
 
 CEL = Style(
@@ -375,16 +375,19 @@ TOON = Style(
         "toon_dinner",
         "toon_everyday",
         "toon_house",
+        "toon_interview",
         "toon_surgery",
         "toon_inked",
         "toon_parlour",
         "toon_props",
         "toon_redrawn",
         "toon_rooms",
+        "toon_screens",
         "toon_world",
         "toon_flat",
         "toon_sets",
         "toon_study",
+        "toon_tie",
         "toon_wear",
     ),
     namer=partial(flat_counter, "k"),
