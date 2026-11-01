@@ -330,6 +330,65 @@ def test_a_character_on_plates_repeats_no_id_and_still_draws_what_was_approved(n
     assert specimens.fingerprint(document) == parts.get(name).version(1).drawing
 
 
+def opacity_at(node: ET.Element, second: float) -> float:
+    """A node's opacity at ``second``: stepped when its track holds, and between its keys when it fades."""
+    value = float(node.get("opacity", "1"))
+    for track in node.findall("animate"):
+        if track.get("property") == "opacity":
+            keys = [(float(key.get("time", "0")), float(key.get("value", "1"))) for key in track.findall("key")]
+            stepped = track.get("defaultInterpolation") == "hold"
+            held = next((value for time, value in reversed(keys) if time <= second), keys[0][1])
+            value = held if stepped else float(np.interp(second, *zip(*keys, strict=True)))
+    return value
+
+
+def something_shows(node: ET.Element, second: float) -> bool:
+    """Whether a drawn node under ``node`` is on at ``second``: inside its span and not gated off."""
+    if node.tag in ("animate", "expression") or second < float(node.get("start", "0")):
+        return False
+    if ("end" in node.attrib and second >= float(node.attrib["end"])) or opacity_at(node, second) <= 0:
+        return False
+    return node.tag not in ("group", "composition") or any(something_shows(child, second) for child in node)
+
+
+def shown_at(document: bytes, second: float) -> bool:
+    composition = ET.fromstring(document).find("composition")
+    assert composition is not None
+    return something_shows(composition, second)
+
+
+def drawn_by_itself(name: str, tmp_path: Path, monkeypatch) -> cs.Plan:
+    """A part that needs no font and no project, as a build plans it."""
+    monkeypatch.setattr(cs, "font_of", lambda style, episodes: None)
+    entry = next(e for e in registry.entries() if e.name == name)
+    recipe = cs.recipe_of(entry)
+    built = cs.document(entry, recipe, None, tmp_path, tmp_path)
+    return cs.Plan(entry, built, recipe.at, cs.key(entry, cs.drawing_of(entry, built), recipe.at), False)
+
+
+@pytest.mark.parametrize("name", ["collage-eye-twitch", "location-chip", "map-far-side"])
+def test_a_part_that_is_on_for_a_moment_is_shown_in_that_moment_and_keeps_its_digest(name, tmp_path, monkeypatch):
+    """The engine draws nothing for these at the default second, which fails the whole build."""
+    plan_ = drawn_by_itself(name, tmp_path, monkeypatch)
+    assert shown_at(plan_.document, plan_.at)
+    assert specimens.fingerprint(plan_.document) == parts.get(name).version(1).drawing
+
+
+def test_the_reader_of_a_document_sees_a_gate_a_span_and_its_end():
+    document = b"""<scene><composition>
+      <group id="a"><animate property="opacity" defaultInterpolation="hold">
+        <key time="0" value="0"/><key time="1" value="1"/><key time="2" value="0"/></animate><shape id="s"/></group>
+      <group id="b" start="3" end="4"><shape id="t"/></group>
+    </composition></scene>"""
+    assert [shown_at(document, second) for second in (0.5, 1.5, 2.5, 3.5, 4.0)] == [False, True, False, True, False]
+
+
+@needs_projects
+def test_every_part_is_on_at_the_second_its_specimen_shows(planned):
+    """A dark moment is a failed build, and the engine is the only other thing that would say so."""
+    assert [p.entry.name for p in planned.values() if not shown_at(p.document, p.at)] == []
+
+
 def test_the_splash_is_shown_while_its_beads_are_in_the_air():
     # a bead flies for 0.32 s at the least: the recipe's default second shows an empty frame, which a render refuses
     assert cs.RECIPES["water-splash"].at < 0.32

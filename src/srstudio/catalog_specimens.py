@@ -325,7 +325,8 @@ RECIPES: dict[str, Recipe] = {
     "collage-stool": Recipe(part(540, 1000, 480)),
     "collage-towel": Recipe(part(540, 700)),
     "collage-ring-corner": Recipe(part()),
-    "collage-eye-twitch": Recipe(part("brent", (0.2, 0.8))),
+    "collage-eye-twitch": Recipe(part("brent", (0.2, 0.8)), at=0.25),  # the lid is down for 0.09 s at each time
+    "location-chip": Recipe(part(), at=0.5),  # its one stop is over at the default second
     "collage-confetti": Recipe(part(0.0, SECONDS)),
     "collage-arm": Recipe(part("deb", (760, 1500), (420, 900))),
     "collage-tv": Recipe(part(300, 700, 480)),
@@ -459,7 +460,7 @@ RECIPES: dict[str, Recipe] = {
         lambda cv, g, e, ctx: e(cv, _on_area(cv, g, ctx), {"inside": (0.0, 0.5), "rest": (0.0, 0.5)}, _HOT)
     ),
     "map-ring": Recipe(part(map_kit.ring_px(3300.0, 1.6), 0.0, SECONDS)),
-    "map-far-side": Recipe(_far_side, at=SECONDS),
+    "map-far-side": Recipe(_far_side, at=SECONDS * 0.75),  # over by half time, and gone at SECONDS itself
     "map-clock": Recipe(part(540.0, 960.0, 300.0, 10.0, 0.0, SECONDS)),
     "map-daylight": Recipe(
         lambda cv, g, e, ctx: e(
