@@ -23,7 +23,14 @@ RELEASE = Release(
     ),
     tags=Tags("everyday-tech", "protagonist", "affection", test="sp-speakers", arm="a"),
     style="Soft",
-    parts={},
+    parts={
+        "bo": 1,
+        "captions": 1,
+        "show-bug": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "soft-time-card": 1,
+    },
     comedy=Scores(author=16, reviewer=17),
     cover=True,
 )
