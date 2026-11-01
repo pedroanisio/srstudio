@@ -8,7 +8,7 @@ Absence of output verification is a design defect, not a runtime bug.
 All LLM output must be treated as untrusted and validated explicitly.
 
 The pipeline is :mod:`srstudio.interview`; this file is the episode: its script, and where each line sits
-(:func:`schedule`). An update is a man in your house, and he has moved the sofa. Juno is Laura, Pip is Alice, Bo is
+(:func:`schedule`). An update is a man in your house, and he has moved the sofa. Juno is Laura, Pip is Will, Bo is
 Eric. There is no music: the reel's foley is synthesized in the build.
 """
 
@@ -21,7 +21,7 @@ from srstudio.styles import SOFT
 SEED = 3403
 VOICES = {
     "juno": Singer("FGY2WhTYpPnrIDTdsKH5", "Laura", dict(stability=0.5, similarity_boost=0.75, style=0.2)),
-    "pip": Singer("Xb7hH8MSUJpSbSDYk0k2", "Alice", dict(stability=0.42, similarity_boost=0.75, style=0.4)),
+    "pip": Singer("bIHbv24MWmeRgasZH58o", "Will", dict(stability=0.30, similarity_boost=0.75, style=0.45)),
     "bo": Singer("cjVigY5qzO86Huf0OWal", "Eric", dict(stability=0.55, similarity_boost=0.75, style=0.3)),
 }
 SCRIPT = [  # role, text, caption, speed
@@ -50,7 +50,7 @@ INTERVIEW = Interview(
     voices=VOICES,
     lines=SCRIPT,
     effects=[],
-    voice_note="ElevenLabs premade voices Laura, Alice and Eric; no reference-voice cloning. "
+    voice_note="ElevenLabs premade voices Laura, Will and Eric; no reference-voice cloning. "
     "Foley synthesized; no music.",
     room_tone_seed=SEED + 10,
     reaction_after=0.1,
@@ -63,7 +63,7 @@ BO_IN = 0.55  # he steps in
 CUE_MIN = 0.92  # a line's start to the next, so its caption holds its 0.84 s
 SWITCH = 0.85  # Pip at the bare wall: click, click on nothing
 PRESS = 1.75  # the bracket: a finger on the fridge door, the hum, nothing
-LAMP = 0.75  # the lamp behind her comes on, Bo nods
+LAMP = 0.75  # the lamp behind Pip comes on, Bo nods
 JAB = 1.3  # the insert: her finger comes up, one star, hard
 WALK = 2.2  # NEXT MORNING: she walks to the door, sure of herself, and sits
 HOLD = 1.3  # the bracket: on the floor, again, nobody speaks
