@@ -8333,7 +8333,7 @@
       "text": "A caixa de lenços, a bandeja de amostras e o currículo."
     },
     {
-      "section": "Soft: casa",
+      "section": "locations",
       "name": "Sala com persiana e televisão",
       "parts": [
         "soft-den",
@@ -8348,7 +8348,7 @@
       "text": "Uma sala cuja hora do dia é parte do cenário: a persiana sobe, a noite sai. A televisão não tem rosto, só barras de voz e uma contagem."
     },
     {
-      "section": "Soft: casa",
+      "section": "locations",
       "name": "Duas casas e um cobertor",
       "parts": [
         "soft-flats",
@@ -8362,7 +8362,7 @@
       "text": "Duas casas lado a lado com uma parede entre elas, e o mesmo cobertor nos dois sofás."
     },
     {
-      "section": "Soft: casa",
+      "section": "locations",
       "name": "Porta de restaurante",
       "parts": [
         "soft-restaurant",
