@@ -1251,6 +1251,8 @@
     "toon-toothpaste-cone": {"title": "Casquinha de pasta de dente"},
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
+    "toon-chat-phone": {"title": "Celular com conversa"},
+    "toon-chat-chip": {"title": "Selo sobre o celular"},
     "collage-napkin": {"title": "Guardanapo no colarinho"},
     "collage-toothbrush-mug": {"title": "Caneca com escova"},
     "collage-snowy-window": {"title": "Janela com neve"},
@@ -8137,6 +8139,19 @@
         "at": 8.0
       },
       "text": "Cardápio fechado, pratos que chegam um a um e o bloco que só aparece no fim."
+    },
+    {
+      "section": "props",
+      "name": "O celular que dá razão aos dois",
+      "parts": [
+        "toon-chat-phone",
+        "toon-chat-chip"
+      ],
+      "shot": {
+        "episode": "absolutely-right",
+        "at": 25.5
+      },
+      "text": "A janela de conversa inventada, com o selo que chega por cima."
     }
   ]
 }

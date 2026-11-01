@@ -10417,6 +10417,40 @@
           "rig": null
         }
       ]
+    },
+    "toon-chat-phone": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "An invented chat window on a phone, which can show its back and buzz. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5e4da857625e79abce0967d06fd2022f8b4f54e1f4e9abdeaeaeeac7239619dc",
+          "rig": null
+        }
+      ]
+    },
+    "toon-chat-chip": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "One short line landing over a phone in a white chip. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2950c9287797bac1656827f873e816573d1bdc48a356c40e2f0fb967f03b2798",
+          "rig": null
+        }
+      ]
     }
   }
 }
