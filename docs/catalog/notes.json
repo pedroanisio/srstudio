@@ -1252,6 +1252,10 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "paper-streamers": {"title": "Serpentinas de papel"},
+    "id-lanyard": {"title": "Crachá com cordão"},
+    "sheet-cake": {"title": "Bolo retangular"},
+    "wall-plaque": {"title": "Placa de parede"},
     "toon-folder": {"title": "Pasta com fotografia"},
     "toon-smoke-detector": {"title": "Detector de fumaça"},
     "collage-wall-clock": {"title": "Relógio de parede de papel"},
@@ -8410,6 +8414,43 @@
         "at": 21.5
       },
       "text": "Uma pasta vista de cima que abre sobre a foto de um prédio sem nome."
+    },
+    {
+      "section": "props",
+      "name": "Placa de parede",
+      "parts": [
+        "wall-plaque"
+      ],
+      "shot": {
+        "episode": "round-seven",
+        "at": 18.9
+      },
+      "text": "Uma placa de latão que passa o filme inteiro ilegível na parede e só ganha letras no close."
+    },
+    {
+      "section": "props",
+      "name": "Bolo e serpentinas",
+      "parts": [
+        "sheet-cake",
+        "paper-streamers"
+      ],
+      "shot": {
+        "episode": "round-seven",
+        "at": 14.6
+      },
+      "text": "Um bolo branco com duas linhas de glacê e serpentinas de papel presas na parede da recepção."
+    },
+    {
+      "section": "props",
+      "name": "Crachá com cordão",
+      "parts": [
+        "id-lanyard"
+      ],
+      "shot": {
+        "episode": "round-seven",
+        "at": 9.5
+      },
+      "text": "Um crachá de funcionário com a foto do personagem, estendido por cima do balcão."
     }
   ]
 }

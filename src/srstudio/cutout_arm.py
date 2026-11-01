@@ -109,10 +109,14 @@ def arm(
     width: float = 5.0,
     hand: float = 44.0,
     finger: bool = False,
+    skin: str | None = None,
 ) -> Arm:
     """Draw the arm from ``shoulder`` to the hand at ``track``'s (time, x, y) points, in ``parent``'s units. ``finger``
-    gives the hand one finger out, to poke with."""
+    gives the hand one finger out, to poke with. ``skin`` colours the hand (default: white, as the office rig's)."""
     _check(track, upper, fore, bend, width, hand)
+    if skin is not None and (not isinstance(skin, str) or not skin):
+        raise CutoutArmError(f"skin is a nonempty colour string, got {skin!r}")
+    colour = cv.white if skin is None else skin
     times = _samples(track)
     poses = []
     for t in times:
@@ -131,8 +135,8 @@ def arm(
     cv.line(forearm, 0, 0, fore, 0, cv.ink, width)
     if finger:
         cv.path(forearm, f"M{fore + hand * 0.3:g} -5 L{fore + hand * 1.1:g} -4 Q{fore + hand * 1.26:g} 0 "
-                         f"{fore + hand * 1.1:g} 5 L{fore + hand * 0.3:g} 6Z", cv.white, cv.ink, 3)  # fmt: skip
-    cv.ellipse(forearm, fore - hand / 2, -hand * 0.46, hand, hand * 0.92, cv.white, cv.ink, 3.5)
+                         f"{fore + hand * 1.1:g} 5 L{fore + hand * 0.3:g} 6Z", colour, cv.ink, 3)  # fmt: skip
+    cv.ellipse(forearm, fore - hand / 2, -hand * 0.46, hand, hand * 0.92, colour, cv.ink, 3.5)
     x0, y0 = hand_at(track, times[0])
     grip = cv.group(parent, f"{id}-grip", x=x0, y=y0)
     cv.keys(grip, "x", [(t, hand_at(track, t)[0]) for t in times], hold=False)

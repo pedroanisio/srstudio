@@ -96,6 +96,19 @@ def test_the_rotation_never_takes_the_long_way_round():
     assert max(abs(b[1] - a[1]) for a, b in zip(keys, keys[1:], strict=False)) < 45
 
 
+def test_a_hand_takes_the_skin_it_is_given():
+    cv = canvas()
+    cutout_arm.arm(cv, cv.comp, "reach", (0, 0), [(0.0, 100, 100)], skin="#C28A65")
+    assert b"#C28A65" in cv.scene.to_bytes()
+
+
+@pytest.mark.parametrize("skin", ["", 7])
+def test_a_skin_that_is_no_colour_is_refused(skin):
+    cv = canvas()
+    with pytest.raises(cutout_arm.CutoutArmError):
+        cutout_arm.arm(cv, cv.comp, "reach", (0, 0), [(0.0, 100, 100)], skin=skin)
+
+
 def drawn(actor, **extras) -> bytes:
     cv = canvas()
     actor(cv).build(cv.comp, 540, 900, perf=Performance(extras=extras))
