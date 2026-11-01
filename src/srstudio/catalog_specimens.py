@@ -489,6 +489,7 @@ RECIPES: dict[str, Recipe] = {
     "toon-calendar": Recipe(part(((0.0, "OCT 27"),))),
     "toon-chat-phone": Recipe(lettered((toon_chat.Bubble(0.0, "You make a good point."),))),
     "toon-chat-chip": Recipe(lettered("You make a good point", 0.0, SECONDS)),
+    "toon-call-chip": Recipe(lettered("Dana", (0.0, 862), 0.0, SECONDS)),
     "toon-whirl": Recipe(part(), at=0.35),  # it is gone by 0.7 s
     "toon-sparkles": Recipe(part(), at=0.25),  # each glint twinkles for half a second
     "hair-fall": Recipe(part(), at=0.3),  # the sheet has crossed the frame by 0.6 s

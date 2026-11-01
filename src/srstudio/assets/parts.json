@@ -10927,6 +10927,57 @@
           "rig": null
         }
       ]
+    },
+    "toon-night-cabin": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A car's cabin at night seen from the dash: roof, back window, seats. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7fb1e2cde501de8ee7418baf3ac977a1e2d81c06f4029f4ba0c79a6185576d1a",
+          "rig": null
+        }
+      ]
+    },
+    "toon-night-dash": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A dark dashboard in front of the seats, with the marks where a desk has them. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e3a330176ad26fc953e56ac3b2797db19bda96c066834fcd0e1a0f9c34ef1210",
+          "rig": null
+        }
+      ]
+    },
+    "toon-call-chip": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A dashboard call readout: a name and a running timer, dim until lit. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "65c9176a8d13fb3b4e3d53dba54fc4957ecdd864bec53332d6bee42d80392bfd",
+          "rig": null
+        }
+      ]
     }
   }
 }

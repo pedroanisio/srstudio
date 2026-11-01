@@ -86,6 +86,7 @@ from . import (  # noqa: F401  (registers builders)
     toon_house,
     toon_inserts,
     toon_interview,
+    toon_night,
     toon_parlour,
     toon_props,
     toon_redrawn,
