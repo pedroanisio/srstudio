@@ -230,6 +230,7 @@ def on_table(g):
     look.pool(cv, g, "plate-shadow", "#2A2018AA", 270, 1254, 400, 44, opacity=0.5)
     cv.ellipse(g, 280, 1236, 380, 54, "#FBF8F0", cv.ink, 4)
     cv.ellipse(g, 320, 1244, 300, 36, "#EFE7D6", "#D6CFBF", 2)
+    signature.cactus(cv, g, 830, 1262, scale=0.5)  # the wall's cactus is behind Milo's head from the first frame on
     lying = cv.group(g, "lying-napkin")
     cv.gate(lying, [(0.0, NAPKIN - 0.5)])
     cutout_odds.paper_napkin(cv, lying, 120, 1272, id="table-napkin")
