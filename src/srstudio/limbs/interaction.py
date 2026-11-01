@@ -208,7 +208,7 @@ def bake_interaction(
             )
             for s in samples
         )
-        reports.append((participant.name, audit(samples, poses, participant.motion.arm)))
+        reports.append((participant.name, audit(samples, poses, participant.motion.arm, quality=options.quality)))
         for frame, pose in zip(frames, poses, strict=True):
             for part in pose.parts:
                 frame.append(
