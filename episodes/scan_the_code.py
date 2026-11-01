@@ -16,7 +16,7 @@ import os
 from _common import project_root
 from instagram_posts import POSTS
 from scan_the_code_audio import BUBBLES, INTERVIEW, SEED, SOUP, TURN
-from srstudio import CAFE, Episode, EpisodeSpec, camera, cast, cutout_counter, foley, locations, props
+from srstudio import CAFE, Episode, EpisodeSpec, camera, cast, cutout_counter, foley, locations, props, signature
 from srstudio import interview as iv_audio
 
 os.umask(0o077)  # generated outputs are private: folders 700, files 600
@@ -52,11 +52,12 @@ ep.audio(
 )
 
 AVA_AT, MILO_AT = (770, 760, 1.55), (300, 950, 1.30)
-ARRIVES_FROM = 230  # she is half in the frame on the first frame, and still walking
+ARRIVES_FROM = 40  # still walking on the first frame, with all of her face in it
 ARRIVES = 0.95
 TABLE_Y = 1180
 TABLE_X, TABLE_WIDE = 540, 860
 TENT_AT = (540, 1270)
+CACTUS_ON_SHELF = (555, 1012)  # between their heads, above the tent: the shelf's usual spot is behind Milo
 NEXT_TABLE = (1375, 520)  # the pigeon's, past the edge of the two-shot
 GLASS_BASE = (140, 1268)
 GLASS_SCALE = 1.35
@@ -273,7 +274,13 @@ def next_table(g):
 
 ava = cast.Barista(cv)
 milo = cast.Customer(cv)
-cafe = ep.setup(locations.cafe, [(0, DURATION)], at_counter=table, menu=("SCAN", "SCAN", "NO MENUS"))
+cafe = ep.setup(
+    locations.cafe,
+    [(0, DURATION)],
+    at_counter=table,
+    menu=("SCAN", "SCAN", "NO MENUS"),
+    cactus=lambda g: signature.cactus(cv, g, *CACTUS_ON_SHELF, 0.6),
+)
 
 
 def close(at, scale, to=(540, 800)):
