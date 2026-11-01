@@ -17,6 +17,24 @@ def dispatch(raw: bytes) -> dict:
 
     request = wire.loads(raw)
     operation = request.get('operation')
+    if operation == 'validate-png':
+        from srstudio._composition_png import verify
+
+        wire.fields(request, {'schema', 'operation', 'png', 'width', 'height'})
+        digest = verify(wire.xml_decode(request['png']), request['width'], request['height'])
+        return {'schema': SCHEMA, 'status': 'ok', 'digest': digest}
+    if operation == 'compile-bundle':
+        from srstudio._composition_bundle_worker import compile_bundle
+
+        bundle_scene = compile_bundle(request)
+        return {
+            'schema': SCHEMA,
+            'status': 'ok',
+            'xml': wire.xml_encode(bundle_scene.xml),
+            'digest': bundle_scene.digest,
+            'plan_digest': bundle_scene.plan_digest,
+            'nodes': bundle_scene.nodes,
+        }
     if operation == 'prepare-plate':
         from srstudio import _composition_plate_wire as plate_wire
         from srstudio._composition_plate import prepare_plate
@@ -31,7 +49,7 @@ def dispatch(raw: bytes) -> dict:
         asset = prepare_vector(binding, wire.xml_decode(request['xml']))
         return {'schema': SCHEMA, 'status': 'ok', 'prepared': wire.prepared_metadata(asset)}
     if operation != 'compile':
-        raise wire.fail(operation, 'prepare, prepare-plate or compile')
+        raise wire.fail(operation, 'prepare, prepare-plate, validate-png, compile or compile-bundle')
     wire.fields(request, {'schema', 'operation', 'plan', 'assets'})
     plan = wire.record(c.ValidatedScenePlan, request['plan'])
     if type(request['assets']) is not list or not 1 <= len(request['assets']) <= c.MAX_LAYERS:

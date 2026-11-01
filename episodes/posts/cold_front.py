@@ -43,6 +43,8 @@ RELEASE = Release(
         "collage-omar": 1,
         "collage-phone": 1,
         "collage-sign": 1,
+        "collage-thread": 1,
+        "collage-weather-map": 1,
         "show-bug": 1,
         "signature-cactus": 1,
         "signature-code": 1,

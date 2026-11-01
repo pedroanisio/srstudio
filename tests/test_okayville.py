@@ -19,7 +19,10 @@ ROOT = Path(__file__).resolve().parent.parent
 RETIRED = re.compile(rb"tuxmeme", re.IGNORECASE)
 TREES = ("src", "episodes", "pilots", "examples", "tools/govern/processes")  # what a reel is drawn and captioned from
 SKILL = ROOT / ".claude/skills/funny-reels/SKILL.md"
-GUIDES = ("docs/authoring-reference.md", "docs/slack-channel.md")  # what an author copies from
+GUIDES = tuple(str(p.relative_to(ROOT)) for p in sorted((ROOT / "docs").glob("authoring-*.md"))) + (
+    "docs/episode-history.md",
+    "docs/slack-channel.md",
+)  # Keep checking every guide an author copies from after the reference split.
 RECORDS = ("notes.md", "sources.md")  # what a pilot's author wrote down about its build: never drawn or captioned
 GUARDS = ["src/srstudio/cast_card.py"]  # holds the name to refuse it on a card: test_cast_card proves that refusal
 

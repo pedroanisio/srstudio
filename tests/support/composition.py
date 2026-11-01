@@ -4,7 +4,7 @@ from dataclasses import replace
 
 from sr_core.scene import Scene
 
-from srstudio import Canvas, parts
+from srstudio import Canvas, clay, parts
 from srstudio import composition as c
 
 
@@ -70,3 +70,22 @@ def plate_plan(**changes):
         c.RenderBudget(),
     )
     return c.preflight(replace(spec, **changes), (binding,))
+
+
+def plate_source():
+    model = clay.Model()
+    model.box('skin', (0, 0, 0.2), (0.2, 0.2, 0.2))
+    return c.PlateSource(
+        'host', (c.plate_mesh(model.meshes()[0], basis='clay'),), (c.PlateMaterial('skin', '#C88762'),)
+    )
+
+
+def prepared_plate_plan(item):
+    base = plate_plan()
+    binding = replace(
+        base.bindings[0],
+        nodes=64,
+        memory_bytes=1024**2,
+        plates=(replace(base.bindings[0].plates[0], key=c.plate_source_digest(item)),),
+    )
+    return c.preflight(base.spec, (binding,))

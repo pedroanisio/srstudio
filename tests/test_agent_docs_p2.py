@@ -72,7 +72,7 @@ def test_build_reports_sdk_error_without_traceback(project, tmp_path):
 def test_sdk_errors_remain_catchable_and_documented():
     assert issubclass(SchemaValueError, ValueError)
     assert not issubclass(SchemaValueError, SrstudioError)
-    docs = (Path(__file__).resolve().parents[1] / 'docs' / 'authoring-reference.md').read_text()
+    docs = (Path(__file__).resolve().parents[1] / 'docs' / 'authoring-extensions.md').read_text()
     assert 'SchemaValueError' in docs
     assert 'Every error the library raises is a `srstudio.SrstudioError`' not in docs
 

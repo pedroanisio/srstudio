@@ -1,0 +1,995 @@
+{
+ "meta": {
+  "date": "2026-11-01",
+  "token_unit": "in-side = input + cache read + cache write, govern usage definition",
+  "price_basis": "super-tools tools/govern/prices.json: in 4, cache write 5, cache read 0.4, out 20 USD per million; its own note calls this an estimate and says subscription use is plan-limit use, not money spent"
+ },
+ "reels": {
+  "only-your-aunt": {
+   "style": "Cutout",
+   "frames": 769,
+   "fps": 30,
+   "seconds_of_video": 25.63,
+   "encode_wall_s": 15.27,
+   "encode_fps": 54.2,
+   "render_s": 12.98,
+   "vector_geometry_s": 7.06,
+   "passes": 1,
+   "encoder": "h264_nvenc",
+   "shapes": 1003,
+   "groups": 143,
+   "mp4_bytes": 11762308,
+   "encode_source": "generated/episodes/only-your-aunt/encode.log, last run only",
+   "status": "measured",
+   "tts_requests_cached": 10,
+   "tts_chars_cached": 281,
+   "stt_requests_cached": 10,
+   "lines_in_master": 10,
+   "chars_in_master": 281,
+   "audio_source": "generated/episodes/only-your-aunt/assets/elevenlabs/*.json (request.text) and voice-transcript.json",
+   "builder_tokens": {
+    "agent": "7b615c6e1f963fcd",
+    "calls": 102,
+    "input": 208,
+    "cache_read": 15908225,
+    "cache_write": 952458,
+    "output": 162699,
+    "in_side": 16860891,
+    "usd_list_estimate": 14.38,
+    "source": "~/.claude/projects/-home-pals-src-worskpace/ec51d38f-c180-4ad3-a09a-0b3cd146dcd7/subagents/agent-a7b615c6e1f963fcd.jsonl, message.usage, deduplicated by message.id",
+    "status": "measured",
+    "snapshot": "2026-11-01T23:3x UTC"
+   },
+   "master_runs_over_10s": 7,
+   "master_wall_s": 697.5,
+   "still_runs": 8,
+   "still_wall_s": 238.0,
+   "master_source": "tool_use to tool_result timestamps in the builder transcript; a master run is voiced build plus queued strict encode"
+  },
+  "nine-alarms": {
+   "style": "Toon",
+   "frames": 667,
+   "fps": 24,
+   "seconds_of_video": 27.79,
+   "encode_wall_s": 27.36,
+   "encode_fps": 25.6,
+   "render_s": 10.81,
+   "vector_geometry_s": 8.51,
+   "passes": 1,
+   "encoder": "h264_nvenc",
+   "shapes": 1620,
+   "groups": 197,
+   "mp4_bytes": 13449156,
+   "encode_source": "generated/episodes/nine-alarms/encode.log, last run only",
+   "status": "measured",
+   "tts_requests_cached": 13,
+   "tts_chars_cached": 278,
+   "stt_requests_cached": 13,
+   "lines_in_master": 12,
+   "chars_in_master": 259,
+   "audio_source": "generated/episodes/nine-alarms/assets/elevenlabs/*.json (request.text) and voice-transcript.json",
+   "builder_tokens": {
+    "agent": "da8280e0ed5c1610",
+    "calls": 113,
+    "input": 230,
+    "cache_read": 17206596,
+    "cache_write": 1095375,
+    "output": 179306,
+    "in_side": 18302201,
+    "usd_list_estimate": 15.95,
+    "source": "~/.claude/projects/-home-pals-src-worskpace/ec51d38f-c180-4ad3-a09a-0b3cd146dcd7/subagents/agent-ada8280e0ed5c1610.jsonl, message.usage, deduplicated by message.id",
+    "status": "measured",
+    "snapshot": "2026-11-01T23:3x UTC"
+   },
+   "master_runs_over_10s": 8,
+   "master_wall_s": 829.5,
+   "still_runs": 11,
+   "still_wall_s": 160.4,
+   "master_source": "tool_use to tool_result timestamps in the builder transcript; a master run is voiced build plus queued strict encode"
+  },
+  "whats-new": {
+   "style": "Soft",
+   "frames": 802,
+   "fps": 30,
+   "seconds_of_video": 26.73,
+   "encode_wall_s": 7.1,
+   "encode_fps": 129.0,
+   "render_s": 5.3,
+   "vector_geometry_s": 3.34,
+   "passes": 1,
+   "encoder": "h264_nvenc",
+   "shapes": 392,
+   "groups": 128,
+   "mp4_bytes": 9729282,
+   "encode_source": "generated/episodes/whats-new/encode.log, last run only",
+   "status": "measured",
+   "tts_requests_cached": 19,
+   "tts_chars_cached": 337,
+   "stt_requests_cached": 19,
+   "lines_in_master": 17,
+   "chars_in_master": 290,
+   "audio_source": "generated/episodes/whats-new/assets/elevenlabs/*.json (request.text) and voice-transcript.json",
+   "builder_tokens": {
+    "agent": "46f77739e47e91d1",
+    "calls": 115,
+    "input": 236,
+    "cache_read": 17151435,
+    "cache_write": 1155895,
+    "output": 168327,
+    "in_side": 18307566,
+    "usd_list_estimate": 16.01,
+    "source": "~/.claude/projects/-home-pals-src-worskpace/ec51d38f-c180-4ad3-a09a-0b3cd146dcd7/subagents/agent-a46f77739e47e91d1.jsonl, message.usage, deduplicated by message.id",
+    "status": "measured",
+    "snapshot": "2026-11-01T23:3x UTC"
+   },
+   "master_runs_over_10s": 9,
+   "master_wall_s": 531.0,
+   "still_runs": 9,
+   "still_wall_s": 199.5,
+   "master_source": "tool_use to tool_result timestamps in the builder transcript; a master run is voiced build plus queued strict encode"
+  },
+  "practice-round": {
+   "style": "Stick",
+   "frames": 695,
+   "fps": 24,
+   "seconds_of_video": 28.96,
+   "encode_wall_s": 44.36,
+   "encode_fps": 16.2,
+   "render_s": 20.64,
+   "vector_geometry_s": 16.57,
+   "passes": 1,
+   "encoder": "h264_nvenc",
+   "shapes": 2670,
+   "groups": 891,
+   "mp4_bytes": 10673442,
+   "encode_source": "generated/episodes/practice-round/encode.log, last run only",
+   "status": "measured",
+   "tts_requests_cached": 14,
+   "tts_chars_cached": 300,
+   "stt_requests_cached": 14,
+   "lines_in_master": 14,
+   "chars_in_master": 300,
+   "audio_source": "generated/episodes/practice-round/assets/elevenlabs/*.json (request.text) and voice-transcript.json",
+   "builder_tokens": {
+    "agent": "4c72feaaac691687",
+    "calls": 123,
+    "input": 248,
+    "cache_read": 19069837,
+    "cache_write": 899380,
+    "output": 191495,
+    "in_side": 19969465,
+    "usd_list_estimate": 15.96,
+    "source": "~/.claude/projects/-home-pals-src-worskpace/ec51d38f-c180-4ad3-a09a-0b3cd146dcd7/subagents/agent-a4c72feaaac691687.jsonl, message.usage, deduplicated by message.id",
+    "status": "measured",
+    "snapshot": "2026-11-01T23:3x UTC"
+   },
+   "master_runs_over_10s": 3,
+   "master_wall_s": 287.6,
+   "still_runs": 7,
+   "still_wall_s": 186.8,
+   "master_source": "tool_use to tool_result timestamps in the builder transcript; a master run is voiced build plus queued strict encode"
+  },
+  "extra-hour": {
+   "style": "Stick",
+   "frames": 348,
+   "fps": 24,
+   "seconds_of_video": 14.5,
+   "encode_wall_s": 30.51,
+   "encode_fps": 11.7,
+   "render_s": 25.22,
+   "vector_geometry_s": 4.31,
+   "passes": 1,
+   "encoder": "libx264",
+   "shapes": 1516,
+   "groups": 541,
+   "mp4_bytes": 2147236,
+   "encode_source": "generated/episodes/extra-hour/encode.log, last run only",
+   "status": "measured",
+   "tts_requests_cached": 9,
+   "tts_chars_cached": 167,
+   "stt_requests_cached": 9,
+   "lines_in_master": 10,
+   "chars_in_master": 178,
+   "audio_source": "generated/episodes/extra-hour/assets/elevenlabs/*.json (request.text) and voice-transcript.json",
+   "builder_tokens": {
+    "agent": "b2577e38ba29e4e2",
+    "calls": 56,
+    "input": 118,
+    "cache_read": 8366226,
+    "cache_write": 400535,
+    "output": 101654,
+    "in_side": 8766879,
+    "usd_list_estimate": 7.38,
+    "source": "~/.claude/projects/-home-pals-src-worskpace/ec51d38f-c180-4ad3-a09a-0b3cd146dcd7/subagents/agent-ab2577e38ba29e4e2.jsonl, message.usage, deduplicated by message.id",
+    "status": "measured",
+    "snapshot": "2026-11-01T23:3x UTC"
+   },
+   "master_runs_over_10s": 5,
+   "master_wall_s": 301.3,
+   "still_runs": 6,
+   "still_wall_s": 86.5,
+   "master_source": "tool_use to tool_result timestamps in the builder transcript; a master run is voiced build plus queued strict encode"
+  },
+  "home-anyway": {
+   "style": "Toon",
+   "frames": 658,
+   "fps": 24,
+   "seconds_of_video": 27.42,
+   "encode_wall_s": 12.68,
+   "encode_fps": 54.9,
+   "render_s": 5.05,
+   "vector_geometry_s": 4.08,
+   "passes": 1,
+   "encoder": "h264_nvenc",
+   "shapes": 2616,
+   "groups": 453,
+   "mp4_bytes": 16670004,
+   "encode_source": "generated/episodes/home-anyway/encode.log, last run only",
+   "status": "measured",
+   "tts_requests_cached": 13,
+   "tts_chars_cached": 380,
+   "stt_requests_cached": 13,
+   "lines_in_master": 12,
+   "chars_in_master": 356,
+   "audio_source": "generated/episodes/home-anyway/assets/elevenlabs/*.json (request.text) and voice-transcript.json",
+   "builder_tokens": {
+    "agent": "0f62cec7d6c7e1f5",
+    "calls": 84,
+    "input": 172,
+    "cache_read": 12154856,
+    "cache_write": 783199,
+    "output": 138290,
+    "in_side": 12938227,
+    "usd_list_estimate": 11.54,
+    "source": "~/.claude/projects/-home-pals-src-worskpace/ec51d38f-c180-4ad3-a09a-0b3cd146dcd7/subagents/agent-a0f62cec7d6c7e1f5.jsonl, message.usage, deduplicated by message.id",
+    "status": "measured",
+    "snapshot": "2026-11-01T23:3x UTC"
+   },
+   "master_runs_over_10s": 4,
+   "master_wall_s": 472.7,
+   "still_runs": 4,
+   "still_wall_s": 72.5,
+   "master_source": "tool_use to tool_result timestamps in the builder transcript; a master run is voiced build plus queued strict encode"
+  },
+  "thought-of-you": {
+   "style": "Collage",
+   "frames": 575,
+   "fps": 24,
+   "seconds_of_video": 23.96,
+   "encode_wall_s": 51.43,
+   "encode_fps": 11.3,
+   "render_s": 21.12,
+   "vector_geometry_s": 5.13,
+   "passes": 2,
+   "encoder": "libx264",
+   "shapes": 1974,
+   "groups": 265,
+   "mp4_bytes": 17831660,
+   "encode_source": "generated/episodes/thought-of-you/encode.log, last run only",
+   "status": "measured",
+   "tts_requests_cached": 12,
+   "tts_chars_cached": 247,
+   "stt_requests_cached": 12,
+   "lines_in_master": 11,
+   "chars_in_master": 220,
+   "audio_source": "generated/episodes/thought-of-you/assets/elevenlabs/*.json (request.text) and voice-transcript.json",
+   "builder_tokens": {
+    "agent": "e15e910dff930fec",
+    "calls": 117,
+    "input": 244,
+    "cache_read": 17112474,
+    "cache_write": 1251183,
+    "output": 163580,
+    "in_side": 18363901,
+    "usd_list_estimate": 16.37,
+    "source": "~/.claude/projects/-home-pals-src-worskpace/ec51d38f-c180-4ad3-a09a-0b3cd146dcd7/subagents/agent-ae15e910dff930fec.jsonl, message.usage, deduplicated by message.id",
+    "status": "measured",
+    "snapshot": "2026-11-01T23:3x UTC"
+   },
+   "master_runs_over_10s": 5,
+   "master_wall_s": 320.1,
+   "still_runs": 7,
+   "still_wall_s": 31.3,
+   "master_source": "tool_use to tool_result timestamps in the builder transcript; a master run is voiced build plus queued strict encode"
+  },
+  "texts-back": {
+   "style": "Toon",
+   "frames": 589,
+   "fps": 24,
+   "seconds_of_video": 24.54,
+   "encode_wall_s": 18.92,
+   "encode_fps": 33.5,
+   "render_s": 6.45,
+   "vector_geometry_s": 4.55,
+   "passes": 1,
+   "encoder": "h264_nvenc",
+   "shapes": 3334,
+   "groups": 969,
+   "mp4_bytes": 15483534,
+   "encode_source": "generated/episodes/texts-back/encode.log, last run only",
+   "status": "measured",
+   "tts_requests_cached": 14,
+   "tts_chars_cached": 311,
+   "stt_requests_cached": 14,
+   "lines_in_master": 14,
+   "chars_in_master": 311,
+   "audio_source": "generated/episodes/texts-back/assets/elevenlabs/*.json (request.text) and voice-transcript.json",
+   "builder_tokens": {
+    "agent": "ed74215804bff522",
+    "calls": 73,
+    "input": 156,
+    "cache_read": 11982501,
+    "cache_write": 660118,
+    "output": 133572,
+    "in_side": 12642775,
+    "usd_list_estimate": 10.77,
+    "source": "~/.claude/projects/-home-pals-src-worskpace/ec51d38f-c180-4ad3-a09a-0b3cd146dcd7/subagents/agent-aed74215804bff522.jsonl, message.usage, deduplicated by message.id",
+    "status": "measured",
+    "snapshot": "2026-11-01T23:3x UTC"
+   },
+   "master_runs_over_10s": 2,
+   "master_wall_s": 296.5,
+   "still_runs": 6,
+   "still_wall_s": 136.8,
+   "master_source": "tool_use to tool_result timestamps in the builder transcript; a master run is voiced build plus queued strict encode"
+  },
+  "cant-afford-to-save": {
+   "style": "Stick",
+   "frames": 346,
+   "fps": 24,
+   "seconds_of_video": 14.42,
+   "encode_wall_s": 18.09,
+   "encode_fps": 20.3,
+   "render_s": 14.78,
+   "vector_geometry_s": 2.4,
+   "passes": 1,
+   "encoder": "h264_nvenc",
+   "shapes": 1675,
+   "groups": 454,
+   "mp4_bytes": 5042660,
+   "encode_source": "generated/episodes/cant-afford-to-save/encode.log, last run only",
+   "status": "measured",
+   "tts_requests_cached": 8,
+   "tts_chars_cached": 197,
+   "stt_requests_cached": 8,
+   "lines_in_master": 7,
+   "chars_in_master": 166,
+   "audio_source": "generated/episodes/cant-afford-to-save/assets/elevenlabs/*.json (request.text) and voice-transcript.json"
+  },
+  "it-autoplayed": {
+   "style": "Toon",
+   "frames": 608,
+   "fps": 24,
+   "seconds_of_video": 25.33,
+   "encode_wall_s": 11.11,
+   "encode_fps": 60.2,
+   "render_s": 3.33,
+   "vector_geometry_s": 2.31,
+   "passes": 1,
+   "encoder": "h264_nvenc",
+   "shapes": 3259,
+   "groups": 880,
+   "mp4_bytes": 13206701,
+   "encode_source": "generated/episodes/it-autoplayed/encode.log, last run only",
+   "status": "measured",
+   "tts_requests_cached": 16,
+   "tts_chars_cached": 276,
+   "stt_requests_cached": 16,
+   "lines_in_master": 16,
+   "chars_in_master": 276,
+   "audio_source": "generated/episodes/it-autoplayed/assets/elevenlabs/*.json (request.text) and voice-transcript.json"
+  },
+  "nobody-died": {
+   "style": "Cutout",
+   "frames": 664,
+   "fps": 30,
+   "seconds_of_video": 22.13,
+   "encode_wall_s": 7.01,
+   "encode_fps": 110.5,
+   "render_s": 4.8,
+   "vector_geometry_s": 3.39,
+   "passes": 1,
+   "encoder": "h264_nvenc",
+   "shapes": 475,
+   "groups": 101,
+   "mp4_bytes": 8241351,
+   "encode_source": "generated/episodes/nobody-died/encode.log, last run only",
+   "status": "measured",
+   "tts_requests_cached": 12,
+   "tts_chars_cached": 280,
+   "stt_requests_cached": 12,
+   "lines_in_master": 12,
+   "chars_in_master": 280,
+   "audio_source": "generated/episodes/nobody-died/assets/elevenlabs/*.json (request.text) and voice-transcript.json"
+  },
+  "wrong-door": {
+   "style": "Soft",
+   "frames": 696,
+   "fps": 30,
+   "seconds_of_video": 23.2,
+   "encode_wall_s": 6.04,
+   "encode_fps": 138.3,
+   "render_s": 3.74,
+   "vector_geometry_s": 1.98,
+   "passes": 1,
+   "encoder": "h264_nvenc",
+   "shapes": 527,
+   "groups": 115,
+   "mp4_bytes": 8176341,
+   "encode_source": "generated/episodes/wrong-door/encode.log, last run only",
+   "status": "measured",
+   "tts_requests_cached": 10,
+   "tts_chars_cached": 231,
+   "stt_requests_cached": 10,
+   "lines_in_master": 10,
+   "chars_in_master": 231,
+   "audio_source": "generated/episodes/wrong-door/assets/elevenlabs/*.json (request.text) and voice-transcript.json"
+  }
+ },
+ "round3_builder": {
+  "agent": "688d88986a0b640f",
+  "calls": 199,
+  "input": 402,
+  "cache_read": 31040464,
+  "cache_write": 1444048,
+  "output": 365576,
+  "in_side": 32484914,
+  "usd_list_estimate": 26.95,
+  "source": "~/.claude/projects/-home-pals-src-worskpace/ec51d38f-c180-4ad3-a09a-0b3cd146dcd7/subagents/agent-a688d88986a0b640f.jsonl, message.usage, deduplicated by message.id",
+  "status": "measured",
+  "snapshot": "2026-11-01T23:3x UTC",
+  "note": "one agent built cant-afford-to-save, it-autoplayed, nobody-died, wrong-door; per reel is this divided by 4"
+ },
+ "writers": {
+  "author_r1": {
+   "agent": "69c0b2899e3a15e3",
+   "calls": 20,
+   "input": 40,
+   "cache_read": 2641888,
+   "cache_write": 184106,
+   "output": 66028,
+   "in_side": 2826034,
+   "usd_list_estimate": 3.3,
+   "source": "~/.claude/projects/-home-pals-src-worskpace/ec51d38f-c180-4ad3-a09a-0b3cd146dcd7/subagents/agent-a69c0b2899e3a15e3.jsonl, message.usage, deduplicated by message.id",
+   "status": "measured",
+   "snapshot": "2026-11-01T23:3x UTC"
+  },
+  "author_r2": {
+   "agent": "fc57c42ec4a94a49",
+   "calls": 16,
+   "input": 32,
+   "cache_read": 2126628,
+   "cache_write": 199515,
+   "output": 73437,
+   "in_side": 2326175,
+   "usd_list_estimate": 3.32,
+   "source": "~/.claude/projects/-home-pals-src-worskpace/ec51d38f-c180-4ad3-a09a-0b3cd146dcd7/subagents/agent-afc57c42ec4a94a49.jsonl, message.usage, deduplicated by message.id",
+   "status": "measured",
+   "snapshot": "2026-11-01T23:3x UTC"
+  },
+  "author_r3": {
+   "agent": "71b7e8ffff217e3a",
+   "calls": 34,
+   "input": 68,
+   "cache_read": 4564430,
+   "cache_write": 391932,
+   "output": 128638,
+   "in_side": 4956430,
+   "usd_list_estimate": 6.36,
+   "source": "~/.claude/projects/-home-pals-src-worskpace/ec51d38f-c180-4ad3-a09a-0b3cd146dcd7/subagents/agent-a71b7e8ffff217e3a.jsonl, message.usage, deduplicated by message.id",
+   "status": "measured",
+   "snapshot": "2026-11-01T23:3x UTC"
+  },
+  "punch_r1": {
+   "agent": "aa39346eccc4f71a",
+   "calls": 3,
+   "input": 6,
+   "cache_read": 114199,
+   "cache_write": 54763,
+   "output": 19890,
+   "in_side": 168968,
+   "usd_list_estimate": 0.72,
+   "source": "~/.claude/projects/-home-pals-src-worskpace/ec51d38f-c180-4ad3-a09a-0b3cd146dcd7/subagents/agent-aaa39346eccc4f71a.jsonl, message.usage, deduplicated by message.id",
+   "status": "measured",
+   "snapshot": "2026-11-01T23:3x UTC"
+  },
+  "punch_r2": {
+   "agent": "8aee25348c01076b",
+   "calls": 15,
+   "input": 30,
+   "cache_read": 1650631,
+   "cache_write": 153583,
+   "output": 61757,
+   "in_side": 1804244,
+   "usd_list_estimate": 2.66,
+   "source": "~/.claude/projects/-home-pals-src-worskpace/ec51d38f-c180-4ad3-a09a-0b3cd146dcd7/subagents/agent-a8aee25348c01076b.jsonl, message.usage, deduplicated by message.id",
+   "status": "measured",
+   "snapshot": "2026-11-01T23:3x UTC"
+  }
+ },
+ "reviews": {
+  "review_slice1": {
+   "agent": "2e6bf3bacd15625e",
+   "calls": 91,
+   "input": 188,
+   "cache_read": 12676639,
+   "cache_write": 1396671,
+   "output": 189605,
+   "in_side": 14073498,
+   "usd_list_estimate": 15.85,
+   "source": "~/.claude/projects/-home-pals-src-worskpace/ec51d38f-c180-4ad3-a09a-0b3cd146dcd7/subagents/agent-a2e6bf3bacd15625e.jsonl, message.usage, deduplicated by message.id",
+   "status": "measured",
+   "snapshot": "2026-11-01T23:3x UTC"
+  },
+  "review_slice2": {
+   "agent": "5ddd42904009b346",
+   "calls": 45,
+   "input": 94,
+   "cache_read": 5258578,
+   "cache_write": 1464171,
+   "output": 106149,
+   "in_side": 6722843,
+   "usd_list_estimate": 11.55,
+   "source": "~/.claude/projects/-home-pals-src-worskpace/ec51d38f-c180-4ad3-a09a-0b3cd146dcd7/subagents/agent-a5ddd42904009b346.jsonl, message.usage, deduplicated by message.id",
+   "status": "measured",
+   "snapshot": "2026-11-01T23:3x UTC"
+  },
+  "review_round3": {
+   "input": 50,
+   "cache_read": 3237439,
+   "cache_write": 480838,
+   "output": 56217,
+   "calls": 25,
+   "in_side": 3718327,
+   "usd_list_estimate": 4.82,
+   "source": "agent-a9ad7c41dce989287.jsonl, messages before its first tool input naming cold-front (2026-11-01T22:00:44Z); later messages reviewed the last four reels and are excluded",
+   "status": "measured"
+  }
+ },
+ "batch_library_work": {
+  "agent": "0e20e901feeba1fd",
+  "calls": 65,
+  "input": 136,
+  "cache_read": 11379552,
+  "cache_write": 451050,
+  "output": 104852,
+  "in_side": 11830738,
+  "usd_list_estimate": 8.9,
+  "source": "~/.claude/projects/-home-pals-src-worskpace/ec51d38f-c180-4ad3-a09a-0b3cd146dcd7/subagents/agent-a0e20e901feeba1fd.jsonl, message.usage, deduplicated by message.id",
+  "status": "measured",
+  "snapshot": "2026-11-01T23:3x UTC"
+ },
+ "orchestrator": {
+  "window": "2026-11-01T10:30Z to 23:32Z",
+  "all_calls": 747,
+  "all_in_side": 136124967,
+  "tagged_calls": 276,
+  "tagged": {
+   "input": 608,
+   "cache_read": 47959017,
+   "cache_write": 1116997,
+   "output": 329172,
+   "in_side": 49076622,
+   "usd_list_estimate": 31.35
+  },
+  "source": "main transcript ec51d38f-c180-4ad3-a09a-0b3cd146dcd7.jsonl; tagged = calls whose tool input names the batch or one of its slugs",
+  "status": "measured, attribution approximate"
+ },
+ "summary": {
+  "reels": 12,
+  "builder_in_side_total": 158636819,
+  "builder_usd_total": 135.31,
+  "builder_mean_in_side_per_reel": 13219735,
+  "builder8_median_in_side": 17581546.0,
+  "builder8_min": 8766879,
+  "builder8_max": 19969465,
+  "writers_in_side": 12081851,
+  "writers_usd": 16.36,
+  "review_in_side": 24514668,
+  "review_usd": 32.22,
+  "plumbing_in_side": 11830738,
+  "plumbing_usd": 8.9,
+  "orchestrator_share_per_reel_in_side": 3067289,
+  "orchestrator_share_per_reel_usd": 1.96,
+  "all_in_per_reel_in_side": 20322629,
+  "all_in_per_reel_usd": 18.03,
+  "division": "(builders + writers + reviews of these 12 + batch library work) / 12, plus orchestrator tagged calls / 16 because those calls cover all 16 reels of the batch",
+  "usd_per_million_in_side_builders": 0.853,
+  "encode_wall_s_min": 6.04,
+  "encode_wall_s_median": 16.68,
+  "encode_wall_s_max": 51.43,
+  "encode_wall_s_total": 249.9,
+  "encode_fps_min": 11.3,
+  "encode_fps_max": 138.3,
+  "master_runs_over_10s_8reels": 43,
+  "master_wall_s_8reels": 3736.2,
+  "round3_master_runs_over_10s": 21,
+  "round3_master_wall_s": 949.4,
+  "tts_chars_cached_total": 3285,
+  "tts_requests_total": 150,
+  "stt_requests_total": 150,
+  "chars_in_master_total": 3148,
+  "status": "derived from the measured figures above",
+  "all_runs_wall_s_per_reel": 390,
+  "cache_read_share_of_builder_in_side": 0.946,
+  "round3_per_reel_in_side": 8121228,
+  "overhead_per_reel_in_side": 7102894
+ },
+ "precedents": [
+  {
+   "name": "srlocations SDK, whole session",
+   "calls": 508,
+   "in_side": 79152205,
+   "output": 1292880,
+   "usd_list_estimate": 70.22,
+   "source": "~/.claude/projects/-home-pals-src-studio/*.jsonl, deduplicated by message.id",
+   "status": "measured"
+  },
+  {
+   "name": "host pilot, Rafa on plates",
+   "calls": 651,
+   "in_side": 108514000,
+   "usd_list_estimate": 104.95,
+   "source": "agent-a5a04c97516b870f0.jsonl (usage_raw row, in-side rounded to 108.51M)",
+   "status": "measured"
+  },
+  {
+   "name": "wire-car and wire-jet",
+   "calls": 195,
+   "in_side": 31280000,
+   "usd_list_estimate": 19.89,
+   "source": "transcript calls with cwd in the wire-car worktree",
+   "status": "measured, cwd attribution"
+  },
+  {
+   "name": "car-vibe study, proxy and vehicle kit",
+   "calls": 130,
+   "in_side": 23070000,
+   "usd_list_estimate": 17.78,
+   "source": "transcript calls with cwd in the car-vibe worktree",
+   "status": "measured, cwd attribution"
+  },
+  {
+   "name": "pedro-drive pilots",
+   "calls": 163,
+   "in_side": 25170000,
+   "usd_list_estimate": 15.87,
+   "source": "transcript calls with cwd in the pedro-drive worktree",
+   "status": "measured, cwd attribution"
+  },
+  {
+   "name": "toon-rooms, keyed lit rooms",
+   "calls": 89,
+   "in_side": 16100000,
+   "usd_list_estimate": 9.95,
+   "source": "transcript calls with cwd in the toon-rooms worktree",
+   "status": "measured, cwd attribution"
+  },
+  {
+   "name": "Bento port to the catalog",
+   "calls": 107,
+   "in_side": 18000000,
+   "usd_list_estimate": 16.79,
+   "source": "agent-a7b0d50a2606f186f.jsonl",
+   "status": "measured"
+  },
+  {
+   "name": "older-rigs",
+   "calls": 46,
+   "in_side": 6960000,
+   "usd_list_estimate": 5.84,
+   "source": "transcript calls with cwd in the older-rigs worktree",
+   "status": "measured, cwd attribution"
+  },
+  {
+   "name": "Pedro rebase",
+   "calls": 31,
+   "in_side": 2880000,
+   "usd_list_estimate": 2.21,
+   "source": "agent-ad4245a4d3237cad0.jsonl",
+   "status": "measured"
+  }
+ ],
+ "other_measurements": {
+  "plate_reels": [
+   {
+    "reel": "unwritten-rules-present",
+    "frames": 752,
+    "encode_wall_s": 28.09,
+    "encode_fps": 28.5,
+    "images_in_scene": 108,
+    "source": "generated/episodes/unwritten-rules-present/encode.log and .scene.xml",
+    "status": "measured"
+   },
+   {
+    "reel": "unwritten-rules-door",
+    "frames": 781,
+    "encode_wall_s": 27.55,
+    "encode_fps": 29.9,
+    "images_in_scene": 107,
+    "source": "generated/episodes/unwritten-rules-door/encode.log and .scene.xml",
+    "status": "measured"
+   }
+  ],
+  "path_traced_frame": {
+   "seconds": 2.74,
+   "memory_mb": 634,
+   "detail": "1080x1920, 48 samples, 4 bounces, RTX 3050",
+   "source": "srstudio/docs/decisions/0068-rafa-clay-host-on-plates.md",
+   "status": "measured, as recorded in the ADR"
+  },
+  "warm_rebuild_engine_runs": {
+   "value": 0,
+   "source": "srstudio/docs/decisions/0091-hybrid-drawing-is-the-default.md",
+   "status": "measured, as recorded in the ADR"
+  },
+  "srlocations_still_gaps_s": {
+   "ink_toon_room": [
+    1.32
+   ],
+   "paper_room": 1.13,
+   "wireframe_room": 1.08,
+   "town_ink_toon_cel_auto": 5.74,
+   "cast_house_look": [
+    7.7,
+    6.48
+   ],
+   "resolution": "1280x720",
+   "source": "seconds between file mtimes in the studio project renders/looks and renders/casting; upper bound on one still including compile, from a sequential example run",
+   "status": "measured, indirect"
+  },
+  "srlocations_sdk_python_lines": {
+   "value": 6554,
+   "source": "find srlocations -name '*.py' | xargs wc -l",
+   "status": "measured"
+  },
+  "toon_catalog": {
+   "locations": 32,
+   "props": 129,
+   "source": "srstudio/src/srstudio/assets/parts.json",
+   "status": "measured"
+  },
+  "framings": {
+   "home_anyway": 6,
+   "nine_alarms": 3,
+   "texts_back": 3,
+   "source": "shot name constants in srstudio/episodes/<slug>_data.py",
+   "status": "measured"
+  },
+  "blockers": {
+   "total": 20,
+   "marks_out_of_frame": 5,
+   "prop_continuity": 2,
+   "set_grounding": 1,
+   "hands_arms_rig": 4,
+   "caption_timing": 3,
+   "other": 5,
+   "classification": "my reading of four non-author reviews; not a measured category",
+   "source": "agents 2e6bf3bacd15625e, 5ddd42904009b346, 9ad7c41dce989287 (first report only)",
+   "status": "counted from reports, classified by judgement"
+  },
+  "existing_set_vs_new_set": {
+   "existing": [
+    [
+     "home-anyway",
+     12938227
+    ],
+    [
+     "texts-back",
+     12642775
+    ]
+   ],
+   "new": [
+    [
+     "nine-alarms",
+     18302201
+    ]
+   ],
+   "difference_note": "one pair, confounded by speaker count and each reel's enhancement commit",
+   "status": "measured figures, comparison indicative"
+  },
+  "usage_gap": {
+   "command": "govern usage okay-e okay-oct31",
+   "result": "okay-e: no segments recorded; okay-oct31: TOTAL 0 calls, 0 tokens",
+   "status": "measured: the lanes hold no token totals"
+  }
+ },
+ "estimates": {
+  "status": "estimated",
+  "scale_note": "complexity sizes are anchored to the measured precedents above; the token ranges are judgement, not measurement",
+  "sizes": {
+   "XS": "under 3M",
+   "S": "3M to 10M",
+   "M": "10M to 30M",
+   "L": "30M to 80M",
+   "XL": "over 80M"
+  },
+  "shared": {
+   "toon_look": {
+    "size": "M",
+    "in_side": [
+     15000000.0,
+     30000000.0
+    ],
+    "basis": "toon-rooms 16.1M, car-vibe 23.1M, plus the animated proof ADR 0091 requires"
+   },
+   "bridge": {
+    "size": "M",
+    "in_side": [
+     15000000.0,
+     25000000.0
+    ],
+    "basis": "car-vibe 23.1M, pedro-drive 25.2M; plate to Staging, part records, gates, tests"
+   }
+  },
+  "sets": {
+   "flat lounge": {
+    "blockout": [
+     "S",
+     4000000.0,
+     8000000.0
+    ],
+    "shader": [
+     "S",
+     3000000.0,
+     6000000.0
+    ],
+    "first_reel": [
+     "M",
+     18000000.0,
+     30000000.0
+    ],
+    "repeat_reel": [
+     "M",
+     12000000.0,
+     16000000.0
+    ]
+   },
+   "flat kitchen": {
+    "blockout": [
+     "S",
+     5000000.0,
+     10000000.0
+    ],
+    "shader": [
+     "S",
+     3000000.0,
+     6000000.0
+    ],
+    "first_reel": [
+     "M",
+     14000000.0,
+     20000000.0
+    ],
+    "repeat_reel": [
+     "M",
+     12000000.0,
+     16000000.0
+    ]
+   },
+   "flat bedroom": {
+    "blockout": [
+     "S",
+     4000000.0,
+     8000000.0
+    ],
+    "shader": [
+     "S",
+     3000000.0,
+     6000000.0
+    ],
+    "first_reel": [
+     "M",
+     14000000.0,
+     20000000.0
+    ],
+    "repeat_reel": [
+     "M",
+     12000000.0,
+     16000000.0
+    ]
+   },
+   "cafe": {
+    "blockout": [
+     "S",
+     5000000.0,
+     9000000.0
+    ],
+    "shader": [
+     "S",
+     4000000.0,
+     8000000.0
+    ],
+    "first_reel": [
+     "M",
+     14000000.0,
+     22000000.0
+    ],
+    "repeat_reel": [
+     "M",
+     12000000.0,
+     16000000.0
+    ]
+   },
+   "car": {
+    "blockout": [
+     "M",
+     15000000.0,
+     30000000.0
+    ],
+    "shader": [
+     "M",
+     12000000.0,
+     25000000.0
+    ],
+    "first_reel": [
+     "M",
+     20000000.0,
+     30000000.0
+    ],
+    "repeat_reel": [
+     "M",
+     14000000.0,
+     20000000.0
+    ]
+   }
+  },
+  "proof": {
+   "size": "S",
+   "in_side": [
+    3000000.0,
+    8000000.0
+   ],
+   "basis": "older-rigs 7.0M, extra-hour 8.8M"
+  },
+  "pilot_total_in_side": {
+   "all_three": [
+    88000000.0,
+    171000000.0
+   ],
+   "without_car": [
+    61000000.0,
+    116000000.0
+   ],
+   "in_all_in_reels": [
+    4.3,
+    8.4
+   ],
+   "usd_at_precedent_rates": [
+    56,
+    152
+   ],
+   "rate_basis": "USD per million in-side: wire-car 0.64, SDK 0.89"
+  },
+  "over_the_shoulder": {
+   "size": "S per character",
+   "in_side": [
+    3000000.0,
+    8000000.0
+   ],
+   "basis": "older-rigs 7.0M; not in the totals; needs approval as a new character view"
+  },
+  "plate_render_flat_once": {
+   "stills": 36,
+   "formula": "9 presets x 2 layers x 2 lighting states",
+   "seconds_each_upper": 18,
+   "total_seconds_upper": 650,
+   "basis": "7.7 s worst 1280x720 still x 2.25 pixel ratio, rounded up; no 1080x1920 still has been timed"
+  },
+  "repeat_reel_saving_against_new_2d_set": {
+   "in_side": 5363974,
+   "reels_to_repay": [
+    16,
+    32
+   ],
+   "basis": "nine-alarms minus home-anyway, one pair"
+  },
+  "look_risk_extra": {
+   "in_side": [
+    30000000.0,
+    60000000.0
+   ],
+   "basis": "if passes miss the approved look, each of 5 sets moves from S toward M painted detail"
+  }
+ }
+}

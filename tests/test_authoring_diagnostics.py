@@ -318,7 +318,7 @@ def test_extreme_gaze_name_preserves_the_repair_failure():
 
 
 def test_documented_agent_repair_recipe_retries_a_typed_style():
-    document = Path(__file__).resolve().parents[1] / 'docs/authoring-reference.md'
+    document = Path(__file__).resolve().parents[1] / 'docs/authoring-diagnostics.md'
     section = (
         document.read_text().split('<!-- diagnostic-repair:start -->')[1].split('<!-- diagnostic-repair:end -->')[0]
     )

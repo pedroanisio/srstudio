@@ -157,7 +157,7 @@ def test_all_authored_family_slots_are_listed_for_agents():
 
 
 def test_documented_store_slot_recipe_executes():
-    text = (Path(__file__).resolve().parents[1] / 'docs/authoring-reference.md').read_text()
+    text = (Path(__file__).resolve().parents[1] / 'docs/authoring-discovery.md').read_text()
     section = text.split('<!-- store-slot-contract:start -->')[1].split('<!-- store-slot-contract:end -->')[0]
     code = section.split('```python\n')[1].split('```')[0]
     namespace = {}

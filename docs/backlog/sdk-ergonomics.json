@@ -50,6 +50,42 @@
     "qualification": "Fresh-process registry.entries() observation after the latest implemented contract batch. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates."
   },
   "review_verification": {
+    "plate_texture_identity": {
+      "baseline_source_commit": "e15fe9cc",
+      "identity_and_snapshot_red": {
+        "failed": 13
+      },
+      "warm_encoding_red": {
+        "failed": 1
+      },
+      "authored_alias_red": {
+        "failed": 5
+      },
+      "approved_drawing_regressions_before_aliases": {
+        "failed": 2
+      },
+      "shared_map_hashing_red": {
+        "failed": 1
+      },
+      "final_selected_regressions": {
+        "passed": 517,
+        "skipped": 3,
+        "deselected": 2,
+        "subtests_passed": 29
+      },
+      "final_real_renderer_test": {
+        "passed": 1,
+        "renderer_attempts": 3,
+        "warm_attempts": 0
+      },
+      "authoring_navigation": {
+        "passed": 104
+      },
+      "plates_branch_inclusive_coverage_percent": 98,
+      "engine_sha256": "90bf26f00439e3615206fa8c7ea4accea8cf5be009e188b60d7c5938ec4e0b4a",
+      "mypy_source_files": 286,
+      "qualification": "The final suite checks both approved host specimen fingerprints without rewriting approval records. The real renderer probe checks 64x64 square/strip texture differences and exact legacy-square pixel parity. Three optional engine tests were skipped in the broad selection; the new texture probe ran separately with the pinned engine. This is not a full-suite run or the complete animated DRAWING.md proof."
+    },
     "composition_runtime_limits": {
       "baseline_source_commit": "40e67f49",
       "process_boundary_red": {"failed": 16},
@@ -467,7 +503,7 @@
     },
     {
       "topic": "Documentation ergonomics",
-      "observation": "The authoring reference now opens with a task-to-API table linking discovery, typed acting, clip clocks, transitions, contacts, repair and quality evaluation. The README links directly to it. Its diagnostic repair example executes in tests; detailed episode histories remain below the task guide.",
+      "observation": "The authoring reference now opens with a task-to-API table linking discovery, typed acting, clip clocks, transitions, contacts, repair and quality evaluation. The README links directly to it. Its diagnostic repair example executes in tests; focused task guides now own reusable workflows and a separate episode-history document retains production records. All original section bookmarks still resolve through the task index.",
       "improvement": "Keep the task guide linked to executable recipes and generated contract vocabularies; avoid duplicating capability declarations in prose.",
       "evidence": ["README.md", "docs/authoring-reference.md", "src/srstudio/_acting_parse.py", "src/srstudio/character_clips.py"]
     }
@@ -487,6 +523,32 @@
     {"priority": "P2", "title": "Continuous transforms and explicit action chaining", "commit": "64efa1c7", "evidence": ["src/srstudio/limbs/transitions.py", "tests/test_action_chaining.py", "tests/test_continuous_tracks.py", "docs/catalog/limbs.md"], "qualification": "Joins match numerically estimated boundary velocities, preserve constraints and support random access. They do not promise acceleration continuity or perceptual preference."}
   ],
   "findings": [
+    {
+      "id": "SDK-P1-05",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Bind texture identities to image shape and owned render snapshots",
+      "problem": "Texture hashes omit image dimensions and are cached despite mutable pixel arrays. Reshaping equal bytes can collapse separate drawing assets, color/normal resources and rendered cache entries. Pixel edits can reuse stale hashes or stage data different from the cache-key document.",
+      "resolution": "Versioned texture identities bind dimensions and RGBA8 pixels. Five closed, exact pixel-hash/dimension aliases preserve authored Rafa/Pedro drawing references; edits or reshapes cannot use those aliases. Textured render keys bind dimensions under schema 1.1.0 and refuse old ambiguous artifacts. Preparation snapshots all maps before cache mutation and stages those same bytes. Hashing is deduplicated within each document, and warm hits neither encode PNGs nor launch a renderer.",
+      "evidence": [
+        "src/srstudio/plates.py:Texture.sha256",
+        "src/srstudio/plates.py:_prepare",
+        "src/srstudio/plates.py:_RenderInputs.key"
+      ],
+      "verification": [
+        "tests/test_plate_texture_identity.py",
+        "tests/test_catalog_render_identity.py",
+        "tests/test_catalog_specimens.py:test_a_character_on_plates_repeats_no_id_and_still_draws_what_was_approved",
+        "docs/decisions/0107-texture-shape-and-snapshot-identity.md"
+      ],
+      "acceptance": [
+        "Reshaping or editing pixels changes drawing and rendered identity",
+        "A render and both verify passes use one owned texture snapshot",
+        "Malformed RGBA input fails before cache creation with typed repair fields",
+        "Existing authored host drawing fingerprints remain pinned",
+        "Real-render shape differences, unchanged-image parity and zero-launch warm reuse are verified"
+      ]
+    },
     {
       "id": "SDK-P1-03",
       "priority": "P1",
@@ -583,14 +645,15 @@
           "Public vector verification/compilation workers with hard kernel address-space limits, parent deadlines, bounded IPC and preserved typed causes; VectorSource batches preparation and compilation",
           "Plate/print renderer sessions enforce nested address-space limits, process-group deadlines and bounded diagnostics; failures and explicit retries consume every enclosing attempt budget without publishing partial images",
           "Perspective plate-view bridge resolves canonical units, handedness, parent transforms, shared world lights and bounded principal-point overscan without applying projection twice",
-          "Bounded static untextured plate preparation verifies immutable mesh buffers, materials, bounds, source identities and declared work; emits a closed XML/resource bundle with retained source evidence; preflight counts distinct resolved placements as distinct cold jobs"
+          "Bounded static untextured plate preparation verifies immutable mesh buffers, materials, bounds, source identities and declared work; emits a closed XML/resource bundle with retained source evidence; preflight counts distinct resolved placements as distinct cold jobs",
+          "Static mixed vector/plate bundles reverify all inputs, render unique jobs under nested limits, verify PNGs and warm caches, and atomically publish portable scene/image directories",
+          "Immutable UV and RGBA8 snapshots preserve color/normal maps, normal strength, sheen and subsurface settings; source snapshots deduplicate dimensions plus pixels, bounded workers generate content-addressed PNG/OBJ resources, and legacy untextured identities remain unchanged"
         ],
         "remaining": [
-          "Textured/animated plate and proxy payload adapters and supported backend emission under shared camera/light contracts",
-          "Integrate prepared plate/proxy composition with bounded renderer sessions and final scene publication",
+          "Printed-label, animated plate and proxy payload adapters and supported backend emission under shared camera/light contracts",
           "Cross-backend rendering evidence for the complete DRAWING.md contract"
         ],
-        "verification": ["tests/test_composition_preflight.py", "tests/test_composition_emission.py", "tests/test_composition_runtime.py", "tests/test_bounded_process.py", "tests/test_composition_example.py", "tests/test_composition_plate_view.py", "tests/test_composition_plates.py", "tests/test_plate_runtime_limits.py", "tests/test_plate_render_sessions.py", "docs/composition-preflight.md", "docs/authoring-benchmark.md"]
+        "verification": ["tests/test_composition_preflight.py", "tests/test_composition_emission.py", "tests/test_composition_runtime.py", "tests/test_bounded_process.py", "tests/test_composition_example.py", "tests/test_composition_plate_view.py", "tests/test_composition_plates.py", "tests/test_composition_bundles.py", "tests/test_composition_textures.py", "tests/test_bundle_primitives.py", "tests/test_plate_runtime_limits.py", "tests/test_plate_render_sessions.py", "docs/composition-preflight.md", "docs/authoring-benchmark.md"]
       },
       "evidence": [
         "DRAWING.md#agent-facing-composition-contract"
@@ -641,8 +704,10 @@
     {
       "id": "SDK-P3-07",
       "priority": "P3",
-      "status": "open",
+      "status": "complete",
       "title": "Separate task documentation from episode history",
+      "resolution": "Replaced the 3043-line mixed reference with a task index, eleven focused authoring guides and a separate episode history. Kept all 87 legacy section bookmarks resolvable and all 74 existing code fences unchanged in their new owners. README and limbs links go directly to task guides; recipe tests execute from those guides, and the author-facing brand check still scans every moved document. Audio now has a reusable workflow guide rather than an episode case-study entry point.",
+      "verification": ["tests/test_authoring_navigation.py", "tests/data/authoring-reference-layout.json", "tests/test_character_discovery_recipe.py", "tests/test_character_clip_recipe.py", "tests/test_noncharacter_discovery_recipes.py", "tests/test_acting_gallery.py", "tests/test_acting_continuity_example.py", "tests/test_acting_transition_example.py", "tests/test_authoring_diagnostics.py", "tests/test_catalog_contracts.py", "tests/test_counter_store_contracts.py", "tests/test_cutout_family_contracts.py", "tests/test_agent_p3_input_and_ids.py", "tests/test_agent_docs_p2.py", "tests/test_okayville.py", "tests/test_recording.py"],
       "problem": "The authoring reference has 2917 lines mixing reusable workflows with detailed episode history.",
       "evidence": [
         "docs/authoring-reference.md"
@@ -898,7 +963,7 @@
       "complexity": "M"
     }
   ],
-  "recommended_order": ["SDK-P2-06", "SDK-P2-07", "SDK-P3-06", "SDK-P3-07", "SDK-P4-01", "SDK-P4-02", "SDK-P4-04"],
+  "recommended_order": ["SDK-P2-06", "SDK-P2-07", "SDK-P3-06", "SDK-P4-01", "SDK-P4-02", "SDK-P4-04"],
   "agent_authoring_guidance": [
     "Discover registered versions, explicit capabilities, coordinate spaces and clocks before choosing a builder; keep unknown metadata unknown.",
     "Use parse_score and compile_performance for supported coordinated intent, character clips for placement, and windows of one performance for cuts. Inspect family capabilities before requesting a channel.",

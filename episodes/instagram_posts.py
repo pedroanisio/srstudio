@@ -106,13 +106,18 @@ def _beside(renders: Path) -> Path:
 
 
 def numbers(renders: Path) -> dict[str, show_numbers.Claim]:
-    """:data:`NUMBERS` with each reel's brief, which only the ledger beside ``renders`` holds (ADR 0080). With no
-    numbered reel the ledger is not read."""
+    """:data:`NUMBERS` with each reel's brief and posting days, which only the ledger beside ``renders`` holds
+    (ADR 0080). With no numbered reel the ledger is not read."""
     if not NUMBERS:
         return {}
     held = show_numbers.read(show_numbers.ledger_path(renders)).reels
-    briefs = {VIDEOS[slug]: c.brief for slug, c in held.items() if slug in VIDEOS and c.brief}
-    return {name: replace(claim, brief=briefs.get(name, "")) for name, claim in NUMBERS.items()}
+    ledger = {VIDEOS[slug]: c for slug, c in held.items() if slug in VIDEOS}
+    return {
+        name: replace(claim, brief=kept.brief, post_by=kept.post_by, not_before=kept.not_before)
+        if (kept := ledger.get(name))
+        else replace(claim, brief="")
+        for name, claim in NUMBERS.items()
+    }
 
 
 def items(renders: Path, episodes: Path | None = None) -> dict[str, Item]:

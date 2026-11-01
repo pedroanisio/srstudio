@@ -46,8 +46,11 @@ class ProcessLimits:
     memory_bytes: int = 8 * 1024**3
     stdout_bytes: int = 16 * 1024**2
     stderr_bytes: int = 65536
+    file_bytes: int | None = None
 
     def __post_init__(self) -> None:
+        if self.file_bytes is not None and (type(self.file_bytes) is not int or not 1 <= self.file_bytes <= 1024**4):
+            raise _fail('input', 'file_bytes', self.file_bytes, 'None or an integer in 1..1099511627776')
         if type(self.timeout) not in (int, float) or not math.isfinite(self.timeout) or not 0 < self.timeout <= 600:
             raise _fail('input', 'timeout', self.timeout, 'finite seconds in (0, 600]')
         for name, maximum in (('memory_bytes', 1024**4), ('stdout_bytes', 32 * 1024**2), ('stderr_bytes', 1024**2)):
@@ -96,7 +99,8 @@ def run(command: tuple[str, ...], *, input: bytes, limits: ProcessLimits, cwd: P
     for name in ('OPENBLAS_NUM_THREADS', 'OMP_NUM_THREADS', 'MKL_NUM_THREADS', 'NUMEXPR_NUM_THREADS'):
         environment[name] = '1'
     bootstrap = Path(__file__).with_name('_process_bootstrap.py')
-    argv = (sys.executable, '-I', str(bootstrap), str(limits.memory_bytes), *command)
+    file_limit = () if limits.file_bytes is None else (f'--file-bytes={limits.file_bytes}',)
+    argv = (sys.executable, '-I', str(bootstrap), str(limits.memory_bytes), *file_limit, *command)
     deadline = time.monotonic() + limits.timeout
     stdout, stderr = bytearray(), bytearray()
     try:
