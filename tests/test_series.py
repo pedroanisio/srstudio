@@ -134,6 +134,27 @@ def test_record_runs_the_takes_recording_on_the_script(monkeypatch):
     assert seen["script"].title == "Demo"
 
 
+def test_a_reel_can_go_without_its_series_music_bed_and_says_so_in_its_voice_note():
+    bed = takes.Bed(SimpleNamespace(), seed=1, bpm=120, gain_db=-16.0, fade=1.0)
+    scored = dataclasses.replace(SERIES, bed=bed)
+
+    @dataclass(frozen=True)
+    class Scored(Reel):
+        series = scored
+
+    fields = {f.name: getattr(reel(), f.name) for f in dataclasses.fields(Reel)}
+    assert Scored(**fields).script().bed is bed
+    assert "Instrumental music bed" in Scored(**fields).script().voice_note
+    bare = Scored(**(fields | {"bed": False})).script()
+    assert bare.bed is None
+    assert bare.voice_note == "ElevenLabs premade voices River and George; no reference-voice cloning."
+
+
+def test_a_reel_asks_for_no_bed_with_a_boolean_or_is_refused():
+    with pytest.raises(SeriesError, match="bed must be True or False, got None"):
+        reel(bed=None)
+
+
 # -- the build --------------------------------------------------------------------------------------------------------
 class FakeEpisode:
     made: list = []

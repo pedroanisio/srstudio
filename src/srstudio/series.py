@@ -93,9 +93,12 @@ class Reel:
     still: float = 0.0  # seconds the opening holds still before the first take (sp-hook_motion arm A)
     crf: str | None = None  # None: the series' crf; a longer reel can ask for a higher one to stay under a size cap
     bleed: bool = False  # far planes blurred past the frame's edge (srstudio.look.sheet): every new reel sets it
+    bed: bool = True  # False: no music under this reel, whatever its series scores its others with
     series: ClassVar[Series | None] = None
 
     def __post_init__(self) -> None:
+        if not isinstance(self.bed, bool):
+            raise SeriesError(f"reel {self.slug!r}: bed must be True or False, got {self.bed!r}")
         if self.crf is not None and not (
             isinstance(self.crf, str) and self.crf.isdigit() and self.crf.isascii() and 0 <= int(self.crf) <= MAX_CRF
         ):
@@ -120,15 +123,16 @@ class Reel:
         if unknown:
             raise SeriesError(f"reel {self.slug!r}: no voice for {unknown[0]!r}; the series has {sorted(s.voices)}")
         names = " and ".join(", ".join(s.voices[r].name for r in roles).rsplit(", ", 1))
+        bed = s.bed if self.bed else None
+        scored = " Instrumental music bed composed with the ElevenLabs Music API." if bed is not None else ""
         return Script(
             title=self.title,
             seed=s.seed,
             voices={r: s.voices[r] for r in roles},
             settings={r: s.settings[r] for r in roles},
             takes=self.takes,
-            voice_note=f"ElevenLabs premade voices {names}; no reference-voice cloning. Instrumental music bed "
-            "composed with the ElevenLabs Music API.",
-            bed=s.bed,
+            voice_note=f"ElevenLabs premade voices {names}; no reference-voice cloning.{scored}",
+            bed=bed,
             font=s.font,
             still=self.still,
         )
