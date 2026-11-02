@@ -89,7 +89,9 @@ _CONTRACTS = {
             'Fixed 58-pixel text is not measured to fit.',
             'Line groups use parent-local start offsets and remain visible, independently of the Canvas key clock. '
             'Buzz spans require finite 0<=start<end. Body x alternates +/-7 every 0.04 seconds with linear keys, '
-            'then returns to zero. turns>=0 foreshortens the back to zero over 0.11 seconds, then opens the front '
+            'then returns to zero. Sampling preflights at most 20000 keys, including the initial key and each '
+            'span return to rest; sample times must advance. turns>=0 needs distinct representable phases and '
+            'foreshortens the back to zero over 0.11 seconds, then opens the front '
             'over another 0.11 seconds. This is flat horizontal scaling, not a 3D rotation or physical vibration.',
         ),
     ),

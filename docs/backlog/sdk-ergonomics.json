@@ -1370,6 +1370,41 @@
   ],
   "findings": [
     {
+      "id": "SDK-P1-31",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Bound call-phone sampling and reject collapsed motion phases",
+      "problem": "Phone buzzes allocated one key per 0.04 seconds without a bound. At very large finite timestamps adding 0.04 could stop advancing, leaving the loop unbounded. Turnover phase timestamps could collapse to one value.",
+      "implementation": "Preflight at most 20000 source keys across all spans, including initial and terminal rest keys; bound span collection, reject non-advancing samples and require distinct turnover phases before drawing. Preserve existing sample arithmetic for valid motion.",
+      "evidence": [
+        "tests/test_call_motion_budget.py",
+        "src/srstudio/cutout_call.py",
+        "src/srstudio/_remaining_part_contracts.py",
+        "docs/authoring-discovery.md"
+      ],
+      "verification": {
+        "red": 3,
+        "initial_green": 1,
+        "additional_boundary_regressions": 4,
+        "new_tests": 8,
+        "selected_regressions": {
+          "passed": 217,
+          "skipped": 0
+        },
+        "post_annotation_regressions": 46,
+        "unchanged_valid_drawings": 30,
+        "branch_inclusive_coverage_percent": 98.99497487437186,
+        "branch_coverage_percent": 100.0,
+        "coverage_scope": [
+          "src/srstudio/cutout_call.py"
+        ],
+        "ruff": "passed",
+        "format": "passed",
+        "mypy_source_files": 337,
+        "retained_artifacts": "../generated/sdk-call-motion-budget/v1/"
+      }
+    },
+    {
       "id": "SDK-P1-30",
       "priority": "P1",
       "status": "complete",

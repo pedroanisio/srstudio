@@ -1505,6 +1505,11 @@ keys follow `Canvas.local_time`, so their clocks differ when local time is
 disabled beneath a later shot. The apron and trial tag are static drawings;
 their names do not imply cloth simulation or solved attachment.
 
+Phone buzzes are preflighted before drawing, with a 20,000-key budget shared
+across all spans, including the initial key and each return to rest. Buzz
+sample times must advance, and turnover phase times must remain distinct;
+extreme timestamps that lose those distinctions raise `CutoutCallError`.
+
 Signature code and cactus return `None` on unsigned canvases. An acting cactus
 requires a signature and uses Canvas-clock flower turns, bloom gates and scale
 pops. The show bug returns its complete fixed-layout group; a direct call

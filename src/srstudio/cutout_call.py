@@ -16,7 +16,7 @@ from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
 
-__all__ = ["CutoutCallError", "PHONE_CHARS", "PHONE_LINES", "PLATE_CHARS", "desk_phone", "video_tile"]
+__all__ = ["CutoutCallError", "MAX_BUZZ_KEYS", "PHONE_CHARS", "PHONE_LINES", "PLATE_CHARS", "desk_phone", "video_tile"]
 
 BEZEL = "#22262C"
 TILE_WALL = "#C9D3D6"
@@ -30,6 +30,7 @@ PHONE_WIDTH, PHONE_HEIGHT = 470.0, 900.0
 PHONE_CHARS = 12  # the most characters on a line of the lock screen, at its size
 PHONE_LINES = 2
 SHAKE = 0.04  # seconds between a buzzing phone's shakes
+MAX_BUZZ_KEYS = 20_000  # includes the initial key and every span's return to rest
 TURN = 0.22  # seconds a phone takes to turn over
 SCREEN = "#16202B"
 
@@ -39,8 +40,10 @@ class CutoutCallError(SrstudioError, ValueError):
 
 
 def _times(values, what: str) -> list[tuple[float, float]]:
-    out = []
+    out: list[tuple[float, float]] = []
     for span in values:
+        if len(out) >= (MAX_BUZZ_KEYS - 1) // 2:
+            raise CutoutCallError(f"buzz key budget is {MAX_BUZZ_KEYS}, including initial and terminal keys")
         try:
             a, b = span
         except (TypeError, ValueError):
@@ -49,6 +52,25 @@ def _times(values, what: str) -> list[tuple[float, float]]:
             raise CutoutCallError(f"{what} needs 0 <= start < end, got {span!r}")
         out.append((float(a), float(b)))
     return out
+
+
+def _buzz_keys(spans: Sequence[tuple[float, float]]) -> list[tuple[float, float]]:
+    """Bound and preflight all shaking before drawing, preserving the authored sample arithmetic."""
+    keys = [(0.0, 0.0)]
+    for a, b in spans:
+        if b - a > MAX_BUZZ_KEYS * SHAKE:
+            raise CutoutCallError(f"buzz key budget is {MAX_BUZZ_KEYS}, including initial and terminal keys")
+        at, sign = a, 1.0
+        while at < b:
+            if len(keys) >= MAX_BUZZ_KEYS - 1:  # reserve this span's return to rest
+                raise CutoutCallError(f"buzz key budget is {MAX_BUZZ_KEYS}, including initial and terminal keys")
+            following = at + SHAKE
+            if following <= at:
+                raise CutoutCallError("a buzz needs distinct representable sample times")
+            keys.append((round(at, 6), 7.0 * sign))
+            at, sign = following, -sign
+        keys.append((b, 0.0))
+    return keys
 
 
 @register(
@@ -134,6 +156,8 @@ def desk_phone(
     spans = _times(buzzes, "a buzz")
     if turns is not None and not (checks.number(turns) and turns >= 0):
         raise CutoutCallError(f"a phone turns over at a time, got {turns!r}")
+    if turns is not None and not turns < turns + TURN / 2 < turns + TURN:
+        raise CutoutCallError("a phone turnover needs two distinct representable phase times")
     if not isinstance(title, str) or len(title) > PHONE_CHARS:
         raise CutoutCallError(f"a title has up to {PHONE_CHARS} characters, got {title!r}")
     if len(lines) > PHONE_LINES:
@@ -150,20 +174,13 @@ def desk_phone(
         last = at
     if title or lines:
         cv.require_font("a phone's screen copy", CutoutCallError)
+    keys = _buzz_keys(spans) if spans else []
     ink = cv.ink
     w, h = PHONE_WIDTH, PHONE_HEIGHT
     g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
     cv.rect(g, -w / 2 + 14, -h / 2 + 22, w, h, "#000000", cv.clear, 0, radius=54, opacity=0.25)
     body = cv.group(g, f"{id}-body")
-    if spans:
-        keys: list[tuple[float, float]] = [(0.0, 0.0)]
-        for a, b in spans:
-            at, sign = a, 1.0
-            while at < b:
-                keys.append((round(at, 6), 7.0 * sign))
-                at += SHAKE
-                sign = -sign
-            keys.append((b, 0.0))
+    if keys:
         cv.keys(body, "x", keys, hold=False)
     face = cv.group(body, f"{id}-face")
     cv.rect(face, -w / 2, -h / 2, w, h, BEZEL, ink, 5, radius=54)
