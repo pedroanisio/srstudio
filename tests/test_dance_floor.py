@@ -76,9 +76,25 @@ def test_a_standing_body_stands_inside_its_feet(preset):
     assert 0.3 * profile.stature < floor - com.y < 0.7 * profile.stature  # about the middle of the body
     both = support(profile, frames, ("left", "right"))
     one = support(profile, frames, ("left",))
-    assert inside(both, com) > 0 > inside(one, com)
+    assert inside(both, com) > max(0.0, inside(one, com))  # a stick's broad soles overlap, so one may hold it too
     half, heel, toe = sole(profile)
     assert 0 < half and 0 < heel < toe  # a footprint on any profile, with toes or without
+
+
+@pytest.mark.parametrize("preset", sk.PRESETS)
+def test_the_footprint_is_the_skeletons_sole(preset):
+    profile = sk.preset(preset)
+    body = sk.body_profile(profile)
+    half, heel, toe = sole(profile)
+    assert (2 * half, heel, toe) == pytest.approx((body.foot_width, body.heel, body.toe))
+    assert 2 * half / profile.stature == pytest.approx(
+        sk.JOINT_TABLE.sole_width, rel=0.5
+    )  # a foot's width, not the hips'
+
+
+def test_the_mannequins_footprint_is_srlocations_foot():
+    half, heel, _ = sole(sk.preset("realistic"))
+    assert (2 * half, heel) == pytest.approx((0.119, 0.077), abs=0.001)
 
 
 def test_the_centre_of_mass_skips_a_joint_a_character_lacks():

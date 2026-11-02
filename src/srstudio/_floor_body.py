@@ -5,10 +5,10 @@ Control of Human Movement*, 4th ed., table 4.1) at the middle of the bone, the t
 bones; a joint a character omits is left out and the rest renormalised. The shares are a person's, so on a cartoon with
 a large head they are an estimate.
 
-A planted foot's footprint is a rectangle on the floor under the foot: as wide as half the hips, from the toes' tip
-forward of the ankle to a heel a quarter of that behind it. The convex hull and the distance inside it are written
-here, not taken from ``body``: they stand in until ``body`` offers its support polygon as public API, and are to be
-replaced by it then (ADR 0194).
+A planted foot's footprint is a rectangle on the floor under the foot, the skeleton's sole: the joint table's sole
+width and heel (srlocations' foot solid) scaled with the character's foot, to the toes' tip. The convex hull and the
+distance inside it are written here, not taken from ``body``: they stand in until ``body`` offers its support polygon
+as public API, and are to be replaced by it then (ADR 0194).
 """
 
 from __future__ import annotations
@@ -24,7 +24,6 @@ from .limbs.math3d import Frame, Quaternion, Vec3
 SIDES = ("left", "right")
 UP_AXIS = Vec3(0.0, 1.0, 0.0)
 FORWARD = Vec3(0.0, 0.0, 1.0)
-HEEL_SHARE = 0.25  # the heel reaches behind the ankle this share of the toes' reach ahead of it
 _TRUNK = 0.497 / 4
 # (from, to, share): ``to`` None is the joint itself; "tip" the bone's end.
 MASSES: tuple[tuple[str, str | None, float], ...] = (
@@ -116,14 +115,10 @@ def inside(polygon: tuple[tuple[float, float], ...], point: Vec3) -> float:
 
 
 def sole(profile: sk.SkeletonProfile) -> tuple[float, float, float]:
-    """A foot's footprint about the point under its ankle: half its width, the heel behind, the toes ahead."""
-    width = abs(profile.offset("right_upper_leg").x)
-    name = "right_toes"
-    if profile.has(name):
-        ahead = profile.offset(name).z + (profile.tip(name) or Vec3()).z
-    else:
-        ahead = (profile.tip("right_foot") or Vec3(0.0, 0.0, 2 * profile.length("ankle"))).z
-    return width / 2, HEEL_SHARE * ahead, ahead
+    """A foot's footprint about the point under its ankle: half its width, the heel behind, the toes ahead. The
+    sizes are the skeleton's sole (``sk.body_profile``: the joint table's width and heel scaled with the foot)."""
+    body = sk.body_profile(profile)
+    return body.foot_width / 2, body.heel, body.toe
 
 
 def support(
