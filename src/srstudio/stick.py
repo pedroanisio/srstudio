@@ -84,6 +84,10 @@ __all__ = [
     "captions",
     "Face",
     "RigPose",
+    "FOOT_RUN",
+    "FOOT_SPLAY",
+    "FOOT_MIN",
+    "foot_end",
     "RigKey",
     "Look",
     "HAIR",
@@ -982,9 +986,20 @@ SKIN, SKIN_SHADE = "#f3ece0", "#d8cdbb"
 LIMB, LIMB_FAR = 15, 13  # stroke widths of the near and the far limbs
 
 
+FOOT_RUN = (46.0, 4.0)  # a foot seen in full side view: 46 px forward of the ankle, 4 down; the legacy foot
+FOOT_SPLAY = math.radians(30.0)  # the turn-out a foot aimed at the lens is drawn with, away from the other foot
+FOOT_MIN = FOOT_RUN[0] * math.sin(FOOT_SPLAY)  # 23 px: the shortest foot drawn, a foot turned out by FOOT_SPLAY
+FOOT_SLACK = 1.05  # a toe this share past a full foot is a caller's scale error, not foreshortening
+
+
 @dataclass(frozen=True)
 class RigPose:
-    """Where the seated figure's joints are, in frame pixels; ``*s`` pairs are (far, near)."""
+    """Where the seated figure's joints are, in frame pixels; ``*s`` pairs are (far, near).
+
+    ``toes`` (far, near), when given, is where each foot's toe projects, at the pose's own scale: a foot seen in full
+    side view reaches :data:`FOOT_RUN` from its ankle, and one turned toward the lens is shorter by its foreshortening.
+    The rig draws each foot along ankle -> toe (see :func:`foot_end`). ``None`` draws every foot as the legacy run,
+    :data:`FOOT_RUN` to the right whatever the facing, as published figures were drawn."""
 
     head: Point
     neck: Point
@@ -993,6 +1008,42 @@ class RigPose:
     feet: tuple[Point, Point]
     elbows: tuple[Point, Point]
     hands: tuple[Point, Point]
+    toes: tuple[Point, Point] | None = None
+
+
+def foot_end(pose: RigPose, i: int) -> Point:
+    """Where foot ``i`` (0 far, 1 near) of ``pose`` ends.
+
+    With no toes: the legacy run, ankle + :data:`FOOT_RUN`. With toes: along ankle -> toe, as long as the toe's
+    projection (the canon length foreshortened), with two rules for a foot the picture barely shows:
+
+    - **Splay.** A foot whose run across the picture is under ``2 * FOOT_MIN`` is turned outward from the other foot
+      by up to :data:`FOOT_MIN` across, fully at no run and fading to none at ``2 * FOOT_MIN``: a frontal stance
+      draws the screen-left foot to the left and the screen-right foot to the right, never both one way. Feet on one
+      x splay far one way, near the other.
+    - **Floor.** A foot is drawn at least :data:`FOOT_MIN` long, so one aimed at the lens still reads as a foot.
+
+    A toe that is not a finite point, or lies past a full foot (:data:`FOOT_SLACK`), is refused."""
+    ax, ay = pose.feet[i]
+    if pose.toes is None:
+        return ax + FOOT_RUN[0], ay + FOOT_RUN[1]
+    toe = pose.toes[i]
+    if not (len(toe) == 2 and all(_is_number(v) for v in toe)):
+        raise StickDataError(f"toe {i} must be a finite (x, y) point, got {toe!r}")
+    vx, vy = toe[0] - ax, toe[1] - ay
+    full = math.hypot(*FOOT_RUN)
+    if math.hypot(vx, vy) > full * FOOT_SLACK:
+        raise StickDataError(f"toe {i} lies {math.hypot(vx, vy):.1f} px from its ankle, past a full foot ({full:.1f})")
+    other = pose.feet[1 - i][0]
+    out = -1.0 if ax < other or (ax == other and i == 0) else 1.0
+    fade = max(0.0, 1.0 - abs(vx) / (2 * FOOT_MIN))
+    vx += out * FOOT_MIN * fade
+    length = math.hypot(vx, vy)
+    if length < FOOT_MIN:
+        if length < EPSILON:
+            vx, vy, length = out, 0.0, 1.0
+        vx, vy = vx * FOOT_MIN / length, vy * FOOT_MIN / length
+    return ax + vx, ay + vy
 
 
 @dataclass(frozen=True)
@@ -1256,7 +1307,8 @@ def _curved_body(cv: Canvas, parent, pose: RigPose, speed: Mapping[str, Point], 
     for i, width in ((0, LIMB_FAR), (1, LIMB)):
         knee, foot = pose.knees[i], pose.feet[i]
         leg = _curve([pose.hip, knee, foot], [speed["hip"], speed[f"knee{i}"], speed[f"foot{i}"]], swing)
-        shape(cv, parent, f"{leg} L {foot[0] + 46:.1f} {foot[1] + 4:.1f}", sw=width, stroke=cv.ink)
+        tx, ty = foot_end(pose, i)
+        shape(cv, parent, f"{leg} L {tx:.1f} {ty:.1f}", sw=width, stroke=cv.ink)
         if ("left" if i == 0 else "right") not in omit_arms:
             arm = [shoulder, pose.elbows[i], pose.hands[i]]
             shape(cv, parent, _curve(arm, [speed["neck"], speed[f"elbow{i}"], speed[f"hand{i}"]], swing), sw=width,
@@ -1290,7 +1342,7 @@ def _body(
     shoulder = (pose.neck[0] - 4, pose.neck[1] + 34)
     for i, width in ((0, LIMB_FAR), (1, LIMB)):
         knee, foot = pose.knees[i], pose.feet[i]
-        _limb(cv, parent, [pose.hip, knee, foot, (foot[0] + 46, foot[1] + 4)], width)
+        _limb(cv, parent, [pose.hip, knee, foot, foot_end(pose, i)], width)
         if ("left" if i == 0 else "right") not in omit_arms:
             _limb(cv, parent, [shoulder, pose.elbows[i], pose.hands[i]], width)
         if i == 0:

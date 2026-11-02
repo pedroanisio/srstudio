@@ -35,7 +35,21 @@ from .errors import SrstudioError
 from .limbs import Camera
 from .limbs.math3d import Vec3
 from .music import Groove
-from .stick import HEAD_R, PLAIN, SKIN, SKIN_SHADE, STANDING, Face, Look, RigKey, RigPose, Swing, check_face, rig
+from .stick import (
+    FOOT_RUN,
+    HEAD_R,
+    PLAIN,
+    SKIN,
+    SKIN_SHADE,
+    STANDING,
+    Face,
+    Look,
+    RigKey,
+    RigPose,
+    Swing,
+    check_face,
+    rig,
+)
 
 __all__ = [
     "EXPRESSIONS",
@@ -73,6 +87,8 @@ FLOOR = float(STANDING["stand"].feet[0][1])  # the y a standing figure's ankles 
 SEAT = (540.0, 1370.0)  # a seated figure's hips: its neck then lands on stick_windshield.FRONT "sit"'s, y 1037
 SHOULDER_DROP = 34.0  # stick.rig draws both arms from (neck.x - 4, neck.y + 34)
 SHOULDER_IN = 4.0
+TOE = Vec3(0.0, 0.024, 0.146)  # the toe from the ankle in the foot bone's own frame, metres: the stick preset ends at
+# the ankle, so this is the mannequin's ankle-to-toe offset
 TURN = math.pi / 4  # a head turn that puts the pupils at the side of the eyes
 NOD = math.pi / 6  # a nod that puts them at the top or the bottom
 MAX_PIXELS = 4096 * 4096
@@ -264,8 +280,11 @@ def perform(
     ``seated`` picks the base pose (:data:`SEATED` or :data:`STANDING_BASE`, onto ``profile``'s rest); by default a
     ``seat`` dance sits and any other stands. ``base`` replaces those deltas. ``hip`` is where the base pose's hips
     land on the frame: :data:`SEAT` seated, and standing the point that puts the base's ankles on :data:`FLOOR`.
-    Planted feet keep their mark; a seated figure keeps both feet on the floor. ``max_frames`` bounds the pictures
-    before one is sampled, within the rig's key budget."""
+    Planted feet keep their mark; a seated figure keeps both feet on the floor. Each foot's toe is the ankle plus
+    the foot bone's turn applied to :data:`TOE`, moved with the ankle when the ankle is moved onto the floor, and held
+    with it for a whole plant: a planted foot keeps its mark and its direction. The toe is handed to the rig at the
+    rig's foot scale (a full foot in side view reaches ``stick.FOOT_RUN``), so the rig draws the foot along it.
+    ``max_frames`` bounds the pictures before one is sampled, within the rig's key budget."""
     if type(max_frames) is not int or not 1 <= max_frames <= MAX_KEYS - 1:
         raise StickDanceError(f"max_frames must be a whole number in 1..{MAX_KEYS - 1}, got {max_frames!r}")
     if type(fps) is not int or not 1 <= fps <= 240:
@@ -303,7 +322,8 @@ def perform(
     shift = {s: _minus(shoulder, rest[f"{s}_upper_arm"].xy) for s in _SIDES}
     far, near = sorted(_SIDES, key=lambda s: rest[f"{s}_upper_arm"].xy[0])
     centre = 1 - profile.proportions.head_radius_m / _crown(profile)
-    marks: dict[str, Vec3 | None] = dict.fromkeys(_SIDES)
+    marks: dict[str, tuple[Vec3, Vec3] | None] = dict.fromkeys(_SIDES)  # a planted foot's ankle and toe offset
+    foot_scale = math.hypot(*FOOT_RUN) / (TOE.length * px)
     poses: list[RigPose] = []
     dropped: set[str] = set()
     short = 0.0
@@ -317,9 +337,11 @@ def perform(
         legs = {}
         for s in _SIDES:
             top, knee, ankle = (joints[f"{s}_{j}"].origin for j in ("upper_leg", "lower_leg", "foot"))
+            toe = joints[f"{s}_foot"].rotation.rotate(TOE)  # from the ankle
             if s in planted:
-                mark = marks[s] or Vec3(ankle.x, ground, ankle.z)
-                marks[s] = mark
+                held_mark = marks[s]
+                mark, toe = held_mark if held_mark is not None else (Vec3(ankle.x, ground, ankle.z), toe)
+                marks[s] = (mark, toe)
             else:
                 marks[s] = None
                 mark = Vec3(ankle.x, min(ankle.y, ground), ankle.z)
@@ -327,7 +349,13 @@ def perform(
                 knee, reached, missed = _knee(top, mark, (knee - top).length, (ankle - knee).length, knee)
                 short = max(short, missed * px)
                 ankle = mark if s in planted else reached  # a planted foot keeps its mark; the shin spans the miss
-            legs[s] = (camera.project(knee).xy, camera.project(ankle).xy)
+            at = camera.project(ankle).xy
+            tip = camera.project(ankle + toe).xy
+            legs[s] = (
+                camera.project(knee).xy,
+                at,
+                (at[0] + (tip[0] - at[0]) * foot_scale, at[1] + (tip[1] - at[1]) * foot_scale),
+            )
         head, tip = shown["head"].xy, shown["head.tip"].xy
         poses.append(
             RigPose(
@@ -336,6 +364,7 @@ def perform(
                 hip=shown["hips"].xy,
                 knees=(legs[far][0], legs[near][0]),
                 feet=(legs[far][1], legs[near][1]),
+                toes=(legs[far][2], legs[near][2]),
                 elbows=tuple(_plus(shown[f"{s}_lower_arm"].xy, shift[s]) for s in (far, near)),  # type: ignore[arg-type]
                 hands=tuple(_plus(shown[f"{s}_hand"].xy, shift[s]) for s in (far, near)),  # type: ignore[arg-type]
             )
