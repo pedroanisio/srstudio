@@ -11,6 +11,8 @@ from srstudio import Canvas, collage, collage_forecast, flat_counter, registry
 from srstudio.canvas import Signature
 from srstudio.collage_forecast import ForecastError, Message, thread, weather_map
 from srstudio.errors import SrstudioError
+from support.acting import evaluate
+from support.gloss import font
 
 
 def canvas() -> Canvas:
@@ -137,3 +139,86 @@ def test_a_thread_it_could_not_show_is_refused(kw, match):
     cv = canvas()
     with pytest.raises(ForecastError, match=match):
         thread(cv, cv.comp, **{**THREAD, **kw})
+
+
+@pytest.mark.parametrize('local', [False, True])
+@pytest.mark.parametrize(
+    'messages',
+    [
+        (Message('A' * 100, 1),),
+        (Message('HEY', 1), Message('A VERY LONG MESSAGE ' * 12, 2)),
+        tuple(Message('HEY', i) for i in range(10)),
+    ],
+)
+def test_thread_preflights_every_message_before_drawing(local, messages):
+    cv = canvas()
+    cv.local_time = local
+    before = cv.scene.to_bytes()
+    with pytest.raises(ForecastError, match='fit'):
+        thread(cv, cv.comp, **THREAD, messages=messages)
+    assert cv.scene.to_bytes() == before
+
+
+@pytest.mark.parametrize('local', [False, True])
+@pytest.mark.parametrize('call', ['', 'PRIYA'])
+def test_thread_header_must_fit_even_without_messages(local, call):
+    cv = canvas()
+    cv.local_time = local
+    before = cv.scene.to_bytes()
+    with pytest.raises(ForecastError, match='fit'):
+        thread(cv, cv.comp, **{**THREAD, 'h': 100}, call=call)
+    assert cv.scene.to_bytes() == before
+
+
+@pytest.mark.parametrize('at', [-1, math.nan, math.inf, True, '1', collage_forecast.FOREVER])
+def test_thread_clock_times_fail_at_the_builder_boundary_before_drawing(at):
+    cv = canvas()
+    before = cv.scene.to_bytes()
+    with pytest.raises(ForecastError, match='clock'):
+        thread(cv, cv.comp, **{**THREAD, 'clock': ((at, '8:59'),)})
+    assert cv.scene.to_bytes() == before
+
+
+def test_thread_rejects_a_message_that_starts_at_its_visibility_end():
+    cv = canvas()
+    before = cv.scene.to_bytes()
+    with pytest.raises(ForecastError, match='message'):
+        thread(cv, cv.comp, **THREAD, messages=(Message('HEY', collage_forecast.FOREVER),))
+    assert cv.scene.to_bytes() == before
+
+
+@pytest.mark.parametrize('local', [False, True])
+@pytest.mark.parametrize('kind', ['thread', 'map'])
+def test_forecast_visibility_and_motion_share_the_documented_project_clock(local, kind):
+    cv = canvas()
+    cv.local_time = local
+    if kind == 'thread':
+        thread(cv, cv.comp, **THREAD, messages=(Message('HEY', 3),))
+    else:
+        weather_map(cv, cv.comp, 100, 200, 450, 600, arrow='EXES', slide=(3, 4), clock=('8:59', (3, 5)))
+    animations = list(ET.fromstring(cv.scene.to_bytes()).iter('animate'))
+    assert animations and {a.get('timeBase', 'composition') for a in animations} == {'composition'}
+    assert cv.local_time is local
+
+
+@pytest.mark.parametrize('local', [False, True])
+def test_thread_message_visibility_and_slide_evaluate_together_in_a_later_shot(local, scene_render, tmp_path):
+    cv = canvas()
+    (tmp_path / 'font.ttf').write_bytes(font())
+    cv.assets.add_font(id='font', src='font.ttf', family='DejaVu Sans', weight='700')
+    cv.local_time = local
+    sequence = cv.comp.add_sequence(id='shots')
+    sequence.add_group(id='lead', end=2)
+    shot = sequence.add_group(id='shot', end=4)
+    thread(cv, shot, **THREAD, messages=(Message('HEY', 3),))
+    root = ET.fromstring(cv.scene.to_bytes())
+    shown = next(g for g in root.iter('group') if g.find('animate[@property="y"]') is not None)
+    path = tmp_path / 'thread.xml'
+    path.write_bytes(cv.scene.to_bytes())
+    states = []
+    for t, visible, rise in ((3.06, 1, 3.75), (2.99, 0, 30), (3.2, 1, 0), (3.06, 1, 3.75)):
+        node = next(n for n in evaluate(scene_render, path, t) if n['id'] == shown.get('id'))
+        assert node['world_opacity'] == visible
+        assert node['world'][5] == pytest.approx(THREAD['y'] + 26 + rise)
+        states.append(node)
+    assert states[0] == states[-1]

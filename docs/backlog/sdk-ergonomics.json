@@ -1187,6 +1187,33 @@
   ],
   "findings": [
     {
+      "id": "SDK-P1-23",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Preflight forecast threads and synchronize their visibility with motion",
+      "problem": "Thread message fitting and invalid clock values failed after drawing. A short phone could clip the header. With local Canvas time, visibility cues for the forecast map/thread diverged from project-timed slide keys.",
+      "resolution": "Validate clock/message times and precompute all message boxes before drawing, rejecting header overflow. Render those same boxes and explicitly put all forecast visibility gates on project time.",
+      "verification": [
+        "tests/test_collage_forecast.py"
+      ],
+      "acceptance": [
+        "Overflowing headers and first/later messages leave scenes unchanged",
+        "Invalid cue times raise ForecastError before drawing",
+        "Renderer evaluation in nonzero sequence shots agrees for visibility and cubic-out slide on both Canvas settings",
+        "Fitting default-clock thread drawings remain byte-identical"
+      ],
+      "verification_summary": {
+        "red": 20,
+        "initial_green": 3,
+        "new_cases": 23,
+        "passed": 368,
+        "skipped": 0,
+        "branch_inclusive_module_coverage_percent": 99.10714285714286,
+        "module_branch_coverage_percent": 98.33333333333333,
+        "retained_artifacts": "../generated/sdk-collage-forecast-preflight/v1/"
+      }
+    },
+    {
       "id": "SDK-P1-22",
       "priority": "P1",
       "status": "complete",
