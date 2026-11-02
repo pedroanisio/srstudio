@@ -352,8 +352,6 @@ def _figure(
             )
     radius = profile.proportions.head_radius_m * camera.scale
     head = camera.point(world["head"].origin)
-    if view == "top" and {"hips", "left_upper_leg", "right_upper_leg"} <= world.keys():
-        _pelvis(draw, camera, world)
     if view == "top":
         middle = head
         facing = world["head"].rotation.rotate(sk.Vec3(0.0, 0.0, 1.0))
@@ -367,17 +365,19 @@ def _figure(
         top = camera.point(sk.tips(profile, posed)["head"])
         middle = ((head[0] + top[0]) / 2, (head[1] + top[1]) / 2)
     draw.ellipse([middle[0] - radius, middle[1] - radius, middle[0] + radius, middle[1] + radius], outline=INK, width=3)
+    if view == "top" and {"hips", "left_upper_leg", "right_upper_leg"} <= world.keys():
+        _pelvis(draw, camera, world)
 
 
 def _pelvis(draw: ImageDraw.ImageDraw, camera: Camera, world: Mapping[str, sk.Frame]) -> None:
-    """Seen from above the shoulders hide the hips, so the hip line and a tick the way the pelvis faces are drawn
-    over them: the pelvis's turn reads against the shoulders' line."""
+    """Seen from above the shoulders and the head hide the hips, so the hip line and a tick the way the pelvis faces
+    are drawn over them: the pelvis's turn reads against the shoulders' line."""
     left, right = camera.point(world["left_upper_leg"].origin), camera.point(world["right_upper_leg"].origin)
     draw.line([left, right], fill=PELVIS, width=6)
     middle = ((left[0] + right[0]) / 2, (left[1] + right[1]) / 2)
     facing = world["hips"].rotation.rotate(sk.Vec3(0.0, 0.0, 1.0))
     length = math.hypot(facing.x, facing.z) or 1.0
-    reach = math.dist(left, right) * 0.6
+    reach = math.dist(left, right) * 1.2
     draw.line(
         [middle, (middle[0] + facing.x / length * reach, middle[1] + facing.z / length * reach)], fill=PELVIS, width=4
     )
