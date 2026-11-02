@@ -3,6 +3,16 @@
 from ..limbs.math3d import Frame as Frame
 from ..limbs.math3d import Quaternion as Quaternion
 from ..limbs.math3d import Vec3 as Vec3
+from ._bridges import arm_profile as arm_profile
+from ._bridges import body_profile as body_profile
+from ._bridges import from_arm_pose as from_arm_pose
+from ._bridges import from_body_pose as from_body_pose
+from ._bridges import from_hand_pose as from_hand_pose
+from ._bridges import hand_profile as hand_profile
+from ._bridges import to_arm_pose as to_arm_pose
+from ._bridges import to_body_pose as to_body_pose
+from ._bridges import to_hand_pose as to_hand_pose
+from ._bridges import wrist_control as wrist_control
 from ._errors import JointLimitError as JointLimitError
 from ._errors import LimitViolation as LimitViolation
 from ._errors import SkeletonBridgeError as SkeletonBridgeError
