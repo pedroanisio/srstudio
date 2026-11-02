@@ -429,6 +429,8 @@ def test_the_compare_counts_only_an_underside_turned_to_the_camera(kit):
                         np.array([(0, 1, 1)]))  # fmt: skip
     assert clay_compare.underside_facing([base], np.array((0.0, -72.0, -300.0))) == 0  # seen from above
     assert clay_compare.underside_facing([base], np.array((0.0, 10.0, -300.0))) == 2  # seen from below
+    ear = cr.clay.Mesh("e", np.array([(0.0, -90.0, 40.0)] * 2), np.array([(0.0, 1.0, 0.0)] * 2), np.array([(0, 1, 1)]))
+    assert clay_compare.underside_facing([base, ear], np.array((0.0, -72.0, -300.0))) == 0  # an outline's foot
 
 
 def test_the_study_writes_nothing_others_can_read(kit, tmp_path):
@@ -447,3 +449,25 @@ def test_the_heads_pictures_are_refused_without_the_face_they_show(kit, rigs):
     cr = kit["cr"]
     with pytest.raises(cr.RenderError, match="face it shows"):
         cr._textures(rigs["mae"], "head")
+
+
+@pytest.mark.parametrize("who", ["mae", "bruno"])
+def test_a_gasp_keeps_the_clay_seated_and_raises_the_head_as_far_as_the_cards(kit, rigs, who):
+    cr, pf = kit["cr"], kit["pf"]
+    data = record()
+    data["cast"][who][1] = resting_frame(lift=-58.0, tilt=-5.0)
+    performance = pf.Performance.parse(data)
+    rig, fig = rigs[who], kit["cf"].figure(rigs[who])
+    seat = cr.Seat((0.0, -37.4, 30.0), 0.16, who == "mae")
+    rest, gasp = (cr.posed(who, rig, fig, performance.at(who, n), seat, "#806040") for n in (0, 1))
+    lowest = [max(float(m.vertices[:, 1].max()) for m in posed) for posed in (rest, gasp)]
+    assert lowest[1] == pytest.approx(lowest[0], abs=1e-6)  # the base stays on the cushion
+    base = [m.vertices[m.normals[:, 1] > 0.999] for m in gasp if m.material.endswith("body")]
+    assert base and all(np.allclose(v[:, 1], lowest[1]) for v in base if len(v))  # flat on it, not rocked off
+    body, head = cr.chains(rig, performance.at(who, 1), who == "mae")
+    card = cr._shift(0.0, -58.0) @ cr._turn(-5.0, (cr.SEAT_X, cr.PAIR_Y))
+    if who == "mae":
+        card = card @ cr._scale(-1.0, 1.0, (cr.SEAT_X, cr.PAIR_Y))
+    neck = np.array([*rig.neck, 1.0])
+    # where the card's goes, within what a turn moves a point up or down that a shear does not (2.2 px at 5°)
+    assert head @ neck == pytest.approx(card @ neck, abs=2.5)

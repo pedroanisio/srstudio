@@ -43,15 +43,18 @@ os.umask(0o077)  # generated outputs are private: folders 700, files 600
 CLIPS = {"1-two-shot": (0, 111), "2-close-ups": (111, cs.ROOM_FRAMES)}
 STILLS = {"two-shot": 60, "close-up-mae": 130, "close-up-bruno": 170}
 PUSH_STILLS = (0, 54, 109)
+BASE_LEVEL = 0.05  # engine centimetres: a base vertex lies this close to the figure's lowest point
 FLAT_TAKES = {"two": (0, 110), "mae": (111, 159), "bruno": (160, 190)}
 
 
 def underside_facing(meshes, eye: np.ndarray) -> int:
-    """How many vertices of the figures' flat bases (their normals straight down, as cf.inflate sets them) face the
-    camera at ``eye`` (engine centimetres)."""
+    """How many vertices of a figure's flat base (at its lowest level, their normals straight down as cf.inflate sets
+    them) face the camera at ``eye`` (engine centimetres). An outline's own normals point down at the bottom of an ear
+    or a paw too; those are not the base."""
+    lowest = max(float(mesh.vertices[:, 1].max()) for mesh in meshes)  # engine y points down
     count = 0
     for mesh in meshes:
-        down = mesh.normals[:, 1] > 0.999  # engine y points down
+        down = (mesh.normals[:, 1] > 0.999) & (mesh.vertices[:, 1] >= lowest - BASE_LEVEL)
         if down.any():
             towards = eye - mesh.vertices[down]
             count += int(((towards * mesh.normals[down]).sum(axis=1) > 0).sum())

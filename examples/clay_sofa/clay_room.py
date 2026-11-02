@@ -223,16 +223,29 @@ def _scale(sx: float, sy: float, about) -> np.ndarray:
     return np.array([[sx, 0, ax - sx * ax], [0, sy, ay - sy * ay], [0, 0, 1.0]])
 
 
+def _shear(degrees: float, base_y: float) -> np.ndarray:
+    """A 3x3 homogeneous 2D shear that moves a point sideways as far as ``_turn(degrees)`` about a point on the line
+    ``base_y`` moves the point straight above it, and leaves that line where it is."""
+    k = -_turn(degrees, (0.0, 0.0))[0, 1]  # how far the turn takes a point one pixel above its pivot sideways
+    return np.array([[1, -k, k * base_y], [0, 1, 0], [0, 0, 1.0]])
+
+
 def chains(rig, frame: Frame, mirror: bool) -> tuple[np.ndarray, np.ndarray]:
     """The 2D transforms toon_head's nested groups put on the body and on the head at ``frame``, in reference pixels:
-    pair (mirror, gasp, jump) · lean · breath, then turn · nod · idle · lift for the head."""
+    pair (mirror, gasp, jump) · lean · breath, then turn · nod · idle · lift for the head.
+
+    The card hops and rocks on the seat: the gasp's and the jump's ``lift`` moves it whole and its ``tilt`` turns it
+    about the middle of its base, so the base leaves the seat. Clay stays seated: the lift raises the head as far as the
+    card's, and stretches the body under it from its base; the tilt leans the figure as far at the neck as the card's
+    turn, as a shear that keeps the base on the cushion."""
     seat = (SEAT_X, PAIR_Y)
-    pair = _shift(0.0, frame.lift) @ _turn(frame.tilt, seat)
-    if mirror:
-        pair = pair @ _scale(-1.0, 1.0, seat)
-    body = pair @ _turn(frame.lean, BODY_PIVOT) @ _scale(1.0, 1.0 + rig.style.breath_scale * frame.breath, BODY_PIVOT)
+    rock = _shear(frame.tilt, PAIR_Y)
+    flip = _scale(-1.0, 1.0, seat) if mirror else np.eye(3)
+    stretch = _scale(1.0, 1.0 + frame.lift / (rig.neck[1] - PAIR_Y), seat)  # the neck up by lift, the base kept
+    within = _turn(frame.lean, BODY_PIVOT) @ _scale(1.0, 1.0 + rig.style.breath_scale * frame.breath, BODY_PIVOT)
+    body = stretch @ rock @ flip @ within  # the card turns, then hops: so the clay leans, then stretches
     neck = rig.neck
-    head = body @ _turn(frame.turn, neck)
+    head = _shift(0.0, frame.lift) @ rock @ flip @ within @ _turn(frame.turn, neck)
     head = head @ _shift(0.0, frame.nod) @ _turn(frame.roll, neck)
     head = head @ _shift(0.0, frame.idle_y) @ _turn(frame.idle_roll, neck)
     head = head @ _shift(0.0, -frame.breath * rig.style.breath_px)
