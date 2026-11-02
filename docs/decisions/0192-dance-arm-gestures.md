@@ -68,7 +68,7 @@ past `lower_leg.stretch`'s limit at the far extreme. Each knee now keeps its hit
 
 ## Consequences
 
-- A routine has bigger moves for a song's loud parts.
+- A routine has bigger moves for a song's loud parts; [ADR 0193](0193-routine-from-a-song.md) draws them by level.
 - Every preset now dances on every preset character within limits without clamping, and a test holds that.
 - A cartoon clap needs intensity 2 to meet. A choreographer that does not know the character leaves it at 1.
 - None of the gestures has been judged on a drawn body yet; the tests prove positions, not how a style draws them.

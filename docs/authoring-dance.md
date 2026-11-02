@@ -154,6 +154,38 @@ routine = dance.parse_routine(text, dance.moves())
 It reports louder and quieter parts, never which one is the chorus. Read the grid first with `music.reading(path)` or
 `srstudio beat`.
 
+## Choreograph by level
+
+`srstudio.choreograph` places the moves for you ([ADR 0193](decisions/0193-routine-from-a-song.md)): one move a phrase,
+small moves on quiet parts and arm gestures on loud ones, only moves the character's `support` allows, at most
+`max_repeat` phrases of one move in a row with every second one mirrored, and one face held a phrase. The same `seed`
+and song give the same routine.
+
+<!-- dance-choreograph:start -->
+```python
+from srstudio import choreograph, dance
+from srstudio.music import Groove
+
+groove = Groove(120)
+song = dance.SongMap(
+    groove,
+    4,
+    (0.0,) * 64,
+    (-6.0, 0.0, 0.0, -6.0),
+    (dance.SongPart(0, 4, -6.0, "low"), dance.SongPart(4, 12, 0.0, "high"), dance.SongPart(12, 16, -6.0, "low")),
+)
+routine = choreograph.choreograph(song, support="seat", seed=7)
+assert [(e.start_bar, e.end_bar) for e in routine.entries] == [(0, 4), (4, 8), (8, 12), (12, 16)]
+assert routine.entries[1].move.name in choreograph.HIGH_MOVES
+assert dance.parse_routine(dance.dump_routine(routine), dance.moves()) == routine
+```
+<!-- dance-choreograph:end -->
+
+On a recorded track, `choreograph.choreograph_track(path, groove, support="feet", seed=7)` maps it first, and
+`srstudio choreograph song.wav --support feet --seed 7 > routine.json` reads the grid as `srstudio beat` does and
+prints the routine. Pass a `choreograph.Palette` to draw from other moves or faces, and `library=` when it names moves
+outside the presets. A routine for a cartoon clap still needs `intensity=2.0` set on that entry by hand.
+
 ## Check a groove
 
 `measure_dance(series, fps, groove)` reads `cycles_per_beat`, `rise`, `fall`, `snap_ratio`, `peak_to_peak`, the `hit`
