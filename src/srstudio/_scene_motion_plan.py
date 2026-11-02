@@ -15,6 +15,7 @@ from . import _composition_sequence as sequence
 from . import composition as c
 from . import plates
 from . import scene_motion as m
+from ._composition_forms import resolved as form_lighting
 from ._composition_preflight import _digest, _graph, _pose_key
 from ._composition_review import check_source
 
@@ -109,10 +110,15 @@ def _events(
                 raise m._fail('samples', f'at most {m.MAX_TIMELINE_SAMPLES} changing frame intervals')
             for frame in range(first, stop):
                 add(float(Fraction(frame, 1) / fps))
+    from ._composition_forms import events as form_events
+
+    bindings = {binding.id: binding for binding in base.bindings}
     schedules = {}
     for layer in spec.layers:
         add(layer.temporal.start)
         add(layer.temporal.end)
+        for time in form_events(bindings[layer.asset], layer, spec.fps):
+            add(time)
         info = sources.get(layer.asset)
         if info is not None and isinstance(info.source, c.RasterSequence):
             clock = sequence.spans(
@@ -216,6 +222,7 @@ def plan_scene(
     metadata_bytes = _metadata_size(base) + _metadata_size(motion)
     _limit(spec, 'max_memory_bytes', base.cost.memory_bytes + 8 * metadata_bytes)
     invocations = sample_work = 0
+    previous_forms: tuple = ()
     pixels = base.cost.frame_pixels
     for index, time in enumerate(times):
         resolved = m._sample_spec(spec, motion, time)
@@ -270,10 +277,20 @@ def plan_scene(
         span = m.SceneSpan(
             time, times[index + 1], indices[fingerprint], tuple(layer.id for layer in active), tuple(selected)
         )
-        if spans and (spans[-1].scene, spans[-1].layers, spans[-1].rasters) == (span.scene, span.layers, span.rasters):
+        form_state = tuple(
+            (layer.id, tuple(field.color for field in form_lighting(sample, layer, time, scene_clock=True)))
+            for layer in active
+            if assets[layer.asset].forms
+        )
+        if (
+            spans
+            and previous_forms == form_state
+            and (spans[-1].scene, spans[-1].layers, spans[-1].rasters) == (span.scene, span.layers, span.rasters)
+        ):
             spans[-1] = replace(spans[-1], end=span.end)
         else:
             spans.append(span)
+        previous_forms = form_state
     layer_assets = {layer.id: assets[layer.asset] for layer in spec.layers}
     nodes = 16 + sum(layer_assets[name].nodes + 8 for span in spans for name in span.layers)
     retained_pixels = sum(

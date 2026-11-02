@@ -206,6 +206,9 @@ def _contacts(spec: c.ScenePlan, layers: dict, assets: dict, poses: dict) -> int
 
 
 def _binding(binding: c.AssetBinding, style: str, *, purpose: str = 'production') -> dict:
+    from ._composition_forms import validate
+
+    validate(binding.forms, binding)
     path = f'bindings.{binding.id}'
     if any(a > b for a, b in zip(binding.bounds.minimum, binding.bounds.maximum, strict=True)):
         raise c._fail(path + '.bounds', asdict(binding.bounds), 'ordered source bounds')
@@ -267,7 +270,9 @@ def _layer(layer: c.LayerSpec, asset: c.AssetBinding, spec: c.ScenePlan, layers:
         raise c._fail(path, layer.role, 'exact local vector information in screen space', 'composition.capability')
     if layer.parent is not None and layer.parent in layers and layers[layer.parent].space != layer.space:
         raise c._fail(path + '.parent', layer.parent, 'a coordinate frame in the same space', 'composition.reference')
-    if spec.lights.mode == 'lit' and asset.backend == 'vector' and layer.role != 'information':
+    if asset.forms and (layer.role != 'picture' or layer.space != 'world' or spec.lights.mode != 'lit'):
+        raise c._fail(path, None, 'lit world picture layers for authored form shading', 'composition.capability')
+    if spec.lights.mode == 'lit' and asset.backend == 'vector' and layer.role != 'information' and not asset.forms:
         raise c._fail(path, asset.backend, 'a backend with a shared-light shading adapter', 'composition.capability')
     if layer.shadow_receiver is not None:
         if layer.shadow_receiver not in layers:
@@ -441,6 +446,8 @@ def preflight(
     declarations = []
     for asset in ordered:
         declaration = asdict(asset)
+        if not asset.forms:
+            del declaration['forms']
         if asset.candidate is None:
             del declaration['candidate']  # Preserve pre-review production identities.
         declarations.append(declaration)

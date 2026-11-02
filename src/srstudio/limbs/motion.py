@@ -304,6 +304,17 @@ class Motion:
     def retarget(self, arm: ArmProfile, hand: HandProfile | None = None) -> Motion:
         return replace(self, arm=arm, hand=hand or self.hand)
 
+    def keyed(self, samples: Sequence[Sample], fps: int) -> Motion:
+        """Play 1..4096 solved world poses at integer 1..120 fps, holding each for one frame.
+
+        Sample times must be exactly ``i / fps`` starting at zero. The returned motion retains this anatomy,
+        replaces its action drivers, and never solves, transforms or interpolates the supplied geometry again.
+        Its duration is ``len(samples) / fps``; outside that interval the last pose is held.
+        """
+        from ._motion_keyed import keyed
+
+        return keyed(self, samples, fps)
+
     def describe_continuity(self) -> dict:
         """Describe source joins and held emission without sampling or certifying the whole motion."""
         from ._continuity import describe_motion

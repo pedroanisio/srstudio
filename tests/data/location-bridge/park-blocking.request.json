@@ -1,0 +1,31 @@
+{
+ "figures": [
+  {
+   "mark": "bench",
+   "posture": "sit",
+   "reach": [
+    {
+     "joint": "right_hand",
+     "to": "in-the-backrest"
+    }
+   ]
+  },
+  {
+   "look_at": "sitter",
+   "mark": "walker",
+   "posture": "stand",
+   "reach": [
+    {
+     "joint": "right_hand",
+     "to": "wave"
+    }
+   ]
+  }
+ ],
+ "points": {
+  "in-the-backrest": [1.83, 0.67, 3.95],
+  "sitter": [1.56, 1.3, 3.52],
+  "wave": [-1.786, 1.55, 7.378]
+ },
+ "schema_version": "1.0.0"
+}

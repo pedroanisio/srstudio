@@ -7,7 +7,8 @@ from ._body_types import BodyKey, BodyProfile, BodyScore, FootAnchor, Step, fail
 from .limbs.errors import LimbError
 from .limbs.math3d import Frame, Quaternion, Vec3
 
-SCHEMA = 'srstudio.body/1.0.0'
+SCHEMA = 'srstudio.body/1.1.0'
+LEGACY_SCHEMA = 'srstudio.body/1.0.0'
 
 
 def obj(value, path, allowed, required=()):
@@ -56,9 +57,13 @@ def parse(data: object) -> BodyScore:
         ('schema', 'duration', 'roots', 'stance', 'steps', 'profile', 'validation_hz'),
         ('schema', 'duration', 'roots', 'stance'),
     )
-    if value['schema'] != SCHEMA:
+    if value['schema'] not in (SCHEMA, LEGACY_SCHEMA):
         raise fail('schema', value['schema'], SCHEMA)
     profile = obj(value.get('profile', {}), 'profile', [f.name for f in fields(BodyProfile)])
+    if value['schema'] == LEGACY_SCHEMA and 'shoulder_width' in profile:
+        raise fail(
+            'profile.shoulder_width', profile['shoulder_width'], 'srstudio.body/1.1.0 for explicit shoulder width'
+        )
     parsed_profile = {
         k: vector(v, 'profile.' + k, 2) if k == 'knee_limits' else number(v, 'profile.' + k) for k, v in profile.items()
     }

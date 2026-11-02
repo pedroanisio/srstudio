@@ -15,9 +15,11 @@ from . import _bundle_output, plates
 from . import _composition_plate_wire as plate_wire
 from . import _composition_proxy as proxy_payload
 from . import _composition_sequence as sequence_payload
+from . import _composition_text as text_assets
 from . import _composition_wire as wire
 from . import composition as c
 from ._composition_emit import check_expansion
+from ._composition_forms import size as form_bytes
 from ._composition_png import MAX_BYTES
 from ._composition_preflight import _digest
 from ._composition_runtime import _call
@@ -125,7 +127,7 @@ def _inputs(plan: c.ValidatedScenePlan, assets: Assets) -> tuple[dict[str, c.Pre
                 raise _failure('assets', 'one source for every vector binding')
             if type(asset.xml) is not bytes:
                 raise _failure('assets.xml', 'immutable XML bytes')
-            total += len(asset.xml)
+            total += len(asset.xml) + text_assets.validate(asset.fonts) + form_bytes(bindings[name].forms)
             vectors[name] = asset
         else:
             raise _failure(
@@ -137,11 +139,17 @@ def _inputs(plan: c.ValidatedScenePlan, assets: Assets) -> tuple[dict[str, c.Pre
         layer.id for layer in layers.values() if bindings[layer.asset].backend != 'vector'
     }:
         raise _failure('assets', 'exactly the supported inputs for every manifest layer')
-    check_expansion(plan, {b.id: len(vectors[b.id].xml) if b.backend == 'vector' else 1024 for b in bindings.values()})
+    check_expansion(
+        plan,
+        {
+            b.id: len(vectors[b.id].xml) + 256 * len(vectors[b.id].fonts) if b.backend == 'vector' else 1024
+            for b in bindings.values()
+        },
+    )
     checked_vectors: dict[str, c.PreparedVector] = {}
     checked_plates: dict[str, Placement] = {}
     for name, asset in sorted(vectors.items()):
-        checked = c.prepare_vector(bindings[name], asset.xml, budget=plan.spec.budget)
+        checked = c.prepare_vector(bindings[name], asset.xml, fonts=asset.fonts, budget=plan.spec.budget)
         if type(asset) is c.PreparedVector and checked != asset:
             raise _failure('assets.' + name, 'unchanged prepared vector evidence')
         checked_vectors[name] = checked
@@ -295,6 +303,9 @@ def compile_bundle(plan: c.ValidatedScenePlan, assets: Assets, *, engine: Path, 
     if not isinstance(engine, Path) or not isinstance(cache, Path):
         raise _failure('engine/cache', 'Path values for renderer and cache')
     vectors, prepared = _inputs(plan, assets)
+    from ._composition_forms import static
+
+    static(plan)
     budget = plan.spec.budget
     images: dict[str, bytes] = {}
     try:
@@ -357,7 +368,9 @@ def compile_bundle(plan: c.ValidatedScenePlan, assets: Assets, *, engine: Path, 
             )
         resources = {hashlib.sha256(data).hexdigest(): data for data in raster_images.values()}
         raster_requests = []
-        wire_bytes = sum(len(v.xml) for v in vectors.values())
+        wire_bytes = sum(
+            len(v.xml) + text_assets.validate(v.fonts) + form_bytes(v.binding.forms) for v in vectors.values()
+        )
         for layer, placement in prepared.items():
             if isinstance(placement, c.PreparedRasterSequence):
                 frames = tuple(
@@ -385,14 +398,18 @@ def compile_bundle(plan: c.ValidatedScenePlan, assets: Assets, *, engine: Path, 
                 raster_requests.append(
                     {'layer': layer, 'png': wire.xml_encode(data), 'meters_per_unit': placement.source.meters_per_unit}
                 )
-        if sum(map(len, resources.values())) + sum(len(v.xml) for v in vectors.values()) > MAX_BYTES:
+        if (
+            sum(map(len, resources.values()))
+            + sum(len(v.xml) + text_assets.validate(v.fonts) + form_bytes(v.binding.forms) for v in vectors.values())
+            > MAX_BYTES
+        ):
             raise _failure('budget.bundle', 'at most eight MiB of combined vector/image inputs', 'composition.budget')
         response = _call(
             {
                 'schema': wire.SCHEMA,
                 'operation': 'compile-bundle',
                 'plan': asdict(plan),
-                'vectors': [{'id': name, 'xml': wire.xml_encode(v.xml)} for name, v in vectors.items()],
+                'vectors': [wire.vector_encode(name, v) for name, v in vectors.items()],
                 'rasters': raster_requests,
             },
             budget,
@@ -403,11 +420,15 @@ def compile_bundle(plan: c.ValidatedScenePlan, assets: Assets, *, engine: Path, 
             raise wire.fail(None, 'compiled content and manifest identities matching the request')
         if type(response['nodes']) is not int or not 1 <= response['nodes'] <= plan.cost.nodes:
             raise wire.fail(None, 'a node count within the manifest bound')
-        if len(xml) + sum(map(len, resources.values())) > MAX_BYTES:
+        font_files = text_assets.resources(vectors.values())
+        if len(xml) + sum(map(len, resources.values())) + sum(len(r.data) for r in font_files) > MAX_BYTES:
             raise _failure('budget.bundle', 'at most eight MiB of complete bundle files', 'composition.budget')
         if prepared and _engine_hash(engine) != engine_hash:
             raise _failure('engine', 'an unchanged renderer throughout the build', 'composition.render')
-        files = tuple(c.BundleResource('image-' + digest + '.png', data) for digest, data in sorted(resources.items()))
+        files = (
+            tuple(c.BundleResource('image-' + digest + '.png', data) for digest, data in sorted(resources.items()))
+            + font_files
+        )
         digest = _digest(
             {'xml': response['digest'], 'resources': [(r.name, hashlib.sha256(r.data).hexdigest()) for r in files]}
         )

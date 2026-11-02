@@ -9,7 +9,8 @@ it, spans in order or free), the difference is a separate check or an explicit o
 * :func:`second` checks a time from 0, before an ``end`` when given;
 * :func:`spans` checks ``(start, end)`` pairs that rise from 0, bounded ``within`` an end, cut by ``clamp`` or
   ``ordered``;
-* :func:`rising` checks seconds that rise strictly from 0 and stay before an end.
+* :func:`rising` checks seconds that rise strictly from 0 and stay before an end;
+* :func:`contrast` measures the WCAG contrast ratio of two ``#rrggbb`` colours, for a check that sets a floor.
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ import math
 from collections.abc import Callable, Iterable, Sequence
 from typing import Any, TypeGuard
 
-__all__ = ["number", "positive", "non_negative", "second", "spans", "rising"]
+__all__ = ["number", "positive", "non_negative", "second", "spans", "rising", "contrast"]
 
 EPSILON = 1e-6  # a span may end this far past its bound: an end summed from rounded seconds
 
@@ -101,3 +102,15 @@ def rising(
             raise error(late(i, t))
         out.append(float(t))
     return out
+
+
+def _luminance(colour: str) -> float:
+    channels = (int(colour[i : i + 2], 16) / 255 for i in (1, 3, 5))
+    r, g, b = (c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in channels)
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def contrast(a: str, b: str) -> float:
+    """The WCAG contrast ratio of two #rrggbb colours, 1 to 21."""
+    high, low = sorted((_luminance(a), _luminance(b)), reverse=True)
+    return (high + 0.05) / (low + 0.05)

@@ -14,6 +14,10 @@ from dataclasses import asdict, dataclass
 from sr_core.scene import Composition, Group
 
 from . import _body_solve as solver
+from ._body_support import support_area as support_area
+from ._body_support import support_footprint as support_footprint
+from ._body_support import support_hull as support_hull
+from ._body_support import support_margin as support_margin
 from ._body_types import BodyError as BodyError
 from ._body_types import BodyKey as BodyKey
 from ._body_types import BodyPose as BodyPose
@@ -30,7 +34,7 @@ MAX_SAMPLES = 20_000
 
 
 def parse_body(data: object) -> BodyScore:
-    """Decode srstudio.body/1.0.0 without coercion; compile_body validates support."""
+    """Decode srstudio.body/1.0.0 or 1.1.0 without coercion; compile_body validates support."""
     from ._body_parse import parse
 
     return parse(data)
@@ -55,7 +59,7 @@ class BodyPlan:
 
         return {
             'schema': 'srstudio.body-plan/1.0.0',
-            'score_schema': 'srstudio.body/1.0.0',
+            'score_schema': 'srstudio.body/1.1.0',
             'units': {'distance': 'meters', 'time': 'seconds', 'angle': 'radians'},
             'axes': {'x': 'right', 'y': 'down', 'z': 'anatomical forward; camera convention toward viewer'},
             'clock': 'original performance seconds',

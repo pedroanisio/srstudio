@@ -7,11 +7,13 @@ import sys
 from pathlib import Path
 
 from . import _composition_bundle as bundle
+from . import _composition_text as text_assets
 from . import _composition_wire as wire
 from . import _scene_motion_wire as tw
 from . import composition as c
 from . import plates
 from . import scene_motion as m
+from ._composition_forms import size as form_bytes
 from ._composition_preflight import _digest
 from ._composition_proxy_runtime import convert
 from ._composition_runtime import _call_worker
@@ -38,7 +40,7 @@ def _vectors(timeline: m.SceneTimeline, assets: Vectors) -> dict[str, c.Prepared
             raise wire.fail(None, 'VectorSource or PreparedVector records')
         if type(name) is not str or name not in bindings or name in sources or type(asset.xml) is not bytes:
             raise wire.fail(None, 'one immutable XML source for each vector binding')
-        total += len(asset.xml)
+        total += len(asset.xml) + text_assets.validate(asset.fonts) + form_bytes(bindings[name].forms)
         if total > bundle.MAX_BYTES:
             raise wire.fail(None, 'at most eight MiB of combined source buffers')
         sources[name] = asset
@@ -46,7 +48,7 @@ def _vectors(timeline: m.SceneTimeline, assets: Vectors) -> dict[str, c.Prepared
         raise wire.fail(None, 'exactly the required vector sources')
     result = {}
     for name, asset in sources.items():
-        verified = c.prepare_vector(bindings[name], asset.xml, budget=timeline.base.spec.budget)
+        verified = c.prepare_vector(bindings[name], asset.xml, fonts=asset.fonts, budget=timeline.base.spec.budget)
         if type(asset) is c.PreparedVector and asset != verified:
             raise wire.fail(None, 'unchanged prepared vector evidence')
         result[name] = verified
@@ -86,7 +88,7 @@ def compile_timeline(timeline: m.SceneTimeline, vectors: Vectors, *, engine: Pat
         'schema': wire.SCHEMA,
         'operation': 'compile-timeline',
         'timeline': tw.encode(timeline),
-        'vectors': [{'id': name, 'xml': wire.xml_encode(v.xml)} for name, v in verified.items()],
+        'vectors': [wire.vector_encode(name, v) for name, v in verified.items()],
         'images': [],
         'placements': [],
     }
@@ -161,7 +163,9 @@ def compile_timeline(timeline: m.SceneTimeline, vectors: Vectors, *, engine: Pat
         cold = len(jobs) - len(warm)
         done = set(warm)
         placements = {}
-        output_bytes = sum(len(v.xml) for v in verified.values())
+        output_bytes = sum(
+            len(v.xml) + text_assets.validate(v.fonts) + form_bytes(v.binding.forms) for v in verified.values()
+        )
         with plates.render_session(
             max_invocations=min(budget.max_engine_invocations, timeline.cost.engine_invocations),
             timeout=budget.timeout,
@@ -218,11 +222,12 @@ def compile_timeline(timeline: m.SceneTimeline, vectors: Vectors, *, engine: Pat
             raise wire.fail(None, 'compiled content and timeline identities matching the request')
         if type(response['nodes']) is not int or not 1 <= response['nodes'] <= timeline.cost.nodes:
             raise wire.fail(None, 'a node count within the timeline bound')
-        if len(xml) + sum(map(len, resources.values())) > bundle.MAX_BYTES:
+        font_files = text_assets.resources(verified.values())
+        if len(xml) + sum(map(len, resources.values())) + sum(len(r.data) for r in font_files) > bundle.MAX_BYTES:
             raise wire.fail(None, 'at most eight MiB of complete bundle files')
         if sources and bundle._engine_hash(engine) != engine_hash:
             raise bundle._failure('engine', 'unchanged renderer throughout compilation', 'composition.render')
-        files = tuple(c.BundleResource('image-' + d + '.png', png) for d, png in sorted(resources.items()))
+        files = tuple(c.BundleResource('image-' + d + '.png', png) for d, png in sorted(resources.items())) + font_files
         digest = _digest(
             {'xml': response['digest'], 'resources': [(r.name, hashlib.sha256(r.data).hexdigest()) for r in files]}
         )

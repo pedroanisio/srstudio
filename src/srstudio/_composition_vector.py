@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import io
 import math
 import re
@@ -10,6 +9,7 @@ import xml.etree.ElementTree as ET
 
 from sr_core.scene import Scene, read
 
+from . import _composition_text as text_assets
 from . import composition as c
 from . import layout
 from ._composition_preflight import _binding
@@ -20,7 +20,27 @@ _TRANSFORM = {'x', 'y', 'rotation', 'scaleX', 'scaleY', 'anchorX', 'anchorY'}
 _NODE = _TRANSFORM | {'id', 'name', 'start', 'end', 'visible', 'opacity'}
 _ALLOWED = {
     'scene': {'version'},
-    'project': {'width', 'height', 'fps', 'duration', 'seed'},
+    'project': {'width', 'height', 'fps', 'duration', 'seed', 'fontPolicy'},
+    'assets': set(),
+    'font': {'id', 'src', 'family', 'weight', 'sha256', 'license'},
+    'text': {
+        'id',
+        'text',
+        'fontAsset',
+        'width',
+        'height',
+        'size',
+        'color',
+        'align',
+        'verticalAlign',
+        'lineHeight',
+        'letterSpacing',
+        'direction',
+        'language',
+        'wrap',
+        'overflow',
+    },
+    'layer': _NODE | {'asset'},
     'composition': set(),
     'paints': set(),
     'linearGradient': {'id', 'x1', 'y1', 'x2', 'y2', 'units', 'spread', 'interpolationSpace'},
@@ -149,8 +169,10 @@ def _transform(box: layout.Box, node: ET.Element) -> layout.Box:
     return layout.Box(rotated.x0 + x[0], rotated.y0 + y[0], rotated.x1 + x[1], rotated.y1 + y[1])
 
 
-def _envelope(node: ET.Element) -> layout.Box | None:
-    if node.tag == 'shape':
+def _envelope(node: ET.Element, texts: dict[str, layout.Box]) -> layout.Box | None:
+    if node.tag == 'layer':
+        box = texts[node.attrib['asset']]
+    elif node.tag == 'shape':
         size = tuple(_number(node.get(a, '0'), a) for a in ('width', 'height'))
         if node.get('shape') != 'path' and (
             min(size) <= 0 or 'width' not in node.attrib or 'height' not in node.attrib
@@ -158,7 +180,7 @@ def _envelope(node: ET.Element) -> layout.Box | None:
             raise _fail('shape', node.get('id'), 'explicit positive shape dimensions')
         box = layout.shape_bounds(node, (size[0], size[1]))
     else:
-        children = [_envelope(child) for child in node if child.tag in ('group', 'shape')]
+        children = [_envelope(child, texts) for child in node if child.tag in ('group', 'shape', 'layer')]
         boxes = [box for box in children if box is not None]
         if not boxes:
             return None
@@ -168,7 +190,7 @@ def _envelope(node: ET.Element) -> layout.Box | None:
     return _transform(box, node)
 
 
-def prepare_vector(binding: c.AssetBinding, xml: bytes) -> c.PreparedVector:
+def prepare_vector(binding: c.AssetBinding, xml: bytes, *, fonts: tuple[c.VectorFont, ...] = ()) -> c.PreparedVector:
     if type(binding) is not c.AssetBinding or binding.backend != 'vector':
         raise _fail('binding', None, 'a vector AssetBinding')
     binding.__post_init__()
@@ -182,8 +204,18 @@ def prepare_vector(binding: c.AssetBinding, xml: bytes) -> c.PreparedVector:
             _binding(binding, parts.get(binding.part).style)
         else:
             _binding(binding, binding.candidate.style, purpose='candidate-review')
+        from . import _composition_forms as forms
+
+        resource_bytes = text_assets.validate(fonts) + forms.size(binding.forms)
+        if type(xml) is not bytes or 8 * (len(xml) + resource_bytes) > binding.memory_bytes:
+            raise _fail(
+                'memory_bytes',
+                binding.memory_bytes,
+                'memory for XML, fonts, licenses and form fields with eightfold working allowance',
+            )
         root = _tree(binding, xml)
-        check_source(binding, hashlib.sha256(xml).hexdigest())
+        digest = c.vector_source_digest(c.VectorSource(binding.id, xml, fonts), forms=binding.forms)
+        check_source(binding, digest)
         if root.tag != 'scene':
             raise _fail('scene', root.tag, 'a scene document')
         paints = {n.get('id') for n in root.findall('./paints/*')}
@@ -198,7 +230,7 @@ def prepare_vector(binding: c.AssetBinding, xml: bytes) -> c.PreparedVector:
                 )
             if node.text and node.text.strip():
                 raise _fail(node.tag, None, 'no embedded expressions or text content')
-            if node.tag in ('group', 'shape'):
+            if node.tag in ('group', 'shape', 'layer'):
                 animations = [n.get('property') for n in node.findall('animate')]
                 if len(set(animations)) != len(animations):
                     raise _fail('animate.property', animations, 'one track per property')
@@ -211,14 +243,14 @@ def prepare_vector(binding: c.AssetBinding, xml: bytes) -> c.PreparedVector:
                 ):
                     raise _fail('duration', None, 'a source duration for timed content')
             if node.tag == 'animate':
-                if parents[node].tag not in ('group', 'shape'):
+                if parents[node].tag not in ('group', 'shape', 'layer'):
                     raise _fail('animate', parents[node].tag, 'animation owned by a timed drawing node')
                 _animation(node, binding)
             if node.tag in ('linearGradient', 'radialGradient', 'stop'):
                 for name in ('x1', 'y1', 'x2', 'y2', 'cx', 'cy', 'r', 'fx', 'fy', 'offset', 'opacity'):
                     if name in node.attrib:
                         _number(node.attrib[name], name)
-            for name in ('fill', 'stroke'):
+            for name in ('fill', 'stroke', 'color'):
                 value = node.get(name, '')
                 if value.startswith('url('):
                     match = _PAINT.fullmatch(value)
@@ -235,7 +267,9 @@ def prepare_vector(binding: c.AssetBinding, xml: bytes) -> c.PreparedVector:
             raise _fail('scene', None, 'a project and composition')
         if binding.duration is not None and _number(project.get('duration', '0'), 'duration') < binding.duration:
             raise _fail('duration', binding.duration, 'a duration within the source project')
-        box = _envelope(content)
+        forms.verify(root, binding)
+        texts = text_assets.verify(root, fonts)
+        box = _envelope(content, texts)
         if box is None:
             raise _fail('composition', None, 'at least one bounded drawing')
         measured = c.Bounds((box.x0, box.y0, 0), (box.x1, box.y1, 0))
@@ -243,7 +277,7 @@ def prepare_vector(binding: c.AssetBinding, xml: bytes) -> c.PreparedVector:
             a < b - 1e-9 for a, b in zip(binding.bounds.maximum, measured.maximum, strict=True)
         ):
             raise _fail('bounds', measured, 'a complete animation envelope inside the declared source bounds')
-        return c.PreparedVector(binding, xml, hashlib.sha256(xml).hexdigest(), measured, len(list(root.iter())))
+        return c.PreparedVector(binding, xml, digest, measured, len(list(root.iter())), fonts)
     except c.CompositionError:
         raise
     except (SrstudioError, ValueError, OverflowError) as error:

@@ -41,6 +41,54 @@ Character tracks clip root motion to the character's lifetime; actions and attac
 Prepared character tracks reuse their numeric samples, projections and reports during drawing. Changed motion,
 camera, timing or corrective inputs invalidate that preparation; IDs, budgets and adapter capabilities are still checked.
 
+## Play externally solved poses
+
+Use `Motion(arm, hand).keyed(samples, fps)` to replace a private playback subclass with the public API:
+
+<!-- keyed-motion:start -->
+```python
+from srstudio.limbs import HUMAN, ArmProfile
+from srstudio.limbs.motion import Action, Motion
+
+source = Motion(ArmProfile(), HUMAN, (Action("point", duration=1),))
+samples = tuple(source.sample(i / 24) for i in range(24))
+played = source.keyed(samples, fps=24)
+assert played.end == 1
+assert played.sample(0.5) == samples[12]
+```
+<!-- keyed-motion:end -->
+
+Supply a list or tuple of 1–4096 immutable `Sample` records with times exactly `i / fps`, starting at zero,
+and an integer rate of 1–120 fps. Solved arm and hand geometry is in world coordinates. The factory checks the
+record graph, finite values, bone lengths, wrist frames, elbow angle, digit topology and control limits against
+the supplied anatomy. It does not infer contacts, repair poses or certify finger collisions and dynamic balance.
+Nested mutable containers are refused; the outer list is copied. A two-million-item graph budget bounds validation.
+
+Each sample is held until the next sample's exact timestamp. Duration includes the final frame interval:
+`len(samples) / fps`. Reads are independent of playback order, and later times hold the final pose. Negative times
+are refused. Baking can use a different output rate and `BakeOptions(duration=...)` can explicitly crop playback.
+The source motion's actions, contacts, attachments and root transforms are replaced, because these poses are
+already solved. Re-solving, root transformation, action chaining and retargeting to different anatomy would change
+that geometry; author new samples for those operations. `describe_continuity()` reports held playback without a
+derivative-continuity guarantee.
+
+`motion_dict`, `parse_motion`, `save_motion` and `load_motion` use the closed `srstudio.limbs-keyed/1.0.0` schema
+with explicit `arm`, `hand`, `played` and `fps` fields. Unit rotations are preserved without repeated normalization
+drift. The existing 5 MiB file limit also applies, so a large in-memory sequence may need splitting for persistence.
+Ordinary procedural motions retain `srstudio.limbs/1.3.0`.
+
+## Preserve authored wrist turns
+
+`HandControl.forearm_twist` is an angle in radians, including authored whole turns when `ArmProfile.twist_limit`
+permits them. Gesture interpolation follows that scalar angle. During orientation-constrained solving, equivalent
+Y-X-Z wrist decompositions are selected within joint limits and nearest the authored control. This retains the
+intended sign at ±π and the reference winding; at gimbal lock it preserves the authored wrist deviation.
+Sampling does not depend on a previously visited frame.
+
+A quaternion represents orientation, not accumulated revolutions. An identity-to-identity quaternion track alone
+cannot express a full turn. Supply winding through the scalar control or author intermediate rotation keys to
+establish the path. The default twist limits remain ±π; enlarge them deliberately for a mechanical or stylized rig.
+
 ## Continue through a moving pose
 
 Use `TransformTrack(interpolation="continuous")` for a root or contact target that should pass through its
@@ -712,3 +760,14 @@ only. Paired differences use the same author's completed attempts on the same ta
 seconds minus baseline seconds; a negative difference means the candidate took less time in that pair.
 An unpaired attempt or failed attempt cannot become a successful paired comparison. These descriptive
 observations do not authenticate authors, judge the completed videos or establish statistical significance.
+
+## HUMAN thumb topology
+
+`HUMAN` has a three-segment articulated thumb chain in the canonical rig's 24:20:16 length ratio. The stylized
+lengths are `(0.12, 0.10, 0.08)`, retaining the previous total reach of 0.30 character units. These are rig segments,
+not a claim that a human thumb has three phalanges. Explicit thumb joint overrides now require three angles.
+The simplified `MITTEN` and `THREE_FINGER` presets retain their two-segment thumbs.
+
+Persisted hand profiles carry their own lengths: loading a previously saved two-segment HUMAN hand preserves its
+anatomy and playback. To retain that topology in new Python authoring, supply a custom `HandProfile` with the
+previous thumb lengths `(0.17, 0.13)`. No loader silently inserts a joint or drops an authored angle.

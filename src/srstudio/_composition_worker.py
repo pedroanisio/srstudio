@@ -85,9 +85,11 @@ def dispatch(raw: bytes) -> dict:
         plate_asset = prepare_plate(plan, request['layer'], plate_wire.source_decode(request['source']))
         return {'schema': SCHEMA, 'status': 'ok', 'prepared': plate_wire.prepared_encode(plate_asset)}
     if operation == 'prepare':
-        wire.fields(request, {'schema', 'operation', 'binding', 'xml'})
+        wire.fields(request, {'schema', 'operation', 'binding', 'xml'} | ({'fonts'} if 'fonts' in request else set()))
         binding = wire.record(c.AssetBinding, request['binding'])
-        asset = prepare_vector(binding, wire.xml_decode(request['xml']))
+        asset = prepare_vector(
+            binding, wire.xml_decode(request['xml']), fonts=wire.fonts_decode(request.get('fonts', []))
+        )
         return {'schema': SCHEMA, 'status': 'ok', 'prepared': wire.prepared_metadata(asset)}
     if operation != 'compile':
         raise wire.fail(operation, 'prepare, prepare-plate, validate-png, compile or compile-bundle')

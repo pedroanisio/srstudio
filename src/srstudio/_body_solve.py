@@ -138,6 +138,9 @@ def sample(score: BodyScore, time: float) -> BodyPose:
         )
     shoulders = tuple(
         Frame(torso.point(Vec3(x, -profile.torso_height, 0)), torso.rotation)
-        for x in (-profile.hip_width * 0.75, profile.hip_width * 0.75)
+        for x in (
+            -(profile.shoulder_width or profile.hip_width * 1.5) / 2,
+            (profile.shoulder_width or profile.hip_width * 1.5) / 2,
+        )
     )
     return BodyPose(time, root, torso, (shoulders[0], shoulders[1]), (legs[0], legs[1]), com, polygon, distance)

@@ -6,7 +6,7 @@ status: accepted
 
 # Drawing architecture: a hybrid, layered kit
 
-srstudio's drawing direction is a hybrid kit: each kind of element uses the method suited to it, with a shared lighting model and a finish owned by the style or show. Each style takes the layers its look needs, so a Collage reel stays paper and a Maps reel stays a map. This is the default for new work ([ADR 0091](docs/decisions/0091-hybrid-drawing-is-the-default.md)). Published reels stay frozen and approved drawings stay pinned. The rigid-object layer is built: `srstudio.proxy`, `srstudio.vehicle` and `srstudio.on_beat`, with [examples/car_vibe](examples/car_vibe/car_vibe_study.py) as the worked example. `forms` and `paint` remain proposed. [Composition preflight and vector emission](docs/composition-preflight.md) supplies typed records, read-only validation, verified vector payloads and atomic self-contained scene output. Vector preparation and compilation use bounded worker processes. Static vector/plate bundles now integrate renderer budgets, verified caches and atomic publication. Static printed labels now retain font provenance and share bounded bundle rendering. Static proxy bundles now share the scene camera/lights, verify light/part-ID passes and convert explicitly selected layers in bounded workers. Baked plate/proxy geometry and appearance timelines now retain explicit source clocks, held boundaries and bounded render work. Typed camera, light and parent tracks can now be sampled into validated static scenes through `srstudio.scene_motion`. Bounded scene-timeline planning now accounts for frame/key/source boundaries and aggregate render work. Animated timeline bundles now verify all sampled geometry, share aggregate render budgets, preserve source clocks and publish atomically. The complete cross-backend proof and remaining shared scene contracts below remain unfinished.
+srstudio's drawing direction is a hybrid kit: each kind of element uses the method suited to it, with a shared lighting model and a finish owned by the style or show. Each style takes the layers its look needs, so a Collage reel stays paper and a Maps reel stays a map. This is the default for new work ([ADR 0091](docs/decisions/0091-hybrid-drawing-is-the-default.md)). Published reels stay frozen and approved drawings stay pinned. The rigid-object layer is built: `srstudio.proxy`, `srstudio.vehicle` and `srstudio.on_beat`, with [examples/car_vibe](examples/car_vibe/car_vibe_study.py) as the worked example. Authored vector form fields now connect shapes to the shared light rig; complete rig adapters and `paint` remain unfinished. [Composition preflight and vector emission](docs/composition-preflight.md) supplies typed records, read-only validation, verified vector payloads and atomic self-contained scene output. Vector preparation and compilation use bounded worker processes. Static vector/plate bundles now integrate renderer budgets, verified caches and atomic publication. Static printed labels now retain font provenance and share bounded bundle rendering. Static proxy bundles now share the scene camera/lights, verify light/part-ID passes and convert explicitly selected layers in bounded workers. Baked plate/proxy geometry and appearance timelines now retain explicit source clocks, held boundaries and bounded render work. Typed camera, light and parent tracks can now be sampled into validated static scenes through `srstudio.scene_motion`. Bounded scene-timeline planning now accounts for frame/key/source boundaries and aggregate render work. Animated timeline bundles now verify all sampled geometry, share aggregate render budgets, preserve source clocks and publish atomically. The complete cross-backend proof and remaining shared scene contracts below remain unfinished.
 
 The kit addresses different needs without requiring every video to use every technique. A single 2D path does not encode a rigid object's unseen surfaces; independently drawn views can drift. Drawn characters already have shading primitives, but need a shared way to attach shading to moving forms and light. Environments need controlled depth and surface texture. Information has the opposite need: captions, cards and map lines must stay exact. A fixed view can remain entirely 2D; multi-view geometry becomes useful when its consistency justifies the rendering cost.
 
@@ -91,6 +91,21 @@ New drawings then use separate `candidate.` identities and exact source hashes;
 compiled scenes carry unapproved provenance. The production default still
 requires approved versions. Review does not relax capability or budget checks
 and does not replace the proof and operator approval required for adoption.
+
+Protected native text can use the compiler's
+[pinned font bundle workflow](docs/composition-preflight.md#native-text-and-pinned-fonts).
+The host owns font and license bytes; explicit text clipping bounds the native
+geometry. Static and timeline bundles preserve source clocks and text layout.
+This provides the information-layer transport needed by the hybrid proof;
+the complete proof and its adoption gates still apply.
+
+Drawn shapes can now use [authored form fields](docs/composition-preflight.md#author-vector-form-lighting)
+under the shared `LightRig`. The host supplies source-space points, unit normals
+and explicit palettes, with source-clock pose keys when needed. Parent transforms
+resolve once; static and timeline workers preserve authored ink and keep native
+information separate. Sphere-area response uses a documented analytic
+approximation. These fields do not infer unseen geometry or certify alignment
+with a rig, and they do not supply receiver shadows or the complete style proof.
 
 ### Runnable example with current APIs
 

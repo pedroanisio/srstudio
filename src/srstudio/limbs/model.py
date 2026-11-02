@@ -168,7 +168,11 @@ _FINGERS = tuple(
         ("little", -0.14, (0.14, 0.10, 0.07), 0.30),
     )
 )
-HUMAN = HandProfile("human", 0.34, 0.36, (_THUMB, *_FINGERS))
+# Three rig segments in the canonical 24:20:16 ratio, retaining the stylized thumb's 0.30 total reach.
+# Saved HandProfiles remain explicit anatomy; simplified hands retain their two-segment thumb.
+HUMAN = HandProfile(
+    "human", 0.34, 0.36, (DigitProfile("thumb", _THUMB.base, (0.12, 0.10, 0.08), -0.8, True), *_FINGERS)
+)
 THREE_FINGER = HandProfile("three-finger", 0.34, 0.36, (_THUMB, _FINGERS[0], _FINGERS[2]))
 MITTEN = HandProfile("mitten", 0.34, 0.36, (_THUMB, DigitProfile("fingers", Vec3(0, 0.36, 0), (0.25, 0.14))))
 PAW = HandProfile(

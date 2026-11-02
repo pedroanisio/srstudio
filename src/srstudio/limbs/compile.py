@@ -102,8 +102,12 @@ def _frame_count(duration: float, options: BakeOptions) -> int:
 
 
 def _motion_duration(motion: Motion, options: BakeOptions, hold_until: float | None) -> float:
+    from ._motion_keyed import _KeyedMotion
+
     if options.duration is not None:
         return options.duration
+    if isinstance(motion, _KeyedMotion):
+        return motion.end
     root_end = motion.root.keys[-1].time
     if hold_until is not None:
         root_end = min(root_end, hold_until - options.offset)

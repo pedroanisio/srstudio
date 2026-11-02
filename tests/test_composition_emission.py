@@ -33,7 +33,11 @@ def test_real_payload_compiles_deterministically_with_closed_resources_and_scope
 @pytest.mark.parametrize(
     'bad', ['xml', 'dtd', 'resource', 'expression', 'effect', 'bounds', 'nodes', 'memory', 'backend']
 )
-def test_payload_refusals_are_typed_and_do_not_change_the_input(bad):
+@pytest.mark.parametrize('boundary', ['public', 'worker'])
+def test_payload_refusals_are_typed_and_do_not_change_the_input(bad, boundary):
+    from srstudio import _composition_vector
+
+    prepare = c.prepare_vector if boundary == 'public' else _composition_vector.prepare_vector
     _, binding, xml = paper()
     if bad == 'xml':
         xml = b'<scene>'
@@ -57,7 +61,7 @@ def test_payload_refusals_are_typed_and_do_not_change_the_input(bad):
         binding = replace(binding, backend='plates')
     before = xml
     with pytest.raises(c.CompositionError) as caught:
-        c.prepare_vector(binding, xml)
+        prepare(binding, xml)
     assert caught.value.to_dict()['code'].startswith('composition.')
     assert xml == before
 
