@@ -175,10 +175,15 @@ def prepare_vector(binding: c.AssetBinding, xml: bytes) -> c.PreparedVector:
     # Preparation verifies the pin independently; preflight also checks the
     # selected scene style. Host payload provenance is not inferred from XML.
     from . import parts
+    from ._composition_review import check_source
 
     try:
-        _binding(binding, parts.get(binding.part).style)
+        if binding.candidate is None:
+            _binding(binding, parts.get(binding.part).style)
+        else:
+            _binding(binding, binding.candidate.style, purpose='candidate-review')
         root = _tree(binding, xml)
+        check_source(binding, hashlib.sha256(xml).hexdigest())
         if root.tag != 'scene':
             raise _fail('scene', root.tag, 'a scene document')
         paints = {n.get('id') for n in root.findall('./paints/*')}

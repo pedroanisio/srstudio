@@ -65,7 +65,7 @@ def compile_scene(plan: c.ValidatedScenePlan, assets: tuple[c.PreparedVector, ..
     started = time.monotonic()
     if type(plan) is not c.ValidatedScenePlan or type(assets) is not tuple or len(assets) > c.MAX_LAYERS:
         raise c._fail('plan/assets', None, 'a validated plan and immutable prepared vector tuple')
-    checked = c.preflight(plan.spec, plan.bindings)
+    checked = c.preflight(plan.spec, plan.bindings, purpose=plan.purpose)
     if checked != plan:
         raise c._fail('plan', plan.digest, 'the current reproducible preflight result', 'composition.version')
     if any(b.backend != 'vector' for b in plan.bindings):
@@ -222,7 +222,9 @@ def assemble(
         checkpoint()
     if not len(paints):
         root.remove(paints)
-    xml = ET.tostring(root, encoding='utf-8', xml_declaration=True)
+    from ._composition_review import mark
+
+    xml = mark(ET.tostring(root, encoding='utf-8', xml_declaration=True), plan)
     nodes = sum(1 for _ in root.iter())
     if nodes > plan.cost.nodes or len(xml) > MAX_XML_BYTES or len(xml) * 8 > budget.max_memory_bytes:
         raise c._fail(

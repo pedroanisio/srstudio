@@ -237,12 +237,26 @@ class PlateWork(_Record):
 
 
 @dataclass(frozen=True)
+class CandidateSource(_Record):
+    """Host-owned unapproved drawing identity, pinned to exact source content.
+
+    This is review provenance, never a part-table approval. The enclosing
+    binding uses a separate ``candidate.`` part name and explicit version.
+    """
+
+    style: str
+    source_digest: str
+
+
+@dataclass(frozen=True)
 class AssetBinding(_Record):
     """Host-authored asset facts; these are not accepted inside agent scene JSON.
 
     Bounds and anchors use source units; LayerSpec.transform.scale converts them
     to the scene world unit. Approval is resolved from the part table, never a
-    caller-supplied boolean. Work declarations are bounds to enforce at emission.
+    caller-supplied boolean. An explicit candidate instead carries unapproved
+    content provenance and requires candidate-review preflight. Work declarations
+    are bounds to enforce at emission.
     """
 
     id: str
@@ -255,6 +269,7 @@ class AssetBinding(_Record):
     memory_bytes: int = field(default=1, metadata={'minimum': 1, 'maximum': 1024**4})
     duration: float | None = None
     plates: tuple[PlateWork, ...] = ()
+    candidate: CandidateSource | None = None
 
 
 @dataclass(frozen=True)
@@ -278,6 +293,13 @@ class ValidatedScenePlan(_Record):
     cost: CostEstimate
     digest: str
     contacts_checked: int
+    purpose: Literal['production', 'candidate-review'] = 'production'
+
+    def describe(self) -> dict:
+        """Revalidate and expose candidate provenance without implying approval."""
+        from ._composition_review import describe
+
+        return describe(self)
 
 
 def style_revision(name: str) -> str:
@@ -294,11 +316,21 @@ def parse_scene(value: str | dict) -> ScenePlan:
     return parse(value)
 
 
-def preflight(spec: ScenePlan, bindings: tuple[AssetBinding, ...]) -> ValidatedScenePlan:
-    """Validate the complete declared composition without executing a builder or touching scene/cache state."""
+def preflight(
+    spec: ScenePlan,
+    bindings: tuple[AssetBinding, ...],
+    *,
+    purpose: Literal['production', 'candidate-review'] = 'production',
+) -> ValidatedScenePlan:
+    """Validate without builders, rendering or cache access.
+
+    Production requires approved references. The host may explicitly select
+    candidate-review for separately named and content-pinned candidate bindings;
+    this retains every capability/budget check and never grants approval.
+    """
     from ._composition_preflight import preflight as validate
 
-    return validate(spec, bindings)
+    return validate(spec, bindings, purpose=purpose)
 
 
 def plate_view(plan: ValidatedScenePlan, layer: str, *, meters_per_unit: float | None = None) -> PlateView:

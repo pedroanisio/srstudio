@@ -16,7 +16,7 @@ from ._composition_vector import prepare_vector
 def compile_bundle(request: dict) -> c.CompiledScene:
     wire.fields(request, {'schema', 'operation', 'plan', 'vectors', 'rasters'})
     plan = wire.record(c.ValidatedScenePlan, request['plan'])
-    if c.preflight(plan.spec, plan.bindings) != plan:
+    if c.preflight(plan.spec, plan.bindings, purpose=plan.purpose) != plan:
         raise wire.fail(None, 'the current validated manifest')
     if any(type(request[k]) is not list or len(request[k]) > c.MAX_LAYERS for k in ('vectors', 'rasters')):
         raise wire.fail(None, 'bounded source lists')

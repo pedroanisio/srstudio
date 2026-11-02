@@ -63,6 +63,10 @@ marks and bytes are bounded. `LocationRecord.placement`, `in_frame` and `Camera.
 4. imports srlocations from that export, without writing bytecode, and refuses if any srlocations module came from
    anywhere else, if `SRLOCATIONS_CATALOGS` is set, or if the interpreter installs srlocations plugins;
 5. reads its own record back through `location_bridge` before writing it, so it writes nothing srstudio refuses.
+   `location_export.load_srstudio` loads that reader and `srstudio.errors`, which both import only the standard
+   library, into an empty `srstudio` package on this repository's `src/srstudio`, so srstudio's `__init__` and the
+   sr-core it needs never run in srlocations' interpreter, and the bridge's errors are `SrstudioError`s like every
+   other library error.
 
 Moving the pin is a commit that changes the constant, re-exports every recorded fixture, and passes the tests.
 

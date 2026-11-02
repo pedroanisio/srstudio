@@ -68,7 +68,7 @@ def _engine_hash(engine: Path) -> str:
 def _inputs(plan: c.ValidatedScenePlan, assets: Assets) -> tuple[dict[str, c.PreparedVector], dict[str, Placement]]:
     if type(plan) is not c.ValidatedScenePlan or type(assets) is not tuple or not 1 <= len(assets) <= c.MAX_LAYERS:
         raise _failure('plan/assets', 'a validated plan and bounded immutable asset tuple')
-    if c.preflight(plan.spec, plan.bindings) != plan:
+    if c.preflight(plan.spec, plan.bindings, purpose=plan.purpose) != plan:
         raise _failure('plan', 'the current validated plan', 'composition.version')
     bindings = {b.id: b for b in plan.bindings}
     layers = {layer.id: layer for layer in plan.spec.layers}

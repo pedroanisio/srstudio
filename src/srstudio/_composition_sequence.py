@@ -113,6 +113,9 @@ def context(plan: c.ValidatedScenePlan, layer: str, source: c.RasterSequence) ->
     backend = 'plates' if isinstance(source.frames[0].source, c.PlateSource) else 'proxy'
     if binding.backend != backend or binding.duration != source.duration:
         raise fail('binding', 'the exact timeline backend and finite source duration')
+    from ._composition_review import check_source
+
+    check_source(binding, source_digest(source))
     keys = {pw.source_digest(raw) for frame in source.frames for raw in raw_sources(frame.source)}
     if keys != {job.key for job in binding.plates}:
         raise fail('jobs', 'exactly the unique raw jobs for every timeline snapshot')
