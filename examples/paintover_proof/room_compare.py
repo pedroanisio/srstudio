@@ -7,9 +7,11 @@
 
 The two-shot and the close-ups are the approved master left, the room right. The push is the approved set under a 2D
 camera.push_in left, the camera moving through the room right, on the same frames and the same curve. The sound is the
-master's own, cut to the same frames. Every measure runs over every frame of its span: the base check against the front
-plate of that frame's camera, the rig drift as the distance between each dot on the seat, projected by the room, and
-the same dot carried on the group that carries the rigs.
+master's own, cut to the same frames. Every measure runs over every frame of its span, for each rig on its own side of
+the line halfway between the two seats: the base check against the front plate of that frame's camera, the rows of the
+figure the seat's front edge covers, and on the push the rig drift as the distance between each dot on the seat,
+projected by the room, and the same dot carried on the group that carries the rigs. A rig whose base comes into view
+gets its worst frame paired as a still, named for the span, the rig and the frame.
 """
 
 import json
@@ -92,6 +94,49 @@ def base_cover(masks: list[np.ndarray], fronts: list[np.ndarray]) -> dict:
     )
 
 
+def sides(mask: np.ndarray, split: float) -> dict[str, np.ndarray]:
+    """The mask cut at column `split`: Mae sits left of it, Bruno right, on every camera of the room."""
+    column = int(round(min(max(split, 0), mask.shape[1])))
+    left, right = mask.copy(), mask.copy()
+    left[:, column:] = 0
+    right[:, :column] = 0
+    return dict(mae=left, bruno=right)
+
+
+def split_of(seats: dict) -> float:
+    return (seats["mae"][0] + seats["bruno"][0]) / 2
+
+
+def per_rig(masks: list[np.ndarray], fronts: list[np.ndarray], splits: list[float]) -> dict:
+    cut = [sides(mask, split) for mask, split in zip(masks, splits, strict=True)]
+    return {name: base_cover([c[name] for c in cut], fronts) for name in lounge.TRACK_COLOURS}
+
+
+def covered_rows(mask: np.ndarray, front: np.ndarray, x: float, half: float) -> float:
+    """Rows of the figure under the front plate, the median over the columns `half` either side of `x`."""
+    figure, near = mask >= 128, front >= 128
+    columns = slice(max(int(x - half), 0), min(int(x + half), mask.shape[1]))
+    return float(np.median((figure[:, columns] & near[:, columns]).sum(axis=0)))
+
+
+def seat_cover(masks: list[np.ndarray], fronts: list[np.ndarray], spots: list[dict], scales: list[float]) -> dict:
+    """How many rows of each figure the seat's front edge covers, frame by frame, in pixels and in the figure's own
+    units (pixels over the frame's scale): if the camera's nearing made the edge climb the figure, both would grow."""
+    result: dict = {}
+    for name in lounge.TRACK_COLOURS:
+        rows = [
+            covered_rows(mask, front, spot[name][0], 30 * scale)
+            for mask, front, spot, scale in zip(masks, fronts, spots, scales, strict=True)
+        ]
+        units = [round(row / scale, 2) for row, scale in zip(rows, scales, strict=True)]
+        result[name] = dict(
+            pixels=dict(first=rows[0], last=rows[-1], least=min(rows), most=max(rows)),
+            figure_units=dict(first=units[0], last=units[-1], least=min(units), most=max(units)),
+            pixels_by_frame=rows,
+        )
+    return result
+
+
 def rig_difference(left: np.ndarray, right: np.ndarray, cast: Path, indices: list[int], shift: int = 0) -> float:
     """Mean difference per channel over the rigs' inner pixels above the seat, `shift` frames apart."""
     total, seen = 0.0, 0
@@ -160,12 +205,25 @@ def main(argv: list[str]) -> None:
 
     fronts = {take: alpha(plates / lounge.plate(take, "front")) for take in TAKES}
     masks = [alpha(project / "cast-room" / f"{frame:04d}.png") for frame in range(FRAMES)]
-    static = {
-        take: base_cover(masks[first : last + 1], [fronts[take]] * (last + 1 - first))
-        for take, (first, last) in TAKES.items()
-    }
+    static, static_cover = {}, {}
+    for take, (first, last) in TAKES.items():
+        count, seats = last + 1 - first, room.takes[take]["rigs"]
+        static[take] = per_rig(masks[first : last + 1], [fronts[take]] * count, [split_of(seats)] * count)
+        spot = {name: seat[:2] for name, seat in seats.items()}
+        scale = seats["mae"][2] / room.takes["two"]["rigs"]["mae"][2]
+        cover = seat_cover(masks[first : last + 1], [fronts[take]] * count, [spot] * count, [scale] * count)
+        static_cover[take] = {name: dict(pixels=row["pixels"], scale=round(scale, 4)) for name, row in cover.items()}
     push_masks = [alpha(project / "cast-push" / f"{frame:04d}.png") for frame in range(lounge.PUSH_FRAMES)]
     push_fronts = [alpha(plates / lounge.push_plate(frame, "front")) for frame in range(lounge.PUSH_FRAMES)]
+    rows = room.pushed()["rig"]
+    push_spots = [
+        {
+            name: centroid(plates / "push" / "track" / f"{frame:04d}.png", colour)
+            for name, colour in lounge.TRACK_COLOURS.items()
+        }
+        for frame in range(lounge.PUSH_FRAMES)
+    ]
+    push_scales = [row[2] / rows[0][2] for row in rows]
 
     left, right = frames(master, FRAMES + 1), frames(room_clip, FRAMES + 1)
     sync = {}
@@ -177,7 +235,8 @@ def main(argv: list[str]) -> None:
         )
     measures = dict(
         spans=dict(room_frames=FRAMES, push_frames=lounge.PUSH_FRAMES, fps=FPS, push_seconds=lounge.PUSH_FRAMES / FPS),
-        base_cover=dict(**static, push=base_cover(push_masks, push_fronts)),
+        base_cover=dict(**static, push=per_rig(push_masks, push_fronts, [row[0] for row in rows])),
+        seat_front_cover=dict(**static_cover, push=seat_cover(push_masks, push_fronts, push_spots, push_scales)),
         rig_difference=sync,
         rig_drift_on_the_push=drift(plates / "push" / "track", project / "marks"),
         room_motion=stepping(room),
@@ -185,6 +244,12 @@ def main(argv: list[str]) -> None:
         engine_sha256=room.engine_sha256,
         srlocations_commit=room.srlocations_commit,
     )
+    for span, rigs in measures["base_cover"].items():  # a base in view is shown, not hidden: its worst frame, paired
+        for name, cover in rigs.items():
+            if cover["base_columns_exposed"]:
+                frame = cover["frame_of_least_cover"] + (0 if span == "push" else TAKES[span][0])
+                left, right = (control_clip, push_clip) if span == "push" else (master, room_clip)
+                pair(left, right, frame, out / f"pair-base-in-view-{span}-{name}-frame-{frame:03d}.png")
     (out / "measures.json").write_text(json.dumps(measures, indent=1) + "\n")
     print(json.dumps(measures))
 

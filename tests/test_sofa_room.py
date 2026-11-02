@@ -27,6 +27,11 @@ FOLDER = ROOT / "examples" / "paintover_proof"
 SCRIPT = FOLDER / "sofa_room_study.py"
 FONT = Path("/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed.ttf")  # stands in for Comic Neue: captions must fit
 SPOTS = {"cactus": [900.0, 1270.0, 100.0], "code": [1030.0, 1410.0, 120.0]}
+SEATS = {  # each camera's x, y, pixels per metre, depth and seat-line slope for the two seats, as the room measured
+    "two": {"mae": [148.5, 1333.4, 755.8, 3.28, 0.0], "bruno": [463.7, 1333.4, 755.8, 3.28, 0.0]},
+    "mae": {"mae": [297.0, 1311.0, 1142.4, 2.17, 0.031], "bruno": [773.7, 1326.0, 1183.3, 2.10, 0.031]},
+    "bruno": {"mae": [-63.6, 1338.3, 1212.7, 2.05, -0.056], "bruno": [423.0, 1311.0, 1138.3, 2.18, -0.056]},
+}
 
 
 @pytest.fixture(scope="module")
@@ -62,14 +67,17 @@ def study(kit):
 
 def room_record(lounge) -> dict:
     frames = lounge.PUSH_FRAMES
-    take = dict(eye=[0.0, 1.0, -3.0], look_at=[0.0, 0.5, 0.0], lens=28.0, spots=SPOTS)
+    takes = {
+        name: dict(eye=[0.0, 1.0, -3.0], look_at=[0.0, 0.5, 0.0], lens=28.0, spots=SPOTS, rigs=SEATS[name])
+        for name in SEATS
+    }
     return dict(
         engine="scene-render",
         engine_sha256="a" * 64,
         srlocations_commit=lounge.SRLOCATIONS_COMMIT,
         size=[lounge.WIDTH, lounge.HEIGHT],
         seconds={},
-        takes=dict(two=take, mae=take, bruno=take),
+        takes=takes,
         rig=[360.0, 1310.0, 300.0],
         push=dict(
             frames=frames,
@@ -121,15 +129,20 @@ def tag(element: ElementTree.Element) -> str:
     return element.tag.rpartition("}")[2]
 
 
-def shapes(project: Path, name: str) -> Counter:
-    elements = scene(project, name)
+def drawn(elements) -> Counter:
     return Counter(frozenset((k, v) for k, v in e.attrib.items() if k != "id") for e in elements if tag(e) == "shape")
 
 
+def keyed(elements) -> Counter:
+    return Counter(tuple(tuple(sorted(k.attrib.items())) for k in e) for e in elements if tag(e) == "animate")
+
+
+def shapes(project: Path, name: str) -> Counter:
+    return drawn(scene(project, name))
+
+
 def moves(project: Path, name: str) -> Counter:
-    return Counter(
-        tuple(tuple(sorted(k.attrib.items())) for k in e) for e in scene(project, name) if tag(e) == "animate"
-    )
+    return keyed(scene(project, name))
 
 
 def plates_in_order(project: Path, name: str) -> list[str]:
@@ -158,9 +171,82 @@ def test_a_camera_draws_far_back_rigs_front(project, take):
     assert "shape" in shot[2:front], "a rig draws between the back plate and the front plate"
 
 
-def test_the_rigs_on_the_room_are_the_approved_rigs(project):
-    assert not shapes(project, "sofa-room") - shapes(project, "sofa-control")
-    assert not moves(project, "sofa-room") - moves(project, "sofa-control")
+def test_the_rigs_on_the_room_are_the_approved_rigs(project, kit):
+    """Every shape and move is the reel's, but for the other character in a close-up, which the reel left out: that one
+    is the reel's own rig drawn by the reel's own drawer, at the two-shot's place, scale and acts, on the close-up's
+    clock, so its gaze and its keys fall on times the reel never drew it."""
+    others = [
+        element
+        for take, shot in close_up_shots(project, "sofa-room", kit["reel"])
+        for group in seated(shot, SEATS["two"]["bruno" if take == "mae" else "mae"])
+        for element in group.iter()
+    ]
+    assert others, "each close-up draws the other character"
+    assert not shapes(project, "sofa-room") - shapes(project, "sofa-control") - drawn(others)
+    assert not moves(project, "sofa-room") - moves(project, "sofa-control") - keyed(others)
+
+
+def close_up_shots(project: Path, name: str, reel) -> list[tuple[str, ElementTree.Element]]:
+    """Each close-up's shot in the scene, with the character it is on: of the composition's groups that start at its
+    cut (a caption starts there too), the one that draws the most."""
+    shots: dict[float, ElementTree.Element] = {}
+    for composition in (e for e in scene(project, name) if tag(e) == "composition"):
+        for e in (e for e in composition if tag(e) == "group" and "start" in e.attrib):
+            start = round(float(e.attrib["start"]), 3)
+            if start not in shots or len(list(e.iter())) > len(list(shots[start].iter())):
+                shots[start] = e
+    found = [
+        (who, shots[round(app.start, 3)])
+        for app in sketch.appearances(reel.SKETCH.beats, reel.SKETCH.end)
+        for who, figure in (("mae", reel.MAE_C), ("bruno", reel.BRUNO_C))
+        if app.who == figure and app.start < reel.SKETCH.end
+    ]
+    assert {who for who, _ in found} == {"mae", "bruno"}, "the scene has both close-ups"
+    return found
+
+
+def seated(shot: ElementTree.Element, seat: list[float]) -> list[ElementTree.Element]:
+    """The groups in `shot` that take the two-shot's picture of the card on `seat` into the shot's camera."""
+    return [
+        e
+        for e in shot.iter()
+        if tag(e) == "group"
+        and float(e.attrib.get("anchorX", "nan")) == pytest.approx(seat[0])
+        and float(e.attrib.get("anchorY", "nan")) == pytest.approx(seat[1])
+    ]
+
+
+@pytest.mark.parametrize("name", ["sofa-room", "cast-room"])
+def test_each_close_up_camera_holds_both_rigs_on_their_seats(project, kit, study, name):
+    """Neither figure leaves the sofa for a close-up: each close-up draws both cards, each on its own seat as that
+    camera sees it, sized by its pixels per metre and with its base along the seat's line."""
+    for take, shot in close_up_shots(project, name, kit["reel"]):
+        for who in ("mae", "bruno"):
+            groups = seated(shot, SEATS["two"][who])
+            assert len(groups) == 1, f"{take}'s close-up seats {who} once"
+            group, here = groups[0], SEATS[take][who]
+            assert float(group.attrib["x"]) == pytest.approx(here[0])
+            assert float(group.attrib["y"]) == pytest.approx(here[1])
+            assert float(group.attrib["scaleX"]) == pytest.approx(here[2] / SEATS["two"][who][2])
+            assert float(group.attrib["skewY"]) == pytest.approx(np.degrees(np.arctan(here[4])))
+            assert sum(tag(e) == "shape" for e in group.iter()) > 20, f"{who} is drawn in {take}'s close-up"
+            (lifted,) = [e for e in group if tag(e) == "group"]
+            assert float(lifted.attrib["y"]) == pytest.approx(-study.lift(float(group.attrib["scaleX"])))
+
+
+def test_a_card_sits_the_same_screen_rows_under_the_seat_at_any_scale(study):
+    for scale in (0.5, 1.0, 1.28, 1.6):
+        base = (study.DROP - study.lift(scale)) * scale
+        assert base == pytest.approx(study.SUNK), "the base sits SUNK screen pixels under the seat's line"
+    assert 0 < study.lift(1.0) < study.DROP, "lifted, but never above the seat's line"
+
+
+def test_on_the_push_the_cards_keep_their_rows_under_the_seat_on_every_frame(project, lounge, study):
+    rows = json.loads((project / "plates" / "room.json").read_text())["push"]["rig"]
+    (lifted,) = [e for e in rider(project, "sofa-push") if tag(e) == "group"]
+    keys = animation(lifted, "y")
+    assert [t for t, _ in keys] == pytest.approx([n / lounge.PUSH_FPS for n in range(lounge.PUSH_FRAMES)], abs=1e-3)
+    assert [v for _, v in keys] == pytest.approx([-study.lift(row[2] / rows[0][2]) for row in rows])
 
 
 def test_the_rigs_on_the_push_are_the_rigs_on_the_room(project):
@@ -334,6 +420,11 @@ def edited(lounge, change) -> dict:
         (lambda d: d["takes"].pop("mae"), "the cameras are"),
         (lambda d: d["takes"]["two"].update(guess=1), "camera two has"),
         (lambda d: d["takes"].update(bruno={**d["takes"]["bruno"], "spots": {}}), "camera bruno places"),
+        (lambda d: d["takes"]["mae"].update(rigs={"mae": SEATS["mae"]["mae"]}), "camera mae seats"),
+        (
+            lambda d: d["takes"]["bruno"].update(rigs={**SEATS["bruno"], "mae": [1.0, 2.0, 3.0, 4.0]}),
+            "camera bruno seats",
+        ),
         (lambda d: d["push"].pop("eye"), "the push has"),
         (lambda d: d["push"].update(frames=3), "frames, not"),
         (lambda d: d["push"]["rig"].pop(), "the push's rig has"),
@@ -442,3 +533,28 @@ def test_the_drift_reads_the_distance_between_the_dots(kit, lounge, tmp_path, mo
             picture.save(folder / f"{frame:04d}.png")
     drift = compare.drift(track, marks)
     assert drift["mae"] == {"mean_px": 1.5, "max_px": 3.0, "worst_frame": 1, "first_frame_px": 0.0}
+
+
+def test_each_rig_is_measured_on_its_own_side_of_the_seats(kit):
+    compare = kit["compare"]
+    picture = np.zeros((10, 10), np.uint8)
+    picture[:, 2] = picture[:, 8] = 255
+    halves = compare.sides(picture, 5.2)
+    assert np.flatnonzero(halves["mae"].any(axis=0)).tolist() == [2]
+    assert np.flatnonzero(halves["bruno"].any(axis=0)).tolist() == [8]
+    assert compare.split_of({"mae": [100.0, 0, 0, 0, 0], "bruno": [300.0, 0, 0, 0, 0]}) == 200.0
+    assert compare.sides(picture, -40)["bruno"].sum() == picture.sum(), "a split off the picture leaves it whole"
+
+
+def test_the_seat_cover_counts_the_rows_under_the_front_in_pixels_and_in_the_figure_s_units(kit, lounge, monkeypatch):
+    compare = kit["compare"]
+    monkeypatch.setattr(compare.lounge, "TRACK_COLOURS", {"mae": "#ff00ff"})
+    near = np.zeros((100, 100), np.uint8)
+    near[60:, :] = 255
+    wide = [np.zeros((100, 100), np.uint8) for _ in range(2)]
+    wide[0][20:70, 10:90] = wide[1][20:84, 10:90] = 255
+    spots = [{"mae": (50.0, 60.0)}] * 2
+    cover = compare.seat_cover(wide, [near, near], spots, [1.0, 1.2])["mae"]
+    assert cover["pixels_by_frame"] == [10.0, 24.0]
+    assert cover["pixels"] == dict(first=10.0, last=24.0, least=10.0, most=24.0)
+    assert cover["figure_units"] == dict(first=10.0, last=20.0, least=10.0, most=20.0)

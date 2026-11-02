@@ -38,6 +38,7 @@ from srlocations.surfaces import Surface
 
 WALL = (8.0, 3.6)  # its width and height, metres
 WALL_Z = 1.3
+SEAT_SHADOW = (0.5, 0.2)  # metres across and deep: a rig's base is about half a metre wide
 CONSOLE, CONSOLE_TOP = (0.35, 0.24), 1.2  # the far unit hangs: its height and depth, and its top, wall below it
 WALL_HORIZON, WALL_SCALE = 1072.0, 579.0  # the horizon's frame row, and px per metre at the wall
 PATCH_X, PATCH_Y = (-0.014, 0.8), (1.345, 1.777)  # where the TV hung, in the wall's metres
@@ -276,6 +277,27 @@ def contact() -> list:
     ]
 
 
+def sitting() -> list:
+    """Where each rig sits, a soft shadow on the cushion's top: centred on its seat point, so the half in front of the
+    card shows, darkest at the card's base. A sheet in the room, so every camera sees it lie on the seat."""
+    w, d = SEAT_SHADOW
+    return [
+        Surface(
+            f"{w / 2} * u",
+            "0",
+            f"{d / 2} * v",
+            u=(-1, 1),
+            v=(-1, 1),
+            samples=(2, 2),
+            at=(x, y + 0.002, z),
+            material="lounge.shadow",
+            name=f"seat-{name}",
+            casts_shadow=False,
+        )
+        for name, (x, y, z) in (("mae", s.SEAT_MAE), ("bruno", s.SEAT_BRUNO))
+    ]
+
+
 def back() -> list:
     """Behind the rigs and sharp: the sofa's back and pillow, the floor, the rug, the side table and the sofa's feet."""
     parts = [
@@ -284,6 +306,7 @@ def back() -> list:
         slab((2.6, 0.76, 0.3), 0.08, (-1.37, 0.597, 0.68), "lounge.sofa", "sofa-back", casts_shadow=False),
         slab((0.205, 0.215, 0.1), 0.085, (-0.165, 0.935, 0.47), "lounge.pillow", "pillow", roll=4, casts_shadow=False),
         *contact(),
+        *sitting(),
         Box(
             size=(0.06, 0.06, 0.06),
             at=(-0.04, 0.03, 0.06),
@@ -478,6 +501,24 @@ def spots(take: Shot) -> dict:
     }
 
 
+SEAT_SPAN = 0.1  # metres either side of a seat point that give the slope of its line
+
+
+def seats(take: Shot) -> dict:
+    """Each rig's seat point as `take` sees it: x, y, pixels per metre there, its depth from the camera, and the slope
+    on screen of the seat's line through it, across the sofa (rows down per column right)."""
+    view = Projection(take, s.WIDTH, s.HEIGHT)
+
+    def slope(x: float, y: float, z: float) -> float:
+        (x0, y0), (x1, y1) = view.pixel(Vec3(x - SEAT_SPAN, y, z)), view.pixel(Vec3(x + SEAT_SPAN, y, z))
+        return (y1 - y0) / (x1 - x0)
+
+    return {
+        name: [*view.pixel(Vec3(*at)), view.pixels_per_metre(Vec3(*at)), view.to_camera(Vec3(*at)).z, slope(*at)]
+        for name, at in (("mae", s.SEAT_MAE), ("bruno", s.SEAT_BRUNO))
+    }
+
+
 def rig_place(take: Shot) -> list[float]:
     view = Projection(take, s.WIDTH, s.HEIGHT)
     return [*view.pixel(Vec3(*s.RIG_MIDDLE)), view.pixels_per_metre(Vec3(*s.RIG_MIDDLE))]
@@ -587,7 +628,8 @@ def main() -> None:
         size=[s.WIDTH, s.HEIGHT],
         seconds=seconds,
         takes={
-            n: dict(eye=list(t.eye), look_at=list(t.look_at), lens=t.lens, spots=spots(t)) for n, t in still.items()
+            n: dict(eye=list(t.eye), look_at=list(t.look_at), lens=t.lens, spots=spots(t), rigs=seats(t))
+            for n, t in still.items()
         },
         rig=rig_place(still["two"]),
         push=push,
