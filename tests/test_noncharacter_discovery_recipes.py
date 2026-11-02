@@ -39,6 +39,71 @@ def test_toon_discovery_recipe_distinguishes_reference_coordinates_and_animation
     assert any(a.property == 'rotation' and a.timeBase is None for a in animations)
 
 
+def test_household_discovery_recipe_owns_visibility_for_a_validation_only_end():
+    ns = recipe('toon-household-discovery')
+    assert ns['scene'].check(schema=True) == []
+    assert ns['pile_result'] is None
+    assert ns['holder'].end == 3
+    assert ns['pipe_result'] in list(ns['holder'].elements())
+    assert ns['pipe_result'].end is None
+    assert ns['pile_info']['arguments']['properties']['end']['x-role'] == 'validation-limit'
+
+
+def test_domestic_discovery_recipe_uses_a_returned_group_and_explicit_point_shape():
+    ns = recipe('toon-domestic-discovery')
+    assert ns['scene'].check(schema=True) == []
+    assert ns['bottle'] in list(ns['holder'].elements())
+    assert ns['bottle'].end == 3
+    assert ns['point_schema']['type'] == 'array'
+    assert len(ns['point_schema']['prefixItems']) == 2
+
+
+def test_study_discovery_recipe_maps_reference_book_geometry_to_frame_marker_keys():
+    ns = recipe('toon-study-discovery')
+    assert ns['scene'].check(schema=True) == []
+    assert ns['marker_info']['arguments']['properties']['at']['x-space'] == 'frame'
+    assert ns['book_result'] is ns['marker_result'] is None
+    group = next(n for n in ns['scene'].iter('group') if n.id == 'marker')
+    assert group.x == pytest.approx(ns['left'] + 0.02 * (ns['right'] - ns['left']))
+    assert group.y == ns['y']
+    animations = list(ns['scene'].iter('animate'))
+    assert len(animations) == 2
+    assert all(a.defaultInterpolation == 'linear' and a.timeBase is None for a in animations)
+
+
+def test_care_discovery_recipe_distinguishes_whole_cabinet_from_moving_front():
+    ns = recipe('toon-care-discovery')
+    assert ns['scene'].check(schema=True) == []
+    assert ns['cabinet'].end == 3
+    assert ns['front'] not in ns['cabinet'].elements()
+    assert ns['front'].end is None
+    assert 'moving drawer front' in ns['drawer_info']['returns']['description']
+    assert ns['lamp_result'] is None
+    assert ns['lamp_info']['arguments']['properties']['end']['x-role'] == 'animation-limit'
+    assert ns['lamp_holder'].end == 3
+    assert all(a.timeBase is None for a in ns['scene'].iter('animate'))
+
+
+def test_care_discovery_recipe_keeps_dim_light_and_smooth_drawer_motion(tmp_path, scene_render):
+    from srstudio.toon import fx
+    from srstudio.toon_bed import GLOW
+    from support.acting import evaluate
+
+    ns = recipe('toon-care-discovery')
+    scene, front = ns['scene'], ns['front']
+    glow = next(s for s in scene.iter('shape') if s.fill == GLOW)
+    path = tmp_path / 'care.scene.xml'
+    path.write_bytes(scene.to_bytes())
+    for time, opacity in ((0.5, 0), (2, 0.35), (2.225, 0.35), (2.45, 0.35)):
+        nodes = {n['id']: n for n in evaluate(scene_render, path, time)}
+        assert nodes[glow.id]['world_opacity'] == pytest.approx(opacity)
+        if time == 2.225:
+            assert nodes[front.id]['local'][0] == pytest.approx(1.025)
+            assert nodes[front.id]['local'][3] == pytest.approx(0.93)
+    nodes = {n['id']: n for n in evaluate(scene_render, path, 1.02)}
+    assert float(nodes[front.id]['props']['x']) == pytest.approx(fx(494) - 3.5)
+
+
 def test_held_prop_recipe_publishes_a_schema_valid_scene_and_no_contact_shadow():
     ns = recipe('held-prop-discovery')
     assert ns['scene'].check(schema=True) == []

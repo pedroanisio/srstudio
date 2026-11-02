@@ -9,6 +9,7 @@ from __future__ import annotations
 import textwrap
 from collections.abc import Callable, Sequence
 
+from . import _toon_detail_contracts as dc
 from . import brush, checks
 from .canvas import Canvas
 from .registry import register
@@ -50,6 +51,7 @@ FRAME_RIGHT = 600.0  # the reference x of the right edge of the frame
 @register(
     "prop",
     "toon-eye-drops",
+    contract=dc.contract('toon-eye-drops'),
     summary="A bottle of eye drops that comes in over a face and lets drops fall",
     style="toon",
 )
@@ -130,6 +132,7 @@ GLASS_OPACITY = 0.14  # a face behind the glass has to read
 @register(
     "prop",
     "toon-reception-glass",
+    contract=dc.contract('toon-reception-glass'),
     summary="A receptionist's sliding glass over a counter, with a speaking hole and a gap for the paperwork",
     style="toon",
 )
@@ -169,6 +172,7 @@ NOTE_SHAPE = (3, 5, 9, 6, 4, 8, 7, 3, 5, 9, 4, 6, 8, 5)  # the waveform, repeati
 @register(
     "graphic",
     "toon-voice-note-bar",
+    contract=dc.contract('toon-voice-note-bar'),
     summary="A voice note's player, large enough to read on a phone: the waveform and the time against the total",
     style="toon",
 )
@@ -233,6 +237,7 @@ STARE_IRIS = "#f2c230"
 @register(
     "prop",
     "toon-gull-stare",
+    contract=dc.contract('toon-gull-stare'),
     summary="A gull's head filling the frame that turns, slowly, until one eye has you",
     style="toon",
 )
@@ -293,6 +298,7 @@ SPIN = 1.2  # seconds a turn of the searching wheel
 @register(
     "graphic",
     "toon-wifi-list",
+    contract=dc.contract('toon-wifi-list'),
     summary="A phone's list of Wi-Fi networks, lettered to read at phone size, that refreshes and lights what changed",
     style="toon",
 )
@@ -365,7 +371,13 @@ RAIN_STREAKS = 16  # streaks in a tile
 RAIN_STEP = 0.618  # of the width: the golden step spreads them without a seed
 
 
-@register("prop", "toon-rain", summary="Rain over a span of the frame, on a loop that never shows", style="toon")
+@register(
+    "prop",
+    "toon-rain",
+    contract=dc.contract('toon-rain'),
+    summary="Rain over a span of the frame, on a loop that never shows",
+    style="toon",
+)
 def rain(
     cv: Canvas,
     parent,
@@ -403,7 +415,13 @@ GNOME_HAT, GNOME_COAT, GNOME_BEARD, GNOME_FACE, GNOME_BOOT = "#d83a34", "#3468b4
 NOODLE_BOX, NOODLE_RED, NOODLE, CHOPSTICK = "#f7f4ec", "#c8352c", "#f0d27a", "#b98a4e"
 
 
-@register("prop", "toon-gnome", summary="A garden gnome, red hat and white beard", style="toon")
+@register(
+    "prop",
+    "toon-gnome",
+    contract=dc.contract('toon-gnome'),
+    summary="A garden gnome, red hat and white beard",
+    style="toon",
+)
 def gnome(cv: Canvas, parent, at: Point = (300.0, 800.0), scale: float = 1.0) -> None:
     """A gnome standing on ``at`` (its feet), about 230 reference pixels tall at scale 1."""
     if not (checks.number(scale) and scale > 0):
@@ -424,7 +442,13 @@ def gnome(cv: Canvas, parent, at: Point = (300.0, 800.0), scale: float = 1.0) ->
     _inked(cv, g, p((-40, -140), (-6, -230), (40, -140)), GNOME_HAT, FINE_W)
 
 
-@register("prop", "toon-noodle-box", summary="A takeout box of noodles with chopsticks, heaped to empty", style="toon")
+@register(
+    "prop",
+    "toon-noodle-box",
+    contract=dc.contract('toon-noodle-box'),
+    summary="A takeout box of noodles with chopsticks, heaped to empty",
+    style="toon",
+)
 def noodle_box(cv: Canvas, parent, at: Point = (300.0, 800.0), scale: float = 1.0, full: float = 1.0) -> None:
     """A takeout box standing on ``at``. ``full`` is how much is left: 1 heaped, 0 empty."""
     if not (checks.number(scale) and scale > 0 and checks.number(full) and 0 <= full <= 1):
