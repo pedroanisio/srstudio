@@ -55,6 +55,18 @@ joints = skeleton.world(character, danced.pose)  # every joint's frame, ready fo
 joint deltas onto `base` (the rest pose unless a style passes its own). A joint the character lacks is dropped and named,
 never applied elsewhere. See [the skeleton guide](authoring-skeleton.md) for profiles and drawing.
 
+## Review a dance in three views
+
+```sh
+python tools/dance_views.py generated/character-proofs/<name>/views.mp4 --moves bob,arm-pump --bars-each 2
+```
+
+Every dance gets a three-plane review before its look is judged: one row per character preset and one column per
+orthographic view, `front` (x, y), `left` (z, y, seen from the character's left side, facing screen right) and `top`
+(x, z, front down the screen, a tick on the head where it faces), on a track `music.render` synthesises at the same
+tempo. It draws bones only, so it shows what the skeleton does with a move before any style draws it. Leave out
+`--moves` for every preset.
+
 ## Write a move
 
 A pattern hits `+amplitude` once a cycle, `phase` beats after the grid's beat. Amplitude is half of peak to peak, its
