@@ -602,7 +602,10 @@ def passes(
 
 # --- the composite ----------------------------------------------------------------------------------------------------
 
-SHADOW_FLOOR, SHADOW_NOISE, SHADOW_SOFT = 0.22, 0.025, 1.2
+# the floor is as dark as the room's own soft shadow under a card goes (lounge_plates' plates/back.png over the
+# clean-plates/back.png drawn without it: 0.673 to 0.681 on the two-shot and both close-ups); a seat that only the
+# fill reaches, as under Bruno lifted on the gasp, reads as that shadow and not as a black cut
+SHADOW_FLOOR, SHADOW_NOISE, SHADOW_SOFT = 0.673, 0.025, 1.2
 
 
 def rgba(path: Path) -> np.ndarray:

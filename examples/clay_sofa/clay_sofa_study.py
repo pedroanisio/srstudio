@@ -87,21 +87,49 @@ def lens_of(room: study.Room, take: str, frame: int | None = None) -> cr.Camera:
 KNOWN_DIFFERENCES = (
     "Bruno's right side runs unseen into the sofa arm's volume, as his flat card does; the arm covers him and takes "
     "no shadow from him",
+    "Mae sits further right along the cushion than her card, which the two-shot cuts at the frame's left edge: the "
+    "clay sits whole inside it",
 )
 
 GAP = 0.006  # metres the clay keeps from the other figure: touching, not passing through
+FRAME_MARGIN = 16.0  # frame pixels the two-shot keeps clear between each figure's silhouette and the frame's side
+
+
+def _across(meshes, lens: cr.Camera) -> tuple[float, float]:
+    """The leftmost and the rightmost frame x of ``meshes`` through ``lens``: their silhouette's sides."""
+    x = cr.project(np.concatenate([m.vertices for m in meshes]), lens)[:, 0]
+    return float(x.min()), float(x.max())
+
+
+def framed(parts, lens: cr.Camera, frame: int) -> None:
+    """Refuse a two-shot ``frame`` on which a figure's silhouette, with half the room's line round it, crosses the
+    frame's side."""
+    edge = ci.ROOM_LINE.heavy / 2.0
+    for who, posed_parts in parts.items():
+        lo, hi = _across([m for part in posed_parts for m in part.meshes], lens)
+        if lo < edge or hi > cr.WIDTH - edge:
+            raise cr.RenderError(f"frame {frame}: {who} crosses the two-shot's side ({lo:.1f} to {hi:.1f} px)")
 
 
 def seats(room: study.Room, performance: pf.Performance) -> dict[str, cr.Seat]:
     """Where each figure sits, on the column of its card's seat on the two-shot and as tall as the card there. Mae
     sits back against the sofa; the drawing lays Bruno over her, so he sits as far forward as it takes for none of him
     to pass through her (at rest, on frame 0). Bruno's column runs into the sofa's arm as his card does; the drawn arm
-    covers him as it covers the card."""
+    covers him as it covers the card. Her card's column puts her past the two-shot's left side, so Mae moves right
+    along the cushion just as far as it takes for her silhouette to keep :data:`FRAME_MARGIN` from it."""
     two = lens_of(room, "two")
     per = toon.SCALE * reel.PAIR_SCALE
     back = cr.SOFA_BACK_FRONT - cr.BACK_CLEARANCE
-    mae = cr.seat_of(cf.figure(RIGS["mae"]), lounge.SEAT_MAE, two, per, True, back)
-    resting = cr.posed("mae", RIGS["mae"], cf.figure(RIGS["mae"]), performance.at("mae", 0), mae)
+    card = lounge.SEAT_MAE
+    for _ in range(6):
+        mae = cr.seat_of(cf.figure(RIGS["mae"]), card, two, per, True, back)
+        resting = cr.posed("mae", RIGS["mae"], cf.figure(RIGS["mae"]), performance.at("mae", 0), mae)
+        cut = FRAME_MARGIN - _across(resting, two)[0]
+        if cut <= 0.25 and (card == lounge.SEAT_MAE or cut >= -0.25):
+            break
+        card = (card[0] + cut / cr.pixels_per_metre(card, two), card[1], card[2])
+    else:
+        raise cr.RenderError(f"Mae does not settle inside the two-shot: {cut:.2f} px past its margin")
     bruno_back = back
     for _ in range(8):
         bruno = cr.seat_of(cf.figure(RIGS["bruno"]), lounge.SEAT_BRUNO, two, per, False, bruno_back)
@@ -152,6 +180,8 @@ def render(root: Path, push: bool, frames: range | None = None) -> dict:
             take = take_of(n)
             lens, back, front = lens_of(room, take), lounge.plate(take, "back"), lounge.plate(take, "front")
         parts, materials = figures_at(performance, n, places)
+        if not push and take_of(n) == "two":
+            framed(parts, lens, n)
         p, k, b, i = cr.passes(parts, materials, lens, cache, spent)
         picture, _ = cr.composite(cr.rgba(root / CLEAN / back), cr.rgba(p), cr.rgba(k), cr.rgba(b))
         paws = [cr.project(m.vertices, lens) for who in parts for part in parts[who] if part.hand for m in part.meshes]

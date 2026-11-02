@@ -4,9 +4,10 @@ The figures keep the drawing: each part's outline is the drawn outline, the face
 are one surface; each figure has one pair of arms, rigged from the shoulders, and every gesture moves those two arms;
 the anatomy rule counts their hands as it counts a drawn figure's (ADR 0174). The gasp and the jump lift the whole
 figure off the cushion and set it back, rigid. They sit on the room's cushion, as the room's cameras see it (checked
-against the room record's own projection), each on its card's column without passing through the other; the sofa's arm
-covers Bruno's right side as it covers his card. The performance record of the reel is read strictly, and the passes
-are put together as the study says, plain and inked in the room's own line.
+against the room record's own projection), Bruno on his card's column and Mae as near hers as the two-shot lets her sit
+whole inside it, without passing through each other; the sofa's arm covers Bruno's right side as it covers his card.
+Lifted off the cushion, a figure leaves no shadow darker than the room's own under a card. The performance record of
+the reel is read strictly, and the passes are put together as the study says, plain and inked in the room's own line.
 The engine runs only as a stand-in script here: the study renders its passes outside this suite.
 """
 
@@ -352,6 +353,21 @@ def test_the_shadow_is_what_the_figures_take_from_the_sofa_never_more_and_never_
     assert (cr.shadow(noise, b, k) == 1.0).all()  # under the renderer's noise
 
 
+# lounge_plates' soft shadow under a card at its darkest: its plates/back.png over the clean-plates/back.png drawn
+# without it, on the two-shot and both close-ups (0.673 to 0.681)
+ROOM_SHADOW = 0.673
+
+
+def test_a_figure_off_the_cushion_darkens_it_no_more_than_the_room_shadows_a_card(kit):
+    """Bruno's gasp lifts him off the cushion: the strip of seat under him, which only the fill reaches, reads as the
+    room's own soft shadow under a card, never as a black cut."""
+    cr = kit["cr"]
+    b, k = picture(0.5), picture(0.0, 0.0)
+    p = picture(0.5)
+    p[5:15, 5:25, :3] = 0.0  # nothing but the fill
+    assert cr.shadow(p, b, k).min() >= ROOM_SHADOW - 0.01
+
+
 def test_the_composite_lays_the_figures_over_the_shadowed_plate(kit):
     cr = kit["cr"]
     back, b = picture(0.8), picture(0.5)
@@ -363,7 +379,7 @@ def test_the_composite_lays_the_figures_over_the_shadowed_plate(kit):
     out, dark = cr.composite(back, p, k, b)
     assert np.allclose(out[:, 22:-1, :3], 0.1)  # the figure where K says it is seen
     assert np.allclose(out[:, 12:17, :3], 0.8)  # the plate untouched where nothing falls
-    assert (out[:, 1:8, 0] < 0.8 * 0.6).all()  # darkened by its shadow
+    assert (out[:, 1:8, 0] < 0.8 * (1 - cr.SHADOW_NOISE)).all()  # darkened by its shadow
     with pytest.raises(cr.RenderError, match="different sizes"):
         cr.shadow(picture(0.5, size=(10, 10)), b, k)
 
@@ -881,13 +897,54 @@ def test_each_figure_sits_on_its_cards_column_and_its_base_on_the_cushion(kit, r
     room = type("R", (), {"takes": {"two": dict(TWO)}})()
     places = study.seats(room, performance)
     lens = cr.camera_of(TWO["eye"], TWO["look_at"], TWO["lens"])
+    x = float(cr.project([places["bruno"].at], lens)[0][0])
+    assert x == pytest.approx(SEEN["two"]["bruno"][0], abs=1.5)
+    assert float(cr.project([places["mae"].at], lens)[0][0]) > SEEN["two"]["mae"][0]  # her card's column cuts her
     for who in ("mae", "bruno"):
-        x = float(cr.project([places[who].at], lens)[0][0])
-        assert x == pytest.approx(SEEN["two"][who][0], abs=1.5)
         posed = cr.posed(who, rigs[who], cf.figure(rigs[who]), performance.at(who, 0), places[who])
         v = np.concatenate([m.vertices for m in posed]) / 100.0
         base = v[:, 1] > -(cr.CUSHION_TOP - cr.SINK) - 0.005  # engine y is down: the lowest half centimetre
         assert v[base, 2].min() >= cr.CUSHION_FRONT + cr.CUSHION_EDGE
+
+
+def silhouette_x(cr, meshes, lens) -> tuple[float, float]:
+    xy = cr.project(np.concatenate([m.vertices for m in meshes]), lens)
+    return float(xy[:, 0].min()), float(xy[:, 0].max())
+
+
+def test_both_figures_sit_whole_inside_the_two_shot(kit, rigs):
+    """Mae's card sits on a column the two-shot cuts at the frame's left edge, as the flat does: the clay moves her
+    right along the cushion, just far enough that her whole silhouette keeps the frame's margin, and Bruno settles in
+    front of her as before. The camera stays the room's, so the plates still fit it."""
+    study, cr, cf = kit["study"], kit["cr"], kit["cf"]
+    performance = resting_performance(kit)
+    room = type("R", (), {"takes": {"two": dict(TWO)}})()
+    places = study.seats(room, performance)
+    lens = cr.camera_of(TWO["eye"], TWO["look_at"], TWO["lens"])
+    seen = {
+        who: silhouette_x(cr, cr.posed(who, rigs[who], cf.figure(rigs[who]), performance.at(who, 0), places[who]), lens)
+        for who in places
+    }
+    assert seen["mae"][0] == pytest.approx(study.FRAME_MARGIN, abs=0.5)  # moved no further than it takes
+    for lo, hi in seen.values():
+        assert study.FRAME_MARGIN - 0.5 <= lo and hi <= cr.WIDTH - study.FRAME_MARGIN
+
+
+def test_a_two_shot_frame_that_cuts_a_figure_is_refused(kit, rigs):
+    study, cr, cf = kit["study"], kit["cr"], kit["cf"]
+    performance = resting_performance(kit)
+    room = type("R", (), {"takes": {"two": dict(TWO)}})()
+    places = study.seats(room, performance)
+    lens = cr.camera_of(TWO["eye"], TWO["look_at"], TWO["lens"])
+    parts = {
+        who: cr.posed_parts(who, rigs[who], cf.figure(rigs[who]), performance.at(who, 0), places[who]) for who in places
+    }
+    study.framed(parts, lens, 0)  # whole inside: nothing to refuse
+    at = places["mae"].at
+    cut = replace(places["mae"], at=(at[0] - 12.0, at[1], at[2]))  # 12 cm left: off the frame's edge
+    parts["mae"] = cr.posed_parts("mae", rigs["mae"], cf.figure(rigs["mae"]), performance.at("mae", 0), cut)
+    with pytest.raises(cr.RenderError, match="frame 7: mae"):
+        study.framed(parts, lens, 7)
 
 
 def test_the_drawn_arm_lies_over_the_clay_and_the_seat_strip_does_not(kit):
