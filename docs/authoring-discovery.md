@@ -712,3 +712,45 @@ clock, and its `tone` enumerates `idle`, `error`, `help` and `award`.
 The turned clipboard requires a font; its edge and quarter views use paths
 alone. These declarations describe supported drawing semantics, without
 claiming spatial contacts, physical lighting or biomechanical motion.
+
+## Core captions and Orbit print artwork
+
+The core Stick and Toon orbit builders declare their arguments and return
+ownership. Stick `hook`, `headline` and `captions` use parent-timeline visibility
+attributes. A sequence shot provides a shot timeline; an ordinary group's
+`start` only limits visibility and does not shift its children's timeline.
+`Canvas.local_time` does not change these visibility attributes. Stick `words`
+instead gates its text and animates its pop and scrim on the canvas clock.
+
+<!-- core-orbit-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry, stick, toon_orbit
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1920, fps='24', duration=4)
+cv = Canvas(scene, font_asset=None)
+sequence = cv.comp.add_sequence(id='shots')
+sequence.add_group(id='lead', end=1)
+shot = sequence.add_group(id='shot', end=3)
+
+hook = registry.get('graphic', 'stick-hook')
+args = hook.describe()['contract']['arguments']['properties']
+assert args['start']['x-timebase'] == 'parent'
+lettering = stick.Plate('#182030', 'M 100 350 L 250 350 L 250 380 L 100 380 Z')
+card = hook(cv, shot, lettering, start=1, end=2)  # project seconds 2..3
+
+# Orbit props return None. Own their placement/visibility with an outer group.
+props = cv.group(shot, 'props')
+result = toon_orbit.field_notebook(cv, props, at=(300, 900), scale=0.6)
+assert result is None  # lettering=None leaves the label blank and needs no font
+```
+<!-- core-orbit-discovery:end -->
+
+Orbit `at` places an authored foot in Toon reference coordinates. Scale and
+placement are baked into the paths before reference-to-frame conversion; the
+created group stays untransformed. Optional `Lettering(display, body)` names
+font asset IDs independently of `Canvas.font_asset`. The salon uses both;
+the terrace and notebook use only `display`. Builders do not load those fonts.
+Orbit sets and props add neither signature marks nor the shared print finish.
+Discovery metadata does not change their catalog approval status.
