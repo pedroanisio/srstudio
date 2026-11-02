@@ -1284,6 +1284,7 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "collage-big-type": {"title": "Celular na maior fonte"},
     "soft-closet": {"title": "Armário no escuro"},
     "soft-mop": {"title": "Esfregão"},
     "soft-door": {"title": "Portas na parede"},
@@ -9219,6 +9220,18 @@
         "at": 16.2
       },
       "text": "Um avental reserva no gancho e um crachá que diz TRIAL: ninguém ali foi contratado."
+    },
+    {
+      "section": "props",
+      "name": "Celular na maior fonte",
+      "parts": [
+        "collage-big-type"
+      ],
+      "shot": {
+        "episode": "big-font",
+        "at": 0.3
+      },
+      "text": "Um celular de papel na maior fonte que existe: duas palavras enchem a tela, uma por linha, e se leem do outro lado da mesa (Big Font)."
     }
   ]
 }

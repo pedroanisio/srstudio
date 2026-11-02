@@ -14032,6 +14032,23 @@
           "rig": null
         }
       ]
+    },
+    "collage-big-type": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-02",
+          "note": "A phone on the largest text size: a few capital words filling the screen, a page at a time, on the phone already approved. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "fa2ffe79b6afa836042877761025aa8ecd613de755948fa448261cb1812a624c",
+          "rig": null
+        }
+      ]
     }
   }
 }

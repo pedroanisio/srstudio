@@ -14,6 +14,7 @@ from . import (  # noqa: F401  (registers builders)
     cel,
     collage,
     collage_article,
+    collage_big_type,
     collage_everyday,
     collage_forecast,
     collage_odds,
