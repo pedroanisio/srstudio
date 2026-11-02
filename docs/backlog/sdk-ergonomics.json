@@ -24,11 +24,11 @@
   "catalog_observation": {
     "parts": 726,
     "characters": 74,
-    "entries_with_explicit_part_contract": 274,
+    "entries_with_explicit_part_contract": 307,
     "all_default_characters_have_explicit_contracts": true,
     "noncharacter_parts": 652,
-    "noncharacter_parts_with_explicit_contracts": 200,
-    "source": "Fresh-process registry observation on 2026-11-01 after 20 Toon flat/odds declarations. Drawing baselines were captured at 7dbc869a. See review_verification.toon_household_contracts.",
+    "noncharacter_parts_with_explicit_contracts": 233,
+    "source": "Fresh-process registry observation on 2026-11-01 after 33 Toon house/homeware declarations. Drawing baselines were captured from edcdeac2. See review_verification.toon_domestic_contracts.",
     "by_kind": {
       "character": {
         "registered": 74,
@@ -36,20 +36,62 @@
       },
       "prop": {
         "registered": 456,
-        "explicit_contracts": 153
+        "explicit_contracts": 182
       },
       "location": {
         "registered": 113,
-        "explicit_contracts": 30
+        "explicit_contracts": 33
       },
       "graphic": {
         "registered": 83,
-        "explicit_contracts": 17
+        "explicit_contracts": 18
       }
     },
     "qualification": "Fresh-process registry.entries() observation after the latest implemented contract batch. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates."
   },
   "review_verification": {
+    "toon_domestic_contracts": {
+      "baseline_source_commit": "edcdeac2",
+      "behavior_regressions_red": {
+        "failed": 7
+      },
+      "initial_contract_tests_red": {
+        "failed": 44
+      },
+      "documentation_recipe_red": {
+        "failed": 1
+      },
+      "final_engine_enabled_tests": {
+        "passed": 588,
+        "skipped": 0
+      },
+      "branch_inclusive_coverage_percent": {
+        "toon_domestic_contracts": 100,
+        "toon_homeware": 98,
+        "toon_house": 99,
+        "contracts": 87,
+        "registry": 92,
+        "total": 95
+      },
+      "coverage_scope": "New domestic metadata, both drawing modules, contracts.py and registry.py; unchanged 80% gate. Not a full-library suite run.",
+      "drawing_baseline_cases": 33,
+      "unchanged_executable_definitions": 50,
+      "changed_executable_definitions": [
+        "toon_homeware._shudder",
+        "toon_homeware._tub_spans",
+        "toon_homeware.soup_tubs"
+      ],
+      "mypy_source_files": 291,
+      "engine_evaluation_times": [
+        0.26,
+        0.35,
+        1,
+        2,
+        3
+      ],
+      "retained_artifacts": "../generated/sdk-toon-domestic-contracts/v1/",
+      "qualification": "33 original drawing baselines remain unchanged for their captured inputs. Corrected alternating tool offsets and decreasing/returning tub counts have separate unit and engine-evaluation evidence. No new encoded-video or perceptual-rating claim; full catalog expansion remains open."
+    },
     "toon_household_contracts": {
       "baseline_source_commit": "7dbc869a",
       "initial_contract_tests_red": {
@@ -589,6 +631,48 @@
   ],
   "findings": [
     {
+      "id": "SDK-P1-06",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Alternate garden-tool vibration on the actual sampling clock",
+      "problem": "The shudder loop sampled at 12 keys per second but computed sign parity at 24, so every sample kept the same positive offset instead of vibrating.",
+      "resolution": "Integer sample indices alternate positive and negative displacement, reset phase per running span and restore zero at each end. Existing canvas-clock selection is preserved.",
+      "evidence": [
+        "src/srstudio/toon_homeware.py:_shudder"
+      ],
+      "verification": [
+        "tests/test_toon_homeware.py:test_running_tools_alternate_displacement_and_rest_between_spans",
+        "tests/test_toon_homeware.py:test_engine_evaluates_alternating_tool_motion_and_decreasing_tub_counts"
+      ],
+      "acceptance": [
+        "Both garden tools alternate displacement during each running span",
+        "Offsets are zero between and after spans",
+        "Local and composition canvas modes retain their declared clocks"
+      ]
+    },
+    {
+      "id": "SDK-P1-07",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Honor decreasing soup-tub count cues",
+      "problem": "The stack selected only the first appearance of each tub and left it visible until end, ignoring later smaller counts.",
+      "resolution": "Each tub now receives merged visibility intervals derived from all count cues, allowing disappearance and return. Increasing-count output preserves its baseline.",
+      "evidence": [
+        "src/srstudio/toon_homeware.py:soup_tubs",
+        "src/srstudio/toon_homeware.py:_tub_spans"
+      ],
+      "verification": [
+        "tests/test_toon_homeware.py:test_tub_visibility_matches_every_count_including_decreases",
+        "tests/test_toon_homeware.py:test_engine_evaluates_alternating_tool_motion_and_decreasing_tub_counts",
+        "tests/test_toon_domestic_contracts.py"
+      ],
+      "acceptance": [
+        "Visible count equals the authored count at each cue and between cues",
+        "Decreasing counts and subsequent increases work",
+        "No tubs remain at end and ordinary increasing drawings remain unchanged"
+      ]
+    },
+    {
       "id": "SDK-P1-05",
       "priority": "P1",
       "status": "complete",
@@ -675,13 +759,15 @@
           "srstudio.toon_sets",
           "srstudio.toon_world",
           "srstudio.toon_flat",
-          "srstudio.toon_odds"
+          "srstudio.toon_odds",
+          "srstudio.toon_house",
+          "srstudio.toon_homeware"
         ],
         "additional_parts": ["toon-headset"],
-        "new_contracts": 147,
-        "current_explicit_noncharacter_contracts": 200,
+        "new_contracts": 180,
+        "current_explicit_noncharacter_contracts": 233,
         "current_registered_noncharacters": 652,
-        "remaining_undeclared": 452,
+        "remaining_undeclared": 419,
         "evidence": [
           "tests/test_counter_store_contracts.py",
           "tests/data/counter-store-contract-baseline.json",
@@ -695,9 +781,12 @@
           "src/srstudio/_toon_household_contracts.py",
           "tests/test_toon_household_contracts.py",
           "tests/data/toon-household-contract-baseline.json",
+          "src/srstudio/_toon_domestic_contracts.py",
+          "tests/test_toon_domestic_contracts.py",
+          "tests/data/toon-domestic-contract-baseline.json",
           "docs/authoring-discovery.md"
         ],
-        "qualification": "The full catalog expansion remains open. These families declare actual units, canvas clocks, local slots, return records and capability limits without altering their drawings. Other families still require source review and executable semantic evidence."
+        "qualification": "The full catalog expansion remains open. These families declare actual units, clocks, local slots, return records and capability limits. Captured baseline drawings remain unchanged; corrected domestic cue behavior is recorded separately in SDK-P1-06 and SDK-P1-07. Other families still require source review and executable semantic evidence."
       },
       "evidence": [
         "src/srstudio/registry.py:contract_coverage",

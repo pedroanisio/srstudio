@@ -239,6 +239,40 @@ assert pile_result is None
 ```
 <!-- toon-household-discovery:end -->
 
+The 33 `toon_house` and `toon_homeware` builders declare room, costume, appliance
+and screen conventions. Worn props such as `toon-towel` accept a reference point;
+they do not track a character automatically. `toon-rack` and `toon-shampoo` return
+their root groups. Other builders in these two modules return `None`.
+
+Dishwasher loads, screen changes and soup-tub counts use parent visibility.
+Receiver pulses, rack movement, bubbles and garden-tool vibration use canvas
+animation time. Finger movement and shower-water phases force composition time.
+The horse's `start`/`end` control automatic blinks, not visibility; an explicit
+blink sequence also works with `end=0`. Inspect nullable schemas through `anyOf`
+to distinguish omitted behavior from an empty sequence.
+
+<!-- toon-domestic-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry
+
+shampoo = registry.get("prop", "toon-shampoo")
+towel = registry.get("prop", "toon-towel")
+point_schema = towel.describe()["contract"]["arguments"]["properties"]["at"]
+assert point_schema["type"] == "array"
+assert shampoo.describe()["contract"]["capabilities"]["returns_scene_handle"]
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="24", duration=4)
+cv = Canvas(scene, font_asset=None)
+holder = cv.group(cv.comp, "bathroom-props")
+bottle = shampoo(cv, holder, at=(340, 700), bubble=1)
+bottle.end = 3
+towel(cv, holder, at=(185, 500), start=0, end=3)
+# The bottle handle controls the whole prop; its bubble has its own child keys.
+```
+<!-- toon-domestic-discovery:end -->
+
 `srstudio.contract_coverage(style=None, kind=None)` returns the same versioned coverage report. Per-kind counts
 separate explicit declarations, complete argument shapes, units, clocks and anchors; `undeclared_parts` names
 the gaps. A count of declarations does not certify complete semantics. Discovery never invokes a builder.

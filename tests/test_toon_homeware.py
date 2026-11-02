@@ -211,6 +211,61 @@ def test_a_garden_tool_shudders_only_while_it_runs(draw):
     assert size(lambda cv: draw(cv, cv.comp, running=((1.0, 2.0),))) > still
 
 
+@pytest.mark.parametrize('draw', [toon_homeware.mower, toon_homeware.blower])
+@pytest.mark.parametrize('local', [False, True])
+def test_running_tools_alternate_displacement_and_rest_between_spans(draw, local):
+    cv = canvas()
+    cv.local_time = local
+    draw(cv, cv.comp, running=((0.25, 0.75), (1.25, 1.75)))
+    animation = next(tree(cv).iter('animate'))
+    assert (animation.get('timeBase') == 'local') == local
+    keys = [(float(k.get('time')), float(k.get('value'))) for k in animation.iter('key')]
+
+    def at(t):
+        return next(value for time, value in reversed(keys) if time <= t)
+
+    assert at(0) == at(1) == at(2) == 0
+    for start in (0.25, 1.25):
+        values = [at(start + d) for d in (0.01, 0.10, 0.18, 0.26)]
+        assert all(a * b < 0 for a, b in zip(values, values[1:], strict=False))
+        assert {abs(v) for v in values} == {toon.fh(3)}
+
+
+@pytest.mark.parametrize(
+    'counts', [((0, 3), (1, 1), (2, 2)), ((0, 2), (1, 2), (2, 1)), ((0, 1), (1, 3), (2, 2), (3, 3))]
+)
+def test_tub_visibility_matches_every_count_including_decreases(counts):
+    cv = canvas()
+    toon_homeware.soup_tubs(cv, cv.comp, counts=counts, end=4)
+    tubs = [g for g in tree(cv).iter('group') if g.get('start') is not None]
+
+    def visible(t):
+        return sum(float(g.get('start')) <= t < float(g.get('end')) for g in tubs)
+
+    assert visible(-0.1) == visible(4) == 0
+    for t, count in counts:
+        assert visible(t) == visible(t + 0.5) == count
+
+
+def test_engine_evaluates_alternating_tool_motion_and_decreasing_tub_counts(tmp_path, scene_render):
+    from support.acting import canvas as unlettered_canvas
+    from support.acting import evaluate
+
+    cv = unlettered_canvas()
+    toon_homeware.mower(cv, cv.comp, running=((0.25, 0.75),))
+    tool = cv.comp.elements()[0]
+    toon_homeware.soup_tubs(cv, cv.comp, counts=((0, 3), (1, 1), (2, 2)), end=3)
+    tub_ids = {g.id for g in cv.scene.iter('group') if g.start is not None}
+    assert cv.scene.check(schema=True) == []
+    path = tmp_path / 'homeware.scene.xml'
+    path.write_bytes(cv.scene.to_bytes())
+    for time, expected_y, count in ((0.26, toon.fh(3), 3), (0.35, -toon.fh(3), 3), (1, 0, 1), (2, 0, 2), (3, 0, 0)):
+        nodes = evaluate(scene_render, path, time)
+        actual = next(n for n in nodes if n['id'] == tool.id)
+        assert actual['world'][5] == pytest.approx(expected_y)
+        assert sum(n['id'] in tub_ids and n['draw'] and n['world_opacity'] > 0 for n in nodes) == count
+
+
 @pytest.mark.parametrize(
     "draw",
     [

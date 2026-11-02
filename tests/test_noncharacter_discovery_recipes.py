@@ -49,6 +49,15 @@ def test_household_discovery_recipe_owns_visibility_for_a_validation_only_end():
     assert ns['pile_info']['arguments']['properties']['end']['x-role'] == 'validation-limit'
 
 
+def test_domestic_discovery_recipe_uses_a_returned_group_and_explicit_point_shape():
+    ns = recipe('toon-domestic-discovery')
+    assert ns['scene'].check(schema=True) == []
+    assert ns['bottle'] in list(ns['holder'].elements())
+    assert ns['bottle'].end == 3
+    assert ns['point_schema']['type'] == 'array'
+    assert len(ns['point_schema']['prefixItems']) == 2
+
+
 def test_held_prop_recipe_publishes_a_schema_valid_scene_and_no_contact_shadow():
     ns = recipe('held-prop-discovery')
     assert ns['scene'].check(schema=True) == []
