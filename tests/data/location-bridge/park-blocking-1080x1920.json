@@ -1,0 +1,1285 @@
+{
+ "blocking": {
+  "contact": {
+   "gap_m": 0.3,
+   "rest_m": 0.02,
+   "sink_m": 0.03,
+   "touch_m": 0.005
+  },
+  "figures": [
+   {
+    "arm_reach_m": 0.581,
+    "at_limit": [],
+    "at_m": [
+     1.684976287020497,
+     0.022499999999999954,
+     3.510325277239223
+    ],
+    "back_rests": false,
+    "carried": true,
+    "clashes": [
+     {
+      "buried": false,
+      "depth_m": 0.07304437375770623,
+      "limb": "right_upper_arm",
+      "part": "park/part-1400"
+     },
+     {
+      "buried": false,
+      "depth_m": 0.0654717373503566,
+      "limb": "right_lower_arm",
+      "part": "park/part-1399"
+     },
+     {
+      "buried": false,
+      "depth_m": 0.021168207118003712,
+      "limb": "right_hand",
+      "part": "park/part-1398"
+     }
+    ],
+    "facing_deg": -86.06630799999999,
+    "joints_m": {
+     "head": [
+      1.684976287020497,
+      1.2200372109001258,
+      3.510325277239223
+     ],
+     "hips": [
+      1.684976287020497,
+      0.611037210900126,
+      3.510325277239223
+     ],
+     "left_eye": [
+      1.5956415192023476,
+      1.300537210900126,
+      3.486648035869558
+     ],
+     "left_foot": [
+      1.2514942711479218,
+      0.13057405168892866,
+      3.4524265874313453
+     ],
+     "left_hand": [
+      1.3367391170043592,
+      0.8341728701056285,
+      3.2715986341959753
+     ],
+     "left_upper_arm": [
+      1.6693693426048324,
+      1.0800372109001262,
+      3.283361242013361
+     ],
+     "right_eye": [
+      1.599723335434137,
+      1.300537210900126,
+      3.5460078604670913
+     ],
+     "right_foot": [
+      1.2634996130061253,
+      0.13057405168892866,
+      3.6270143068358545
+     ],
+     "right_hand": [
+      1.8299989831339314,
+      0.6700020482555248,
+      3.9500035370439264
+     ],
+     "right_upper_arm": [
+      1.7005832314361615,
+      1.0800372109001262,
+      3.737289312465085
+     ]
+    },
+    "mark": "bench",
+    "off_mark_m": 0.023056311443567495,
+    "pose": {
+     "controls": {
+      "left_foot.up_down": 12.0,
+      "left_index_distal.stretched": -27.0,
+      "left_index_intermediate.stretched": -30.0,
+      "left_index_proximal.stretched": -27.0,
+      "left_little_distal.stretched": -27.0,
+      "left_little_intermediate.stretched": -30.0,
+      "left_little_proximal.stretched": -27.0,
+      "left_lower_arm.stretch": -90.0,
+      "left_lower_leg.stretch": -88.0,
+      "left_middle_distal.stretched": -27.0,
+      "left_middle_intermediate.stretched": -30.0,
+      "left_middle_proximal.stretched": -27.0,
+      "left_ring_distal.stretched": -27.0,
+      "left_ring_intermediate.stretched": -30.0,
+      "left_ring_proximal.stretched": -27.0,
+      "left_thumb_distal.stretched": -24.0,
+      "left_thumb_intermediate.stretched": -15.0,
+      "left_thumb_proximal.stretched": -15.0,
+      "left_upper_arm.down_up": -82.0,
+      "left_upper_arm.front_back": -15.0,
+      "left_upper_leg.front_back": -88.0,
+      "right_foot.up_down": 12.0,
+      "right_index_distal.stretched": -27.0,
+      "right_index_intermediate.stretched": -30.0,
+      "right_index_proximal.stretched": -27.0,
+      "right_little_distal.stretched": -27.0,
+      "right_little_intermediate.stretched": -30.0,
+      "right_little_proximal.stretched": -27.0,
+      "right_lower_arm.stretch": -69.263,
+      "right_lower_leg.stretch": -88.0,
+      "right_middle_distal.stretched": -27.0,
+      "right_middle_intermediate.stretched": -30.0,
+      "right_middle_proximal.stretched": -27.0,
+      "right_ring_distal.stretched": -27.0,
+      "right_ring_intermediate.stretched": -30.0,
+      "right_ring_proximal.stretched": -27.0,
+      "right_thumb_distal.stretched": -24.0,
+      "right_thumb_intermediate.stretched": -15.0,
+      "right_thumb_proximal.stretched": -15.0,
+      "right_upper_arm.down_up": -82.459,
+      "right_upper_arm.front_back": 37.254,
+      "right_upper_arm.twist_in_out": 43.794,
+      "right_upper_leg.front_back": -88.0
+     },
+     "sits": true
+    },
+    "reached": [
+     {
+      "joint": "right_hand",
+      "missed_m": 4.211893520984185e-06,
+      "to": "in-the-backrest"
+     }
+    ],
+    "request": {
+     "adjust": {},
+     "height_m": null,
+     "kind": null,
+     "look_at": null,
+     "mark": "bench",
+     "pose": "sit",
+     "posture": "sit",
+     "reach": [
+      {
+       "joint": "right_hand",
+       "pole": null,
+       "to": "in-the-backrest"
+      }
+     ],
+     "seed": null
+    },
+    "seat": {
+     "at_m": [
+      1.715665,
+      0.0,
+      3.508215
+     ],
+     "back_m": 0.1,
+     "depth_m": 0.36,
+     "facing_deg": -86.06630799999999,
+     "height_m": 0.45,
+     "part": "park/part-1397"
+    },
+    "shots": [
+     {
+      "joints_px": {
+       "head": null,
+       "hips": null,
+       "left_eye": null,
+       "left_foot": null,
+       "left_hand": null,
+       "left_upper_arm": null,
+       "right_eye": null,
+       "right_foot": null,
+       "right_hand": null,
+       "right_upper_arm": null
+      },
+      "pixels_per_metre": 44800.0,
+      "seat_px": null,
+      "shot": "along-the-path",
+      "sight_px": {
+       "ahead": null,
+       "eye": null
+      }
+     },
+     {
+      "joints_px": {
+       "head": [
+        1152.5317537373041,
+        1131.946984265383
+       ],
+       "hips": [
+        1169.210714365296,
+        1456.571993698789
+       ],
+       "left_eye": [
+        1111.8401803521097,
+        1088.5586492900438
+       ],
+       "left_foot": [
+        967.9018775763358,
+        1740.7676435959988
+       ],
+       "left_hand": [
+        1037.0038378457393,
+        1340.7686707763562
+       ],
+       "left_upper_arm": [
+        1205.0860314052015,
+        1200.59179026908
+       ],
+       "right_eye": [
+        1100.7378396284998,
+        1091.458003632885
+       ],
+       "right_foot": [
+        940.7475008929625,
+        1718.3285716576204
+       ],
+       "right_hand": [
+        1137.2003051010772,
+        1407.714577252133
+       ],
+       "right_upper_arm": [
+        1113.0839945101472,
+        1208.979393746077
+       ]
+      },
+      "pixels_per_metre": 546.7121921795128,
+      "seat_px": [
+       1189.8391298820102,
+       1545.2271362267593
+      ],
+      "shot": "by-the-bench",
+      "sight_px": {
+       "ahead": [
+        572.8543217147788,
+        1086.3912378621728
+       ],
+       "eye": [
+        1088.5455880229865,
+        1089.8993584985296
+       ]
+      }
+     },
+     {
+      "joints_px": {
+       "head": [
+        4744.10152958251,
+        670.5794408271702
+       ],
+       "hips": [
+        4821.151106983407,
+        3442.9476774937107
+       ],
+       "left_eye": [
+        4061.6995401601484,
+        362.94041417325593
+       ],
+       "left_foot": [
+        2237.7034051815094,
+        4079.381276553249
+       ],
+       "left_hand": [
+        2765.468195798619,
+        2344.099113672668
+       ],
+       "left_upper_arm": [
+        6446.893921515444,
+        1508.705002216739
+       ],
+       "right_eye": [
+        3901.486079961436,
+        417.34759785523784
+       ],
+       "right_foot": [
+        2236.7069459195045,
+        3547.3226807219685
+       ],
+       "right_hand": [
+        4256.274243279075,
+        2334.725686686237
+       ],
+       "right_upper_arm": [
+        4039.0120686670616,
+        1209.1430559773942
+       ]
+      },
+      "pixels_per_metre": 4643.650290549453,
+      "seat_px": [
+       5172.683685148304,
+       4356.832272550449
+      ],
+      "shot": "from-the-bench",
+      "sight_px": {
+       "ahead": [
+        697.8953848319825,
+        737.6239390131418
+       ],
+       "eye": [
+        3723.414363499408,
+        418.25522365728784
+       ]
+      }
+     },
+     {
+      "joints_px": {
+       "head": [
+        573.1082270844447,
+        1066.771093993864
+       ],
+       "hips": [
+        572.7386044363814,
+        1129.9833111998041
+       ],
+       "left_eye": [
+        563.3891615840984,
+        1057.22735088362
+       ],
+       "left_foot": [
+        529.849241358752,
+        1170.622665557417
+       ],
+       "left_hand": [
+        526.3460013390021,
+        1107.2014141430307
+       ],
+       "left_upper_arm": [
+        557.8630795453867,
+        1088.3008626017615
+       ],
+       "right_eye": [
+        567.3324159055996,
+        1055.529425579025
+       ],
+       "right_foot": [
+        541.3149902480063,
+        1164.8060655341665
+       ],
+       "right_hand": [
+        611.4761935314783,
+        1112.6621029032722
+       ],
+       "right_upper_arm": [
+        587.8220603317367,
+        1074.7196065315234
+       ]
+      },
+      "pixels_per_metre": 108.57475799380995,
+      "seat_px": [
+       575.3519746957083,
+       1147.244096648284
+      ],
+      "shot": "over-the-lawn",
+      "sight_px": {
+       "ahead": [
+        477.21760634264973,
+        1034.532964669075
+       ],
+       "eye": [
+        562.2618875223275,
+        1055.6083275426272
+       ]
+      }
+     }
+    ],
+    "sight_m": {
+     "ahead": [
+      0.5651207725544303,
+      1.300537210900126,
+      3.5873309700154143
+     ],
+     "eye": [
+      1.5627648834373404,
+      1.300537210900126,
+      3.5187290165399654
+     ]
+    },
+    "stature_m": 1.75,
+    "support": [
+     {
+      "gap_m": 0.0,
+      "joint": "hips",
+      "part": "park/part-1397",
+      "rests": true,
+      "way": "down"
+     },
+     {
+      "gap_m": 0.03,
+      "joint": "left_upper_leg",
+      "part": "park/part-1392",
+      "rests": false,
+      "way": "down"
+     },
+     {
+      "gap_m": 0.03,
+      "joint": "right_upper_leg",
+      "part": "park/part-1392",
+      "rests": false,
+      "way": "down"
+     },
+     {
+      "gap_m": 0.04,
+      "joint": "chest",
+      "part": "park/part-1400",
+      "rests": false,
+      "way": "back"
+     },
+     {
+      "gap_m": 0.07,
+      "joint": "upper_chest",
+      "part": "park/part-1400",
+      "rests": false,
+      "way": "back"
+     }
+    ],
+    "tangled": []
+   },
+   {
+    "arm_reach_m": 0.581,
+    "at_limit": [],
+    "at_m": [
+     -1.7,
+     0.0145,
+     7.8
+    ],
+    "back_rests": null,
+    "carried": true,
+    "clashes": [],
+    "facing_deg": 156.0,
+    "joints_m": {
+     "head": [
+      -1.6992645500016514,
+      1.5842188527827539,
+      7.798348152258341
+     ],
+     "hips": [
+      -1.7,
+      0.97525,
+      7.8
+     ],
+     "left_eye": [
+      -1.6201351007466054,
+      1.6589594634398985,
+      7.742010474997114
+     ],
+     "left_foot": [
+      -1.6200647724562725,
+      0.081,
+      7.835589456269132
+     ],
+     "left_hand": [
+      -1.389776641941914,
+      0.874561512043701,
+      7.89029231469581
+     ],
+     "left_upper_arm": [
+      -1.4921684083863083,
+      1.44425,
+      7.892532586299745
+     ],
+     "right_eye": [
+      -1.6674848828094633,
+      1.6582518686633225,
+      7.705986213058359
+     ],
+     "right_foot": [
+      -1.7799352275437275,
+      0.081,
+      7.764410543730867
+     ],
+     "right_hand": [
+      -1.7859995630050407,
+      1.5500007633263035,
+      7.377999179427951
+     ],
+     "right_upper_arm": [
+      -1.9078315916136916,
+      1.44425,
+      7.707467413700255
+     ]
+    },
+    "mark": "walker",
+    "off_mark_m": 0.0145,
+    "pose": {
+     "controls": {
+      "head.nod_down_up": -1.9737360722288269,
+      "head.turn_left_right": -6.641726756311954,
+      "left_eye.down_up": 2.5006574499997214e-06,
+      "left_eye.in_out": 3.610765219264067e-06,
+      "left_index_distal.stretched": -18.0,
+      "left_index_intermediate.stretched": -20.0,
+      "left_index_proximal.stretched": -18.0,
+      "left_little_distal.stretched": -18.0,
+      "left_little_intermediate.stretched": -20.0,
+      "left_little_proximal.stretched": -18.0,
+      "left_lower_arm.stretch": -10.0,
+      "left_middle_distal.stretched": -18.0,
+      "left_middle_intermediate.stretched": -20.0,
+      "left_middle_proximal.stretched": -18.0,
+      "left_ring_distal.stretched": -18.0,
+      "left_ring_intermediate.stretched": -20.0,
+      "left_ring_proximal.stretched": -18.0,
+      "left_thumb_distal.stretched": -16.0,
+      "left_thumb_intermediate.stretched": -10.0,
+      "left_thumb_proximal.stretched": -10.0,
+      "left_upper_arm.down_up": -80.0,
+      "left_upper_arm.twist_in_out": -10.0,
+      "neck.nod_down_up": -1.9737360722288269,
+      "neck.turn_left_right": -6.641726756311954,
+      "right_eye.down_up": 2.5006574499997214e-06,
+      "right_eye.in_out": -3.610765219264067e-06,
+      "right_index_distal.stretched": -18.0,
+      "right_index_intermediate.stretched": -20.0,
+      "right_index_proximal.stretched": -18.0,
+      "right_little_distal.stretched": -18.0,
+      "right_little_intermediate.stretched": -20.0,
+      "right_little_proximal.stretched": -18.0,
+      "right_lower_arm.stretch": -102.731,
+      "right_middle_distal.stretched": -18.0,
+      "right_middle_intermediate.stretched": -20.0,
+      "right_middle_proximal.stretched": -18.0,
+      "right_ring_distal.stretched": -18.0,
+      "right_ring_intermediate.stretched": -20.0,
+      "right_ring_proximal.stretched": -18.0,
+      "right_thumb_distal.stretched": -16.0,
+      "right_thumb_intermediate.stretched": -10.0,
+      "right_thumb_proximal.stretched": -10.0,
+      "right_upper_arm.down_up": 51.406,
+      "right_upper_arm.front_back": -32.311,
+      "right_upper_arm.twist_in_out": 11.156
+     },
+     "sits": false
+    },
+    "reached": [
+     {
+      "joint": "right_hand",
+      "missed_m": 1.2029007142664802e-06,
+      "to": "wave"
+     }
+    ],
+    "request": {
+     "adjust": {},
+     "height_m": null,
+     "kind": null,
+     "look_at": "sitter",
+     "mark": "walker",
+     "pose": "stand",
+     "posture": "stand",
+     "reach": [
+      {
+       "joint": "right_hand",
+       "pole": null,
+       "to": "wave"
+      }
+     ],
+     "seed": null
+    },
+    "seat": null,
+    "shots": [
+     {
+      "joints_px": {
+       "head": null,
+       "hips": null,
+       "left_eye": null,
+       "left_foot": null,
+       "left_hand": null,
+       "left_upper_arm": null,
+       "right_eye": null,
+       "right_foot": null,
+       "right_hand": null,
+       "right_upper_arm": null
+      },
+      "pixels_per_metre": 44800.0,
+      "seat_px": null,
+      "shot": "along-the-path",
+      "sight_px": {
+       "ahead": null,
+       "eye": null
+      }
+     },
+     {
+      "joints_px": {
+       "head": [
+        -168.38720296350425,
+        1109.0447092746795
+       ],
+       "hips": [
+        -177.89824628507688,
+        1267.097546002309
+       ],
+       "left_eye": [
+        -149.2625434311858,
+        1088.8415996909343
+       ],
+       "left_foot": [
+        -168.05622032692565,
+        1505.4409747261477
+       ],
+       "left_hand": [
+        -91.60573810930089,
+        1293.2839716989458
+       ],
+       "left_upper_arm": [
+        -110.67531323323715,
+        1147.0464143209927
+       ],
+       "right_eye": [
+        -163.9916827518523,
+        1087.985187913323
+       ],
+       "right_foot": [
+        -216.60342585632202,
+        1508.3816400243682
+       ],
+       "right_hand": [
+        -218.8403421509587,
+        1108.4845109379817
+       ],
+       "right_upper_arm": [
+        -232.5237885280352,
+        1142.9491511297297
+       ]
+      },
+      "pixels_per_metre": 265.1906799798432,
+      "seat_px": null,
+      "shot": "by-the-bench",
+      "sight_px": {
+       "ahead": [
+        -22.27736530454615,
+        1088.609572720129
+       ],
+       "eye": [
+        -152.49507958751224,
+        1088.420564508849
+       ]
+      }
+     },
+     {
+      "joints_px": {
+       "head": [
+        819.891109229764,
+        842.8833631075261
+       ],
+       "hips": [
+        820.3112956555884,
+        1041.3026045225797
+       ],
+       "left_eye": [
+        833.773080114426,
+        815.9126814340638
+       ],
+       "left_foot": [
+        849.7231700055402,
+        1334.7697600141328
+       ],
+       "left_hand": [
+        926.2630303213498,
+        1075.973362210208
+       ],
+       "left_upper_arm": [
+        895.2841163035233,
+        887.6075526137913
+       ],
+       "right_eye": [
+        814.0793958370693,
+        816.1521640967267
+       ],
+       "right_foot": [
+        792.1791433450089,
+        1332.3512510547985
+       ],
+       "right_hand": [
+        722.9438714118875,
+        847.4983895882893
+       ],
+       "right_upper_arm": [
+        746.1124741073118,
+        889.3283961410982
+       ]
+      },
+      "pixels_per_metre": 326.712140774253,
+      "seat_px": null,
+      "shot": "from-the-bench",
+      "sight_px": {
+       "ahead": [
+        884.4277699506507,
+        807.7733959194576
+       ],
+       "eye": [
+        825.6178711389857,
+        815.8014800489633
+       ]
+      }
+     },
+     {
+      "joints_px": {
+       "head": [
+        528.6350416720164,
+        890.9688431869547
+       ],
+       "hips": [
+        528.7544592476041,
+        939.09225881542
+       ],
+       "left_eye": [
+        531.4164151062485,
+        886.6603365884793
+       ],
+       "left_foot": [
+        535.7967305339129,
+        1008.735482874204
+       ],
+       "left_hand": [
+        553.7942832599709,
+        949.0246131874769
+       ],
+       "left_upper_arm": [
+        546.9973868662087,
+        902.8028005389478
+       ],
+       "right_eye": [
+        526.531490697663,
+        886.7851759499971
+       ],
+       "right_foot": [
+        521.9911766168033,
+        1008.0359560391842
+       ],
+       "right_hand": [
+        503.13599635297624,
+        899.3854526450518
+       ],
+       "right_upper_arm": [
+        510.4365473312235,
+        901.3504067980248
+       ]
+      },
+      "pixels_per_metre": 80.0509700254502,
+      "seat_px": null,
+      "shot": "over-the-lawn",
+      "sight_px": {
+       "ahead": [
+        534.0377846690483,
+        912.5475007628409
+       ],
+       "eye": [
+        529.1370998336506,
+        887.5537259994018
+       ]
+      }
+     }
+    ],
+    "sight_m": {
+     "ahead": [
+      -1.0178995311243169,
+      1.5885468814319148,
+      6.902686672406139
+     ],
+     "eye": [
+      -1.6226439375530295,
+      1.656236528407466,
+      7.696224519383527
+     ]
+    },
+    "stature_m": 1.75,
+    "support": [
+     {
+      "gap_m": 0.005,
+      "joint": "left_foot",
+      "part": "park/path",
+      "rests": true,
+      "way": "down"
+     },
+     {
+      "gap_m": 0.005,
+      "joint": "left_toes",
+      "part": "park/path",
+      "rests": true,
+      "way": "down"
+     },
+     {
+      "gap_m": 0.005,
+      "joint": "right_foot",
+      "part": "park/path",
+      "rests": true,
+      "way": "down"
+     },
+     {
+      "gap_m": 0.005,
+      "joint": "right_toes",
+      "part": "park/path",
+      "rests": true,
+      "way": "down"
+     }
+    ],
+    "tangled": []
+   }
+  ],
+  "points": {
+   "in-the-backrest": [
+    1.83,
+    0.67,
+    3.95
+   ],
+   "sitter": [
+    1.56,
+    1.3,
+    3.52
+   ],
+   "wave": [
+    -1.786,
+    1.55,
+    7.378
+   ]
+  },
+  "set_parts": [
+   "park/cloud",
+   "park/crown",
+   "park/hedge",
+   "park/hedge-end",
+   "park/kerb-left",
+   "park/kerb-right",
+   "park/limb",
+   "park/part-0",
+   "park/part-1057",
+   "park/part-1058",
+   "park/part-1059",
+   "park/part-1060",
+   "park/part-1061",
+   "park/part-1062",
+   "park/part-1063",
+   "park/part-1064",
+   "park/part-1065",
+   "park/part-1066",
+   "park/part-1067",
+   "park/part-1068",
+   "park/part-1069",
+   "park/part-1070",
+   "park/part-1071",
+   "park/part-1072",
+   "park/part-1073",
+   "park/part-1074",
+   "park/part-1075",
+   "park/part-1076",
+   "park/part-1377",
+   "park/part-1378",
+   "park/part-1379",
+   "park/part-1380",
+   "park/part-1381",
+   "park/part-1382",
+   "park/part-1383",
+   "park/part-1384",
+   "park/part-1385",
+   "park/part-1392",
+   "park/part-1393",
+   "park/part-1394",
+   "park/part-1395",
+   "park/part-1396",
+   "park/part-1397",
+   "park/part-1398",
+   "park/part-1399",
+   "park/part-1400",
+   "park/part-1401",
+   "park/part-1402",
+   "park/part-1403",
+   "park/part-1404",
+   "park/part-1405",
+   "park/part-1406",
+   "park/part-1407",
+   "park/part-1408",
+   "park/part-1409",
+   "park/part-1410",
+   "park/part-1411",
+   "park/path",
+   "park/shrub",
+   "park/tree-line-0",
+   "park/tree-line-1",
+   "park/trunk"
+  ],
+  "skeleton": [
+   "hips",
+   "spine",
+   "chest",
+   "upper_chest",
+   "neck",
+   "head",
+   "left_eye",
+   "right_eye",
+   "jaw",
+   "left_upper_leg",
+   "left_lower_leg",
+   "left_foot",
+   "left_toes",
+   "right_upper_leg",
+   "right_lower_leg",
+   "right_foot",
+   "right_toes",
+   "left_shoulder",
+   "left_upper_arm",
+   "left_lower_arm",
+   "left_hand",
+   "right_shoulder",
+   "right_upper_arm",
+   "right_lower_arm",
+   "right_hand",
+   "left_thumb_proximal",
+   "left_thumb_intermediate",
+   "left_thumb_distal",
+   "left_index_proximal",
+   "left_index_intermediate",
+   "left_index_distal",
+   "left_middle_proximal",
+   "left_middle_intermediate",
+   "left_middle_distal",
+   "left_ring_proximal",
+   "left_ring_intermediate",
+   "left_ring_distal",
+   "left_little_proximal",
+   "left_little_intermediate",
+   "left_little_distal",
+   "right_thumb_proximal",
+   "right_thumb_intermediate",
+   "right_thumb_distal",
+   "right_index_proximal",
+   "right_index_intermediate",
+   "right_index_distal",
+   "right_middle_proximal",
+   "right_middle_intermediate",
+   "right_middle_distal",
+   "right_ring_proximal",
+   "right_ring_intermediate",
+   "right_ring_distal",
+   "right_little_proximal",
+   "right_little_intermediate",
+   "right_little_distal"
+  ]
+ },
+ "frame": {
+  "height_px": 1920,
+  "width_px": 1080
+ },
+ "location": {
+  "catalog": "studio",
+  "digest": "dc5d119ac32c2553186a44c511116268251bc58fd21241896b9297ca9d1ca2fc",
+  "name": "park",
+  "source": "catalog",
+  "version": "1.0.0"
+ },
+ "schema_version": "1.1.0",
+ "shots": [
+  {
+   "camera": {
+    "eye_m": [
+     -3.0,
+     1.6,
+     7.5
+    ],
+    "fit": "height",
+    "focal_px": 2240.0,
+    "forward": [
+     -0.6604373543408093,
+     -0.02401590379421125,
+     0.7504969935691013
+    ],
+    "gate_mm": [
+     36.0,
+     24.0
+    ],
+    "lens_mm": 28.0,
+    "look_at_m": [
+     -14.0,
+     1.2,
+     20.0
+    ],
+    "near_m": 0.05,
+    "right": [
+     0.7507135169227552,
+     0.0,
+     0.6606278948920248
+    ],
+    "up": [
+     -0.015865575967499167,
+     0.9997115765884415,
+     0.018029063599430867
+    ]
+   },
+   "marks": [
+    {
+     "at_m": [
+      1.69,
+      0.0,
+      3.51
+     ],
+     "facing_deg": -86.0,
+     "feet_px": null,
+     "framing": "",
+     "head_px": null,
+     "height_m": 1.7,
+     "in_frame": false,
+     "mark": "bench",
+     "pixels_per_metre": 44800.0
+    },
+    {
+     "at_m": [
+      -1.7,
+      0.0,
+      7.8
+     ],
+     "facing_deg": 156.0,
+     "feet_px": null,
+     "framing": "",
+     "head_px": null,
+     "height_m": 1.7,
+     "in_frame": false,
+     "mark": "walker",
+     "pixels_per_metre": 44800.0
+    }
+   ],
+   "name": "along-the-path"
+  },
+  {
+   "camera": {
+    "eye_m": [
+     0.0,
+     0.95,
+     0.0
+    ],
+    "fit": "height",
+    "focal_px": 1920.0,
+    "forward": [
+     0.13683304537289445,
+     0.1612675177609113,
+     0.9773788955206746
+    ],
+    "gate_mm": [
+     36.0,
+     24.0
+    ],
+    "lens_mm": 24.0,
+    "look_at_m": [
+     1.4,
+     2.6,
+     10.0
+    ],
+    "near_m": 0.05,
+    "right": [
+     0.9903417466743302,
+     0.0,
+     -0.13864784453440623
+    ],
+    "up": [
+     -0.022359393730964426,
+     0.9869107293546029,
+     -0.15970995522117445
+    ]
+   },
+   "marks": [
+    {
+     "at_m": [
+      1.69,
+      0.0,
+      3.51
+     ],
+     "facing_deg": -86.0,
+     "feet_px": [
+      1189.563075451632,
+      1800.4940979877183
+     ],
+     "framing": "",
+     "head_px": [
+      1142.4865984756007,
+      888.0209173531475
+     ],
+     "height_m": 1.7,
+     "in_frame": false,
+     "mark": "bench",
+     "pixels_per_metre": 547.2200096445772
+    },
+    {
+     "at_m": [
+      -1.7,
+      0.0,
+      7.8
+     ],
+     "facing_deg": 156.0,
+     "feet_px": [
+      -193.49819141505498,
+      1529.0952157002089
+     ],
+     "framing": "",
+     "head_px": [
+      -166.72835858261533,
+      1079.5017227831395
+     ],
+     "height_m": 1.7,
+     "in_frame": false,
+     "mark": "walker",
+     "pixels_per_metre": 265.27635820837725
+    }
+   ],
+   "name": "by-the-bench"
+  },
+  {
+   "camera": {
+    "eye_m": [
+     1.2,
+     1.15,
+     2.6
+    ],
+    "fit": "height",
+    "focal_px": 1920.0,
+    "forward": [
+     -0.6080280900453164,
+     0.012667251875944105,
+     0.7938144508924965
+    ],
+    "gate_mm": [
+     36.0,
+     24.0
+    ],
+    "lens_mm": 24.0,
+    "look_at_m": [
+     -6.0,
+     1.3,
+     12.0
+    ],
+    "near_m": 0.05,
+    "right": [
+     0.7938781460016401,
+     0.0,
+     0.6080768777884903
+    ],
+    "up": [
+     0.007702662970884487,
+     0.9999197671463003,
+     -0.010056254434210304
+    ]
+   },
+   "marks": [
+    {
+     "at_m": [
+      1.69,
+      0.0,
+      3.51
+     ],
+     "facing_deg": -86.0,
+     "feet_px": [
+      4954.356442820344,
+      6371.828668740941
+     ],
+     "framing": "",
+     "head_px": [
+      4734.005871631308,
+      -1463.6927415408709
+     ],
+     "height_m": 1.7,
+     "in_frame": false,
+     "mark": "bench",
+     "pixels_per_metre": 4684.411598853306
+    },
+    {
+     "at_m": [
+      -1.7,
+      0.0,
+      7.8
+     ],
+     "facing_deg": 156.0,
+     "feet_px": [
+      820.900568709847,
+      1360.0839286941555
+     ],
+     "framing": "",
+     "head_px": [
+      819.8749804932022,
+      805.2675029403139
+     ],
+     "height_m": 1.7,
+     "in_frame": true,
+     "mark": "walker",
+     "pixels_per_metre": 326.7223523626299
+    }
+   ],
+   "name": "from-the-bench"
+  },
+  {
+   "camera": {
+    "eye_m": [
+     9.0,
+     6.0,
+     -8.0
+    ],
+    "fit": "height",
+    "focal_px": 1600.0,
+    "forward": [
+     -0.5345224838248487,
+     -0.2672612419124244,
+     0.8017837257372732
+    ],
+    "gate_mm": [
+     36.0,
+     24.0
+    ],
+    "lens_mm": 20.0,
+    "look_at_m": [
+     -3.0,
+     0.0,
+     10.0
+    ],
+    "near_m": 0.05,
+    "right": [
+     0.8320502943378437,
+     0.0,
+     0.554700196225229
+    ],
+    "up": [
+     -0.14824986333222023,
+     0.9636241116594315,
+     0.22237479499833038
+    ]
+   },
+   "marks": [
+    {
+     "at_m": [
+      1.69,
+      0.0,
+      3.51
+     ],
+     "facing_deg": -86.0,
+     "feet_px": [
+      572.8165789947368,
+      1192.1392661627976
+     ],
+     "framing": "",
+     "head_px": [
+      573.8603242574319,
+      1016.0408056055422
+     ],
+     "height_m": 1.7,
+     "in_frame": true,
+     "mark": "bench",
+     "pixels_per_metre": 108.55216353287953
+    },
+    {
+     "at_m": [
+      -1.7,
+      0.0,
+      7.8
+     ],
+     "facing_deg": 156.0,
+     "feet_px": [
+      528.9010797505289,
+      1014.5801262595947
+     ],
+     "framing": "",
+     "head_px": [
+      528.6429653261225,
+      881.6893840623205
+     ],
+     "height_m": 1.7,
+     "in_frame": true,
+     "mark": "walker",
+     "pixels_per_metre": 80.03545212350677
+    }
+   ],
+   "name": "over-the-lawn"
+  }
+ ],
+ "srlocations_commit": "4ae2278214de6e704d8dcbab8f293b6a47438483"
+}

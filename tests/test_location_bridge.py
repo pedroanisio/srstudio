@@ -36,7 +36,7 @@ def first_mark(data: dict, shot: str = "down-the-aisle", mark: str = "aisle") ->
 
 def test_the_fixture_is_a_record_of_the_pinned_srlocations():
     record = lb.load(FIXTURE)
-    assert record.schema_version == lb.SCHEMA_VERSION
+    assert record.schema_version == lb.SCHEMA_WITHOUT_BLOCKING == "1.0.0"  # no blocking: what 1.0.0 readers read
     assert record.srlocations_commit == lb.SRLOCATIONS_COMMIT
     assert (record.location.source, record.location.name) == ("catalog", "airliner")
     assert re.fullmatch(r"[0-9a-f]{64}", record.location.digest)
