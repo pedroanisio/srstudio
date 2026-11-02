@@ -27,6 +27,7 @@ from .acting import (
 )
 from .canvas import Canvas
 from .character_clips import GlossClip, ToonClip, _check
+from .face_blends import FaceBlend, FacePose, FaceTrack
 from .head_motion import CHANNELS, GAZES, Channel, HeadPlan
 from .limbs.integration import LimbTrack
 from .toon import Pose
@@ -252,6 +253,7 @@ def compile_score(rig: ActingRig, score: ActingScore) -> PerformancePlan:
     numeric: dict[str, list[NumericEvent]] = {name: [] for name in CHANNELS}
     busy: dict[str, float] = {}
     previous = -1.0
+    face_blends = []
     for index, beat in enumerate(score.beats):
         path = f'beats[{index}]'
         if not isinstance(beat, ActingBeat):
@@ -309,6 +311,26 @@ def compile_score(rig: ActingRig, score: ActingScore) -> PerformancePlan:
                 raise _error(f'{path}.breath', beat.breath, 'a normalized expansion in 0..1')
             assignments['breath'] = beat.breath
         windows = schedules(beat, rig, set(assignments), duration, path)
+        if type(beat.blend) is not bool:
+            raise _error(path + '.blend', beat.blend, 'a boolean')
+        if beat.blend:
+            if overrides.expression is not None:
+                raise _error(path + '.blend', True, 'one expression owner without an override', 'acting.conflict')
+            if 'expression' not in assignments:
+                raise _error(path + '.blend', True, 'an assigned expression or emotion')
+            window = windows['expression']
+            source, target = expressions[-1][1], assignments['expression']
+            if source.mouth is None or target.mouth is None:
+                raise _error(path + '.blend', None, 'explicit source and target mouth states', 'acting.unsupported')
+            face_blends.append(
+                FaceBlend(
+                    window.launch,
+                    window.arrival,
+                    FacePose(source.eyes, source.mouth),
+                    FacePose(target.eyes, target.mouth),
+                    beat.policy.curve if beat.policy is not None else 'sine-in-out',
+                )
+            )
         if beat.reset and beat.policy is not None:
             start = min(w.start for w in windows.values())
             end = max(w.end for w in windows.values())
@@ -405,6 +427,11 @@ def compile_score(rig: ActingRig, score: ActingScore) -> PerformancePlan:
         limbs,
     )
     _check(cv, clip, duration)
+    if face_blends:
+        if not isinstance(clip, ToonClip):
+            raise _error('blend', rig.name, 'a Toon rig declaring facial blends', 'acting.unsupported')
+        clip = replace(clip, face_blends=FaceTrack(tuple(face_blends), score.sample_rate))
+        _check(cv, clip, duration)
     return PerformancePlan(
         rig,
         duration,

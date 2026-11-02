@@ -22,6 +22,7 @@ from .voice import Alignment
 
 SCHEMA = 'srstudio.acting/1.0.0'
 POLICY_SCHEMA = 'srstudio.acting/1.1.0'
+BLEND_SCHEMA = 'srstudio.acting/1.2.0'
 
 
 def _object(value: object, path: str, allowed: set[str], required: set[str] | None = None) -> dict[str, Any]:
@@ -86,8 +87,10 @@ def _policy(value: object, path: str) -> TransitionPolicy:
     return TransitionPolicy(**kwargs)
 
 
-def _beat(value: object, path: str, policy_enabled: bool) -> ActingBeat:
+def _beat(value: object, path: str, policy_enabled: bool, blend_enabled: bool) -> ActingBeat:
     allowed = {f.name for f in fields(ActingBeat)} - (set() if policy_enabled else {'policy'})
+    if not blend_enabled:
+        allowed -= {'blend'}
     data = _object(value, path, allowed, {'at'})
     kwargs: dict[str, Any] = {'at': _number(data['at'], path + '.at')}
     for name in ('emotion', 'gaze', 'gesture'):
@@ -98,6 +101,8 @@ def _beat(value: object, path: str, policy_enabled: bool) -> ActingBeat:
             kwargs[name] = _number(data[name], f'{path}.{name}')
     if 'reset' in data:
         kwargs['reset'] = _boolean(data['reset'], path + '.reset')
+    if 'blend' in data:
+        kwargs['blend'] = _boolean(data['blend'], path + '.blend')
     if data.get('expression') is not None:
         expression = _object(data['expression'], path + '.expression', {'eyes', 'mouth'}, {'eyes'})
         kwargs['expression'] = Expression(
@@ -133,8 +138,8 @@ def decode(data: object, overrides: Overrides | None) -> ActingScore:
         {'schema', 'duration', 'beats', 'speech', 'heard', 'seed', 'sample_rate', 'idle'},
         {'schema', 'duration'},
     )
-    if value['schema'] not in (SCHEMA, POLICY_SCHEMA):
-        raise _error('schema', value['schema'], (SCHEMA, POLICY_SCHEMA))
+    if value['schema'] not in (SCHEMA, POLICY_SCHEMA, BLEND_SCHEMA):
+        raise _error('schema', value['schema'], (SCHEMA, POLICY_SCHEMA, BLEND_SCHEMA))
     if overrides is not None and not isinstance(overrides, Overrides):
         raise _error('overrides', overrides, 'typed runtime Overrides')
     integers = {}
@@ -147,7 +152,7 @@ def decode(data: object, overrides: Overrides | None) -> ActingScore:
     for name in ('speech', 'heard'):
         speech[name] = tuple(_line(row, f'{name}[{i}]') for i, row in enumerate(_array(value.get(name, []), name)))
     beats = tuple(
-        _beat(row, f'beats[{i}]', value['schema'] == POLICY_SCHEMA)
+        _beat(row, f'beats[{i}]', value['schema'] != SCHEMA, value['schema'] == BLEND_SCHEMA)
         for i, row in enumerate(_array(value.get('beats', []), 'beats'))
     )
     return ActingScore(

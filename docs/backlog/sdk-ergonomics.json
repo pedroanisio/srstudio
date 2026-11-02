@@ -2591,7 +2591,7 @@
     {
       "id": "SDK-P4-04",
       "priority": "P4",
-      "status": "open",
+      "status": "complete",
       "title": "Support authored emotional blends on capable rigs",
       "problem": "Coordinated acting holds or replaces expressions; richer facial transitions need explicit authored support coordinated with posture and gesture.",
       "evidence": [
@@ -2602,7 +2602,16 @@
         "Rigs explicitly declare supported expression transitions",
         "Unsupported blends fail before drawing",
         "Deterministic cuts and temporal rendered review cover facial and body coordination"
-      ]
+      ],
+      "resolution": "Score 1.2.0 adds an explicit blend request and HeadRig binds a FaceBlender declaring directed expression pairs. The opt-in Bento candidate supports all six transitions among neutral, deadpan and concerned by deforming authored lids, brow position/angle/curvature and mouth curves before clipping and inking. Endpoint geometry is checked against the bound rig; unsupported pairs, malformed geometry, work-budget overflow and competing facial owners fail before placement allocates IDs. FaceTrack holds geometry on the original performance grid while numeric head/posture and breath keep their coordinated clock. Existing scores and approved Bento identities remain unchanged. The candidate uses version-2 hands without borrowing drawing approval. Speech, independent gaze, pose replacement during a blend and arbitrary expression topology remain explicit unsupported combinations, not silent fallbacks.",
+      "verification": ["tests/test_acting_blends.py", "tests/test_face_blends.py", "tests/test_acting_blends_example.py", "examples/acting_blends.py", "docs/decisions/0180-authored-face-blends.md"],
+      "rendered_evidence": {
+        "path": "../generated/sdk-emotional-blends/v1/",
+        "scope": "Five-second 1080x1920, 24 fps authored face/body study. Strict final rendering of 120 uncut and 120 cut frames; all 120 frame pairs are pixel-identical. Strict H.264 encoding produces 120 frames at 24 fps. Frame-sequence visual review inspected every facial deformation frame in both transitions and twelve body/key-boundary frames. This is frame-sequence inspection, not video playback, audience preference measurement or drawing adoption approval.",
+        "pixel_report": "review/pixels.json",
+        "video": "review/blends.mp4",
+        "review_index": "index.html"
+      }
     },
     {
       "id": "SDK-P1-01",
@@ -2827,7 +2836,7 @@
       "complexity": "M"
     }
   ],
-  "recommended_order": ["SDK-P2-07", "SDK-P3-06", "SDK-P4-01", "SDK-P4-04"],
+  "recommended_order": ["SDK-P2-07", "SDK-P3-06", "SDK-P4-01"],
   "agent_authoring_guidance": [
     "Discover registered versions, explicit capabilities, coordinate spaces and clocks before choosing a builder; keep unknown metadata unknown.",
     "Use parse_score and compile_performance for supported coordinated intent, character clips for placement, and windows of one performance for cuts. Inspect family capabilities before requesting a channel.",
