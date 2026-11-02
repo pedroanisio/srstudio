@@ -47,6 +47,17 @@ class ProxyError(SrstudioError, ValueError):
     """A view, a recipe or a set of meshes that cannot make plates."""
 
 
+def _recipe_error(field: str, actual: object, expected: str) -> ProxyError:
+    return ProxyError(
+        f"recipe.{field} must be {expected}",
+        code=f"proxy.recipe.{field}",
+        path=f"recipe.{field}",
+        actual=actual,
+        expected=expected,
+        remedy=f"Set {field} explicitly to satisfy this recipe constraint before rendering.",
+    )
+
+
 def rgb(colour: str) -> np.ndarray:
     return np.array([int(colour[i : i + 2], 16) for i in (1, 3, 5)], float) / 255
 
@@ -156,7 +167,9 @@ class Ink:
 @dataclass(frozen=True)
 class Recipe:
     """A style's conversion. ``tones`` gives each part shade to highlight; ``quiet`` groups parts that meet with no
-    line between them; ``behind`` is what the people stand in front of; ``under`` goes on a plate of its own."""
+    line between them; ``behind`` is what the people stand in front of; ``under`` goes on a plate of its own.
+    ``soft_edge=0`` makes upper-inclusive hard tone steps. ``grain_seed`` is a nonnegative integer;
+    a grain grid with no variance contributes zero wander rather than invalid pixels."""
 
     tones: Mapping[str, Tones]
     quiet: tuple[tuple[str, ...], ...] = ()
@@ -176,6 +189,12 @@ class Recipe:
         for name, tones in self.tones.items():
             if len(tones) != 4 or not all(_HEX.match(c) for c in tones):
                 raise ProxyError(f"part {name} needs four #rrggbb tones, got {tones!r}")
+        if any(not group for group in self.quiet):
+            raise _recipe_error('quiet', self.quiet, 'a sequence of nonempty part families')
+        if not isinstance(self.ink, Ink):
+            raise _recipe_error('ink', self.ink, 'an Ink record')
+        if type(self.grain_seed) is not int or self.grain_seed < 0:
+            raise _recipe_error('grain_seed', self.grain_seed, 'a nonnegative integer, excluding booleans')
         for what, names in (("behind", self.behind), ("under", self.under), *(("quiet", g) for g in self.quiet)):
             stray = sorted(set(names) - set(self.tones))
             if stray:
@@ -194,8 +213,12 @@ class Recipe:
             raise ProxyError(f"thresholds {self.thresholds} must rise")
         if not (checks.number(self.soft_edge) and self.soft_edge >= 0):
             raise ProxyError(f"soft_edge {self.soft_edge} must not be negative")
-        if not isinstance(self.oversample, int) or self.oversample < 1:
-            raise ProxyError(f"oversample {self.oversample} must be a whole number from 1")
+        for threshold in self.thresholds:
+            low, high = threshold - self.soft_edge, threshold + self.soft_edge
+            if not all(checks.number(value) for value in (low, high, high - low)):
+                raise _recipe_error('soft_edge', self.soft_edge, 'finite representable tone transition intervals')
+        if type(self.oversample) is not int or self.oversample < 1:
+            raise _recipe_error('oversample', self.oversample, 'a whole number from 1, excluding booleans')
 
     @property
     def names(self) -> list[str]:
@@ -225,7 +248,12 @@ class Layers:
 
 
 def _smooth(a: float, b, x):
-    t = np.clip((x - a) / (b - a), 0, 1)
+    span = np.asarray(b) - a
+    # A collapsed transition is a step, including its upper endpoint. Avoid
+    # dividing first: masked NaNs can otherwise survive into palette pixels.
+    values = np.asarray(x)
+    t = np.divide(np.clip(values, a, b) - a, span, out=np.asarray(values >= b, dtype=float), where=span != 0)
+    t = np.clip(t, 0, 1)
     return t * t * (3 - 2 * t)
 
 
@@ -302,7 +330,9 @@ def composite(lit: np.ndarray, ids: np.ndarray, recipe: Recipe) -> tuple[np.ndar
     distance = ndimage.distance_transform_edt(~edges) if edges.any() else np.full(edges.shape, np.inf)
     noise = np.random.default_rng(recipe.grain_seed).standard_normal((height // 4 + 1, width // 4 + 1))
     grain = ndimage.gaussian_filter(noise, 14)
-    grain = ndimage.zoom(grain / grain.std(), 4, order=1)[:height, :width]
+    spread = grain.std()
+    grain = grain / spread if spread > 0 else np.zeros_like(grain)
+    grain = ndimage.zoom(grain, 4, order=1)[:height, :width]
     pen, size = recipe.ink, recipe.oversample
     weight = (pen.weight + pen.grain * grain + pen.shade * (1 - np.clip(luma * 1.5, 0, 1))) * size
     weight = np.clip(weight, pen.least * size, pen.most * size)

@@ -15,6 +15,7 @@ from pathlib import Path
 
 from sr_core.scene import Scene
 
+from srstudio import gpu
 from srstudio.canvas import Canvas, Palette
 
 SIZE = 1024
@@ -91,7 +92,8 @@ def main(out: Path) -> None:
     out.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     document = out.with_suffix(".scene.xml")
     document.write_bytes(compose().to_bytes())
-    subprocess.run([os.environ["SRSTUDIO_ENGINE"], "render", str(document), "-t", "0", "-o", str(out)], check=True)
+    with gpu.held():
+        subprocess.run([os.environ["SRSTUDIO_ENGINE"], "render", str(document), "-t", "0", "-o", str(out)], check=True)
     for written in (document, out):
         written.chmod(0o600)
 

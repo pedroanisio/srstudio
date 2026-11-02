@@ -22,6 +22,9 @@ from typing import NoReturn
 from sr_core.scene import SchemaValueError
 
 from . import (
+    anatomy,
+    anatomy_gate,
+    anatomy_ledger,
     auto_enhance,
     bible_cli,
     catalog_page,
@@ -34,6 +37,7 @@ from . import (
     interview,
     lip_proof,
     lipsync,
+    master,
     music,
     outbox,
     overlap,
@@ -41,13 +45,18 @@ from . import (
     proof,
     registry,
     releases,
+    scopes,
     show,
     show_numbers,
     strict_gate,
+    text_rules,
     usage,
 )
 from .episode import SceneCheckError
 from .errors import SrstudioError, diagnostic
+from .frame_gates import FrameGateError
+from .framegraph import FrameGraphError
+from .layout import LayoutError, find_engine
 from .social import MANIFEST, DeliveryError, read_manifest
 from .soundtrack import INK_MOUTH
 from .styles import STYLES
@@ -151,10 +160,12 @@ def main(argv=None):
     strict = sub.add_parser("strict", help="list the reels shipped with findings proven false (ADR 0078)")
     strict.add_argument("--scripts", type=Path, default=_scripts_default(), help="the episodes folder")
     strict.add_argument("--delivery", type=Path, default=_delivery_default(), help="the delivery folder")
+    bodies = sub.add_parser("anatomy", help="list what is published against the anatomy and text rules (ADR 0147)")
+    bodies.add_argument("--manifest", type=Path, nargs="*", default=None, help="the delivery manifests to read")
     enhance = sub.add_parser(
-        "enhance", help="the auto-enhance mode, its ledger and the kinds of enhancement (ADR 0056)"
+        "enhance", help="the auto-enhance mode, its ledger, its kinds and a check of this branch's claims (ADR 0056)"
     )
-    enhance.add_argument("action", nargs="?", choices=("status", "kinds", "on", "off"), default="status")
+    enhance.add_argument("action", nargs="?", choices=("status", "kinds", "check", "on", "off"), default="status")
     enhance.add_argument("--scripts", type=Path, default=_scripts_default(), help="folder of episode scripts")
     versions = sub.add_parser("parts", help="list each part's versions, print a digest, check the pins")
     versions.add_argument("--json", action="store_true")
@@ -174,6 +185,24 @@ def main(argv=None):
     lip.add_argument("--master", type=Path, help="the final mp4; with --out, pull each instant's frame")
     lip.add_argument("--out", type=Path, help="folder for the frames")
     lip.add_argument("--crop", help="ffmpeg crop of each frame, w:h:x:y")
+    encoded = sub.add_parser(
+        "master", help="encode a reel's master and install it write-once: a re-run never replaces it (ADR 0170)"
+    )
+    encoded.add_argument("scene", type=Path, help="the reel's <slug>.scene.xml")
+    encoded.add_argument("--out-dir", type=Path, help="what the output paths are relative to (default: the folder "
+                         "SRSTUDIO_RENDERS is in)")  # fmt: skip
+    encoded.add_argument(
+        "--engine", type=Path, default=os.environ.get("SRSTUDIO_ENGINE") or shutil.which("scene-render")
+    )
+    encoded.add_argument("--next", action="store_true", help="write beside a master already there, as <slug>-v2.mp4")
+    encoded.add_argument("engine_args", nargs="*", help="after --: the engine's own, as -- --strict --hw software")
+    levels = sub.add_parser(
+        "scopes", help="a master's levels: illegal, out-of-gamut and oversaturated samples fail at 0 (ADR 0172)"
+    )
+    levels.add_argument("videos", type=Path, nargs="+", metavar="video")
+    levels.add_argument(
+        "--engine", type=Path, default=os.environ.get("SRSTUDIO_ENGINE") or shutil.which("scene-render")
+    )
     measured = sub.add_parser("proof", help="a master's measures (ffprobe, ebur128) and a sheet of frames to look at")
     measured.add_argument("video", type=Path)
     measured.add_argument("--at", type=float, action="append", default=[], help="a moment to look at, in seconds")
@@ -297,6 +326,8 @@ def main(argv=None):
         return _number(args)
     if args.cmd == "strict":
         return _strict(args)
+    if args.cmd == "anatomy":
+        return _anatomy(args)
     if args.cmd == "enhance":
         return _enhance(args.action, args.scripts.resolve().parent)
     if args.cmd == "lip-proof":
@@ -305,6 +336,10 @@ def main(argv=None):
         return _beat(args)
     if args.cmd == "proof":
         return _proof(args)
+    if args.cmd == "master":
+        return _master(args)
+    if args.cmd == "scopes":
+        return _scopes(args)
     if args.cmd == "arms":
         return _arms(args)
     if args.cmd == "parts":
@@ -555,6 +590,8 @@ def main(argv=None):
                     runpy.run_path(script, run_name="__main__")
                 else:
                     runpy.run_module(script, run_name="__main__")
+            if args.root:
+                return _anatomy_frames(Path(args.root))
         except (SceneCheckError, parts.PartError) as exc:
             print(exc, file=sys.stderr)
             return 1
@@ -606,6 +643,32 @@ def _proof(args: argparse.Namespace) -> int:
     else:
         print(" ".join(f"{k}={v}" for k, v in made.items()))
     return 0
+
+
+def _master(args: argparse.Namespace) -> int:
+    renders = os.environ.get("SRSTUDIO_RENDERS")
+    out_dir = args.out_dir or (Path(renders).parent if renders else None)
+    if out_dir is None or args.engine is None:
+        print("srstudio master: set --out-dir and --engine, or SRSTUDIO_RENDERS and SRSTUDIO_ENGINE", file=sys.stderr)
+        return 2
+    try:
+        done = master.encode(args.scene, out_dir, engine=args.engine, args=args.engine_args, next_name=args.next)
+    except SrstudioError as exc:
+        _error("master", exc)
+        return 2
+    print(done.output.rstrip())
+    for path in done.paths:
+        print(f"master: {path}")
+    return done.returncode
+
+
+def _scopes(args: argparse.Namespace) -> int:
+    if args.engine is None:
+        print("srstudio scopes: set --engine or SRSTUDIO_ENGINE", file=sys.stderr)
+        return 2
+    said, status = scopes.lines(args.videos, args.engine)
+    print("\n".join(said))
+    return status
 
 
 def _lip_proof(args: argparse.Namespace) -> int:
@@ -673,17 +736,20 @@ def _enhance(action: str, repo: Path) -> int:
             print(f"{kind:<10} {what}")
         return 0
     try:
-        if action != "status":
-            auto_enhance.set_mode(repo, on=action == "on")
-        print(f"auto-enhance: {'on' if auto_enhance.enabled(repo) else 'off'}")
-        rows = auto_enhance.ledger(repo) if action == "status" else []
+        if action == "check":
+            rows = auto_enhance.unsound(repo)
+        else:
+            if action != "status":
+                auto_enhance.set_mode(repo, on=action == "on")
+            print(f"auto-enhance: {'on' if auto_enhance.enabled(repo) else 'off'}")
+            rows = auto_enhance.ledger(repo) if action == "status" else []
     except auto_enhance.EnhanceError as exc:
         _error("enhance", exc)
         return 2
     for row in rows:
         verdict = "; ".join(row.problems) or "counts"
         print(f"{row.commit[:7]} {','.join(row.slugs)} [{','.join(row.kinds)}] {row.subject}: {verdict}")
-    return 0
+    return 1 if action == "check" and rows else 0
 
 
 def _cards(args) -> int:
@@ -791,6 +857,62 @@ def _strict(args: argparse.Namespace) -> int:
         )
     except (DeliveryError, releases.ReleaseError) as exc:
         print(f"srstudio strict: {exc}", file=sys.stderr)
+        return 2
+    print("\n".join(lines))
+    return 0
+
+
+def _anatomy_frames(project: Path) -> int:
+    """The rules that read the frames, on what was just built: rule 2 of the anatomy rules and the timing of a text.
+    Measuring takes the engine, so a build with no engine says it did not measure, and the first delivery still does
+    (ADR 0148, ADR 0150). 1 for a fault."""
+    scenes = _picture_scenes(project)
+    if not scenes:
+        return 0
+    try:
+        engine = find_engine()
+    except LayoutError as exc:
+        print(f"srstudio build: the frames were not measured: {exc}", file=sys.stderr)
+        return 0
+    faults = [fault for scene in scenes for fault in _measured(project, scene, engine)]
+    return 1 if faults else 0
+
+
+def _measured(project: Path, scene: Path, engine: Path) -> list[object]:
+    """What the frames of ``scene`` show against the frame rules, each printed; a rule the engine cannot read says so
+    and leaves the other to answer."""
+    slug = scene.name.removesuffix(".scene.xml")
+    faults: list[object] = []
+    for rule, read in (
+        ("anatomy", lambda: anatomy_gate.after_build(project, slug, scene, engine)),
+        ("text", lambda: text_rules.after_build(slug, scene, engine)),
+    ):
+        try:
+            faults += read()
+        except (FrameGraphError, FrameGateError) as exc:
+            print(f"srstudio build: the {rule} frames were not measured: {exc}", file=sys.stderr)
+    for fault in faults:
+        print(f"{slug}: {fault}", file=sys.stderr)
+    return faults
+
+
+def _picture_scenes(project: Path) -> list[Path]:
+    """The scenes of ``project`` that draw a picture: the one named after the project when there is one, else every
+    scene but a narrated reel's sound (``<slug>.audio.scene.xml``), which has no frames to measure."""
+    named = project / f"{project.name}.scene.xml"
+    if named.is_file():
+        return [named]
+    return sorted(p for p in project.glob("*.scene.xml") if not p.name.endswith(".audio.scene.xml"))
+
+
+def _anatomy(args: argparse.Namespace) -> int:
+    renders = _delivery_default().parent
+    manifests = args.manifest or [renders / "ig" / MANIFEST, renders.parent / "pilots" / "news" / "manifest.json"]
+    try:
+        rows = (*anatomy_ledger.exemptions(), *text_rules.exemptions())
+        lines = anatomy_gate.listing(rows, anatomy_gate.published(manifests))
+    except anatomy.AnatomyError as exc:
+        print(f"srstudio anatomy: {exc}", file=sys.stderr)
         return 2
     print("\n".join(lines))
     return 0

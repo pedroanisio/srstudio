@@ -15,7 +15,7 @@ import math
 from collections.abc import Sequence
 
 from . import _toon_domestic_contracts as dc
-from . import checks
+from . import anatomy_ledger, checks
 from .canvas import Canvas
 from .registry import register
 from .toon import FINE_W, INK_W, ToonDataError, fh, fx, fy
@@ -545,6 +545,7 @@ def _shudder(cv: Canvas, g, spans: list[tuple[float, float]]) -> None:
 )
 def lasagna(cv: Canvas, parent, at: Point = (185.0, 838.0), scale: float = 1.0) -> None:
     """The dish with its base at reference ``at``, an oven glove at each end."""
+    anatomy_ledger.loose_hand(cv, "toon-lasagna")
     x, y = _point(at, "a dish's place")
     s = _scale(scale)
     g = cv.group(parent, cv.uid("g"))

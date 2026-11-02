@@ -168,10 +168,12 @@ class Panel:
 
 
 # -- text -------------------------------------------------------------------------------------------------------------
-def wrap(font: bytes, text: str, size: float, width: float, max_lines: int) -> list[str]:
+def wrap(
+    font: bytes, text: str, size: float, width: float, max_lines: int, *, keep_together: bool = False
+) -> list[str]:
     """:func:`srstudio.look.wrap`, refusing with :class:`SagaError`."""
     try:
-        return look.wrap(font, text, size, width, max_lines)
+        return look.wrap(font, text, size, width, max_lines, keep_together=keep_together)
     except look.FitError as e:
         raise SagaError(str(e)) from None
 

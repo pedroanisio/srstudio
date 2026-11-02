@@ -11,8 +11,8 @@ Composition preparation owns immutable snapshots of UV coordinates and RGBA8
 pixels. A host can snapshot existing clay meshes and plate materials with
 `plate_source`, or construct the same closed records explicitly. Color maps,
 normal maps, their strength, sheen and subsurface settings survive the adapter.
-Printed-label recipes are refused until their rendering work and font inputs
-have a bounded, verified adapter; dropping the label would change the drawing.
+[Printed-label support](0144-bounded-composition-prints.md) adds a separate bounded
+adapter for rendering work and font inputs; dropping a label would change the drawing.
 
 Every texture is named by an ID that a material references. Source validation
 bounds counts, dimensions, raw bytes and scalar ranges. The worker verifies

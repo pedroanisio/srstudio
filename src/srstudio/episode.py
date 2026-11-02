@@ -19,7 +19,7 @@ from sr_core.scene import AudioMix, AudioTrack, CaptionTrack, Composition, Group
 from sr_core.scene import Sequence as SceneSequence
 from sr_core.scene._runtime import _attr_specs
 
-from . import checks, digest, native, show, signature
+from . import anatomy_ledger, checks, digest, native, show, signature
 from ._outputs import pinned_directories, write_outputs
 from ._transaction import scene_transaction
 from .canvas import Canvas, Keys, Palette, Signature
@@ -1018,6 +1018,8 @@ class Episode:
         for sequence in sequences:
             if matched_output := sequence.match_any((target_out, target_report)):
                 raise EpisodeArgumentError(f"{matched_output}: output must not replace a project input sequence frame")
+        noted = anatomy_ledger.notes(self.cv)
+        anatomy_ledger.refuse(self.spec.slug, noted)
         number = show.active()
         if number is not None and not self._show_stamped:
             self._show_stamped = True
@@ -1050,6 +1052,9 @@ class Episode:
                 raise check_error from exc
             raise check_error
         document = _document_at(self.scene, self.root, out.parent)
+        from . import text_rules  # it reads the frame gates, which read the releases this module's callers load
+
+        text_rules.refuse_captions(self.spec.slug, document, self.root)
         if self.cv.signature is not None and (absent := signature.missing(document)):
             error = signature.SignatureError(
                 f"{self.spec.slug} is signed but its document has no {', '.join(absent)}: every location must draw "
@@ -1069,6 +1074,7 @@ class Episode:
                 raise error from exc
             raise error
         report_data = (json.dumps(report_rows, indent=2) + "\n").encode()
+        anatomy_ledger.built(noted, self.cv.limbs.values())
         write_outputs(
             [(target_out, document), (target_report, report_data)],
             overwrite=overwrite,

@@ -189,3 +189,67 @@ def test_the_marks_can_stand_on_open_ground():
     ids = [n.get("id", "") for n in tree(cv).iter()]
     assert any(i.startswith("sig-cactus") for i in ids)
     assert any(i.startswith("sig-code") for i in ids)
+
+
+@pytest.mark.parametrize(
+    'kwargs',
+    [
+        {'scale': 0},
+        {'scale': -1},
+        {'scale': True},
+        {'scale': math.nan},
+        {'scale': math.inf},
+        {'scale': 0.000001},
+        {'scale': 1e308},
+        {'to': math.nan},
+        {'to': math.inf},
+        {'to': True},
+        {'to': 'left'},
+        {'to': 1e308},
+        {'at': (100,)},
+        {'at': (math.nan, 700)},
+        {'at': 'here'},
+        {'at': (1e308, 700)},
+        {'start': 1e308, 'seconds': 1e308},
+    ],
+)
+def test_loose_wheel_refuses_invalid_or_unrepresentable_geometry_before_drawing(kwargs):
+    cv = canvas()
+    before = cv.scene.to_bytes()
+    with pytest.raises(ToonDataError):
+        toon_cars.loose_wheel(cv, cv.comp, **kwargs)
+    assert cv.scene.to_bytes() == before
+
+
+@pytest.mark.parametrize('scale', [0.5, 1, 2])
+def test_engine_loose_wheel_travel_and_rotation_agree_at_interior_times(scale, tmp_path, scene_render):
+    from support.acting import evaluate
+
+    cv = canvas()
+    cv.local_time = True
+    toon_cars.loose_wheel(cv, cv.comp, start=1, to=0, seconds=2, scale=scale, id='wheel')
+    path = tmp_path / 'wheel.scene.xml'
+    path.write_bytes(cv.scene.to_bytes())
+    initial = toon_cars.fx(296 - 96 * scale)
+    radius = toon_cars.fh(30 * scale)
+    for time in (0.5, 1.5, 2, 2.5, 3.5):
+        fraction = min(1, max(0, (time - 1) / 2))
+        node = next(n for n in evaluate(scene_render, path, time) if n['id'] == 'wheel')
+        x = float(node['props']['x'])
+        angle = float(node['props']['rotation'])
+        assert x == pytest.approx(initial * (1 - fraction), abs=0.001)
+        assert math.radians(angle) * radius == pytest.approx(x - initial, abs=0.002)
+
+
+@pytest.mark.parametrize('local', [False, True])
+def test_passing_vehicle_crosses_at_its_cue_in_both_canvas_modes(local, tmp_path, scene_render):
+    from support.acting import evaluate
+
+    cv = canvas()
+    cv.local_time = local
+    toon_cars.drive_past(cv, cv.comp, Passing(2), y=780, id='passing')
+    path = tmp_path / 'traffic.scene.xml'
+    path.write_bytes(cv.scene.to_bytes())
+    for time in (1.9, 2, 2.1):
+        node = next(n for n in evaluate(scene_render, path, time) if n['id'] == 'passing')
+        assert float(node['props']['x']) == pytest.approx(toon_cars.fh(900 * (2 - time)), abs=0.02)

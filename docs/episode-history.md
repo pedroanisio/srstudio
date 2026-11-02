@@ -1342,6 +1342,26 @@ the sketch's `Shot.measure`).
 
 No episode draws them yet, so the catalog's notes need no gallery item for them.
 
+### Lyra and Retro Orbit: flat print parts
+
+[src/srstudio/toon_plate.py](../src/srstudio/toon_plate.py) draws a mid-century poster as brush shapes: `shape` turns an
+absolute path into a closed `Shape`, `Frame` places a plate inside a part, and `clip` and `inside` stand in for a clip
+path. A plate keeps its literal colours on any canvas palette.
+
+[src/srstudio/toon_orbit.py](../src/srstudio/toon_orbit.py) adds two 9:16 locations, `planetarium_salon` and
+`starlight_terrace`, and five props: `telescope`, `moon_globe`, `saturn_model`, `field_notebook`, `signal_clicker`.
+Signs are live text in the two fonts of `Lettering`, Bebas Neue and DM Sans, installed with `fonts.install`; with no
+`Lettering` they stand blank. `print_finish` is the one grain, and it fits `Staging.finish`. Neither set signs a shot,
+so a reel there gives its shots a `Staging.desk` that does.
+
+[src/srstudio/toon_lyra.py](../src/srstudio/toon_lyra.py) is `lyra`, an owl who presents astronomy. `MOODS` and
+`EYE_POSES` are typed data; `pose(start, name)` writes a pose in either, and `mood()` and `eye_pose()` refuse an unknown
+name. She is lip synced through her beak, and `LYRA_RIG` is her head rig, with `mood_plan` turning her head from mood
+to mood. Her moods go through the rig, not through `toon_cast.figure`, which holds to the shared names.
+
+Lyra and her rig are approved. The two locations and five props are proposed, so a reel cannot use them until they are
+decided. The reasons and where the port differs from the pack are in [docs/decisions/0063-lyra-retro-orbit.md](decisions/0063-lyra-retro-orbit.md).
+
 ## Saga style: a space-opera parody in seven episodes (S1–S7)
 
 The galaxy's grandeur is the setup; the turn is that it runs on the systems the viewer suffers at work, and a

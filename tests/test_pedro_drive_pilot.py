@@ -9,6 +9,8 @@ from pathlib import Path
 
 import pytest
 
+from srstudio import files
+
 ROOT = Path(__file__).resolve().parents[1]
 PILOTS = ROOT / "episodes" / "pilots"
 if str(PILOTS) not in sys.path:
@@ -111,9 +113,13 @@ def test_a_plate_nobody_drew_is_refused_with_the_choices_named(tmp_path, monkeyp
         pilot.Piece(tmp_path / "out").plate("car-asleep")
 
 
-def fake_engine(tmp_path: Path, code: int) -> Path:
-    engine = tmp_path / "engine"
-    engine.write_text(f"#!/bin/sh\necho out >&1\necho err >&2\nexit {code}\n")
+def fake_engine(tmp_path: Path, code: int, body: str = "master") -> Path:
+    """Writes its -o file, as the engine does even when it exits non-zero."""
+    engine = tmp_path / f"engine-{code}"
+    engine.write_text(
+        '#!/bin/sh\n[ "$5 $6" = "--hw software" ] || exit 9\n'
+        f'printf {body} > "$4"\necho out >&1\necho err >&2\nexit {code}\n'
+    )
     engine.chmod(engine.stat().st_mode | stat.S_IXUSR)
     return engine
 
@@ -121,9 +127,21 @@ def fake_engine(tmp_path: Path, code: int) -> Path:
 def test_the_encode_calls_the_software_encoder_and_a_failing_one_raises_a_typed_error(tmp_path):
     scene = tmp_path / "x.scene.xml"
     scene.write_text("<scene/>")
-    assert pilot.encode(scene, fake_engine(tmp_path, 0)) == tmp_path / "x.scene.mp4"
     with pytest.raises(pilot.DriveError, match=r"encode failed \(3\)[\s\S]*err"):
         pilot.encode(scene, fake_engine(tmp_path, 3))
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["engine-3", "x.scene.xml"]  # a failed encode leaves nothing
+    assert pilot.encode(scene, fake_engine(tmp_path, 0)) == tmp_path / "x.scene.mp4"
+    assert (tmp_path / "x.scene.mp4").read_text() == "master"
+
+
+def test_a_re_run_never_replaces_the_pilot_master_and_encodes_nothing(tmp_path):
+    scene = tmp_path / "x.scene.xml"
+    scene.write_text("<scene/>")
+    pilot.encode(scene, fake_engine(tmp_path, 0))
+    with pytest.raises(files.WriteOnceError, match="x.scene.mp4 exists"):
+        pilot.encode(scene, fake_engine(tmp_path, 3))
+    assert (tmp_path / "x.scene.mp4").read_text() == "master"
+    assert not list(tmp_path.glob(".*"))
 
 
 def test_main_needs_a_folder_and_encodes_only_when_asked(tmp_path, monkeypatch, capsys):

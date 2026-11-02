@@ -1,0 +1,119 @@
+{
+  "schema": "1.0.0",
+  "exemptions": [
+    {
+      "reel": "any-news",
+      "rule": "hand-no-side",
+      "part": "collage-arm",
+      "why": "published before a hand had to say its side; its picture is frozen"
+    },
+    {
+      "reel": "fluent",
+      "rule": "hand-no-side",
+      "part": "collage-arm",
+      "why": "published before a hand had to say its side; its picture is frozen"
+    },
+    {
+      "reel": "ill-get-this",
+      "rule": "hand-no-side",
+      "part": "collage-arm",
+      "why": "published before a hand had to say its side; its picture is frozen"
+    },
+    {
+      "reel": "its-gone",
+      "rule": "hand-no-side",
+      "part": "collage-arm",
+      "why": "published before a hand had to say its side; its picture is frozen"
+    },
+    {
+      "reel": "missing-lid",
+      "rule": "hand-unpaired",
+      "part": "news-gus",
+      "why": "published on a version with one hand on both arms; its picture is frozen (ADR 0142)"
+    },
+    {
+      "reel": "missing-lid",
+      "rule": "hand-unpaired",
+      "part": "news-vera",
+      "why": "published on a version with one hand on both arms; its picture is frozen (ADR 0142)"
+    },
+    {
+      "reel": "regards-dad",
+      "rule": "hand-no-side",
+      "part": "collage-arm",
+      "why": "published before a hand had to say its side; its picture is frozen"
+    },
+    {
+      "reel": "seabird-jet-lag",
+      "rule": "hand-unpaired",
+      "part": "news-gus",
+      "why": "published on a version with one hand on both arms; its picture is frozen (ADR 0142)"
+    },
+    {
+      "reel": "seabird-jet-lag",
+      "rule": "hand-unpaired",
+      "part": "news-vera",
+      "why": "published on a version with one hand on both arms; its picture is frozen (ADR 0142)"
+    },
+    {
+      "reel": "baby-monitor",
+      "rule": "hand-no-arm",
+      "part": "toon-lasagna",
+      "why": "published before rule 2: the prop draws its holder's hand, the build never named the arm"
+    },
+    {
+      "reel": "do-you-floss",
+      "rule": "hand-no-arm",
+      "part": "toon-clipboard",
+      "why": "published before rule 2: the prop draws its holder's hand, the build never named the arm"
+    },
+    {
+      "reel": "entry-level",
+      "rule": "hand-no-arm",
+      "part": "crayon-cv",
+      "why": "published before rule 2: the prop draws its holder's hand, the build never named the arm"
+    },
+    {
+      "reel": "get-your-mother",
+      "rule": "hand-no-arm",
+      "part": "toon-phone",
+      "why": "published before rule 2: the prop draws its holder's hand, the build never named the arm"
+    },
+    {
+      "reel": "its-soaking",
+      "rule": "hand-no-arm",
+      "part": "toon-watering-can",
+      "why": "published before rule 2: the prop draws its holder's hand, the build never named the arm"
+    },
+    {
+      "reel": "nine-alarms",
+      "rule": "hand-no-arm",
+      "part": "toon-phone",
+      "why": "published before rule 2: the prop draws its holder's hand, the build never named the arm"
+    },
+    {
+      "reel": "text-me",
+      "rule": "hand-no-arm",
+      "part": "toon-phone",
+      "why": "published before rule 2: the prop draws its holder's hand, the build never named the arm"
+    },
+    {
+      "reel": "texts-back",
+      "rule": "hand-no-arm",
+      "part": "toon-phone",
+      "why": "published before rule 2: the prop draws its holder's hand, the build never named the arm"
+    },
+    {
+      "reel": "voice-note",
+      "rule": "hand-no-arm",
+      "part": "toon-watering-can",
+      "why": "published before rule 2: the prop draws its holder's hand, the build never named the arm"
+    },
+    {
+      "reel": "thought-of-you",
+      "rule": "hand-no-side",
+      "part": "collage-arm",
+      "why": "published before a hand had to say its side; its picture is frozen, and its insert is a POV arm drawn right"
+    }
+  ]
+}

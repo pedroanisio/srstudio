@@ -17,6 +17,7 @@ import math
 from collections.abc import Sequence
 from functools import partial
 
+from . import _stick_scene_contracts as sc
 from . import checks, look, signature
 from .canvas import Canvas
 from .registry import register
@@ -98,7 +99,12 @@ def held(pose: str) -> tuple[float, float]:
 _label = partial(look.text, weight=700, lines=1, line_height="1.15", overflow="ellipsis")
 
 
-@register("location", "stick-classroom", tags=("school", "classroom", "parent-teacher", "chalkboard", "font"))
+@register(
+    "location",
+    "stick-classroom",
+    contract=sc.contract('stick-classroom'),
+    tags=("school", "classroom", "parent-teacher", "chalkboard", "font"),
+)
 def classroom(cv: Canvas, parent, *, board: str = "PARENT-TEACHER NIGHT") -> None:
     """A primary-school classroom: the wall and its alphabet strip, the chalkboard lettered ``board`` (1 to
     :data:`BOARD_CHARS` characters, in chalk), the class's crayon drawings pinned up, the clock and the linoleum
@@ -152,7 +158,7 @@ def classroom(cv: Canvas, parent, *, board: str = "PARENT-TEACHER NIGHT") -> Non
     signature.code(s, parent, 40, 1880, 9, color="#7a8577")
 
 
-@register("prop", "stick-tiny-chair", tags=("school", "chair", "child-size"))
+@register("prop", "stick-tiny-chair", contract=sc.contract('stick-tiny-chair'), tags=("school", "chair", "child-size"))
 def tiny_chair(cv: Canvas, parent):
     """A child's plastic chair at the left, its seat at :data:`SEAT_Y`: draw it before the grown-up perched on it."""
     s = cv
@@ -165,7 +171,12 @@ def tiny_chair(cv: Canvas, parent):
     return g
 
 
-@register("prop", "stick-teacher-desk", tags=("school", "desk", "apple", "front-layer"))
+@register(
+    "prop",
+    "stick-teacher-desk",
+    contract=sc.contract('stick-teacher-desk'),
+    tags=("school", "desk", "apple", "front-layer"),
+)
 def teacher_desk(cv: Canvas, parent):
     """The teacher's desk at the right, from :data:`DESK_X` at :data:`DESK_TOP`: drawn after the teacher, it hides her
     legs. On it, a stack of marked papers, an apple and the cactus (ADR 0001)."""
@@ -222,7 +233,12 @@ def _drawing(cv: Canvas, parent) -> None:
         _label(s, g, "z", zx, zy, 40, 40, zs + k * 4, z)
 
 
-@register("graphic", "stick-essay", tags=("school", "essay", "page", "highlighter", "grade", "font"))
+@register(
+    "graphic",
+    "stick-essay",
+    contract=sc.contract('stick-essay'),
+    tags=("school", "essay", "page", "highlighter", "grade", "font"),
+)
 def essay(
     cv: Canvas,
     parent,

@@ -22,7 +22,20 @@ from types import MappingProxyType
 from typing import Any
 
 from . import _character_contracts as cc
-from . import brush, drawing_events, head_motion, look, news_arms, news_head, news_kit, parts, toon, toon_head
+from . import _news_contracts as dc
+from . import (
+    anatomy_ledger,
+    brush,
+    drawing_events,
+    head_motion,
+    look,
+    news_arms,
+    news_head,
+    news_kit,
+    parts,
+    toon,
+    toon_head,
+)
 from .brush import Point
 from .canvas import Canvas
 from .head_motion import Channel, HeadPlan
@@ -498,7 +511,10 @@ def _rig(cv: Canvas, frame) -> None:
 
 
 @register(
-    "location", "news-set@2", summary="The studio with planes: a lit room, a monitor wall with pictures, a truss above"
+    "location",
+    "news-set@2",
+    contract=dc.contract('news-set@2'),
+    summary="The studio with planes: a lit room, a monitor wall with pictures, a truss above",
 )
 def studio(cv: Canvas, parent, end: float = 10.0) -> None:
     """The far plane out of focus: a truss in the room's head, nine bezelled screens with a picture on each, the light
@@ -565,7 +581,12 @@ def _camera(cv: Canvas, g) -> None:
     _oval(cv, near, 176, 1686, 9, 9, TANGERINE)
 
 
-@register("prop", "news-desk@2", summary="The anchor desk: a polished top with a lip, a lit front, a floor under it")
+@register(
+    "prop",
+    "news-desk@2",
+    contract=dc.contract('news-desk@2'),
+    summary="The anchor desk: a polished top with a lip, a lit front, a floor under it",
+)
 def desk(cv: Canvas, parent) -> None:
     """A top with a back edge, a sheen and a lit lip; a front of ribbed panels that curves away, a light box with the
     show's chevrons and no word; a kick plate, then a glossy floor with the desk's shadow and light on it. The frame's
@@ -1383,6 +1404,7 @@ def _perform(
         raise NewsKitError(f"the desk seats vera and gus, not {who!r}")
     if not acts or acts[0][0] > start:
         raise NewsKitError(f"an anchor needs a pose from {start} s, got {acts[:1]!r}")
+    anatomy_ledger.note_part(cv, f"news-{who}", number)
     owner = {
         ('vera', 2): vera,
         ('gus', 2): gus,
@@ -1844,7 +1866,12 @@ def _chip(cv: Canvas, parent, x: float, w: float, fill: str, stroke: str | None 
     cv.rect(parent, x, BUG_Y, w, BUG_H, fill, stroke, 3.0 if stroke else 0.0, radius=CHIP)
 
 
-@register("graphic", "news-bug@2", summary="The show's name in the corner, on the top row's chip")
+@register(
+    "graphic",
+    "news-bug@2",
+    contract=dc.contract('news-bug@2'),
+    summary="The show's name in the corner, on the top row's chip",
+)
 def bug(cv: Canvas, parent, start: float, end: float, measure: Measure, id: str = "news-bug") -> None:
     """The show's name in a tangerine chip, top left."""
     _span(start, end, "the bug")
@@ -1858,7 +1885,12 @@ def _tag_wide(measure: Measure) -> float:
     return measure("PARODY", 40.0) + 44.0
 
 
-@register("graphic", "news-parody-tag@2", summary="The PARODY tag on the top row's chip, on a whole fictional reel")
+@register(
+    "graphic",
+    "news-parody-tag@2",
+    contract=dc.contract('news-parody-tag@2'),
+    summary="The PARODY tag on the top row's chip, on a whole fictional reel",
+)
 def parody_tag(cv: Canvas, parent, start: float, end: float, measure: Measure, id: str = "news-parody-tag") -> None:
     """PARODY in butter on plum, top right, opposite the show's name."""
     _span(start, end, "the PARODY tag")
@@ -1876,7 +1908,12 @@ LID_FILL, LID_RIM = "#8fd4dc", "#5fb3c0"
 LID = ((-78, -34), (-62, -48), (62, -48), (78, -34), (78, 34), (62, 48), (-62, 48), (-78, 34))
 
 
-@register("graphic", "news-missing-card", summary="A missing-person flyer for an object: its picture and its name")
+@register(
+    "graphic",
+    "news-missing-card",
+    contract=dc.contract('news-missing-card'),
+    summary="A missing-person flyer for an object: its picture and its name",
+)
 def missing_card(
     cv: Canvas, parent, label: str, start: float, end: float, measure: Measure, id: str = "news-missing-card"
 ) -> None:
@@ -1924,7 +1961,12 @@ def _door(cv: Canvas, parent, right: float) -> None:
     _inked_oval(cv, parent, knob[0], knob[1], 5.5, 5.5, BUTTER, 2.5)
 
 
-@register("graphic", "news-live-door", summary="A live shot of a door nothing happens at, which can slam shut")
+@register(
+    "graphic",
+    "news-live-door",
+    contract=dc.contract('news-live-door'),
+    summary="A live shot of a door nothing happens at, which can slam shut",
+)
 def live_door(
     cv: Canvas,
     parent,
@@ -1962,7 +2004,10 @@ def live_door(
 
 
 @register(
-    "graphic", "news-source-card@2", summary="A real story's source: a card with the headline, then a top-row chip"
+    "graphic",
+    "news-source-card@2",
+    contract=dc.contract('news-source-card@2'),
+    summary="A real story's source: a card with the headline, then a top-row chip",
 )
 def source_card(
     cv: Canvas,
@@ -2012,7 +2057,12 @@ def source_card(
     _text(cv, corner, label, right - w, BUG_Y, w, BUG_H, 34, PLUM_DEEP, "center")
 
 
-@register("graphic", "news-lower-third@2", summary="The lower-third: a mint kicker over one line, flush on the ticker")
+@register(
+    "graphic",
+    "news-lower-third@2",
+    contract=dc.contract('news-lower-third@2'),
+    summary="The lower-third: a mint kicker over one line, flush on the ticker",
+)
 def lower_third(
     cv: Canvas,
     parent,
@@ -2040,7 +2090,10 @@ def lower_third(
 
 
 @register(
-    "graphic", "news-banner@2", summary="The BREAKING banner, slimmer, flush on the lower-third, chevrons running"
+    "graphic",
+    "news-banner@2",
+    contract=dc.contract('news-banner@2'),
+    summary="The BREAKING banner, slimmer, flush on the lower-third, chevrons running",
 )
 def banner(
     cv: Canvas, parent, start: float, end: float, measure: Measure, id: str = "news-banner", slide: bool = True
@@ -2071,7 +2124,12 @@ def banner(
     _slide(cv, g, start, moves=slide)
 
 
-@register("graphic", "news-ticker@2", summary="The ticker, flush under the lower-third, its tab cut to a chevron")
+@register(
+    "graphic",
+    "news-ticker@2",
+    contract=dc.contract('news-ticker@2'),
+    summary="The ticker, flush under the lower-third, its tab cut to a chevron",
+)
 def ticker(
     cv: Canvas, parent, items: Sequence[str], start: float, end: float, measure: Measure, id: str = "news-ticker"
 ) -> None:
@@ -2103,7 +2161,12 @@ def ticker(
     _text(cv, g, "NEWS", 20, TICKER_Y, 130, TICKER_H, 40, PLUM_DEEP, "center")
 
 
-@register("graphic", "news-captions@2", summary="The show's dialogue captions on the show's panel, a colour per anchor")
+@register(
+    "graphic",
+    "news-captions@2",
+    contract=dc.contract('news-captions@2'),
+    summary="The show's dialogue captions on the show's panel, a colour per anchor",
+)
 def captions(
     cv: Canvas,
     parent,
@@ -2162,7 +2225,10 @@ def _handset(cv: Canvas, g, title: str) -> None:
 
 
 @register(
-    "graphic", "news-phone@2", summary="Gus's phone, a real handset: bezel, buttons, a status row, tailed bubbles"
+    "graphic",
+    "news-phone@2",
+    contract=dc.contract('news-phone@2'),
+    summary="Gus's phone, a real handset: bezel, buttons, a status row, tailed bubbles",
 )
 def phone_insert(
     cv: Canvas,
@@ -2252,7 +2318,12 @@ def _marker(cv: Canvas, m, kind: str) -> None:
         _inked_oval(cv, m, 0.0, 0.0, 22.0, 22.0, TANGERINE, 5.0)
 
 
-@register("graphic", "news-route", summary="A route on Gus's phone: a sea, a coast, a track that draws itself, pins")
+@register(
+    "graphic",
+    "news-route",
+    contract=dc.contract('news-route'),
+    summary="A route on Gus's phone: a sea, a coast, a track that draws itself, pins",
+)
 def route_insert(
     cv: Canvas,
     parent,
@@ -2346,7 +2417,10 @@ def _button(cv: Canvas, g, word: str, fill: str, ink: str) -> None:
 
 
 @register(
-    "graphic", "news-money-app", summary="An unbranded money app on Gus's phone, whose button stops working on cue"
+    "graphic",
+    "news-money-app",
+    contract=dc.contract('news-money-app'),
+    summary="An unbranded money app on Gus's phone, whose button stops working on cue",
 )
 def money_app(
     cv: Canvas,
@@ -2458,7 +2532,12 @@ def _oven_tag(cv: Canvas, g, word: str, fill: str) -> None:
     _text(cv, g, word, x, y, PHONE_W - 180.0, 160.0, OVEN_TAG_SIZE, PLUM_DEEP, "center")
 
 
-@register("graphic", "news-oven-clock", summary="An unbranded stove whose clock never changes while the tag on it does")
+@register(
+    "graphic",
+    "news-oven-clock",
+    contract=dc.contract('news-oven-clock'),
+    summary="An unbranded stove whose clock never changes while the tag on it does",
+)
 def oven_clock(
     cv: Canvas,
     parent,
@@ -2626,6 +2705,7 @@ def _cloud(cv: Canvas, g) -> None:
 @register(
     "graphic",
     "news-forecast-map",
+    contract=dc.contract('news-forecast-map'),
     summary="An invented county in the sun with one pin, and a cloud small enough to find it",
 )
 def forecast_map(
@@ -2718,7 +2798,10 @@ def _man(cv: Canvas, g, id: str, stops: Sequence[Stop], fill: str) -> None:
 
 
 @register(
-    "graphic", "news-corridor-map", summary="A corridor from above: two plain dots that step in sync, and a count"
+    "graphic",
+    "news-corridor-map",
+    contract=dc.contract('news-corridor-map'),
+    summary="A corridor from above: two plain dots that step in sync, and a count",
 )
 def corridor_map(
     cv: Canvas,

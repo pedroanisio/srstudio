@@ -34,6 +34,7 @@ from importlib.resources import files
 from pathlib import Path
 from typing import Any
 
+from . import _map_contracts as dc
 from . import checks, foley, look, mind_kit, signature, toon
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -407,7 +408,12 @@ def _show(cv: Canvas, parent, view, start: float, end: float, sea: str | None = 
     return g
 
 
-@register("location", "map-ground", summary="The channel's bright ground behind a globe: pale sky, soft light")
+@register(
+    "location",
+    "map-ground",
+    contract=dc.contract('map-ground'),
+    summary="The channel's bright ground behind a globe: pale sky, soft light",
+)
 def ground(cv: Canvas, parent) -> None:
     """The ground of a globe: a pale sky, lighter towards the middle. It is never dark: a dark, still frame fails."""
     g = cv.group(parent, cv.uid("g"))
@@ -416,7 +422,12 @@ def ground(cv: Canvas, parent) -> None:
     cv.rect(g, 0, 0, cv.width, cv.height, paint)
 
 
-@register("graphic", "map-globe", summary="An orthographic globe that turns: land, lakes, a grid, a lit edge")
+@register(
+    "graphic",
+    "map-globe",
+    contract=dc.contract('map-globe'),
+    summary="An orthographic globe that turns: land, lakes, a grid, a lit edge",
+)
 def globe(
     cv: Canvas,
     parent,
@@ -461,7 +472,12 @@ def globe(
     return view
 
 
-@register("graphic", "map-flat", summary="An equirectangular map with a camera that flies: north is simply up")
+@register(
+    "graphic",
+    "map-flat",
+    contract=dc.contract('map-flat'),
+    summary="An equirectangular map with a camera that flies: north is simply up",
+)
 def flat(
     cv: Canvas,
     parent,
@@ -514,7 +530,12 @@ def _whip(cv: Canvas, parent, view, moves: Sequence[Move]) -> None:
     cv.keys(g, "opacity", keys, hold=False, local=False)
 
 
-@register("graphic", "map-far-side", summary="The far side of the Earth laid over a flat map, flipped over")
+@register(
+    "graphic",
+    "map-far-side",
+    contract=dc.contract('map-far-side'),
+    summary="The far side of the Earth laid over a flat map, flipped over",
+)
 def far_side(
     cv: Canvas,
     parent,
@@ -557,7 +578,12 @@ def far_side(
     return view
 
 
-@register("graphic", "map-equal-area", summary="A Lambert azimuthal equal-area map, re-centred as it moves")
+@register(
+    "graphic",
+    "map-equal-area",
+    contract=dc.contract('map-equal-area'),
+    summary="A Lambert azimuthal equal-area map, re-centred as it moves",
+)
 def equal_area(
     cv: Canvas,
     parent,
@@ -590,7 +616,12 @@ def _pop(cv: Canvas, node, at: float) -> None:
         cv.keys(node, channel, [(at, POP_FROM), (at + POP_SECONDS, 1.0)], kind="back-out", local=False)
 
 
-@register("prop", "map-pin", summary="A pin on a place, its name and latitude on a label that rides with it")
+@register(
+    "prop",
+    "map-pin",
+    contract=dc.contract('map-pin'),
+    summary="A pin on a place, its name and latitude on a label that rides with it",
+)
 def pin(
     cv: Canvas,
     parent,
@@ -647,7 +678,12 @@ def pin(
         top += size * 1.2
 
 
-@register("prop", "map-parallel", summary="One line of latitude drawn around the world from a place, with its tag")
+@register(
+    "prop",
+    "map-parallel",
+    contract=dc.contract('map-parallel'),
+    summary="One line of latitude drawn around the world from a place, with its tag",
+)
 def parallel(
     cv: Canvas,
     parent,
@@ -692,7 +728,12 @@ def _route(lat: float, frm: float, to: float) -> str:
     return " ".join(f"{frm + (to - frm) * i / steps:.3f},{lat:.5f}" for i in range(steps + 1))
 
 
-@register("graphic", "map-population", summary="The world's people as dots, one per million, by zone and in waves")
+@register(
+    "graphic",
+    "map-population",
+    contract=dc.contract('map-population'),
+    summary="The world's people as dots, one per million, by zone and in waves",
+)
 def population(
     cv: Canvas,
     view,
@@ -743,7 +784,12 @@ def population(
                 cv.keys(layer, "opacity", keys, hold=False, local=False)
 
 
-@register("prop", "map-ring", summary="A circle of a true radius with a veil outside it, what the reel counts inside")
+@register(
+    "prop",
+    "map-ring",
+    contract=dc.contract('map-ring'),
+    summary="A circle of a true radius with a veil outside it, what the reel counts inside",
+)
 def ring(
     cv: Canvas,
     parent,
@@ -779,7 +825,12 @@ def ring(
         cv.text(g, cv.uid("map-tag"), words, left, top, math.ceil(wide), math.ceil(tall), TAG_SIZE, color=PAPER)
 
 
-@register("prop", "map-clock", summary="A round clock with no numbers: one place's time, or a day going by")
+@register(
+    "prop",
+    "map-clock",
+    contract=dc.contract('map-clock'),
+    summary="A round clock with no numbers: one place's time, or a day going by",
+)
 def clock(
     cv: Canvas,
     parent,
@@ -837,7 +888,12 @@ def lit(place: Place, moment: datetime) -> bool:
     return sun_altitude(place.lat, place.lon, moment) > HORIZON
 
 
-@register("prop", "map-daylight", summary="Towns on a map that light and go dark as one real day runs past")
+@register(
+    "prop",
+    "map-daylight",
+    contract=dc.contract('map-daylight'),
+    summary="Towns on a map that light and go dark as one real day runs past",
+)
 def daylight(
     cv: Canvas, parent, view, places: Sequence[Place], day: datetime, start: float, end: float, id: str = "map-daylight"
 ) -> None:
@@ -864,7 +920,12 @@ def daylight(
             cv.keys(sun, "opacity", keys, local=False)
 
 
-@register("graphic", "map-stamp", summary="One line of evidence over the map: the figure, its dataset and its year")
+@register(
+    "graphic",
+    "map-stamp",
+    contract=dc.contract('map-stamp'),
+    summary="One line of evidence over the map: the figure, its dataset and its year",
+)
 def stamp(
     cv: Canvas,
     parent,
@@ -914,7 +975,12 @@ def _wrap(measure: Measure, text: str, size: float, width: float, most: int) -> 
     return lines
 
 
-@register("graphic", "map-captions", summary="The channel's captions: a paper box of ink letters at the top of the map")
+@register(
+    "graphic",
+    "map-captions",
+    contract=dc.contract('map-captions'),
+    summary="The channel's captions: a paper box of ink letters at the top of the map",
+)
 def captions(
     cv: Canvas,
     parent,

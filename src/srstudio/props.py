@@ -415,6 +415,29 @@ def coffee_cup(cv: Canvas, parent, x, y, scale=1, rotation=0, *, shadow: bool = 
     return g
 
 
+CUP_BASE = 57  # how far below its origin coffee_cup draws the corners of its base, in the cup's own units
+
+
+def cup_on(cv: Canvas, parent, x, top, scale=1, *, shadow: bool = True):
+    """A coffee cup standing on a surface: ``top`` is the surface's top edge in ``parent``'s units, and its base and
+    contact shadow land there at any ``scale``. It stands, so it takes no rotation: a tilted cup is :func:`coffee_cup`.
+    """
+    for name, value, usable, expected in (
+        ("top", top, checks.number(top), "a finite number"),
+        ("scale", scale, checks.number(scale) and scale > 0, "a finite number above zero"),
+    ):
+        if not usable:
+            raise PropError(
+                f"cup-on {name} must be {expected}",
+                code=f"prop.cup-on.{name}",
+                path=name,
+                actual=value,
+                expected=expected,
+                remedy="Give the surface's top edge as a number in the parent's units, and a scale above zero.",
+            )
+    return coffee_cup(cv, parent, x, top - CUP_BASE * scale, scale, shadow=shadow)
+
+
 @register("prop", "menu-board", contract=dc.prop('menu-board'), summary="Chalkboard menu with the Free Wi-Fi line")
 def menu_board(
     cv: Canvas,

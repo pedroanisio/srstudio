@@ -104,6 +104,29 @@ def test_care_discovery_recipe_keeps_dim_light_and_smooth_drawer_motion(tmp_path
     assert float(nodes[front.id]['props']['x']) == pytest.approx(fx(494) - 3.5)
 
 
+def test_lit_room_discovery_recipe_places_overlay_after_actor_and_returns_typed_cues():
+    from srstudio.toon_rooms import Cue
+
+    ns = recipe('toon-lit-room-discovery')
+    assert ns['scene'].check(schema=True) == []
+    assert ns['cv'].comp.elements() == [ns['back'], ns['actor'], ns['light'], ns['front']]
+    assert ns['cues']['lamp'] == [Cue(0, 'on'), Cue(1, 'dim')]
+    assert ns['room_info']['returns']['x-role'] == 'parsed-light-cues'
+    assert ns['light'].elements() and ns['back'].elements()
+
+
+def test_lit_room_discovery_recipe_fades_light_continuously_in_engine(tmp_path, scene_render):
+    from support.acting import evaluate
+
+    ns = recipe('toon-lit-room-discovery')
+    shade = next(g for g in ns['light'].elements() if g.blend == 'multiply')
+    path = tmp_path / 'room.scene.xml'
+    path.write_bytes(ns['scene'].to_bytes())
+    for time, expected in ((0.5, 0), (1, 0), (1.375, 0.0975), (1.75, 0.195), (2.5, 0.39), (3, 0.39)):
+        node = next(n for n in evaluate(scene_render, path, time) if n['id'] == shade.id)
+        assert node['world_opacity'] == pytest.approx(expected)
+
+
 def test_held_prop_recipe_publishes_a_schema_valid_scene_and_no_contact_shadow():
     ns = recipe('held-prop-discovery')
     assert ns['scene'].check(schema=True) == []

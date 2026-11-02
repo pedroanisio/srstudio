@@ -9,6 +9,7 @@ import pytest
 from sr_core.scene import read, write
 
 from srstudio import package
+from srstudio.files import WriteOnceError
 from srstudio.social import InstagramPost
 from support.package import project
 
@@ -63,6 +64,23 @@ def test_an_unchanged_scene_keeps_its_package_and_a_changed_one_gets_the_next_pa
     assert second == out / "demo-1.0.1.vpkg.zip"
     assert package.scene_sha(second) == package.sha256(scene)
     assert first.is_file()  # an earlier version is kept, never overwritten
+
+
+def test_a_version_packed_meanwhile_by_another_run_is_never_replaced(scene_render, tmp_path):
+    """A package version is write-once (ADR 0170): its bytes are what shipped, so a run that finds its version taken
+    when it installs raises, and leaves the other run's package as it was and no scratch behind."""
+    folder, out = project(tmp_path), tmp_path / "vpkg"
+
+    def racing(cmd, *args, **kw):
+        done = package._run(cmd, *args, **kw)
+        if "pack" in map(str, cmd):
+            (out / "demo-1.0.0.vpkg.zip").write_bytes(b"the other run's package")
+        return done
+
+    with pytest.raises(WriteOnceError, match="demo-1.0.0.vpkg.zip exists"):
+        package.pack(folder, out, post(), engine=scene_render, run=racing)
+    assert sorted(p.name for p in out.iterdir()) == ["demo-1.0.0.vpkg.zip"]
+    assert (out / "demo-1.0.0.vpkg.zip").read_bytes() == b"the other run's package"
 
 
 def audio_project(root):

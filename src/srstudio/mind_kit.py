@@ -20,6 +20,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
+from . import _presentation_contracts as dc
 from . import checks, foley, look, signature, toon
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -199,7 +200,12 @@ def _block(cv: Canvas, parent, lines: Sequence[str], x, y, w, size, colour, alig
     return y + height
 
 
-@register("location", "mind-stage", summary="The channel's dark ground, a soft glow behind what it shows")
+@register(
+    "location",
+    "mind-stage",
+    contract=dc.contract('mind-stage'),
+    summary="The channel's dark ground, a soft glow behind what it shows",
+)
 def stage(cv: Canvas, parent) -> None:
     """The ground of every card and mechanism: deep ink, a little lighter towards the middle."""
     g = cv.group(parent, cv.uid("g"))
@@ -208,7 +214,12 @@ def stage(cv: Canvas, parent) -> None:
     cv.rect(g, 0, 0, cv.width, cv.height, paint)
 
 
-@register("graphic", "mind-stamp", summary="One line of evidence stamped over the picture, with its source under it")
+@register(
+    "graphic",
+    "mind-stamp",
+    contract=dc.contract('mind-stamp'),
+    summary="One line of evidence stamped over the picture, with its source under it",
+)
 def stamp(
     cv: Canvas, parent, rows: Sequence[str], cite: str, start: float, end: float, measure: Measure, y: float = STAMP_Y
 ) -> Any:
@@ -247,7 +258,12 @@ def stamp(
     return g
 
 
-@register("graphic", "mind-zipper", summary="A closed zipper over the whole frame, pulled open to show the shot behind")
+@register(
+    "graphic",
+    "mind-zipper",
+    contract=dc.contract('mind-zipper'),
+    summary="A closed zipper over the whole frame, pulled open to show the shot behind",
+)
 def zipper(cv: Canvas, parent, start: float, end: float) -> Any:
     """The frame is cloth with a zipper down its middle. The pull runs down from the top from ``start`` to ``end``, and
     each row of the cloth parts as it passes, so the shot underneath opens in a V. Returns its group."""
@@ -281,7 +297,12 @@ def zipper(cv: Canvas, parent, start: float, end: float) -> Any:
     return g
 
 
-@register("graphic", "mind-named", summary="The effect's name, small, over the last hold: a signature after the laugh")
+@register(
+    "graphic",
+    "mind-named",
+    contract=dc.contract('mind-named'),
+    summary="The effect's name, small, over the last hold: a signature after the laugh",
+)
 def named(
     cv: Canvas,
     parent,
@@ -361,7 +382,12 @@ def name_lines(name: str, measure: Measure) -> tuple[list[str], float]:
     return best
 
 
-@register("graphic", "mind-name-card", summary="The series card: the catchphrase, then the effect's name in the spot")
+@register(
+    "graphic",
+    "mind-name-card",
+    contract=dc.contract('mind-name-card'),
+    summary="The series card: the catchphrase, then the effect's name in the spot",
+)
 def name_card(
     cv: Canvas, parent, name: str, start: float, reveal: float, end: float, measure: Measure, id: str = "name-card"
 ) -> None:
@@ -411,7 +437,10 @@ class Evidence:
 
 
 @register(
-    "graphic", "mind-evidence-card", summary="One study on a paper card: who, when, what they did, what they found"
+    "graphic",
+    "mind-evidence-card",
+    contract=dc.contract('mind-evidence-card'),
+    summary="One study on a paper card: who, when, what they did, what they found",
 )
 def evidence_card(
     cv: Canvas,
@@ -455,7 +484,12 @@ def evidence_card(
     _block(cv, cv.group(g, f"{id}-result", **timing), result, x + pad, top + 30.0, inner, result_size, "#a3301a")
 
 
-@register("prop", "mind-spotlight", summary="A beam of attention from above onto one point, which can sweep")
+@register(
+    "prop",
+    "mind-spotlight",
+    contract=dc.contract('mind-spotlight'),
+    summary="A beam of attention from above onto one point, which can sweep",
+)
 def spotlight(
     cv: Canvas,
     parent,
@@ -483,7 +517,12 @@ def spotlight(
         cv.keys(g, "x", list(sweep), kind="sine-in-out", local=False)
 
 
-@register("prop", "mind-memory-shelf", summary="A shelf of labelled files, one of which slides up")
+@register(
+    "prop",
+    "mind-memory-shelf",
+    contract=dc.contract('mind-memory-shelf'),
+    summary="A shelf of labelled files, one of which slides up",
+)
 def memory_shelf(
     cv: Canvas,
     parent,
@@ -530,7 +569,12 @@ def _line_of(what: object) -> tuple[str, float, str]:
     return what[0], float(what[1]), str(what[2])
 
 
-@register("prop", "mind-two-lines", summary="Expectation against reality: two bars to scale, the second one late")
+@register(
+    "prop",
+    "mind-two-lines",
+    contract=dc.contract('mind-two-lines'),
+    summary="Expectation against reality: two bars to scale, the second one late",
+)
 def two_lines(
     cv: Canvas,
     parent,
@@ -561,7 +605,12 @@ def two_lines(
         cv.keys(bar, "scaleX", [(at, BAR_FROM), (at + BAR_GROW, 1.0)], kind="cubic-out", local=False)
 
 
-@register("prop", "mind-lens", summary="A bias as a lens: a tinted glass that colours what it passes over")
+@register(
+    "prop",
+    "mind-lens",
+    contract=dc.contract('mind-lens'),
+    summary="A bias as a lens: a tinted glass that colours what it passes over",
+)
 def lens(
     cv: Canvas,
     parent,
@@ -590,7 +639,12 @@ def lens(
         cv.keys(g, "x", list(path), kind="sine-in-out", local=False)
 
 
-@register("graphic", "mind-captions", summary="The channel's captions: one or two lines in a box, ink for the narrator")
+@register(
+    "graphic",
+    "mind-captions",
+    contract=dc.contract('mind-captions'),
+    summary="The channel's captions: one or two lines in a box, ink for the narrator",
+)
 def captions(
     cv: Canvas,
     parent,

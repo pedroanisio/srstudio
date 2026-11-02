@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0.0",
+  "generated_by": {
+    "model": "GPT-6",
+    "tool": "OpenAI Codex"
+  },
+  "source_commit": "9090b73311f4e9e70bcf97221474ee8d4b7746b6",
+  "scene_sha256": {
+    "host-wardrobe": "2d4cec9aa32bc8ebb989e801d4d1877ea0b2f12e93239b809606cd092c2d8f13",
+    "mind-stage": "82950279cebbf45d0e2a791cb028ef2f0bf0fb457e568945a3ec9048feab4a50",
+    "map-ground": "f90475fd307b380dbeb0ec97a4a37d8e5ff3354734d2b6f900c6d6373687b947",
+    "host-phone": "34173b2423836bee978729afb947ac24682c2007474f07e3bb7bf945ddba9ac5",
+    "mind-spotlight": "7a3289e4cc2033f450b146ffff777e7a61c3748d126999f33563a790bd2f7a4d",
+    "mind-memory-shelf": "e27250a58a08a04501d2abec3a8982e3b7af642b726cb8b63206ab591b694743",
+    "mind-two-lines": "a50df632c1b7bd508aa456efdc02efd166c07d5de48b47fdfe60c601a30c59ae",
+    "mind-lens": "886d8027791f90768caae4845d163cdec92aa68ee51604e8c9e434911800c809",
+    "map-pin": "79a438768ec69a49403f02b1ca17ca2a542d0495c14496835a5f353258f63303",
+    "map-parallel": "03d34bf704e12eb9fa8c7f316b1bc7465b53b83fc0023cefce6e2cab88f8f4ae",
+    "map-ring": "5a0323ff4ab41f5e634b5ab29e399fcc9d88a891aa41417fc4be086a00a7ca90",
+    "map-clock": "e63fd5dde6474be5927e19d772b6d3951223db9734ffe1881fad337bcf0bf01b",
+    "map-daylight": "e465c1b5c9a1b3fceab45177258496c3ca5a7a14eccfe34d6414939d1b78fd10",
+    "host-punch": "33208c14d21b6e4f2f04ef3c3015dd7c8ba76e6e047473b05fee2623bd2e0f59",
+    "host-label": "0e9b799bbd5da7afd0015bd1905ebd28cd155fa8cab5a78866f51850887c09c2",
+    "host-captions": "830a2471255b99e5e47d45bfeb61274475248dc278c19e44677d802b9b407fdb",
+    "host-sign-off": "57b14306732a752048cee4ebf1a0a054c4339c433834f5700860d2052aa6a164",
+    "host-screen": "6e8f8a9c6bc1cfd284aa322642939abd1ff3c14bcc27b738ece399351174f9a9",
+    "mind-stamp": "3d787588a51174a9c9bd6fd7762b25a9730479b7a72546f2ff3c0ba91e8a3f5c",
+    "mind-zipper": "9e3e2ce700363eee84503d68862374958861dd599e64b8ef99d9492bcd53045e",
+    "mind-named": "6bf25390dcd80a05b991f69949f43a64cbdf164e000f1808a2321e8aeffb5b1f",
+    "mind-name-card": "2f3379e9288eeef205eb368eec84477fd94b1ba7928b09bb8c5f2dbad2802ef1",
+    "mind-evidence-card": "4d2de681a5c162cb4793cfa172822d2ac83ea2c8cad4cb79e88647c1768bba64",
+    "mind-captions": "0ed9ee582e3614a4800c6020b21a6d955cf1143fb83df44e33493a08fbd2e0e0",
+    "map-globe": "966fb760153796111a28a9ab6324435623c51c9d579d76bb1af62f68f71c7723",
+    "map-flat": "b220429aa7b82fd59935585bbfcae18d6f8b12593963309179b7be4d68b6ca68",
+    "map-far-side": "3a905ca7c0ff9fe3528b0ff03f3d957b023a0efc18b84e9e6e71f2f9fc349c71",
+    "map-equal-area": "125c89388261b816d2b8ac74f04e7dbc4eddda73c4946c3655b3ff57e5a559ac",
+    "map-population": "3324f4ccd7dbea43485efba5d38defa5c7925dbce710830565cd528a11460f50",
+    "map-stamp": "93b8aa73ae270e77b968f926978c85fa44d330ae31b500c2b75f0b2bc4b26541",
+    "map-captions": "e14054a8feb255e768348a2dc9cb26aa33f715aab9e940ed7ef4d132c14ee08c"
+  }
+}

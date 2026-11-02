@@ -10,6 +10,7 @@ Everything is in frame pixels of the 1080 × 1920 Stick frame and nothing is ran
 
 from __future__ import annotations
 
+from . import _stick_drawing_contracts as dc
 from . import checks, signature, stick_reel
 from .canvas import Canvas
 from .registry import register
@@ -79,7 +80,12 @@ def on_figure(pose: RigPose, *, at: tuple[float, float], flip: bool = False) -> 
             "hand": place(pose.hands[1])}  # fmt: skip
 
 
-@register("location", "stick-coffee-corner", tags=("office", "coffee", "work", "window"))
+@register(
+    "location",
+    "stick-coffee-corner",
+    contract=dc.contract('stick-coffee-corner'),
+    tags=("office", "coffee", "work", "window"),
+)
 def corner(cv: Canvas, parent) -> None:
     """The office's coffee corner: the wall, the floor, and a tall window on the city between the two of them."""
     s = _group(cv, parent)
@@ -112,7 +118,12 @@ def view(cv: Canvas, parent):
     return g
 
 
-@register("prop", "stick-coffee-counter", tags=("office", "coffee", "counter", "machine"))
+@register(
+    "prop",
+    "stick-coffee-counter",
+    contract=dc.contract('stick-coffee-counter'),
+    tags=("office", "coffee", "counter", "machine"),
+)
 def counter(cv: Canvas, parent):
     """The counter across the frame, in front of the figures, with the coffee machine on it."""
     g = _group(cv, parent)
@@ -127,6 +138,7 @@ def counter(cv: Canvas, parent):
 @register(
     "prop",
     "stick-mug",
+    contract=dc.contract('stick-mug'),
     tags=("office", "coffee", "mug"),
     examples=('from srstudio import get\nmug = get("prop", "stick-mug")(ep.cv, ep.comp, 540, 960)',),
 )
@@ -138,7 +150,7 @@ def mug(cv: Canvas, parent, x: float, y: float, *, colour: str = "#f4f1e8"):
     return g
 
 
-@register("prop", "stick-arm-cast", tags=("injury", "cast", "plaster"))
+@register("prop", "stick-arm-cast", contract=dc.contract('stick-arm-cast'), tags=("injury", "cast", "plaster"))
 def cast(cv: Canvas, parent, elbow: tuple[float, float], hand: tuple[float, float]):
     """Plaster from ``elbow`` to ``hand``."""
     d = f"M {elbow[0]} {elbow[1]} L {hand[0]} {hand[1]}"
@@ -148,7 +160,7 @@ def cast(cv: Canvas, parent, elbow: tuple[float, float], hand: tuple[float, floa
     return g
 
 
-@register("prop", "stick-neck-brace", tags=("injury", "neck", "brace"))
+@register("prop", "stick-neck-brace", contract=dc.contract('stick-neck-brace'), tags=("injury", "neck", "brace"))
 def brace(cv: Canvas, parent, x: float, y: float):
     """A foam collar under the chin of a head whose neck is at (``x``, ``y``)."""
     g = _group(cv, parent)
@@ -157,7 +169,7 @@ def brace(cv: Canvas, parent, x: float, y: float):
     return g
 
 
-@register("prop", "stick-parrot", tags=("animal", "parrot", "bird"))
+@register("prop", "stick-parrot", contract=dc.contract('stick-parrot'), tags=("animal", "parrot", "bird"))
 def parrot(cv: Canvas, parent, x: float, y: float, *, facing: int = -1):
     """A parrot standing at (``x``, ``y``), looking left (``facing=-1``) or right (``1``)."""
     if facing not in (-1, 1):
@@ -184,7 +196,7 @@ def _flame(cv: Canvas, parent, x: float, y: float, h: float, lean: float) -> Non
                       f"Q {x + 30 + lean} {y - h * 0.3} {x + 22} {y} Z", FIRE_IN)  # fmt: skip
 
 
-@register("prop", "stick-flames", tags=("fire", "flames", "slightly"))
+@register("prop", "stick-flames", contract=dc.contract('stick-flames'), tags=("fire", "flames", "slightly"))
 def flames(cv: Canvas, parent, x: float, y: float, end: float, *, rate: float = 4.0):
     """A small fire standing on (``x``, ``y``) for ``end`` seconds, its two drawings turning ``rate`` times a second."""
     if not (checks.number(end) and end > 0):
@@ -197,7 +209,7 @@ def flames(cv: Canvas, parent, x: float, y: float, end: float, *, rate: float = 
     return g
 
 
-@register("prop", "stick-tombstone", tags=("death", "grave", "stone"))
+@register("prop", "stick-tombstone", contract=dc.contract('stick-tombstone'), tags=("death", "grave", "stone"))
 def tombstone(cv: Canvas, parent, x: float, *, words: str):
     """A headstone standing behind the counter at ``x``, cut with ``words``."""
     cv.require_font("the stone is cut in it")
@@ -213,7 +225,7 @@ def tombstone(cv: Canvas, parent, x: float, *, words: str):
     return g
 
 
-@register("prop", "stick-meteor", tags=("meteor", "disaster", "sky"))
+@register("prop", "stick-meteor", contract=dc.contract('stick-meteor'), tags=("meteor", "disaster", "sky"))
 def meteor(cv: Canvas, parent, end: float, *, land: float):
     """A meteor coming down behind the towers, reaching :data:`LAND` ``land`` seconds in, then the glow it leaves.
     Draw it in :func:`view`; it is held to the window."""

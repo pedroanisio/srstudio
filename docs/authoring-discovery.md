@@ -316,6 +316,59 @@ assert lamp_result is None
 ```
 <!-- toon-care-discovery:end -->
 
+The 21 builders in `toon_cars`, `toon_dinner`, `toon_parlour` and `toon_rooms`
+declare the traffic, dining and room contracts. Newer Toon orbit props and sets
+still require their own semantic declarations. Passing vehicles use
+`Passing(at, kind, colour)`: `at` is the composition time when the vehicle crosses
+the frame center. Road scrolling follows the canvas clock; tally marks use parent
+visibility. Loose wheels keep translation and rotation proportional to their
+converted radius. Their scale, position and destination must produce finite
+geometry and a positive frame-pixel radius.
+
+Dining dishes accept `(kind, x)` or `(kind, x, at)` rows. They use a fixed table
+height and canvas-keyed opacity reveals. Cones and the parlour case return groups
+with geometry already placed in frame pixels; changing their group `x` adds a
+translation to that placement. The parlour front's `start` and `end` are only
+validation limits: they do not trim traffic or hide the room.
+
+Lit rooms return a dictionary of `toon_rooms.Cue` records. Their closed light maps
+list the room's supported sources; omitted sources receive defaults. A screen's
+first cue names its color, and later cues can retain or change it. Light levels,
+screen colors, tickets and router LEDs follow the canvas clock. The lounge speaker
+ring uses composition keys. `end=0` draws a still; positive `end` bounds generated
+keys without hiding the room.
+
+Create the light layer after the actor and before the foreground desk. This lets
+room lighting reach the character while keeping the signature clear. `dim` fades
+linearly over 1.5 seconds; it can support a quiet mood change, but it does not
+select or animate the actor's expression.
+
+<!-- toon-lit-room-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry, toon
+
+room = registry.get("location", "toon-lounge")
+room_info = room.describe()["contract"]
+dog = registry.get("character", "toon-dog")
+names = dog.describe()["contract"]["vocabularies"]
+pose = toon.Pose(0, names["eyes"][0], names["mouths"][0], names["arms"][0])
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="30", duration=4)
+cv = Canvas(scene, font_asset=None)
+back = cv.group(cv.comp, "back")
+actor = cv.group(cv.comp, "actor")
+light = cv.group(cv.comp, "light")
+front = cv.group(cv.comp, "front")
+cues = room(cv, back, {"lamp": ((0, "on"), (1, "dim")),
+                       "tv": ((0, "on", "blue"),)}, end=4, light=light)
+dog(cv, actor, [pose], enter=0, duration=4)
+toon.desk(cv, front)
+assert room_info["returns"]["x-role"] == "parsed-light-cues"
+```
+<!-- toon-lit-room-discovery:end -->
+
 The 22 parts in `toon_everyday`, `toon_inserts`, `toon_study` and `toon_laptop`
 also publish contracts. Inspect the return before using it:
 
@@ -504,3 +557,314 @@ when the prop needs a mesh and depth ordering across articulated limbs. Some bui
 drawing: `cafe-window` returns its clipped view, and `tree` its animated canopy. Their contracts identify that
 limitation. `captions` returns layers placed directly in the composition; its start/end values use the composition
 clock, independently of `Canvas.local_time`. Other core graphic animation keys use the canvas clock.
+
+## Stick household and everyday drawings
+
+The 49 builders in `stick_home`, `stick_office` and `stick_odds` declare their
+coordinate units, return values, choices and animation clocks. They draw in
+frame pixels for the 1080×1920 Stick layout; changing canvas dimensions does not
+scale fixed furniture or typography. These drawings provide no spatial grip,
+collision geometry or anatomical solver.
+
+Check the returned coordinate frame before attaching or moving a prop.
+`stick-handset` bakes its center and scale into the geometry, so assigning its
+group `x` adds a translation. `stick-box`, `stick-receipt`, `stick-drill` and the
+other explicitly local props return a group whose transform owns placement.
+Their origin is an authored drawing reference, not a verified physical contact.
+For example, the truck's tires extend below its authored y reference.
+
+Opacity gates and motion keys use the canvas clock: composition time by default,
+local time with `Canvas.local_time=True`. The caller-phone shake lasts 0.25 seconds
+per ring and moves in parent pixels, independently of the phone's scale. A flame
+or spark `rate` counts alternating drawings per second; a complete two-drawing
+cycle takes `2/rate` seconds.
+
+An animation limit does not necessarily hide the drawing. The overhead figure's
+feet stop at `end`, but its body remains. A scanner's `end` finishes its scan line.
+A robe or passenger drawing covering a whole interval omits its opacity gate.
+Use a caller-owned parent to control complete shot visibility, and give a robe
+the same validated keys, poses and transforms as its figure.
+
+<!-- stick-drawing-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry
+
+entry = registry.get("prop", "stick-receipt")
+contract = entry.describe()["contract"]
+assert contract["returns"]["x-space"] == "returned-group"
+assert contract["capabilities"]["spatial_attachment"] is False
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="24", duration=6)
+cv = Canvas(scene, font_asset=None, local_time=True)
+shot = cv.group(cv.comp, "receipt-shot", start=2, end=5)
+receipt = entry(cv, shot, 540, 900, 300, unroll=(0.5, 1.5))
+# Local unroll keys run within the shot; the outer parent hides all receipt geometry.
+# The receipt starts at 2% height and holds its full height after unrolling.
+```
+<!-- stick-drawing-discovery:end -->
+
+## Stick road and airport composition
+
+The 28 builders in `stick_car`, `stick_windshield`, `stick_street`,
+`stick_roadtrip` and `stick_airport` declare their drawing frames, clocks and
+return ownership. Inspect nested records before interpreting a value as speed,
+a duration or physical geometry.
+
+`stick-car` takes `Scroll.speed` in frame pixels per second; its six scenery
+layers use different fractions of that speed. `Scroll.offset` changes scenery
+placement and is not a source-time offset for cuts. `stick-windshield.speed`
+counts receding road dashes per second. Both are authored 2D effects.
+`stick-ride` takes an existing `node`, modifies its y keys and returns `None`.
+Its waves depend on sample index, so changing `step` changes temporal frequency;
+the last sample can follow `end`. These adapters do not promise phase-preserving
+cuts or physical suspension dynamics.
+
+`ride` and `windshield` accept `max_keys` (an integer from 2 to 20,000,
+default 20,000), limiting generated keys per animation track. Reduce duration
+or sampling rate when a plan exceeds the budget. Nonfinite values and times
+that collapse at serialization precision raise `StickDataError` before the
+call changes the scene. A parked windshield or zero-amplitude ride emits no
+motion keys. Windshield reset gaps are the smaller of 0.001 seconds and half
+a cycle, keeping fast representable cycles ordered.
+
+The mirror and mounted-phone returns have `x-role="partial-drawing"`. The mirror
+returns only its masked glass; the phone returns only its case. Use an outer
+parent when moving or hiding the complete drawing. A mirror callback receives
+parent coordinates, not coordinates translated to the glass's top-left.
+
+<!-- stick-transport-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry
+
+entry = registry.get("prop", "stick-rear-view")
+contract = entry.describe()["contract"]
+assert contract["returns"]["x-role"] == "partial-drawing"
+assert contract["arguments"]["properties"]["figure"]["x-role"] == "drawing-slot"
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="24", duration=6)
+cv = Canvas(scene, font_asset=None, local_time=True)
+shot = cv.group(cv.comp, "mirror-shot", start=2, end=5)
+seen = []
+
+def reflection(glass):
+    seen.append(glass)
+    cv.ellipse(glass, 450, 700, 180, 180, "#F0E9DF")
+
+# The callback runs once; the glass mask clips its drawing.
+# The outer parent owns visibility of glass, housing, background and glare.
+glass = entry(cv, shot, reflection)
+```
+<!-- stick-transport-discovery:end -->
+
+Airport readouts accept timed display strings, with `None` for a dark interval;
+they do not infer a physical weight unit. Readings begin at zero, rise strictly
+and finish before `end`. Their opacity keys follow the canvas clock, while the
+scale housing stays visible. `stick-carry-on(tag=None)` and
+`stick-gate-podium(plate=False)` need no font. `stick-gate` still requires its font
+and valid sign strings when `sign=False`.
+
+## Stick scene placement and partial handles
+
+The 24 builders in `stick_door`, `stick_flat`, `stick_gym`, `stick_school`,
+`stick_shop`, `stick_bed` and `stick_table` declare their return ownership,
+placement and timing. `stick-snow-cap` returns a path shape, while `stick-duvet`
+returns only the moving mound. The duvet cover and folds remain in sibling
+nodes; move or hide an outer parent to control the entire drawing.
+
+`duvet.lift` values are vertical displacements from the drawn mound.
+`folded_bedding.slide` values are absolute parent x positions and replace its
+`x` argument. Its interpolation is `cubic-out` per segment. An essay's `at`
+places its sheet center, with scaling about that center, rather than placing
+the sheet's top left. Inspect these semantics before attaching another prop.
+
+<!-- stick-scene-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry, stick_bed
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1920, fps='24', duration=3)
+cv = Canvas(scene, font_asset=None)
+bed_layer = cv.group(cv.comp, 'bed-layer')
+entry = registry.get('prop', 'stick-duvet')
+contract = entry.describe()['contract']
+assert contract['returns']['x-role'] == 'partial-drawing'
+
+# The phone uses the mound's authored drawing coordinates, not a new (0, 0) origin.
+mound = entry(cv, bed_layer, 3, x=540, y=1300, near=1800,
+              lift=((0, 0), (1, -20), (3, 0)))
+phone = stick_bed.recorder(cv, mound, 540, 1100, 3, lines=2, live=True)
+assert phone in list(mound.elements())
+
+# Darkening is a multiply overlay with a radial pool, not a scene light.
+stick_bed.lights_low(cv, cv.comp, pool=(540, 1100, 250), strength=0.6)
+```
+<!-- stick-scene-discovery:end -->
+
+Door closure and Murphy-bed folding switch held drawings; they do not solve
+hinge motion or collisions. Gym dawn, kiosk messages, alarms and scene motion
+keys follow `Canvas.local_time`. A kiosk's nested `Screen.start` uses that same
+clock, and its `tone` enumerates `idle`, `error`, `help` and `award`.
+The turned clipboard requires a font; its edge and quarter views use paths
+alone. These declarations describe supported drawing semantics, without
+claiming spatial contacts, physical lighting or biomechanical motion.
+
+## Core captions and Orbit print artwork
+
+The core Stick and Toon orbit builders declare their arguments and return
+ownership. Stick `hook`, `headline` and `captions` use parent-timeline visibility
+attributes. A sequence shot provides a shot timeline; an ordinary group's
+`start` only limits visibility and does not shift its children's timeline.
+`Canvas.local_time` does not change these visibility attributes. Stick `words`
+instead gates its text and animates its pop and scrim on the canvas clock.
+
+<!-- core-orbit-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry, stick, toon_orbit
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1920, fps='24', duration=4)
+cv = Canvas(scene, font_asset=None)
+sequence = cv.comp.add_sequence(id='shots')
+sequence.add_group(id='lead', end=1)
+shot = sequence.add_group(id='shot', end=3)
+
+hook = registry.get('graphic', 'stick-hook')
+args = hook.describe()['contract']['arguments']['properties']
+assert args['start']['x-timebase'] == 'parent'
+lettering = stick.Plate('#182030', 'M 100 350 L 250 350 L 250 380 L 100 380 Z')
+card = hook(cv, shot, lettering, start=1, end=2)  # project seconds 2..3
+
+# Orbit props return None. Own their placement/visibility with an outer group.
+props = cv.group(shot, 'props')
+result = toon_orbit.field_notebook(cv, props, at=(300, 900), scale=0.6)
+assert result is None  # lettering=None leaves the label blank and needs no font
+```
+<!-- core-orbit-discovery:end -->
+
+Orbit `at` places an authored foot in Toon reference coordinates. Scale and
+placement are baked into the paths before reference-to-frame conversion; the
+created group stays untransformed. Optional `Lettering(display, body)` names
+font asset IDs independently of `Canvas.font_asset`. The salon uses both;
+the terrace and notebook use only `display`. Builders do not load those fonts.
+Orbit sets and props add neither signature marks nor the shared print finish.
+Discovery metadata does not change their catalog approval status.
+
+## Presentation kits and map assets
+
+The 31 non-character builders in `host_kit`, `mind_kit` and `map_kit` declare
+their clocks and return types. Their coordinates are frame pixels, except
+map longitude/latitude in degrees and projection zoom in levels. Their
+`measure(text, size)` callbacks return text advance in frame pixels at the
+requested font size; use the actual bound font rather than character counts.
+
+Host `punch` mutates an existing group, and its optional `push` is
+`(duration, target_scale)`. Host `captions` takes an episode context and returns
+`(background_bands_group, native_caption_track)`. Its words are timed tuples,
+and its layout uses the episode safe area. Unpack the pair when controlling
+caption visibility. This differs from the Mind and Map caption builders,
+which return one group of text boxes.
+
+Map views return a `MapAsset`, separate from the layer displaying it.
+`parallel` adds routes to that asset; `population` adds geographic layers.
+Neither returns a scene group. A pin or daylight marker uses the engine's
+projection to follow that asset. A ring is fixed in frame coordinates and
+does not follow the map. These are geographic bindings, not world-space
+contacts or collision geometry.
+
+<!-- presentation-discovery:start -->
+```python
+from sr_core.scene import MapAsset, Scene
+from srstudio import Canvas, map_kit, registry
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1920, fps='30', duration=4)
+cv = Canvas(scene, font_asset=None)
+view_builder = registry.get('graphic', 'map-flat')
+assert view_builder.describe()['contract']['returns']['x-role'] == 'map-asset'
+view = view_builder(cv, cv.comp, lon=0, lat=0, zoom=0, start=0, end=4)
+assert isinstance(view, MapAsset)
+
+# Place uses name, latitude, longitude. The unlabelled route needs no font.
+place = map_kit.Place('Rome', 41.89193, 12.51133)
+result = map_kit.parallel(cv, cv.comp, view, place, 0, 4, drawn=0.5)
+assert result is None and len(list(view.iter('route'))) == 2
+
+# runs means total elapsed hours across the interval, not hours per second.
+clock = map_kit.clock(cv, cv.comp, 200, 400, 80, hour=9, start=0, end=4, runs=2)
+assert clock.x == 200 and clock.y == 400
+```
+<!-- presentation-discovery:end -->
+
+Before rendering a map project, use `map_kit.install(project_root)` to publish
+the referenced GeoJSON files. Builders declare hashes and credits but do not
+copy files into the project. Population dots come from the shipped dataset;
+the builder does not fetch current figures.
+
+Most kit animations explicitly use the composition clock even when the
+canvas uses local time. Host `punch`, Mind `stamp` and Mind `zipper` follow
+`Canvas.local_time` instead. Visibility attributes remain on the parent
+timeline in both cases. Keep those clocks aligned when nesting shots;
+inspect nested move, dive, sweep and reveal metadata before reusing a plan.
+Mind spotlight and lens are drawn overlays, with absolute x tracks; they
+do not calculate lighting or magnification.
+
+## News graphics and insert timelines
+
+The 27 non-character builders in `news_kit` and `news_inked` expose explicit
+contracts. Select the version deliberately: names such as `news-phone` and
+`news-phone@2` retain distinct drawings. Most builders return `None`; place
+related graphics under a caller-owned group to move or hide them together.
+Both caption builders return their complete text-panel group. Their cue
+visibility is held, with no native word-level karaoke.
+
+These layouts use frame pixels for a 1080×1920 composition. The route insert
+uses phone-screen pixels below the header, with `(0, 0)` at frame `(190, 616)`.
+Its `draw` argument is a duration. The marker moves linearly with segment
+times proportional to distance; each full route leg appears at its segment
+start. The route is a schematic drawing, not a geographic map asset.
+
+<!-- news-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, news_inked, registry
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1920, fps='30', duration=8)
+cv = Canvas(scene, font_asset=None)
+
+# Version 2's desk has no lettering and needs no font asset.
+desk = registry.get('prop', 'news-desk@2')
+parent = cv.group(cv.comp, 'news-shot', start=1, end=7)
+assert desk(cv, parent) is None
+
+route = registry.get('graphic', 'news-route').describe()['contract']
+arguments = route['arguments']['properties']
+assert arguments['draw']['x-role'] == 'duration'
+assert arguments['track']['items']['x-space'] == 'phone-map'
+
+# A later corridor stop starts a short step; it is not the arrival time.
+keys = news_inked.corridor_keys(((1, 250, 250), (3, 400, 250)))
+assert keys == [(1, 250, 250), (3, 250, 250), (3.22, 400, 250)]
+```
+<!-- news-discovery:end -->
+
+Bind the show font and supply `measure(text, size)` using that font for text
+builders. Version 1's desk includes lettering; version 2's does not. A
+`Source` supplies the outlet, date and headline to display; constructing it
+does not verify the source. Bubble `clock` and oven `time` are display copy,
+not animation timestamps. The oven's digits remain fixed when its label
+changes. Money-app inserts draw a UI without making service calls.
+
+Animation keys use the composition clock even with `Canvas.local_time=True`.
+Visibility intervals use parent time, including phone-message arrivals,
+button refusals, door cuts and count changes. Align those clocks when placing
+these graphics in sequence shots. The studio's `end` parameter is accepted
+for compatibility but changes neither its sweep times nor its visibility;
+use the caller-owned parent to limit the shot. Corridor targets are panel
+pixels, and the dots have no skeletal, balance or collision constraints.

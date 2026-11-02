@@ -22,7 +22,7 @@ from collections.abc import Callable
 from pathlib import Path
 from xml.etree import ElementTree
 
-from . import digest
+from . import digest, files
 from .errors import SrstudioError
 from .layout import LayoutError, find_engine
 from .outbox import latest_package
@@ -182,9 +182,7 @@ def pack(
             raise PackageError(f"{built.name} does not hold the scene it was packed from")
         if latest is not None and _contents(latest) == _contents(built):
             return latest
-        target = out / built.name
-        built.replace(target)
-        target.chmod(0o600)
-        return target
+        built.chmod(0o600)
+        return files.install_once(built, out / built.name)  # a version's bytes are what shipped (ADR 0170)
     finally:
         shutil.rmtree(work, ignore_errors=True)

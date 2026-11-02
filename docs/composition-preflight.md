@@ -20,8 +20,11 @@ enforce process limits and count retries; see [render sessions](authoring-benchm
 `prepare_plate` also verifies static mesh and texture payloads and prepares their
 closed scene/resources in a bounded worker. `compile_bundle` and `emit_bundle`
 combine verified vectors and static plates with bounded rendering and portable
-image resources. Printed-label, animated plate and proxy adapters remain open under
-SDK-P2-07.
+image resources, including bounded printed labels. `prepare_proxy` adds static
+light/part-ID conversion under the same camera, lighting and worker budgets.
+`RasterSequence` adds baked geometry/appearance timelines under that shared
+static view. Animated scene cameras, lights and parent transforms remain open
+under SDK-P2-07.
 A valid manifest alone is not a rendered scene,
 approval of a new style, or proof of a host's declared geometry.
 
@@ -113,11 +116,11 @@ two cold renders; identical placements can share one. A rendered artifact must
 also bind the actual camera, lighting, renderer and other rendering inputs.
 
 The preparation adapter accepts one static plate job per source, up to 128
-meshes, 128 materials and 128 textures, with eight MiB of combined input buffers.
+meshes, 128 materials, 128 textures and 128 printed labels, with eight MiB of combined input buffers.
 Prepared XML/resources have a separate eight MiB cap. Materials support `#RRGGBB`
 base, emissive and sheen colors, roughness/metallic/subsurface values in `0..1`,
-and normal-map strength in `0..16`. Printed-label recipes, proxy recipes and
-animated source bindings are refused. Source memory declarations
+and normal-map strength in `0..16`. Printed labels require explicit font bytes
+and license metadata. Proxy recipes and animated source bindings are refused. Source memory declarations
 must cover eight times the input buffer bytes; the job must cover prepared
 resource storage and its frame buffer. These storage checks complement the
 hard process cap; they do not measure or guarantee renderer/GPU peak memory.
@@ -141,10 +144,9 @@ prepared = composition.prepare_plate(plan, "host-layer", source)
 
 The adapter copies geometry, UVs and `plates.Texture` pixels into immutable bytes.
 It preserves color maps, normal maps, their strength, sheen and subsurface values.
-Shared pixel maps are deduplicated by both dimensions and contents. The adapter
-refuses `Material.print` recipes; it never drops a label or substitutes a flat
-material. Printed textures need their own bounded rendering and font-provenance
-adapter before that path can be supported.
+Shared pixel maps are deduplicated by both dimensions and contents. A
+`Material.print` requires the font inputs described below. A material cannot
+specify both a printed label and a color map.
 
 For explicit records, `plate_texture("paint", texture)` creates a `PlateTexture`.
 Put it in `PlateSource.textures` and name it with
@@ -167,7 +169,8 @@ PNG identity includes its dimensions, so equal pixel bytes in differently shaped
 images cannot alias. Source identity includes UVs, raw pixels, dimensions and
 material fields. Untextured inputs using the original defaults retain their
 existing source and prepared identities; extended sources use identity schema
-`srstudio.plate-source/1.1.0`. Renderer caches include the prepared resources, so a
+`srstudio.plate-source/1.1.0` for textures and `1.2.0` for printed labels.
+Renderer caches include the prepared resources, so a
 changed map produces a new render job. Public bundle compilation reverifies the
 original source and rejects forged prepared resources before rendering.
 
@@ -176,6 +179,241 @@ basis parity, repeated UVs, material preservation, closed resource limits, sourc
 and cache identities, typed refusals, and a rendered color-map registration probe.
 These checks establish material transport and rendering on the tested engine;
 they do not approve a new character drawing or a texture-animation policy.
+
+## Preserve printed labels
+
+For materials with an existing `plates.Print`, supply the font's immutable bytes
+and its license identifier explicitly:
+
+```python
+source = composition.plate_source(
+    "host", tuple(meshes), tuple(materials), basis="clay",
+    print_font=font_bytes, print_license="OFL-1.1",
+)
+```
+
+The host owns the font selection and license declaration. The adapter performs
+no download or filesystem read. `PlateSource.prints` holds immutable `PlatePrint`
+records containing each exact `plates.Print` recipe, font bytes and license;
+`PlateMaterial.print` names the record. Identical recipes and font inputs are
+deduplicated. Every record must be referenced, every reference must resolve,
+and every printed mesh must have authored UVs. Text uses `plates.PRINTABLE`.
+Recipes allow at most 128 lines, 4096 characters per line and 32768 text bytes
+in total. Dimensions are `2..8192`; all labels together are limited to eight MiB
+of decoded RGBA pixels, independently of the source-buffer cap.
+
+Preparation inspects the TrueType font's actual family, weight and upright style
+inside the bounded worker, compiles and schema-checks each label scene, and
+retains content-addressed `prints/<scene-sha256>.scene.xml` and
+`fonts/<font-sha256>.ttf` resources. Source and prepared identities include the
+recipe, font and license. Preparation does not invoke the renderer. Invalid
+font metadata, ambiguous color maps and unsupported label inputs produce
+`CompositionError` before cache or output mutation.
+
+The source still has one `PlateWork` declaration. For `N` distinct labels, its
+`engine_invocations` must cover `N + 1`, and its `samples` must cover
+`plates.SAMPLES * (N + 1)`; the latter conservatively charges the same sample
+bound for each label. Its width and height cover the maximum of the registered
+plate view and every label. Node and memory bounds include compiled label
+scenes and fonts. Existing global field caps still apply: a large label set can
+exceed the sample or byte budget even when its count fits.
+
+A cold bundle renders each unique label scene, validates its PNG dimensions,
+CRC and bounded decompression, then renders the plate. All attempts consume
+the per-source, plan and enclosing render-session limits. `new_plates` counts
+completed plate jobs; `engine_invocations` includes their label attempts. Labels
+are intermediate dependencies within the private render directory. Only a
+fully verified plate enters the cache, and a warm plate needs no label render.
+The portable bundle contains the final images, so it needs neither fonts nor
+label recipes at playback. Changing font bytes or recipe content invalidates
+the dependent plate cache.
+
+[Print tests](../tests/test_composition_prints.py) exercise bounded input and wire
+validation, font provenance, closed preparation, failure preservation, cache
+invalidation, nested attempt limits and a real rendered UV label probe. This
+establishes label transport; it does not certify arbitrary text legibility.
+
+## Prepare a static proxy
+
+`proxy_source` snapshots existing mesh arrays and a `proxy.Recipe`. Its required
+`lighting="scene"` argument explicitly replaces that recipe's private lights with
+the shared scene rig. Immutable `ProxyRecipe`, `ProxyPart` and `ProxyInk` records
+also support direct host construction. No callable or file path crosses the
+worker boundary.
+
+```python
+from srstudio import clay, proxy
+from srstudio import composition as c
+
+model = clay.Model()
+model.box("body", (0, 0, 0), (0.2, 0.2, 0.2))
+recipe = proxy.Recipe({"body": ("#102030", "#506070", "#90A0B0", "#D0E0F0")})
+source = c.proxy_source(
+    "host", tuple(model.meshes()), recipe, basis="clay", lighting="scene"
+)
+# Width/height bound the final registered view, including any principal-point
+# overscan. proxy_jobs applies the recipe's oversampling exactly once.
+jobs = c.proxy_jobs(source, width=64, height=64, memory_bytes=8 * 1024**2)
+binding = c.AssetBinding(
+    "host", "rafa", 1, "proxy", c.Bounds((-1, -1, -1), (1, 1, 1)),
+    nodes=128, memory_bytes=32 * 1024**2, plates=jobs,
+)
+spec = c.ScenePlan(
+    c.StylePin("toon", c.style_revision("toon")), 64, 64, c.FrameRate(), 1, 7,
+    "meter", c.CameraSpec("perspective", (0, 0, 10), (0, 0, 0), (32, 32), 100, 10),
+    c.LightRig("lit", (c.LightSpec("ambient", "ambient", "#FFFFFF", 1),)),
+    (c.LayerSpec("host", "host", 1, c.TemporalPolicy(0, 1), passes=("rgba",)),),
+    c.RenderBudget(timeout=120),
+)
+plan = c.preflight(spec, (binding,))
+prepared = c.prepare_proxy(plan, "host", source)
+```
+
+This box demonstrates the host binding and preparation protocol; a valid binding
+is not approval of new geometry or a new style. Pass `prepared` to
+`compile_bundle` or `emit_bundle` alongside the other prepared placements.
+Preparation validates the actual geometry and returns light/ID documents without
+rendering. The light pass uses world-space scene lights; the semantic ID pass
+uses black ambient illumination and deterministic emissive material IDs.
+
+Each proxy layer selects exactly one pass:
+
+| Pass | Image contents |
+| --- | --- |
+| `rgba` | Full converted model, including its normally visible under parts |
+| `back` | Designated behind parts; under parts are excluded |
+| `front` | Other visible parts; behind and under parts are excluded |
+| `under` | A separate under-only render, including surfaces hidden by the full model |
+
+Use separate layers with the same asset and pose to place supported plate/proxy
+picture assets between `under`, `back` and `front`. Those layers share identical
+raw render jobs. Vector information can be placed above all picture layers;
+vector picture assets still require a shared-light adapter and are refused in
+this lit workflow. A
+recipe with under parts declares four jobs; otherwise it declares two. If the
+under subset is the whole model, identical jobs are deduplicated. The planning
+estimate may conservatively count separate selected passes; actual `BundleWork`
+counts unique cold/warm raw jobs and real launch attempts. No depth or normal
+pass, automatic intersecting-layer strategy or cross-layer shadow receiver is
+implied.
+
+`proxy_source_digest` includes palette, ink and grain controls. The `PlateWork`
+keys returned by `proxy_jobs` identify only the raw geometry/material inputs.
+Changing tones or grain can therefore reuse verified light/ID cache entries
+while producing a new converted image. Changed geometry, roughness, view,
+lighting or renderer bytes invalidate the affected raw renders. Conversion
+runs again in the bounded worker on warm builds. Portable bundles contain only
+the selected converted PNGs; intermediate light/ID images stay in the cache.
+
+The immutable adapter supports 1–64 parts and oversampling 1–4. Mesh and recipe
+inputs, combined prepared pass resources, conversion PNG inputs and final
+bundle files each have an eight MiB cap. Raw dimensions must stay within 8192
+and the plan's frame-pixel budget. For `P` raw pixels and `N` palette parts,
+the binding's memory declaration must cover at least
+`8 * source_bytes + P * (64 * N + 512)` bytes. This reserves the part-distance
+tensor and conversion intermediates; it is not measured RSS. Job declarations
+also cover the actual raw dimensions, samples, bounces and prepared storage.
+Worker memory/deadline limits remain authoritative. Ink uses final image pixels;
+premultiplied-alpha downsampling applies oversampling once. Tiny parts remain
+subject to the existing proxy classifier's 3×3 opening.
+
+[Proxy tests](../tests/test_composition_proxy.py) execute this recipe and check
+shared projection, all four conversion results, content-sensitive cache reuse,
+malformed inputs, forged evidence and real-engine part-ID registration.
+Animation, temporal stability and style approval require the separate
+[DRAWING acceptance study](../DRAWING.md#proof-and-acceptance-gates).
+
+## Animate held raster snapshots
+
+`RasterSequence` stores immutable `RasterFrame` snapshots on a finite source
+clock. Each snapshot contains a complete `PlateSource` or `ProxySource`, so
+geometry, materials, texture pixels, printed labels and proxy conversion controls
+can change over time. Frames start at zero, strictly increase, and remain below
+`duration`. Each is held until the next frame; the last holds until the source
+ends. This is baked playback with explicit replacements, not mesh interpolation
+or a promise of continuous motion.
+
+```python
+from srstudio import clay, composition as c, plates
+
+def snapshot(x, color):
+    model = clay.Model()
+    model.box("skin", (x, 0, 0), (0.2, 0.2, 0.2))
+    return c.plate_source(
+        "host", tuple(model.meshes()), (plates.Material("skin", color),), basis="clay"
+    )
+
+first = snapshot(0, "#C88762")
+second = snapshot(-0.12, "#00AAFF")
+source = c.RasterSequence(
+    "host", 2, (c.RasterFrame(0, first), c.RasterFrame(0.5, second), c.RasterFrame(1.5, first))
+)
+binding = c.AssetBinding(
+    "host", "rafa", 1, "plates", c.Bounds((-1, -1, -1), (1, 1, 1)),
+    nodes=256, memory_bytes=16 * 1024**2, duration=source.duration,
+    plates=c.raster_jobs(source, width=64, height=64, memory_bytes=8 * 1024**2),
+)
+clock = c.TemporalPolicy(0.5, 1.375, source_start=0.25, rate=2)
+spec = c.ScenePlan(
+    c.StylePin("toon", c.style_revision("toon")), 64, 64, c.FrameRate(4), 2, 7,
+    "meter", c.CameraSpec("perspective", (0, 0, 10), (0, 0, 0), (32, 32), 100, 10),
+    c.LightRig("lit", (c.LightSpec("ambient", "ambient", "#FFFFFF", 1),)),
+    (c.LayerSpec("host", "host", 1, clock),), c.RenderBudget(timeout=120),
+)
+plan = c.preflight(spec, (binding,))
+schedule = c.raster_schedule(plan, "host", source)
+prepared = c.prepare_raster_sequence(plan, "host", source)
+```
+
+This example illustrates the protocol using a box; its host binding does not
+approve new geometry as a character. Pass `prepared` to `compile_bundle` or
+`emit_bundle`. The schedule contains source sample indices and half-open scene
+intervals: `[0.5, 0.625)`, `[0.625, 1.125)` and `[1.125, 1.375)`. At an exact
+boundary only the new snapshot is visible. Source offsets and playback rates
+are applied once. Decimal-to-rational clock arithmetic avoids accumulating
+successive interval errors, and intervals that collapse at scene-time floating
+precision are refused.
+
+To use proxies, supply `ProxySource` snapshots, set the binding backend to
+`"proxy"`, and select one supported pass in the layer. Every snapshot must
+support that pass. A sequence keeps one source ID, backend, physical unit scale
+and proxy oversampling factor. The shared scene camera, lights and parent
+transforms remain static; snapshots can contain baked object motion in source
+coordinates. Host code samples its motion explicitly before snapshotting. No
+builder, mutable array, live recipe mapping or callback crosses the worker
+boundary.
+
+`raster_jobs` declares unique raw jobs for the complete source. Identical
+geometry/appearance snapshots share render work; proxy palette/grain-only
+changes can reuse raw light/ID images and still get converted again. Print
+jobs include their label attempts. `raster_sequence_digest` includes every
+source snapshot, timestamp and the finite duration. Job dimensions bound the
+registered view including overscan, and proxy oversampling applies once.
+
+Preparation verifies every snapshot, including ones outside the selected clip,
+under the original validated plan and binding. Animated anchors, declared
+contacts, source duration and shared budgets retain their original identities.
+Rendered geometry does not independently certify a host-declared anchor.
+Emission renders only snapshots whose held intervals intersect the clip and
+reuses verified cache entries across retimed cuts and out-of-order builds.
+Repeated output images are sent once per sequence with checked image references.
+The portable scene stores explicit visibility intervals and selected PNGs.
+
+A source contains at most 1024 snapshots. Combined source buffers and prepared
+resources each stay within eight MiB, even when a snapshot repeats. The binding's
+node declaration covers all prepared snapshots; memory covers at least eight
+times the complete source buffers and prepared resources, plus each proxy's
+conversion requirements. Worker deadlines/address-space caps, render attempts,
+pixel/sample limits and final bundle/IPC byte caps remain enforced. A failed
+snapshot leaves the cache untouched; completed render entries may survive a
+later runtime failure, but publication never installs a partial bundle.
+
+The [timeline tests](../tests/test_composition_sequences.py) cover source clocks,
+held boundaries, invalid unseen snapshots, closed IPC, animated anchor records,
+cold/warm work and real-rendered plate/proxy motion. Smoothness, moving scene
+cameras, shared-light vector picture adapters, receivers and the complete
+animated [drawing acceptance study](../DRAWING.md#proof-and-acceptance-gates)
+remain separate requirements.
 
 ## Render and publish a mixed bundle
 
@@ -348,8 +586,8 @@ bounded manifest intake and final filesystem publication are outside the worker.
 This execution boundary is not a sandbox for hostile Python programs.
 
 The vector compiler makes no engine calls. Rendering its output independently
-does not inherit these budgets; plate/proxy adapters and renderer integration
-remain required work. Timeout and memory-allocation failures expose budget paths;
+does not inherit these budgets. Static plate/proxy bundle rendering does inherit
+the plan limits; independently rendered scene playback needs its own session. Timeout and memory-allocation failures expose budget paths;
 other worker startup, exit or protocol failures have explicit worker codes.
 There are no automatic retries. Typed SDK causes, including part-version errors,
 survive the worker boundary through a closed diagnostic protocol.

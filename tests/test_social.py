@@ -1282,6 +1282,7 @@ def test_a_first_delivery_with_a_run_together_caption_is_refused_before_it_write
     _run_together(tmp_path)
     monkeypatch.setattr(posts.frame_gates, "signature_hidden", lambda *a, **kw: [])
     monkeypatch.setattr(posts.figure_gates, "figure_defects", lambda *a, **kw: [])
+    monkeypatch.setattr(posts.text_rules, "timing_defects", lambda *a, **kw: [])
     monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
     with pytest.raises(frame_gates.FrameGateError, match="New_Reel: the caption 'Take it Whatever' runs 'it'"):
         posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
@@ -1339,6 +1340,9 @@ def _reported_reel(posts, monkeypatch, tmp_path, findings):
     monkeypatch.setattr(posts, "STRICT", tmp_path / "strict")
     monkeypatch.setattr(posts.frame_gates, "signature_hidden", lambda *a, **kw: [])
     monkeypatch.setattr(posts.figure_gates, "figure_defects", lambda *a, **kw: [])
+    monkeypatch.setattr(posts.anatomy_gate, "hand_defects", lambda *a, **kw: [])
+    monkeypatch.setattr(posts.anatomy_gate, "body_defects", lambda *a, **kw: [])
+    monkeypatch.setattr(posts.text_rules, "timing_defects", lambda *a, **kw: [])
     return renders
 
 

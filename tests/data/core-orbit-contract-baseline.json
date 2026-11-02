@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0.0",
+  "generated_by": {
+    "model": "GPT-6",
+    "tool": "OpenAI Codex"
+  },
+  "source_commit": "f3d8940a69989c52866eece6cc7c3464f62d2d91",
+  "scene_sha256": {
+    "toon-planetarium-salon": "7044f551d56a5283eb1a2abfeffbd57369b1d95fd1f6d7eaf8462c0361c29ebc",
+    "toon-starlight-terrace": "966cad7005dab0768f490ea474dc0d1c88160d69fa6add8a6a442d49236a78b6",
+    "stick-room": "5d214372c11bdaad31769dba25c70cc5f3e7a0ce6331617a050d939b38f4e4b8",
+    "stick-yard": "d9db73104db6d02a9853344573bcf913ebb94939493ebbd63dc0443dd284c130",
+    "toon-telescope": "6df087889f3d0440c72c15d7c7d78b1d602bc7a9c430fb4b016c322931201328",
+    "toon-moon-globe": "bf97b0de20c5816753c9740e11b48b1dfeaa4cc8949f0817a4f2e4a1a42e5f0a",
+    "toon-saturn-model": "7cbfc0415e9b74b937f2028526065467f65399cab32c8f13e2c071c84ee83008",
+    "toon-field-notebook": "c1e29262d8a7073172a5206ebe9c765dfbc163c01de25322c79de3189a307ed3",
+    "toon-signal-clicker": "4f9645763ff6614d0e197e5a36dcdbe14f7f6cf6fa63fbf7ff1b494c131d7070",
+    "stick-hook": "ca54f06333cc015aabdc27babfd6389ab1fdd95bac3993f2bfda3af82a02f310",
+    "stick-headline": "e1b627b0d41ac5894cecd1f8607db8c7a1896e63ddfe89626d48b1153bd34c1b",
+    "stick-captions": "d6bdb405cd846ce13b150901377b3d5f81e9e088c4d848b76ea66d4d001feb8e",
+    "stick-words": "7919662338076abf17a9f4ed3898bf54ef580a81fdbb2c4afa627890c290075f",
+    "stick-card": "b2ed67b54ccc1f445250c3e113a7a351cdc708570f27aa3d09d3180300d3d21b",
+    "stick-call": "2b9134ff5357a5c9df6e48bc28ca8560668e3908fbb3c21723104246d25ed041"
+  }
+}

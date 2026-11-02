@@ -29,11 +29,12 @@ lighting, renderer and rendering inputs.
 
 The original adapter supported static, untextured PBR plate geometry.
 [Verified texture snapshots](0106-verified-plate-textures.md) now preserve UVs,
-color/normal maps, sheen and subsurface settings. Printed-label recipes, animated
-bindings and proxy recipes still fail explicitly. This
+color/normal maps, sheen and subsurface settings.
+[Bounded printed labels](0144-bounded-composition-prints.md) retain recipes and
+font provenance. Animated bindings and proxy recipes still fail explicitly. This
 does not authorize dropping maps or changing an approved drawing's materials.
 Static mixed emission and renderer-session integration are now provided by
-[atomic composition bundles](0105-atomic-composition-bundles.md). Printed-label, animated
+[atomic composition bundles](0105-atomic-composition-bundles.md). Animated
 and proxy adapters remain open under SDK-P2-07.
 [Tests](../../tests/test_composition_plates.py) verify actual input and failure
 behavior and render a prepared scene with only its declared resources.

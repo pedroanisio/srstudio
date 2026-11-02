@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from srstudio import foley, scripting, sketch, toon_flat, toon_house, toon_odds, toon_world
+from srstudio import anatomy, anatomy_ledger, foley, scripting, sketch, toon_flat, toon_house, toon_odds, toon_world
 from srstudio.sketch import Line, Sketch, Speaker
 from srstudio.toon_sketch import Sound
 from srstudio.voice import Voice, VoiceSettings
@@ -115,7 +115,8 @@ def dress(shot) -> None:
             toon_world.paw(cv, shot.front, ((key, opened + 0.3),), HEDGEHOG_COAT, y=590.0, reach=240.0, holding="keys")
     if app.who == "bear":
         toon_odds.balled_sheets(cv, shot.front, BRUNO_SHEETS, None, app.end)
-        toon_odds.folded_sheet(cv, shot.front, (190.0, 830.0), "#a9744f", app.start, app.end)
+        with anatomy_ledger.on_arm("bear", anatomy.Side.RIGHT):
+            toon_odds.folded_sheet(cv, shot.front, (190.0, 830.0), "#a9744f", app.start, app.end)
 
 
 def sounds(beats, end: float) -> list[Sound]:

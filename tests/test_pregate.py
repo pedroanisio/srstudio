@@ -58,12 +58,12 @@ def test_a_clean_run_exits_zero_and_runs_every_step(capsys):
     last = capsys.readouterr().out.splitlines()[-1]
     assert last.startswith("pregate: ok")
     tools = [Path(c[0]).name for c in run.calls if c[0] != "git"]
-    assert tools == ["ruff", "ruff", "mypy", "python"]
+    assert tools == ["ruff", "ruff", "mypy", "python", "python"]
 
 
 def test_a_failed_step_fails_the_gate_and_is_named(capsys):
     assert pregate.main([], run=Commands(code=1)) == 1
-    assert "failed: format, lint, mypy, tests" in capsys.readouterr().out
+    assert "failed: format, lint, mypy, enhance, tests" in capsys.readouterr().out
 
 
 def test_the_full_gate_needs_a_commit():

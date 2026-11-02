@@ -175,6 +175,8 @@ class Canvas:
         self._effect_root: Any = None
         self._frozen = 0  # inside Canvas.frozen(): every key holds its value at 0 s
         self._frozen_hidden: set[Any] = set()
+        self.anatomy: dict[tuple[str, str], str] = {}  # (rule, part): what a build drew against the anatomy rules
+        self.limbs: dict[str, Any] = {}  # node id: whose hand it is (srstudio.anatomy_ledger.Limb)
 
     @property
     def assets(self):
@@ -206,6 +208,11 @@ class Canvas:
     @property
     def shade(self) -> str:
         return self.palette.shade
+
+    def note_anatomy(self, rule: str, part: str, detail: str) -> None:
+        """Note that this build drew ``part`` against ``rule`` of the anatomy rules; see :mod:`srstudio.anatomy_ledger`,
+        which refuses the reel when it finishes."""
+        self.anatomy[(rule, part)] = detail
 
     # -- ids and paints ------------------------------------------------------------------
     def uid(self, prefix: str) -> str:

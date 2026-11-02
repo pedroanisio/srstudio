@@ -27,7 +27,8 @@ from dataclasses import dataclass
 from typing import Any
 
 from . import _character_contracts as cc
-from . import checks
+from . import anatomy, checks
+from .anatomy import Facing, Fingers
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -689,8 +690,17 @@ def _neck(look: Look) -> list[Shape]:
     ]
 
 
-def _hand(look: Look, key: str, x: float, y: float, r: float = 40, side: int = 1) -> list[Shape]:
-    """A mitten hand with its thumb, the skin shaded on one side."""
+def _arm(side: int) -> anatomy.Arm:
+    return anatomy.Arm(anatomy.Side.of(side))
+
+
+RIGHT = _arm(1)
+
+
+def _hand(look: Look, key: str, x: float, y: float, r: float, hand: anatomy.Hand) -> list[Shape]:
+    """A mitten hand with its thumb, the skin shaded on one side. ``hand`` says which: the thumb goes where the arm and
+    the facing put it on the frame (:mod:`srstudio.anatomy`)."""
+    side = -hand.thumb_x
     return [
         _blob(f"{look.name}-{key}-thumb", x - side * r * 0.85, y - r * 0.2, r * 0.38, r * 0.5, look.skin, n=10),
         _blob(f"{look.name}-{key}", x, y, r, r * 0.92, look.skin, n=12, amount=0.04),
@@ -729,7 +739,7 @@ def _arms(look: Look, arms: str) -> tuple[list[Shape], list[Shape]]:
         return (
             _sleeve(look, f"{key}u", shoulder, elbow)
             + _sleeve(look, f"{key}a", elbow, wrist, 70)
-            + _hand(look, f"{key}h", wrist[0], wrist[1] + 50, 40, side)
+            + _hand(look, f"{key}h", wrist[0], wrist[1] + 50, 40, _arm(side).hand(Facing.BACK, Fingers.DOWN))
         )
 
     if arms == "down":
@@ -739,25 +749,27 @@ def _arms(look: Look, arms: str) -> tuple[list[Shape], list[Shape]]:
         elbow, hand = (CX + hw + 40, sy + 160), (CX + hw + 30, sy - 120)
         under += _sleeve(look, "ru", rs, elbow) + _sleeve(look, "rf", elbow, hand, 68)
         finger = _capsule((hand[0] + 6, hand[1] - 18), (hand[0] + 44, hand[1] - 84), 26)
-        under += [_cutout(f"{look.name}-finger", finger, look.skin, 1.0)] + _hand(look, "rh", *hand, r=38)
+        under += [_cutout(f"{look.name}-finger", finger, look.skin, 1.0)] + _hand(
+            look, "rh", *hand, 38, RIGHT.hand(Facing.PALM)
+        )
     elif arms == "shrug":
         for side, shoulder, key in ((-1, ls, "l"), (1, rs, "r")):
             elbow = (CX + side * (hw + 24), sy + 220)
             hand = (CX + side * (hw + 34), sy + 70)
             under += _sleeve(look, f"{key}u", shoulder, elbow) + _sleeve(look, f"{key}f", elbow, hand, 66)
-            under += _hand(look, f"{key}h", *hand, r=36, side=side)
+            under += _hand(look, f"{key}h", *hand, 36, _arm(side).hand(Facing.PALM))
     elif arms == "hold":
         for side, shoulder, key in ((-1, ls, "l"), (1, rs, "r")):
             elbow = (CX + side * (hw + 4), sy + 300)
             hand = (CX + side * 96, sy + 250)
             under += _sleeve(look, f"{key}u", shoulder, elbow) + _sleeve(look, f"{key}f", elbow, hand, 66)
-            under += _hand(look, f"{key}h", *hand, r=36, side=-side)
+            under += _hand(look, f"{key}h", *hand, 36, _arm(side).hand(Facing.BACK))
     elif arms == "face":
         under += down(-1, ls, low_l, "l")
         ex, ey = _eye_centres(look)[1]
         elbow = (CX + hw + 10, sy + 230)
         over += _sleeve(look, "ru", rs, elbow) + _sleeve(look, "rf", elbow, (ex + 40, ey + 110), 66)
-        over += _hand(look, "rh", ex - 4, ey + 6, r=74, side=-1)
+        over += _hand(look, "rh", ex - 4, ey + 6, 74, RIGHT.hand(Facing.BACK))
     elif arms == "free":
         under += down(1, rs, low_r, "r")  # the screen-left arm is the scene's to draw, with what it holds
     elif arms == "free-right":
