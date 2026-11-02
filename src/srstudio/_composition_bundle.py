@@ -13,6 +13,8 @@ from pathlib import Path
 
 from . import _bundle_output, plates
 from . import _composition_plate_wire as plate_wire
+from . import _composition_proxy as proxy_payload
+from . import _composition_sequence as sequence_payload
 from . import _composition_wire as wire
 from . import composition as c
 from ._composition_emit import check_expansion
@@ -21,7 +23,9 @@ from ._composition_preflight import _digest
 from ._composition_runtime import _call
 from ._outputs import _check_directory, pinned_directories
 
-Assets = tuple[c.PreparedVector | c.VectorSource | c.PreparedPlate, ...]
+Raster = c.PreparedPlate | c.PreparedProxy
+Placement = Raster | c.PreparedRasterSequence
+Assets = tuple[c.PreparedVector | c.VectorSource | Placement, ...]
 CACHE_SCHEMA = 'srstudio.composition-render/1.0.0'
 # Graphics backends need larger scratch/mapped files than the final PNG cap.
 MAX_RENDER_FILE_BYTES = 256 * 1024**2
@@ -61,34 +65,56 @@ def _engine_hash(engine: Path) -> str:
     return digest.hexdigest()
 
 
-def _inputs(
-    plan: c.ValidatedScenePlan, assets: Assets
-) -> tuple[dict[str, c.PreparedVector], dict[str, c.PreparedPlate]]:
+def _inputs(plan: c.ValidatedScenePlan, assets: Assets) -> tuple[dict[str, c.PreparedVector], dict[str, Placement]]:
     if type(plan) is not c.ValidatedScenePlan or type(assets) is not tuple or not 1 <= len(assets) <= c.MAX_LAYERS:
         raise _failure('plan/assets', 'a validated plan and bounded immutable asset tuple')
     if c.preflight(plan.spec, plan.bindings) != plan:
         raise _failure('plan', 'the current validated plan', 'composition.version')
     bindings = {b.id: b for b in plan.bindings}
     layers = {layer.id: layer for layer in plan.spec.layers}
-    vectors, raster_sources = {}, {}
+    vectors: dict[str, c.VectorSource | c.PreparedVector] = {}
+    raster_sources: dict[str, Placement] = {}
     total = 0
     for asset in assets:
-        if type(asset) is c.PreparedPlate:
+        if type(asset) is c.PreparedPlate or type(asset) is c.PreparedProxy or type(asset) is c.PreparedRasterSequence:
             if (
                 type(asset.layer) is not str
                 or asset.layer in raster_sources
                 or asset.layer not in layers
                 or type(asset.binding) is not c.AssetBinding
                 or bindings.get(layers[asset.layer].asset) != asset.binding
-                or asset.binding.backend != 'plates'
-                or type(asset.xml) is not bytes
-                or type(asset.resources) is not tuple
-                or len(asset.resources) > plate_wire.MAX_RESOURCES
+                or (
+                    type(asset) is not c.PreparedRasterSequence
+                    and asset.binding.backend != ('proxy' if type(asset) is c.PreparedProxy else 'plates')
+                )
             ):
-                raise _failure('assets', 'one prepared plate for each supported plate placement')
-            total += plate_wire.validate_source(asset.source)
+                raise _failure('assets', 'one prepared raster for each supported placement')
+            if type(asset) is c.PreparedPlate:
+                if (
+                    type(asset.xml) is not bytes
+                    or type(asset.resources) is not tuple
+                    or len(asset.resources) > plate_wire.MAX_RESOURCES
+                ):
+                    raise _failure('assets', 'bounded immutable prepared plate evidence')
+                total += plate_wire.validate_source(asset.source)
+            elif type(asset) is c.PreparedProxy:
+                if (
+                    type(asset.passes) is not tuple
+                    or not 2 <= len(asset.passes) <= 4
+                    or any(type(p) is not c.PreparedPlate for p in asset.passes)
+                ):
+                    raise _failure('assets', 'bounded immutable prepared proxy evidence')
+                total += proxy_payload.validate_source(asset.source)
+            elif type(asset) is c.PreparedRasterSequence:
+                if (
+                    type(asset.frames) is not tuple
+                    or not 1 <= len(asset.frames) <= c.MAX_RECORD_ITEMS
+                    or any(type(frame) is not c.PreparedRasterFrame for frame in asset.frames)
+                ):
+                    raise _failure('assets', 'bounded immutable raster sequence evidence')
+                total += sequence_payload.validate_source(asset.source)
             raster_sources[asset.layer] = asset
-        elif type(asset) in (c.VectorSource, c.PreparedVector):
+        elif type(asset) is c.VectorSource or type(asset) is c.PreparedVector:
             if type(asset) is c.PreparedVector:
                 if type(asset.binding) is not c.AssetBinding or bindings.get(asset.binding.id) != asset.binding:
                     raise _failure('assets', 'prepared vector evidence for this binding')
@@ -102,24 +128,31 @@ def _inputs(
             total += len(asset.xml)
             vectors[name] = asset
         else:
-            raise _failure('assets', 'VectorSource, PreparedVector or PreparedPlate records')
+            raise _failure(
+                'assets', 'VectorSource, PreparedVector, PreparedPlate, PreparedProxy or PreparedRasterSequence records'
+            )
         if total > MAX_BYTES:
             raise _failure('assets', 'at most eight MiB of combined source buffers', 'composition.budget')
-    if (
-        set(vectors) != {b.id for b in bindings.values() if b.backend == 'vector'}
-        or set(raster_sources) != {layer.id for layer in layers.values() if bindings[layer.asset].backend == 'plates'}
-        or any(b.backend == 'proxy' for b in bindings.values())
-    ):
+    if set(vectors) != {b.id for b in bindings.values() if b.backend == 'vector'} or set(raster_sources) != {
+        layer.id for layer in layers.values() if bindings[layer.asset].backend != 'vector'
+    }:
         raise _failure('assets', 'exactly the supported inputs for every manifest layer')
     check_expansion(plan, {b.id: len(vectors[b.id].xml) if b.backend == 'vector' else 1024 for b in bindings.values()})
-    checked_vectors, checked_plates = {}, {}
+    checked_vectors: dict[str, c.PreparedVector] = {}
+    checked_plates: dict[str, Placement] = {}
     for name, asset in sorted(vectors.items()):
         checked = c.prepare_vector(bindings[name], asset.xml, budget=plan.spec.budget)
         if type(asset) is c.PreparedVector and checked != asset:
             raise _failure('assets.' + name, 'unchanged prepared vector evidence')
         checked_vectors[name] = checked
     for layer, plate in sorted(raster_sources.items()):
-        checked_plate = c.prepare_plate(plan, layer, plate.source)
+        checked_plate: Placement
+        if isinstance(plate, c.PreparedRasterSequence):
+            checked_plate = c.prepare_raster_sequence(plan, layer, plate.source)
+        elif isinstance(plate, c.PreparedProxy):
+            checked_plate = c.prepare_proxy(plan, layer, plate.source)
+        else:
+            checked_plate = c.prepare_plate(plan, layer, plate.source)
         if checked_plate != plate:
             raise _failure('assets.' + layer, 'unchanged prepared plate evidence')
         checked_plates[layer] = checked_plate
@@ -259,10 +292,22 @@ def compile_bundle(plan: c.ValidatedScenePlan, assets: Assets, *, engine: Path, 
         engine_hash = _engine_hash(engine) if prepared else ''
         jobs = {}
         layer_keys = {}
-        for layer, asset in prepared.items():
-            key = _key(asset, engine_hash)
-            jobs[key] = asset
-            layer_keys[layer] = key
+        instances: dict[tuple[str, int], tuple[Raster, c.ValidatedScenePlan]] = {}
+        for layer, placement in prepared.items():
+            if isinstance(placement, c.PreparedRasterSequence):
+                for span in c.raster_schedule(plan, layer, placement.source):
+                    frame = placement.frames[span.sample]
+                    instances[layer, span.sample] = (frame.asset, plan)
+            else:
+                instances[layer, 0] = (placement, plan)
+        for reference, (placement, _) in instances.items():
+            passes = placement.passes if isinstance(placement, c.PreparedProxy) else (placement,)
+            keys = []
+            for asset in passes:
+                key = _key(asset, engine_hash)
+                jobs[key] = asset
+                keys.append(key)
+            layer_keys[reference] = tuple(keys)
         entries = {key: cache / 'composition' / engine_hash / key for key in jobs}
         # Validate all warm entries before starting any cold renderer work.
         for key, asset in jobs.items():
@@ -282,13 +327,54 @@ def compile_bundle(plan: c.ValidatedScenePlan, assets: Assets, *, engine: Path, 
             for key, asset in jobs.items():
                 if key not in images:
                     with plates.render_session(
-                        max_invocations=asset.binding.plates[0].engine_invocations,
+                        max_invocations=next(
+                            j.engine_invocations for j in asset.binding.plates if j.key == asset.source_digest
+                        ),
                         timeout=budget.timeout,
                         max_memory_bytes=budget.max_memory_bytes,
                         max_file_bytes=MAX_RENDER_FILE_BYTES,
                     ):
                         images[key] = _render(entries[key], key, engine_hash, asset, engine, budget)
-        resources = {hashlib.sha256(data).hexdigest(): data for data in images.values()}
+        from ._composition_proxy_runtime import convert
+
+        raster_images = {}
+        for reference, (placement, view_plan) in instances.items():
+            raw = tuple(images[key] for key in layer_keys[reference])
+            raster_images[reference] = (
+                convert(view_plan, placement, raw, sequence=placement.binding.duration is not None)
+                if isinstance(placement, c.PreparedProxy)
+                else raw[0]
+            )
+        resources = {hashlib.sha256(data).hexdigest(): data for data in raster_images.values()}
+        raster_requests = []
+        wire_bytes = sum(len(v.xml) for v in vectors.values())
+        for layer, placement in prepared.items():
+            if isinstance(placement, c.PreparedRasterSequence):
+                frames = tuple(
+                    raster_images[layer, span.sample] for span in c.raster_schedule(plan, layer, placement.source)
+                )
+                unique = list(dict.fromkeys(frames))
+                wire_bytes += sum(map(len, unique))
+                if wire_bytes > MAX_BYTES:
+                    raise _failure('budget.bundle', 'at most eight MiB of raster IPC inputs', 'composition.budget')
+                indices = {data: index for index, data in enumerate(unique)}
+                raster_requests.append(
+                    {
+                        'layer': layer,
+                        'meters_per_unit': placement.source.frames[0].source.meters_per_unit,
+                        'times': [frame.time for frame in placement.source.frames],
+                        'images': [wire.xml_encode(data) for data in unique],
+                        'frames': [indices[data] for data in frames],
+                    }
+                )
+            else:
+                data = raster_images[layer, 0]
+                wire_bytes += len(data)
+                if wire_bytes > MAX_BYTES:
+                    raise _failure('budget.bundle', 'at most eight MiB of raster IPC inputs', 'composition.budget')
+                raster_requests.append(
+                    {'layer': layer, 'png': wire.xml_encode(data), 'meters_per_unit': placement.source.meters_per_unit}
+                )
         if sum(map(len, resources.values())) + sum(len(v.xml) for v in vectors.values()) > MAX_BYTES:
             raise _failure('budget.bundle', 'at most eight MiB of combined vector/image inputs', 'composition.budget')
         response = _call(
@@ -297,14 +383,7 @@ def compile_bundle(plan: c.ValidatedScenePlan, assets: Assets, *, engine: Path, 
                 'operation': 'compile-bundle',
                 'plan': asdict(plan),
                 'vectors': [{'id': name, 'xml': wire.xml_encode(v.xml)} for name, v in vectors.items()],
-                'rasters': [
-                    {
-                        'layer': layer,
-                        'png': wire.xml_encode(images[layer_keys[layer]]),
-                        'meters_per_unit': asset.source.meters_per_unit,
-                    }
-                    for layer, asset in prepared.items()
-                ],
+                'rasters': raster_requests,
             },
             budget,
         )

@@ -45,6 +45,7 @@ from . import (
     stick,
     toon,
     toon_head,
+    toon_lyra,
     toon_rigs,
 )
 from .canvas import Canvas, flat_counter
@@ -176,8 +177,18 @@ def _brush_toon(entry: registry.Entry) -> Canvas:
     return cv
 
 
+def _lyra_poses(start: float, step: float) -> list[toon.Pose]:
+    own = (*toon_lyra.MOODS, *toon_lyra.EYE_POSES)
+    return [toon_lyra.pose(start + i * step, name) for i, name in enumerate(own)]
+
+
+OWN_POSES: dict[str, Callable[[float, float], list[toon.Pose]]] = {"toon-lyra": _lyra_poses}  # beyond the shared names
+
+
 def _newer_toon(entry: registry.Entry) -> Canvas:
     poses = _poses(NEWER_EYES, NEWER_MOUTHS, (*ARMS, *OWN_ARMS.get(entry.name, ())), WEAR)
+    if entry.name in OWN_POSES:
+        poses += OWN_POSES[entry.name](len(poses) * STEP, STEP)
     seconds = len(poses) * STEP
     cv = _stage("toon", seconds)
     entry(cv, cv.comp, poses, seconds, _taps(poses), mouths=_track(VISEMES))
@@ -337,7 +348,7 @@ SPECIMENS: dict[str, Callable[[registry.Entry], Canvas]] = {
     "toon-cat": _traced_toon,
     **{f"toon-{name}": _brush_toon for name in TOON_BRUSH},
     "toon-fox@2": _newer_toon,
-    **dict.fromkeys(("toon-sloth", "toon-goat", "toon-hamster", "toon-bento"), _newer_toon),
+    **dict.fromkeys(("toon-sloth", "toon-goat", "toon-hamster", "toon-bento", "toon-lyra"), _newer_toon),
     **{f"toon-{name}@2": _newer_toon for name in TOON_REDRAWN},
     "toon-bento@2": _newer_toon,
     **{f"collage-{name}": _paper for name in collage.LOOKS},

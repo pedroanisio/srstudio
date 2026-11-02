@@ -6,14 +6,16 @@ the face, accepts exactly one ``@font-face`` that matches the request and points
 weight and style it declares must be the ones requested. The licence comes from the ``google/fonts``
 repository (OFL, Apache or UFL) and is stored beside the font. ``fonts.lock.json`` records the URL and
 digest; a later install with the file in place makes no request, and a file whose digest changed is
-refused. Nothing is written until every check passes. :func:`as_font` turns the result into the
-:class:`~srstudio.styles.Font` a style or ``EpisodeSpec`` uses.
+refused. Nothing is written until every check passes, and what is written is private: mode 600 for the files, 700 for
+the folder and any parent made for it. :func:`as_font` turns the result into the :class:`~srstudio.styles.Font` a style
+or ``EpisodeSpec`` uses.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import struct
 import urllib.error
@@ -296,6 +298,21 @@ def _digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def _private_folder(folder: Path) -> None:
+    """``folder`` at mode 700, with any parent that has to be made for it at 700 too; a parent already there is left."""
+    missing = [p for p in (folder, *folder.parents) if not p.exists()]
+    for path in reversed(missing):
+        path.mkdir(mode=0o700, exist_ok=True)
+    folder.chmod(0o700)
+
+
+def _write_private(path: Path, data: bytes) -> None:
+    """``data`` in ``path`` at mode 600, whatever mode a file already there had."""
+    with os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "wb") as out:
+        os.fchmod(out.fileno(), 0o600)
+        out.write(data)
+
+
 def install(font: GoogleFont, folder: str | Path, *, fetch: Fetch | None = None) -> Installed:
     """The verified, pinned font file for ``font`` in ``folder``, downloading it only when it is not pinned there."""
     get = fetch if fetch is not None else fetch_url
@@ -340,15 +357,15 @@ def install(font: GoogleFont, folder: str | Path, *, fetch: Fetch | None = None)
     if licence is None:
         raise FontError(f"no licence for {font.family!r} in the google/fonts repository (ofl, apache, ufl)")
     spdx, text = licence
-    folder.mkdir(parents=True, exist_ok=True)
+    _private_folder(folder)
     path = folder / f"{font.slug}.ttf"
     licence_path = folder / f"{font.family.lower().replace(' ', '-')}.{spdx.split('-')[0]}.txt"
-    path.write_bytes(data)
-    licence_path.write_bytes(text)
+    _write_private(path, data)
+    _write_private(licence_path, text)
     got = Installed(path, _digest(data), font.family, font.weight, font.italic, spdx, licence_path, url)
     entry = {k: v for k, v in asdict(got).items() if k not in ("path", "license_file")}
     lock[font.slug] = {**entry, "file": path.name, "license_file": licence_path.name}
-    (folder / LOCK).write_text(json.dumps(lock, indent=2, sort_keys=True) + "\n")
+    _write_private(folder / LOCK, (json.dumps(lock, indent=2, sort_keys=True) + "\n").encode())
     return got
 
 

@@ -126,7 +126,8 @@ def assemble(
     if rasters:
         shelf = ET.SubElement(root, 'assets')
         seen = set()
-        for raster in rasters.values():
+        images = (image for raster in rasters.values() for image in raster.get('frames', (raster,)))
+        for raster in images:
             if raster['id'] not in seen:
                 ET.SubElement(
                     shelf,
@@ -148,6 +149,31 @@ def assemble(
     for index, layer in enumerate(spec.layers):
         if layer.id in rasters:
             raster = rasters[layer.id]
+            if 'frames' in raster:
+                parent = ET.SubElement(
+                    content,
+                    'group',
+                    {'id': f'l{index}', 'start': _number(layer.temporal.start), 'end': _number(layer.temporal.end)},
+                )
+                for sample, frame in enumerate(raster['frames']):
+                    group = ET.SubElement(
+                        parent,
+                        'group',
+                        {
+                            'id': f'l{index}__frame{sample}',
+                            'x': _number(frame['offset'][0]),
+                            'y': _number(frame['offset'][1]),
+                            'start': _number(frame['start']),
+                            'end': _number(frame['end']),
+                        },
+                    )
+                    ET.SubElement(
+                        group,
+                        'layer',
+                        {'id': f'l{index}__frame{sample}__image', 'asset': frame['id'], 'x': '0', 'y': '0'},
+                    )
+                    checkpoint()
+                continue
             group = ET.SubElement(
                 content,
                 'group',

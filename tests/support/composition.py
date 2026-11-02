@@ -1,10 +1,12 @@
 """A real pinned paper drawing for composition payload and emission tests."""
 
+import sys
 from dataclasses import replace
 
+import numpy as np
 from sr_core.scene import Scene
 
-from srstudio import Canvas, clay, parts
+from srstudio import Canvas, clay, parts, plates
 from srstudio import composition as c
 
 
@@ -89,3 +91,51 @@ def prepared_plate_plan(item):
         plates=(replace(base.bindings[0].plates[0], key=c.plate_source_digest(item)),),
     )
     return c.preflight(base.spec, (binding,))
+
+
+def mesh():
+    """A one-quad textured mesh named for the plate material ``skin``, with UVs on its corners."""
+    return clay.Mesh(
+        'skin',
+        np.array([[-0.25, -0.25, 0], [0.25, -0.25, 0], [0.25, 0.25, 0], [-0.25, 0.25, 0]]),
+        np.tile([0.0, 0.0, -1.0], (4, 1)),
+        np.array([[0, 2, 1], [0, 3, 2]]),
+        np.array([[0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]]),
+    )
+
+
+def mixed():
+    """A plan with one prepared plate under one screen-space vector mark, and both prepared inputs."""
+    item = plate_source()
+    base = prepared_plate_plan(item)
+    scene = Scene(version='auto')
+    scene.add_project(width=64, height=64, fps='24', duration=1)
+    canvas = Canvas(scene, font_asset=None, width=64, height=64)
+    canvas.rect(canvas.comp, 0, 0, 8, 8, '#FF0000')
+    xml = scene.to_bytes()
+    mark = c.AssetBinding('mark', 'rafa', 1, 'vector', c.Bounds((0, 0, 0), (8, 8, 0)), nodes=16, memory_bytes=16384)
+    layer = c.LayerSpec(
+        'mark', 'mark', 1, c.TemporalPolicy(0, 1), role='information', space='screen', transform=c.Transform((3, 4, 0))
+    )
+    plan = c.preflight(replace(base.spec, layers=base.spec.layers + (layer,)), base.bindings + (mark,))
+    return plan, (c.prepare_plate(plan, 'host', item), c.VectorSource('mark', xml))
+
+
+def renderer(tmp_path, body=None):
+    """A stand-in engine that copies a blue 64 px PNG to its --output, or runs ``body`` instead."""
+    fixture = tmp_path / 'fixture.png'
+    plates.write_png(fixture, np.full((64, 64, 4), (0, 0, 255, 255), dtype=np.uint8))
+    engine = tmp_path / 'engine'
+    engine.write_text(
+        f'#!{sys.executable}\n'
+        + (
+            body
+            or f'''import sys
+from pathlib import Path
+assert Path(sys.argv[2]).is_file()
+Path(sys.argv[sys.argv.index('--output') + 1]).write_bytes(Path({str(fixture)!r}).read_bytes())
+'''
+        )
+    )
+    engine.chmod(0o700)
+    return engine
