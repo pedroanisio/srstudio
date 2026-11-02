@@ -138,8 +138,8 @@ snippet above to compile these combined picture layers.
 
 This candidate declares a ground-level root; it does not yet constrain each
 sole with the body solver. The three-second depth change remains a cut, and
-the rig retains its authored ink colors. The following components add the hand
-and information; body support, rig form lighting and the complete animated
+the rig retains its authored ink colors. The following components add the hand,
+supported body and information. Rig form lighting and the complete animated
 acceptance measurements remain open. The retained legacy `drawing_proof` and
 the 30-second showcase are unchanged.
 
@@ -155,7 +155,8 @@ corrects a drawing/reference-space mix-up: Bento's authored sole coordinate
 must pass through his reference mapping before conversion to native pixels.
 The previous root used native y=1479.53 instead of 1806.81. All 17 figure tests,
 including six full-size native pixel comparisons, pass with the corrected
-placement. This fixes the static anchor; animated per-foot support remains open.
+placement. This fixes the static anchor in `figure_scene`; the supported-body
+component below adds animated per-foot constraints.
 
 ### Shared hand and cup
 
@@ -197,9 +198,9 @@ form lighting or approved information-layer equivalence.
 
 ### Shoulder-attached candidate
 
-[`drawing_attached.attached_scene`](../examples/drawing_attached.py) replaces
-the isolated hand study in `complete_scene()`. It keeps the native face and head
-clock, declares the candidate's right arm as externally owned, and omits that
+[`drawing_attached.attached_scene`](../examples/drawing_attached.py) supplies
+the attached arm used by the supported-body candidate below. It keeps the
+native face and head clock, declares the candidate's right arm as externally owned, and omits that
 native arm before drawing. The spatial sleeve follows Bento's actual shoulder,
 including native breath and lean. Its rigid placement preserves arm and digit
 dimensions. The cup follows the same placement while attached and holds its
@@ -220,9 +221,10 @@ estimate exceeds the node cap. The 500,000-node and 8-GiB caps remain unchanged.
 The [native-engine registration report](../../generated/sdk-attached-hand/v4/registration/verification.json)
 compares the projected native shoulder with the spatial sleeve in all 67
 intervals at 1080×1920. Its maximum axis residual is below 0.0032 pixel.
-This measures geometry registration, not raster contact masks. The body still
-needs world-anchored feet and steps, and the cup's world hold after release
-does not model physical support. Candidate geometry and palette still require
+This measures geometry registration, not raster contact masks. That component
+still uses sliding feet; the supported-body replacement below adds sole
+constraints and steps. The cup's world hold after release does not model
+physical support. Candidate geometry and palette still require
 the complete acceptance review.
 
 The [attached preview](../../generated/sdk-attached-hand/v4/index.html) uses
@@ -233,6 +235,46 @@ strict final-quality frames include contact onset, the camera cut, release and
 an out-of-order repeat. Opening/repeated pixels, the opaque background and
 protected information regions match exactly. This is an incremental reduced
 preview, not a fresh full-size cold run or complete acceptance.
+
+### Supported body candidate
+
+[`drawing_body.body_scene`](../examples/drawing_body.py) replaces the sliding
+whole-figure placement in `complete_scene()`. Bento shifts over a stance foot,
+lifts and places the other foot, transfers weight, and brings the trailing foot
+along. His measured drawing proportions define a separate body profile; the
+default human sole width remains 0.12 m. The solver preserves bone lengths and
+checks its explicit static mass proxy. This is not a dynamics certificate.
+
+The native upper body retains the face, breath and head clocks. Its pelvis
+center follows the solved root, and the spatial sleeve follows the resulting
+shoulder. Authored trouser contours deform through the hip, knee and ankle;
+each foot is one rigid drawing placed at its world sole. Contour reduction
+stays within 0.05 drawing units of the traced source polyline. It does not
+replace that polyline with a generic foot or alter the approved native rig.
+
+Liftoff, landing, weight-shift and hand-contact events join the shared sampling
+clock. Both painter windows use the original six-second path clock, avoiding
+rounding differences between locally offset path keys and global foot keys.
+The three-second depth replacement remains an explicit cut. At the default
+12-fps world cadence, the complete plan has 80 intervals and 196 raw render
+jobs, with 180,355 planned nodes and 6,705,311,568 bytes of working storage.
+These are planned costs, not observed peak memory or a completed cold render.
+
+`tests/test_drawing_body_support.py` exercises support, planted sole positions,
+bone lengths, native pelvis registration, source preparation and full-size
+component rendering. The component render isolates the upper body, legs, feet
+and floor; the spatial arm, car and information belong to the combined render.
+The [full-size body component](../../generated/sdk-bento-body/v4/index.html)
+retains eight strict final-quality frames, including both steps, the held
+opening and an out-of-order repeat. Its 5,775,010-byte XML stays below the
+unchanged cap, and held/repeated RGBA pixels match exactly. This is component
+evidence; the isolated render deliberately omits the spatial right arm.
+At the 12 planted-sole observations in these frames, the last covered pixel
+center in the projected anchor column is within 0.835 pixel vertically of that
+anchor. The report records the local floor/interior checks and edge threshold;
+this sampled measurement does not establish every frame's contact mask.
+Physical cup support, shared rig form lighting and the full animated acceptance
+matrix remain open.
 
 ### Native information in the combined scene
 
@@ -245,7 +287,7 @@ and remains above every picture layer.
 The scene's native `background="#efe8df"` restores the original clear color
 without inserting an extra picture layer. This retains the original text-edge
 compositing path and adds no raw render jobs. At the default cadence, the
-complete layer plan includes the attached candidate's 164 raw jobs and the existing
+complete layer plan includes the supported candidate's 196 raw jobs and the existing
 node, memory and output limits.
 
 Use `complete_scene()` in the build snippet to include the background and
@@ -256,7 +298,8 @@ complete rendered acceptance matrix remain required before adoption.
 The full-size information test compares native and compiled 1080×1920 RGBA
 pixels before and after the camera cut, with exact equality. The separate
 [combined preview](../../generated/sdk-world-information/v4/complete-preview.json)
-reuses 30 cached raw renders at 216×384 and a 2-fps world cadence. Its held and
+predates the supported-body integration and reuses 30 cached raw renders at
+216×384 and a 2-fps world cadence. Its held and
 repeated frames, opaque background, and title/caption regions pass exact pixel
 checks. It is a reduced preview, not the default 12-fps full-size acceptance proof.
 
@@ -271,7 +314,7 @@ compare against `proxy.View.project` and exercise near-plane refusal.
 
 The following acceptance work remains: measured raster landmark/contact and
 occlusion masks across the complete clip; palette and line-width approval;
-rendered pose/expression continuity and whole-body support; shared drawn shading
+rendered pose/expression continuity and complete body-contact masks; shared drawn shading
 and adoption of the caster/receiver contract; equivalence to the approved information layer;
 compatibility fingerprints; and complete temporal visual review. The JSON
 reports distinguish measured facts from those remaining requirements. Operator

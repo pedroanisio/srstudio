@@ -43,11 +43,14 @@ def test_background_is_native_at_every_camera_pose(example):
 def test_complete_candidate_keeps_information_screen_owned_and_within_bounds(example):
     study = example.complete_scene()
     timeline = study.timeline
+    assert {binding.id for binding in timeline.base.bindings} >= {'legs', 'feet'}
+    assert sum('-foot-' in layer.id for layer in timeline.base.spec.layers) == 4
+    assert {0.85, 1.35, 1.95, 2.45, 3.85, 4.35, 4.95, 5.45} <= {span.start for span in timeline.spans}
     assert timeline.base.spec.background == '#efe8df'
     info = timeline.base.spec.layers[-1]
     assert (info.id, info.space, info.role) == ('information', 'screen', 'information')
     assert info.parent is None
-    assert timeline.cost.engine_invocations == 164  # Includes the exact 1.2-second contact onset for hand and car.
+    assert timeline.cost.engine_invocations == 196  # Shared foot, root and contact events sample every picture layer.
     assert timeline.cost.nodes <= 500000
     assert timeline.cost.memory_bytes <= 8 * 1024**3
     for plan in timeline.samples:
