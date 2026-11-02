@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from . import camera, checks, look, saga, signature
+from ._saga_set_contracts import contract
 from .canvas import Canvas
 from .registry import register
 from .saga import SagaError, Talk
@@ -382,6 +383,7 @@ def _jabbing_arm(cv: Canvas, g, jab: Jab, frames: Sequence[tuple[float, float]])
     "saga-space",
     summary="Deep space: a navy-to-violet void, twinkling stars, a nebula, a ringed "
     "planet and a small asteroid where someone left a potted cactus",
+    contract=contract('saga-space'),
 )
 def space(cv: Canvas, parent, *, end: float, planet: bool = True) -> None:
     """Open space for exteriors; props (the cube, ships) are drawn over it."""
@@ -408,6 +410,7 @@ def space(cv: Canvas, parent, *, end: float, planet: bool = True) -> None:
     "saga-bridge",
     summary="The Directorate's command bridge: a wide window on the stars, steel "
     "struts, a red alert strip and a row of blinking consoles",
+    contract=contract('saga-bridge'),
 )
 def bridge(cv: Canvas, parent, *, end: float) -> None:
     """The bridge; the cast stands on its deck at :data:`FLOOR`."""
@@ -446,6 +449,7 @@ def bridge(cv: Canvas, parent, *, end: float) -> None:
     "saga-cantina",
     summary="A desert cantina: adobe arches, hanging lamps, a bottle shelf and "
     "booths of shadowy patrons whose eyes glow when they all turn to stare",
+    contract=contract('saga-cantina'),
 )
 def cantina(cv: Canvas, parent, *, end: float, stare: Spans = ()) -> None:
     """The cantina behind the bar; the patrons' eyes light during ``stare``. The bar itself is
@@ -500,6 +504,7 @@ def cantina(cv: Canvas, parent, *, end: float, stare: Spans = ()) -> None:
     "saga-cantina-bar",
     summary="The cantina's bar counter in front of whoever serves behind it, "
     "dark wood with a brass rail and a card reader on a stalk",
+    contract=contract('saga-cantina-bar'),
 )
 def cantina_front(cv: Canvas, parent, *, end: float) -> None:
     """The bar counter, drawn after the cast behind it."""
@@ -517,6 +522,7 @@ def cantina_front(cv: Canvas, parent, *, end: float) -> None:
     "saga-desert",
     summary="A desert world at sunset: two suns, layered dunes, a domed hut with "
     "a potted cactus at its door and a dew-collecting tower",
+    contract=contract('saga-desert'),
 )
 def desert(cv: Canvas, parent, *, end: float, shade: bool = False) -> None:
     """The desert outside the hut; the cast stands on the near dune at :data:`FLOOR`. With ``shade`` the dune below
@@ -558,6 +564,7 @@ def desert(cv: Canvas, parent, *, end: float, shade: bool = False) -> None:
     "saga-cockpit",
     summary="A freighter cockpit seen from the nose: a windshield on the stars "
     "that streaks into hyperspace, and the pilots' headrests",
+    contract=contract('saga-cockpit'),
 )
 def cockpit(cv: Canvas, parent, *, end: float, jump: Spans = (), hit: float | None = None) -> None:
     """The cockpit behind the pilots; the window streaks during ``jump``, and at second ``hit`` a fireball blooms in
@@ -600,6 +607,9 @@ def cockpit(cv: Canvas, parent, *, end: float, jump: Spans = (), hit: float | No
     "location",
     "saga-cockpit-console",
     summary="The cockpit's console in front of the pilots: switches, blinking lights, a throttle and a dashboard plant",
+    contract=contract(
+        'saga-cockpit-console', stick_ball=stick_ball, stick_grip=stick_grip, hand_at=hand_at, jab_frames=jab_frames
+    ),
 )
 def cockpit_front(
     cv: Canvas, parent, *, end: float, hit: float | None = None, jab: Jab | None = None, ledge: bool = False
@@ -640,6 +650,7 @@ def cockpit_front(
     "saga-compactor",
     summary="A trash compactor: grimy riveted walls that close in, rubbish "
     "heaps, a dripping pipe and a door that slides open",
+    contract=contract('saga-compactor'),
 )
 def compactor(
     cv: Canvas,
@@ -725,6 +736,7 @@ def _panel_layout(p: Panel, font: bytes, x: float, w: float, most: float) -> _Pa
     "saga-holo",
     summary="A hologram panel: cyan glass with scanlines, a toned title, wrapped body text "
     "and an optional face on the call; switches panels on the shot's clock",
+    contract=contract('saga-holo', wrap=wrap, cast=saga.CAST),
 )
 def holo(
     cv: Canvas,
@@ -808,6 +820,7 @@ def holo(
     "saga-cube",
     summary="The Directorate's battle cube, a moon-sized box with panel seams and one "
     "small, circled exhaust hole; with a boom it bursts into fire and debris",
+    contract=contract('saga-cube'),
 )
 def cube_station(
     cv: Canvas, parent, *, at: tuple[float, float], size: float = 520, end: float, boom: float | None = None
@@ -883,6 +896,7 @@ def cube_station(
     "saga-freighter",
     summary="Rook's freighter: a boxy, dented space van with one wonky fin, a "
     "glowing engine and a sticker asking how its piloting is",
+    contract=contract('saga-freighter'),
 )
 def freighter(cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0, end: float, flip: bool = False):
     """The freighter centred on ``at``, nose to the right (left with ``flip``)."""
@@ -900,7 +914,12 @@ def freighter(cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0
     return g
 
 
-@register("prop", "saga-pebble", summary="A pebble on the sand that floats up, wobbling, when someone feels the Flow")
+@register(
+    "prop",
+    "saga-pebble",
+    summary="A pebble on the sand that floats up, wobbling, when someone feels the Flow",
+    contract=contract('saga-pebble'),
+)
 def pebble(cv: Canvas, parent, *, at: tuple[float, float], end: float, lift: float = 0.0, rise: float = 160):
     """A pebble resting on ``at`` that floats ``rise`` px up from ``lift`` (a second inside the shot)."""
     _check_end(end)
@@ -922,7 +941,12 @@ def pebble(cv: Canvas, parent, *, at: tuple[float, float], end: float, lift: flo
     return g
 
 
-@register("prop", "saga-fighter", summary="A Directorate fighter: a grey wedge with red running lights, in a hurry")
+@register(
+    "prop",
+    "saga-fighter",
+    summary="A Directorate fighter: a grey wedge with red running lights, in a hurry",
+    contract=contract('saga-fighter'),
+)
 def fighter(cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0, end: float, flip: bool = False):
     """A fighter centred on ``at``, nose to the right (left with ``flip``)."""
     _check_end(end)
@@ -940,6 +964,7 @@ def fighter(cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0, 
     "graphic",
     "saga-hook",
     summary="The hook: the Handbook in the top-left corner glowing as it asks the reel's question in gold beside it",
+    contract=contract('saga-hook', wrap=wrap),
 )
 def hook(cv: Canvas, parent, text: str, *, end: float, font: bytes, talk: Talk = ()):
     """The question at the top of the safe area beside a small Handbook, from 0 to ``end``."""
@@ -960,6 +985,7 @@ def hook(cv: Canvas, parent, text: str, *, end: float, font: bytes, talk: Talk =
     "saga-entry",
     summary="The Handbook entry that buttons every reel: the device held up on the "
     "stars, its screen typing out the entry's title and the dry footnote",
+    contract=contract('saga-entry', wrap=wrap),
 )
 def entry(
     cv: Canvas, parent, title: str, body: str, *, end: float, font: bytes, talk: Talk = (), legible: bool = False

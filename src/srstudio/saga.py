@@ -27,6 +27,7 @@ from typing import Any
 
 from . import _character_contracts as cc
 from . import camera, checks, lipsync, rig
+from ._saga_set_contracts import contract
 from .canvas import VOID, Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -537,6 +538,7 @@ def _check_prop_position(at: tuple[float, float]) -> None:
     summary="The Handbook, the narrator's device: a chunky orange slab with RELAX on its cover in big friendly "
     "letters and a screen that glows while the narrator reads",
     tags=("narrator",),
+    contract=contract('saga-handbook'),
 )
 def handbook(cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0, talk: Talk = (), end: float):
     """The Handbook, top-left corner at ``at``, 220 × 300 at scale 1; its screen follows ``talk``."""

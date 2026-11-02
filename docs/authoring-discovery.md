@@ -1395,3 +1395,66 @@ uses the native `typewriter` text preset, whose start and duration are stated
 in the contract; this is distinct from the Canvas key tracks controlling its
 word gate and Sunny's motion. The notice adds a signature code but no cactus.
 The graphic returns the whole composition, without a separate host handle.
+
+## Saga scenery and sampled console contact
+
+Saga's sixteen scenery, prop and graphic contracts distinguish room mutation
+from returned groups. The eight location layers and the cube return `None`;
+use a caller-owned group to move or gate them together. Holograms return one
+group per panel. Ships, the pebble, the Handbook and the two graphics return
+their whole drawing group. Room and graphic geometry uses the fixed
+1080×1920 layout. Ships, the pebble and the Handbook have local geometry at
+their placement; cube coordinates are baked into its paths.
+
+<!-- saga-set-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry, saga_sets
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1920, fps='24', duration=6)
+cv = Canvas(scene, font_asset=None, local_time=True)
+sequence = cv.comp.add_sequence(id='shots')
+sequence.add_group(id='lead', end=2)
+shot = sequence.add_group(id='cockpit-shot', end=4)
+room = cv.group(shot, 'room')
+saga_sets.cockpit(cv, room, end=4, jump=((0.5, 1.5),))
+# Draw pilots here, before the foreground console.
+console = registry.get('location', 'saga-cockpit-console')
+jab = saga_sets.Jab(1, '#efe2c4', '#925934', (404, 1040), 1.55)
+assert console.builder(cv, room, end=4, jab=jab) is None
+cv.gate(room, ((0, 4),))
+operations = {op.name: op.builder for op in console.contract.operations}
+hand_at = operations['hand_at']
+stick_grip = operations['stick_grip']
+jab_frames = operations['jab_frames']
+assert hand_at(jab, 0) == stick_grip(0)
+assert len(jab_frames(jab, 4)) == 97
+assert console.describe()['contract']['capabilities']['spatial_attachment'] is False
+```
+<!-- saga-set-discovery:end -->
+
+Keys and visibility gates follow `Canvas.local_time`; enabling it makes cues
+relative to the later sequence shot. `end` does not universally clip emitted
+animation. Compactor walls retain their supplied stop time, even beyond
+`end`; `start_px` can carry their displacement across a cut. Door motion can
+also finish after `end`. Static ships, the desert and the bar validate `end`
+without adding motion. Call `saga_sets.finish` explicitly for shot grading.
+
+Console inspection exposes the actual `stick_ball`, `stick_grip`, `hand_at`
+and `jab_frames` helpers. Positions use fixed-layout coordinates before caller
+transforms. The console shares bounded 24 Hz samples between stick rotation
+and the hand/forearm drawing, with at most 20,000 samples including the terminal
+sample. The arm is one stretching forearm from a fixed elbow. Its independent
+interpolation tracks do not guarantee exact contact between sample times or
+provide whole-body support, articulation or collision handling.
+
+Hologram, hook and entry contracts expose the actual `wrap` helper. Supply
+font bytes matching the bound Canvas font. All hologram title/body layouts
+are measured before drawing, including later panels. A panel's `fade=True`
+uses opacity instead of the first panel's vertical pop and the nonfade
+flicker. Hologram `face` draws a small complete cast member, without a head
+crop or speech track. The entry's body uses the engine's native typewriter
+preset; the contract states its start and duration separately from Canvas
+keys. Its screen ignores a speech state at zero and responds to later states;
+the small Handbook follows its initial speech state as well.

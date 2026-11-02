@@ -24,11 +24,11 @@
   "catalog_observation": {
     "parts": 734,
     "characters": 75,
-    "entries_with_explicit_part_contract": 707,
+    "entries_with_explicit_part_contract": 723,
     "all_default_characters_have_explicit_contracts": true,
     "noncharacter_parts": 659,
-    "noncharacter_parts_with_explicit_contracts": 632,
-    "source": "Fresh-process registry observation on 2026-11-02 after eight Gloss set/graphic contracts with the existing wrapping operation. Drawing baselines were captured from c2d2a854; the serving-cue repair in 3afd32ab preserves those valid scenes. See review_verification.gloss_set_contracts.",
+    "noncharacter_parts_with_explicit_contracts": 648,
+    "source": "Fresh-process registry observation on 2026-11-02 after sixteen Saga scenery, prop and graphic contracts with five existing helpers. Drawing baselines were captured from fc3f2af8. See review_verification.saga_set_contracts.",
     "by_kind": {
       "character": {
         "registered": 75,
@@ -36,15 +36,15 @@
       },
       "prop": {
         "registered": 461,
-        "explicit_contracts": 448
+        "explicit_contracts": 454
       },
       "location": {
         "registered": 115,
-        "explicit_contracts": 106
+        "explicit_contracts": 114
       },
       "graphic": {
         "registered": 83,
-        "explicit_contracts": 78
+        "explicit_contracts": 80
       }
     },
     "qualification": "Fresh-process registry.entries() observation after the latest implemented contract batch. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates.",
@@ -58,6 +58,36 @@
     }
   },
   "review_verification": {
+    "saga_set_contracts": {
+      "baseline_source_commit": "fc3f2af8d8be4808d549ffb25bc43ed16ed74eca",
+      "missing_contract_and_guide_regressions_red": 52,
+      "initial_green": 1,
+      "new_tests": 53,
+      "new_explicit_contracts": 16,
+      "existing_helpers_exposed_as_operations": 5,
+      "unchanged_drawing_baselines": 16,
+      "unchanged_implementation_definitions": 61,
+      "implementation_comparison_scope": "Top-level functions/classes with registration decorators removed; bodies and docstrings unchanged from the separately committed preflight fixes.",
+      "new_real_engine_evaluation_cases": 2,
+      "selected_regressions": {
+        "passed": 2251,
+        "skipped": 0
+      },
+      "branch_inclusive_coverage_percent": 96.45426515930113,
+      "branch_coverage_percent": 92.73504273504274,
+      "coverage_scope": [
+        "src/srstudio/_saga_set_contracts.py",
+        "src/srstudio/contracts.py",
+        "src/srstudio/registry.py",
+        "src/srstudio/saga.py",
+        "src/srstudio/saga_sets.py"
+      ],
+      "ruff": "passed",
+      "format": "passed",
+      "mypy_source_files": 336,
+      "retained_artifacts": "../generated/sdk-saga-set-contracts/v1/",
+      "qualification": "Sixteen unchanged drawings, actual mutation/group ownership, Canvas clocks, nested Panel/Jab units and vocabularies, real wrap/contact helpers and deterministic engine evaluation at sampled times in later sequence shots. Contact between samples and whole-body biomechanics are not guaranteed. Eleven non-character contracts and the broader animation findings remain open."
+    },
     "gloss_set_contracts": {
       "baseline_source_commit": "c2d2a8543820ea8a47a8c0d8086d8f1397ead6b2",
       "implementation_comparison_commit": "3afd32ab73430a95ebd7408e56e7150a3ca91ed3",
@@ -2035,15 +2065,17 @@
           "srstudio.collage_article",
           "srstudio.collage_forecast",
           "srstudio.rafa",
-          "srstudio.gloss_sets"
+          "srstudio.gloss_sets",
+          "srstudio.saga_sets"
         ],
         "additional_parts": [
-          "toon-headset"
+          "toon-headset",
+          "saga-handbook"
         ],
-        "new_contracts": 579,
-        "current_explicit_noncharacter_contracts": 632,
+        "new_contracts": 595,
+        "current_explicit_noncharacter_contracts": 648,
         "current_registered_noncharacters": 659,
-        "remaining_undeclared": 27,
+        "remaining_undeclared": 11,
         "evidence": [
           "tests/test_counter_store_contracts.py",
           "tests/data/counter-store-contract-baseline.json",
@@ -2134,9 +2166,13 @@
           "src/srstudio/_gloss_set_contracts.py",
           "tests/test_gloss_set_contracts.py",
           "tests/support/gloss_set_contracts.py",
-          "tests/data/gloss-set-contract-baseline.json"
+          "tests/data/gloss-set-contract-baseline.json",
+          "src/srstudio/_saga_set_contracts.py",
+          "tests/test_saga_set_contracts.py",
+          "tests/support/saga_set_contracts.py",
+          "tests/data/saga-set-contract-baseline.json"
         ],
-        "qualification": "The full catalog expansion remains open. All 109 non-character builders in Stick-prefixed modules and all 158 in Toon-prefixed modules now declare authored contracts, alongside the completed Cutout families. These module counts do not include other families sharing their style names. Drawing baselines remain unchanged; specific correctness repairs are recorded separately as P1 findings. Host, Mind and Map kits now declare all 31 non-character builders. Both News kit versions now declare their 27 non-character builders. The five Soft scene, bedtime, closet and inbox modules add 18 declared builders. The Soft prop and odds modules add 32 declared builders, with effect limits, held versus linear motion, callback ownership and expression-clock qualifications. Blob now declares all 12 non-character builders and exposes eight existing layout helpers without inventing spatial attachments. All 19 Ink non-character builders now declare clocks, actual return scope, timed records and typed delegation targets while retaining explicitly open variadic envelopes. The Collage table and corner module adds 16 contracts with actual drawing origins, copy, fork/card limits, return ownership and project-clock animation. Everyday Collage adds 22 contracts and five real reach/sampling helper operations, with phone-screen ownership, mixed clock qualifications and explicit limits of sampled sleeve motion. Collage rooms, photos, clinic props and illustrated interfaces add 33 contracts and three actual room layout helpers, with sharp signature ownership, typed Place records, crop semantics and verified clocks. Rafa adds seven model-mutation contracts and its actual mesh-finishing helper, with material/print dependencies and explicitly qualified room placement. Gloss adds eight scenery and graphic contracts with actual wrapping, mutation versus group returns, carried cards, native text presets and Canvas-clock evidence. The 27 remaining non-character entries still require source review and executable semantic evidence."
+        "qualification": "The full catalog expansion remains open. All 109 non-character builders in Stick-prefixed modules and all 158 in Toon-prefixed modules now declare authored contracts, alongside the completed Cutout families. These module counts do not include other families sharing their style names. Drawing baselines remain unchanged; specific correctness repairs are recorded separately as P1 findings. Host, Mind and Map kits now declare all 31 non-character builders. Both News kit versions now declare their 27 non-character builders. The five Soft scene, bedtime, closet and inbox modules add 18 declared builders. The Soft prop and odds modules add 32 declared builders, with effect limits, held versus linear motion, callback ownership and expression-clock qualifications. Blob now declares all 12 non-character builders and exposes eight existing layout helpers without inventing spatial attachments. All 19 Ink non-character builders now declare clocks, actual return scope, timed records and typed delegation targets while retaining explicitly open variadic envelopes. The Collage table and corner module adds 16 contracts with actual drawing origins, copy, fork/card limits, return ownership and project-clock animation. Everyday Collage adds 22 contracts and five real reach/sampling helper operations, with phone-screen ownership, mixed clock qualifications and explicit limits of sampled sleeve motion. Collage rooms, photos, clinic props and illustrated interfaces add 33 contracts and three actual room layout helpers, with sharp signature ownership, typed Place records, crop semantics and verified clocks. Rafa adds seven model-mutation contracts and its actual mesh-finishing helper, with material/print dependencies and explicitly qualified room placement. Gloss adds eight scenery and graphic contracts with actual wrapping, mutation versus group returns, carried cards, native text presets and Canvas-clock evidence. Saga adds sixteen scenery, prop and graphic contracts with actual wrap and sampled contact operations, fixed-layout units, nested cue records and real-engine clock evidence. The 11 remaining non-character entries still require source review and executable semantic evidence."
       },
       "evidence": [
         "src/srstudio/registry.py:contract_coverage",
