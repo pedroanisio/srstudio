@@ -63,12 +63,17 @@ def test_the_sway_snap_lands_with_the_drop():
 
 
 def test_the_seat_groove_head_holds_its_angle_and_the_arms_ride_without_lag():
+    # The neck leans after the hips and the head rolls back against it (ADR 0201): the head's angle in the picture
+    # holds, though its joints now move. The arms still ride the body.
     out = list(frames(seat_groove(), REEL, 0.0, SPAN, FPS))
-    for joint in ("head", "neck", "left_upper_arm", "right_upper_arm", "left_lower_arm", "right_lower_arm"):
+    for joint in ("left_upper_arm", "right_upper_arm", "left_lower_arm", "right_lower_arm"):
         for dof in dance.JOINTS[joint]:
             assert {f.value(f"{joint}.{dof}") for f in out} == {0.0}, (joint, dof)
+    for f in out:
+        assert f.value("head.tilt_left_right") == pytest.approx(-f.value("neck.tilt_left_right"))
     assert seat_groove().support == "seat"
     assert all(dance.chain(p.target) in {"root", "left_arm", "right_arm"} for p in seat_groove().patterns)
+    assert {f.target for f in seat_groove().follows} == {"neck.tilt_left_right", "head.tilt_left_right"}
 
 
 @pytest.mark.parametrize(

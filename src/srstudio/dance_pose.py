@@ -8,15 +8,20 @@ big-headed cartoon bobs more than a realistic figure by the same share; each joi
 A delta on a joint the character lacks (a finger of a mitten hand, a joint ``omit`` removed) is dropped and named in
 :attr:`DancePose.dropped`, never applied elsewhere. A target outside the canonical skeleton is refused, and a value
 past a joint's limit is refused unless ``clamp`` asks for it to be clamped, as :func:`skeleton.add` does.
+
+:func:`body_series` reads the swing a dance shows on a character, the head's travel and roll and the neck's lean,
+frame by frame, for :func:`dance.measure_swing` (ADR 0201).
 """
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+import math
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 
 from . import skeleton as sk
-from ._dance_sample import DanceFrame
+from ._dance_model import DanceError
+from ._dance_sample import MAX_FRAMES, DanceFrame
 
 HIPS = ("hips.right", "hips.up", "hips.forward")  # the root's translations, in dance.ROOT's order
 
@@ -53,3 +58,57 @@ def _joints(joints: Mapping[str, float]) -> Mapping[str, float]:
     if not isinstance(joints, Mapping):
         raise sk.SkeletonSchemaError("a frame's joints are a mapping", path="joints", actual=type(joints).__name__)
     return joints
+
+
+@dataclass(frozen=True)
+class BodySeries:
+    """A dance as the picture of a character facing the camera shows it, one value per frame: the head's centre
+    ``across`` (toward the character's right) and ``up`` from the rest pose's hips, in that character's head radii;
+    the head's ``roll``, joint to crown, and the neck's ``lean``, neck to head joint, in radians from straight up,
+    positive toward the character's right."""
+
+    across: tuple[float, ...]
+    up: tuple[float, ...]
+    roll: tuple[float, ...]
+    lean: tuple[float, ...]
+
+
+def _side(a: sk.Vec3, b: sk.Vec3) -> float:
+    """The angle from straight up of the line from ``a`` to ``b`` in the picture's plane (y is down)."""
+    return math.atan2(b.x - a.x, a.y - b.y)
+
+
+def body_series(
+    profile: sk.SkeletonProfile,
+    frames: Iterable[DanceFrame],
+    *,
+    base: sk.SkeletonPose | None = None,
+    clamp: bool = False,
+) -> BodySeries:
+    """``frames`` danced on ``profile`` through :func:`dance_pose`, read as a :class:`BodySeries`; at most
+    ``MAX_FRAMES`` frames are read. The head's centre is half way from its joint to its crown."""
+    start = base if base is not None else sk.rest_pose(profile)
+    radius = profile.proportions.head_radius_m
+    hips = sk.world(profile, start)["hips"].origin
+    rows: list[tuple[float, float, float, float]] = []
+    for n, frame in enumerate(frames):
+        if n >= MAX_FRAMES:
+            raise DanceError(f"a body series reads at most {MAX_FRAMES} frames", path="frames")
+        if not isinstance(frame, DanceFrame):
+            raise DanceError(f"frames are dance.DanceFrame, not {type(frame).__name__}", path=f"frames[{n}]")
+        pose = dance_pose(profile, frame, base=start, clamp=clamp).pose
+        joints, crown = sk.world(profile, pose), sk.tips(profile, pose)["head"]
+        head = joints["head"].origin
+        centre_x, centre_y = (head.x + crown.x) / 2, (head.y + crown.y) / 2
+        rows.append(
+            (
+                (centre_x - hips.x) / radius,
+                (hips.y - centre_y) / radius,
+                _side(head, crown),
+                _side(joints["neck"].origin, head),
+            )
+        )
+    if not rows:
+        raise DanceError("a body series reads at least one frame", path="frames")
+    across, up, roll, lean = (tuple(column) for column in zip(*rows, strict=True))
+    return BodySeries(across, up, roll, lean)

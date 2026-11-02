@@ -1,5 +1,5 @@
 {
-  "schema": "srstudio.dance-moves/1.0.0",
+  "schema": "srstudio.dance-moves/1.1.0",
   "generated_by": {
     "tool": "Claude Code",
     "model": "Claude Opus 5.5 (claude-opus-5-5)"
@@ -7,7 +7,7 @@
   "moves": [
     {
       "name": "seat-groove",
-      "description": "The seated car dance measured on a 129 BPM reel: a near-sine bob that drops on the beat and a sideways snap that lands with the drop. The head holds its angle; arms ride the body.",
+      "description": "The seated car dance measured on a 129 BPM reel: a bob that drops on the beat and a sideways snap that lands with the drop. The neck leans after the hips, overshoots and settles, so the head draws an open loop a beat and stays level.",
       "support": "seat",
       "loop_beats": 1,
       "lags": {
@@ -21,7 +21,7 @@
           "cycles": 1,
           "per": "beat",
           "phase": 0,
-          "amplitude": -0.19,
+          "amplitude": -0.23,
           "snap": 0.422
         },
         {
@@ -51,11 +51,29 @@
           "amplitude": -0.05,
           "snap": 0.422
         }
+      ],
+      "follow": [
+        {
+          "target": "neck.tilt_left_right",
+          "source": "root.right",
+          "gain": 2.3,
+          "lag": 0.32,
+          "frequency": 4.0,
+          "damping": 0.75
+        },
+        {
+          "target": "head.tilt_left_right",
+          "source": "root.right",
+          "gain": -2.3,
+          "lag": 0.32,
+          "frequency": 4.0,
+          "damping": 0.75
+        }
       ]
     },
     {
       "name": "bob",
-      "description": "A standing bob: knees give on the beat, the chest and head follow a little late.",
+      "description": "A standing bob: knees give on the beat, the chest and head follow a little late, and the neck nods after the drop.",
       "support": "feet",
       "loop_beats": 1,
       "lags": {
@@ -140,11 +158,21 @@
           "amplitude": -0.04,
           "snap": 0.45
         }
+      ],
+      "follow": [
+        {
+          "target": "neck.nod_down_up",
+          "source": "root.up",
+          "gain": 0.3,
+          "lag": 0.08,
+          "frequency": 3.0,
+          "damping": 0.5
+        }
       ]
     },
     {
       "name": "sway",
-      "description": "Weight rocks side to side over two beats; the spine counters and the head tilts after.",
+      "description": "Weight rocks side to side over two beats; the spine counters, the neck leans after the weight, and the head tilts after.",
       "support": "feet",
       "loop_beats": 2,
       "lags": {
@@ -199,6 +227,16 @@
           "phase": 0,
           "amplitude": 0.04,
           "snap": 0.5
+        }
+      ],
+      "follow": [
+        {
+          "target": "neck.tilt_left_right",
+          "source": "root.right",
+          "gain": 0.25,
+          "lag": 0.1,
+          "frequency": 1.5,
+          "damping": 0.5
         }
       ]
     },
@@ -309,7 +347,7 @@
     },
     {
       "name": "head-nod",
-      "description": "The head nods down on the beat, the neck leading it.",
+      "description": "The head nods down on the beat, the neck leading it, and the upper chest gives a little after it.",
       "support": "either",
       "loop_beats": 1,
       "lags": {
@@ -333,6 +371,16 @@
           "phase": 0,
           "amplitude": -0.05,
           "snap": 0.4
+        }
+      ],
+      "follow": [
+        {
+          "target": "upper_chest.front_back",
+          "source": "neck.nod_down_up",
+          "gain": 0.4,
+          "lag": 0.06,
+          "frequency": 3.0,
+          "damping": 0.5
         }
       ]
     },

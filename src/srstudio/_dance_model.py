@@ -4,10 +4,14 @@ A target is ``"<joint>.<dof>"`` on the 55 joints of srlocations' mannequin, in r
 body's translation in head radii. A dof named ``a_b`` reads negative toward ``a`` and positive toward ``b``; a
 single-word dof (``stretch``, ``close``, ``stretched``, ``spread``) reads positive toward that word. The skeleton
 that turns these deltas into a pose owns any other convention (ADR 0186).
+
+A :class:`Follow` makes one target ride another like a damped spring, late and overshooting a little: the overlapping
+action, follow-through and lean that give a move its swing (ADR 0201).
 """
 
 from __future__ import annotations
 
+import functools
 import math
 import re
 from collections.abc import Mapping
@@ -27,6 +31,7 @@ __all__ = [
     "Contact",
     "DanceError",
     "Entry",
+    "Follow",
     "Move",
     "MoveError",
     "Pattern",
@@ -34,11 +39,17 @@ __all__ = [
     "RoutineError",
     "chain",
     "mirrored",
+    "spring",
     "wave",
 ]
 
 MAX_PATTERNS = 128
 MAX_CONTACTS = 16
+MAX_FOLLOWS = 32
+MAX_GAIN = 8.0  # a follower moves at most this many of its own units per unit of its source
+SPRING_TAPS = 48  # places a follower reads its source at: the cost of one follower on one frame
+SPRING_SPAN = 2.0  # beats a spring remembers at most
+MIN_SETTLE = 0.3  # damping times frequency: a spring settles to under 3 % within its span
 MAX_ENTRIES = 512
 MAX_TRACK_BARS = 4096
 MAX_ROOT = 4.0  # head radii a pattern may move the root, either way
@@ -178,6 +189,72 @@ def _bound(target: str) -> float:
     return MAX_ROOT if target in ROOT else MAX_TURN
 
 
+@functools.cache
+def spring(frequency: float, damping: float) -> tuple[tuple[float, float], ...]:
+    """A damped spring's response, as (beats back, weight) pairs that sum to 1: a follower is the weighted sum of its
+    source read that many beats back. ``frequency`` is the spring's own, in cycles per beat; under 1, ``damping``
+    overshoots and rings, settling as ``exp(-damping * 2 pi * frequency * beats)``. The span ends when that falls
+    under 1 %, or at ``SPRING_SPAN`` beats, and holds ``SPRING_TAPS`` places: bounded work, no state carried between
+    frames."""
+    _within(frequency, 0.5, 8, "spring frequency")
+    _within(damping, 0.1, 2, "spring damping")
+    if damping * frequency < MIN_SETTLE - TOLERANCE:
+        raise MoveError(
+            f"a spring of damping {damping:g} at {frequency:g} cycles per beat rings past its span; damping times "
+            f"frequency is at least {MIN_SETTLE}",
+            code="dance.spring",
+            path="damping",
+        )
+    w0 = 2 * math.pi * frequency
+    span = min(SPRING_SPAN, math.log(100) / (damping * w0))
+    step = span / SPRING_TAPS
+    taps = []
+    for i in range(SPRING_TAPS):
+        t = (i + 0.5) * step
+        if damping < 1:
+            shape = math.sin(w0 * math.sqrt(1 - damping * damping) * t)
+        elif damping == 1:
+            shape = w0 * t
+        else:
+            shape = math.sinh(w0 * math.sqrt(damping * damping - 1) * t)
+        taps.append((t, math.exp(-damping * w0 * t) * shape))
+    total = sum(h for _, h in taps)
+    return tuple((t, h / total) for t, h in taps)
+
+
+@dataclass(frozen=True)
+class Follow:
+    """``target`` follows ``source``, a pattern's target in the same move: ``gain`` times the source, read ``lag``
+    beats late through a :func:`spring` of ``frequency`` cycles per beat and ``damping``. The gain carries the units,
+    radians per head radius when a joint follows the root, so one follower can lean a trunk into the body's sway or
+    roll a head back against its trunk's lean. A chain is several followers of one source, each a little later down
+    it: hips, spine, chest, neck, head."""
+
+    target: str
+    source: str
+    gain: float
+    lag: float = 0.0
+    frequency: float = 3.0
+    damping: float = 0.6
+
+    def __post_init__(self) -> None:
+        chain(self.target)
+        chain(self.source)
+        if self.target == self.source:
+            raise MoveError(f"{self.target} follows itself", path="source", actual=self.source)
+        _within(self.gain, -MAX_GAIN, MAX_GAIN, "gain")
+        if self.gain == 0:
+            raise MoveError(f"{self.target}: a follower with no gain does not move", path="gain")
+        _within(self.lag, 0, 1, "follow lag")
+        spring(float(self.frequency), float(self.damping))
+
+    def mirror(self) -> Follow:
+        """The follower danced the other way round: both ends mirrored, and the gain's sign turned with theirs."""
+        target, turned = mirrored(self.target, 1.0)
+        source, also = mirrored(self.source, 1.0)
+        return Follow(target, source, self.gain * turned * also, self.lag, self.frequency, self.damping)
+
+
 @dataclass(frozen=True)
 class Pattern:
     """One channel's motion: ``bias + intensity * amplitude * wave(...)``, hitting ``+amplitude`` every cycle.
@@ -265,6 +342,7 @@ class Move:
     lags: tuple[tuple[str, float], ...] = ()
     contacts: tuple[Contact, ...] = ()
     description: str = ""
+    follows: tuple[Follow, ...] = ()
 
     def __post_init__(self) -> None:
         _name(self.name, "move name", MoveError)
@@ -281,7 +359,8 @@ class Move:
             raise MoveError(f"{self.name}: a target has one pattern", path="patterns")
         _within(self.loop_beats, 0.25, 64, "loop_beats")
         _lags(self.lags)
-        self._support(targets)
+        self._follows(targets)
+        self._support(targets + [f.target for f in self.follows])
         for p in self.patterns:
             turns = p.cycles * self.loop_beats
             if p.per == "beat" and abs(turns - round(turns)) > TOLERANCE:
@@ -290,6 +369,18 @@ class Move:
                     "a loop holds whole cycles",
                     path="loop_beats",
                 )
+
+    def _follows(self, targets: list[str]) -> None:
+        if not (isinstance(self.follows, tuple) and len(self.follows) <= MAX_FOLLOWS):
+            raise MoveError(f"{self.name}: a move holds at most {MAX_FOLLOWS} followers in a tuple", path="follows")
+        if not all(isinstance(f, Follow) for f in self.follows):
+            raise MoveError(f"{self.name}: every follower is a Follow", path="follows")
+        followed = [f.target for f in self.follows]
+        for f in self.follows:
+            if f.source not in targets:
+                raise MoveError(f"{self.name}: {f.target} follows {f.source}, which no pattern moves", path="follows")
+            if f.target in targets or followed.count(f.target) > 1:
+                raise MoveError(f"{self.name}: {f.target} is moved by one pattern or one follower", path="follows")
 
     def _support(self, targets: list[str]) -> None:
         chains = {chain(t) for t in targets}
@@ -339,7 +430,7 @@ class Move:
     def held(self) -> tuple[tuple[str, float], ...]:
         """The pose a move that never moves holds, as an :attr:`Entry.hold`: each pattern's bias by target. A move
         with a moving pattern is refused, because a hold has no beat to move on (ADR 0192)."""
-        moving = [p.target for p in self.patterns if p.amplitude != 0]
+        moving = [p.target for p in self.patterns if p.amplitude != 0] + [f.target for f in self.follows]
         if moving:
             raise MoveError(f"{self.name}: {moving} move, so the move is no held pose", path="patterns", actual=moving)
         return tuple((p.target, p.bias) for p in self.patterns)
@@ -365,7 +456,10 @@ class Move:
             )
         lags = tuple((_swap(name), beats) for name, beats in self.lags)
         contacts = tuple(Contact(_swap(c.foot), c.start, c.end) for c in self.contacts)
-        return Move(self.name, self.support, tuple(patterns), self.loop_beats, lags, contacts, self.description)
+        follows = tuple(f.mirror() for f in self.follows)
+        return Move(
+            self.name, self.support, tuple(patterns), self.loop_beats, lags, contacts, self.description, follows
+        )
 
 
 @dataclass(frozen=True)
