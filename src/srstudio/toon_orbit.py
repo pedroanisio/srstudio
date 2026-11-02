@@ -25,6 +25,7 @@ import math
 import random
 from dataclasses import dataclass
 
+from . import _toon_orbit_contracts as oc
 from . import checks
 from .brush import Point
 from .canvas import Canvas
@@ -318,22 +319,42 @@ def _prop(cv: Canvas, parent, id: str | None, plate: Plate):
     return g
 
 
-@register("prop", "toon-telescope", summary="A long-view telescope, its swept barrel on a splayed gold-braced tripod")
+@register(
+    "prop",
+    "toon-telescope",
+    contract=oc.contract('toon-telescope'),
+    summary="A long-view telescope, its swept barrel on a splayed gold-braced tripod",
+)
 def telescope(cv: Canvas, parent, at: Point = (440.0, 960.0), scale: float = 1.0, id: str | None = None) -> None:
     _prop(cv, parent, id, telescope_art(_standing(at, scale, (310.0, 700.0), 0.66)))
 
 
-@register("prop", "toon-moon-globe", summary="A Moon globe in a gold crescent cradle on a boomerang base")
+@register(
+    "prop",
+    "toon-moon-globe",
+    contract=oc.contract('toon-moon-globe'),
+    summary="A Moon globe in a gold crescent cradle on a boomerang base",
+)
 def moon_globe(cv: Canvas, parent, at: Point = (440.0, 860.0), scale: float = 1.0, id: str | None = None) -> None:
     _prop(cv, parent, id, moon_art(_standing(at, scale, (304.0, 572.0), 0.4)))
 
 
-@register("prop", "toon-saturn-model", summary="A Saturn model with tilted rings on a wire stand and orbit foot")
+@register(
+    "prop",
+    "toon-saturn-model",
+    contract=oc.contract('toon-saturn-model'),
+    summary="A Saturn model with tilted rings on a wire stand and orbit foot",
+)
 def saturn_model(cv: Canvas, parent, at: Point = (440.0, 860.0), scale: float = 1.0, id: str | None = None) -> None:
     _prop(cv, parent, id, saturn_art(_standing(at, scale, (304.0, 576.0), 0.4)))
 
 
-@register("prop", "toon-field-notebook", summary="A coral field notebook with a blank or lettered label and a pencil")
+@register(
+    "prop",
+    "toon-field-notebook",
+    contract=oc.contract('toon-field-notebook'),
+    summary="A coral field notebook with a blank or lettered label and a pencil",
+)
 def field_notebook(
     cv: Canvas,
     parent,
@@ -347,7 +368,12 @@ def field_notebook(
     _field_label(cv, g, f, lettering)
 
 
-@register("prop", "toon-signal-clicker", summary="A sculpted signal clicker with oversized buttons and a wrist loop")
+@register(
+    "prop",
+    "toon-signal-clicker",
+    contract=oc.contract('toon-signal-clicker'),
+    summary="A sculpted signal clicker with oversized buttons and a wrist loop",
+)
 def signal_clicker(cv: Canvas, parent, at: Point = (440.0, 860.0), scale: float = 1.0, id: str | None = None) -> None:
     _prop(cv, parent, id, clicker_art(_standing(at, scale, (280.0, 590.0), 0.4)))
 
@@ -491,6 +517,7 @@ def _salon_signs(cv: Canvas, parent, lettering: Lettering | None) -> None:
 @register(
     "location",
     "toon-planetarium-salon",
+    contract=oc.contract('toon-planetarium-salon'),
     summary="A cream salon with a panoramic Saturn window, gold panel, starburst clock, saucer lamp, telescope and "
     "boomerang desk, built for 9:16",
 )
@@ -568,6 +595,7 @@ def _terrace_signs(cv: Canvas, parent, lettering: Lettering | None) -> None:
 @register(
     "location",
     "toon-starlight-terrace",
+    contract=oc.contract('toon-starlight-terrace'),
     summary="A night terrace with a crescent in its orbit, stars, hills, an observatory pod, a telescope and a field "
     "table, built for 9:16",
 )
