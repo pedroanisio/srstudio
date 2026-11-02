@@ -393,3 +393,37 @@ def test_a_park_refuses_shots_out_of_order():
     cv = signed()
     with pytest.raises(SoftSetError, match="shots"):
         soft_sets.park(cv, cv.comp, shots=(soft_sets.Shot(2.0), soft_sets.Shot(1.0)))
+
+
+def test_a_park_by_day_is_the_park_it_always_was():
+    plain, day = signed(), signed()
+    soft_sets.park(plain, plain.comp, seated=[(0.0, 9.0)])
+    soft_sets.park(day, day.comp, seated=[(0.0, 9.0)], night=False)
+    assert plain.scene.to_bytes() == day.scene.to_bytes()
+    assert not {"soft-park-stars", "soft-park-lamp", "soft-park-dark"} & set(groups(plain))
+
+
+def test_a_park_at_night_has_stars_a_lit_lamp_and_a_dark_over_the_cast():
+    cv = signed()
+    soft_sets.park(cv, cv.comp, seated=[(0.0, 9.0)], cast=lambda g: cv.group(g, "the-cast"), night=True)
+    ids = [g.get("id") for g in tree(cv).iter("group")]
+    assert {"soft-park-stars", "soft-park-lamp"} <= set(ids)
+    assert ids.index("soft-park-lamp") < ids.index("the-cast") < ids.index("soft-park-dark")
+    assert b"soft-park-night-sky" in cv.scene.to_bytes() and b"soft-park-sky" not in cv.scene.to_bytes()
+
+
+def test_the_dark_of_a_park_at_night_goes_with_the_shots_and_its_marks_stay_put():
+    cv = signed()
+    shots = (soft_sets.Shot(0.0), soft_sets.Shot(1.0, 1.4, 300.0, 1000.0))
+    soft_sets.park(cv, cv.comp, shots=shots, night=True)
+    found = groups(cv)
+    assert found["soft-park-dark"] in list(found["soft-park-room"].iter("group"))
+    front = found["soft-park-front"]
+    assert front.find(".//key") is None and "sig-cactus" in {g.get("id") for g in front.iter("group")}
+
+
+@pytest.mark.parametrize("night", ["yes", 1, None])
+def test_a_park_refuses_a_night_that_is_not_a_yes_or_no(night):
+    cv = signed()
+    with pytest.raises(SoftSetError, match="night"):
+        soft_sets.park(cv, cv.comp, night=night)

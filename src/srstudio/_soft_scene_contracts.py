@@ -79,8 +79,12 @@ _CONTRACTS = {
         ('growth', P(items=P(prefix_items=(TIME, P(minimum=0, maximum=4))))),
         ('seated', SPANS),
         ('cast', _slot('Receives the framed room after the tree and bench, before the foreground.')),
+        ('night', P(type=bool)),
         constraints=(
             FRAME,
+            'night (default off) draws the park after dark: stars, lit town windows, a lamp behind the bench, and a '
+            'dark over the room and cast that rides with the shots. The foreground keeps its day colors but for '
+            'its bush.',
             'growth is held (time,stage) rows from zero, selecting tree stages 0..4; the town '
             'caps its stage at 3. This swaps drawings rather than growing geometry continuously.',
             'seated gates the bench; empty spans omit it. '
