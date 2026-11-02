@@ -14,6 +14,10 @@ from dataclasses import asdict, dataclass
 from sr_core.scene import Composition, Group
 
 from . import _body_solve as solver
+from ._body_support import support_area as support_area
+from ._body_support import support_footprint as support_footprint
+from ._body_support import support_hull as support_hull
+from ._body_support import support_margin as support_margin
 from ._body_types import BodyError as BodyError
 from ._body_types import BodyKey as BodyKey
 from ._body_types import BodyPose as BodyPose

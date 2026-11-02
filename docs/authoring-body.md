@@ -70,6 +70,27 @@ There is always at least one supporting foot. Steps may not overlap and must lan
 before the performance ends. Flat soles and a static support check do not model
 flight, toe-off/heel-strike, stairs, collision avoidance or running dynamics.
 
+Adapters can use the public support geometry functions without importing the
+body solver's private module:
+
+| Function | Result |
+| --- | --- |
+| `support_footprint(sole, profile)` | Four world-space `Vec3` corners using the full `foot_width`, heel and toe |
+| `support_hull(points)` | Counterclockwise convex hull of `(x, z)` pairs, starting at its lexicographic minimum |
+| `support_margin(polygon, point)` | Minimum signed edge clearance of a world `Vec3` projected onto x/z, in meters |
+| `support_area(polygon)` | Ground area in square meters |
+
+The hull accepts lists or tuples of 3–4096 finite x/z pairs in the +/-1000 meter
+workspace. It removes duplicate and interior points and refuses degenerate
+support. Margin and area require unique, counterclockwise convex vertices,
+without repeating the closing vertex. Margin is positive inside and negative
+outside; outside a corner it is an edge half-plane clearance, not the Euclidean
+distance to that corner. The footprint requires a planted yaw-only sole on y=0.
+These functions use the same hull, footprint and margin calculations as
+`BodyPose.support_polygon` and `BodyPose.support_margin`; they do not infer which
+feet are planted or certify dynamic balance. Malformed inputs raise `BodyError`
+with repair fields. Existing pose and profile defaults remain unchanged.
+
 Compilation validates a grid at `validation_hz` (default 60), all root keys, contact
 boundaries, swing midpoints and immediately preceding contact states. Each direct
 sample also validates support and joint limits. `plan.checked_times` records the
