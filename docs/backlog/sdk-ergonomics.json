@@ -1301,6 +1301,32 @@
   ],
   "findings": [
     {
+      "id": "SDK-P1-29",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Preflight Saga prop placement and dimensions",
+      "problem": "Invalid positions reached scene allocation or raw tuple indexing. Ships accepted zero, negative or boolean scales; cube sizes and pebble travel could fail only after geometry was emitted.",
+      "resolution": "Share a two-coordinate finite-position check across the five props; require positive cube size and ship scale; reject nonnumeric or nonfinite pebble travel before drawing. Signed finite pebble travel remains supported.",
+      "verification": [
+        "tests/test_saga_prop_preflight.py",
+        "tests/test_saga.py"
+      ],
+      "acceptance": [
+        "Invalid positions and dimensions raise SagaError before scene or ID mutation",
+        "Valid drawings, mirrored ships and signed pebble travel remain unchanged"
+      ],
+      "verification_summary": {
+        "red": 38,
+        "new_cases": 38,
+        "passed": 574,
+        "skipped": 0,
+        "unchanged_valid_drawings": 20,
+        "branch_inclusive_coverage_percent": 97.18543046357615,
+        "branch_coverage_percent": 97.28682170542636,
+        "retained_artifacts": "../generated/sdk-saga-prop-preflight/v1/"
+      }
+    },
+    {
       "id": "SDK-P1-28",
       "priority": "P1",
       "status": "complete",

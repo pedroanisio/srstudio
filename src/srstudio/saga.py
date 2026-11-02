@@ -26,7 +26,7 @@ from functools import partial
 from typing import Any
 
 from . import _character_contracts as cc
-from . import camera, lipsync, rig
+from . import camera, checks, lipsync, rig
 from .canvas import VOID, Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -526,6 +526,11 @@ def mabel(
     )
 
 
+def _check_prop_position(at: tuple[float, float]) -> None:
+    if not (isinstance(at, (tuple, list)) and len(at) == 2 and all(map(checks.number, at))):
+        raise SagaError(f"a prop position needs two finite coordinates, got {at!r}")
+
+
 @register(
     "prop",
     "saga-handbook",
@@ -536,6 +541,7 @@ def mabel(
 def handbook(cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0, talk: Talk = (), end: float):
     """The Handbook, top-left corner at ``at``, 220 × 300 at scale 1; its screen follows ``talk``."""
     rig.check_place(scale, end, SagaError)
+    _check_prop_position(at)
     check_talk(talk)
     g = cv.group(parent, cv.uid("g"), x=at[0], y=at[1], scaleX=scale, scaleY=scale)
     cv.rect(g, 8, 10, 220, 300, cv.ink, radius=28, opacity=0.5)

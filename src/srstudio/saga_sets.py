@@ -815,6 +815,8 @@ def cube_station(
     """The cube centred on ``at``, ``size`` px across its front; ``boom`` (a second in the shot) blows it up with an
     orange fireball and drifting debris, never a white full-frame flash."""
     _check_end(end)
+    saga._check_prop_position(at)
+    checks.positive(size, SagaError, f"a cube size must be positive, got {size!r}")
     if boom is not None and not (checks.number(boom) and 0 <= boom < end):
         raise SagaError(f"the cube's boom falls inside the shot (0..{end}), got {boom}")
     cx, cy, s = at[0], at[1], size / 2
@@ -885,6 +887,8 @@ def cube_station(
 def freighter(cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0, end: float, flip: bool = False):
     """The freighter centred on ``at``, nose to the right (left with ``flip``)."""
     _check_end(end)
+    saga._check_prop_position(at)
+    checks.positive(scale, SagaError, f"a ship scale must be positive, got {scale!r}")
     g = cv.group(parent, cv.uid("g"), x=at[0], y=at[1], scaleX=-scale if flip else scale, scaleY=scale)
     cv.ellipse(g, -300, -50, 120, 100, cv.rgrad("saga-engine", [(0, "#ffd88a"), (1, "#ff5a4f00")]))
     cv.path(g, "M-220 -90 L160 -90 Q240 -80 260 0 Q240 80 160 90 L-220 90 Z", "#c9ced5", cv.ink, INK_W)
@@ -900,6 +904,9 @@ def freighter(cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0
 def pebble(cv: Canvas, parent, *, at: tuple[float, float], end: float, lift: float = 0.0, rise: float = 160):
     """A pebble resting on ``at`` that floats ``rise`` px up from ``lift`` (a second inside the shot)."""
     _check_end(end)
+    saga._check_prop_position(at)
+    if not checks.number(rise):
+        raise SagaError(f"a pebble rise must be finite and numeric, got {rise!r}")
     if not (checks.number(lift) and 0 <= lift < end):
         raise SagaError(f"the pebble lifts inside the shot (0..{end}), got {lift}")
     g = cv.group(parent, cv.uid("g"), x=at[0], y=at[1])
@@ -919,6 +926,8 @@ def pebble(cv: Canvas, parent, *, at: tuple[float, float], end: float, lift: flo
 def fighter(cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0, end: float, flip: bool = False):
     """A fighter centred on ``at``, nose to the right (left with ``flip``)."""
     _check_end(end)
+    saga._check_prop_position(at)
+    checks.positive(scale, SagaError, f"a ship scale must be positive, got {scale!r}")
     g = cv.group(parent, cv.uid("g"), x=at[0], y=at[1], scaleX=-scale if flip else scale, scaleY=scale)
     cv.path(g, "M-90 -60 L110 0 L-90 60 L-60 0 Z", "#5c6676", cv.ink, INK_W)
     cv.ellipse(g, -20, -12, 40, 24, "#1a1d24", cv.ink, 3)
