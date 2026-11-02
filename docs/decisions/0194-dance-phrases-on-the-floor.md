@@ -66,6 +66,10 @@ both honest.
   style already has, and `ground(profile, pose, feet)` lays one pose's feet flat. Style adapters call these; the
   stick adapter is to switch to them.
 - `seated(profile)` is a base pose on a seat at knee height, feet flat on the floor.
+- `stance(profile, *, width, bend, turnout, clamp)` is a standing base pose with the feet flat and `width` hip heights
+  apart, turned out by `turnout` radians, and the hips sunk until the knees bend by `bend` radians (`knee_bend(profile,
+  pose)` reads it); the defaults are `STANCE_WIDTH` 0.5, `STANCE_BEND` 0.55 and `STANCE_TURNOUT` 0.25.
+- `Performance.dance_frames(fps)` gives the solved floor pass back as ordinary `DanceFrame`s on the unspotted base.
 
 **Planted feet.** A planted foot lands where the free pose puts it at the first moment of its plant, laid flat on the
 floor and turned the way it points; from then its ball stays on that spot. When the body turns on the floor a planted
@@ -90,6 +94,23 @@ height for width and heel, scaled with the foot), `support_hull` of those corner
 centre of mass stands inside. The centre of mass is this module's own: `body` offers a torso mass proxy, not a
 segment-weighted centre.
 
+**A bent-knee, wide stance.** A class dancer stands low on a wide base: the dance study ([ADR 0196](0196-dance-style-from-reference-video.md)) measured the knees
+bent 26°–62° and the stance 3.1–7.2 head radii wide, where the rest pose stands straight and narrow. `stance` lays both
+feet flat at `±width / 2` hip heights, then finds the hips' drop by bisection (40 halvings over at most 0.7 hip
+heights) at which the leg solve bends the knees by `bend`. A drop the feet cannot follow (a wide base on straight legs)
+is refused with `FloorError`; a leg past its joint limits with `FloorLimitError` unless `clamp`. Passed as `base=`, it
+is the pose every phrase key adds its deltas onto, so a phrase's root drop sinks into bent knees, not into the floor.
+
+**The floor pass as frames.** A measure that reads `DanceFrame`s (the study's `dance_style.check`, the swing layer)
+sees the legs only as the keys set them: a root drop in raw frames moves the whole body down. `dance_frames(fps)`
+re-expresses each solved pose as a frame on the unspotted base: the travel and turn as `floor`, the hips' solved
+offset as `root` in head radii, every other control as a joint delta, and the feet the pass held as `planted`.
+`dance_pose` turns each back into the solved pose within 1e-6 m, so the folded knees reach any reader of frames.
+
+**Rejected: a second leg solve inside `dance_pose`.** `dance_pose` is a pure map from deltas to a pose that every
+style shares; solving legs there would plant feet twice for a style that already calls `plant`, and would give a
+different body to a reader that never asked for a floor.
+
 **Ensemble.** `ensemble(source, dancers, groove, *, seed, variation)` gives each `Dancer(profile, spot, delay_beats,
 base)` its own performance from its `Spot(x, z, facing)`. A `random.Random(seed)` draws, dancer by dancer, a timing
 shift of up to 0.04 beats and a size of the moves within 6 %, both times `variation`; the same seed gives the same
@@ -103,6 +124,19 @@ punching), `kick-ball-change` (two bounces, a kick-ball-change on each side), `p
 arms overhead, two body rolls rising, step in) and `turn-travel` (a step-pivot quarter turn to the left, travel, a
 pivot back to the front). Every step lands on both feet, moves the weight on the next sixteenth and lifts on the one
 after, so the balance shift always has a key to move on.
+
+Every key also carries the class groove on a two-beat cycle, `c = cos(π × beat)`, from the study's measures: the legs
+open by 0.1 radian a side, the hips sink 0.09 hip heights and bounce 0.06 down on the odd counts, and a single-foot key
+rises 0.1; the chest and upper chest twist by 0.2 radian and tilt by 0.05 (shared 0.6 and 0.4), the neck sways by
+0.04, the head nods by 0.05 and the chest leans 0.05 into the down count. `kick-ball-change` and `turn-travel` take
+half the hips' motion and `turn-travel` no extra width, so the kick and the pivots stay inside the ankles' limits;
+`plie-roll` keeps its own depth and width. The groove step's lifts on every "and" raise the hips once a beat: without
+them the bounce is half time, but the cartoon's standing foot rolls past its limit.
+
+Each key keeps its own timing: a `hit` holds the last pose for 65 % of the span and strikes in the last
+`HIT_SHARE` (35 %) at about three times a `smooth`'s peak speed; a `smooth` leaves and lands at rest with its peak
+speed at the middle. These are the timing waveforms this ADR ships; a per-key attack, release and peak-speed time
+belongs to the timing work's `curve` waveform in the moves schema, which a key is to name once it lands.
 
 ### Review
 
@@ -119,5 +153,14 @@ character in one row in a formation with a `--canon`. A character is a preset or
   a dance) reads phrases too.
 - The floor pass solves legs for every picture; a one-eight phrase takes a few seconds per character to perform and
   sample at 50 pictures a second.
+- A test differentiates every shipped transition, joint and floor channel alike: a hit holds and strikes late at
+  high speed, a smooth speeds up then slows down about its middle. Landing poses alone do not pass it.
+- `dance_style.check` against the study's `studio-hiphop` record is the measure for the class phrases, read through
+  `dance_frames` so the folded legs count. The phrases come closer to the class without matching it: the hips ride
+  higher than the class's, the step-based phrases travel further a beat, and the narrow-hipped cartoon's foot roll
+  limits how wide and how much the upper body sways.
+- `plant` over a phrase's raw frames does not know which foot stepped, so the floor's travel drags the standing leg;
+  `plie-roll` sampled raw and planted passes the ankle's flex limit by up to 0.03 radian. Phrases go through
+  `perform`.
 - The balance shift is horizontal only and a jump is not checked in the air. A phrase that needs the weight moved
   faster than a sixteenth, or leaves the body over one foot without a key to move on, is reported, not fixed.

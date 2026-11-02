@@ -249,7 +249,10 @@ moves, lift on the one after. The balance pass moves the weight on keys, so a fo
 lands leaves the body over nothing and is reported. A phrase sits in a `dance.Entry` like a move, a whole number of
 times, and `choreograph(..., library={**dance.moves(), **dance.phrases()})` draws one only for a song phrase it fills.
 A style that has its own `DanceFrame`s calls `dance_floor.plant(profile, frames)` for the same feet and weight, and
-`dance_floor.ground(profile, pose)` lays one pose's feet flat. Review phrases with
+`dance_floor.ground(profile, pose)` lays one pose's feet flat. For a class dancer's low, wide base pass
+`base=dance_floor.stance(profile)` (or `stance(profile, width=0.6, bend=0.8)`, hip heights and radians): a phrase's
+root drop then sinks into bent knees. `run.dance_frames(fps)` gives the solved floor pass back as ordinary
+`DanceFrame`s, so a measure such as `dance_style.check` sees the folded legs. Review phrases with
 `python tools/dance_views.py out.mp4 --phrases groove-step,turn-travel --bpm 122.65 --views front,top,three-quarter`,
 and add `--ensemble --canon 0.5` for every character in one row.
 
