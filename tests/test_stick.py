@@ -238,6 +238,7 @@ def test_the_style_value(tmp_path):
         "stick_door",
         "stick_flat",
         "stick_gym",
+        "stick_holiday",
         "stick_home",
         "stick_odds",
         "stick_office",
@@ -361,6 +362,13 @@ def test_the_style_value(tmp_path):
         "stick-handset",
         "stick-key",
         "stick-reply-screen",
+        "stick-holiday-tree",
+        "stick-tree-star",
+        "stick-light-string",
+        "stick-step-stool",
+        "stick-pumpkin",
+        "stick-smart-speaker",
+        "stick-worktop",
     }
 
 

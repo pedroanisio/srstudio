@@ -1284,6 +1284,13 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "stick-holiday-tree": {"title": "Árvore de Natal"},
+    "stick-tree-star": {"title": "Estrela da árvore"},
+    "stick-light-string": {"title": "Pisca-pisca"},
+    "stick-step-stool": {"title": "Banquinho de degraus"},
+    "stick-pumpkin": {"title": "Abóbora de gorro"},
+    "stick-smart-speaker": {"title": "Caixinha inteligente"},
+    "stick-worktop": {"title": "Bancada da cozinha"},
     "collage-big-type": {"title": "Celular na maior fonte"},
     "soft-closet": {"title": "Armário no escuro"},
     "soft-mop": {"title": "Esfregão"},
@@ -9232,6 +9239,46 @@
         "at": 0.3
       },
       "text": "Um celular de papel na maior fonte que existe: duas palavras enchem a tela, uma por linha, e se leem do outro lado da mesa (Big Font)."
+    },
+    {
+      "section": "props",
+      "name": "Natal de 1º de novembro",
+      "parts": [
+        "stick-holiday-tree",
+        "stick-tree-star",
+        "stick-step-stool",
+        "stick-light-string"
+      ],
+      "shot": {
+        "episode": "november-first",
+        "at": 2.1
+      },
+      "text": "Uma árvore pequena num vaso, a estrela na mão dela em cima de um banquinho de dois degraus, e o pisca-pisca que acende quando ele entra na cozinha (November First)."
+    },
+    {
+      "section": "props",
+      "name": "Abóbora de gorro",
+      "parts": [
+        "stick-pumpkin",
+        "stick-worktop"
+      ],
+      "shot": {
+        "episode": "november-first",
+        "at": 4.0
+      },
+      "text": "Uma abóbora lisa, sem rosto entalhado, com um gorro vermelho de pompom, na bancada da cozinha: o Halloween que pediu para ficar (November First)."
+    },
+    {
+      "section": "props",
+      "name": "Caixinha inteligente",
+      "parts": [
+        "stick-smart-speaker"
+      ],
+      "shot": {
+        "episode": "november-first",
+        "at": 9.0
+      },
+      "text": "Uma caixinha inventada, sem letras nem marca, com um anel coral que só acende enquanto ela fala (November First)."
     }
   ]
 }
