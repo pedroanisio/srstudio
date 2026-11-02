@@ -54,6 +54,50 @@
     }
   },
   "review_verification": {
+    "composition_proxies": {
+      "baseline_source_commit": "3b1e0fe9",
+      "initial_missing_adapter_regressions_red": 8,
+      "png_decoder_contracts_red": 5,
+      "mutable_snapshot_regressions_red": 1,
+      "aggregate_snapshot_budget_regressions_red": 1,
+      "executable_guide_regressions_red": 1,
+      "final_tests": {
+        "distinct_passed": 552,
+        "subtests_passed": 29,
+        "skipped": 0,
+        "real_renderer_cases": 6
+      },
+      "branch_inclusive_coverage_percent": {
+        "composition_scope": 89,
+        "proxy_source": 97,
+        "proxy_runtime": 100,
+        "proxy_worker": 96,
+        "png": 93
+      },
+      "coverage_scope": "All composition implementation modules and composition.py; final-source coverage replaces earlier measurements for the changed snapshot and PNG decoder. This is a scoped regression run, not the full repository suite.",
+      "renderer_sha256": "90bf26f00439e3615206fa8c7ea4accea8cf5be009e188b60d7c5938ec4e0b4a",
+      "rendered_proxy_proof": {
+        "final_dimensions": [
+          64,
+          64
+        ],
+        "raw_dimensions": [
+          128,
+          128
+        ],
+        "raw_jobs": 4,
+        "cold_engine_invocations": 4,
+        "warm_engine_invocations": 0,
+        "exact_existing_conversion_passes": [
+          "rgba",
+          "back",
+          "front",
+          "under"
+        ],
+        "registered_part_landmarks": 2
+      },
+      "limits": "Static geometry and registration only. The real fixture has behind and under parts; a separate pixel-domain case verifies a nonempty front. Shared-light vector picture adapters, animated geometry, cross-layer receivers, temporal quality and operator style approval are not established by this proof."
+    },
     "proxy_numeric": {
       "baseline_source_commit": "d10c2022",
       "initial_numeric_and_recipe_regressions_red": 19,
@@ -1143,13 +1187,14 @@
           "Bounded static untextured plate preparation verifies immutable mesh buffers, materials, bounds, source identities and declared work; emits a closed XML/resource bundle with retained source evidence; preflight counts distinct resolved placements as distinct cold jobs",
           "Static mixed vector/plate bundles reverify all inputs, render unique jobs under nested limits, verify PNGs and warm caches, and atomically publish portable scene/image directories",
           "Immutable UV and RGBA8 snapshots preserve color/normal maps, normal strength, sheen and subsurface settings; source snapshots deduplicate dimensions plus pixels, bounded workers generate content-addressed PNG/OBJ resources, and legacy untextured identities remain unchanged",
-          "Static printed labels retain immutable typed recipes, actual font bytes and explicit licenses; bounded workers compile closed scenes/fonts, cold bundles render labels under per-source and shared attempt/memory/deadline limits, verify PNGs and publish only complete plate artifacts"
+          "Static printed labels retain immutable typed recipes, actual font bytes and explicit licenses; bounded workers compile closed scenes/fonts, cold bundles render labels under per-source and shared attempt/memory/deadline limits, verify PNGs and publish only complete plate artifacts",
+          "Static proxies retain immutable recipe/geometry inputs with explicit scene-light ownership; proxy_jobs derives light/ID and optional under-only jobs, bounded preparation shares plate geometry validation, conversion verifies PNGs and preserves rgba/back/front/under semantics, and mixed bundles deduplicate raw renders while reprocessing palette/grain changes"
         ],
         "remaining": [
-          "Animated plate and proxy payload adapters and supported backend emission under shared camera/light contracts",
+          "Animated plate and animated proxy payload adapters under shared camera/light contracts",
           "Cross-backend rendering evidence for the complete DRAWING.md contract"
         ],
-        "verification": ["tests/test_composition_preflight.py", "tests/test_composition_emission.py", "tests/test_composition_runtime.py", "tests/test_bounded_process.py", "tests/test_composition_example.py", "tests/test_composition_plate_view.py", "tests/test_composition_plates.py", "tests/test_composition_bundles.py", "tests/test_composition_textures.py", "tests/test_composition_prints.py", "tests/test_bundle_primitives.py", "tests/test_plate_runtime_limits.py", "tests/test_plate_render_sessions.py", "docs/composition-preflight.md", "docs/authoring-benchmark.md", "docs/decisions/0144-bounded-composition-prints.md"]
+        "verification": ["tests/test_composition_preflight.py", "tests/test_composition_emission.py", "tests/test_composition_runtime.py", "tests/test_bounded_process.py", "tests/test_composition_example.py", "tests/test_composition_plate_view.py", "tests/test_composition_plates.py", "tests/test_composition_bundles.py", "tests/test_composition_textures.py", "tests/test_composition_prints.py", "tests/test_bundle_primitives.py", "tests/test_plate_runtime_limits.py", "tests/test_plate_render_sessions.py", "docs/composition-preflight.md", "docs/authoring-benchmark.md", "docs/decisions/0144-bounded-composition-prints.md", "tests/test_composition_proxy.py", "docs/decisions/0145-bounded-composition-proxies.md"]
       },
       "evidence": [
         "DRAWING.md#agent-facing-composition-contract"
