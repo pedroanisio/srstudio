@@ -9,7 +9,7 @@ from functools import lru_cache
 from types import MappingProxyType
 
 from . import checks
-from ._dance_model import FEET, ROOT, DanceError, Entry, Move, Pattern, Routine, RoutineError, chain, wave
+from ._dance_model import FEET, ROOT, DanceError, Entry, Move, Pattern, Routine, RoutineError, chain, spring, wave
 from ._dance_phrase import Floor, Phrase, moment
 from .music import Groove
 
@@ -64,6 +64,18 @@ def _voice(move: Move, p: Pattern, scale: float, beat: float, per_bar: int) -> f
     return _value(p, move.lag(chain(p.target)), beat, per_bar, scale * p.intensity * p.amplitude, p.bias, p.snap)
 
 
+def _followers(move: Move, scale: float, beat: float, per_bar: int) -> dict[str, float]:
+    """Each follower of ``move``: its gain times its source's voice, read through the spring ``lag`` beats late."""
+    sources = {p.target: p for p in move.patterns}
+    out = {}
+    for f in move.follows:
+        p = sources[f.source]
+        late = beat - f.lag
+        heard = sum(w * _voice(move, p, scale, late - back, per_bar) for back, w in spring(f.frequency, f.damping))
+        out[f.target] = f.gain * heard
+    return out
+
+
 def _mix(
     old: tuple[Move, float] | None, new: tuple[Move, float], k: float, beat: float, per_bar: int
 ) -> dict[str, float]:
@@ -88,6 +100,11 @@ def _mix(
         if b:
             value += k * _voice(new[0], b, new[1], beat, per_bar)
         out[target] = value
+    weighted = ((1 - k, old), (k, new)) if old else ((k, new),)
+    for weight, (move, scale) in weighted:
+        if weight > 0:
+            for target, value in _followers(move, scale, beat, per_bar).items():
+                out[target] = out.get(target, 0.0) + weight * value
     return out
 
 

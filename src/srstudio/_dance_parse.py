@@ -6,9 +6,10 @@ unknown or missing field, no wrong type (a boolean is not a number, a float is n
 at most ``MAX_MOVES`` moves and ``MAX_PHRASES`` phrases. The typed model then checks what the schema cannot say
 (ADR 0186).
 
-Moves 1.1 adds the ``curve`` waveform (ADR 0199): a pattern with ``"waveform": "curve"`` carries ``curve``, its
-cycle's samples, and no ``snap``; every other pattern carries ``snap`` and no ``curve``. A 1.0 document is read as it
-always was, and a ``curve`` in one is an unknown field.
+Moves 1.1 adds two things, read under one minor: the ``curve`` waveform (ADR 0199), whose pattern carries ``curve``,
+its cycle's samples, and no ``snap`` while every other pattern carries ``snap`` and no ``curve``; and a move's
+``follow`` list, joints that follow another channel late through a spring (ADR 0201). A 1.0 document reads as it
+always did, and a ``curve`` or a ``follow`` in one is an unknown field, since neither existed in 1.0.
 """
 
 from __future__ import annotations
@@ -23,7 +24,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import TypeVar
 
-from ._dance_model import CURVE_POINTS, Contact, DanceError, Entry, Move, Pattern, Routine
+from ._dance_model import CURVE_POINTS, MAX_FOLLOWS, Contact, DanceError, Entry, Follow, Move, Pattern, Routine
 from ._dance_phrase import MAX_KEYS, Floor, Key, Phrase, beat_of
 
 __all__ = [
@@ -187,8 +188,20 @@ def _contact(value: object, path: str) -> Contact:
     return _built(path, lambda: Contact(foot, start, end))
 
 
+_FOLLOW = ("target", "source", "gain")
+_SPRING = ("lag", "frequency", "damping")
+
+
+def _follow(value: object, path: str) -> Follow:
+    f = _fields(value, path, _FOLLOW, _SPRING)
+    target, source = _text(f["target"], f"{path}.target"), _text(f["source"], f"{path}.source")
+    numbers = {k: _number(v, f"{path}.{k}") for k, v in f.items() if k in ("gain", *_SPRING)}
+    return _built(path, lambda: Follow(target=target, source=source, **numbers))
+
+
 def _move(value: object, path: str, minor: int) -> Move:
-    m = _fields(value, path, ("name", "support", "patterns"), ("description", "loop_beats", "lags", "contacts"))
+    optional = ("description", "loop_beats", "lags", "contacts") + (("follow",) if minor >= 1 else ())
+    m = _fields(value, path, ("name", "support", "patterns"), optional)
     name, support = _text(m["name"], f"{path}.name"), _text(m["support"], f"{path}.support")
     description = _text(m.get("description", ""), f"{path}.description")
     patterns = tuple(
@@ -199,11 +212,16 @@ def _move(value: object, path: str, minor: int) -> Move:
     contacts = tuple(
         _contact(c, f"{path}.contacts[{i}]") for i, c in enumerate(_list(m.get("contacts", []), f"{path}.contacts", 16))
     )
-    return _built(path, lambda: Move(name, support, patterns, loop, lags, contacts, description))
+    follows = tuple(
+        _follow(f, f"{path}.follow[{i}]")
+        for i, f in enumerate(_list(m.get("follow", []), f"{path}.follow", MAX_FOLLOWS))
+    )
+    return _built(path, lambda: Move(name, support, patterns, loop, lags, contacts, description, follows))
 
 
 def parse_moves(text: str | bytes) -> Mapping[str, Move]:
-    """The moves of a ``srstudio.dance-moves/1.x`` document, by name in file order."""
+    """The moves of a ``srstudio.dance-moves/1.x`` document, by name in file order. A move's ``follow`` list needs
+    minor 1 or later."""
     top = _document(text, MOVES_SCHEMA)
     _fields(top, "$", ("schema", "moves"), ("generated_by",))
     minor = int(str(top["schema"]).split("/")[1].split(".")[1])
