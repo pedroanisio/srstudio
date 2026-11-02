@@ -32,7 +32,7 @@ from pathlib import Path
 from typing import Literal
 
 SCHEMA_VERSION = "1.0.0"
-SRLOCATIONS_COMMIT = "2742fd40a1f3221c19950ebd8ba594d9c616893f"  # srlocations main, 2026-11-02: ADR 0179's pin
+SRLOCATIONS_COMMIT = "4ae2278214de6e704d8dcbab8f293b6a47438483"  # srlocations main, 2026-11-02: ADR 0179's pin
 GATE_MM = (36.0, 24.0)  # srlocations' film gate at the pin (compiler.Projection.SENSOR)
 MAX_BYTES = 4_000_000  # a record of every shot and mark of a set is tens of kilobytes
 MAX_FRAME_PX = 16_384
