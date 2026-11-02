@@ -49,6 +49,29 @@ acceleration continuous, which is the property the operator asked for: speed nev
 and acceleration never steps (no tick at a sample). Sixteen samples of a cosine play back its peak speed within 0.5%
 and its peak acceleration within 2%.
 
+### A gesture's timing is measured
+
+`dance.measure_dance` already fitted a repeating curve to a channel and read only its extremes. Its fit is a sum of
+overtones, so its derivatives are exact, and the reading now also carries, counted from the hit:
+
+| Measure | Meaning |
+|---|---|
+| `peak_speed_phase` | the share of the cycle after the hit at which the gesture moves fastest |
+| `attack` | seconds from 10% to 90% of the way from the far extreme onto the hit |
+| `release` | seconds from 90% to 10% of the way off the hit to the far extreme |
+| `peak_acceleration` | the largest acceleration, in amplitudes (half the peak to peak) per beat squared |
+| `velocity` | the speed toward the hit's side over its largest, at 32 places from the hit |
+
+`attack` and `release` leave out a rest at either extreme, which `onto` and `away` count: a `hold` rests and then
+strikes, and only the strike is its attack. `dance.profile_distance` compares two velocity profiles as the root mean
+square of their difference, 0 for the same gesture. A `DanceTarget` can hold any of these, with a phase read either way
+round the cycle and a profile held to a distance.
+
+The reading is band-limited: `harmonics` (1 to 32, 12 by default as before) is how many overtones the fit keeps. A
+gesture whose acceleration has corners, as a spline's has at its samples, reads its peak acceleration 9% low at 12 and
+5% low at 24; and the fastest moment sits on a flat top of the speed, so it reads within 0.015 of the cycle. Comparisons
+between two stages read both sides the same way, so these limits cancel there.
+
 ## Rejected alternatives
 
 - **Linear interpolation between samples.** Speed is constant between samples and jumps at each one; acceleration is a
