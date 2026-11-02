@@ -17,8 +17,10 @@ the camera has no pixels, ``in_frame`` is srlocations' rule on those pixels, and
 every shot. Units are in the field names: metres (``_m``), millimetres (``_mm``), degrees (``_deg``), pixels (``_px``,
 from the frame's top left, y down). World axes are srlocations': x right, y up, z away.
 
-This module imports only the standard library: the exporter loads it by path in srlocations' interpreter and checks
-its own record with it before writing, so the reader and the writer cannot drift.
+This module imports only the standard library and ``srstudio.errors``, which imports only the standard library too:
+the exporter loads the two of them, and nothing else of srstudio, in srlocations' interpreter
+(``location_export.load_srstudio``) and checks its own record with this reader before writing, so the reader and the
+writer cannot drift.
 """
 
 from __future__ import annotations
@@ -30,6 +32,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
+
+from srstudio.errors import SrstudioError
 
 SCHEMA_VERSION = "1.0.0"
 SRLOCATIONS_COMMIT = "4ae2278214de6e704d8dcbab8f293b6a47438483"  # srlocations main, 2026-11-02: ADR 0179's pin
@@ -51,7 +55,7 @@ CATALOG = re.compile(r"[a-z0-9][a-z0-9_-]*")
 CONTROL = re.compile(r"[\x00-\x1f\x7f]")
 
 
-class LocationBridgeError(Exception):
+class LocationBridgeError(SrstudioError):
     """Anything this module refuses."""
 
 

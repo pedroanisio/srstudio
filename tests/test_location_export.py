@@ -141,6 +141,82 @@ def test_srlocations_code_loaded_from_outside_the_export_is_refused(tmp_path):
         export.check_loaded(modules, tmp_path / "export")
 
 
+BARE = """
+import importlib.util, json, sys
+found = importlib.util.spec_from_file_location("location_export", sys.argv[1])
+tool = importlib.util.module_from_spec(found)
+sys.modules["location_export"] = tool
+found.loader.exec_module(tool)
+{body}
+"""
+
+
+def bare(body: str, *args: str) -> subprocess.CompletedProcess[str]:
+    """A Python with no site-packages and no srstudio on its path, as srlocations' interpreter has none."""
+    script = BARE.replace("{body}", body)
+    tool = str(ROOT / "tools" / "location_export.py")
+    return subprocess.run([sys.executable, "-I", "-S", "-c", script, tool, *args], capture_output=True, text=True)
+
+
+def test_the_bridge_loads_with_srstudios_errors_and_nothing_else_of_srstudio():
+    done = bare(
+        """
+bridge = tool.load_bridge()
+package = sys.modules["srstudio"]
+print(json.dumps({
+    "loaded": sorted(name for name in sys.modules if name == "srstudio" or name.startswith("srstudio.")),
+    "init_ran": getattr(package, "__file__", None) is not None,
+    "base": issubclass(bridge.LocationBridgeError, sys.modules["srstudio.errors"].SrstudioError),
+    "value": issubclass(bridge.RecordValueError, ValueError),
+    "name": bridge.__name__,
+}))
+"""
+    )
+    assert done.returncode == 0, done.stderr
+    assert json.loads(done.stdout) == {
+        "loaded": ["srstudio", "srstudio.errors", "srstudio.location_bridge"],
+        "init_ran": False,
+        "base": True,
+        "value": True,
+        "name": "srstudio.location_bridge",
+    }
+
+
+def test_a_second_tool_loads_its_own_reader_through_the_same_loader():
+    done = bare('print(tool.load_srstudio("errors").__name__, sorted(n for n in sys.modules if "srstudio" in n))')
+    assert done.returncode == 0, done.stderr
+    assert done.stdout.split(maxsplit=1) == ["srstudio.errors", "['srstudio', 'srstudio.errors']\n"]
+
+
+def test_an_srstudio_from_elsewhere_is_refused(tmp_path):
+    (tmp_path / "srstudio").mkdir()
+    done = bare(
+        """
+import types
+other = types.ModuleType("srstudio")
+other.__path__ = [sys.argv[2]]
+sys.modules["srstudio"] = other
+try:
+    tool.load_bridge()
+except tool.ExportError as error:
+    print("refused:", error)
+""",
+        str(tmp_path / "srstudio"),
+    )
+    assert done.returncode == 0, done.stderr
+    assert done.stdout.startswith("refused: the srstudio already imported is from")
+
+
+@pytest.mark.parametrize("name", ["", "Errors", "../errors", "errors.py", "location_bridge.sub", "__init__"])
+def test_a_module_name_that_is_no_module_of_srstudio_is_refused(name):
+    with pytest.raises(export.ExportError, match="a module of srstudio"):
+        export.load_srstudio(name)
+
+
+def test_the_bridge_the_tests_read_is_the_one_the_exporter_loads():
+    assert export.load_bridge() is lb
+
+
 BLOCKED = {
     "mark": "aisle",
     "at": [0.0, 0.0, 3.0],

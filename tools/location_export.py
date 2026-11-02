@@ -11,14 +11,16 @@ It never runs srlocations from a checkout. It writes the pinned commit's ``srloc
 repository's object store to ``generated/srlocations/<commit>`` (folders 700, files 600), checks every file there
 against that commit's tree by its git blob id before each run, imports srlocations from there and nowhere else, and
 refuses when anything differs: an edited, extra or missing file, a module loaded from elsewhere, an srlocations plugin
-or extra catalog in the environment. The record is read back through ``srstudio.location_bridge``, loaded by path,
-before it is written, so the exporter writes nothing srstudio would refuse.
+or extra catalog in the environment. The record is read back through ``srstudio.location_bridge`` before it is
+written, so the exporter writes nothing srstudio would refuse; ``load_srstudio`` loads that reader, and nothing of
+srstudio but it and ``srstudio.errors``, from this repository into srlocations' interpreter.
 """
 
 from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib
 import importlib.metadata
 import importlib.util
 import json
@@ -35,7 +37,8 @@ from types import ModuleType
 from typing import Any
 
 REPO = Path(__file__).resolve().parents[1]
-BRIDGE = REPO / "src" / "srstudio" / "location_bridge.py"
+SOURCE = REPO / "src" / "srstudio"
+MODULE = re.compile(r"[a-z][a-z0-9_]*")  # one module of the srstudio package, by its name in it
 EXPORTED = ("srlocations", "catalog")  # what of the commit the exporter runs: the package and its catalog
 BLOCKING_KEYS = {  # srlocations.framing.blocking's keys at the pin, and the record's name for each
     "mark": "mark",
@@ -203,15 +206,37 @@ def size(text: str) -> tuple[int, int]:
     return int(found.group(1)), int(found.group(2))
 
 
+def load_srstudio(module: str) -> ModuleType:
+    """``srstudio.<module>`` from this repository, in an interpreter that is not srstudio's, such as srlocations'.
+
+    srstudio's ``__init__`` imports the whole library and an sr-core this interpreter does not hold, so it never
+    runs: an empty ``srstudio`` package is stood up on this repository's ``src/srstudio`` and only ``module``, and what
+    it imports, is loaded into it. ``module`` must import only the standard library and modules like itself
+    (``location_bridge`` imports ``errors``). In srstudio's own interpreter the package is already there and is used
+    as it is. Refuses (``ExportError``) a name that is no module of srstudio, an ``srstudio`` already imported from
+    another place, and any ``srstudio.*`` module loaded from outside this repository. Public, for the other exporters
+    that run in srlocations' interpreter and read their record with an srstudio reader."""
+    if not MODULE.fullmatch(module):
+        raise ExportError(f"{module!r} is not a module of srstudio: one lower-case name, such as location_bridge")
+    package = sys.modules.get("srstudio")
+    if package is None:
+        package = ModuleType("srstudio", "srstudio's modules from this repository; its __init__ does not run here")
+        package.__path__ = [str(SOURCE)]
+        sys.modules["srstudio"] = package
+    places = [Path(entry).resolve() for entry in getattr(package, "__path__", [])]
+    if SOURCE.resolve() not in places:
+        raise ExportError(f"the srstudio already imported is from {places}, not this repository's {SOURCE}")
+    loaded = importlib.import_module(f"srstudio.{module}")
+    for name, item in sorted(sys.modules.items()):
+        source = getattr(item, "__file__", None)
+        if name.startswith("srstudio.") and not Path(source or "/").resolve().is_relative_to(SOURCE.resolve()):
+            raise ExportError(f"{name} was loaded from {source}, not from this repository's {SOURCE}")
+    return loaded
+
+
 def load_bridge() -> ModuleType:
-    """srstudio's reader, by path: srstudio's package needs its own interpreter, this one module needs none."""
-    found = importlib.util.spec_from_file_location("srstudio_location_bridge", BRIDGE)
-    if found is None or found.loader is None:
-        raise ExportError(f"cannot load {BRIDGE}")
-    module = importlib.util.module_from_spec(found)
-    sys.modules[found.name] = module
-    found.loader.exec_module(module)
-    return module
+    """srstudio's location reader, ``srstudio.location_bridge``, as :func:`load_srstudio` loads it."""
+    return load_srstudio("location_bridge")
 
 
 def workspace_generated() -> Path:
