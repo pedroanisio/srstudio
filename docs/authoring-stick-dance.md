@@ -65,7 +65,7 @@ and perform from that time.
 
 | Argument | Default | Sets |
 |---|---|---|
-| `profile` | `STICK_RIG` | The skeleton. It is the stick preset with the rig's arm and leg bones. Any `SkeletonProfile` works. |
+| `profile` | `PROFILE` | The skeleton: the `stick` preset, which has the cast's torso, arm and leg bones. Any `SkeletonProfile` works. |
 | `seated` | from the move | `True` uses `SEATED` and `False` uses `STANDING_BASE`, both deltas on the profile's rest. |
 | `base` | none | Your own deltas in place of those. |
 | `hip` | `SEAT`, or the floor | Where the base pose's hips land in frame pixels. |

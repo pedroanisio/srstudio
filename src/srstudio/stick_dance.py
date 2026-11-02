@@ -35,16 +35,15 @@ from .errors import SrstudioError
 from .limbs import Camera
 from .limbs.math3d import Vec3
 from .music import Groove
-from .stick import ARM, HEAD_R, PLAIN, SKIN, SKIN_SHADE, STANDING, Face, Look, RigKey, RigPose, check_face, rig
+from .stick import HEAD_R, PLAIN, SKIN, SKIN_SHADE, STANDING, Face, Look, RigKey, RigPose, check_face, rig
 
 __all__ = [
     "EXPRESSIONS",
     "FLOOR",
-    "LEG",
+    "PROFILE",
     "SEAT",
     "SEATED",
     "STANDING_BASE",
-    "STICK_RIG",
     "ExpressionError",
     "RenderedTrackError",
     "StickDance",
@@ -67,9 +66,8 @@ class RenderedTrackError(StickDanceError):
     """Rendered frames the head cannot be read from: unreadable, too big, or with no head in them."""
 
 
-LEG = 255.0  # one bone of a standing figure's leg, hip to knee and knee to ankle, as stick.STANDING draws it
 FLOOR = float(STANDING["stand"].feet[0][1])  # the y a standing figure's ankles stand on: stick.STANDING's floor
-SEAT = (540.0, 1420.0)  # where a seated figure's hips sit: stick_windshield.FRONT's seat
+SEAT = (540.0, 1370.0)  # a seated figure's hips: its neck then lands on stick_windshield.FRONT "sit"'s, y 1037
 SHOULDER_DROP = 34.0  # stick.rig draws both arms from (neck.x - 4, neck.y + 34)
 SHOULDER_IN = 4.0
 TURN = math.pi / 4  # a head turn that puts the pupils at the side of the eyes
@@ -79,17 +77,7 @@ MAX_RENDERED = 100_000
 SKIN_TOLERANCE = 6  # per channel: the engine's own fill reads back within a step or two
 
 
-def _stick_rig() -> sk.SkeletonProfile:
-    """The stick preset with the bones stick.rig draws: arms of two :data:`stick.ARM` bones and legs of two
-    :data:`LEG` bones, at the rig's head radius of :data:`stick.HEAD_R` pixels. The preset's torso and head already
-    match the rig's seated figure; its limbs are longer than the drawn ones."""
-    stick = sk.preset("stick")
-    px = HEAD_R / stick.proportions.head_radius_m
-    lengths = (("thigh", LEG / px), ("shin", LEG / px), ("upper_arm", ARM / px), ("forearm", ARM / px))
-    return replace(stick, name="stick-rig", proportions=replace(stick.proportions, lengths=lengths))
-
-
-STICK_RIG = _stick_rig()
+PROFILE = sk.preset("stick")  # the Stick cast's bones at stick.HEAD_R pixels to its head radius
 
 # Deltas onto the profile's rest pose. Seated: thighs forward onto a seat, shins down to the floor, and the arms out a
 # little with the forearms in toward the lap, as stick_windshield.FRONT's "sit" draws them.
@@ -250,7 +238,7 @@ def perform(
     start: float,
     end: float,
     *,
-    profile: sk.SkeletonProfile = STICK_RIG,
+    profile: sk.SkeletonProfile = PROFILE,
     base: Mapping[str, float] | None = None,
     seated: bool | None = None,
     fps: int = 25,

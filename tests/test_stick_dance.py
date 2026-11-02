@@ -44,17 +44,20 @@ def seat_groove(bars: float = 8) -> sd.StickDance:
 # The profile
 
 
-def test_the_stick_rig_profile_has_the_bones_the_rig_draws_on_the_preset_s_head_and_torso():
-    preset = sk.preset("stick")
-    px = stick.HEAD_R / sd.STICK_RIG.proportions.head_radius_m
-    assert sd.STICK_RIG.name == "stick-rig"
-    assert sd.STICK_RIG.length("upper_arm") * px == pytest.approx(stick.ARM)
-    assert sd.STICK_RIG.length("forearm") * px == pytest.approx(stick.ARM)
-    assert sd.STICK_RIG.length("thigh") * px == pytest.approx(sd.LEG)
-    assert sd.STICK_RIG.length("shin") * px == pytest.approx(sd.LEG)
-    for segment in ("torso", "neck", "clavicle"):
-        assert sd.STICK_RIG.length(segment) == preset.length(segment)
-    assert (sd.STICK_RIG.hands, sd.STICK_RIG.omit, sd.STICK_RIG.rest) == (preset.hands, preset.omit, preset.rest)
+def test_the_default_profile_is_the_stick_preset_with_the_cast_s_bones():
+    px = stick.HEAD_R / sd.PROFILE.proportions.head_radius_m
+    assert sd.PROFILE == sk.preset("stick")
+    assert sd.PROFILE.length("upper_arm") * px == pytest.approx(stick.ARM, abs=0.1)
+    assert sd.PROFILE.length("forearm") * px == pytest.approx(stick.ARM, abs=0.1)
+
+
+def test_a_standing_figure_stands_as_tall_as_the_cast_s_stand():
+    """stick.STANDING "stand": head at 750, neck 857, hips 1190, feet 1700. The base pose softens the knees."""
+    stand = sd.perform(MOVES["head-nod"], GROOVE, 0.0, 0.04, seated=False).poses[0]
+    drawn = stick.STANDING["stand"]
+    assert stand.hip[1] - stand.neck[1] == pytest.approx(drawn.hip[1] - drawn.neck[1], abs=1)
+    assert stand.feet[0][1] == stand.feet[1][1] == sd.FLOOR
+    assert stand.head[1] == pytest.approx(drawn.head[1], abs=25)
 
 
 def test_the_seated_figure_sits_where_the_windshield_s_front_poses_sit():
@@ -62,7 +65,8 @@ def test_the_seated_figure_sits_where_the_windshield_s_front_poses_sit():
     sit = sd.perform(MOVES["head-nod"], GROOVE, 0.0, 0.04, seated=True).poses[0]
     shoulder = (sit.neck[0] - 4, sit.neck[1] + 34)
     assert sit.neck[1] - sit.head[1] == pytest.approx(110, abs=3)  # FRONT "sit": 107
-    assert sit.hip[1] - sit.neck[1] == pytest.approx(393, abs=1)  # FRONT "sit": 383
+    assert sit.hip[1] - sit.neck[1] == pytest.approx(333, abs=1)  # the cast's torso; FRONT "sit" draws 383
+    assert sit.neck[1] == pytest.approx(1037, abs=3)  # FRONT "sit"'s neck: the head sits where the cast's does
     near = (sit.elbows[1][0] - shoulder[0], sit.elbows[1][1] - shoulder[1])
     far = (sit.elbows[0][0] - shoulder[0], sit.elbows[0][1] - shoulder[1])
     assert near[0] > 40 and far[0] < -40 and near[0] == pytest.approx(-far[0]) and near[1] == pytest.approx(far[1])

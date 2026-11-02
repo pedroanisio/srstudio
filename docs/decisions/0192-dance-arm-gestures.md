@@ -27,13 +27,13 @@ Seven preset moves in `assets/dance/moves.json`, on canonical controls only, in 
 
 | Move | Support | What the tests read on forward kinematics, on `realistic`, `cartoon` and `stick` |
 |---|---|---|
-| `clap` | either | On every beat the two hand tips (the middle of each hand's fingertips) are within 0.1 head radius on realistic, 0.3 on stick and 0.9 on cartoon, in front of the body and below the shoulders; at the far extreme between beats they are more than 2.5 head radii apart; neither hand passes the midline by more than 0.15 head radius. |
-| `point-up` | either | On one the right hand tip is above the middle of the head, out past its own shoulder, while the left hand is below its shoulder; on two the reverse. On realistic and stick the pointing hand is above the crown. A `hold` waveform keeps the point after the beat. |
+| `clap` | either | On every beat the two hand tips (the middle of each hand's fingertips) are within 0.1 head radius on realistic and 0.9 on cartoon, and on stick at intensity 0.75, in front of the body and below the shoulders; at the far extreme between beats they are more than 2.5 head radii apart; neither hand passes the midline by more than 0.15 head radius. |
+| `point-up` | either | On one the right hand tip is above the middle of the head, out past its own shoulder, while the left hand is below its shoulder; on two the reverse. The pointing hand is above the crown by more than 1 head radius on realistic and 0.7 on stick. A `hold` waveform keeps the point after the beat. |
 | `raise-the-roof` | either | Both hand tips stay above the shoulders, are highest on the beat, rise into it, and travel at least 0.3 head radius; the palms face up (the fingertips' curl direction has an upward share above 0.6). |
 | `hand-wave-side` | either | Both raised hands are over 1.5 head radii further right on beat one than on beat three, above the shoulders throughout, one wave a bar. |
 | `shoulder-roll` | either | Each shoulder is highest on its beat, furthest back half a beat later, lowest a beat later and furthest forward after that: a backward roll, the left a beat after the right. |
 | `hip-sway` | feet | The hips are over 0.4 head radius further right on one than on two, and each hand moves the same way by more than twice the hips. |
-| `hands-up` | either | A held pose that does not move: both hand tips above the middle of the head, and over 1.5 head radii above the crown on realistic and stick. |
+| `hands-up` | either | A held pose that does not move: both hand tips above the middle of the head, and above the crown by over 1.5 head radii on realistic and 1.1 on stick. |
 
 Every gesture, and its mirror, is danced at 48 samples a beat on all three presets through `dance_pose` without
 clamping, so no frame passes a limit. Arms carry lag 0, so a raised arm rides the body as the reference reel's does.
@@ -48,8 +48,9 @@ Where a preset's proportions forbid the full gesture, the amplitudes fit all thr
 
 - The cartoon cannot reach above its crown with any arm angle its limits allow, so `point-up` and `hands-up` hold it to
   the middle of its head.
-- No single set of arm angles brings all three presets' hands together. `clap` meets on realistic and stick and stops
-  short on the cartoon; the cartoon claps shut at `Entry` intensity 2, which swings the arms further in and is tested.
+- No single set of arm angles brings all three presets' hands together. `clap` meets on realistic, crosses the
+  stick's hands by 0.44 head radius and stops short on the cartoon; the stick claps shut at `Entry` intensity 0.75 and
+  the cartoon at 2, and both are tested.
 
 The same test found that `bob`, `bounce` and `step-touch` swung each knee symmetrically about zero and straightened it
 past `lower_leg.stretch`'s limit at the far extreme. Each knee now keeps its hit value and straightens to zero.

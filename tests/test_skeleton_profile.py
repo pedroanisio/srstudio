@@ -56,6 +56,18 @@ def test_the_stick_preset_has_mittens_and_loses_the_small_joints():
     assert "jaw.close" not in profile.controls
 
 
+def test_the_stick_preset_has_the_stick_casts_bones_at_its_head():
+    """stick.rig draws a 92 px head on a 333 px torso, arm bones of 155 px and leg bones of 255 px."""
+    profile = sk.preset("stick")
+    px = 92 / profile.head_radius
+    solved = profile.proportions.solved()
+    drawn = {"torso": 333, "upper_arm": 155, "forearm": 155, "thigh": 255, "shin": 255}
+    assert {name: solved[name] * px for name in drawn} == pytest.approx(drawn, abs=0.1)
+    assert profile.stature * px == pytest.approx(
+        1112.8, abs=0.1
+    )  # its ankle and hip joints add 71 px to the drawn 1042
+
+
 def test_every_preset_keeps_a_rest_pose_inside_its_limits():
     assert sk.PRESETS == ("realistic", "cartoon", "stick")
     for name in sk.PRESETS:

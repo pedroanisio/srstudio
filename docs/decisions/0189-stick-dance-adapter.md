@@ -29,18 +29,18 @@ inside a beat.
   `skeleton.project` through a front, orthographic camera at `stick.HEAD_R` pixels to the profile's head radius, and
   reads one `RigPose` from each picture. `draw` keys the rig once a picture, so the rig's key budget bounds the dance:
   `perform` refuses more than `MAX_KEYS - 1` pictures before sampling any.
-- **The profile has the rig's bones.** `STICK_RIG` is the `stick` preset with the arm bones at `stick.ARM` (155 px)
-  and the leg bones at `LEG` (255 px, as `stick.STANDING` draws them). The preset's torso (393 px) and head (110 px
-  above the neck) already match the windshield's seated figure (383 px and 107 px). Its arms (256 and 200 px) and legs
-  (337 px) are longer than the drawn ones, and that would change the cast's look. `perform` takes any profile.
+- **The profile has the cast's bones.** The default profile is the `stick` preset of `srstudio.skeleton`, whose torso,
+  arm and leg bones are the Stick cast's at `stick.HEAD_R` pixels to its head radius: a 333 px torso, arm bones of
+  `stick.ARM` (155 px) and leg bones of 255 px, as `stick.STANDING` draws them. A standing figure then stands as tall
+  as the cast's "stand". `perform` takes any profile.
 - **Reading the joints.** The rig's head is the head circle's centre on the head bone, and the neck and hip are the
   `neck` and `hips` joints. The rig draws both arms from one shoulder point under the neck, so each arm is moved by the
   constant offset that puts its shoulder there in the base pose. A shrug and a raised arm still ride the body. Legs
   run from the hip point. The arm and leg on screen left are the rig's far pair.
 - **Base poses.** `SEATED` puts thighs forward and shins down, and turns the arms out to the windshield's "sit".
   `STANDING_BASE` softens the knees, so a dance that drops the hips bends them. A seat dance sits and any other stands,
-  unless `seated` says otherwise. The base pose's hips land on `hip`: `SEAT` (540, 1420) seated, and standing on the
-  point that puts the ankles on the room's floor (y 1700).
+  unless `seated` says otherwise. The base pose's hips land on `hip`: `SEAT` (540, 1370) seated, which puts the neck on
+  the windshield's "sit" neck, and standing on the point that puts the ankles on the room's floor (y 1700).
 - **Planted feet.** `dance_pose` does not plant feet. The adapter keeps a mark for each foot from the picture it is
   planted until it lifts; a seated figure keeps both. A two-bone reach in 3D solves the knee toward the danced knee,
   or forward when that knee lies on the line. A foot is never drawn through the floor. A planted foot stays on its mark
@@ -76,8 +76,10 @@ its extreme 5 ms after the beat.
   them would be a new rig.
 - **Draw the dance with `limbs` or `body` tracks.** Those are profile figures with their own anatomy records. The Stick
   cast is the rig, and a dance must look like the cast.
-- **Use the stick preset's own limb lengths.** The projected arms reach 456 px against the rig's 310, and the legs
-  are 32 % longer than every standing pose the style has drawn.
+- **An adapter-only profile with the rig's bones.** The preset's arms reached 456 px against the rig's 310, its legs
+  were 32 % longer than every standing pose the style has drawn and its torso 393 px against 333. Fixing that only in
+  the adapter would leave every other user of the `stick` preset (retargeted takes, the three-plane views) drawing a
+  figure that is not the cast.
 - **Keep one face per key.** That gives 25 face drawings a second, and blinks could never land, because a blink needs
   more than its 0.14 s inside one span.
 - **Plant the feet in `dance_pose`.** Contacts are the body's job, and the skeleton module is shared by every style.
@@ -89,8 +91,9 @@ its extreme 5 ms after the beat.
   change by phrase.
 - A dance costs one body drawing a picture: eight bars at 129 BPM are 373 groups of five strokes for each figure.
   `MAX_KEYS` bounds a single figure's dance to 13 minutes at 25 pictures a second.
-- The standing figure is taller than `stick.STANDING` (the skeleton's torso is 393 px against 333), and its arms hang
-  from the single shoulder point.
+- A standing figure's arms hang from the single shoulder point the rig draws, while the skeleton's shoulders stay
+  1.77 head radii apart. The arm gestures are tuned for those shoulders: on the cast's arms `clap` crosses the hands
+  by 0.44 head radius at intensity 1 and meets at 0.75, and `point-up` clears the crown by 0.74 head radius.
 - seat-groove turns the shoulders with the drop. A raised arm turns with them, so the raised hand moves 0.70 head
   radius against the head's 0.38, where the reference's moved 0.32 against 0.50. It rides the body in phase, with no
   lag. Whether it reads right is for the operator's review of the proof clip.
