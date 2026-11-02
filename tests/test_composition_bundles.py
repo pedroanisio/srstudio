@@ -168,7 +168,7 @@ def test_warm_cache_preserves_validation_budget_errors(inputs, tmp_path, monkeyp
     def exhausted(*args):
         raise c.CompositionError('worker timed out', code='composition.budget')
 
-    monkeypatch.setattr(bundle, '_png', exhausted)
+    monkeypatch.setattr(bundle, '_png_size', exhausted)
     with pytest.raises(c.CompositionError) as caught:
         c.compile_bundle(plan, assets, engine=engine, cache=tmp_path / 'cache')
     assert caught.value.to_dict()['code'] == 'composition.budget'

@@ -37,9 +37,9 @@ def _unique(items: list[tuple[str, object]]) -> dict:
     return result
 
 
-def loads(raw: bytes) -> dict:
-    if type(raw) is not bytes or len(raw) > MAX_WIRE_BYTES:
-        raise fail(None, f'at most {MAX_WIRE_BYTES} encoded bytes')
+def loads(raw: bytes, *, maximum: int = MAX_WIRE_BYTES) -> dict:
+    if type(raw) is not bytes or len(raw) > maximum:
+        raise fail(None, f'at most {maximum} encoded bytes')
     try:
         value = json.loads(raw.decode('utf-8'), object_pairs_hook=_unique)
     except (ValueError, RecursionError, UnicodeError) as error:
@@ -51,10 +51,10 @@ def loads(raw: bytes) -> dict:
     return value
 
 
-def dumps(value: dict) -> bytes:
+def dumps(value: dict, *, maximum: int = MAX_WIRE_BYTES) -> bytes:
     result = json.dumps(value, separators=(',', ':'), allow_nan=False).encode('utf-8')
-    if len(result) > MAX_WIRE_BYTES:
-        raise fail(len(result), f'at most {MAX_WIRE_BYTES} encoded bytes')
+    if len(result) > maximum:
+        raise fail(len(result), f'at most {maximum} encoded bytes')
     return result
 
 

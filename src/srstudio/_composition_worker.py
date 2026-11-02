@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 SCHEMA = 'srstudio.composition-worker/1.0.0'
@@ -122,7 +123,7 @@ def dispatch(raw: bytes) -> dict:
     }
 
 
-def main() -> None:
+def main(handler: Callable[[bytes], dict] | None = None, *, maximum: int = 16 * 1024**2) -> None:
     # Prefer the installed source containing this worker, including alternate
     # worktrees. No caller-supplied module names or executable objects cross IPC.
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -131,7 +132,7 @@ def main() -> None:
         from srstudio import composition as c
 
         try:
-            result = dispatch(sys.stdin.buffer.read(wire.MAX_WIRE_BYTES + 1))
+            result = (dispatch if handler is None else handler)(sys.stdin.buffer.read(maximum + 1))
         except c.CompositionError as error:
             result = {
                 'schema': SCHEMA,
@@ -139,7 +140,7 @@ def main() -> None:
                 'diagnostic': error.to_dict(),
                 'cause': wire.cause_encode(error.__cause__),
             }
-        sys.stdout.buffer.write(wire.dumps(result))
+        sys.stdout.buffer.write(wire.dumps(result, maximum=maximum))
     except MemoryError:
         # Fixed bytes avoid allocating a diagnostic after an allocation failure.
         os.write(2, b'SRSTUDIO_COMPOSITION_MEMORY_LIMIT\n')

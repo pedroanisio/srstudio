@@ -193,17 +193,27 @@ def _key(asset: c.PreparedPlate, engine_hash: str) -> str:
 
 
 def _record(key: str, engine_hash: str, asset: c.PreparedPlate, digest: str) -> dict:
+    return _record_size(key, engine_hash, asset.width, asset.height, digest)
+
+
+def _record_size(key: str, engine_hash: str, width: int, height: int, digest: str) -> dict:
     return {
         'schema': CACHE_SCHEMA,
         'key': key,
         'engine': engine_hash,
         'image': digest,
-        'width': asset.width,
-        'height': asset.height,
+        'width': width,
+        'height': height,
     }
 
 
 def _cached(entry: Path, key: str, engine_hash: str, asset: c.PreparedPlate, budget: c.RenderBudget) -> bytes | None:
+    return _cached_size(entry, key, engine_hash, asset.width, asset.height, budget)
+
+
+def _cached_size(
+    entry: Path, key: str, engine_hash: str, width: int, height: int, budget: c.RenderBudget
+) -> bytes | None:
     try:
         info = entry.lstat()
     except FileNotFoundError:
@@ -217,7 +227,7 @@ def _cached(entry: Path, key: str, engine_hash: str, asset: c.PreparedPlate, bud
             type(record) is not dict
             or type(record.get('width')) is not int
             or type(record.get('height')) is not int
-            or record != _record(key, engine_hash, asset, hashlib.sha256(data).hexdigest())
+            or record != _record_size(key, engine_hash, width, height, hashlib.sha256(data).hexdigest())
         ):
             raise _failure(
                 'cache', 'a cache record matching the complete render and image identities', 'composition.cache'
@@ -226,7 +236,7 @@ def _cached(entry: Path, key: str, engine_hash: str, asset: c.PreparedPlate, bud
         raise _failure(
             'cache', 'an intact verified cache entry; remove or repair it explicitly', 'composition.cache'
         ) from error
-    _png(data, asset, budget)
+    _png_size(data, width, height, budget)
     return data
 
 
@@ -411,6 +421,13 @@ def compile_bundle(plan: c.ValidatedScenePlan, assets: Assets, *, engine: Path, 
 def emit_bundle(
     plan: c.ValidatedScenePlan, assets: Assets, output: Path, *, engine: Path, cache: Path
 ) -> c.CompiledBundle:
+    _validate_destination(output, cache)
+    bundle = compile_bundle(plan, assets, engine=engine, cache=cache)
+    _publish_bundle(output, bundle)
+    return bundle
+
+
+def _validate_destination(output: Path, cache: Path) -> None:
     if not isinstance(output, Path) or output.name in ('', '.', '..') or not isinstance(cache, Path):
         raise _failure('output/cache', 'distinct directory Paths')
     if output.exists() or output.is_symlink():
@@ -418,11 +435,12 @@ def emit_bundle(
     target, storage = output.resolve(), cache.resolve()
     if target.is_relative_to(storage) or storage.is_relative_to(target):
         raise _failure('output/cache', 'non-overlapping bundle and cache directories', 'composition.output')
-    bundle = compile_bundle(plan, assets, engine=engine, cache=cache)
+
+
+def _publish_bundle(output: Path, bundle: c.CompiledBundle) -> None:
     try:
         _bundle_output.publish(output, {'scene.xml': bundle.xml, **{r.name: r.data for r in bundle.resources}})
     except OSError as error:
         raise _failure(
             'output', 'atomic publication to a new directory on a filesystem supporting renameat2', 'composition.output'
         ) from error
-    return bundle

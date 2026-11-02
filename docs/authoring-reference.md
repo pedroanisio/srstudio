@@ -28,7 +28,8 @@ a similar character or pass contract JSON directly to a builder.
 | Repair invalid authoring input | [Diagnostic recipe](authoring-diagnostics.md#repairing-authoring-input) | Match `code` and `path`, validate corrected input, and bound retries in ordinary code. |
 | Evaluate motion quality | [Quality study](../examples/limbs_quality.py) | Keep numeric limits, strict rendering and human temporal ratings separate. |
 | Measure authoring cost | [Authoring benchmark](authoring-benchmark.md) | Separate cold/warm phases, compare output hashes, and bound plate renderer invocations. |
-| Compile a bounded composition | [Composition preflight and emission](composition-preflight.md) | Validate manifests and vector/static-plate payloads, preserve clocks, and publish supported scenes or portable bundles. |
+| Compile a bounded composition | [Composition preflight and emission](composition-preflight.md) | Validate manifests and vector/plate/proxy payloads, preserve clocks, and publish supported scenes or portable bundles. |
+| Animate a shared camera, lights and parents | `scene_motion.plan_scene`, `emit_timeline`; [timeline emission](composition-preflight.md#emit-a-scene-timeline) | Bound the complete clip, preserve source clocks through held view cuts, and share verified raw renders. |
 
 
 | More authoring tasks | Guide |

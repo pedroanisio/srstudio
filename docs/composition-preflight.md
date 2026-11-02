@@ -25,8 +25,9 @@ light/part-ID conversion under the same camera, lighting and worker budgets.
 `RasterSequence` adds baked geometry/appearance timelines under that shared
 static view. `srstudio.scene_motion` now samples typed camera, light and parent
 tracks into validated static plans. `scene_motion.plan_scene` adds bounded
-timeline scheduling and aggregate work accounting. Animated bundle emission
-remains open under SDK-P2-07.
+timeline scheduling and aggregate work accounting. `compile_timeline` and
+`emit_timeline` verify, render and publish the complete sampled timeline. The
+full DRAWING cross-backend adoption proof remains open under SDK-P2-07.
 A valid manifest alone is not a rendered scene,
 approval of a new style, or proof of a host's declared geometry.
 
@@ -102,8 +103,9 @@ place both anchors together.
 original clip; it does not budget a batch of views. Its digest identifies the
 resolved scene, so repeated held samples can share the existing verified render
 cache. Sampling neither creates files nor emits an animated bundle. Use
-`plan_scene` below to budget a complete sampled timeline. Animated emission and
-the DRAWING adoption proof remain required before SDK-P2-07 is complete.
+`plan_scene` below to budget a complete sampled timeline and `emit_timeline`
+to publish it. The DRAWING adoption proof remains required before SDK-P2-07
+is complete.
 
 ## Plan a scene timeline
 
@@ -190,9 +192,62 @@ typed error before execution. The timeline digest pins inputs, source identities
 samples, terminal state, intervals and costs. It is a planning identity; it does
 not replace renderer/cache identities or authorize a new drawing style.
 
-`compile_bundle` and `emit_bundle` still accept individual static plans or baked
-source timelines under a static view. Compiling and atomically publishing this
-new scene timeline remains open; do not treat its existence as an emitted clip.
+`compile_bundle` and `emit_bundle` accept individual static plans or baked
+source timelines under a static view. Use the timeline APIs below when the
+shared camera, lights or parent transforms change.
+
+## Emit a scene timeline
+
+Given `timeline` from the preceding example, supply `Path` values for an existing
+renderer executable (`engine`), a reusable cache (`cache`) and a new output
+directory (`output`). Vector bindings additionally require exactly one
+`VectorSource` or `PreparedVector` per binding; this plate-only example uses `()`.
+
+```python
+bundle = m.emit_timeline(timeline, (), output, engine=engine, cache=cache)
+assert bundle.plan_digest == timeline.digest
+assert (output / "scene.xml").read_bytes() == bundle.xml
+```
+
+`compile_timeline(timeline, vectors=(), *, engine, cache)` returns the same
+`CompiledBundle` without publishing its files. `bundle.work` reports new raw
+renders, verified cache hits and consumed renderer attempts. A vector-only
+timeline accepts a nonexistent renderer path and does not create a cache.
+
+Compilation recomputes the supplied timeline rather than trusting its digest
+or costs. It verifies all vector payloads and prepares every unique scene view,
+including the terminal view and all hidden raster snapshots, before accessing
+the render cache. Preparation is streamed one placement at a time; only bounded
+identity receipts are retained. The execution pass checks those receipts again.
+Known source and XML expansion limits fail before any cache writes.
+
+Every warm entry is validated before the first cold render. Raw jobs share the
+timeline invocation budget and any enclosing `plates.render_session`; label
+renders and failed attempts consume those limits too. Worker and renderer
+processes have hard memory limits and per-invocation deadlines. Valid individual
+cache entries can survive a later failure, but no partial output bundle is
+published. Corrupt or disappearing cache entries fail explicitly without an
+implicit repair or retry.
+
+Output holds the sampled view over each half-open scene interval. Source clips
+retain their original time offset and rate across view cuts; raster snapshots
+change at their mapped source boundaries. IDs and paint references are scoped
+per interval and placement. Repeated raw renders and final PNGs are deduplicated
+independently: proxy palette/grain changes can produce more final images than
+raw renders. Layer ordering and selected proxy passes remain explicit.
+
+The timeline assembly worker receives closed JSON with a 32 MiB transport cap;
+existing static composition workers retain their 16 MiB cap. Source buffers,
+combined vector/image inputs and complete bundle files each have an 8 MiB cap.
+The worker recomputes the schedule, validates every image reference and PNG,
+checks the final schema and bounds the output node count. Publication creates a
+private directory (0700) with private files (0600) through an atomic rename.
+Existing destinations, output symlinks and overlapping cache/output directories are
+refused.
+
+This adapter does not establish biomechanical quality, unsupported orthographic
+raster registration, continuous camera safety between samples, or style approval.
+The complete animated DRAWING proof remains required.
 
 ## Register a plate view
 

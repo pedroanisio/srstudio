@@ -2,8 +2,8 @@
 
 Each sample is a normal validated ScenePlan, suitable for existing preparation
 adapters. plan_scene schedules samples and bounds aggregate work without renders,
-cache access or output writes;
-animated bundle emission remains a separate, unfinished adapter.
+cache access or output writes. compile_timeline and emit_timeline prepare,
+render and assemble those intervals under one shared render budget.
 Euler channels follow authored turns; no shortest-arc rotation is inferred.
 """
 
@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 from bisect import bisect_right
 from dataclasses import dataclass, field, fields, replace
+from pathlib import Path
 from typing import Literal, TypeVar, cast
 
 from . import composition as c
@@ -130,6 +131,39 @@ def plan_scene(
     from ._scene_motion_plan import plan_scene as plan
 
     return plan(spec, bindings, motion, rasters=rasters)
+
+
+def compile_timeline(
+    timeline: SceneTimeline, vectors: tuple[c.VectorSource | c.PreparedVector, ...] = (), *, engine: Path, cache: Path
+) -> c.CompiledBundle:
+    """Verify all snapshots, render visible views and compile a self-contained bundle.
+
+    Warm entries are verified before cold work. Renderer attempts share the
+    timeline budget and any enclosing render_session. Individually verified
+    cache entries survive later failures. Vector-only timelines need no engine.
+    """
+    from ._scene_motion_bundle import compile_timeline as compile_bundle
+
+    return compile_bundle(timeline, vectors, engine=engine, cache=cache)
+
+
+def emit_timeline(
+    timeline: SceneTimeline,
+    vectors: tuple[c.VectorSource | c.PreparedVector, ...],
+    output: Path,
+    *,
+    engine: Path,
+    cache: Path,
+) -> c.CompiledBundle:
+    """Atomically publish a complete timeline into a new private directory.
+
+    Scene intervals are held at planned frame/cut times. Authored vector clocks
+    and baked source boundaries retain their original scene-time mapping.
+    Existing outputs and overlapping output/cache directories are rejected.
+    """
+    from ._scene_motion_bundle import emit_timeline as emit
+
+    return emit(timeline, vectors, output, engine=engine, cache=cache)
 
 
 Key = CameraKey | LightKey | TransformKey

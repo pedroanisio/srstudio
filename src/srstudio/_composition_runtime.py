@@ -20,18 +20,19 @@ def _worker_command() -> tuple[str, ...]:
 
 
 def _call(request: dict, budget: c.RenderBudget) -> dict:
+    return _call_worker(request, budget, command=_worker_command(), maximum=wire.MAX_WIRE_BYTES)
+
+
+def _call_worker(request: dict, budget: c.RenderBudget, *, command: tuple[str, ...], maximum: int) -> dict:
     if type(budget) is not c.RenderBudget:
         raise c._fail('budget', None, 'RenderBudget')
     budget.__post_init__()
-    payload = wire.dumps(request)
+    payload = wire.dumps(request, maximum=maximum)
     limits = ProcessLimits(
-        timeout=budget.timeout,
-        memory_bytes=budget.max_memory_bytes,
-        stdout_bytes=wire.MAX_WIRE_BYTES,
-        stderr_bytes=65536,
+        timeout=budget.timeout, memory_bytes=budget.max_memory_bytes, stdout_bytes=maximum, stderr_bytes=65536
     )
     try:
-        result = run(_worker_command(), input=payload, limits=limits)
+        result = run(command, input=payload, limits=limits)
     except BoundedProcessError as error:
         failure = error.to_dict()
         if failure['code'] == 'process.timeout':
@@ -51,7 +52,7 @@ def _call(request: dict, budget: c.RenderBudget) -> dict:
             'a successful bounded worker with supported kernel limits',
             'composition.worker.' + failure['code'].removeprefix('process.'),
         ) from error
-    response = wire.loads(result.stdout)
+    response = wire.loads(result.stdout, maximum=maximum)
     if response.get('status') == 'error':
         wire.fields(response, {'schema', 'status', 'diagnostic', 'cause'})
         diagnostic = wire.read_diagnostic(response['diagnostic'])
