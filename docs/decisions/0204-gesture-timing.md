@@ -307,6 +307,15 @@ The score reads stops, not which stop is the hit. `bounce` stops on the beat and
 reads the same. The AIST++ average over stops tops out near a half for a gesture that turns once a beat, since its
 far-extreme stop lies off the beat (0.48 for `clap`).
 
+### A phrase key can arrive on a measured stroke
+
+ADR 0194's keys arrive on a fixed ease (`smooth`, `hit`, `linear`) and asked for a per-key timing from this work's
+`curve`. A key's span is one stroke, not a cycle, so `Curve.stroke(u)` reads the way back onto the hit as an ease: from
+the curve's last far-extreme sample (0) to the hit (1), exact at both ends because the spline passes through its
+samples, with `Curve.stroke_velocity(u)` its rate and `Curve.stroke_peak` where it is fastest. The stroke carries the
+measured gesture's attack and peak-speed time, and it fits the phrase's `ease(kind, u)` contract unchanged. Naming a
+curve from a key (`Key.ease`) belongs to the phrase work, which owns `Key`.
+
 ## Rejected alternatives
 
 - **Linear interpolation between samples.** Speed is constant between samples and jumps at each one; acceleration is a

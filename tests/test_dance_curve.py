@@ -198,3 +198,41 @@ def test_the_shipped_presets_are_a_1_1_document():
 
     data = json.loads(files("srstudio").joinpath("assets/dance/moves.json").read_text())
     assert data["schema"] == "srstudio.dance-moves/1.1.0"
+
+
+# --- the stroke onto the hit, as an ease (ADR 0204; a phrase's key names it) ----------------------------------------
+
+
+def strike(n=32):
+    """A cycle whose way back onto the hit speeds up all the way into it, the way a phrase's ``hit`` lands."""
+    out = []
+    for k in range(n):
+        u = k / n
+        out.append(math.cos(math.pi * u / 0.5) if u < 0.5 else -1 + 2 * ((u - 0.5) / 0.5) ** 2)
+    return tuple(out)
+
+
+@pytest.mark.parametrize("points", [cosine(), whip(), strike()], ids=["cosine", "whip", "strike"])
+def test_a_stroke_runs_from_the_far_extreme_onto_the_hit_exactly(points):
+    c = Curve(points)
+    assert c.stroke(0.0) == 0.0 and c.stroke(1.0) == 1.0
+    assert c.stroke(-0.5) == 0.0 and c.stroke(1.5) == 1.0  # a span read past its ends holds its keys
+
+
+def test_a_stroke_is_the_curve_from_its_last_far_extreme_scaled_to_the_way():
+    c = Curve(whip())
+    start = 18 / 24  # the whip's last -1 sample: the strike begins there
+    for u in (0.1, 0.37, 0.8):
+        assert c.stroke(u) == pytest.approx((c.value(start + u * (1 - start)) + 1) / 2)
+        assert c.stroke_velocity(u) == pytest.approx(c.velocity(start + u * (1 - start)) * (1 - start) / 2)
+
+
+def test_a_cosine_stroke_is_fastest_at_its_middle_and_a_strike_at_its_end():
+    assert Curve(cosine()).stroke_peak == pytest.approx(0.5, abs=0.02)
+    assert Curve(strike()).stroke_peak > 0.9
+
+
+def test_a_stroke_velocity_integrates_to_the_whole_way():
+    c = Curve(strike())
+    steps = 2000
+    assert sum(c.stroke_velocity((i + 0.5) / steps) for i in range(steps)) / steps == pytest.approx(1.0, abs=1e-6)

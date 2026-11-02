@@ -9,6 +9,10 @@ written: on a grid of :data:`CHECK_STEPS` places per sample it must stay within 
 its highest place must lie within three eighths of a sample of the hit. (A spline through a stroke that eases onto the
 hit faster than it leaves it peaks a little after the hit, as the curvature it cannot step is spread over a sample;
 two samples at the top, as when the seam is written twice, peak half a sample away and are refused.)
+
+:meth:`Curve.stroke` reads the way back onto the hit, from the last far-extreme sample to the hit, as an ease from 0
+to 1, exact at both ends: a dance phrase's key can arrive on its pose with a measured gesture's attack and
+peak-speed time instead of a fixed ease.
 """
 
 from __future__ import annotations
@@ -125,3 +129,32 @@ class Curve:
         k, t = self._segment(u)
         n, m = len(self.points), self._m
         return m[k] * (1 - t) + m[(k + 1) % n] * t
+
+    @property
+    def _onto(self) -> float:
+        """Where the stroke onto the hit begins: the last sample at the far extreme."""
+        n = len(self.points)
+        return max(k for k, y in enumerate(self.points) if y == -1.0) / n
+
+    def stroke(self, u: float) -> float:
+        """The stroke onto the hit as an ease: the share of the way from the far extreme (0) to the hit (1) at ``u``
+        of the stroke, held at its ends outside ``0..1``. It is exact at both ends, since the spline passes through
+        its samples, so a phrase's key can name it as the way it arrives."""
+        u = min(1.0, max(0.0, u))
+        if u in (0.0, 1.0):  # the samples themselves, free of the rounding in placing them
+            return u
+        start = self._onto
+        return (self.value(start + u * (1 - start)) + 1) / 2
+
+    def stroke_velocity(self, u: float) -> float:
+        """The stroke's rate, in shares of the way per stroke: :meth:`stroke`'s derivative inside ``0..1``."""
+        start = self._onto
+        return self.velocity(start + min(1.0, max(0.0, u)) * (1 - start)) * (1 - start) / 2
+
+    @property
+    def stroke_peak(self) -> float:
+        """Where in the stroke it moves fastest, as a share of the stroke, on a grid of :data:`CHECK_STEPS` places
+        per sample of the cycle."""
+        steps = len(self.points) * CHECK_STEPS
+        speeds = [self.stroke_velocity(i / steps) for i in range(steps + 1)]
+        return speeds.index(max(speeds)) / steps
