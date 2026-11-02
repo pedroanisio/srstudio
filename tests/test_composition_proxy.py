@@ -9,21 +9,8 @@ import pytest
 from srstudio import clay, proxy
 from srstudio import composition as c
 from support.composition import PROXY_TONES as TONES
-from support.composition import plate_plan
+from support.composition import proxy_plan as plan_for
 from support.composition import proxy_source as source
-
-
-def plan_for(item, *, passes=('rgba',)):
-    base = plate_plan()
-    binding = replace(
-        base.bindings[0],
-        backend='proxy',
-        nodes=512,
-        memory_bytes=64 * 1024**2,
-        plates=c.proxy_jobs(item, width=64, height=64, memory_bytes=8 * 1024**2),
-    )
-    spec = replace(base.spec, layers=(replace(base.spec.layers[0], passes=passes),))
-    return c.preflight(spec, (binding,))
 
 
 def test_snapshot_and_work_accelerator_are_immutable_and_content_addressed():
