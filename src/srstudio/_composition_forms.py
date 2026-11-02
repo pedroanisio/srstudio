@@ -22,9 +22,12 @@ def fail(expected: str) -> c.CompositionError:
 
 
 def validate(forms: tuple[c.FormSurface, ...], binding: c.AssetBinding | None = None) -> None:
+    from . import _composition_paths as paths
+
     if type(forms) is not tuple or len(forms) > 256 or any(type(f) is not c.FormSurface for f in forms):
         raise fail('an immutable tuple of at most 256 FormSurface records')
     _graph(forms, [0])
+    paths.validate(forms, binding)
     seen = set()
     for surface in forms:
         _id(surface.node, 'forms.node')
@@ -69,7 +72,11 @@ def validate(forms: tuple[c.FormSurface, ...], binding: c.AssetBinding | None = 
 
 def definition(forms: tuple[c.FormSurface, ...]) -> list[dict]:
     validate(forms)
-    return [asdict(surface) for surface in sorted(forms, key=lambda surface: surface.node)]
+    result = [asdict(surface) for surface in sorted(forms, key=lambda surface: surface.node)]
+    for value in result:
+        if value['path'] is None:
+            del value['path']  # Preserve the established form-only source identity.
+    return result
 
 
 def size(forms: tuple[c.FormSurface, ...]) -> int:
@@ -77,6 +84,8 @@ def size(forms: tuple[c.FormSurface, ...]) -> int:
 
 
 def verify(root: ET.Element, binding: c.AssetBinding) -> None:
+    from . import _composition_paths as paths
+
     if not binding.forms:
         return
     validate(binding.forms, binding)
@@ -88,6 +97,7 @@ def verify(root: ET.Element, binding: c.AssetBinding) -> None:
     for surface in binding.forms:
         if surface.mode == 'diffuse' and not _COLOR.fullmatch(shapes[surface.node].get('fill', '')):
             raise fail('a solid #RRGGBB fill on diffuse shapes; keep gradients and outlines in explicit ink fields')
+    paths.verify(root, binding)
 
 
 def _sample(surface: c.FormSurface, time: float, clock: c.TemporalPolicy | None = None) -> tuple[Vec3, Vec3]:
@@ -119,6 +129,8 @@ def _tuple(vector: Vec3) -> tuple[float, float, float]:
 def resolved(
     plan: c.ValidatedScenePlan, layer: c.LayerSpec, time: float, *, scene_clock: bool = False
 ) -> tuple[c.FormLight, ...]:
+    from . import _composition_paths as paths
+
     binding = next(binding for binding in plan.bindings if binding.id == layer.asset)
     if not binding.forms:
         return ()
@@ -153,7 +165,14 @@ def resolved(
         else:
             color = None
         result.append(
-            c.FormLight(surface.node, _tuple(point), _tuple(normal), (energy[0], energy[1], energy[2]), color)
+            c.FormLight(
+                surface.node,
+                _tuple(point),
+                _tuple(normal),
+                (energy[0], energy[1], energy[2]),
+                color,
+                paths.world(surface.path, time, layer.temporal if scene_clock else None, frame, scale),
+            )
         )
     return tuple(result)
 
@@ -172,14 +191,26 @@ def lighting(plan: c.ValidatedScenePlan, layer: str, source_time: float) -> tupl
 def apply(
     root: ET.Element, plan: c.ValidatedScenePlan, layer: c.LayerSpec, time: float, *, scene_clock: bool = False
 ) -> None:
+    from . import _composition_paths as paths
+
     nodes = {node.get('id'): node for node in root.iter('shape')}
+    surfaces = {
+        surface.node: surface for binding in plan.bindings if binding.id == layer.asset for surface in binding.forms
+    }
     for sample in resolved(plan, layer, time, scene_clock=scene_clock):
         if sample.color is not None:
             nodes[sample.node].set('fill', sample.color)
+        path = surfaces[sample.node].path
+        if path is not None:
+            paths.apply(nodes[sample.node], sample, plan.spec, path)
 
 
 def static(plan: c.ValidatedScenePlan) -> None:
-    if any(surface.keys for binding in plan.bindings for surface in binding.forms):
+    if any(
+        surface.keys or (surface.path is not None and surface.path.keys)
+        for binding in plan.bindings
+        for surface in binding.forms
+    ):
         raise fail('compile_timeline for source-clock form pose keys')
 
 
@@ -196,13 +227,20 @@ def events(binding: c.AssetBinding, layer: c.LayerSpec, fps: c.FrameRate) -> tup
         if len(result) > MAX_TIMELINE_SAMPLES:
             raise fail(f'at most {MAX_TIMELINE_SAMPLES} form sample intervals')
 
+    tracks: list[tuple[c.FormKey | c.PathKey, ...]] = []
     for surface in binding.forms:
-        for key in surface.keys:
+        tracks.append(surface.keys)
+        if surface.path is not None:
+            tracks.append(surface.path.keys)
+    for keys in tracks:
+        for key in keys:
             scene_time = clock.start + (key.time - clock.source_start) / clock.rate
             if clock.start < scene_time < clock.end:
                 add(scene_time)
-        for left, right in zip(surface.keys, surface.keys[1:], strict=False):
-            if left.interpolation != 'linear' or (left.point, left.normal) == (right.point, right.normal):
+        for left, right in zip(keys, keys[1:], strict=False):
+            if left.interpolation != 'linear' or (asdict(left) | {'time': 0, 'interpolation': ''}) == (
+                asdict(right) | {'time': 0, 'interpolation': ''}
+            ):
                 continue
             start = max(clock.start, clock.start + (left.time - clock.source_start) / clock.rate)
             end = min(clock.end, clock.start + (right.time - clock.source_start) / clock.rate)

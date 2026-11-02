@@ -66,7 +66,13 @@ def source_digest(source: c.VectorSource, *, forms: tuple[c.FormSurface, ...] = 
         if len(source.xml) + validate(source.fonts) + size(forms) > MAX_BYTES:
             raise fail('at most eight MiB of XML, font, license and form buffers')
         return _digest(
-            {'schema': 'srstudio.vector-source/1.1.0', 'source': source_digest(source), 'forms': definition(forms)}
+            {
+                'schema': 'srstudio.vector-source/1.2.0'
+                if any(s.path is not None for s in forms)
+                else 'srstudio.vector-source/1.1.0',
+                'source': source_digest(source),
+                'forms': definition(forms),
+            }
         )
     if not source.fonts:
         return xml

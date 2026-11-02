@@ -1144,3 +1144,60 @@ Catch `CompositionError` and inspect `to_dict()` for `code`, `path`, `actual`,
 `expected` and `remedy`. Version failures preserve the underlying part error as
 their cause. Correct the named field before retrying; validation never mutates
 the supplied manifest or binding records.
+
+## Project authored spatial paths
+
+A `FormPath` supplies explicit 3D vertices for a native vector path. The compiler transforms them through the
+layer's complete parent hierarchy and projects them through the same camera used by plates and spatial limbs.
+Use this for authored rig surfaces, outlines and planar scenery under a moving camera. Ordinary vector assets
+retain their frontal-view contract; attaching normals alone does not supply geometry for a new view.
+
+```python
+from srstudio import composition as c
+
+vertices = ((-1., -1., 0.), (1., -1., 1.), (1., 1., 1.), (-1., 1., 0.))
+forms = (c.FormSurface(
+    "panel", ("#000000", "#ffffff"),
+    normal=(-1 / 5**0.5, 0, 2 / 5**0.5),
+    path=c.FormPath(vertices),
+),)
+source = c.VectorSource("panel", b'''<scene version="1.1">
+  <project width="320" height="240" fps="24" duration="1"/>
+  <composition><shape id="panel" shape="path" width="320" height="240"
+    path="M -1 -1 L 1 -1 L 1 1 L -1 1 Z" fill="#ffffff"/></composition>
+</scene>''')
+binding = c.AssetBinding(
+    "panel", "candidate.spatial-panel", 1, "vector",
+    c.Bounds((-1, -1, 0), (1, 1, 1)), nodes=10, memory_bytes=65536,
+    forms=forms, candidate=c.CandidateSource("toon", c.vector_source_digest(source, forms=forms)),
+)
+spec = c.ScenePlan(
+    c.StylePin("toon", c.style_revision("toon")), 320, 240, c.FrameRate(24), 1, 7, "meter",
+    c.CameraSpec("perspective", (5, 2, 10), (0, 0, 0), (160, 120), 60, 10),
+    c.LightRig("lit", (c.LightSpec("fill", "ambient", "#ffffff", 1),)),
+    (c.LayerSpec("panel", "panel", 1, c.TemporalPolicy(0, 1)),), c.RenderBudget(),
+)
+compiled = c.compile_scene(c.preflight(spec, (binding,), purpose="candidate-review"), (source,))
+```
+
+Every shape in a spatial asset must have a `FormPath`. Closed polygons have 3–256 vertices; open polylines use
+`closed=False` and have 2–256. The spatial points replace the source shape's native `path` at emission. The source
+XML still owns solid fill, stroke, opacity and ordering. Its transforms must be identity, and only opacity XML
+animation is supported. Gradients are refused because their spatial coordinates have no projection adapter.
+Stroke widths remain **output pixels**; model a filled ribbon with spatial vertices when thickness must be in
+world units. Camera projection happens once, with identity placement on the emitted vector group.
+
+`PathKey(time, points, interpolation="hold" | "linear")` animates a fixed vertex topology on the source clock.
+The first key must be at zero and match the initial vertices. Every key must fit the binding's complete duration
+and spatial bounds. Use `scene_motion.plan_scene` and `compile_timeline` for keyed paths; static emission refuses
+them. Held keys switch at their exact mapped boundaries, including fractional source rates. Linear keys enter
+the output-frame grid, and geometry changes remain separate spans even when lighting selects the same palette
+color. Linear vertex interpolation does not enforce rig bone lengths: use the rig's solved samples where those
+constraints matter.
+
+`form_lighting` also exposes resolved world `vertices` for registration measurements. The source digest includes
+geometry and topology; form-only and ordinary vector digests retain their earlier meaning. Input graph limits,
+source-buffer limits and conservative projected-XML expansion checks apply before assembly. Bounds crossing the
+camera's near plane are refused; this adapter does not clip them. It does not infer hidden surfaces, triangulate
+volumes, sort intersecting surfaces, cast shadows or approve an asset. Keep overlap passes and caster/receiver
+contracts explicit. The combined DRAWING proof remains a separate acceptance requirement.
