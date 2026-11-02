@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from types import MappingProxyType
 
 from . import checks
-from ._dance_model import FEET, ROOT, DanceError, Entry, Move, Pattern, Routine, RoutineError, chain, wave
+from ._dance_model import FEET, ROOT, DanceError, Entry, Move, Pattern, Routine, RoutineError, chain
 from .music import Groove
 
 __all__ = ["MAX_FRAMES", "MAX_FPS", "DanceFrame", "frames", "sample"]
@@ -50,7 +50,7 @@ def _swung(beat: float, swing: float) -> float:
 
 def _value(p: Pattern, lag: float, beat: float, per_bar: int, amplitude: float, bias: float, snap: float) -> float:
     u = (p.cycles_per_beat(per_bar) * (_swung(beat - lag, p.swing) - p.phase)) % 1.0
-    return bias + amplitude * wave(p.waveform, snap, u)
+    return bias + amplitude * p.wave(u, snap)
 
 
 def _voice(move: Move, p: Pattern, scale: float, beat: float, per_bar: int) -> float:

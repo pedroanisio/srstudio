@@ -1,5 +1,5 @@
 {
-  "schema": "srstudio.dance-moves/1.0.0",
+  "schema": "srstudio.dance-moves/1.1.0",
   "generated_by": {
     "tool": "Claude Code",
     "model": "Claude Opus 5.5 (claude-opus-5-5)"
