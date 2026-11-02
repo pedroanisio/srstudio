@@ -44,6 +44,7 @@ RELEASE = Release(
         "toon-rabbit": 2,
         "toon-sofa-back": 1,
         "toon-speaker": 1,
+        "toon-tv-browse": 1,
     },
     comedy=Scores(author=17, reviewer=16),
     cover=True,

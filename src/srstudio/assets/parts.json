@@ -13513,10 +13513,13 @@
         {
           "number": 1,
           "date": "2026-11-02",
-          "note": "A full-frame TV list of films: a heading, a corner clock, tiles of stills with the first in focus, its title and running time under it, or the row stepping left a tile a tick. An invented interface with no app name or logo. Proposed: awaiting a decision.",
-          "status": "proposed",
+          "note": "A full-frame TV list of films: a heading, a corner clock, tiles of stills with the first in focus, its title and running time under it, or the row stepping left a tile a tick. An invented interface with no app name or logo.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-02",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793486690.452509: \"The same conditions apply as before: an approved style, no real brand, logo or likeness, and no readable personal or financial data.\", the conditions confirmed by the orchestrator, a non-author reviewer, on the full-size frame of grown-on-me's flat control at 3.00 s, with its room frames at 13.90 s and 22.63 s (2026-11-02): an invented interface in an approved style, a generic MOVIES heading, a corner clock and one row of stills, no app name, logo or real service, no readable personal data, and invented titles (THE QUIET FERRY, 2h 38m)."
+          },
           "drawing": "bca2bda5655e8c9484f9c264145ad58bae3fd8f6d7a4af70ccc469df0ca7894e",
           "rig": null
         }
