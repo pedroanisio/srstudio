@@ -993,3 +993,57 @@ sea and palm use renderer expressions; `Canvas.local_time` selects keyframe
 clocks without rewriting those expressions. These illustrations provide no
 grip, collision, fluid, lighting or biomechanical solver. The hush finger
 draws an extra forearm and finger, so authors must coordinate it with the rig.
+
+## Blob furniture, room layouts and placement helpers
+
+Blob's 12 registered furniture and room builders use the Soft fixed
+1080x1920 layout. Their returned groups contain already-positioned artwork.
+Transform a shared parent to move the room and its occupants together.
+The laptop is an exception within that layout: its root already translates
+and scales laptop-local geometry. `blob.keyboard()` returns the deck corners
+after that built-in transform; applying it again misplaces the hands.
+
+Discovery now includes the existing placement helpers as operations:
+`keyboard`, `sofa_seat`, `swivel_seat`, `meeting_table_top`, `meeting_screen`,
+`room_point`, `wall_quad` and `floor_quad`, on the parts that use them. These
+return reference geometry without drawing. They can guide placement and
+framing, but they do not create world anchors, collisions or solved contacts.
+
+`shots` on these four room builders means visibility intervals, unlike the
+`Shot` framing records used by `soft_sets`. `None` leaves a room visible;
+an empty sequence hides it. The opacity gates follow `Canvas.local_time`.
+The home forwards `on_sofa` to the sofa group, between its seat and near arm,
+so the near arm supplies the foreground occlusion. The callback still owns
+the actor's placement and scale.
+
+<!-- blob-drawing-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, blob, registry
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1920, fps='30', duration=6)
+cv = Canvas(scene, font_asset=None)
+contract = registry.get('location', 'soft-meeting-room').describe()['contract']
+assert contract['arguments']['properties']['on_screen']['x-space'] == 'screen-local'
+assert contract['operations']['meeting_screen']['returns']['x-role'] == 'screen-frame'
+
+_, width, height, _ = blob.meeting_screen()
+
+def screen(parent):
+    # The room supplies translation, wall skew and a rectangular mask.
+    cv.rect(parent, 0, 0, width, height, '#336699')
+    cv.ellipse(parent, width / 2 - 30, height / 2 - 30, 60, 60, '#FFFFFF')
+
+room = blob.meeting_room(
+    cv, cv.comp, shots=((1, 3), (4, 6)), on_screen=screen, chair=False,
+)
+assert room.id == 'soft-meeting-room'
+```
+<!-- blob-drawing-discovery:end -->
+
+The meeting screen slot overlays its default slide in a separate masked
+group. Draw its contents in the flat local rectangle; the room applies the
+wall skew once. The other furniture, window light patches, clock, coffee
+steam and pendant glaze are static drawings. The home's `lamp_talk` toggles
+a drawn shade and halo in ordered spans, without changing shared lighting.
