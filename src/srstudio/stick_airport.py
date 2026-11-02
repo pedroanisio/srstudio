@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from functools import partial
 
+from . import _stick_transport_contracts as tc
 from . import checks, look, signature
 from .canvas import Canvas
 from .registry import register
@@ -117,7 +118,9 @@ def now_size(now: str) -> float:
     return 72 if len(now) <= 10 else 72 * 8 / len(now)
 
 
-@register("location", "stick-gate", tags=("airport", "gate", "boarding", "travel", "font"))
+@register(
+    "location", "stick-gate", contract=tc.contract('stick-gate'), tags=("airport", "gate", "boarding", "travel", "font")
+)
 def gate(
     cv: Canvas,
     parent,
@@ -174,7 +177,12 @@ def gate(
     signature.code(s, parent, 40, 1880, 9, color="#8a99a8")
 
 
-@register("prop", "stick-gate-podium", tags=("airport", "gate", "counter", "front-layer", "font"))
+@register(
+    "prop",
+    "stick-gate-podium",
+    contract=tc.contract('stick-gate-podium'),
+    tags=("airport", "gate", "counter", "front-layer", "font"),
+)
 def podium(cv: Canvas, parent, *, gate: str = "B9", plate: bool = True):
     """The gate podium at the right, from :data:`PODIUM_X` at :data:`PODIUM_TOP`: drawn after the agent, it hides
     her legs. A screen on top and the gate lettered on its front plate, or the plate blank with ``plate=False``
@@ -196,7 +204,12 @@ def podium(cv: Canvas, parent, *, gate: str = "B9", plate: bool = True):
     return g
 
 
-@register("prop", "stick-carry-on", tags=("airport", "luggage", "suitcase", "tag", "font"))
+@register(
+    "prop",
+    "stick-carry-on",
+    contract=tc.contract('stick-carry-on'),
+    tags=("airport", "luggage", "suitcase", "tag", "font"),
+)
 def carry_on(cv: Canvas, parent, x, y, *, tag: str | None = "GROUP 4", hanging: bool = False):
     """A wheeled carry-on standing on ``x, y`` (the floor under its middle), its handle up and a luggage tag
     lettered ``tag`` (1 to :data:`TAG_CHARS` characters; ``None``: left blank) hanging from the grip; ``hanging``
@@ -229,7 +242,12 @@ def carry_on(cv: Canvas, parent, x, y, *, tag: str | None = "GROUP 4", hanging: 
     return g
 
 
-@register("prop", "stick-bag-scale", tags=("airport", "scale", "luggage", "readout", "weight", "font"))
+@register(
+    "prop",
+    "stick-bag-scale",
+    contract=tc.contract('stick-bag-scale'),
+    tags=("airport", "scale", "luggage", "readout", "weight", "font"),
+)
 def bag_scale(cv: Canvas, parent, x, y, readings, end, *, readout: tuple[float, float, float, float] = READOUT):
     """A bag scale: its platter set in the floor under ``x, y`` and its red readout at ``readout``, on the podium's
     front by default. ``readings`` are ``(start, weight)`` in rising order, the first from the shot's start; each
@@ -283,7 +301,12 @@ def boarding_sign(
     _label(s, parent, now, sx + 20, sy + 140, sw_ - 40, 96, now_size(now), SIGN_TEXT)
 
 
-@register("prop", "stick-coat-ball", tags=("airport", "clothes", "coats", "scarf", "hat", "front-layer"))
+@register(
+    "prop",
+    "stick-coat-ball",
+    contract=tc.contract('stick-coat-ball'),
+    tags=("airport", "clothes", "coats", "scarf", "hat", "front-layer"),
+)
 def coat_ball(cv: Canvas, parent, x, chin, radius, *, layers=3, hats=0, scarves=0, trousers=False, shoes=False):
     """Everything a passenger owns, worn: a ball of ``radius`` hanging from the chin at ``x, chin``, drawn after a
     STANDING figure so only the head shows. ``layers`` of coat (1 to :data:`MAX_LAYERS`) show as hems around it, a
@@ -336,7 +359,9 @@ def _shoe(x, y, side) -> str:
     return f"M {heel} {y + 12} L {heel} {y - 70} L {ankle} {y - 70} Q {toe} {y - 30} {toe} {y + 12} Z"
 
 
-@register("prop", "stick-palm", tags=("palm", "tree", "tropics", "arrivals", "holiday"))
+@register(
+    "prop", "stick-palm", contract=tc.contract('stick-palm'), tags=("palm", "tree", "tropics", "arrivals", "holiday")
+)
 def palm(cv: Canvas, parent, x, y, *, height=560):
     """A palm standing on ``x, y``: a bent trunk ``height`` tall and seven fronds. Nothing about it is cold."""
     if height < 120:
@@ -358,7 +383,12 @@ def palm(cv: Canvas, parent, x, y, *, height=560):
     return g
 
 
-@register("location", "stick-cabin", tags=("airport", "plane", "cabin", "middle-seat", "travel", "font"))
+@register(
+    "location",
+    "stick-cabin",
+    contract=tc.contract('stick-cabin'),
+    tags=("airport", "plane", "cabin", "middle-seat", "travel", "font"),
+)
 def cabin(cv: Canvas, parent, *, row: str = "38", seats: str = "DEF") -> None:
     """A row of the cabin seen from the aisle: the overhead bins with the ``row`` number (1 to :data:`ROW_CHARS`
     characters) and a letter over each of the three seats (``seats``, three letters), the seat backs at
@@ -387,7 +417,9 @@ def cabin(cv: Canvas, parent, *, row: str = "38", seats: str = "DEF") -> None:
     signature.code(s, parent, 40, 1880, 9, color="#8a7f99")
 
 
-@register("prop", "stick-armrests", tags=("airport", "plane", "cabin", "front-layer"))
+@register(
+    "prop", "stick-armrests", contract=tc.contract('stick-armrests'), tags=("airport", "plane", "cabin", "front-layer")
+)
 def armrests(cv: Canvas, parent):
     """The two armrests between the three seats, at :data:`ARMRESTS`: drawn after the passengers, so an elbow on
     one rests on it."""

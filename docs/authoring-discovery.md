@@ -604,3 +604,111 @@ receipt = entry(cv, shot, 540, 900, 300, unroll=(0.5, 1.5))
 # The receipt starts at 2% height and holds its full height after unrolling.
 ```
 <!-- stick-drawing-discovery:end -->
+
+## Stick road and airport composition
+
+The 28 builders in `stick_car`, `stick_windshield`, `stick_street`,
+`stick_roadtrip` and `stick_airport` declare their drawing frames, clocks and
+return ownership. Inspect nested records before interpreting a value as speed,
+a duration or physical geometry.
+
+`stick-car` takes `Scroll.speed` in frame pixels per second; its six scenery
+layers use different fractions of that speed. `Scroll.offset` changes scenery
+placement and is not a source-time offset for cuts. `stick-windshield.speed`
+counts receding road dashes per second. Both are authored 2D effects.
+`stick-ride` takes an existing `node`, modifies its y keys and returns `None`.
+Its waves depend on sample index, so changing `step` changes temporal frequency;
+the last sample can follow `end`. These adapters do not promise phase-preserving
+cuts or physical suspension dynamics.
+
+`ride` and `windshield` accept `max_keys` (an integer from 2 to 20,000,
+default 20,000), limiting generated keys per animation track. Reduce duration
+or sampling rate when a plan exceeds the budget. Nonfinite values and times
+that collapse at serialization precision raise `StickDataError` before the
+call changes the scene. A parked windshield or zero-amplitude ride emits no
+motion keys. Windshield reset gaps are the smaller of 0.001 seconds and half
+a cycle, keeping fast representable cycles ordered.
+
+The mirror and mounted-phone returns have `x-role="partial-drawing"`. The mirror
+returns only its masked glass; the phone returns only its case. Use an outer
+parent when moving or hiding the complete drawing. A mirror callback receives
+parent coordinates, not coordinates translated to the glass's top-left.
+
+<!-- stick-transport-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry
+
+entry = registry.get("prop", "stick-rear-view")
+contract = entry.describe()["contract"]
+assert contract["returns"]["x-role"] == "partial-drawing"
+assert contract["arguments"]["properties"]["figure"]["x-role"] == "drawing-slot"
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="24", duration=6)
+cv = Canvas(scene, font_asset=None, local_time=True)
+shot = cv.group(cv.comp, "mirror-shot", start=2, end=5)
+seen = []
+
+def reflection(glass):
+    seen.append(glass)
+    cv.ellipse(glass, 450, 700, 180, 180, "#F0E9DF")
+
+# The callback runs once; the glass mask clips its drawing.
+# The outer parent owns visibility of glass, housing, background and glare.
+glass = entry(cv, shot, reflection)
+```
+<!-- stick-transport-discovery:end -->
+
+Airport readouts accept timed display strings, with `None` for a dark interval;
+they do not infer a physical weight unit. Readings begin at zero, rise strictly
+and finish before `end`. Their opacity keys follow the canvas clock, while the
+scale housing stays visible. `stick-carry-on(tag=None)` and
+`stick-gate-podium(plate=False)` need no font. `stick-gate` still requires its font
+and valid sign strings when `sign=False`.
+
+## Stick scene placement and partial handles
+
+The 24 builders in `stick_door`, `stick_flat`, `stick_gym`, `stick_school`,
+`stick_shop`, `stick_bed` and `stick_table` declare their return ownership,
+placement and timing. `stick-snow-cap` returns a path shape, while `stick-duvet`
+returns only the moving mound. The duvet cover and folds remain in sibling
+nodes; move or hide an outer parent to control the entire drawing.
+
+`duvet.lift` values are vertical displacements from the drawn mound.
+`folded_bedding.slide` values are absolute parent x positions and replace its
+`x` argument. Its interpolation is `cubic-out` per segment. An essay's `at`
+places its sheet center, with scaling about that center, rather than placing
+the sheet's top left. Inspect these semantics before attaching another prop.
+
+<!-- stick-scene-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry, stick_bed
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1920, fps='24', duration=3)
+cv = Canvas(scene, font_asset=None)
+bed_layer = cv.group(cv.comp, 'bed-layer')
+entry = registry.get('prop', 'stick-duvet')
+contract = entry.describe()['contract']
+assert contract['returns']['x-role'] == 'partial-drawing'
+
+# The phone uses the mound's authored drawing coordinates, not a new (0, 0) origin.
+mound = entry(cv, bed_layer, 3, x=540, y=1300, near=1800,
+              lift=((0, 0), (1, -20), (3, 0)))
+phone = stick_bed.recorder(cv, mound, 540, 1100, 3, lines=2, live=True)
+assert phone in list(mound.elements())
+
+# Darkening is a multiply overlay with a radial pool, not a scene light.
+stick_bed.lights_low(cv, cv.comp, pool=(540, 1100, 250), strength=0.6)
+```
+<!-- stick-scene-discovery:end -->
+
+Door closure and Murphy-bed folding switch held drawings; they do not solve
+hinge motion or collisions. Gym dawn, kiosk messages, alarms and scene motion
+keys follow `Canvas.local_time`. A kiosk's nested `Screen.start` uses that same
+clock, and its `tone` enumerates `idle`, `error`, `help` and `award`.
+The turned clipboard requires a font; its edge and quarter views use paths
+alone. These declarations describe supported drawing semantics, without
+claiming spatial contacts, physical lighting or biomechanical motion.

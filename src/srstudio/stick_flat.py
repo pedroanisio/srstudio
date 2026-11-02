@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from . import _stick_scene_contracts as sc
 from . import checks, signature
 from .canvas import Canvas
 from .registry import register
@@ -53,7 +54,12 @@ FOLD = 0.125  # the mid frame of the fold, three frames at 24 fps
 NEAR_Y = 1730  # the open bed's foot, toward the camera
 
 
-@register("location", "stick-studio-flat", tags=("home", "flat", "rental", "kitchen"))
+@register(
+    "location",
+    "stick-studio-flat",
+    contract=sc.contract('stick-studio-flat'),
+    tags=("home", "flat", "rental", "kitchen"),
+)
 def studio(cv: Canvas, parent, *, marks: bool = True) -> None:
     """A studio flat for rent, :data:`SET_W` wide: the wall and its skirting over floorboards, the kitchen counter
     with a stove, a pot and a tap, a toilet plumbed in right beside the stove, a window whose sunny view is painted
@@ -225,7 +231,7 @@ def _between(talk: Sequence[tuple[float, float]], end: float) -> list[tuple[floa
     return out
 
 
-@register("prop", "stick-murphy-bed", tags=("home", "flat", "bed", "reveal"))
+@register("prop", "stick-murphy-bed", contract=sc.contract('stick-murphy-bed'), tags=("home", "flat", "bed", "reveal"))
 def murphy_bed(
     cv: Canvas,
     parent,

@@ -24,11 +24,11 @@
   "catalog_observation": {
     "parts": 734,
     "characters": 75,
-    "entries_with_explicit_part_contract": 415,
+    "entries_with_explicit_part_contract": 467,
     "all_default_characters_have_explicit_contracts": true,
     "noncharacter_parts": 659,
-    "noncharacter_parts_with_explicit_contracts": 340,
-    "source": "Fresh-process registry observation on 2026-11-02 after 49 Stick home/office/everyday declarations. Includes the newly merged Lyra character and seven undeclared Toon orbit props/sets. Drawing baselines were captured from e8768834. See review_verification.stick_drawing_contracts.",
+    "noncharacter_parts_with_explicit_contracts": 392,
+    "source": "Fresh-process registry observation on 2026-11-02 after 24 Stick scene/prop declarations. Drawing baselines were captured from 9f4728cd. See review_verification.stick_scene_contracts.",
     "by_kind": {
       "character": {
         "registered": 75,
@@ -36,15 +36,15 @@
       },
       "prop": {
         "registered": 461,
-        "explicit_contracts": 272
+        "explicit_contracts": 310
       },
       "location": {
         "registered": 115,
-        "explicit_contracts": 48
+        "explicit_contracts": 61
       },
       "graphic": {
         "registered": 83,
-        "explicit_contracts": 20
+        "explicit_contracts": 21
       }
     },
     "qualification": "Fresh-process registry.entries() observation after the latest implemented contract batch. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates.",
@@ -54,6 +54,34 @@
     }
   },
   "review_verification": {
+    "stick_scene_contracts": {
+      "baseline_source_commit": "9f4728cd",
+      "initial_missing_contract_and_guide_regressions_red": 62,
+      "selected_regressions": {"passed": 1351, "skipped": 0},
+      "coverage_scope": "_stick_scene_contracts.py, _stick_drawing_contracts.py, contracts.py and registry.py; unchanged 80% branch-inclusive gate. Not a full-library suite run.",
+      "drawing_baseline_cases": 24,
+      "unchanged_executable_definitions": 66,
+      "mypy_source_files": 314,
+      "retained_artifacts": "../generated/sdk-stick-scene-contracts/v1/",
+      "qualification": "Declarations and executed examples distinguish absolute versus relative values, sheet-center anchors, actual canvas clocks, path-layer and partial-group returns, nested screen records and conditional fonts. No physical hinge, contact, lighting or gait claims. Full catalog expansion remains open."
+    },
+    "stick_transport_contracts": {
+      "baseline_source_commit": "e4aef221",
+      "verified_develop_commit": "107526ec",
+      "initial_missing_contract_regressions_red": 52,
+      "nested_face_and_guide_regressions_red": 2,
+      "final_engine_enabled_regressions": {
+        "passed": 1261,
+        "skipped": 0
+      },
+      "branch_inclusive_coverage_percent": 90,
+      "coverage_scope": "Two Stick metadata modules, contracts.py and registry.py; unchanged 80% gate. Not a full-library suite run.",
+      "drawing_baseline_cases": 28,
+      "unchanged_executable_definitions": 60,
+      "mypy_source_files": 312,
+      "retained_artifacts": "../generated/sdk-stick-transport-contracts/v1/",
+      "qualification": "Metadata distinguishes motion units, canvas clocks, existing-node mutation, partial handles, callback frames, held performance and conditional fonts. No camera, physical transport or phase-preserving cut guarantee. Full catalog expansion remains open."
+    },
     "stick_drawing_contracts": {
       "baseline_source_commit": "e8768834",
       "initial_missing_contract_regressions_red": 73,
@@ -896,6 +924,28 @@
   ],
   "findings": [
     {
+      "id": "SDK-P1-14",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Bound and preflight procedural transport motion keys",
+      "problem": "Finite ride and windshield inputs could overflow derived key counts or values, allocate unbounded key lists, collapse times at serialization precision, or put fast windshield reset keys before time zero. Windshield failures could leave partial geometry behind.",
+      "resolution": "Expose a max_keys budget of 2..20000 per track and reject excessive work before allocation. Check all generated values and serialized times before mutation. Windshield resets use min(0.001 seconds, half a cycle), preserving ordinary drawing output while supporting fast representable cycles.",
+      "verification": [
+        "tests/test_stick_motion_limits.py",
+        "tests/test_stick_car.py",
+        "tests/test_stick_windshield.py",
+        "tests/test_stick_transport_contracts.py",
+        "tests/data/stick-transport-contract-baseline.json"
+      ],
+      "acceptance": [
+        "Overflow, collapsed keys and exhausted budgets raise StickDataError before scene mutation",
+        "Invalid budgets reject booleans and non-integers; exact budgets pass and repaired retries match fresh drawings",
+        "Fast cycles shrink and reset correctly in real renderer evaluation at nonsequential sample times",
+        "Zero motion emits no keys; existing transport drawing baselines remain unchanged"
+      ],
+      "qualification": "Scoped to direct ride and windshield key generation. This does not establish global atomicity or work limits for every transport builder. The 20000-key hard ceiling bounds allocation; callers can set a lower budget. Larger plans must reduce duration or sampling rate rather than bypass the bound. Numeric timing evidence does not establish perceptual quality."
+    },
+    {
       "id": "SDK-P1-13",
       "priority": "P1",
       "status": "complete",
@@ -1189,15 +1239,27 @@
           "srstudio.toon_rooms",
           "srstudio.stick_home",
           "srstudio.stick_office",
-          "srstudio.stick_odds"
+          "srstudio.stick_odds",
+          "srstudio.stick_airport",
+          "srstudio.stick_car",
+          "srstudio.stick_street",
+          "srstudio.stick_windshield",
+          "srstudio.stick_roadtrip",
+          "srstudio.stick_door",
+          "srstudio.stick_flat",
+          "srstudio.stick_gym",
+          "srstudio.stick_school",
+          "srstudio.stick_shop",
+          "srstudio.stick_bed",
+          "srstudio.stick_table"
         ],
         "additional_parts": [
           "toon-headset"
         ],
-        "new_contracts": 287,
-        "current_explicit_noncharacter_contracts": 340,
+        "new_contracts": 339,
+        "current_explicit_noncharacter_contracts": 392,
         "current_registered_noncharacters": 659,
-        "remaining_undeclared": 319,
+        "remaining_undeclared": 267,
         "evidence": [
           "tests/test_counter_store_contracts.py",
           "tests/data/counter-store-contract-baseline.json",
@@ -1227,9 +1289,17 @@
           "src/srstudio/_stick_drawing_contracts.py",
           "tests/test_stick_drawing_contracts.py",
           "tests/support/stick_contracts.py",
-          "tests/data/stick-drawing-contract-baseline.json"
+          "tests/data/stick-drawing-contract-baseline.json",
+          "src/srstudio/_stick_transport_contracts.py",
+          "tests/test_stick_transport_contracts.py",
+          "tests/support/stick_transport_contracts.py",
+          "tests/data/stick-transport-contract-baseline.json",
+          "src/srstudio/_stick_scene_contracts.py",
+          "tests/test_stick_scene_contracts.py",
+          "tests/support/stick_scene_contracts.py",
+          "tests/data/stick-scene-contract-baseline.json"
         ],
-        "qualification": "The full catalog expansion remains open. Completed Cutout, Toon and 49 Stick household/everyday builders declare authored units, clocks, return records and capability limits. The new Stick declarations preserve 49 baseline drawings and 69 executable definitions. Seven newly merged Toon orbit props/sets and other families still require source review and executable semantic evidence."
+        "qualification": "The full catalog expansion remains open. Completed Cutout, Toon and 101 Stick household/transport/scene builders declare authored units, clocks, return records and capability limits. Stick drawing baselines remain unchanged; specific correctness repairs are recorded separately as P1 findings. Eight core Stick builders, seven Toon orbit props/sets and other families still require source review and executable semantic evidence."
       },
       "evidence": [
         "src/srstudio/registry.py:contract_coverage",
