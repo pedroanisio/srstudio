@@ -81,7 +81,10 @@ joint's own controls on the branch nearest a straight mix; `add` layers a delta.
 
 The skeleton does not replace `body` or `limbs`; it feeds them. `to_body_pose` gives a `body.BodyPose`: the root at
 hip-joint height between the hips, the torso as the upper chest's turn there, both legs, and the support polygon and
-margin from body's own mass proxy over the feet flat on y=0. With no foot down there is no `BodyPose`. `to_arm_pose`
+margin from body's own mass proxy over the feet flat on y=0, through body's public support geometry
+(`support_footprint`, `support_hull`, `support_margin`). A sole counts as flat within the bridge's 1e-6 tolerance;
+body's support takes only exact ground soles, so each planted sole is set on y=0 with its yaw for the footprint while
+its leg is reported where it is. With no foot down there is no `BodyPose`. `to_arm_pose`
 and `to_hand_pose` give `limbs.ArmPose` and `limbs.HandPose` for one side, in limbs' own frame conventions, and
 `arm_profile`, `hand_profile` and `body_profile` give each module the anatomy of this character. `wrist_control`
 gives the limbs `HandControl` that turns limbs' arm frame into this hand's frame: at zero forearm twist limbs' palm

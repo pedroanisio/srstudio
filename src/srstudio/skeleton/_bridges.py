@@ -22,8 +22,7 @@ import math
 from collections.abc import Sequence
 
 from .. import checks
-from .._body_solve import footprint, hull, margin
-from ..body import BodyPose, BodyProfile, LegPose
+from ..body import BodyPose, BodyProfile, LegPose, support_footprint, support_hull, support_margin
 from ..limbs.math3d import Frame, Quaternion, Vec3
 from ..limbs.model import HUMAN, ArmPose, ArmProfile, DigitPose, DigitProfile, HandControl, HandPose, HandProfile
 from ._errors import SkeletonBridgeError, SkeletonError, SkeletonSchemaError
@@ -149,6 +148,12 @@ def body_profile(profile: SkeletonProfile) -> BodyProfile:
     )
 
 
+def _grounded(sole: Frame) -> Frame:
+    """A planted sole on y=0 with its yaw alone: flat here is within TOLERANCE, and body's support takes exact soles."""
+    ahead = sole.rotation.rotate(Z)
+    return Frame(Vec3(sole.origin.x, 0.0, sole.origin.z), turn(Y, math.atan2(ahead.x, ahead.z)))
+
+
 def _legs(profile: SkeletonProfile) -> None:
     _need(profile, [f"{side}_{part}" for side in SIDES for part in LEG], "legs")
 
@@ -207,11 +212,10 @@ def to_body_pose(
         )
         com += (hip + knee) * 0.06 + (knee + ankle) * 0.03 + sole.origin * 0.02
         if side in chosen:
-            support.extend((p.x, p.z) for p in footprint(sole, shape))
-    polygon = hull(support)
-    return BodyPose(
-        float(time), root, torso, (shoulders[0], shoulders[1]), (legs[0], legs[1]), com, polygon, margin(polygon, com)
-    )
+            support.extend((p.x, p.z) for p in support_footprint(_grounded(sole), shape))
+    polygon = support_hull(support)
+    margin = support_margin(polygon, com)
+    return BodyPose(float(time), root, torso, (shoulders[0], shoulders[1]), (legs[0], legs[1]), com, polygon, margin)
 
 
 def from_body_pose(profile: SkeletonProfile, body: BodyPose, *, base: SkeletonPose | None = None) -> SkeletonPose:

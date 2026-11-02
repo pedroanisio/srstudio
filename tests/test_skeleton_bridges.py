@@ -2,6 +2,7 @@
 
 import math
 import random
+import re
 from pathlib import Path
 
 import pytest
@@ -65,6 +66,35 @@ def test_a_body_pose_stands_on_the_ground():
     assert close(shown.shoulders[1].origin, world["right_upper_arm"].origin)
     assert shown.support_margin > 0
     assert len(shown.support_polygon) >= 4
+
+
+def test_the_support_is_bodys_public_hull_of_the_planted_soles():
+    pose = sk.pose(REAL, {"right_upper_leg.front_back": -0.5, "right_lower_leg.stretch": -0.5})
+    shown = sk.to_body_pose(REAL, pose)
+    profile = sk.body_profile(REAL)
+    corners = body.support_footprint(shown.legs[0].sole, profile)
+    assert shown.support_polygon == body.support_hull([(p.x, p.z) for p in corners])
+    assert shown.support_margin == body.support_margin(shown.support_polygon, shown.center_of_mass)
+
+
+def test_a_sole_flat_within_the_tolerance_stands_where_it_lies():
+    """A planted sole a hair off the floor is set on it for body's support, which takes only exact ground soles."""
+    yaw = Quaternion.axis_angle(Vec3(0, 1, 0), 0.4)
+    flat = sk.pose(REAL, crouch(REAL).as_dict(), root=Frame(crouch(REAL).root.origin, yaw))
+    tilt = Quaternion.axis_angle(Vec3(1, 0, 0), 4e-7)  # under the skeleton's tolerance, over body's
+    lifted = sk.pose(REAL, flat.as_dict(), root=Frame(flat.root.origin + Vec3(0, 5e-7, 0), tilt * yaw))
+    shown, exact = sk.to_body_pose(REAL, lifted), sk.to_body_pose(REAL, flat)
+    assert [leg.planted for leg in shown.legs] == [True, True]
+    assert all(4e-7 < leg.sole.origin.y < 1e-6 for leg in shown.legs)  # each leg is reported where it is
+    # Two parallel soles have nearly collinear corners, so a hair's turn may add a hull vertex; area and margin hold.
+    assert body.support_area(shown.support_polygon) == pytest.approx(body.support_area(exact.support_polygon), abs=1e-6)
+    assert shown.support_margin == pytest.approx(exact.support_margin, abs=1e-6)
+
+
+def test_the_skeleton_reaches_body_only_through_its_public_module():
+    package = Path(__file__).parents[1] / "src/srstudio/skeleton"
+    for source in sorted(package.glob("*.py")):
+        assert not re.search(r"from \.\.(_body_|body\._)|import _body_", source.read_text()), source.name
 
 
 def test_the_body_root_sits_between_the_legs():
