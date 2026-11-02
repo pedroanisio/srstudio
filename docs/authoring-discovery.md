@@ -111,6 +111,8 @@ Clocks are explicit:
 | `x-timebase` | Meaning |
 | --- | --- |
 | `project` | Absolute project seconds. In Toon and Collage, `duration` is the exit time, not an interval length. |
+| `composition` | Animation keys explicitly use the composition clock, even if `Canvas.local_time=True`. |
+| `parent` | Visibility start/end attributes use the containing parent's timeline. These are not durations. |
 | `relative:enter` | Pose start relative to the character's `enter`; the drawer adds the entrance once. |
 | `canvas` | The canvas animation clock. With `Canvas(local_time=True)` under a shot sequence, zero is the shot start. |
 | `relative:take` | Time since the supplied take starts. Ink builders expect a corresponding local canvas; they do not add `Take.start`. |
@@ -160,6 +162,47 @@ srstudio catalog --contract-coverage --json
 srstudio catalog --style cutout --kind prop --contract-coverage
 srstudio inspect prop coffee-cup --json
 ```
+
+Forty Toon core, props, sets and world builders also declare their semantics,
+including `toon-headset`. Toon positions use `toon-reference` space: `fx(x)` maps
+`x * 1080 / 592`, while `fy(y)` maps `(y - 70) * 1080 / 592`, both rounded to two
+decimals. Distances use `fh` without the y offset. Font sizes and measurement callback
+results use frame pixels. Resizing the canvas does not rescale this reference artwork.
+The note insert is an explicitly documented frame-pixel exception.
+
+Most of these Toon builders return `None`; draw inside a group you create if you need
+a placement handle. `toon-headset` instead returns ordered geometry/paint layers for
+`stickers=`, with no scene mutation. These declarations do not promise spatial grips.
+
+The clock and logo explicitly pin animation keys to composition time. The plant,
+coffee machine and other canvas-keyed parts follow `Canvas.local_time`. Toasts mix
+parent visibility bounds with composition-keyed movement; inspect constraints before
+placing them in a shifted shot. `measure(text)` and `measure(text, size)` are runtime
+text-measurement bindings, not drawing callbacks.
+
+<!-- toon-drawing-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry
+
+plant = registry.get("prop", "toon-plant")
+clock = registry.get("prop", "toon-clock")
+plant_info = plant.describe()["contract"]
+clock_info = clock.describe()["contract"]
+assert plant_info["arguments"]["properties"]["at"]["x-space"] == "toon-reference"
+assert plant_info["capabilities"]["spatial_attachment"] is False
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="24", duration=4)
+cv = Canvas(scene, font_asset=None, local_time=True)
+parent = cv.group(cv.comp, "drawings")
+plant_result = plant(cv, parent, at=(120, 750), scale=1, end=4)
+clock_result = clock(cv, parent, times=((0, "08:00"), (2, "09:30")), at=(350, 400))
+# Plant keys use local time. Clock hands remain on composition time.
+# This unshifted parent aligns both clocks; neither builder returns a handle.
+assert plant_result is clock_result is None
+```
+<!-- toon-drawing-discovery:end -->
 
 `srstudio.contract_coverage(style=None, kind=None)` returns the same versioned coverage report. Per-kind counts
 separate explicit declarations, complete argument shapes, units, clocks and anchors; `undeclared_parts` names
