@@ -353,15 +353,23 @@ class Torso:
         """An arm's layers, where its paw goes and the way it points: the ink set a little low (heavier underneath),
         the coat over it, both tapering into the body (:data:`TAPER`), and the shade along the forearm's underside.
         The paw is the caller's to draw, at ``paw`` kept inside the body beside the shoulders (:meth:`keep`)."""
-        path = self.arm_path(points)
+        return self.drawn(self.arm_path(points), self.keep(paw, self.arm * PAW), coat, shade)
+
+    def drawn(
+        self, path: Sequence[Point], paw: Point, coat: str, shade: str, taper: brush.Profile = TAPER
+    ) -> tuple[list[Layer], Point, Point]:
+        """An arm drawn along ``path`` exactly as given, with its paw at ``paw``: :meth:`limb`'s layers, where its paw
+        goes and the way it points, for a caller that places the arm itself (a dance posing it on a skeleton), which
+        may also say how the ink and the coat taper along it (:data:`TAPER` unless ``taper`` is given)."""
+        if len(path) < 2:
+            raise ToonDataError(f"an arm runs from its root through at least one more point, got {path!r}")
         w = self.arm
         low = [(x + 0.6, y + 1.8) for x, y in path]
         under = [(x + 0.4, y + w * 0.26) for x, y in (path[1:] if len(path) > 2 else path)]
         layers: list[Layer] = [
-            (brush.stroke(low, w + 2 * INK * 0.9, TAPER), "ink"),
-            (brush.stroke(path, w, TAPER), coat),
+            (brush.stroke(low, w + 2 * INK * 0.9, taper), "ink"),
+            (brush.stroke(path, w, taper), coat),
             (brush.stroke(under, w * 0.4, UNDER), shade),
         ]
         ax, ay = path[-2]
-        at = self.keep(paw, self.arm * PAW)
-        return layers, at, _unit(at[0] - ax, at[1] - ay)
+        return layers, paw, _unit(paw[0] - ax, paw[1] - ay)
