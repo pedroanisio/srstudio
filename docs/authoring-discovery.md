@@ -204,6 +204,41 @@ assert plant_result is clock_result is None
 ```
 <!-- toon-drawing-discovery:end -->
 
+The 20 builders in `toon_flat` and `toon_odds` also declare their semantics.
+Check individual arguments: `toon-closet.at` is an opening time, while
+`toon-pipe.at` is a reference point. Flat animations follow the canvas clock;
+pipe drips and mosquito paths explicitly use composition time. The paper insert
+uses frame-pixel geometry and the canvas animation clock.
+
+Flat builders return `None`; the odds builders return a `Group` whose coordinates
+are already converted to frame pixels. Neither family supplies spatial grips.
+An `end` marked `validation-limit` checks timing without hiding the drawing:
+laundry piles, tiny drawers and tasting spoons remain visible. Give them a parent
+with a visibility end when the shot needs one. A pipe's `end` hides its drops and
+jets, while its body remains visible.
+
+<!-- toon-household-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry
+
+pile = registry.get("prop", "toon-laundry-pile")
+pipe = registry.get("prop", "toon-pipe")
+pile_info = pile.describe()["contract"]
+assert pile_info["arguments"]["properties"]["end"]["x-role"] == "validation-limit"
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="24", duration=4)
+cv = Canvas(scene, font_asset=None)
+holder = cv.group(cv.comp, "household", end=3)
+pile_result = pile(cv, holder, start=None, top=750, end=3)
+pipe_result = pipe(cv, holder, at=(470, 560), drips=(0.5, 1.5), end=3)
+assert pile_result is None
+# The holder ends visibility for both the pile and the pipe body at 3 seconds.
+# No shifted parent is used: composition animation and parent visibility align.
+```
+<!-- toon-household-discovery:end -->
+
 `srstudio.contract_coverage(style=None, kind=None)` returns the same versioned coverage report. Per-kind counts
 separate explicit declarations, complete argument shapes, units, clocks and anchors; `undeclared_parts` names
 the gaps. A count of declarations does not certify complete semantics. Discovery never invokes a builder.

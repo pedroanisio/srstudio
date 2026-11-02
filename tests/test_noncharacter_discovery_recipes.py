@@ -39,6 +39,16 @@ def test_toon_discovery_recipe_distinguishes_reference_coordinates_and_animation
     assert any(a.property == 'rotation' and a.timeBase is None for a in animations)
 
 
+def test_household_discovery_recipe_owns_visibility_for_a_validation_only_end():
+    ns = recipe('toon-household-discovery')
+    assert ns['scene'].check(schema=True) == []
+    assert ns['pile_result'] is None
+    assert ns['holder'].end == 3
+    assert ns['pipe_result'] in list(ns['holder'].elements())
+    assert ns['pipe_result'].end is None
+    assert ns['pile_info']['arguments']['properties']['end']['x-role'] == 'validation-limit'
+
+
 def test_held_prop_recipe_publishes_a_schema_valid_scene_and_no_contact_shadow():
     ns = recipe('held-prop-discovery')
     assert ns['scene'].check(schema=True) == []
