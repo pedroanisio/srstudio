@@ -2,6 +2,7 @@
 
 import math
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 
@@ -22,6 +23,7 @@ from srstudio.dance import (
 )
 from srstudio.errors import SrstudioError
 from srstudio.music import Groove
+from support.authoring_docs import fences
 
 GRID = Groove(120)  # half a second a beat: beat positions read as plain numbers
 
@@ -515,3 +517,17 @@ def test_a_routine_reports_its_support():
 def test_the_errors_share_one_base():
     assert issubclass(MoveError, DanceError) and issubclass(RoutineError, DanceError)
     assert issubclass(DanceError, SrstudioError) and issubclass(DanceError, ValueError)
+
+
+def test_the_guides_recipes_run():
+    guide = (Path(__file__).resolve().parents[1] / "docs" / "authoring-dance.md").read_text()
+    recipes = [code for language, code in fences(guide) if language == "python"]
+    assert len(recipes) == 2
+    for code in recipes:
+        exec(compile(code, "authoring-dance.md", "exec"), {})
+
+
+def test_the_guides_move_parses():
+    guide = (Path(__file__).resolve().parents[1] / "docs" / "authoring-dance.md").read_text()
+    documents = [code for language, code in fences(guide) if language == "json"]
+    assert list(dance.parse_moves(documents[0])) == ["chest-pop"]
