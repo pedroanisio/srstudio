@@ -62,6 +62,13 @@ def test_the_presets_parse_and_cover_the_brief():
         "arm-pump",
         "arm-wave-overhead",
         "step-touch",
+        "clap",
+        "point-up",
+        "raise-the-roof",
+        "hand-wave-side",
+        "shoulder-roll",
+        "hip-sway",
+        "hands-up",
     }
     assert moves() is moves()
     assert moves()["step-touch"].support == "feet"

@@ -30,7 +30,7 @@ assert dance.SEAT_GROOVE_BOB.misses(reading) == ()
 <!-- dance-recipe:end -->
 
 The presets are `seat-groove`, `bob`, `sway`, `bounce`, `shoulder-shimmy`, `head-nod`, `arm-pump`, `arm-wave-overhead`
-and `step-touch`. A frame's `value(target)` reads any canonical target and returns zero for one the dance does not move.
+and `step-touch`, and the arm gestures below. A frame's `value(target)` reads any canonical target and returns zero for one the dance does not move.
 `planted` names the feet a body should hold still, `support` says how the body is held up, and `expression` is the face
 held for the phrase. Only `seat-groove` is measured against a reference, and the presets have not been judged on a drawn
 body.
@@ -54,6 +54,36 @@ joints = skeleton.world(character, danced.pose)  # every joint's frame, ready fo
 `dance_pose` turns the root's head radii into metres of this character's head, so a big head bobs more, and adds the
 joint deltas onto `base` (the rest pose unless a style passes its own). A joint the character lacks is dropped and named,
 never applied elsewhere. See [the skeleton guide](authoring-skeleton.md) for profiles and drawing.
+
+## Dance arm gestures
+
+`clap`, `point-up`, `raise-the-roof`, `hand-wave-side`, `shoulder-roll` and `hip-sway` are full-arm gestures on the beat,
+and `hands-up` is a pose to hold ([ADR 0192](decisions/0192-dance-arm-gestures.md)). Each is tested on the skeleton's
+forward kinematics on the `realistic`, `cartoon` and `stick` presets, and dances on all three within limits without
+clamping. A move that never moves gives its pose to an entry's `hold` with `held()`:
+
+<!-- dance-gestures:start -->
+```python
+from srstudio import dance
+from srstudio.music import Groove
+
+presets = dance.moves()
+routine = dance.Routine(
+    8,
+    (
+        dance.Entry(0, 4, presets["clap"], expression="grin"),
+        dance.Entry(4, 8, presets["seat-groove"], transition_beats=2, hold=presets["hands-up"].held()),
+    ),
+)
+frame = dance.sample(routine, Groove(120), 9.0)
+assert frame.value("left_upper_arm.down_up") == presets["hands-up"].held()[0][1]
+```
+<!-- dance-gestures:end -->
+
+The cartoon's arms are short against its head and shoulders: its pointing and raised hands reach the middle of its head,
+not above it, and its clap meets at `intensity=2.0`. A raised arm rides the body with no lag, as in the reference reel.
+`hold` adds to the move, so hold `hands-up` over a move that leaves the arms alone (`seat-groove`, `head-nod`,
+`shoulder-roll`, `bob`, `sway`).
 
 ## Write a move
 

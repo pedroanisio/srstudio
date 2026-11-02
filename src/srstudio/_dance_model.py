@@ -336,6 +336,14 @@ class Move:
         at = beat % self.loop_beats
         return frozenset(c.foot for c in self.contacts if c.start <= at < c.end)
 
+    def held(self) -> tuple[tuple[str, float], ...]:
+        """The pose a move that never moves holds, as an :attr:`Entry.hold`: each pattern's bias by target. A move
+        with a moving pattern is refused, because a hold has no beat to move on (ADR 0192)."""
+        moving = [p.target for p in self.patterns if p.amplitude != 0]
+        if moving:
+            raise MoveError(f"{self.name}: {moving} move, so the move is no held pose", path="patterns", actual=moving)
+        return tuple((p.target, p.bias) for p in self.patterns)
+
     def mirror(self) -> Move:
         """The move danced the other way round."""
         patterns = []
