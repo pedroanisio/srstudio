@@ -85,7 +85,7 @@ def project(modules, tmp_path_factory) -> Path:
     font.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy(FONT, font)
     (root / "plates").mkdir()
-    for name in lounge.LAYERS:
+    for name in {*lounge.LAYERS, "front"}:
         Image.new("RGBA", (lounge.WIDTH, lounge.HEIGHT)).save(root / "plates" / f"{name}.png")
     (root / "plates" / "registration.json").write_text(json.dumps(record(lounge)))
     run(root, "--silent")
@@ -191,7 +191,7 @@ def registration_after(project: Path, tmp_path: Path, change) -> Path:
         (lambda d: d.pop("spots"), "expected the fields"),
         (lambda d: d.update(srlocations_commit="0" * 40), "drawn by srlocations"),
         (lambda d: d.update(size=[1080, 1080]), "the plates are"),
-        (lambda d: d["seconds"].pop("front"), "the layers are"),
+        (lambda d: d["seconds"].pop("near"), "the layers are"),
         (lambda d: d["spots"].pop("code"), "the spots are"),
     ],
 )

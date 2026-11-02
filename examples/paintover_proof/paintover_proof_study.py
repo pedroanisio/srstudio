@@ -2,6 +2,7 @@
 """Paintover proof: the opening of it-autoplayed re-staged on a 3D lounge, the rigs live and unchanged.
 
     python lounge_plates.py PROJECT                     # with srlocations' interpreter: PROJECT/plates
+    python plate_fronts.py PROJECT                      # the front plates, cut from the back plates
     python paintover_proof_study.py PROJECT             # → PROJECT/paintover-proof.scene.xml, the 3D plates
     python paintover_proof_study.py PROJECT --control   # the approved set, to show the rigs did not change
     python paintover_proof_study.py PROJECT --cast      # the rigs alone on nothing, to measure what the seat must hide
