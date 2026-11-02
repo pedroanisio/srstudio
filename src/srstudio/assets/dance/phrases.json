@@ -2274,7 +2274,7 @@
     {
      "count": "1:7&",
      "contacts": [
-      "right_foot"
+      "left_foot"
      ],
      "pose": {
       "left_upper_arm.down_up": 0.25,
@@ -2283,9 +2283,9 @@
       "right_upper_arm.down_up": 0.25,
       "right_upper_arm.front_back": -0.7,
       "right_lower_arm.stretch": -0.6,
-      "left_upper_leg.front_back": -0.35,
-      "left_lower_leg.stretch": -0.7,
-      "left_foot.up_down": 0.3,
+      "right_upper_leg.front_back": -0.35,
+      "right_lower_leg.stretch": -0.7,
+      "right_foot.up_down": 0.3,
       "left_upper_leg.in_out": 0.0,
       "right_upper_leg.in_out": 0.0,
       "chest.twist_left_right": -0.0,

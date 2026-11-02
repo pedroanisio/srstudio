@@ -74,8 +74,9 @@ both honest.
 **Planted feet.** A planted foot lands where the free pose puts it at the first moment of its plant, laid flat on the
 floor and turned the way it points; from then its ball stays on that spot. When the body turns on the floor a planted
 foot pivots on its ball by the same turn, as a dancer's does. The leg is solved onto it by `retarget`'s leg solve,
-which now takes the foot's world turn (`reach(..., turn=)`). Over `BLEND_S` either side of a plant the foot eases on
-and off the spot. A free foot is kept above the floor. When the far foot of a wide stance is out of the leg's reach,
+which now takes the foot's world turn (`reach(..., turn=)`). A plant starts and ends where the dance says the foot
+is planted, found by bisection between the scan's steps, so every frame that names the foot holds it flat. Over
+`BLEND_S` either side of a plant the foot eases on and off the spot. A free foot is kept above the floor. When the far foot of a wide stance is out of the leg's reach,
 the hips sink (at most 0.3 hip heights) until it is in reach at 99.5 % of the leg's length, as a dancer bends the
 standing knee; the foot is never dragged.
 
@@ -86,15 +87,20 @@ mass `margin + 0.25 × foot width` inside the support of the feet planted on bot
 shift moves on the later key's ease. So the weight is over the standing foot before the other lifts. `balance(fps)`
 reports every frame whose centre of mass is less than `margin_m` (5 mm by default, less on a narrow foot) inside the
 support of its planted feet as a `BalanceFinding`; `check` and `strict=True` refuse with `BalanceError`. A frame in the
-air or on a seat is not checked. A leg past its joint limits is refused with `FloorLimitError` unless `clamp`.
+air or on a seat is not checked. A leg past its joint limits is refused with `FloorLimitError` unless `clamp`; with
+`clamp` on, a planted foot its clamped leg leaves tilted holds nothing up. The balance search reads the support of the
+held feet that lie flat at each of its passes, so a leg that tips a foot at the unshifted pose still finds the shift
+that sets it down; when no held foot lies flat there, it starts from the last key's shift.
 
-**Support from `body`.** The support is `body`'s public geometry: `support_footprint` under each planted ankle,
-turned the way the foot points, on the character's `sk.body_profile` (the joint table's sole, 0.068 and 0.044 of the
-height for width and heel, scaled with the foot), `support_hull` of those corners, and `support_margin` for how far the
-centre of mass stands inside. The centre of mass is this module's own: `body` offers a torso mass proxy, not a
-segment-weighted centre.
+**Support from the skeleton bridge.** The support is the skeleton bridge's (`sk.to_body_pose`, [ADR 0185](0185-shared-skeleton.md)), the one
+path from a skeleton pose to `body`'s support: the pose is set down so the floor is y=0, the bridge decides which
+soles lie flat, places `body.support_footprint` under each on the character's `sk.body_profile` (the joint table's
+sole, scaled with the foot) and takes `body.support_hull` of them. The floor pass names the feet the dance plants; a
+named foot the bridge does not find flat is left out. `body.support_margin` says how far the centre of mass stands
+inside. The centre of mass is this module's own: the bridge carries `body`'s torso mass proxy, not a segment-weighted
+centre.
 
-**A bent-knee, wide stance.** A class dancer stands low on a wide base: the dance study ([ADR 0196](0196-dance-style-from-reference-video.md)) measured the knees
+**A bent-knee, wide stance.** A class dancer stands low on a wide base: the dance study ([ADR 0203](0203-dance-style-from-reference-video.md)) measured the knees
 bent 26°–62° and the stance 3.1–7.2 head radii wide, where the rest pose stands straight and narrow. `stance` lays both
 feet flat at `±width / 2` hip heights, then finds the hips' drop by bisection (40 halvings over at most 0.7 hip
 heights) at which the leg solve bends the knees by `bend`. A drop the feet cannot follow (a wide base on straight legs)
@@ -130,13 +136,15 @@ open by 0.1 radian a side, the hips sink 0.09 hip heights and bounce 0.06 down o
 rises 0.1; the chest and upper chest twist by 0.2 radian and tilt by 0.05 (shared 0.6 and 0.4), the neck sways by
 0.04, the head nods by 0.05 and the chest leans 0.05 into the down count. `kick-ball-change` and `turn-travel` take
 half the hips' motion and `turn-travel` no extra width, so the kick and the pivots stay inside the ankles' limits;
-`plie-roll` keeps its own depth and width. The groove step's lifts on every "and" raise the hips once a beat: without
+`plie-roll` keeps its own depth and width. `turn-travel` comes back to the front on the left foot: the right foot
+lifts on 7-and, because the cartoon's right leg can hold that pivot only by rolling the foot past its limit, which
+would tip the planted sole. The groove step's lifts on every "and" raise the hips once a beat: without
 them the bounce is half time, but the cartoon's standing foot rolls past its limit.
 
 Each key keeps its own timing: a `hit` holds the last pose for 65 % of the span and strikes in the last
 `HIT_SHARE` (35 %) at about three times a `smooth`'s peak speed; a `smooth` leaves and lands at rest with its peak
 speed at the middle. These are the timing waveforms this ADR ships; a per-key attack, release and peak-speed time
-belongs to the timing work's `curve` waveform in the moves schema, which a key is to name once it lands.
+belongs to the gesture-timing work's (ADR 0204) `curve` waveform in the moves schema, which a key is to name once it lands.
 
 ### Review
 

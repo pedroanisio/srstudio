@@ -5,9 +5,9 @@ Control of Human Movement*, 4th ed., table 4.1) at the middle of the bone, the t
 bones; a joint a character omits is left out and the rest renormalised. The shares are a person's, so on a cartoon with
 a large head they are an estimate.
 
-A planted foot's footprint, the convex support of the planted feet and how far a point stands inside it are
-``body``'s public support geometry (``support_footprint``, ``support_hull``, ``support_margin``) on the character's
-``sk.body_profile``: the joint table's sole width and heel (srlocations' foot solid) scaled with its foot.
+The support of the planted feet is the skeleton bridge's (``sk.to_body_pose``): which soles lie flat on the floor,
+``body``'s public footprint under each on the character's ``sk.body_profile``, and ``body``'s hull of them. How far a
+point stands inside it is ``body.support_margin``.
 """
 
 from __future__ import annotations
@@ -97,17 +97,26 @@ def sole(profile: sk.SkeletonProfile) -> tuple[float, float, float]:
 
 
 def support(
-    profile: sk.SkeletonProfile, frames: Mapping[str, Frame], feet: Iterable[str]
-) -> tuple[tuple[float, float], ...]:
-    """The convex support, on the floor's (x, z), of the named sides' feet as they stand in ``frames``: body's
-    footprint under each ankle, turned the way the foot points, and body's hull of them."""
-    anatomy = sk.body_profile(profile)
-    points: list[tuple[float, float]] = []
-    for side in feet:
-        foot = frames[f"{side}_foot"]
-        sole_frame = Frame(Vec3(foot.origin.x, 0.0, foot.origin.z), yaw(heading(foot.rotation)))
-        points.extend((p.x, p.z) for p in body.support_footprint(sole_frame, anatomy))
-    return body.support_hull(points)
+    profile: sk.SkeletonProfile, pose: sk.SkeletonPose, floor_y: float, feet: Iterable[str]
+) -> tuple[tuple[tuple[float, float], ...], tuple[str, ...]] | None:
+    """The convex support, on the floor's (x, z), of those of the named sides' feet that lie flat as ``pose`` stands
+    on the floor at ``floor_y``, with the sides it counts; ``None`` when none does. Flatness, footprints and hull are
+    the skeleton bridge's (``sk.to_body_pose``), with the pose set down so the floor is y=0."""
+    root = pose.root
+    grounded = sk.SkeletonPose(Frame(root.origin - Vec3(0.0, floor_y, 0.0), root.rotation), pose.values)
+    try:
+        whole = sk.to_body_pose(profile, grounded)
+    except sk.SkeletonBridgeError as error:
+        if error.code != "skeleton.support":
+            raise
+        return None  # no foot lies flat on the floor
+    down = {leg.side for leg in whole.legs if leg.planted}
+    named = tuple(side for side in SIDES if side in set(feet) and side in down)
+    if not named:
+        return None
+    if set(named) == down:
+        return whole.support_polygon, named
+    return sk.to_body_pose(profile, grounded, planted=named).support_polygon, named
 
 
 def toes_offset(profile: sk.SkeletonProfile, side: str) -> Vec3:
