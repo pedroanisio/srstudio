@@ -18,11 +18,11 @@ transition longer than its shots, lines wider than the safe area.
 from __future__ import annotations
 
 import math
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, replace
 from typing import Any, Literal, get_args
 
-from . import checks
+from . import breaks, checks
 from ._transaction import scene_transaction
 from .errors import SrstudioError
 from .fonts import text_width
@@ -76,6 +76,7 @@ class CaptionLook:
     min_seconds: float = 0.0  # the shortest a cue is shown: held into the silence after it (engine minimum 0.8333)
     published: bool = False  # a look only reels published with it keep; it draws nothing and new reels never set it
     outline: Outline = "stroke"  # "layer": the stroke drawn as ink text under unstroked burned letters (ADR 0048)
+    keep_together: bool = False  # no cue ends after a weak word, inside a number or a name while another cut fits
 
     def __post_init__(self) -> None:
         for name in ("size", "line_height"):
@@ -92,6 +93,8 @@ class CaptionLook:
             and self.stroke.upper() in (self.color.upper(), self.active.upper())
         ):
             raise NativeError(f"a caption stroke in the letters' own colour {self.stroke} closes their counters")
+        if not isinstance(self.keep_together, bool):
+            raise NativeError(f"caption keep_together must be True or False, got {self.keep_together!r}")
         if self.outline not in get_args(Outline):
             raise NativeError(f"caption outline must be one of {get_args(Outline)}, not {self.outline!r}")
         for name in ("max_chars", "max_lines", "max_words", "min_last"):
@@ -131,28 +134,91 @@ def cues_from_takes(takes: Iterable[Take], look: CaptionLook | None = None) -> l
     return held
 
 
+Stuck = Callable[[Word], bool]  # whether a cut just before this word is one breaks.forbidden names
+
+
+def _never(_word: Word) -> bool:
+    return False
+
+
+def _stuck(cue: Cue, look: CaptionLook) -> Stuck:
+    """With ``look.keep_together``, whether a cut before a word of ``cue`` falls after a weak word, inside a number or
+    inside a name (:func:`srstudio.breaks.forbidden`, read over the whole take); without it, never."""
+    if not look.keep_together:
+        return _never
+    places = breaks.kept_together([w.text for w in cue.words])
+    stuck = {id(word) for i, word in enumerate(cue.words) if i in places}
+    return lambda word: id(word) in stuck
+
+
+def _fits(words: Sequence[Word], look: CaptionLook) -> bool:
+    return len(wrap(" ".join(w.text for w in words), look.max_chars, look.max_words)) <= look.max_lines
+
+
 def _fit(cue: Cue, look: CaptionLook, where: str, limit: float) -> list[Cue]:
     cues = [cue]
+    stuck = _stuck(cue, look)
     if len(wrap(cue.text, look.max_chars, look.max_words)) > look.max_lines:
         if not cue.words:
             raise NativeError(f"take {where}: {cue.text!r} needs word timings to be split into cues that fit")
-        groups: list[list[Word]] = []
-        for word in cue.words:
-            if groups and len(wrap(" ".join(w.text for w in [*groups[-1], word]), look.max_chars,
-                                   look.max_words)) <= look.max_lines:  # fmt: skip
-                groups[-1].append(word)
-            else:
-                groups.append([word])
+        groups = _segments(cue.words, look, stuck) if look.keep_together else _greedy(cue.words, look)
         tail = groups[-1]
         if len(groups) > 1 and (len(tail) < look.min_last or limit - tail[0].start < look.min_seconds):
-            both = groups[-2] + tail  # the greedy fill left a last cue too small to read: cut the two afresh
-            i = _split(both, look, limit)
+            both = groups[-2] + tail  # the fill left a last cue too small to read: cut the two afresh
+            i = _split(both, look, limit, stuck)
             if i is not None:
                 groups[-2:] = [both[:i], both[i:]]
         cues = [_cue(g) for g in groups]
     if look.min_last > 1:
-        cues = [part for c in cues for part in _unorphan(c, look, where, limit)]
+        cues = [part for c in cues for part in _unorphan(c, look, where, limit, stuck)]
     return cues
+
+
+def _greedy(words: Sequence[Word], look: CaptionLook) -> list[list[Word]]:
+    """Each cue filled with as many words as fit before the next one starts."""
+    groups: list[list[Word]] = []
+    for word in words:
+        if groups and _fits([*groups[-1], word], look):
+            groups[-1].append(word)
+        else:
+            groups.append([word])
+    return groups
+
+
+def _broken_off(words: Sequence[Word]) -> bool:
+    """Rule 7's fault (ADR 0146): a cue that holds a sentence end and stops inside the next sentence."""
+    return any(w.text.endswith(_SENTENCE_END) for w in words[:-1]) and not words[-1].text.endswith(_SENTENCE_END)
+
+
+def _segments(words: Sequence[Word], look: CaptionLook, stuck: Stuck) -> list[list[Word]]:
+    """The cues that fit, chosen over every way to cut ``words``: first the fewest cues that break off inside a
+    sentence (rule 7), then the fewest cuts ``stuck`` forbids, then the fewest cues, then the most even fill. The
+    greedy fill is one of the ways, so this is never worse than it on the first two counts. A word too long for a cue
+    is a cue of its own, as in the greedy fill."""
+    room = look.max_chars * look.max_lines
+    best: list[tuple[tuple[int, int, int, int], int] | None] = [((0, 0, 0, 0), 0)] + [None] * len(words)
+    for j in range(1, len(words) + 1):
+        for i in range(j - 1, -1, -1):
+            part = words[i:j]
+            if j - i > 1 and not _fits(part, look):
+                break  # a cue that does not fit only gets longer towards the start
+            before = best[i]
+            if before is None:
+                continue
+            (broken, forbidden, count, uneven), _ = before
+            slack = max(room - len(" ".join(w.text for w in part)), 0) if j < len(words) else 0
+            cost = (broken + _broken_off(part), forbidden + (i > 0 and stuck(words[i])), count + 1, uneven + slack**2)
+            current = best[j]
+            if current is None or cost < current[0]:
+                best[j] = (cost, i)
+    groups: list[list[Word]] = []
+    j = len(words)
+    while j > 0:
+        step = best[j]
+        assert step is not None  # every single word is a cue that can be reached
+        groups.insert(0, list(words[step[1] : j]))
+        j = step[1]
+    return groups
 
 
 def _cue(words: Sequence[Word]) -> Cue:
@@ -160,6 +226,7 @@ def _cue(words: Sequence[Word]) -> Cue:
 
 
 _CLAUSE_END = tuple(".,!?;:…")
+_SENTENCE_END = tuple(".!?…")
 
 
 def _orphaned(text: str, look: CaptionLook) -> bool:
@@ -167,23 +234,24 @@ def _orphaned(text: str, look: CaptionLook) -> bool:
     return len(lines) > 1 and len(lines[-1].split()) < look.min_last
 
 
-def _unorphan(cue: Cue, look: CaptionLook, where: str, limit: float) -> list[Cue]:
+def _unorphan(cue: Cue, look: CaptionLook, where: str, limit: float, stuck: Stuck = _never) -> list[Cue]:
     """``cue`` as it is, or, when its last line would hold fewer than ``look.min_last`` words, split in two where both
     halves fit without an orphan, the second holds at least ``min_last`` words and each half can be shown for
     ``look.min_seconds`` (the second until ``limit``, its take's end): after a word that ends a clause (``.,!?;:``)
     if one can, else where the halves' lengths balance, the longer half first on a tie. Without such a split the cue
-    is kept whole: a lone last word is easier to read than a caption shown too briefly."""
+    is kept whole: a lone last word is easier to read than a caption shown too briefly. With ``look.keep_together``
+    a cut ``stuck`` names is taken only when no other fits."""
     if not _orphaned(cue.text, look):
         return [cue]
     if not cue.words:
         raise NativeError(f"take {where}: {cue.text!r} needs word timings to be split without an orphan")
-    i = _split(cue.words, look, limit)
+    i = _split(cue.words, look, limit, stuck)
     return [cue] if i is None else [_cue(cue.words[:i]), _cue(cue.words[i:])]
 
 
-def _split(words: Sequence[Word], look: CaptionLook, limit: float) -> int | None:
+def _split(words: Sequence[Word], look: CaptionLook, limit: float, stuck: Stuck = _never) -> int | None:
     """Where to cut ``words`` in two (see :func:`_unorphan`), or None when no cut gives two readable halves."""
-    best: tuple[tuple[bool, int, int], int] | None = None
+    best: tuple[tuple[bool, bool, int, int], int] | None = None
     for i in range(1, len(words)):
         halves = [" ".join(w.text for w in part) for part in (words[:i], words[i:])]
         if len(words) - i < look.min_last:  # the second half alone would be the orphan
@@ -193,7 +261,7 @@ def _split(words: Sequence[Word], look: CaptionLook, limit: float) -> int | None
             continue
         if any(len(wrap(t, look.max_chars, look.max_words)) > look.max_lines or _orphaned(t, look) for t in halves):
             continue
-        score = (not halves[0].endswith(_CLAUSE_END), max(len(t) for t in halves), -len(halves[0]))
+        score = (stuck(words[i]), not halves[0].endswith(_CLAUSE_END), max(len(t) for t in halves), -len(halves[0]))
         if best is None or score < best[0]:
             best = (score, i)
     return None if best is None else best[1]

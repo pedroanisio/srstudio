@@ -198,6 +198,8 @@ Four shows are channels on Toon's road rather than styles of their own. Each is 
 
 `srstudio.look` holds the primitives every style shares, while each style keeps its own numbers: `grade` for bloom, vignette and grain, `depth` for a far plane out of focus, `pool` for a soft light and `fade` for haze or a shade. See [finishing a style](docs/authoring-styles.md#finishing-a-style-srstudiolook) and [ADR 0031](docs/decisions/0031-shared-look-and-caption-primitives.md).
 
+Caption breaks can keep phrases whole. With `CaptionLook(keep_together=True)`, or `keep_together=True` on `look.wrap`, no cue or line ends after a weak word such as `the` or `to`, inside a number such as `twenty thousand`, or inside a name such as `New York`, while another break fits. It is off by default so that a published reel rebuilds byte for byte, and new reels turn it on. `srstudio.caption_breaks.audit` lists the forbidden breaks in a built scene. See [ADR 0173](docs/decisions/0173-caption-breaks-keep-phrases-whole.md).
+
 The library draws in 2D, and what it models in 3D is a clay character or a rigid proxy. `srstudio.clay` bakes a model to meshes, and `srstudio.plates` path-traces a `Plate`, one camera, one set of lights and some placed meshes, into a still cached by its digest. Rafa, who hosts the Host show, is built this way ([ADR 0068](docs/decisions/0068-rafa-clay-host-on-plates.md)).
 
 Drawing digests remain stable; rendered artifacts additionally identify the renderer binary, compiled scenes,

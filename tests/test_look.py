@@ -54,6 +54,17 @@ def test_wrap_breaks_text_into_lines_the_font_draws_within_the_width():
 
 
 @needs_font
+def test_wrap_keeps_phrases_together_on_request_and_greedy_by_default():
+    text = "Leave him and open a candle shop today"
+    width = fonts.text_width(font(), "Leave him and open a", 40) + 1
+    assert look.wrap(font(), text, 40, width, 3) == ["Leave him and open a", "candle shop today"]
+    kept = look.wrap(font(), text, 40, width, 3, keep_together=True)
+    assert kept == ["Leave him and open", "a candle shop today"]
+    assert all(fonts.text_width(font(), line, 40) <= width for line in kept)
+    assert look.wrap(font(), "Leave him and\nopen a", 40, width, 3, keep_together=True) == ["Leave him and", "open a"]
+
+
+@needs_font
 def test_wrap_keeps_explicit_newlines():
     assert look.wrap(font(), "one\ntwo", 40, 900, 3) == ["one", "two"]
 
