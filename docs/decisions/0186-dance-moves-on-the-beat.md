@@ -29,8 +29,10 @@ and keeping planted feet planted, is the skeleton's and the body's job.
   hips translation is the root; `hips.right`, `hips.up` and `hips.forward` are refused as targets because their metres
   would not scale to a character.
 - A dof named `a_b` reads negative toward `a` and positive toward `b`; a one-word dof (`stretch`, `close`, `stretched`,
-  `spread`) reads positive toward that word. This reads the names, not the mannequin's code: the skeleton must confirm
-  or convert it, and the presets' arms and legs depend on it.
+  `spread`) reads positive toward that word. The names set it, and the shared skeleton ([ADR
+  0185](0185-shared-skeleton.md)) confirms it on its own forward kinematics: `tests/test_dance_pose.py` holds a nod
+  down, a lean front, a lean and tilt to the right (+x), an arm up, an arm and a leg forward and a bent elbow to the
+  way their names say.
 - Time is in beats. A lag and a phase are beats, so they keep their musical meaning at any tempo.
 
 ### Move schema, `srstudio.dance-moves/1.0.0`
@@ -99,6 +101,16 @@ The raised arm's tip moving 0.32 head radius against the head's 0.50 is not a te
 chain, so it needs the skeleton's forward kinematics. Until then `seat-groove` carries the bob on the root, and an arm
 below the shoulder riding it moves with the root in full.
 
+### On a character's skeleton
+
+`srstudio.dance_pose.dance_pose(profile, frame, base=, clamp=)` is the one step from a `DanceFrame` to a
+`skeleton.SkeletonPose`. The root's head radii become the hips' `right`, `up` and `forward` translations in metres of
+that character's head radius, so a cartoon with a bigger head bobs more by the same share. Joint deltas add onto `base`,
+the character's rest pose unless a style passes its own, such as a seated one. A delta on a joint the character lacks,
+a finger of a mitten hand or a joint its profile omits, is dropped and named in `DancePose.dropped`; a target outside
+the canonical skeleton is refused, and a value past a limit is refused unless `clamp` is set. `dance` itself still
+imports no skeleton: `dance_pose` sits between the two, and every style adapter starts from it.
+
 ### Song structure
 
 `song_map` measures a track on a groove: energy on every beat, and phrases of `phrase_bars` merged into parts wherever
@@ -118,8 +130,9 @@ and a routine only needs the bars where the level turns.
 ## Consequences
 
 - A move scales to any character and any tempo, and is tested against the dance it was measured from.
-- The presets' dof signs assume the naming convention above. Until the skeleton lands, only `seat-groove`'s root
-  channels are measured against a reference; the other presets are authored and have not been seen on a body.
+- The presets' dof signs follow the naming convention above, which the skeleton confirms. Only `seat-groove`'s root
+  channels are measured against a reference; every preset dances on every preset character within limits when
+  clamped, and none has yet been judged on a drawn body.
 - `seat-groove` carries the whole bob on the root because the head must not rotate within a beat and head position
   cannot be read without forward kinematics. A body that holds the hips on a seat decides how the root reaches the torso.
 - A move that needs a held arm pose in a seated dance adds it as `hold`. `seat-groove` does not raise an arm itself.

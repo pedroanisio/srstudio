@@ -32,7 +32,28 @@ assert dance.SEAT_GROOVE_BOB.misses(reading) == ()
 The presets are `seat-groove`, `bob`, `sway`, `bounce`, `shoulder-shimmy`, `head-nod`, `arm-pump`, `arm-wave-overhead`
 and `step-touch`. A frame's `value(target)` reads any canonical target and returns zero for one the dance does not move.
 `planted` names the feet a body should hold still, `support` says how the body is held up, and `expression` is the face
-held for the phrase. Only `seat-groove` is measured against a reference, and the presets have not been seen on a body.
+held for the phrase. Only `seat-groove` is measured against a reference, and the presets have not been judged on a drawn
+body.
+
+## Dance on a character
+
+```python
+from srstudio import dance, skeleton
+from srstudio.dance_pose import dance_pose
+from srstudio.music import Groove
+
+groove = Groove(129)
+character = skeleton.preset("cartoon")
+frame = dance.sample(dance.moves()["arm-wave-overhead"], groove, 0.3)
+
+danced = dance_pose(character, frame, clamp=True)
+print(danced.dropped)  # canonical fingers this character's hands do not have
+joints = skeleton.world(character, danced.pose)  # every joint's frame, ready for a style to draw
+```
+
+`dance_pose` turns the root's head radii into metres of this character's head, so a big head bobs more, and adds the
+joint deltas onto `base` (the rest pose unless a style passes its own). A joint the character lacks is dropped and named,
+never applied elsewhere. See [the skeleton guide](authoring-skeleton.md) for profiles and drawing.
 
 ## Write a move
 
