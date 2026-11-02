@@ -114,6 +114,72 @@
       "rule": "hand-no-side",
       "part": "collage-arm",
       "why": "published before a hand had to say its side; its picture is frozen, and its insert is a POV arm drawn right"
+    },
+    {
+      "reel": "home-anyway",
+      "rule": "hand-count",
+      "part": "rabbit",
+      "why": "published before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm; its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "ill-get-this",
+      "rule": "hand-count",
+      "part": "gary",
+      "why": "published before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm; its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "ill-get-this",
+      "rule": "hand-count",
+      "part": "rosa",
+      "why": "published before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm; its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "it-autoplayed",
+      "rule": "hand-count",
+      "part": "bear",
+      "why": "published before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm; its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "it-autoplayed",
+      "rule": "hand-count",
+      "part": "rabbit",
+      "why": "published before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm; its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "its-gone",
+      "rule": "hand-count",
+      "part": "rosa",
+      "why": "published before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm; its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "nine-alarms",
+      "rule": "hand-count",
+      "part": "bear",
+      "why": "published before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm; its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "nine-alarms",
+      "rule": "hand-count",
+      "part": "rabbit",
+      "why": "published before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm; its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "regards-dad",
+      "rule": "hand-count",
+      "part": "gary",
+      "why": "published before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm; its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "texts-back",
+      "rule": "hand-count",
+      "part": "dog",
+      "why": "published before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm; its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "texts-back",
+      "rule": "hand-count",
+      "part": "rabbit",
+      "why": "published before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm; its picture is frozen (ADR 0174)"
     }
   ]
 }
