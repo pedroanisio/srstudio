@@ -137,3 +137,37 @@ def test_a_record_starting_mid_video_keeps_its_clock():
     data["subject"]["first_frame"] = 100
     track = pt.from_data(data)
     assert track.frames[0].index == 100 and math.isclose(track.frames[0].time_s, 100 / 30)
+
+
+# --- 1.1.0: a repeated picture is no new observation (ADR 0199) ------------------------------------------------------
+
+
+def test_a_1_1_record_says_which_frames_repeat_the_last_picture():
+    track = pt.from_data(record(12, repeat=(2, 3, 7)))
+    assert track.schema_version == "1.1.0" and pt.SCHEMA_VERSION == "1.1.0"
+    assert track.repeats == 3 and [f.index for f in track.frames if f.repeat] == [2, 3, 7]
+    assert not track.frames[2].found and track.frames[2].world is None and track.found == 9
+    assert pt.from_data(record(12)).repeats == 0  # a 1.0 record: every frame its own picture
+
+
+@pytest.mark.parametrize(
+    ("data", "error", "words"),
+    [
+        (edited(record(6), "frames.2.repeat", False), pt.RecordFormatError, "unknown field"),  # not in 1.0
+        (edited(record(6, repeat=()), "frames.2.repeat", ...), pt.RecordFormatError, "lacks field"),
+        (edited(record(6, repeat=()), "frames.2.repeat", 1), pt.RecordFormatError, "true or false"),
+        (edited(record(6, repeat=()), "frames.2.repeat", "yes"), pt.RecordFormatError, "true or false"),
+        (edited(record(6, repeat=()), "frames.2.repeat", True), pt.RecordValueError, "holds no landmarks"),
+        (edited(record(6, repeat=(3,)), "frames.0.repeat", True), pt.RecordValueError, "holds no landmarks"),
+    ],
+)
+def test_a_repeat_flag_outside_its_contract_is_refused(data, error, words):
+    with pytest.raises(error, match=words):
+        pt.from_data(data)
+
+
+def test_the_first_frame_cannot_repeat_a_picture_before_it():
+    data = record(6, repeat=(0,))
+    data["subject"]["first_frame"] = 1
+    with pytest.raises(pt.RecordValueError, match="first frame has no picture before it"):
+        pt.from_data(data)

@@ -218,6 +218,7 @@ def test_a_lost_frame_keeps_its_clock_and_a_found_one_its_landmarks():
         "box": None,
         "position": None,
         "appearance": None,
+        "repeat": False,
     }
     entry = tool.frame_entry(4, 30.0, body(200, 120), tool.Match(0, 0.05, 0.1), W, H)
     assert len(entry["image"]) == 33 and entry["image"][0][:2] == [0.5, 0.4] and entry["position"] == 0.05
@@ -284,3 +285,42 @@ def test_estimator_poses_become_candidates_in_pixels_of_the_whole_frame():
     assert len(whole) == 2 and whole[0].image[0, :2].tolist() == [200, 75] and whole[0].image[0, 4] == 0.0
     crop = tool.bodies_from(_Result(1), W, H, (100, 50, 200, 100), crop=True)
     assert crop[0].crop and crop[0].image[0, :2].tolist() == [200, 75] and crop[0].world[0].tolist() == [0.1, -0.2, 0.3]
+
+
+# --- repeated pictures (ADR 0199) -------------------------------------------------------------------------------------
+
+
+def grey(seed: int = 0) -> np.ndarray:
+    return np.random.default_rng(seed).integers(0, 256, (96, 128), dtype=np.uint8)
+
+
+def test_the_same_picture_again_is_a_repeat_even_through_compression_noise():
+    still = grey()
+    noisy = np.clip(still.astype(int) + np.random.default_rng(1).integers(-1, 2, still.shape), 0, 255).astype(np.uint8)
+    assert tool.repeats(still, still) and tool.repeats(still, noisy)
+
+
+def test_a_moved_hand_or_a_broad_change_is_a_new_grey():
+    still = grey()
+    moved = still.copy()
+    moved[40:48, 60:68] = 255 - moved[40:48, 60:68]  # one block changes a lot: a hand moved
+    assert not tool.repeats(still, moved)
+    faint = np.clip(still.astype(int) + 3, 0, 255).astype(np.uint8)  # every block changes a little: a fade
+    assert not tool.repeats(still, faint)
+
+
+def test_pictures_of_other_sizes_are_refused():
+    with pytest.raises(tool.ExtractError):
+        tool.repeats(grey(), grey()[:50])
+    with pytest.raises(tool.ExtractError):
+        tool.repeats(np.zeros((4, 4), np.uint8), np.zeros((4, 4), np.uint8))
+
+
+def test_a_repeat_carries_its_clock_and_no_observation_and_the_reader_takes_it():
+    entry = tool.repeat_entry(5, 30.0)
+    assert entry["repeat"] is True and entry["t_s"] == round(5 / 30, 6) and entry["world"] is None
+    first = tool.frame_entry(0, 30.0, body(200, 120), tool.Match(0, 0.05, 0.1), W, H)
+    data = _data([first, *(tool.frame_entry(i, 30.0, None, None, W, H) for i in range(1, 5)), entry])
+    assert data["schema"] == "srstudio.pose-track/1.1.0"
+    track = pt.from_data(data)
+    assert track.frames[5].repeat and track.repeats == 1
