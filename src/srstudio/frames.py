@@ -14,6 +14,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from . import gpu
 from .errors import SrstudioError
 from .sketch import Beat, load_beats
 
@@ -70,9 +71,12 @@ def at_size(scene: Path, frames: Sequence[Frame], out: Path, engine: str | Path)
     written = []
     for frame in frames:
         path = out / f"{frame.at:06.2f}-{frame.why}.png"
-        done = subprocess.run(
-            [str(engine), "render", str(scene), "-t", str(frame.at), "-o", str(path)], capture_output=True, text=True
-        )
+        with gpu.held():
+            done = subprocess.run(
+                [str(engine), "render", str(scene), "-t", str(frame.at), "-o", str(path)],
+                capture_output=True,
+                text=True,
+            )
         if done.returncode != 0 or not path.is_file():
             raise FrameError(f"{scene}: the frame at {frame.at} s did not render: {done.stderr.strip()[:200]}")
         written.append(path)

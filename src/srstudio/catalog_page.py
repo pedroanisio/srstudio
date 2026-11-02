@@ -50,7 +50,7 @@ from dataclasses import dataclass, field
 from importlib.resources import files
 from pathlib import Path
 
-from . import catalog_data, catalog_server, catalog_specimens, catalog_versions, checks, digest, parts, registry
+from . import catalog_data, catalog_server, catalog_specimens, catalog_versions, checks, digest, gpu, parts, registry
 from .catalog_data import CatalogError, GalleryEntry, Line, Still
 from .styles import STYLES, Style
 from .usage import PILOTS, Report, pilot_projects
@@ -1050,7 +1050,8 @@ def pose_sheet(engine: Path, cache: Path) -> list[tuple[str, Path]]:
     doc = folder / "poses.scene.xml"
     doc.write_bytes(scene.to_bytes())
     for i, (_, png) in enumerate(pngs):
-        _cache(png.resolve(), [str(engine), "render", str(doc), "-f", str(i), "-o"])
+        with gpu.held():
+            _cache(png.resolve(), [str(engine), "render", str(doc), "-f", str(i), "-o"])
     return pngs
 
 

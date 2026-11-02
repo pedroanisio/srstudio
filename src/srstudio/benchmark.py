@@ -25,7 +25,7 @@ from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 
 from . import _benchmark_fixtures as fixtures
-from . import plates, registry
+from . import gpu, plates, registry
 from .acting import PerformancePlan
 from .errors import SrstudioError
 from .limbs.motion import Motion
@@ -139,21 +139,22 @@ def _discover() -> tuple[object, Counts]:
 def _render_frames(engine: Path, source: Path, timeout: float) -> tuple[object, Counts]:
     output = source.parent / 'frame-%04d.png'
     try:
-        result = subprocess.run(
-            [
-                str(engine),
-                'render',
-                str(source),
-                '--frames',
-                f'0..{fixtures.FRAMES}',
-                '--output',
-                str(output),
-                '--strict',
-            ],
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
+        with gpu.held():
+            result = subprocess.run(
+                [
+                    str(engine),
+                    'render',
+                    str(source),
+                    '--frames',
+                    f'0..{fixtures.FRAMES}',
+                    '--output',
+                    str(output),
+                    '--strict',
+                ],
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+            )
     except (OSError, subprocess.TimeoutExpired) as error:
         raise _fail(f'renderer failed: {error}', 'benchmark.render') from error
     if result.returncode:

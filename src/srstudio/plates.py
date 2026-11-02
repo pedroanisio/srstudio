@@ -32,7 +32,7 @@ from pathlib import Path
 import numpy as np
 from sr_core.scene import Scene
 
-from . import _bounded_process, checks
+from . import _bounded_process, checks, gpu
 from .canvas import Canvas
 from .clay import Mesh
 from .errors import SrstudioError
@@ -504,6 +504,11 @@ def _engine_render(engine: Path, source: Path, out: Path) -> None:
                 expected=f'fewer than {scope.maximum} attempts',
                 remedy='Reuse cached inputs or explicitly increase the render-session budget.',
             )
+    with gpu.held():  # one GPU job at a time; the wait counts against no budget and no engine second
+        _timed_render(engine, source, out, scopes)
+
+
+def _timed_render(engine: Path, source: Path, out: Path, scopes: tuple[_RenderScope, ...]) -> None:
     for scope in scopes:
         scope.spent += 1
         scope.stats.invocations += 1

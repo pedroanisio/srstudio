@@ -264,6 +264,8 @@ The configured coverage gate is 80%. Some integration tests require additional l
 | `SRSTUDIO_EPISODES` | Generated episode projects for Collage build tests. |
 | `SRSTUDIO_RENDERS` and `SRSTUDIO_FONTS` | Rendered videos and pinned fonts for the delivery gate. |
 
+Every `render` and `encode` srstudio starts takes one machine-wide GPU lock, `/run/lock/srstudio-gpu.lock`. You can point it elsewhere with `SRSTUDIO_GPU_LOCK`. A job that waits longer than `SRSTUDIO_GPU_WAIT` seconds (900 by default) for another job's render stops with `GpuBusyError`, which names the holder's pid and command. To run a bare engine command by hand under the same lock, use `flock -w 900 /run/lock/srstudio-gpu.lock scene-render ...`. See [ADR 0171](docs/decisions/0171-one-gpu-job-at-a-time.md).
+
 ## Layout
 
 - [src/srstudio/](src/srstudio/) — library and CLI.

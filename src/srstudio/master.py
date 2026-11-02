@@ -23,7 +23,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
-from . import files
+from . import files, gpu
 from .errors import SrstudioError
 
 __all__ = ["PLACES", "Encoded", "MasterError", "encode", "targets"]
@@ -125,7 +125,8 @@ def encode(
     try:
         command = [str(engine), "encode", scene.name, *args, "--out-dir", str(stage.resolve())]
         try:
-            done = run(command, cwd=scene.parent.resolve(), capture_output=True, text=True)
+            with gpu.held():  # the engine renders every frame on the GPU, --hw software included (ADR 0171)
+                done = run(command, cwd=scene.parent.resolve(), capture_output=True, text=True)
         except OSError as e:
             raise MasterError(f"cannot run the engine {engine}: {e}") from None
         said = (done.stdout + done.stderr)[-_TAIL:]
