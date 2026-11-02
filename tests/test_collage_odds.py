@@ -104,3 +104,32 @@ def test_a_scale_without_a_drop_stays_where_it_is_drawn():
 def test_a_prop_refuses_cues_it_cannot_play(draw):
     with pytest.raises(CollageOddsError):
         draw(canvas())
+
+
+@pytest.mark.parametrize('local', [False, True])
+@pytest.mark.parametrize('at', [-1, 4, float('nan'), True])
+def test_scale_rejects_its_drop_cue_before_creating_any_geometry(local, at):
+    cv = canvas()
+    cv.local_time = local
+    before = cv.scene.to_bytes()
+    with pytest.raises(CollageOddsError, match='drops'):
+        collage_odds.doctor_scale(cv, cv.comp, 400, 1880, bar_at=at, end=4)
+    assert cv.scene.to_bytes() == before
+
+
+@pytest.mark.parametrize(
+    'draw',
+    [
+        lambda cv: collage_odds.lens_frame(cv, cv.comp, 500, 500, spread=0),
+        lambda cv: collage_odds.spinach(cv, cv.comp, 500, 500, width=0),
+        lambda cv: collage_odds.wine_glass(cv, cv.comp, 500, 1500, full=-1),
+        lambda cv: collage_odds.water_jug(cv, cv.comp, 500, 1500, scale=0),
+        lambda cv: collage_odds.doctor_scale(cv, cv.comp, 500, base=900, bar_to=900),
+    ],
+)
+def test_invalid_prop_geometry_is_refused_before_drawing(draw):
+    cv = canvas()
+    before = cv.scene.to_bytes()
+    with pytest.raises(CollageOddsError):
+        draw(cv)
+    assert cv.scene.to_bytes() == before

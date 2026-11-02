@@ -1210,6 +1210,30 @@
   ],
   "findings": [
     {
+      "id": "SDK-P1-24",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Validate doctor-scale drop cues before drawing",
+      "problem": "An invalid bar_at raised CollageOddsError only after creating the scale and bar geometry.",
+      "resolution": "Move the existing drop-cue check ahead of scene mutation, preserving the accepted inputs and animation.",
+      "verification": [
+        "tests/test_collage_odds.py:test_scale_rejects_its_drop_cue_before_creating_any_geometry"
+      ],
+      "acceptance": [
+        "Invalid drop cues leave the scene unchanged under either Canvas clock",
+        "Existing geometry refusals remain atomic"
+      ],
+      "verification_summary": {
+        "red": 8,
+        "new_cases": 13,
+        "passed": 241,
+        "skipped": 0,
+        "branch_inclusive_module_coverage_percent": 95.83333333333333,
+        "module_branch_coverage_percent": 86.84210526315789,
+        "retained_artifacts": "../generated/sdk-collage-scale-preflight/v1/"
+      }
+    },
+    {
       "id": "SDK-P1-23",
       "priority": "P1",
       "status": "complete",
