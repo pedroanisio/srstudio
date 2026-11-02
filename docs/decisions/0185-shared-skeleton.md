@@ -90,7 +90,9 @@ and `to_hand_pose` give `limbs.ArmPose` and `limbs.HandPose` for one side, in li
 sets body's `shoulder_width` to the distance between the upper arms' joints, so a body plan places the shoulders where
 the skeleton does rather than at body's default of 1.5 hip widths. `wrist_control`
 gives the limbs `HandControl` that turns limbs' arm frame into this hand's frame: at zero forearm twist limbs' palm
-faces where the skeleton's palm does not, so limbs' forearm twist carries half a turn.
+faces where the skeleton's palm does not, so limbs' forearm twist carries half a turn. `arm_profile`'s twist range
+therefore straddles pi; limbs' orientation-constrained solve keeps a wrist's winding inside it, so a `limbs.Motion`
+holding this hand's frame reads the same forearm twist as `wrist_control`.
 
 Each `from_*` reads a record back into controls, keeping everything else from a base pose, so a pose solved by
 `limbs.reach` or sampled from a `body` plan lands on the skeleton. A record whose geometry is not this character's is

@@ -12,7 +12,7 @@ from srstudio import skeleton as sk
 from srstudio.limbs.geometry import project_pose
 from srstudio.limbs.math3d import Frame, Quaternion, Vec3
 from srstudio.limbs.model import HandControl
-from srstudio.limbs.motion import Sample
+from srstudio.limbs.motion import Action, Contact, Motion, Sample, TransformTrack
 
 REAL = sk.preset("realistic")
 TOON = sk.preset("cartoon")
@@ -412,6 +412,22 @@ def test_limbs_draws_the_skeletons_hand_on_its_own_arm_frame(side):
             low, high = getattr(limits, {"forearm_twist": "twist_limit", "wrist_flex": "flex_limit"}[name])
             assert low - 1e-9 <= value <= high + 1e-9
         assert limits.deviation_limit[0] - 1e-9 <= control.wrist_deviation <= limits.deviation_limit[1] + 1e-9
+
+
+@pytest.mark.parametrize("side", SIDES)
+@pytest.mark.parametrize("twist", [1.4, -1.3])
+def test_limbs_solves_a_wrist_past_half_a_turn_as_wrist_control_reads_it(side, twist):
+    """arm_profile's twist range straddles pi; limbs' orientation solve keeps the winding inside it."""
+    values = {f"{side}_lower_arm.stretch": -1.0, f"{side}_lower_arm.twist_in_out": twist, f"{side}_hand.down_up": 0.3}
+    pose = sk.pose(REAL, values)
+    hand = sk.to_hand_pose(REAL, pose, side)
+    arm = sk.arm_profile(REAL, pose, side)
+    held = Contact("hold", 0.2, 1.5, TransformTrack.constant(hand.frame))
+    solved = Motion(arm, sk.hand_profile(REAL, side), (Action("point", 0, 2),), contacts=(held,)).sample(1.0)
+    expected = sk.wrist_control(REAL, pose, side)
+    assert abs(expected.forearm_twist - math.pi) > 1.2  # far from pi: past it for one twist, short of it for the other
+    assert solved.control.forearm_twist == pytest.approx(expected.forearm_twist, abs=1e-6)
+    assert turned(solved.hand.frame.rotation, hand.frame.rotation)
 
 
 def test_a_wrist_control_needs_a_hand():
