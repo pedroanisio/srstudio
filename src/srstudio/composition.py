@@ -249,6 +249,41 @@ class CandidateSource(_Record):
 
 
 @dataclass(frozen=True)
+class FormKey(_Record):
+    """An authored surface point/normal in asset space on the complete source clock."""
+
+    time: float = field(metadata={'minimum': 0, 'maximum': 600})
+    point: tuple[float, float, float]
+    normal: tuple[float, float, float]
+    interpolation: Literal['hold', 'linear'] = 'hold'
+
+
+@dataclass(frozen=True)
+class FormSurface(_Record):
+    """A named shape's lighting field; ink explicitly retains the authored fill/stroke."""
+
+    node: str
+    palette: tuple[str, ...] = ()
+    point: tuple[float, float, float] = (0, 0, 0)
+    normal: tuple[float, float, float] = (0, 0, 1)
+    keys: tuple[FormKey, ...] = ()
+    mode: Literal['diffuse', 'ink'] = 'diffuse'
+    albedo: str = '#ffffff'
+    exposure: float = field(default=1, metadata={'minimum': 0, 'maximum': 1000000})
+
+
+@dataclass(frozen=True)
+class FormLight:
+    """Resolved world-space field and palette color for one authored surface."""
+
+    node: str
+    point: tuple[float, float, float]
+    normal: tuple[float, float, float]
+    irradiance: tuple[float, float, float]
+    color: str | None
+
+
+@dataclass(frozen=True)
 class AssetBinding(_Record):
     """Host-authored asset facts; these are not accepted inside agent scene JSON.
 
@@ -270,6 +305,14 @@ class AssetBinding(_Record):
     duration: float | None = None
     plates: tuple[PlateWork, ...] = ()
     candidate: CandidateSource | None = None
+    forms: tuple[FormSurface, ...] = ()
+
+
+def form_lighting(plan: ValidatedScenePlan, layer: str, source_time: float) -> tuple[FormLight, ...]:
+    """Resolve authored form fields under shared lights; no drawing or file access."""
+    from ._composition_forms import lighting
+
+    return lighting(plan, layer, source_time)
 
 
 @dataclass(frozen=True)
@@ -391,11 +434,11 @@ class VectorSource:
     fonts: tuple[VectorFont, ...] = ()
 
 
-def vector_source_digest(source: VectorSource) -> str:
-    """Pin XML, font bytes and licenses; fontless sources retain their XML hash."""
+def vector_source_digest(source: VectorSource, *, forms: tuple[FormSurface, ...] = ()) -> str:
+    """Pin XML, fonts, licenses and form fields; plain sources retain their XML hash."""
     from ._composition_text import source_digest
 
-    return source_digest(source)
+    return source_digest(source, forms=forms)
 
 
 @dataclass(frozen=True)

@@ -9,6 +9,7 @@ from . import _composition_text as text_assets
 from . import _composition_wire as wire
 from . import composition as c
 from ._composition_emit import assemble, check_expansion
+from ._composition_forms import size as form_bytes
 from ._composition_png import MAX_BYTES, verify
 from ._composition_sequence import spans
 from ._composition_vector import prepare_vector
@@ -36,7 +37,7 @@ def compile_bundle(request: dict) -> c.CompiledScene:
         name, xml, fonts = wire.vector_decode(item)
         if type(name) is not str or name in roots or name not in bindings or bindings[name].backend != 'vector':
             raise wire.fail(None, 'one source per vector binding')
-        total += len(xml) + text_assets.validate(fonts)
+        total += len(xml) + text_assets.validate(fonts) + form_bytes(bindings[name].forms)
         if total > MAX_BYTES:
             raise wire.fail(total, 'at most eight MiB of combined bundle inputs')
         asset = prepare_vector(bindings[name], xml, fonts=fonts)

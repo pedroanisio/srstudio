@@ -7,9 +7,12 @@ from pathlib import Path
 
 import pytest
 
+from srstudio.checks import contrast
 from srstudio.sample import SYSTEM_FONTS
 from srstudio.thumbnail import (
+    ACCENT_CONTRAST,
     BLOCK,
+    INK,
     MARGIN,
     MAX_SIZE,
     Thumbnail,
@@ -45,6 +48,27 @@ def test_a_bad_spec_is_refused_with_its_reason(thumb, needle):
     assert any(needle in p for p in thumb.problems())
     with pytest.raises(ThumbnailError, match=needle):
         thumb.validate()
+
+
+@pytest.mark.parametrize("accent", ["#A82E22", "#3355AA", "#0b0b0d"])
+def test_an_accent_the_outline_ink_drowns_is_refused(accent):
+    """The accent letters sit in the ink outline and the kicker's ink letters sit on the accent: a dark red read as
+    a smudge on a delivered cover's dark band before this check."""
+    assert contrast(accent, INK.ink) < ACCENT_CONTRAST
+    with pytest.raises(ThumbnailError, match=f"accent {accent} is .* against the ink"):
+        Thumbnail("a", 0, accent=accent).validate()
+
+
+@pytest.mark.parametrize("accent", ["#ffd23f", "#FF9F7A", "#ff0000"])
+def test_an_accent_that_reads_on_the_ink_passes(accent):
+    assert contrast(accent, INK.ink) >= ACCENT_CONTRAST
+    assert not Thumbnail("a", 0, accent=accent).problems()
+
+
+def test_contrast_is_the_wcag_ratio():
+    assert contrast("#ffffff", "#000000") == pytest.approx(21.0)
+    assert contrast("#777777", "#777777") == pytest.approx(1.0)
+    assert contrast("#ffd23f", "#0b0b0d") == contrast("#0b0b0d", "#ffd23f")
 
 
 def test_the_headline_is_shown_in_capitals_line_by_line():

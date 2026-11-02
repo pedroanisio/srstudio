@@ -52,12 +52,22 @@ def validate(items: tuple[c.VectorFont, ...]) -> int:
     return size
 
 
-def source_digest(source: c.VectorSource) -> str:
+def source_digest(source: c.VectorSource, *, forms: tuple[c.FormSurface, ...] = ()) -> str:
+    from ._composition_forms import definition, size
+    from ._composition_forms import validate as validate_forms
+
+    validate_forms(forms)
     if type(source) is not c.VectorSource or type(source.xml) is not bytes or len(source.xml) > MAX_BYTES:
         raise fail('a VectorSource with at most eight MiB of immutable XML')
     if len(source.xml) + validate(source.fonts) > MAX_BYTES:
         raise fail('at most eight MiB of XML, font and license buffers')
     xml = hashlib.sha256(source.xml).hexdigest()
+    if forms:
+        if len(source.xml) + validate(source.fonts) + size(forms) > MAX_BYTES:
+            raise fail('at most eight MiB of XML, font, license and form buffers')
+        return _digest(
+            {'schema': 'srstudio.vector-source/1.1.0', 'source': source_digest(source), 'forms': definition(forms)}
+        )
     if not source.fonts:
         return xml
     return _digest(

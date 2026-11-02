@@ -12,6 +12,7 @@ from . import _composition_wire as wire
 from . import _scene_motion_wire as tw
 from . import composition as c
 from ._composition_emit import _number, _placement
+from ._composition_forms import size as form_bytes
 from ._composition_png import MAX_BYTES, verify
 from ._composition_preflight import _pose
 from ._composition_vector import prepare_vector
@@ -21,6 +22,8 @@ def compile_timeline(request: dict) -> c.CompiledScene:
     wire.fields(request, {'schema', 'operation', 'timeline', 'vectors', 'images', 'placements'})
     if request['operation'] != 'compile-timeline':
         raise wire.fail(None, 'compile-timeline')
+    from ._composition_forms import apply
+
     timeline = tw.decode(request['timeline'])
     spec = timeline.base.spec
     required = set(tw.references(timeline))
@@ -34,7 +37,7 @@ def compile_timeline(request: dict) -> c.CompiledScene:
         name, xml, fonts = wire.vector_decode(value)
         if type(name) is not str or name not in bindings or name in vectors:
             raise wire.fail(None, 'one source per vector binding')
-        total += len(xml) + text_assets.validate(fonts)
+        total += len(xml) + text_assets.validate(fonts) + form_bytes(bindings[name].forms)
         if total > MAX_BYTES:
             raise wire.fail(None, 'bounded combined bundle inputs')
         vectors[name] = prepare_vector(bindings[name], xml, fonts=fonts)
@@ -141,6 +144,7 @@ def compile_timeline(request: dict) -> c.CompiledScene:
                 continue
             asset = vectors[layer.asset]
             source = text_assets.portable(ET.fromstring(asset.xml), asset.fonts)
+            apply(source, plan, layer, span.start, scene_clock=True)
             text_assets.scope(source, prefix)
             source_assets = source.find('assets')
             if source_assets is not None and len(source_assets):

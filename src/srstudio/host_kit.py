@@ -1137,6 +1137,24 @@ def label(cv: Canvas, parent, text: str, start: float, end: float, measure: Meas
     cv.keys(g, "y", [(start, -14.0), (start + 0.16, 0.0)], hold=False, kind="cubic-out", local=False)
 
 
+def _said_as(token: str, left: Sequence[Word]) -> int:
+    """How many of the next words said make up caption ``token``: one that matches it, or, for a number, the run the
+    speech split at its separators ("4,000" said as "4" and "000"); 0 when they do not make it up."""
+    if left and sketch.normalize_words(left[0][2]) == sketch.normalize_words(token):
+        return 1
+    bare = re.sub(r"\W", "", token)
+    if not any(c.isdigit() for c in bare):
+        return 0
+    joined = ""
+    for n, (_, _, said) in enumerate(left, 1):
+        joined += re.sub(r"\W", "", said)
+        if joined == bare:
+            return n
+        if not bare.startswith(joined):
+            return 0
+    return 0
+
+
 def _timed(lines: Sequence[toon.Line], words: Sequence[Word]) -> list[list[tuple[float, str]]]:
     """Each cue's words with the second each is said: from the takes, or spread evenly through a silent master's cue.
     A word that is not the next one said is :class:`HostKitError`, so a caption can never run ahead of the voice, and
@@ -1151,9 +1169,11 @@ def _timed(lines: Sequence[toon.Line], words: Sequence[Word]) -> list[list[tuple
             continue
         row: list[tuple[float, str]] = []
         for token in tokens:
-            if not left or sketch.normalize_words(left[0][2]) != sketch.normalize_words(token):
+            parts = _said_as(token, left)
+            if not parts:
                 raise HostKitError(f"caption word {token!r} is not the next word said: {left[:1]!r}")
-            at, _, _ = left.pop(0)
+            at, _, _ = left[0]
+            del left[:parts]
             if not row and line.start - at > CAPTION_LATE + 1e-6:
                 raise HostKitError(f"caption {line.text!r} arrives {line.start - at:.3f} s after its voice")
             row.append((max(at, line.start), token))
@@ -1178,17 +1198,35 @@ def caption_cues(lines: Sequence[toon.Line], words: Sequence[Word] = (), skip: S
     return cues
 
 
+def _fits(words: Sequence[str]) -> bool:
+    return len(native.wrap(" ".join(words), CAPTION_LOOK.max_chars, CAPTION_LOOK.max_words)) <= CAPTION_LOOK.max_lines
+
+
+def packed(sentences: Sequence[Sequence[str]]) -> list[list[str]]:
+    """``sentences``, each a list of words, as the fewest cues that fit the band's rows: a sentence joins the cue
+    before it while the two fit together, so a short one never stands alone. A sentence too long on its own stays one
+    cue, for the track to refuse."""
+    cues: list[list[str]] = []
+    for sentence in sentences:
+        if cues and _fits([*cues[-1], *sentence]):
+            cues[-1].extend(sentence)
+        else:
+            cues.append(list(sentence))
+    return cues
+
+
 def _sentences(said: Sequence[native.Word]) -> list[list[native.Word]]:
-    """``said`` whole when it fits the band's rows, or else cut after each word that ends a sentence."""
-    text = " ".join(w.text for w in said)
-    if len(native.wrap(text, CAPTION_LOOK.max_chars, CAPTION_LOOK.max_words)) <= CAPTION_LOOK.max_lines:
+    """``said`` whole when it fits the band's rows, or else cut after words that end a sentence, into the fewest cues
+    that fit (:func:`packed`)."""
+    if _fits([w.text for w in said]):
         return [list(said)]
-    parts: list[list[native.Word]] = [[]]
+    sentences: list[list[str]] = [[]]
     for k, word in enumerate(said):
-        parts[-1].append(word)
+        sentences[-1].append(word.text)
         if word.text.endswith((".", "!", "?")) and k + 1 < len(said):
-            parts.append([])
-    return parts
+            sentences.append([])
+    words = iter(said)
+    return [[next(words) for _ in cue] for cue in packed(sentences)]
 
 
 @register(

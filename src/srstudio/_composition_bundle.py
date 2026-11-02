@@ -19,6 +19,7 @@ from . import _composition_text as text_assets
 from . import _composition_wire as wire
 from . import composition as c
 from ._composition_emit import check_expansion
+from ._composition_forms import size as form_bytes
 from ._composition_png import MAX_BYTES
 from ._composition_preflight import _digest
 from ._composition_runtime import _call
@@ -126,7 +127,7 @@ def _inputs(plan: c.ValidatedScenePlan, assets: Assets) -> tuple[dict[str, c.Pre
                 raise _failure('assets', 'one source for every vector binding')
             if type(asset.xml) is not bytes:
                 raise _failure('assets.xml', 'immutable XML bytes')
-            total += len(asset.xml) + text_assets.validate(asset.fonts)
+            total += len(asset.xml) + text_assets.validate(asset.fonts) + form_bytes(bindings[name].forms)
             vectors[name] = asset
         else:
             raise _failure(
@@ -302,6 +303,9 @@ def compile_bundle(plan: c.ValidatedScenePlan, assets: Assets, *, engine: Path, 
     if not isinstance(engine, Path) or not isinstance(cache, Path):
         raise _failure('engine/cache', 'Path values for renderer and cache')
     vectors, prepared = _inputs(plan, assets)
+    from ._composition_forms import static
+
+    static(plan)
     budget = plan.spec.budget
     images: dict[str, bytes] = {}
     try:
@@ -364,7 +368,9 @@ def compile_bundle(plan: c.ValidatedScenePlan, assets: Assets, *, engine: Path, 
             )
         resources = {hashlib.sha256(data).hexdigest(): data for data in raster_images.values()}
         raster_requests = []
-        wire_bytes = sum(len(v.xml) + text_assets.validate(v.fonts) for v in vectors.values())
+        wire_bytes = sum(
+            len(v.xml) + text_assets.validate(v.fonts) + form_bytes(v.binding.forms) for v in vectors.values()
+        )
         for layer, placement in prepared.items():
             if isinstance(placement, c.PreparedRasterSequence):
                 frames = tuple(
@@ -394,7 +400,7 @@ def compile_bundle(plan: c.ValidatedScenePlan, assets: Assets, *, engine: Path, 
                 )
         if (
             sum(map(len, resources.values()))
-            + sum(len(v.xml) + text_assets.validate(v.fonts) for v in vectors.values())
+            + sum(len(v.xml) + text_assets.validate(v.fonts) + form_bytes(v.binding.forms) for v in vectors.values())
             > MAX_BYTES
         ):
             raise _failure('budget.bundle', 'at most eight MiB of combined vector/image inputs', 'composition.budget')

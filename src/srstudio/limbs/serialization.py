@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 import tempfile
@@ -12,7 +13,7 @@ from pathlib import Path
 from typing import Any, Union, get_args, get_origin, get_type_hints
 
 from .errors import LimbError
-from .math3d import number
+from .math3d import Quaternion, number
 from .motion import Motion
 
 SCHEMA = "srstudio.limbs/1.3.0"
@@ -25,7 +26,7 @@ MAX_DEPTH = 64
 _STRUCTURE = re.compile(r'"(?:[^"\\]|\\.)*"?|[\[\]{}]', re.DOTALL)
 
 
-def _decode(kind: Any, value: object, where: str, budget: list[int], depth: int = 0) -> Any:
+def _decode(kind: Any, value: object, where: str, budget: list[int], depth: int = 0, *, solved: bool = False) -> Any:
     budget[0] -= 1
     if budget[0] < 0 or depth > 32:
         raise LimbError(f"{where}: motion document exceeds its decoding bound", code="budget")
@@ -37,10 +38,10 @@ def _decode(kind: Any, value: object, where: str, budget: list[int], depth: int 
                 return None
             non_null = tuple(candidate for candidate in args if candidate is not type(None))
             if len(non_null) == 1:
-                return _decode(non_null[0], value, where, budget, depth + 1)
+                return _decode(non_null[0], value, where, budget, depth + 1, solved=solved)
         for candidate in args:
             try:
-                return _decode(candidate, value, where, budget, depth + 1)
+                return _decode(candidate, value, where, budget, depth + 1, solved=solved)
             except LimbError as error:
                 if error.code == "budget":
                     raise
@@ -62,11 +63,14 @@ def _decode(kind: Any, value: object, where: str, budget: list[int], depth: int 
                 code="budget" if isinstance(value, (list, tuple)) else "invalid",
             )
         if len(args) == 2 and args[1] is Ellipsis:
-            return tuple(_decode(args[0], item, f"{where}[{i}]", budget, depth + 1) for i, item in enumerate(value))
+            return tuple(
+                _decode(args[0], item, f"{where}[{i}]", budget, depth + 1, solved=solved)
+                for i, item in enumerate(value)
+            )
         if len(value) != len(args):
             raise LimbError(f"{where}: expected {len(args)} array elements")
         return tuple(
-            _decode(t, item, f"{where}[{i}]", budget, depth + 1)
+            _decode(t, item, f"{where}[{i}]", budget, depth + 1, solved=solved)
             for i, (t, item) in enumerate(zip(args, value, strict=True))
         )
     if isinstance(kind, type) and is_dataclass(kind):
@@ -87,10 +91,19 @@ def _decode(kind: Any, value: object, where: str, budget: list[int], depth: int 
             raise LimbError(f"{where}: missing required fields {missing}")
         hints = get_type_hints(kind)
         decoded = {
-            name: _decode(hints[name], item, f"{where}.{name}", budget, depth + 1) for name, item in value.items()
+            name: _decode(hints[name], item, f"{where}.{name}", budget, depth + 1, solved=solved)
+            for name, item in value.items()
         }
         try:
-            return kind(**decoded)
+            result = kind(**decoded)
+            if solved and kind is Quaternion:
+                components = {name: decoded.get(name, definitions[name].default) for name in ('w', 'x', 'y', 'z')}
+                if abs(math.hypot(*components.values()) - 1) > 1e-8:
+                    raise LimbError('solved rotations must already be unit quaternions')
+                # Do not renormalize already solved geometry on each save/load cycle.
+                for name, component in components.items():
+                    object.__setattr__(result, name, component)
+            return result
         except LimbError as error:
             raise LimbError(
                 f'{where}: {error.message}', code=error.code, residual=error.residual, context=error.context
@@ -99,6 +112,10 @@ def _decode(kind: Any, value: object, where: str, budget: list[int], depth: int 
 
 
 def motion_dict(motion: Motion) -> dict:
+    from ._motion_keyed import _KeyedMotion, document
+
+    if isinstance(motion, _KeyedMotion):
+        return document(motion)
     # Decoding through the declared field types writes 0 for a float field as 0.0, so a saved file reloads and
     # saves again byte for byte.
     typed: Motion = _decode(Motion, asdict(motion), "motion", [MAX_ITEMS])
@@ -106,6 +123,10 @@ def motion_dict(motion: Motion) -> dict:
 
 
 def parse_motion(data: object) -> Motion:
+    from ._motion_keyed import MAX_ITEMS as KEYED_ITEMS
+    from ._motion_keyed import SCHEMA as KEYED_SCHEMA
+    from ._motion_keyed import _KeyedMotion
+
     if not isinstance(data, dict):
         raise LimbError("motion document must be an object")
     if len(data) > 3 or any(not isinstance(key, str) for key in data):
@@ -113,12 +134,16 @@ def parse_motion(data: object) -> Motion:
     unknown = set(data) - {"schema", "generatedBy", "motion"}
     if unknown:
         raise LimbError(f"motion document has unknown fields {sorted(unknown)}")
-    if data.get("schema") not in (SCHEMA, TRANSFORM_SCHEMA, ANATOMY_SCHEMA, LEGACY_SCHEMA):
+    if data.get("schema") not in (SCHEMA, TRANSFORM_SCHEMA, ANATOMY_SCHEMA, LEGACY_SCHEMA, KEYED_SCHEMA):
         raise LimbError(f"motion document needs schema {SCHEMA}")
     if "generatedBy" in data and not isinstance(data["generatedBy"], str):
         raise LimbError("motion generatedBy must be a string")
     if "motion" not in data:
         raise LimbError("motion document is missing motion")
+    if data['schema'] == KEYED_SCHEMA:
+        if not isinstance(data['motion'], dict) or set(data['motion']) != {'arm', 'hand', 'played', 'fps'}:
+            raise LimbError('keyed motion requires exactly arm, hand, played and fps')
+        return _decode(_KeyedMotion, data['motion'], 'motion', [KEYED_ITEMS], solved=True)
     result: Motion = _decode(Motion, data["motion"], "motion", [MAX_ITEMS])
     if data["schema"] == LEGACY_SCHEMA and any("bend_axis" in digit for digit in data["motion"]["hand"]["digits"]):
         raise LimbError("custom bend axes require motion schema srstudio.limbs/1.1.0")

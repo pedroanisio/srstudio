@@ -13,6 +13,7 @@ from . import _scene_motion_wire as tw
 from . import composition as c
 from . import plates
 from . import scene_motion as m
+from ._composition_forms import size as form_bytes
 from ._composition_preflight import _digest
 from ._composition_proxy_runtime import convert
 from ._composition_runtime import _call_worker
@@ -39,7 +40,7 @@ def _vectors(timeline: m.SceneTimeline, assets: Vectors) -> dict[str, c.Prepared
             raise wire.fail(None, 'VectorSource or PreparedVector records')
         if type(name) is not str or name not in bindings or name in sources or type(asset.xml) is not bytes:
             raise wire.fail(None, 'one immutable XML source for each vector binding')
-        total += len(asset.xml) + text_assets.validate(asset.fonts)
+        total += len(asset.xml) + text_assets.validate(asset.fonts) + form_bytes(bindings[name].forms)
         if total > bundle.MAX_BYTES:
             raise wire.fail(None, 'at most eight MiB of combined source buffers')
         sources[name] = asset
@@ -162,7 +163,9 @@ def compile_timeline(timeline: m.SceneTimeline, vectors: Vectors, *, engine: Pat
         cold = len(jobs) - len(warm)
         done = set(warm)
         placements = {}
-        output_bytes = sum(len(v.xml) + text_assets.validate(v.fonts) for v in verified.values())
+        output_bytes = sum(
+            len(v.xml) + text_assets.validate(v.fonts) + form_bytes(v.binding.forms) for v in verified.values()
+        )
         with plates.render_session(
             max_invocations=min(budget.max_engine_invocations, timeline.cost.engine_invocations),
             timeout=budget.timeout,

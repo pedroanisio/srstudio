@@ -58,6 +58,8 @@ from . import (
     rafa_host,
     registry,
     saga_sets,
+    smallprint_kit,
+    smallprint_props,
     soft_props,
     specimens,
     stick,
@@ -261,12 +263,17 @@ def _punched(cv: Canvas, g: object, e: registry.Entry, ctx: Context) -> None:
 
 def _plated(cv: Canvas, g: object, e: registry.Entry, ctx: Context) -> None:
     """A part that is one path-traced plate, on the stage (ADR 0068)."""
-    plate = rafa_host.part_plates(e.name)[0]
+    plate = plates_of(e.name)[0]
     rafa_host.place(cv, g, plate, y=(rafa_host.HEIGHT - plate.height) / 2)
 
 
+def plates_of(name: str) -> tuple[plates.Plate, ...]:
+    """Every path-traced plate the part ``name`` shows (ADR 0068): Rafa's, Pedro's or Small Print's (ADR 0195)."""
+    return (*rafa_host.part_plates(name), *pedro_host.part_plates(name), *smallprint_props.part_plates(name))
+
+
 RECIPES: dict[str, Recipe] = {
-    **dict.fromkeys((*rafa.ROOMS, *rafa.PROPS), Recipe(_plated)),
+    **dict.fromkeys((*rafa.ROOMS, *rafa.PROPS, *smallprint_props.STATES, "smallprint-tears"), Recipe(_plated)),
     # -- locations -------------------------------------------------------------------------------------------------
     "cel-room": Recipe(_cel_room),
     "stick-yard": Recipe(_yard),
@@ -536,6 +543,8 @@ RECIPES: dict[str, Recipe] = {
     "host-sign-off": Recipe(lettered("You know what you did.", 0.0, SECONDS)),
     "host-screen": Recipe(lettered("The Group Chat", (host_kit.Bubble("haha"),), 0.0, SECONDS)),
     "host-punch": Recipe(_punched),
+    "smallprint-card": Recipe(lettered("Why do onions make you cry?", 0.0, SECONDS)),
+    "smallprint-stamp": Recipe(lettered(smallprint_kit.Stamp("IT'S A GAS", "Imai et al., Nature, 2002"), 0.0, SECONDS)),
     "toon-tee": Recipe(part((180, 660))),
     "toon-bow-tie": Recipe(part((180, 640))),
     "toon-stars": Recipe(part(5)),
@@ -924,7 +933,7 @@ def render_one(plan_: Plan, engine: Path, folder: Path, fonts: Path) -> None:
     work.mkdir(parents=True, exist_ok=True)
     definitions = plan_.plate_inputs
     if definitions is None:
-        definitions = (*rafa_host.part_plates(name), *pedro_host.part_plates(name))
+        definitions = plates_of(name)
     if plan_.plate_keys is not None and len(plan_.plate_keys) != len(definitions):
         raise SpecimenRenderError('bound plate keys do not match the specimen dependencies')
     for index, plate in enumerate(definitions):
@@ -1011,7 +1020,7 @@ def render_all(engine: Path, cache: Path, episodes: Path) -> Shelf:
     bound = []
     fonts = print_fonts(episodes, folder / "work")
     for item in plans:
-        definitions = (*rafa_host.part_plates(item.entry.name), *pedro_host.part_plates(item.entry.name))
+        definitions = plates_of(item.entry.name)
         dependencies = []
         for definition in definitions:
             inputs, source, prints = plates._prepare(definition, engine, fonts)

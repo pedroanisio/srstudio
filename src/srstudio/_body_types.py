@@ -78,8 +78,11 @@ class BodyProfile:
     support_margin: float = 0.005
     max_stride: float = 0.5
     max_root_speed: float = 1.0
+    shoulder_width: float | None = None
 
     def __post_init__(self) -> None:
+        if self.shoulder_width is not None:
+            scalar(self.shoulder_width, 'profile.shoulder_width', 0.01, 2)
         for name in ('hip_width', 'thigh', 'shin', 'ankle_height', 'foot_width', 'heel', 'toe', 'torso_height'):
             scalar(getattr(self, name), 'profile.' + name, 0.01, 2)
         if (

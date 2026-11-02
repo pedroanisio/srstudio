@@ -528,6 +528,38 @@ def test_each_series_defaults_to_its_own_stage_and_remote(tool):
     assert tool.remote_of("news") == "gdrive:srstudio/pilots/news"
     assert tool.stage_of("host") == Path("generated/pilots/host")
     assert tool.remote_of("host") == "gdrive:srstudio/pilots/host"
+    assert tool.stage_of("smallprint") == Path("generated/pilots/smallprint")
+    assert tool.remote_of("smallprint") == "gdrive:srstudio/pilots/smallprint"
+
+
+def no_real_rclone(monkeypatch, tool) -> Runner:
+    """A recorder in place of rclone, and the real process runner made to fail the test if anything reaches it."""
+
+    def refuse(cmd, *_, **__):
+        raise AssertionError(f"a test reached the real process runner: {cmd!r}")
+
+    runner = Runner()
+    monkeypatch.setattr(tool.outbox, "_run", runner)
+    monkeypatch.setattr(subprocess, "run", refuse)
+    return runner
+
+
+def test_the_real_runner_cannot_be_reached_once_it_is_guarded(tool, monkeypatch):
+    no_real_rclone(monkeypatch, tool)
+    with pytest.raises(AssertionError, match="real process runner"):
+        subprocess.run(["rclone", "version"], check=False)
+    assert tool.outbox._run is not subprocess.run
+
+
+def test_smallprint_stages_in_its_own_folder_and_stage_only_calls_no_rclone(tool, world, monkeypatch):
+    runner = no_real_rclone(monkeypatch, tool)
+    argv = args(world, "--series", "smallprint", "--stage-only", "--rclone", str(world / "no-such-rclone"))
+    argv[argv.index("--stage") + 1] = str(world / "generated/pilots/smallprint")
+    assert tool.main(argv) == 0
+    assert runner.calls == []
+    staged = world / "generated/pilots/smallprint"
+    assert (staged / "the-tell/the-tell.mp4").is_file() and (staged / tool.MANIFEST).is_file()
+    assert not (world / "generated/pilots/mind").exists()
 
 
 @pytest.mark.parametrize(
@@ -661,7 +693,7 @@ def both_scored(world: Path, author: int = 15, reviewer: int = 14) -> None:
 
 def test_only_news_and_host_owe_the_floor(tool):
     assert set(tool.SERIES) - tool.NOT_COMEDY == {"news", "host"}
-    assert tool.NOT_COMEDY == {"mind", "maps"}
+    assert tool.NOT_COMEDY == {"mind", "maps", "smallprint"}
 
 
 def test_scored_news_stages_in_its_own_folder_pushes_to_its_own_remote_and_reads_only_ignore(tool, world, monkeypatch):
@@ -727,7 +759,7 @@ def test_a_drive_that_cannot_be_read_clears_no_short_pilot(tool, world, monkeypa
     assert not (world / "generated/pilots").exists()
 
 
-@pytest.mark.parametrize("series", ["mind", "maps"])
+@pytest.mark.parametrize("series", ["mind", "maps", "smallprint"])
 @pytest.mark.parametrize("lines", [(), ("comedy-author: 2", "comedy-reviewer: 2"), ("comedy-author: nonsense",)])
 def test_mind_and_maps_are_exempt_whatever_their_notes_say(tool, world, monkeypatch, series, lines):
     scored(world, "the-tell", *lines)

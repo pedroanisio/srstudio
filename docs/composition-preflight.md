@@ -905,6 +905,84 @@ validation, verifies actual payloads and compiles the result. Input and result
 messages use closed, bounded JSON with base64 bytes; executable Python objects
 are never deserialized.
 
+## Author vector form lighting
+
+Attach `FormSurface` records to a vector binding to use the scene's `LightRig`.
+Each source shape needs exactly one field: `diffuse` selects an authored palette
+color, while `ink` preserves the original fill and stroke, including existing
+`brush.crescent` shapes. A field names the source shape ID before placement
+namespacing. Native information belongs in a separate screen information layer.
+
+```python
+from srstudio import composition as c
+
+source = c.VectorSource("face", (
+    '<scene version="1.1"><project width="64" height="64" fps="24" duration="1"/>'
+    '<composition><shape id="cheek" shape="rect" x="-10" y="-10" '
+    'width="20" height="20" fill="#d09050"/></composition></scene>'
+).encode())
+surfaces = (c.FormSurface(
+    "cheek", ("#503020", "#d09050"), albedo="#d09050",
+    point=(0, 0, 0), normal=(0, 0, 1),
+),)
+binding = c.AssetBinding(
+    "face", "candidate.lit-cheek", 1, "vector",
+    c.Bounds((-10, -10, 0), (10, 10, 0)), nodes=16,
+    memory_bytes=65536, duration=1, forms=surfaces,
+    candidate=c.CandidateSource("toon", c.vector_source_digest(source, forms=surfaces)),
+)
+spec = c.ScenePlan(
+    c.StylePin("toon", c.style_revision("toon")), 64, 64, c.FrameRate(),
+    1, 7, "meter", c.CameraSpec(origin=(32, 32), scale=1),
+    c.LightRig("lit", (c.LightSpec("key", "directional", "#ffffff", 1, yaw=180),)),
+    (c.LayerSpec("face", "face", 1, c.TemporalPolicy(0, 1)),), c.RenderBudget(),
+)
+plan = c.preflight(spec, (binding,), purpose="candidate-review")
+lit = c.form_lighting(plan, "face", source_time=0)[0]
+compiled = c.compile_scene(plan, (source,))
+assert lit.color == "#d09050"
+```
+
+Points and unit normals are authored in binding asset space. The complete layer
+parent transform moves points and rotates normals once; camera motion changes
+projection, not the world light direction. The host derives these fields from
+the same pose samples used to draw the shape. The compiler cannot infer a face's
+normal from its outline or prove that host metadata matches a rig. Its existing
+frontal vector camera envelope remains enforced; a field does not add new views.
+
+`form_lighting` returns immutable world points, normals, RGB irradiance and
+selected colors without drawing or writing files. Diffuse input fills must be
+solid `#RRGGBB`; palettes contain two to sixteen explicit colors. The adapter
+decodes sRGB albedo, palette and light colors to linear RGB. Ambient energy is
+its intensity. Directional energy is intensity times the positive cosine between
+the surface normal and the direction toward the light. Sphere-area energy uses
+the center direction with `intensity * (radius / distance)**2` attenuation;
+points inside or on the emitter are refused. This is an analytic approximation,
+not the plate renderer's path-traced result. Multiply summed energy by linear
+albedo and exposure, then choose the closest palette entry in squared linear
+RGB distance. Equal distances select the first authored entry. Output colors
+always come from the palette; strokes are retained. Cross-backend intensity
+calibration and temporal band review remain part of the style proof.
+
+For moving fields, supply `FormKey` points/normals on the complete source clock.
+Keys begin at zero with the surface's initial values and stay within its declared
+duration. An outgoing `hold` changes exactly at the next key; `linear` interpolates
+points and normalizes the interpolated normals. Antipodal linear normals require
+an intermediate authored key. `scene_motion.plan_scene` maps these keys through
+the layer's source offset and rate, samples changing intervals at output frame
+times, and preserves exact off-grid key boundaries. Adjacent spans coalesce only
+when their selected colors and existing scene/visibility/raster state agree.
+No temporal filter, hidden noise, or inferred easing is added.
+
+Use `compile_timeline` or `emit_timeline` for keyed fields, including held ones;
+static compilation refuses them. All routes validate the recipe again inside
+the bounded worker. Fields are limited to 256 per binding, share the manifest
+graph and timeline sample bounds, contribute to source memory accounting, and
+are included in candidate content hashes. Hashes for sources without fields
+remain unchanged. Form shading does not cast shadows, supply receivers, apply
+a world finish, or establish emotional or biomechanical quality. Those contracts
+and the complete hybrid adoption proof remain open.
+
 ## Native text and pinned fonts
 
 Keep captions as native `<text>` assets when composing information layers.

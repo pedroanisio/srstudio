@@ -11,6 +11,7 @@ from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from ._motion_interpolation import smooth
+from ._wrist_rotation import controls
 from .constraints import hand_pose, reach
 from .errors import LimbError
 from .math3d import Quaternion, Vec3, bounded
@@ -111,13 +112,7 @@ def pose(
     arm = reach(profile, goal, pole=pole, policy=motion.reach_policy)
     if orientation is not None:
         relative = orientation if local_orientation else arm.frame.rotation.inverse() * orientation
-        x, y, z = (relative.rotate(v) for v in (Vec3(1, 0, 0), Vec3(0, 1, 0), Vec3(0, 0, 1)))
-        control = replace(
-            control,
-            wrist_flex=math.asin(max(-1, min(1, -z.y))),
-            wrist_deviation=math.atan2(x.y, y.y),
-            forearm_twist=math.atan2(z.x, z.z),
-        )
+        control = controls(relative, control, profile)
     for name, limit in (
         ("wrist_flex", profile.flex_limit),
         ("wrist_deviation", profile.deviation_limit),

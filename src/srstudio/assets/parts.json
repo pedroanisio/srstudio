@@ -13913,6 +13913,125 @@
           }
         }
       ]
+    },
+    "smallprint-tower": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-02",
+          "note": "A clay stepped tower with a penny on top, falling past it in three tumbles and landing, as replacement plates on Rafa's worktop. First drawn for Small Print's penny-drop pilot.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5908ac7a543fce4624625149acc0975e1236cb63004d452fef7b3104c5777f5c",
+          "rig": null
+        }
+      ]
+    },
+    "smallprint-paper": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-02",
+          "note": "A sheet on his worktop folded 1 to 7 times, each fold half the size and twice as thick, as replacement plates. First drawn for Small Print's paper-fold pilot.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ae229d737e9dd71b8f5ab4b80010020225ac61540fdae8652cc47727722b6153",
+          "rig": null
+        }
+      ]
+    },
+    "smallprint-roll": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-02",
+          "note": "A tissue roll on his worktop whose sheet runs out of frame at the left, on a path-traced plate. First drawn for Small Print's paper-fold pilot.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "fcda5439cb80820586ce0076cc281573c7f35e80d0764676df61d44af67c15f4",
+          "rig": null
+        }
+      ]
+    },
+    "smallprint-onion": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-02",
+          "note": "An onion on a board under a knife in his fist, whole, halved or chopped, knife up or down, as replacement plates. First drawn for Small Print's onion-tears pilot.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "b067d7c983966ab22b28c6650a090b14dabebba2babe8ab348a743d4d4da1618",
+          "rig": null
+        }
+      ]
+    },
+    "smallprint-tears": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-02",
+          "note": "Two runs of tear beads on Rafa's cheeks, cut as a patch against his pose plate; nothing else about him changes. First drawn for Small Print's onion-tears pilot.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "deb5a259e3cc115860e165b4e838935a79f74b326e2068153b10d1e82906fa72",
+          "rig": null
+        }
+      ]
+    },
+    "smallprint-card": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-02",
+          "note": "Small Print's typed-question card: ink on paper with a search-box rule, at the top of the first and last beats. First drawn for the Small Print pilots.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "409420a610d37802e8a18909686fe3155cd88462bc5c8fcb73e25e4c70e05ea4",
+          "rig": null
+        }
+      ]
+    },
+    "smallprint-stamp": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-02",
+          "note": "Small Print's finding stamp: a red tilted stamp line with its source printed under it, landing on a paper panel. First drawn for the Small Print pilots.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "33d0b0ffddb36479487ff45cc1c1a89c0be33a72627ddbd941d8b48da0e2392f",
+          "rig": null
+        }
+      ]
     }
   }
 }
