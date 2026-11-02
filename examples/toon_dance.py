@@ -390,6 +390,10 @@ v1.</p>
 <h2>O que julgar</h2>
 <ul>
 <li>Em repouso: os braços da dança ao lado dos da v2 aprovada. Devem ser praticamente iguais.</li>
+<li>As patas na mesa: o cão inteiro desce e sobe a cada batida (o balanço medido, cerca de 0,38 raio de cabeça de
+pico a pico), e os braços descem com ele. Na descida as patas em repouso ficam atrás da borda da mesa e só aparecem na
+subida. Os braços seguem o esqueleto sem nenhuma correção; prender as patas na mesa seria mudar o movimento do
+esqueleto, e isso fica para a sua decisão.</li>
 <li>Compassos 5 a 8: o braço esquerdo levantado ainda parece o braço da v2, saindo de dentro do corpo, com a pata
 desenhada sobre o lado da cabeça; ele acompanha o corpo sem atraso.</li>
 <li>Compassos 13 e 14, o braço bombeando: quando o antebraço aponta para a câmera ele fica curto na tela. Veja se
