@@ -34,7 +34,7 @@ MAX_SAMPLES = 20_000
 
 
 def parse_body(data: object) -> BodyScore:
-    """Decode srstudio.body/1.0.0 without coercion; compile_body validates support."""
+    """Decode srstudio.body/1.0.0 or 1.1.0 without coercion; compile_body validates support."""
     from ._body_parse import parse
 
     return parse(data)
@@ -59,7 +59,7 @@ class BodyPlan:
 
         return {
             'schema': 'srstudio.body-plan/1.0.0',
-            'score_schema': 'srstudio.body/1.0.0',
+            'score_schema': 'srstudio.body/1.1.0',
             'units': {'distance': 'meters', 'time': 'seconds', 'angle': 'radians'},
             'axes': {'x': 'right', 'y': 'down', 'z': 'anatomical forward; camera convention toward viewer'},
             'clock': 'original performance seconds',

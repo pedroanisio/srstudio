@@ -56,6 +56,17 @@ masses sit at segment midpoints; foot masses sit at sole origins; the torso mass
 sits 45% of the torso height above the root. These weights do not adapt to a heavy
 prop or independently moving arms.
 
+`shoulder_width` is the full left-to-right distance between shoulder joint centers, independent of `hip_width`.
+Supply it when adapting a canonical rig: shoulders are placed at ±`shoulder_width / 2` in the torso frame, then
+rotated with the torso. Omitting it (Python `None`) retains the stylized default of `1.5 * hip_width`. In JSON,
+omit the field to request that default; explicit widths are finite numbers in 0.01–2 meters.
+
+`foot_width` is the full width of **one sole**, not the distance between the two feet. The stance's `FootAnchor`
+origins determine the distance between feet. Each support rectangle spans ±`foot_width / 2`, from `-heel` to `toe`
+in its sole frame; both drawing and support calculations use those same dimensions. A joint-center table does
+not specify sole width by itself. Carry sole dimensions from the authored foot geometry instead of deriving them
+from hip spacing. Changing `shoulder_width` does not change sole width, stance or the mass proxy.
+
 The projected mass must remain inside the convex hull of planted sole rectangles,
 with the profile's minimum margin. Moving the root without first shifting support
 can raise `body.support`; excessive reach, bend or twist raises `body.joint`.
@@ -99,7 +110,8 @@ Limits are 600 seconds, 1–120 validation samples/second, 1,000 root keys or st
 and 20,000 estimated validation samples. Bounds are cumulative, so a long score
 may require a lower validation rate.
 
-The `srstudio.body/1.0.0` JSON schema accepts `duration`, `roots`, `stance`, optional
+The `srstudio.body/1.1.0` JSON schema adds explicit `profile.shoulder_width`; the reader also accepts `1.0.0`
+documents without that field. Both schemas accept `duration`, `roots`, `stance`, optional
 `steps`, `profile` and `validation_hz`. A frame is an object with `origin: [x,y,z]`
 and optional `rotation: [w,x,y,z]`; a root key has `time`, `root` and optional
 `torso: [w,x,y,z]`. Stance entries have `side` and `frame`; steps have `side`,
