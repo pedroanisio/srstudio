@@ -354,7 +354,7 @@ def _from_start(keys: list[tuple[float, float]]) -> list[tuple[float, float]]:
     return [(0.0, v0 + (v1 - v0) * -t0 / (t1 - t0)), *later]
 
 
-def _check_app(title: str, rows: Sequence[AppRow], progress, stars, take: Take) -> None:
+def _check_app(title: str, rows: Sequence[AppRow], progress, stars, take: Take) -> int:
     if not (title.strip() and len(title) <= TITLE_MAX):
         raise MeterError(f"the title is 1 to {TITLE_MAX} characters, got {title!r}")
     if len(rows) > ROWS_MAX:
@@ -381,6 +381,11 @@ def _check_app(title: str, rows: Sequence[AppRow], progress, stars, take: Take) 
         last = stars + (STARS - 1) * STAR_STEP
         if not (checks.number(stars) and 0 <= stars and last <= take.duration):
             raise MeterError(f"the stars light within the take (0..{take.duration}), from {stars} to {last}")
+    content = len(rows) * (ROW_H + ROW_GAP) + (64 if progress is not None else 0) + (88 if stars is not None else 0)
+    available = BODY[3] - BEZEL - CHIN - HEADER
+    if content + 24 > available:
+        raise MeterError(f"the form does not fit the screen: {content} px plus 24 px margin in {available} px")
+    return content
 
 
 def _star(cx: float, cy: float, r: float) -> str:
@@ -410,8 +415,10 @@ def app_screen(
     stars: float | None = None,
 ):
     """The phone of :mod:`srstudio.ink_phone` with ``title`` in its bar, ``rows`` stacked from the top, a bar that
-    fills over ``progress`` (``(start, end)``) under them, and five stars lit from ``stars`` on."""
-    _check_app(title, rows, progress, stars, take)
+    fills over ``progress`` (``(start, end)``) under them, and five stars lit from ``stars`` on.
+    The content must fit the glass: up to five rows alone, four with a bar or stars, or three with both.
+    Overflow is refused before drawing."""
+    content = _check_app(title, rows, progress, stars, take)
     x0, y0, w, h = BODY
     sx, sy, sw_, sh = x0 + BEZEL, y0 + BEZEL, w - 2 * BEZEL, h - BEZEL - CHIN
     g = group(cv, parent)
@@ -420,7 +427,6 @@ def app_screen(
     path(cv, g, _box(sx, sy, sw_, sh, 30), cv.white, sw=2.5)
     path(cv, g, _box(sx, sy, sw_, HEADER, 30), cv.ink, sw=0)
     _text(cv, g, title, sx, sy, sw_, HEADER, 48, cv.white)
-    content = len(rows) * (ROW_H + ROW_GAP) + (64 if progress is not None else 0) + (88 if stars is not None else 0)
     y = sy + HEADER + max(24.0, (sh - HEADER - content) / 2)  # the form sits in the middle of the screen
     for r in rows:
         row = group(cv, g)

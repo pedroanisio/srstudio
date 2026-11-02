@@ -1098,6 +1098,30 @@
   ],
   "findings": [
     {
+      "id": "SDK-P1-19",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Reject Ink app forms that overflow their phone glass",
+      "problem": "The row-count check accepted six rows and combinations of rows, progress and stars that extended below the glass.",
+      "resolution": "Compute content height during preflight, require room for the minimum top margin, and reuse that measurement in rendering. Fitting forms retain their existing layout.",
+      "verification": [
+        "tests/test_ink_meter.py:test_app_refuses_content_that_overflows_the_phone_before_drawing",
+        "tests/test_ink_meter.py:test_app_keeps_largest_fitting_forms_inside_the_glass"
+      ],
+      "acceptance": [
+        "Overfull forms fail before scene mutation on both Canvas clocks",
+        "Five rows alone, four with either progress or stars, and three with both still fit"
+      ],
+      "verification_summary": {
+        "red": 8,
+        "passed": 94,
+        "new_cases": 12,
+        "skipped": 0,
+        "branch_inclusive_module_coverage_percent": 100.0,
+        "retained_artifacts": "../generated/sdk-ink-app-layout/v1/"
+      }
+    },
+    {
       "id": "SDK-P1-18",
       "priority": "P1",
       "status": "complete",
