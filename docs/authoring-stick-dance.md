@@ -77,6 +77,12 @@ and perform from that time.
 An arm held past horizontal does not take a dance's shrug: its side's `shoulder.*` channels fade to `SHRUG_RAISED` at
 `RAISED_FULL`, so a raised hand rides the body as the head does instead of swinging further.
 
+`draw(..., swing=SWING)` draws each limb and the body line as one curve through its joints that bows against the
+way they travel, so a moving arm reads as swinging. `SWING` is `stick.Swing()`: a drag of 0.1 s of the joints' speed,
+capped at 0.3 of a bone. Pass your own `stick.Swing(drag=..., cap=...)` (drag 0..0.5 s, cap 0..0.5) for more or less.
+The curves pass through the joints, so a gesture keeps the skeleton's timing and acceleration. Without `swing` the
+bones are straight.
+
 `EXPRESSIONS` names the faces a phrase can hold: `neutral`, `smile`, `grin`, `eyes-closed`, `smirk`, `cool` and
 `surprised`. Any other name raises `ExpressionError`. A held `head` or `neck` `turn_left_right` or `nod_down_up` in an
 entry's `hold` turns the face's look for that phrase.

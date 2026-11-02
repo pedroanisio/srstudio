@@ -97,6 +97,8 @@ __all__ = [
     "forearm",
     "reaching",
     "rig",
+    "Swing",
+    "check_swing",
     "between",
     "camera",
     "card",
@@ -1154,6 +1156,126 @@ def _limb(cv: Canvas, parent, points: Sequence[Point], width: float):
     return shape(cv, parent, d, sw=width, stroke=cv.ink)
 
 
+@dataclass(frozen=True)
+class Swing:
+    """Curved, dragging limbs for :func:`rig`. Each arm (shoulder, elbow, hand), each leg (hip, knee, foot) and the
+    body line (under the head, neck, hip) is one smooth curve through its joints instead of straight bones, and the
+    curve bows against the way its joints travel, so a moving limb trails like a swung rope.
+
+    ``drag`` is in seconds: a curve handle moves off its bone by ``drag`` times the speed across the bone of the
+    joints it sits between (pixels a second, from the neighbouring keys). ``cap`` bounds that move to a share of the
+    bone's length, so a fast move bends a limb and never knots it; a curve bows at most three quarters of it."""
+
+    drag: float = 0.1
+    cap: float = 0.3
+
+
+SWING_DRAG_MAX = 0.5  # seconds: more trails a limb by over a beat at dance tempo, a lag the keys do not have
+SWING_CAP_MAX = 0.5  # a handle half a bone off its line bends the bone into a hook
+
+
+def check_swing(swing: Swing) -> None:
+    """A swing the rig can draw: ``drag`` in 0..:data:`SWING_DRAG_MAX` s and ``cap`` in 0..:data:`SWING_CAP_MAX`."""
+    if not isinstance(swing, Swing):
+        raise StickDataError(f"swing must be a stick.Swing or None, got {type(swing).__name__}")
+    if not (_is_number(swing.drag) and 0 <= swing.drag <= SWING_DRAG_MAX):
+        raise StickDataError(f"swing drag must be 0..{SWING_DRAG_MAX} seconds, got {swing.drag!r}")
+    if not (_is_number(swing.cap) and 0 <= swing.cap <= SWING_CAP_MAX):
+        raise StickDataError(f"swing cap must be 0..{SWING_CAP_MAX} of a bone, got {swing.cap!r}")
+
+
+def _joints(pose: RigPose) -> dict[str, Point]:
+    """``pose``'s joints by name: ``*0`` is the far side and ``*1`` the near."""
+    named = {"head": pose.head, "neck": pose.neck, "hip": pose.hip}
+    for part, pair in (("knee", pose.knees), ("foot", pose.feet), ("elbow", pose.elbows), ("hand", pose.hands)):
+        named.update({f"{part}0": pair[0], f"{part}1": pair[1]})
+    return named
+
+
+def _motion(poses: Sequence[RigPose], times: Sequence[float]) -> list[dict[str, Point]]:
+    """Each pose's joint velocities in pixels a second, from its neighbours (one-sided at the ends; still for a single
+    pose). A long hold between two keys spreads their difference over the hold, so a held pose barely drags."""
+    named = [_joints(p) for p in poses]
+    out: list[dict[str, Point]] = []
+    for i, here in enumerate(named):
+        a, b = max(i - 1, 0), min(i + 1, len(named) - 1)
+        dt = times[b] - times[a]
+        out.append(
+            {
+                k: ((named[b][k][0] - named[a][k][0]) / dt, (named[b][k][1] - named[a][k][1]) / dt) if dt else (0, 0)
+                for k in here
+            }
+        )
+    return out
+
+
+def _curve(points: Sequence[Point], speeds: Sequence[Point], swing: Swing, before: Point | None = None) -> str:
+    """A path through ``points`` as cubic curves (Catmull-Rom tangents, ``before`` steering the first one), each
+    handle moved across its bone against the joints' travel by :class:`Swing`'s drag, within its cap. At a joint
+    inside the path both handles then turn onto one line, so the curve bends there without a kink."""
+    ext = [before if before is not None else points[0], *points, points[-1]]
+    segments: list[list[list[float]]] = []
+    for i in range(len(points) - 1):
+        p0, p1, p2, p3 = ext[i], ext[i + 1], ext[i + 2], ext[i + 3]
+        handles = [
+            [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6],
+            [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6],
+        ]
+        bone = math.dist(p1, p2)
+        if bone > EPSILON:
+            across = (-(p2[1] - p1[1]) / bone, (p2[0] - p1[0]) / bone)
+            v1, v2 = speeds[i], speeds[i + 1]
+            for handle, near in zip(handles, (2 / 3, 1 / 3), strict=True):
+                v = (v1[0] * near + v2[0] * (1 - near), v1[1] * near + v2[1] * (1 - near))
+                bow = -swing.drag * (v[0] * across[0] + v[1] * across[1])
+                bow = max(-swing.cap * bone, min(swing.cap * bone, bow))
+                handle[0] += across[0] * bow
+                handle[1] += across[1] * bow
+        segments.append(handles)
+    for j in range(1, len(points) - 1):  # the joint between segment j - 1 and segment j
+        (px, py), into, out = points[j], segments[j - 1][1], segments[j][0]
+        a, b = (px - into[0], py - into[1]), (out[0] - px, out[1] - py)
+        la, lb = math.hypot(*a), math.hypot(*b)
+        if la > EPSILON and lb > EPSILON:
+            ux, uy = a[0] / la + b[0] / lb, a[1] / la + b[1] / lb
+            lu = math.hypot(ux, uy)
+            if lu > EPSILON:
+                ux, uy = ux / lu, uy / lu
+                into[0], into[1] = px - ux * la, py - uy * la
+                out[0], out[1] = px + ux * lb, py + uy * lb
+    d = f"M {points[0][0]:.1f} {points[0][1]:.1f}"
+    for ((ax, ay), (bx, by)), (ex, ey) in zip(segments, points[1:], strict=True):
+        d += f" C {ax:.1f} {ay:.1f} {bx:.1f} {by:.1f} {ex:.1f} {ey:.1f}"
+    return d
+
+
+def _curved_body(cv: Canvas, parent, pose: RigPose, speed: Mapping[str, Point], swing: Swing, look: Look,
+                 omit_arms: frozenset[str]) -> None:  # fmt: skip
+    """:func:`_body` with each limb and the body line one dragging curve; the feet and the tie stay as drawn."""
+    shoulder = (pose.neck[0] - 4, pose.neck[1] + 34)
+    for i, width in ((0, LIMB_FAR), (1, LIMB)):
+        knee, foot = pose.knees[i], pose.feet[i]
+        leg = _curve([pose.hip, knee, foot], [speed["hip"], speed[f"knee{i}"], speed[f"foot{i}"]], swing)
+        shape(cv, parent, f"{leg} L {foot[0] + 46:.1f} {foot[1] + 4:.1f}", sw=width, stroke=cv.ink)
+        if ("left" if i == 0 else "right") not in omit_arms:
+            arm = [shoulder, pose.elbows[i], pose.hands[i]]
+            shape(cv, parent, _curve(arm, [speed["neck"], speed[f"elbow{i}"], speed[f"hand{i}"]], swing), sw=width,
+                  stroke=cv.ink)  # fmt: skip
+        if i == 0:
+            if look.neck:
+                line = [_under_head(pose), pose.neck, pose.hip]
+                speeds = [speed["head"], speed["neck"], speed["hip"]]
+            else:
+                line, speeds = [pose.neck, pose.hip], [speed["neck"], speed["hip"]]
+            shape(cv, parent, _curve(line, speeds, swing, before=pose.head), sw=LIMB, stroke=cv.ink)
+            if look.apron is not None:
+                bib, strap = _apron(pose.neck, pose.hip)
+                shape(cv, parent, strap, sw=5, stroke=cv.ink)
+                shape(cv, parent, bib, look.apron, sw=4, stroke=cv.ink)
+            if look.tie is not None:
+                shape(cv, parent, _tie(pose.neck, pose.hip), look.tie, sw=4, stroke=cv.ink)
+
+
 def _body(
     cv: Canvas,
     parent,
@@ -1387,6 +1509,14 @@ _RIG_KEY_FIELDS = (('start', cc.seconds('canvas', 'start')), ('face', cc.P(field
                     'every picture keeps its face and blinks; off draws one face per key.'
                 ),
             ),
+            (
+                'swing',
+                cc.P(
+                    description='A stick.Swing(drag seconds 0..0.5, cap 0..0.5 of a bone) draws each limb and the '
+                    'body line as one curve through its joints, bowed against their travel; None (the default) '
+                    'draws straight bones.'
+                ),
+            ),
             ('phones', cc.P(description='Character timestamps relative to the shot start; start/end use seconds.')),
             (
                 'poses',
@@ -1425,6 +1555,7 @@ def rig(
     mouth: PhonemeStyle = INK_MOUTH,
     limbs: tuple[LimbTrack, ...] = (),
     held_faces: bool = False,
+    swing: Swing | None = None,
 ):
     """The Stick style's drawn figure: ink limbs posed per key, a round head dressed by ``look``, eyes, brows and a
     phoneme mouth speaking ``phones`` (character timings relative to the shot) under the ``mouth`` model
@@ -1436,9 +1567,13 @@ def rig(
     Keys hold (12 fps cartoon timing, no tweening); :func:`check_keys` refuses a performance it cannot draw and
     :func:`check_look` a look. ``held_faces`` draws one face for each run of neighbouring keys with an equal face,
     so a body keyed every picture (a dance) holds its face and blinks inside it; off, every key draws its
-    own face, as published figures were drawn."""
+    own face, as published figures were drawn. ``swing`` (a :class:`Swing`) draws each limb and the body line as one
+    curve through its joints that drags against their travel; without it the bones are straight, as published
+    figures were drawn."""
     if not isinstance(held_faces, bool):
         raise StickDataError(f"held_faces must be True or False, got {held_faces!r}")
+    if swing is not None:
+        check_swing(swing)
     check_keys(keys, end, poses)
     check_look(look)
     if not (_is_number(scale) and scale > 0):
@@ -1465,9 +1600,14 @@ def rig(
         g.x, g.y, g.scaleX, g.scaleY = at[0], at[1], -scale if flip else scale, scale
     behind = _group(cv, g) if limbs else None
     spans = _spans(keys, end)
-    for k, a, b in spans:
+    if swing is not None:
+        motion = _motion([poses[k.pose] for k, _, _ in spans], [a for _, a, _ in spans])
+    for j, (k, a, b) in enumerate(spans):
         body = _group(cv, g)
-        _body(cv, body, poses[k.pose], look.tie, look.apron, sides, look.neck)
+        if swing is None:
+            _body(cv, body, poses[k.pose], look.tie, look.apron, sides, look.neck)
+        else:
+            _curved_body(cv, body, poses[k.pose], motion[j], swing, look, sides)
         _gate(cv, body, a, b, end)
     limb_body = _group(cv, g) if limbs else None
     hx, hy = poses[keys[0].pose].head

@@ -59,7 +59,25 @@ inside a beat.
 - **`stick.rig(held_faces=True)`.** The rig drew one face for every key and placed a blink only inside a key's span, so
   a body keyed every 0.04 s would draw a face a picture and never blink. The rig now takes `held_faces`. With it, a run
   of neighbouring keys with an equal face draws one face, one lips position and one blink track. The default is
-  `False`, and published figures draw byte for byte as before (tested). This is the only change to `stick.py`.
+  `False`, and published figures draw byte for byte as before (tested).
+- **Curved, dragging limbs: `stick.rig(swing=...)`.** Straight bones made a dance read as dry: the reference reel's
+  arms and body line are curved strokes that bend and drag with the motion. With a `stick.Swing`, each arm (shoulder,
+  elbow, hand), each leg (hip, knee, foot) and the body line (under the head when the look has a neck, neck, hip) is
+  one cubic curve through its joints with Catmull-Rom tangents; the body line's first tangent follows the head, so a
+  head that leans bends the spine. Each curve handle then moves across its bone against the joints' travel by `drag`
+  seconds of their speed (from the neighbouring keys, so a long hold barely drags), at most `cap` of the bone. At a
+  knee or elbow both handles turn onto one line, so the curve bends there without a kink. The feet, the tie and the
+  apron stay as drawn. `check_swing` refuses a `drag` outside 0..0.5 s or a `cap` outside 0..0.5. `None` (the
+  default) draws the straight bones, and published figures draw byte for byte as before (pinned digests in the test).
+  `stick_dance.draw(swing=SWING)` turns it on for a dance; `SWING` is `Swing()`, a drag of 0.1 s capped at 0.3 of a
+  bone. These are the only changes to `stick.py`.
+- **The drag never moves a joint.** The curves pass through the joints the skeleton put there, picture by picture, so
+  a gesture keeps its timing and acceleration: the drawing bends the limb between the joints and does not delay,
+  smooth or resample the hand. A test measures each hand's speed and acceleration over a beat of `arm-pump`, `clap`
+  and `hand-wave-side` on the skeleton's forward kinematics and on the drawn strokes, with swing off, at `SWING` and at
+  the largest drag and cap. They agree within the path's 0.1 px rounding (3 px/s and 130 px/s² allowed; measured at
+  most 2.4 px/s and 97 px/s² against peaks of 1,693 px/s and 28,962 px/s²), and the fastest picture is the same one.
+  The test fails on all six curved cases when the drawing lags one picture.
 - **The groove is checked on the drawing.** `StickDance.track("head", "up")` and `track("hip", "right")` give the
   drawn positions in head radii. `SEAT_GROOVE_BOB` and `SEAT_GROOVE_SWAY` must find no miss on them. The test reads
   rendered frames too: `head_centroids` decodes the engine's PNGs with ffmpeg and takes the centre of the skin pixels,
@@ -93,6 +111,13 @@ low point within 5 ms of the beat and its sideways extreme within 3 ms (0.38 and
   figure that is not the cast.
 - **Keep one face per key.** That gives 25 face drawings a second, and blinks could never land, because a blink needs
   more than its 0.14 s inside one span.
+- **Swing by tweening or smoothing the joints.** Easing the hand toward its next position, or filtering the joint
+  tracks, reads as follow-through but moves the hand late and softens its stops: it changes the gesture's speed and
+  acceleration. Lag and overshoot belong in the motion, measured, not in the drawing.
+- **Bow each bone on its own.** With the upper arm and forearm bowed separately, the curve broke at the elbow: a kink
+  where the two bows met, visible on the proof frames.
+- **Let the curve pass near the elbow instead of through it.** One bow from shoulder to hand reads like a rope, but
+  the drawn elbow would leave the skeleton's, so the drawing would stop being the dance it was measured on.
 - **Plant the feet in `dance_pose`.** Contacts are the body's job, and the skeleton module is shared by every style.
   The adapter plants in its own pass and reports what it could not reach.
 
@@ -107,5 +132,8 @@ low point within 5 ms of the beat and its sideways extreme within 3 ms (0.38 and
   by 0.44 head radius at intensity 1 and meets at 0.75, and `point-up` clears the crown by 0.74 head radius.
 - A held raised arm keeps its height through a shrug, so a shoulder move (seat-groove, bounce, shoulder-roll,
   shoulder-shimmy) under a raised arm moves only the arm that hangs.
+- With `SWING`, a limb at rest is a gentle curve through its joints and a moving one bends against its travel, by
+  up to about a fifth of a bone at the car's seat-groove speeds and up to the cap in arm-pump. The head and hip numbers
+  above do not change, because the joints do not move.
 - The non-seat presets have no measured reference. Their numbers in the study are readings, not targets.
 - Nothing merges on a look until the operator approves the proof clip.

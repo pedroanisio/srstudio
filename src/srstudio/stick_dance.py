@@ -35,7 +35,7 @@ from .errors import SrstudioError
 from .limbs import Camera
 from .limbs.math3d import Vec3
 from .music import Groove
-from .stick import HEAD_R, PLAIN, SKIN, SKIN_SHADE, STANDING, Face, Look, RigKey, RigPose, check_face, rig
+from .stick import HEAD_R, PLAIN, SKIN, SKIN_SHADE, STANDING, Face, Look, RigKey, RigPose, Swing, check_face, rig
 
 __all__ = [
     "EXPRESSIONS",
@@ -46,6 +46,7 @@ __all__ = [
     "SEATED",
     "SHRUG_RAISED",
     "STANDING_BASE",
+    "SWING",
     "ExpressionError",
     "RenderedTrackError",
     "StickDance",
@@ -86,6 +87,9 @@ RAISED_FULL = math.pi / 4
 
 
 PROFILE = sk.preset("stick")  # the Stick cast's bones at stick.HEAD_R pixels to its head radius
+# Curved, dragging limbs for a dance (draw(swing=SWING)): stick.Swing's own defaults, so a dance and any other rig
+# drawn with curves bend alike.
+SWING = Swing()
 
 # Deltas onto the profile's rest pose. Seated: thighs forward onto a seat, shins down to the floor, and the arms out a
 # little with the forearms in toward the lap, as stick_windshield.FRONT's "sit" draws them.
@@ -381,10 +385,13 @@ def draw(
     flip: bool = False,
     blinks: Sequence[float] = (),
     prefix: str = "dance",
+    swing: Swing | None = None,
 ):
     """``performance`` drawn by :func:`stick.rig` from ``begin`` on the shot clock (the time it was performed from,
     unless given) until ``end`` (one picture after its last by default), holding its first picture before ``begin``
-    and its last after the dance; the face is held per phrase and blinks at ``blinks``. Returns the rig's group."""
+    and its last after the dance; the face is held per phrase and blinks at ``blinks``. ``swing`` (a
+    :class:`stick.Swing`, such as :data:`SWING`) draws the limbs and body line as curves that drag against their
+    travel; without it the bones are straight. Returns the rig's group."""
     if not isinstance(performance, StickDance):
         raise StickDanceError(f"draw takes a StickDance from perform, not {type(performance).__name__}")
     poses, keys = performance.keys(begin=begin, prefix=prefix)
@@ -393,7 +400,7 @@ def draw(
     if not (checks.number(finish) and finish > last):
         raise StickDanceError(f"end {end!r} must come after the dance's last picture, at {last} s")
     return rig(cv, parent, keys, finish, poses=poses, look=look, at=at, scale=scale, flip=flip, blinks=blinks,
-               held_faces=True)  # fmt: skip
+               held_faces=True, swing=swing)  # fmt: skip
 
 
 def _size(path: Path) -> tuple[int, int]:
