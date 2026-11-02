@@ -1,9 +1,10 @@
 {
-  "schema": "srstudio.skeleton-joints/1.0.0",
+  "schema": "srstudio.skeleton-joints/1.1.0",
   "srlocations_commit": "be0aabced115e4e885adba380c72f2f63f80959c",
   "srlocations_joints_digest": "88629dcb422eb384692b6c893174a25066573d322d4f81b54c46a24538bf438d",
   "reference_height_m": 1.75,
   "head_radius": 0.06,
+  "sole": {"width": 0.068, "heel": 0.044},
   "joints": [
     {"name": "hips", "parent": null, "side": 0, "region": "torso", "offset": [0.0, -0.55, 0.0], "rest": [1.0, 0.0, 0.0, 0.0], "dofs": [{"name": "right", "kind": "translate", "axis": [1.0, 0.0, 0.0], "low": -5.0, "high": 5.0}, {"name": "up", "kind": "translate", "axis": [0.0, -1.0, 0.0], "low": -2.0, "high": 2.0}, {"name": "forward", "kind": "translate", "axis": [0.0, 0.0, 1.0], "low": -5.0, "high": 5.0}, {"name": "front_back", "kind": "rotate", "axis": [1.0, 0.0, 0.0], "low": -3.14159265359, "high": 3.14159265359}, {"name": "left_right", "kind": "rotate", "axis": [0.0, 0.0, 1.0], "low": -3.14159265359, "high": 3.14159265359}, {"name": "twist_left_right", "kind": "rotate", "axis": [0.0, 1.0, 0.0], "low": -3.14159265359, "high": 3.14159265359}]},
     {"name": "spine", "parent": "hips", "side": 0, "region": "torso", "offset": [0.0, -0.04, 0.0], "rest": [1.0, 0.0, 0.0, 0.0], "dofs": [{"name": "front_back", "kind": "rotate", "axis": [1.0, 0.0, 0.0], "low": -0.698131700798, "high": 0.209439510239}, {"name": "left_right", "kind": "rotate", "axis": [0.0, 0.0, 1.0], "low": -0.209439510239, "high": 0.209439510239}, {"name": "twist_left_right", "kind": "rotate", "axis": [0.0, 1.0, 0.0], "low": -0.209439510239, "high": 0.209439510239}]},

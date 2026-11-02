@@ -23,7 +23,7 @@ reference photographs. Its moves and blocking are written against those names. s
 `srstudio.skeleton` holds one canonical joint table, a per-character profile that resizes and trims it, a pose of
 rotations on it with forward kinematics, and bridges to the records `body` and `limbs` adapters already draw.
 
-### The joint table, schema `srstudio.skeleton-joints/1.0.0`
+### The joint table, schema `srstudio.skeleton-joints/1.1.0`
 
 `src/srstudio/assets/skeleton/humanoid.json` is srlocations' mannequin, read once at srlocations commit
 `4ae2278214de6e704d8dcbab8f293b6a47438483` and converted to srstudio's axes. Its `srlocations_commit` follows
@@ -32,10 +32,11 @@ unchanged (`be0aabc` did):
 
 | Field | Holds |
 |---|---|
-| `schema` | `srstudio.skeleton-joints/1.0.0`; a reader refuses another major |
+| `schema` | `srstudio.skeleton-joints/1.1.0`; a reader refuses another major |
 | `srlocations_commit` | the commit the table was read at |
 | `srlocations_joints_digest` | SHA-256 of `json.dumps([[joint, [control, ...]], ...])` over the joints in order, with `json.dumps`' default separators; srlocations computes the same digest (`88629dcb422eb384...`) |
 | `reference_height_m`, `head_radius` | the mannequin's height (1.75 m) and head radius, as a share of that height |
+| `sole` | `width` and `heel` (1.1.0): the foot's sole across and how far it reaches behind the ankle, as shares of the height, from the foot solid srlocations draws (`Bulk` radii 0.034 across, 0.074 along, centred 0.03 ahead of the ankle); `body_profile` scales them with the foot instead of guessing them from the hips |
 | `joints[]` | `name`, `parent` (the first joint, `hips`, has none), `side` (-1 left, 0 middle, 1 right), `region` (torso, head, arm, leg), `offset` (where it sits on its parent at rest, as a share of the height), `rest` (a unit quaternion `[w, x, y, z]`, which only the thumbs use), `dofs[]`, and `tip` where a bone ends with no child |
 | `dofs[]` | `name`, `kind` (`rotate`, or `translate` on the root only), `axis` (one of +/-x, +/-y, +/-z, on that joint's own side), `low`, `high` (radians, or metres for a translation) |
 

@@ -27,7 +27,7 @@ from ..body import BodyPose, BodyProfile, LegPose
 from ..limbs.math3d import Frame, Quaternion, Vec3
 from ..limbs.model import HUMAN, ArmPose, ArmProfile, DigitPose, DigitProfile, HandControl, HandPose, HandProfile
 from ._errors import SkeletonBridgeError, SkeletonError, SkeletonSchemaError
-from ._joints import BY_NAME, JOINTS, Joint
+from ._joints import BY_NAME, JOINT_TABLE, JOINTS, Joint
 from ._pose import SkeletonPose, _checked, _solved, pose
 from ._profile import FINGERS, HAND_KINDS, SkeletonProfile
 from ._rotation import decompose, turn
@@ -129,13 +129,13 @@ def _torso_height(profile: SkeletonProfile) -> float:
 
 def body_profile(profile: SkeletonProfile) -> BodyProfile:
     """body's anatomy for this character: hip width, thigh, shin, ankle height and foot from its bones, and the torso
-    from the hip joints to the shoulders. The foot is as wide as half the hips with the heel half the toe, since the
-    skeleton has no foot width. body's joint envelopes, stride and speed stay body's defaults. A character too small
-    or large for body's 0.01..2 metre bounds raises body's own BodyError."""
+    from the hip joints to the shoulders. The sole's width and heel are the table's, from srlocations' foot solid,
+    scaled with the foot. body's joint envelopes, stride and speed stay body's defaults. A character too small or large
+    for body's 0.01..2 metre bounds raises body's own BodyError."""
     width = 2 * abs(profile._offset(BY_NAME["right_upper_leg"]).x)
-    toes = BY_NAME["right_toes"]
+    toes, foot = BY_NAME["right_toes"], profile._scale(BY_NAME["right_foot"])
     toe = profile._offset(toes).z + _TOE_REACH * profile._scale(toes)
-    foot_width, heel = width / 2, toe / 2
+    foot_width, heel = JOINT_TABLE.sole_width * foot, JOINT_TABLE.sole_heel * foot
     return BodyProfile(
         hip_width=width,
         thigh=profile._offset(BY_NAME["right_lower_leg"]).length,

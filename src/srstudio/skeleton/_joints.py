@@ -1,6 +1,6 @@
 """The canonical joint table: srlocations' 55 mannequin joints and 103 controls, as data in srstudio's axes.
 
-The table at ``assets/skeleton/humanoid.json`` (schema ``srstudio.skeleton-joints/1.0.0``) was read from srlocations
+The table at ``assets/skeleton/humanoid.json`` (schema ``srstudio.skeleton-joints/1.1.0``) was read from srlocations
 at the commit it records and converted once: offsets keep srlocations' shares of the height with y flipped to point
 down, angles are radians, and each control carries the axis it turns about on its own side, so a mirrored joint
 needs no rule at run time. ``srlocations_joints_digest`` is srlocations' own digest of the joint and control names,
@@ -21,7 +21,7 @@ from ..limbs.math3d import Quaternion, Vec3
 from . import _strict as strict
 from ._errors import SkeletonError, SkeletonSchemaError
 
-JOINTS_SCHEMA = "srstudio.skeleton-joints/1.0.0"
+JOINTS_SCHEMA = "srstudio.skeleton-joints/1.1.0"
 NAME = re.compile(r"[a-z][a-z_]{0,63}")
 COMMIT = re.compile(r"[0-9a-f]{40}")
 DIGEST = re.compile(r"[0-9a-f]{64}")
@@ -87,6 +87,8 @@ class JointTable:
     reference_height_m: float
     head_radius: float
     joints: tuple[Joint, ...]
+    sole_width: float  # the foot's sole across, as a share of the reference height
+    sole_heel: float  # how far the sole reaches behind the ankle, as a share of the reference height
 
     @property
     def pelvis_share(self) -> float:
@@ -187,6 +189,7 @@ def parse_joint_table(data: object) -> JointTable:
         "srlocations_joints_digest",
         "reference_height_m",
         "head_radius",
+        "sole",
         "joints",
     )
     value = strict.fields(data, "table", fields, fields)
@@ -195,6 +198,9 @@ def parse_joint_table(data: object) -> JointTable:
     digest = strict.text(value["srlocations_joints_digest"], "srlocations_joints_digest", DIGEST)
     height = strict.number(value["reference_height_m"], "reference_height_m", 0.1, 10.0)
     head = strict.number(value["head_radius"], "head_radius", 0.001, 1.0)
+    sole = strict.fields(value["sole"], "sole", ("width", "heel"), ("width", "heel"))
+    width = strict.number(sole["width"], "sole.width", 0.001, 1.0)
+    heel = strict.number(sole["heel"], "sole.heel", 0.001, 1.0)
     known: dict[str, Joint] = {}
     for i, row in enumerate(strict.items(value["joints"], "joints", 1, MAX_JOINTS)):
         joint = _joint(row, f"joints[{i}]", known)
@@ -207,7 +213,7 @@ def parse_joint_table(data: object) -> JointTable:
             actual=joints_digest(joints),
             expected=digest,
         )
-    return JointTable(schema, commit, digest, height, head, joints)
+    return JointTable(schema, commit, digest, height, head, joints, width, heel)
 
 
 def read_joint_table(text: str) -> JointTable:

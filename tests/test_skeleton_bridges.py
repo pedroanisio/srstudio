@@ -249,6 +249,15 @@ def test_a_body_profile_carries_the_lengths_body_needs():
     assert sk.body_profile(STICK).toe > 0  # a character with no toes joint still has a foot to stand on
 
 
+def test_a_body_profile_stands_on_the_mannequins_sole():
+    """The sole is srlocations' foot solid: 0.119 m wide and 0.077 m behind the ankle on the 1.75 m mannequin."""
+    real = sk.body_profile(REAL)
+    assert real.foot_width == pytest.approx(0.068 * 1.75) and real.heel == pytest.approx(0.044 * 1.75)
+    assert real.toe == pytest.approx(0.146 * 1.75, abs=1e-6)
+    toon = sk.body_profile(TOON)
+    assert toon.foot_width / real.foot_width == pytest.approx(toon.toe / real.toe)  # a foot scales as one piece
+
+
 def test_an_arm_pose_reads_the_joints_it_names():
     pose = sk.pose(REAL, {"right_upper_arm.down_up": -0.6, "right_lower_arm.stretch": -1.2})
     arm = sk.to_arm_pose(REAL, pose, "right")
