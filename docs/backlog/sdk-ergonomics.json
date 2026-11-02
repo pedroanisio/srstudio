@@ -1271,6 +1271,33 @@
   ],
   "findings": [
     {
+      "id": "SDK-P1-25",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Preflight Gloss set copy, fonts and delegated speech before drawing",
+      "problem": "Activity and waiting-room digits, ticket digits, card layout, hook/notice copy and Sunny speech could fail after allocating scene nodes, effects or IDs. Board failures on later cards retained earlier cards. Missing bound fonts failed only during text emission.",
+      "resolution": "Check all digit strings before set/prop construction; measure every board card with a pure layout helper before emission; require fonts and validate delegated talk before graphics construction. Reuse measured lines and heights when drawing.",
+      "verification": [
+        "tests/test_gloss_set_preflight.py",
+        "tests/test_gloss.py"
+      ],
+      "acceptance": [
+        "Invalid first or later copy and speech leave scene bytes and ID allocation unchanged with either Canvas clock",
+        "Text builders reject a missing bound font before drawing",
+        "Valid drawings preserve geometry, timing and layout"
+      ],
+      "verification_summary": {
+        "red": 34,
+        "new_cases": 34,
+        "passed": 361,
+        "skipped": 0,
+        "unchanged_valid_drawings": 20,
+        "branch_inclusive_module_coverage_percent": 99.69040247678019,
+        "module_branch_coverage_percent": 99.25373134328358,
+        "retained_artifacts": "../generated/sdk-gloss-set-preflight/v1/"
+      }
+    },
+    {
       "id": "SDK-P1-24",
       "priority": "P1",
       "status": "complete",
