@@ -648,6 +648,7 @@ RECIPES: dict[str, Recipe] = {
     "soft-mail-screen": Recipe(part(540.0, 960.0, scale=3.0)),
     "soft-mail-list": Recipe(part(540.0, 960.0, marked=2, scale=3.0)),
     "soft-call-screen": Recipe(part(540.0, 960.0, scale=3.0)),
+    "soft-battery-screen": Recipe(part(540.0, 960.0, scale=3.0)),
 }  # fmt: skip
 RECIPES.update(  # a kit's second version takes the same arguments, so it takes the same recipe
     {

@@ -254,6 +254,29 @@ _CONTRACTS = {
             'Each nonblank count has at most seven characters.',
         ),
     ),
+    'soft-battery-screen': placed(
+        'the center of the phone glass',
+        (
+            'levels',
+            P(
+                items=P(
+                    fields=(
+                        ('percent', P(type=int, minimum=0, maximum=100)),
+                        ('at', TIME),
+                        ('until', TIME),
+                        ('number', P(type=bool)),
+                    )
+                )
+            ),
+        ),
+        constraints=(
+            FONT,
+            'Glass spans local (-65,-130)..(65,130). Ordered nonoverlapping spans gate the charge and its number; '
+            'the empty battery stays drawn through gaps. The charge and number go red at 20 percent and under; a level '
+            'with number False shows its charge alone. '
+            'No status bar: a plain battery over a percentage, copying no real phone.',
+        ),
+    ),
     'soft-mail-list': placed(
         'the center of the phone glass',
         ('scroll', P(items=P(prefix_items=(TIME, LOCAL)))),

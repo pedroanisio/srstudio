@@ -1,8 +1,9 @@
-"""Soft inbox: what a phone's ``screen`` shows of mail and of a call, all of it invented.
+"""Soft inbox: what a phone's ``screen`` shows of mail, of a call and of its own charge, all of it invented.
 
 Each one draws in a phone's glass, the box from (-65, -130) to (65, 130) of :func:`srstudio.soft_props.phone`, and takes
 ``x``, ``y`` and ``scale`` so it can also stand alone. There is no app in any of them: an envelope with a count, a plain
-list of subjects, and a caller over a red and a green button. No name, no address, no logo.
+list of subjects, a caller over a red and a green button, and a percentage over a plain battery, which is no phone's
+status bar. No name, no address, no logo.
 """
 
 from __future__ import annotations
@@ -16,7 +17,7 @@ from .canvas import Canvas
 from .registry import register
 from .soft_props import SoftPropError
 
-__all__ = ["Count", "call_screen", "mail_list", "mail_screen"]
+__all__ = ["Count", "Level", "battery_screen", "call_screen", "charge_width", "mail_list", "mail_screen"]
 
 BADGE = "#C8321F"  # white letters on it read at 5.4:1
 PAPER = "#F3E9D6"
@@ -27,6 +28,11 @@ MAX_COUNT = 7  # characters a badge holds
 MAX_ROW = 22  # characters a subject holds over two lines
 MAX_ROWS = 4
 MAX_CALLER = 16  # characters a caller holds over two lines
+BATTERY_OK = "#3F9C5A"
+BATTERY_GLASS = "#F3F6F8"
+LOW = 20  # percent: from here down the charge and its number go red
+CELL = (-46.0, 22.0, 84.0, 44.0)  # x, y, width and height the charge fills, in the glass
+SLIVER = 4.0  # px of charge left to see at the very bottom
 
 
 class Count(NamedTuple):
@@ -35,6 +41,16 @@ class Count(NamedTuple):
     text: str
     at: float
     until: float
+
+
+class Level(NamedTuple):
+    """From ``at`` until ``until`` the battery reads ``percent``; with ``number`` False only the charge shows, for a
+    phone whose lettering would leave the safe area in that shot."""
+
+    percent: int
+    at: float
+    until: float
+    number: bool = True
 
 
 def _place(what: str, x: float, y: float, scale: float) -> None:
@@ -170,4 +186,56 @@ def call_screen(
         dark = cv.group(g, f"{id}-pressed")
         cv.gate(dark, [(pressed, 1e6)])
         cv.ellipse(dark, -56, 40, 44, 44, "#7E1E12", ink, 3)
+    return g
+
+
+def charge_width(percent: int) -> float:
+    """How much of the cell ``percent`` fills, never so little it cannot be seen."""
+    return max(SLIVER, CELL[2] * percent / 100)
+
+
+@register(
+    "prop",
+    "soft-battery-screen",
+    contract=dc.contract('soft-battery-screen'),
+    summary="A phone's glass: a plain battery and its percentage, going down by steps and red when low",
+)
+def battery_screen(
+    cv: Canvas,
+    parent,
+    x: float = 0,
+    y: float = 0,
+    *,
+    levels: Sequence[Level] = (Level(2, 0.0, 1.0),),
+    scale: float = 1,
+    id: str = "soft-battery-screen",
+):
+    """A percentage over a battery in the glass, reading each of ``levels`` in turn. The number sits in the top half,
+    so a phone held at the chest keeps it in the safe area."""
+    _place("a battery screen", x, y, scale)
+    rows = list(levels)
+    if not rows:
+        raise SoftPropError("a battery screen shows a charge: give it at least one level")
+    for row in rows:
+        if isinstance(row.percent, bool) or not isinstance(row.percent, int) or not 0 <= row.percent <= 100:
+            raise SoftPropError(f"a battery reads a whole percent from 0 to 100, got {row.percent!r}")
+        if not (checks.number(row.at) and checks.number(row.until) and row.at < row.until):
+            raise SoftPropError(f"a level shows for some time, got {row!r}")
+        if not isinstance(row.number, bool):
+            raise SoftPropError(f"a level shows its number or not: number is True or False, got {row.number!r}")
+    if any(a.until > b.at for a, b in zip(rows, rows[1:], strict=False)):
+        raise SoftPropError(f"levels run in order and never overlap, got {rows!r}")
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    ink = cv.ink
+    cx, cy, width, height = CELL
+    cv.rect(g, -65, -130, 130, 260, BATTERY_GLASS, radius=14)
+    cv.rect(g, cx - 6, cy - 6, width + 12, height + 12, "#FFFFFF", ink, 4, radius=10)
+    cv.rect(g, cx + width + 6, cy + 12, 8, height - 24, ink, radius=3)
+    for k, row in enumerate(rows):
+        low = row.percent <= LOW
+        shown = cv.group(g, f"{id}-level-{k}")
+        cv.gate(shown, [(row.at, row.until)])
+        cv.rect(shown, cx, cy, charge_width(row.percent), height, BADGE if low else BATTERY_OK, radius=4)
+        if row.number:
+            cv.text(shown, f"{id}-text-{k}", f"{row.percent}%", -60, -68, 120, 64, 46, color=BADGE if low else ROW_INK)
     return g

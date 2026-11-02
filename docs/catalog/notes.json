@@ -1304,6 +1304,7 @@
     "trial-tag": {"title": "Crachá de teste"},
     "apron-spare": {"title": "Avental reserva"},
     "soft-call-screen": {"title": "Tela de chamada"},
+    "soft-battery-screen": {"title": "Tela de bateria"},
     "soft-mail-list": {"title": "Lista de e-mails"},
     "soft-mail-screen": {"title": "Tela de e-mail com contador"},
     "collage-thread": {"title": "Conversa no celular"},
@@ -9239,6 +9240,18 @@
         "at": 0.3
       },
       "text": "Um celular de papel na maior fonte que existe: duas palavras enchem a tela, uma por linha, e se leem do outro lado da mesa (Big Font)."
+    },
+    {
+      "section": "props",
+      "name": "Tela de bateria",
+      "parts": [
+        "soft-battery-screen"
+      ],
+      "shot": {
+        "episode": "two-percent",
+        "at": 11.0
+      },
+      "text": "Uma bateria simples e a porcentagem por cima, que cai de 33% a 2% enquanto ela pede a corrida, a foto e a mensagem para a mãe (Always on 2%)."
     },
     {
       "section": "props",

@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 import pytest
 
 from srstudio import SOFT, Canvas, registry, soft_inbox
-from srstudio.soft_inbox import Count
+from srstudio.soft_inbox import Count, Level
 from srstudio.soft_props import SoftPropError
 from support.soft_props import canvas
 
@@ -21,7 +21,7 @@ def groups(cv: Canvas) -> dict:
 def test_the_module_is_a_part_of_the_soft_style():
     assert "soft_inbox" in SOFT.parts
     names = {e.name for e in registry.entries()}
-    assert {"soft-mail-screen", "soft-mail-list", "soft-call-screen"} <= names
+    assert {"soft-mail-screen", "soft-mail-list", "soft-call-screen", "soft-battery-screen"} <= names
 
 
 def opacity(group) -> list[tuple[float, float]]:
@@ -117,3 +117,63 @@ def test_a_call_screen_refuses(kw):
     g = cv.comp
     with pytest.raises(SoftPropError):
         soft_inbox.call_screen(cv, g, **kw)
+
+
+def test_a_battery_shows_each_level_only_for_its_own_span_and_goes_red_when_low():
+    cv = canvas()
+    soft_inbox.battery_screen(cv, cv.comp, levels=(Level(41, 0.0, 0.9), Level(2, 0.9, 1.8)))
+    found = groups(cv)
+    assert opacity(found["soft-battery-screen-level-0"]) == [(0.0, 1.0), (0.9, 0.0)]
+    assert opacity(found["soft-battery-screen-level-1"]) == [(0.0, 0.0), (0.9, 1.0), (1.8, 0.0)]
+    texts = {t.get("id"): t.get("text") for t in tree(cv).iter() if t.get("text") is not None}
+    assert texts == {"soft-battery-screen-text-0": "41%", "soft-battery-screen-text-1": "2%"}
+    fills = {
+        k: [s.get("fill") for s in found[f"soft-battery-screen-level-{k}"].iter("shape") if s.get("fill")]
+        for k in (0, 1)
+    }
+    assert soft_inbox.BATTERY_OK in fills[0] and soft_inbox.BADGE in fills[1]
+
+
+def test_a_battery_fill_is_as_wide_as_its_charge_with_a_sliver_left_at_the_bottom():
+    assert soft_inbox.charge_width(100) == soft_inbox.CELL[2]
+    assert soft_inbox.charge_width(50) == soft_inbox.CELL[2] / 2
+    assert 0 < soft_inbox.charge_width(0) == soft_inbox.SLIVER < soft_inbox.charge_width(2) + 1
+
+
+def test_a_level_can_show_its_charge_without_the_number_for_a_phone_near_the_frame_edge():
+    cv = canvas()
+    soft_inbox.battery_screen(cv, cv.comp, levels=(Level(41, 0.0, 0.9, number=False), Level(2, 0.9, 1.8)))
+    found = {g.get("id"): g for g in tree(cv).iter() if g.get("id")}
+    assert "soft-battery-screen-text-0" not in found
+    assert "soft-battery-screen-text-1" in found
+    assert len([s for s in found["soft-battery-screen-level-0"].iter("shape")]) == 1
+
+
+def test_a_battery_screen_shows_no_status_bar_only_the_cell_and_its_number():
+    cv = canvas()
+    soft_inbox.battery_screen(cv, cv.comp, levels=(Level(2, 0.0, 1.0),))
+    words = [t.get("text") for t in tree(cv).iter() if t.get("text") is not None]
+    assert words == ["2%"]
+
+
+@pytest.mark.parametrize(
+    "kw",
+    [
+        dict(levels=()),
+        dict(levels=(Level(101, 0.0, 1.0),)),
+        dict(levels=(Level(-1, 0.0, 1.0),)),
+        dict(levels=(Level(True, 0.0, 1.0),)),
+        dict(levels=(Level(2.5, 0.0, 1.0),)),
+        dict(levels=(Level(2, 0.0, 1.0, number=1),)),
+        dict(levels=(Level(2, 1.0, 1.0),)),
+        dict(levels=(Level(2, 0.0, float("inf")),)),
+        dict(levels=(Level(41, 0.0, 1.0), Level(33, 0.5, 2.0))),
+        dict(scale=0),
+        dict(y=float("nan")),
+    ],
+)
+def test_a_battery_screen_refuses(kw):
+    cv = canvas()
+    g = cv.comp
+    with pytest.raises(SoftPropError):
+        soft_inbox.battery_screen(cv, g, **kw)

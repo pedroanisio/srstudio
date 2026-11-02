@@ -14050,6 +14050,23 @@
         }
       ]
     },
+    "soft-battery-screen": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-02",
+          "note": "A phone's glass showing only its charge: a plain battery under a whole percentage, green above 20 and red at 20 and under, each level timed in turn. Invented, no status bar, no real phone's look. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d6332cd56907cff93818068ac74acfc43ea5084ded26fa077e507934551eee9a",
+          "rig": null
+        }
+      ]
+    },
     "stick-holiday-tree": {
       "kind": "prop",
       "style": "stick",
