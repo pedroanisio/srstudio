@@ -288,7 +288,7 @@ def test_invalid_assembly_reply_is_not_published(tmp_path, monkeypatch, field, v
 
 
 def test_real_engine_vector_clock_survives_off_grid_parent_cut(scene_render, tmp_path):
-    from test_composition_emission import evaluate
+    from support.composition_emission import evaluate
 
     spec, binding, xml = paper(animated=True)
     layer = replace(spec.layers[0], temporal=c.TemporalPolicy(0.25, 1.25, 0.5, 1))
@@ -327,7 +327,7 @@ def test_real_engine_combines_source_cuts_and_shared_motion(scene_render, tmp_pa
     import numpy as np
 
     from srstudio._composition_png import decode
-    from test_composition_sequences import engine_nodes, plan_for, sequence
+    from support.composition_sequences import engine_nodes, plan_for, sequence
 
     source = sequence(backend)
     base = plan_for(source)
@@ -386,7 +386,7 @@ def test_real_engine_combines_source_cuts_and_shared_motion(scene_render, tmp_pa
 
 def test_static_proxy_timeline_reuses_unlit_id_pass_across_lighting_changes(tmp_path):
     from support.composition import proxy_source
-    from test_composition_proxy import plan_for
+    from support.composition_proxy import plan_for
 
     source = proxy_source(oversample=1)
     base = plan_for(source)

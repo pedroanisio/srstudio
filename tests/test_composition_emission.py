@@ -1,6 +1,5 @@
 """Payload verification and atomic scene emission, including actual engine clocks."""
 
-import json
 import subprocess
 import xml.etree.ElementTree as ET
 from dataclasses import FrozenInstanceError, replace
@@ -9,6 +8,7 @@ import pytest
 
 from srstudio import composition as c
 from support.composition import paper, window
+from support.composition_emission import evaluate
 
 
 def test_real_payload_compiles_deterministically_with_closed_resources_and_scoped_ids():
@@ -138,17 +138,6 @@ def test_failed_atomic_replace_retains_previous_scene(tmp_path, monkeypatch):
     assert isinstance(caught.value.__cause__, OSError)
     assert path.read_bytes() == b'previous'
     assert list(tmp_path.iterdir()) == [path]
-
-
-def evaluate(engine, path, time):
-    result = subprocess.run(
-        [str(engine), 'eval', str(path), '--time', str(time), '--json'],
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
-    return json.loads(result.stdout)['result']['nodes']
 
 
 def test_engine_preserves_source_clock_through_offset_and_rate(tmp_path, scene_render):

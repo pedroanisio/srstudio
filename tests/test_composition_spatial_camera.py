@@ -10,7 +10,7 @@ from srstudio import scene_motion as m
 from srstudio.limbs import Affine, Frame, Vec3
 from srstudio.limbs.errors import LimbError
 from support.composition import paper, plate_plan
-from test_composition_plate_view import engine_project
+from support.composition_plate_view import engine_project
 
 
 @pytest.mark.parametrize(

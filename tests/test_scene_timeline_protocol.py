@@ -168,7 +168,7 @@ def test_proxy_palette_frames_can_outnumber_raw_render_jobs(tmp_path):
     import numpy as np
 
     from srstudio import plates
-    from test_composition_sequences import plan_for, sequence
+    from support.composition_sequences import plan_for, sequence
 
     original = sequence('proxy')
     third = replace(original.frames[0].source, recipe=replace(original.frames[0].source.recipe, grain_seed=51))
@@ -224,7 +224,7 @@ def test_vector_worker_scopes_paints_and_preserves_clocks_across_empty_and_held_
 
 def test_static_proxy_inputs_round_trip_through_the_closed_protocol():
     from support.composition import proxy_source
-    from test_composition_proxy import plan_for
+    from support.composition_proxy import plan_for
 
     source = proxy_source(oversample=1)
     base = plan_for(source)

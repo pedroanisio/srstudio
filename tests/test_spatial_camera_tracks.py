@@ -13,7 +13,7 @@ from srstudio.limbs.compile import BakeOptions
 from srstudio.limbs.interaction import Participant, PropDrawing, bake_interaction
 from srstudio.limbs.motion import Action, Motion, TransformKey, TransformTrack
 from support.composition import plate_source, prepared_plate_plan
-from test_limbs_interaction import canvas, mesh
+from support.limbs_interaction import canvas, mesh
 
 
 def track():
