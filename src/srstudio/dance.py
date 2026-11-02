@@ -16,12 +16,14 @@ from __future__ import annotations
 
 from ._dance_curve import CurveError
 from ._dance_measure import (
+    PROFILE_POINTS,
     SEAT_GROOVE_BOB,
     SEAT_GROOVE_SWAY,
     DanceMeasureError,
     DanceReading,
     DanceTarget,
     measure_dance,
+    profile_distance,
 )
 from ._dance_model import (
     CHAINS,
@@ -68,6 +70,7 @@ __all__ = [
     "MAX_FPS",
     "MAX_FRAMES",
     "MOVES_SCHEMA",
+    "PROFILE_POINTS",
     "ROOT",
     "ROUTINE_SCHEMA",
     "SEAT_GROOVE_BOB",
@@ -104,6 +107,7 @@ __all__ = [
     "moves",
     "parse_moves",
     "parse_routine",
+    "profile_distance",
     "sample",
     "song_map",
     "wave",
