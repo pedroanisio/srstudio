@@ -4,7 +4,9 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 
 # ADR 0146: A caption does not run across a sentence end
 
-- Status: accepted (2026-11-01), ordered by arc4d3; written by Claude Opus 5.5 in Claude Code
+- Status: accepted (2026-11-01), ordered by arc4d3, the narrower reading ruled by arc4d3 in Slack 1793579374.497809: "A
+  window of whole sentences passes; a window that drops the stop or breaks off inside the next sentence is refused.";
+  written by Claude Opus 5.5 in Claude Code
 - Follows [ADR 0073](0073-frame-gates-and-standing-review.md) and
   [ADR 0145](0145-anatomy-is-a-build-error.md)
 - Back to the [library README](../../README.md)
