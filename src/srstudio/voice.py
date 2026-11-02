@@ -37,7 +37,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from . import checks
+from . import checks, files
 from .errors import MissingKeyError, ProviderHTTPError, SrstudioError
 
 MODEL = "eleven_multilingual_v2"
@@ -210,6 +210,19 @@ def parse_response(body: object, requested_text: str) -> Speech:
 def _check_text(alignment: Alignment, requested_text: str) -> None:
     if alignment.text != requested_text:
         raise VoiceOutputError(f"aligned text {alignment.text!r} does not match the requested {requested_text!r}")
+
+
+def refuse_half_written(paths: Sequence[Path]) -> None:
+    """Raise :class:`srstudio.files.WriteOnceError` when any of a cache entry's ``paths`` is there, before a paid
+    request would write the entry again: a take, an effect or a song is write-once (ADR 0170), and an entry with some
+    of its files is moved away by hand, never written over."""
+    there = [p.name for p in paths if p.is_symlink() or p.exists()]
+    if there:
+        raise files.WriteOnceError(
+            f"a half-written cache entry ({', '.join(there)}) is never written over: move it away by hand",
+            code="files.exists",
+            path=str(paths[0]),
+        )
 
 
 def _cached_record(path: Path, what: str) -> dict:
@@ -597,6 +610,7 @@ class ElevenLabsClient:
         timing, mp3, wav = (prefix.with_suffix(s) for s in (".json", ".mp3", ".wav"))
         if timing.exists() and mp3.exists():
             return self._from_cache(text, voice, settings, timing, mp3, wav)
+        refuse_half_written((mp3, wav, timing))
         if not self.key:
             raise MissingKeyError("ELEVENLABS_API_KEY is required to generate an uncached line")
         payload = self.payload(text, settings)
@@ -610,8 +624,8 @@ class ElevenLabsClient:
         duration = verify_audio(wav_bytes, speech.alignment)
         # Verified: only now does anything reach the cache.
         self.cache.mkdir(parents=True, exist_ok=True)
-        mp3.write_bytes(speech.audio)
-        wav.write_bytes(wav_bytes)
+        files.write_once(mp3, speech.audio)
+        files.write_same(wav, wav_bytes)
         meta = {
             "alignment": speech.alignment.to_json(),
             "normalized_alignment": speech.normalized_alignment.to_json() if speech.normalized_alignment else None,
@@ -622,7 +636,7 @@ class ElevenLabsClient:
             "request": payload,
             "request_id": request_id,
         }
-        timing.write_text(json.dumps(meta, indent=2) + "\n")
+        files.write_once(timing, json.dumps(meta, indent=2) + "\n")
         return SpokenLine(text, voice, settings, speech.alignment, wav, timing, duration)
 
     def _from_cache(self, text, voice, settings, timing: Path, mp3: Path, wav: Path) -> SpokenLine:
@@ -632,7 +646,7 @@ class ElevenLabsClient:
         wav_bytes = wav.read_bytes() if wav.exists() else decode(mp3.read_bytes())
         duration = verify_audio(wav_bytes, alignment)
         if not wav.exists():
-            wav.write_bytes(wav_bytes)
+            files.write_same(wav, wav_bytes)
         return SpokenLine(text, voice, settings, alignment, wav, timing, duration)
 
     # -- sound effects ----------------------------------------------------------------------------------
@@ -650,8 +664,9 @@ class ElevenLabsClient:
             wav_bytes = wav.read_bytes() if wav.exists() else decode(mp3.read_bytes())
             duration = verify_effect(wav_bytes, seconds)
             if not wav.exists():
-                wav.write_bytes(wav_bytes)
+                files.write_same(wav, wav_bytes)
             return EffectClip(text, float(seconds), wav, record, duration)
+        refuse_half_written((mp3, wav, record))
         if not self.key:
             raise MissingKeyError("ELEVENLABS_API_KEY is required to generate an uncached sound effect")
         audio, request_id = self.binary_transport(
@@ -662,10 +677,10 @@ class ElevenLabsClient:
         wav_bytes = decode(bytes(audio))
         duration = verify_effect(wav_bytes, seconds)
         self.cache.mkdir(parents=True, exist_ok=True)
-        mp3.write_bytes(bytes(audio))
-        wav.write_bytes(wav_bytes)
-        record.write_text(
-            json.dumps({"request": payload, "request_id": request_id, "duration": duration}, indent=2) + "\n"
+        files.write_once(mp3, bytes(audio))
+        files.write_same(wav, wav_bytes)
+        files.write_once(
+            record, json.dumps({"request": payload, "request_id": request_id, "duration": duration}, indent=2) + "\n"
         )
         return EffectClip(text, float(seconds), wav, record, duration)
 
@@ -698,5 +713,7 @@ class ElevenLabsClient:
         transcript = parse_transcript(body)
         # Parsed: only now does it reach the cache.
         self.cache.mkdir(parents=True, exist_ok=True)
-        record.write_text(json.dumps({"request": fields, "request_id": request_id, "response": body}, indent=2) + "\n")
+        files.write_once(
+            record, json.dumps({"request": fields, "request_id": request_id, "response": body}, indent=2) + "\n"
+        )
         return transcript

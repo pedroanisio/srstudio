@@ -11,6 +11,7 @@ redraws the same.
 
 from __future__ import annotations
 
+from . import _stick_drawing_contracts as dc
 from . import checks, look, signature, stick_reel
 from .canvas import Canvas
 from .registry import register
@@ -102,7 +103,9 @@ POSES: dict[str, RigPose] = {
 }
 
 
-@register("location", "stick-kitchen", tags=("home", "kitchen", "domestic", "fridge"))
+@register(
+    "location", "stick-kitchen", contract=dc.contract('stick-kitchen'), tags=("home", "kitchen", "domestic", "fridge")
+)
 def kitchen(cv: Canvas, parent, *, marks: bool = True, safe: bool = True) -> None:
     """The kitchen, without its table: the window and its curtains, a calendar, a shut fridge, a shut safe. A reel
     whose framing or card hides the marks passes ``marks=False`` and places them where they are seen (ADR 0001), and
@@ -146,7 +149,7 @@ def _safe(cv: Canvas, parent) -> None:
     box(cv, parent, cx - 5, cy - 56, 10, 28, STEEL_DARK)
 
 
-@register("prop", "stick-table", tags=("home", "kitchen", "table", "furniture"))
+@register("prop", "stick-table", contract=dc.contract('stick-table'), tags=("home", "kitchen", "table", "furniture"))
 def table(
     cv: Canvas, parent, *, span: tuple[float, float] = TABLE_X, top: float = TABLE_TOP, legs: float = 420.0
 ) -> None:
@@ -161,7 +164,12 @@ def table(
     box(cv, g, x0, top, x1 - x0, 42, WOOD, 6, r=8)
 
 
-@register("location", "stick-kitchen-plan", tags=("home", "kitchen", "overhead", "chase"))
+@register(
+    "location",
+    "stick-kitchen-plan",
+    contract=dc.contract('stick-kitchen-plan'),
+    tags=("home", "kitchen", "overhead", "chase"),
+)
 def plan(cv: Canvas, parent) -> None:
     """The kitchen straight from above, for running round the table: the floor and the table top at :data:`PLAN`."""
     g = _group(cv, parent)
@@ -176,7 +184,7 @@ def plan(cv: Canvas, parent) -> None:
     signature.code(cv, g, 40, 1885, 9, color="#3d2c1c")
 
 
-@register("prop", "stick-from-above", tags=("figure", "overhead", "chase"))
+@register("prop", "stick-from-above", contract=dc.contract('stick-from-above'), tags=("figure", "overhead", "chase"))
 def from_above(cv: Canvas, parent, end: float, *, hair: str = "none", phone: str | None = None, rate: float = 6.0):
     """A figure seen from straight above and heading up the frame, centred on the origin: feet that step ``rate``
     times a second, shoulders, arms ahead, a head with a ``hair`` of ``none``, ``side-part`` or ``bun``, and a
@@ -203,7 +211,7 @@ def from_above(cv: Canvas, parent, end: float, *, hair: str = "none", phone: str
     return g
 
 
-@register("prop", "stick-fridge-open", tags=("home", "kitchen", "fridge"))
+@register("prop", "stick-fridge-open", contract=dc.contract('stick-fridge-open'), tags=("home", "kitchen", "fridge"))
 def fridge_open(cv: Canvas, parent):
     """The fridge at :data:`FRIDGE` standing open: the lit shelves, and the door swung toward the camera."""
     x, y, w, h = FRIDGE
@@ -218,7 +226,7 @@ def fridge_open(cv: Canvas, parent):
     return g
 
 
-@register("prop", "stick-safe-open", tags=("home", "safe", "valuables"))
+@register("prop", "stick-safe-open", contract=dc.contract('stick-safe-open'), tags=("home", "safe", "valuables"))
 def safe_open(cv: Canvas, parent):
     """The safe at :data:`SAFE` standing open: a dark box and its door swung back off the wall."""
     x, y, w, h = SAFE
@@ -230,7 +238,7 @@ def safe_open(cv: Canvas, parent):
     return g
 
 
-@register("prop", "stick-handset", tags=("phone", "hand", "prop"))
+@register("prop", "stick-handset", contract=dc.contract('stick-handset'), tags=("phone", "hand", "prop"))
 def handset(cv: Canvas, parent, x: float, y: float, *, colour: str = "#1f2430", lit: bool = False, scale: float = 1.0):
     """A phone a hand can hold, centred on (``x``, ``y``), in a case of ``colour``, its screen ``lit`` or dark."""
     if not (checks.number(scale) and scale > 0):
@@ -243,7 +251,7 @@ def handset(cv: Canvas, parent, x: float, y: float, *, colour: str = "#1f2430", 
     return g
 
 
-@register("prop", "stick-key", tags=("key", "safe", "small"))
+@register("prop", "stick-key", contract=dc.contract('stick-key'), tags=("key", "safe", "small"))
 def key(cv: Canvas, parent, x: float, y: float, *, scale: float = 1.0):
     """A small brass key, its bow at (``x``, ``y``)."""
     if not (checks.number(scale) and scale > 0):
@@ -257,7 +265,9 @@ def key(cv: Canvas, parent, x: float, y: float, *, scale: float = 1.0):
     return g
 
 
-@register("location", "stick-bedroom", tags=("home", "bedroom", "night", "bed", "moon"))
+@register(
+    "location", "stick-bedroom", contract=dc.contract('stick-bedroom'), tags=("home", "bedroom", "night", "bed", "moon")
+)
 def bedroom(cv: Canvas, parent) -> None:
     """A bedroom at night: the moon in the window, and someone asleep in the bed at the left, eyes shut, whatever
     happens. The floor starts at :data:`FLOOR_Y`; the frame's right half is clear for a figure."""
@@ -283,7 +293,7 @@ def bedroom(cv: Canvas, parent) -> None:
     signature.code(cv, s, 40, 1885, 9, color="#8b93ad")
 
 
-@register("prop", "stick-chair", tags=("home", "chair", "furniture"))
+@register("prop", "stick-chair", contract=dc.contract('stick-chair'), tags=("home", "chair", "furniture"))
 def chair(cv: Canvas, parent, x, y, *, rise: float = 0.0, flip: bool = False):
     """A wooden kitchen chair with its feet on ``y``, its seat 150 above it, the height a figure climbs. ``rise`` lifts
     it on longer legs, for a figure to sit in; ``flip`` puts its back on the left."""
@@ -300,7 +310,12 @@ def chair(cv: Canvas, parent, x, y, *, rise: float = 0.0, flip: bool = False):
     return g
 
 
-@register("prop", "stick-smoke-alarm", tags=("home", "smoke-alarm", "battery", "ceiling", "sound"))
+@register(
+    "prop",
+    "stick-smoke-alarm",
+    contract=dc.contract('stick-smoke-alarm'),
+    tags=("home", "smoke-alarm", "battery", "ceiling", "sound"),
+)
 def smoke_alarm(cv: Canvas, parent, x, y, *, scale: float = 1.0, flashes=()):
     """A smoke alarm seen from below, centred on ``x, y``: a white disc, its vents and test button, and an LED lit
     for a moment at each of ``flashes`` (seconds on the shot's clock), which is where the chirp comes from."""
@@ -323,7 +338,7 @@ def smoke_alarm(cv: Canvas, parent, x, y, *, scale: float = 1.0, flashes=()):
     return g
 
 
-@register("prop", "stick-mound", tags=("yard", "grave", "earth", "burial", "font"))
+@register("prop", "stick-mound", contract=dc.contract('stick-mound'), tags=("yard", "grave", "earth", "burial", "font"))
 def mound(cv: Canvas, parent, x, y, *, words: str = "RIP"):
     """A fresh mound of earth on the grass with its middle on ``x, y`` (its foot), and a small tombstone at its head
     lettered ``words`` (1 to :data:`STONE_CHARS` characters)."""
@@ -340,7 +355,7 @@ def mound(cv: Canvas, parent, x, y, *, words: str = "RIP"):
     return g
 
 
-@register("prop", "stick-shovel", tags=("yard", "garden", "tool", "digging"))
+@register("prop", "stick-shovel", contract=dc.contract('stick-shovel'), tags=("yard", "garden", "tool", "digging"))
 def shovel(cv: Canvas, parent, x, y):
     """A long shovel standing with its blade in the ground at ``x, y``, its grip 620 above."""
     g = _group(cv, parent)
@@ -351,7 +366,12 @@ def shovel(cv: Canvas, parent, x, y):
     return g
 
 
-@register("prop", "stick-message-insert", tags=("phone", "text", "message", "reveal", "fullscreen", "font"))
+@register(
+    "prop",
+    "stick-message-insert",
+    contract=dc.contract('stick-message-insert'),
+    tags=("phone", "text", "message", "reveal", "fullscreen", "font"),
+)
 def message(cv: Canvas, parent, *, sender: str, text: str):
     """The whole frame as a phone with one message on it, from ``sender``: a text message the audience must read in a
     second, on a phone. It sets ``text`` at :data:`MESSAGE_SIZE` over at most three lines, and refuses a message of
@@ -373,7 +393,12 @@ def message(cv: Canvas, parent, *, sender: str, text: str):
     return g
 
 
-@register("prop", "stick-reply-screen", tags=("phone", "chat", "reveal", "fullscreen"))
+@register(
+    "prop",
+    "stick-reply-screen",
+    contract=dc.contract('stick-reply-screen'),
+    tags=("phone", "chat", "reveal", "fullscreen"),
+)
 def reply(cv: Canvas, parent, *, name: str, sent: str, answer: str):
     """The whole frame as a chat with ``name``: the message ``sent``, and one big ``answer`` under it."""
     cv.require_font("the chat is set in it")

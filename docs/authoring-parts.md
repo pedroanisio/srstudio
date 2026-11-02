@@ -10,6 +10,38 @@ Use this directory of drawing families after [inspecting a contract](authoring-d
 
 Run commands from the srstudio repository root.
 
+## Rigid proxies and deterministic tone conversion
+
+`proxy.Recipe` names each modeled part's four tones, from shade to highlight.
+Use `soft_edge=0` for hard bands; equality with a threshold selects the higher
+tone. Positive widths retain the smooth transition between neighboring tones.
+Widths whose derived transition intervals overflow are refused before rendering;
+very small representable widths saturate without overflowing the interpolation.
+
+```python
+from srstudio import proxy
+
+recipe = proxy.Recipe(
+    tones={"body": ("#102030", "#506070", "#90A0B0", "#D0E0F0")},
+    soft_edge=0,
+    grain_seed=7,
+    oversample=2,
+)
+```
+
+Keep `grain_seed` a nonnegative integer for deterministic ink. `None`, booleans,
+strings and fractional seeds are refused when the recipe is constructed. A grain
+grid with no variance contributes zero wander, including the smallest 2 × 2 view
+at one-times sampling. Empty `quiet` families, non-`Ink` records and boolean
+`oversample` values are also refused before rendering. These errors expose
+`proxy.recipe.<field>` codes and `recipe.<field>` paths through `ProxyError.to_dict()`.
+
+`proxy.layers` uses a light pass and a part-ID pass for a stationary view. A
+recipe with `under` parts needs another pair of passes for those parts alone.
+Use [render sessions](authoring-benchmark.md#bound-a-plate-authoring-operation)
+to bound and count those attempts. The [composition guide](composition-preflight.md)
+tracks the scene-plan adapters and their supported capabilities.
+
 ## The parts
 
 Give repeated graphics distinct `id=` values. Each custom instance namespaces its text assets and layers as

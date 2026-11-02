@@ -42,6 +42,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from . import _character_contracts as cc
+from . import _stick_core_contracts as sc
 from . import checks, look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -454,7 +455,7 @@ TUFTS = (  # x, y, scale: grass tufts from the fence line to the foreground
 TUFT = "M -23 8 Q -29 -7 -37 -13 M -10 8 Q -12 -10 -21 -23 M 1 9 Q 1 -13 7 -27 M 12 10 Q 20 -12 28 -18 M 24 12 L 35 0"
 
 
-@register("location", "stick-room", tags=("room", "desk", "laptop", "window"))
+@register("location", "stick-room", contract=sc.contract('stick-room'), tags=("room", "desk", "laptop", "window"))
 def room(cv: Canvas, parent, *, marks: bool = True) -> None:
     """A sunlit study in two-point perspective: window, wall picture, bookcase, chair, desk and an open laptop. A reel
     that blurs the room or frames the desk out passes ``marks=False`` and places the marks itself (ADR 0001)."""
@@ -525,7 +526,7 @@ def room(cv: Canvas, parent, *, marks: bool = True) -> None:
         signature.code(s, parent, 790, 1120, 9, color="#c9ccd3", angle=-16)  # on the laptop's lid
 
 
-@register("location", "stick-yard", tags=("garden", "fence", "trees", "outdoor"))
+@register("location", "stick-yard", contract=sc.contract('stick-yard'), tags=("garden", "fence", "trees", "outdoor"))
 def yard(cv: Canvas, parent, foliage: Sequence[Plate], seed: int) -> None:
     """A back garden: sky, trees with traced foliage, a board fence that jitters by ``seed``, grass and tufts."""
     s = cv
@@ -624,7 +625,7 @@ def _badge(cv: Canvas, parent, badge: Badge, cx: float, cy: float, angle: float)
 
 
 # -- lettering and captions ---------------------------------------------------------------------------------
-@register("graphic", "stick-hook", tags=("lettering", "card"))
+@register("graphic", "stick-hook", contract=sc.contract('stick-hook'), tags=("lettering", "card"))
 def hook(cv: Canvas, parent, lettering: Plate, start: float, end: float):
     """The hook: traced lettering on a rounded white card at the top of the frame, from ``start`` to ``end``."""
     g = _group(cv, parent, start=start, end=end)
@@ -634,7 +635,7 @@ def hook(cv: Canvas, parent, lettering: Plate, start: float, end: float):
     return g
 
 
-@register("graphic", "stick-headline", tags=("lettering",))
+@register("graphic", "stick-headline", contract=sc.contract('stick-headline'), tags=("lettering",))
 def headline(cv: Canvas, parent, outline: Plate, fill: Plate, start: float, end: float):
     """A headline: traced lettering, its outline plate under its fill, the fill edged in its own colour."""
     g = _group(cv, parent, start=start, end=end)
@@ -643,7 +644,7 @@ def headline(cv: Canvas, parent, outline: Plate, fill: Plate, start: float, end:
     return g
 
 
-@register("graphic", "stick-captions", tags=("captions", "outlined"))
+@register("graphic", "stick-captions", contract=sc.contract('stick-captions'), tags=("captions", "outlined"))
 def captions(cv: Canvas, parent, lines: Sequence[Line], *, outline: str = "stroke") -> None:
     """One caption per cue: centred font text in white, outlined in ink, across the frame at :data:`CAPTION_Y`.
 
@@ -901,7 +902,7 @@ def _marked(words: Sequence[dict]) -> str:
     return " ".join(w["text"].lstrip(PUNCTUATION) if _ends_sentence(w) else w["text"].strip(PUNCTUATION) for w in words)
 
 
-@register("graphic", "stick-words", tags=("captions", "outlined", "word-by-word"))
+@register("graphic", "stick-words", contract=sc.contract('stick-words'), tags=("captions", "outlined", "word-by-word"))
 def words(cv: Canvas, parent, cues: Sequence[Line], *, y: float = WORD_Y, scrim: float = SCRIM_PEAK) -> None:
     """Word-by-word captions: each cue a word (or a few, :func:`word_cues`), very large white text outlined in
     ink, centred at ``y``, popping in as it starts (:meth:`Canvas.pop_in`), over a feathered ink scrim that fades in
@@ -1623,7 +1624,7 @@ def dolly(cv: Canvas, parent, a: Framing, b: Framing, seconds: float, *, start: 
 CARD = (90, 300, 900, 230, 46)  # x, y, w, h, radius of the hook card
 
 
-@register("graphic", "stick-card", tags=("hook", "card", "font"))
+@register("graphic", "stick-card", contract=sc.contract('stick-card'), tags=("hook", "card", "font"))
 def card(cv: Canvas, parent, text: str, *, size: float = 54, width: int | None = None):
     """The hook in the caption font: ink text, balanced over up to three lines, on a rounded white card; ``width``
     narrows it about the frame's centre, so that a reel's card stays clear of the show's bug."""
@@ -1697,7 +1698,7 @@ def _check_call(tiles: Sequence[Tile], inbox: Sequence[Mail], speaking: str, hig
         raise StickDataError(f"highlight must index one of the {len(inbox)} mails, got {highlight!r}")
 
 
-@register("graphic", "stick-call", tags=("video-call", "screen", "inbox", "font"))
+@register("graphic", "stick-call", contract=sc.contract('stick-call'), tags=("video-call", "screen", "inbox", "font"))
 def call(
     cv: Canvas,
     parent,

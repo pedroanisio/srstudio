@@ -31,7 +31,7 @@ from typing import Literal
 
 from sr_core.scene import Scene
 
-from . import checks, fonts
+from . import checks, fonts, gpu
 from .canvas import Canvas, Palette
 from .errors import SrstudioError
 
@@ -443,7 +443,8 @@ def render(
         doc = work / "thumbnail.scene.xml"
         doc.write_bytes(scene.to_bytes())
         png = work / "thumbnail.png"
-        _run([str(engine), "render", str(doc), *ENGINE_ARGS, "-o", str(png.resolve())], "the engine cannot draw it")
+        with gpu.held():
+            _run([str(engine), "render", str(doc), *ENGINE_ARGS, "-o", str(png.resolve())], "the engine cannot draw it")
         jpg = work / out.name
         _run([ffmpeg, "-v", "error", "-y", "-i", str(png), *ENCODER_ARGS, str(jpg)], f"cannot encode {out.name}")
         if not jpg.exists():

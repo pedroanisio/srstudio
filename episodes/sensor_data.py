@@ -101,7 +101,7 @@ def dress(shot) -> None:
         for at in SINKS:
             collage_odds.sensor_tap(cv, front, at, RIM, ())
     if app.start >= shut:
-        collage_everyday.arm(cv, front, "jun", (800.0, 1500.0), (936.0, 1180.0), width=64.0)
+        collage_everyday.arm(cv, front, "jun", (800.0, 1500.0), (936.0, 1180.0), width=64.0, side=1)
         cv.rect(front, x, y, w, h, "#7a6a55", collage.INK, 5.0)
         # the slab hides the shelf's code
         signature.code(cv, front, x + w - 12.0, 760.0, 14.0, color="#fffaf0", opacity=0.85, align="end")

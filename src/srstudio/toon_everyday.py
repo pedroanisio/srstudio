@@ -27,7 +27,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
 from . import _toon_detail_contracts as dc
-from . import checks
+from . import anatomy_ledger, checks
 from .canvas import Align, Canvas
 from .registry import register
 from .toon import CAPTION_H, CAPTION_TOP, FINE_W, INK_W, REF_TOP, REF_W, SCALE, ToonDataError, fh, fx, fy
@@ -365,6 +365,7 @@ def phone(
         _shown(cv, sg, s.at, nxt)
         _screen(cv, sg, f"{id}-screen-{k}", s, s.at + FILL_TIME if nxt is None else nxt)
     if hand is not None:
+        anatomy_ledger.loose_hand(cv, "toon-phone")
         _ellipse(cv, g, -68, -96, 22, 36, hand, FINE_W)
     buzzes = [s.at for s in shown if s.kind == "notify"]
     if buzzes:
@@ -902,5 +903,6 @@ def clipboard(
             cv, st, text, "stamp-text"
         )
     if hand is not None:
+        anatomy_ledger.loose_hand(cv, "toon-clipboard")
         _ellipse(cv, g, -89, -130, 24, 40, hand, FINE_W)
     return box

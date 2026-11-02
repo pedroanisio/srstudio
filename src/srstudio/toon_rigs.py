@@ -19,6 +19,7 @@ from .toon_bento import BENTO_RIG, BENTO_RIG_2
 from .toon_critters import GOAT_RIG, HAMSTER_RIG, SLOTH_RIG
 from .toon_head import HeadRig
 from .toon_inked import FOX_RIG
+from .toon_lyra import LYRA_RIG
 from .toon_redrawn import BEAR_RIG, DOG_RIG, FROG_RIG, HEDGEHOG_RIG, RABBIT_RIG, RACCOON_RIG
 
 __all__ = ["RIGS", "rig_of"]
@@ -28,6 +29,7 @@ RIGS: Mapping[str, HeadRig] = MappingProxyType(
         "toon-sloth": SLOTH_RIG,
         "toon-goat": GOAT_RIG,
         "toon-hamster": HAMSTER_RIG,
+        "toon-lyra": LYRA_RIG,
         "toon-fox@2": FOX_RIG,
         "toon-dog@2": DOG_RIG,
         "toon-frog@2": FROG_RIG,

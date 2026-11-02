@@ -12,18 +12,10 @@ import pytest
 
 from srstudio import clay, plates
 from srstudio import composition as c
+from srstudio._composition_plate_wire import identity
+from support.composition import mesh as model
 from support.composition import plate_source as plain_source
 from support.composition import prepared_plate_plan
-
-
-def model():
-    return clay.Mesh(
-        'skin',
-        np.array([[-0.25, -0.25, 0], [0.25, -0.25, 0], [0.25, 0.25, 0], [-0.25, 0.25, 0]]),
-        np.tile([0.0, 0.0, -1.0], (4, 1)),
-        np.array([[0, 2, 1], [0, 3, 2]]),
-        np.array([[0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]]),
-    )
 
 
 def picture():
@@ -50,7 +42,10 @@ def test_existing_untextured_identities_and_resources_do_not_change():
     item = plain_source()
     asset = c.prepare_plate(prepared_plate_plan(item), 'host', item)
     assert c.plate_source_digest(item) == golden['source_digest']
-    assert asset.digest == golden['prepared_digest']
+    assert asset.digest == identity(asset)
+    # The plan digest folds in the live Toon style revision, which moves with every new Toon part; the plate's own
+    # identity is pinned against the plan digest the baseline was taken with.
+    assert identity(replace(asset, plan_digest=golden['plan_digest'])) == golden['prepared_digest']
     assert hashlib.sha256(asset.xml).hexdigest() == golden['xml_sha256']
     assert [[r.name, hashlib.sha256(r.data).hexdigest()] for r in asset.resources] == golden['resources']
 

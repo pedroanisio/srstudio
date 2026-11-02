@@ -18,7 +18,7 @@ import re
 from collections.abc import Callable, Sequence
 
 from . import _toon_domestic_contracts as dc
-from . import checks, signature
+from . import anatomy_ledger, checks, signature
 from .canvas import Canvas
 from .registry import register
 from .toon import FINE_W, INK_W, ToonDataError, _path, fh, fx, fy
@@ -606,6 +606,7 @@ def watering_can(
 ) -> None:
     """A can with its spout's rose near reference ``at``, tipped down and to the left, shown from ``start`` to ``end``
     (always, in a still), its drops falling from ``pour``."""
+    anatomy_ledger.loose_hand(cv, "toon-watering-can")
     x, y = _point(at, "a watering can's place")
     if not (checks.number(start) and checks.number(end) and checks.number(pour) and min(start, end, pour) >= 0):
         raise ToonDataError(f"a watering can's clock needs times >= 0, got {start}, {end}, {pour}")

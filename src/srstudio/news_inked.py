@@ -22,7 +22,19 @@ from types import MappingProxyType
 from typing import Any
 
 from . import _character_contracts as cc
-from . import brush, drawing_events, head_motion, look, news_arms, news_head, news_kit, parts, toon, toon_head
+from . import (
+    anatomy_ledger,
+    brush,
+    drawing_events,
+    head_motion,
+    look,
+    news_arms,
+    news_head,
+    news_kit,
+    parts,
+    toon,
+    toon_head,
+)
 from .brush import Point
 from .canvas import Canvas
 from .head_motion import Channel, HeadPlan
@@ -1383,6 +1395,7 @@ def _perform(
         raise NewsKitError(f"the desk seats vera and gus, not {who!r}")
     if not acts or acts[0][0] > start:
         raise NewsKitError(f"an anchor needs a pose from {start} s, got {acts[:1]!r}")
+    anatomy_ledger.note_part(cv, f"news-{who}", number)
     owner = {
         ('vera', 2): vera,
         ('gus', 2): gus,

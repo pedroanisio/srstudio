@@ -43,6 +43,7 @@ from . import (
     collage_forecast,
     collage_group,
     gloss_sets,
+    gpu,
     host_kit,
     ink_meter,
     ink_phone,
@@ -864,13 +865,14 @@ def rgb(colour: str) -> tuple[int, int, int]:
 def _render(engine: Path, document: bytes, at: float, out: Path) -> None:
     source = out.with_suffix(".scene.xml")
     source.write_bytes(document)
-    run = subprocess.run(
-        [str(engine), "render", source.name, "-t", f"{at:g}", "-o", out.name],
-        cwd=out.parent,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    with gpu.held():
+        run = subprocess.run(
+            [str(engine), "render", source.name, "-t", f"{at:g}", "-o", out.name],
+            cwd=out.parent,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
     if run.returncode != 0:
         raise SpecimenRenderError(f"{out.stem}: scene-render failed: {run.stdout[-400:]} {run.stderr[-400:]}")
     source.unlink()
@@ -1080,13 +1082,14 @@ def poster(packages: Path, slug: str, engine: Path, cache: Path) -> Path:
         return out
     folder.mkdir(parents=True, exist_ok=True)
     frame = folder / f"{out.stem}.frame.png"
-    run = subprocess.run(
-        [str(Path(engine).resolve()), "render", scene.name, "-t", f"{at:g}", "-o", str(frame)],
-        cwd=scene.parent,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    with gpu.held():
+        run = subprocess.run(
+            [str(Path(engine).resolve()), "render", scene.name, "-t", f"{at:g}", "-o", str(frame)],
+            cwd=scene.parent,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
     if run.returncode != 0 or not frame.exists():
         raise SpecimenRenderError(f"package {slug}: scene-render failed: {run.stdout[-400:]} {run.stderr[-400:]}")
     _check_renderer(engine, engine_digest)

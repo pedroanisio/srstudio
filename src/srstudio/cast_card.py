@@ -31,7 +31,7 @@ from typing import Any, Literal
 import numpy as np
 from sr_core.scene import Scene
 
-from . import blob, checks, collage, fonts, parts, rig, specimens, stick, toon
+from . import blob, checks, collage, fonts, gpu, parts, rig, specimens, stick, toon
 from .canvas import Canvas, Palette, flat_counter
 from .catalog_specimens import bounds, pixels_of
 from .errors import SrstudioError
@@ -353,7 +353,8 @@ def _draw(scene: Scene, faces: Lettering, engine: str | Path, work: Path, name: 
     document.write_bytes(scene.to_bytes())
     command = [str(engine), "render", document.name, *ENGINE_ARGS, "-o", png.name]
     try:
-        subprocess.run(command, cwd=work, check=True, capture_output=True)
+        with gpu.held():
+            subprocess.run(command, cwd=work, check=True, capture_output=True)
     except (OSError, subprocess.CalledProcessError) as exc:
         detail = getattr(exc, "stderr", b"") or b""
         raise CastCardError(f"the engine cannot draw {name}: {detail.decode(errors='replace')[-400:] or exc}") from exc

@@ -22,13 +22,12 @@ His head lies over the body with its own chin, and his muzzle rides in the face 
 (:data:`BENTO_RIG`). The registered drawing is that rig with a still plan: one drawing, whether or not the head moves.
 
 His hands are a pair from version 2 (ADR 0143): a :class:`Paw` is on an :class:`Arm` and shows a :class:`Facing`, and
-the drawing follows from those two, so a thumb follows its side. :data:`BENTO_RIG_2` is that version; version 1 keeps
-its one hand on both arms, as first approved.
+the drawing follows from those two by the shared contract (:mod:`srstudio.anatomy`), so a thumb follows its side.
+:data:`BENTO_RIG_2` is that version; version 1 keeps its one hand on both arms, as first approved.
 """
 
 from __future__ import annotations
 
-import enum
 import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
@@ -36,7 +35,9 @@ from functools import cache
 from types import MappingProxyType
 from typing import TYPE_CHECKING
 
-from . import brush
+from . import anatomy, brush
+from .anatomy import Facing
+from .anatomy import Side as Arm
 from .brush import Point, Shape
 from .canvas import Canvas
 from .contracts import Operation, ParameterContract, PartContract
@@ -538,24 +539,14 @@ _FIST_LINES: tuple[Path, ...] = (
 _WRIST_X = 3.0  # where a drawn hand meets its cuff, across the hand: a mirrored hand stays on the cuff it had
 
 
-class Arm(enum.Enum):
-    """The arm a hand is on, by the side of the frame it leaves from. His right arm is on the frame's left. The value
-    is the arm's place in :attr:`Gesture.sleeves`."""
-
-    LEFT = 0
-    RIGHT = 1
-
-
-class Facing(enum.Enum):
-    """What the camera sees of a hand."""
-
-    PALM = "palm"  # raised and shown: the crease shows, and with the fingers up the thumb is on the inside
-    BACK = "back"  # pressed to something, or hanging: no crease, and with the fingers up the thumb is on the outside
-
-
 # The arm each drawing is of, palm to the camera: the open hand has its thumb on the +x side, inward on the frame's
-# left, and the fist has it on the -x side, inward on the frame's right.
-DRAWN_FOR: Mapping[str, Arm] = MappingProxyType({"open": Arm.LEFT, "fist": Arm.RIGHT})
+# left, and the fist has it on the -x side, inward on the frame's right. An :class:`Arm` is the side of the frame it
+# leaves from, so his right arm is on the frame's left. A palm is raised and shown, and shows its crease. A back is
+# pressed to something, or hanging, and shows none.
+DRAWINGS: Mapping[str, anatomy.Drawing] = MappingProxyType(
+    {"open": anatomy.Drawing("open", Arm.LEFT, Facing.PALM), "fist": anatomy.Drawing("fist", Arm.RIGHT, Facing.PALM)}
+)
+DRAWN_FOR: Mapping[str, Arm] = MappingProxyType({name: drawing.side for name, drawing in DRAWINGS.items()})
 
 
 @dataclass(frozen=True)
@@ -581,10 +572,15 @@ class Paw:
             raise ToonDataError("a fist is drawn from its fingers: there is no back of a fist to show")
 
     @property
+    def hand(self) -> anatomy.Hand:
+        """This hand in the shared contract. Past a quarter turn its fingers go down: the turn, not the drawing."""
+        fingers = anatomy.Fingers.DOWN if abs(self.angle) > 90.0 else anatomy.Fingers.UP
+        return anatomy.Arm(self.arm).hand(self.facing, fingers)
+
+    @property
     def mirrored(self) -> bool:
         """Whether the drawing is reflected: a hand on the other arm is, and a hand's back is its palm's mirror."""
-        other_arm = self.arm is not DRAWN_FOR["fist" if self.fist else "open"]
-        return other_arm != (self.facing is Facing.BACK)
+        return DRAWINGS["fist" if self.fist else "open"].mirrored(self.hand)
 
 
 def _hand(x: float, y: float, angle: float = 0.0, fist: bool = False, scale: float = 1.0) -> list[Layer]:
@@ -621,8 +617,8 @@ def _nearest(paw: Paw, sleeve: Path) -> float:
 class Gesture:
     """A pose of his arms. ``sleeves`` go over him in ``under`` order, the frame's left arm then the frame's right, then
     ``held`` (what he holds) under the paws; ``hands`` are his :class:`Paw`, and ``paws`` paws drawn whole, each with a
-    shape of its own and no thumb to follow a side. A hand must be at the end of its own arm's sleeve: one on the other
-    arm, or two on one, is refused here, when the gesture is built."""
+    shape of its own and no thumb to follow a side, which ``no_thumb`` says the reason for. A hand must be at the end of
+    its own arm's sleeve: one on the other arm, or two on one, is refused here, when the gesture is built."""
 
     name: str
     title: str
@@ -630,6 +626,7 @@ class Gesture:
     hands: tuple[Paw, ...] = ()
     paws: tuple[Path, ...] = ()
     held: bool = False
+    no_thumb: str = ""
 
     def __post_init__(self) -> None:
         if len(self.sleeves) != 2 or not self.sleeves[0][0][0] < PIVOT_X < self.sleeves[1][0][0]:
@@ -637,11 +634,21 @@ class Gesture:
         for paw in self.hands:
             if not isinstance(paw, Paw):
                 raise ToonDataError(f"{self.name}: a hand is a Paw, not {paw!r}")
-            own, other = self.sleeves[paw.arm.value], self.sleeves[1 - paw.arm.value]
+            own, other = self._sleeve(paw.arm), self._sleeve(paw.arm.other)
             if _nearest(paw, other) < _nearest(paw, own):
                 raise ToonDataError(f"{self.name}: the hand at ({paw.x}, {paw.y}) is on the other arm, not {paw.arm}")
         if len({paw.arm for paw in self.hands}) != len(self.hands):
             raise ToonDataError(f"{self.name}: two hands on one arm")
+        if self.paws and not self.no_thumb.strip():
+            raise ToonDataError(f"{self.name}: a paw drawn whole has no thumb, and a gesture says why")
+        self.whole()
+
+    def _sleeve(self, arm: Arm) -> Path:
+        return self.sleeves[0 if arm is Arm.LEFT else 1]
+
+    def whole(self) -> tuple[anatomy.Thumbless, ...]:
+        """The paws drawn whole, in the shared contract: each on an arm, with no side to follow, and the reason."""
+        return tuple(anatomy.Arm(Arm(-1 + 2 * i)).thumbless(self.no_thumb) for i, _ in enumerate(self.paws))
 
 
 _READY_SLEEVES: tuple[Path, Path] = (
@@ -670,7 +677,7 @@ _TUCKED = Paw(Arm.LEFT, 133.0, 692.0, 180.0, scale=0.75, facing=Facing.BACK)  # 
 GESTURES: dict[str, Gesture] = {
     gesture.name: gesture
     for gesture in (
-        Gesture("ready", "Ready", _READY_SLEEVES, paws=_READY_PAWS),
+        Gesture("ready", "Ready", _READY_SLEEVES, paws=_READY_PAWS, no_thumb="hanging at his sides, drawn whole"),
         Gesture(
             "present",
             "Presenting",
@@ -793,6 +800,7 @@ GESTURES: dict[str, Gesture] = {
                     (222.0, 589.0),
                 ),
             ),
+            no_thumb="tucked round his arms, drawn whole",
         ),
         Gesture(
             "firm",
@@ -918,6 +926,7 @@ GESTURES: dict[str, Gesture] = {
                     (387.0, 560.0, 399.0, 565.0),
                 ),
             ),
+            no_thumb="round the tablet's edges, drawn whole",
             held=True,
         ),
     )
@@ -1824,8 +1833,9 @@ BENTO_RIG = HeadRig(
     pose_tilt=_tilt_of,
     tilt_reach=(min(_TILTS), max(_TILTS)),
     face_slide=FACE_SLIDE,
+    drawn_as=("toon-bento", 1),
 )
-BENTO_RIG_2 = replace(BENTO_RIG, look=BENTO_2)
+BENTO_RIG_2 = replace(BENTO_RIG, look=BENTO_2, drawn_as=("toon-bento", 2))
 _CONTRACT = PartContract(
     parameters=(
         (

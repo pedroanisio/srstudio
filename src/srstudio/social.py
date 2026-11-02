@@ -37,7 +37,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, NamedTuple
 
-from . import checks, digest
+from . import checks, digest, gpu
 from . import thumbnail as drawing
 from .errors import SrstudioError
 from .thumbnail import Thumbnail, ThumbnailError, covered, render
@@ -289,8 +289,10 @@ def take_still(
         raise CoverError(f"{scene.name} has no {COVER_VARIANT} variant to draw the cover's backdrop in")
     with tempfile.TemporaryDirectory(dir=out.parent) as tmp:
         still = Path(tmp) / "still.png"
-        _run([str(engine), "render", str(scene.resolve()), "--variant", COVER_VARIANT, "-t", f"{index / info.fps:.6f}",
-              "-o", str(still.resolve())], f"the engine cannot draw frame {index} of {scene.name}")  # fmt: skip
+        with gpu.held():
+            _run([str(engine), "render", str(scene.resolve()), "--variant", COVER_VARIANT, "-t",
+                  f"{index / info.fps:.6f}", "-o", str(still.resolve())],
+                 f"the engine cannot draw frame {index} of {scene.name}")  # fmt: skip
         if not still.exists():
             raise CoverError(f"the engine wrote no frame {index} of {scene.name}")
         size = _run([ffprobe, "-v", "error", "-show_entries", "stream=width,height", "-of", "csv=p=0:s=x",

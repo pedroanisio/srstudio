@@ -18,6 +18,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 
+from . import _stick_scene_contracts as sc
 from . import checks, signature, stick_reel
 from .canvas import Canvas
 from .look import sheet
@@ -198,7 +199,12 @@ def _clock(cv: Canvas, parent, end: float, turns: float) -> None:
     oval(cv, parent, cx - 8, cy - 8, 16, 16, cv.ink)
 
 
-@register("location", "stick-entrance", tags=("lobby", "doorway", "street", "glass-door", "night", "clock"))
+@register(
+    "location",
+    "stick-entrance",
+    contract=sc.contract('stick-entrance'),
+    tags=("lobby", "doorway", "street", "glass-door", "night", "clock"),
+)
 def entrance(
     cv: Canvas, parent, end: float, *, night: Sequence[tuple[float, float]] = ((0.0, 0.0),), clock: float = 0.0
 ) -> None:
@@ -237,7 +243,12 @@ def entrance(
     signature.code(s, parent, 40, 1885, 9, color="#6d5f49")
 
 
-@register("location", "stick-street-lens", tags=("street", "long-lens", "path", "night"))
+@register(
+    "location",
+    "stick-street-lens",
+    contract=sc.contract('stick-street-lens'),
+    tags=("street", "long-lens", "path", "night"),
+)
 def street(cv: Canvas, parent, end: float, *, night: Sequence[tuple[float, float]] = ((0.0, 0.0),)) -> None:
     """What a long lens sees of :func:`entrance`'s street, filling the frame: the path, the pavement and the end of
     the street, soft behind a runner sharp in the middle of it. It carries both signature marks."""
@@ -286,7 +297,9 @@ def _pane(cv: Canvas, parent, edge: float) -> None:
     shape(cv, parent, f"M {edge + 8} {ch} L {edge + 8} {ch + 6}", sw=20, stroke=METAL)
 
 
-@register("prop", "stick-glass-door", tags=("door", "glass", "swing", "lobby"))
+@register(
+    "prop", "stick-glass-door", contract=sc.contract('stick-glass-door'), tags=("door", "glass", "swing", "lobby")
+)
 def door(cv: Canvas, parent, end: float, *, shut: float | None = None, closed: bool = False) -> None:
     """The glass door on its hinge at :data:`DOORWAY`'s right jamb: held open at :data:`OPEN_EDGE`, and, from
     ``shut`` (seconds into the shot), swinging closed through :data:`SWING_STEPS` drawn frames; ``closed`` draws it
@@ -364,7 +377,7 @@ def shaking(start: float, end: float, face: Face, *, rate: float = 12.0) -> list
     return [RigKey(round(start + i / rate, 4), "hold-a" if i % 2 == 0 else "hold-b", face) for i in range(count)]
 
 
-@register("prop", "stick-snow-cap", tags=("snow", "winter", "weather"))
+@register("prop", "stick-snow-cap", contract=sc.contract('stick-snow-cap'), tags=("snow", "winter", "weather"))
 def snow_cap(cv: Canvas, parent, x: float, y: float, step: int, *, width: float = 150.0):
     """A heap of settled snow on what is at (``x``, ``y``, its base's centre), bigger with each ``step`` (1 to 3)."""
     if step not in (1, 2, 3):
@@ -399,7 +412,12 @@ def snow(cv: Canvas, parent, end: float, *, x: float = 0.0, y: float = 0.0, w: f
     return g
 
 
-@register("prop", "stick-marathon", tags=("marathon", "crowd", "silhouette", "runners"))
+@register(
+    "prop",
+    "stick-marathon",
+    contract=sc.contract('stick-marathon'),
+    tags=("marathon", "crowd", "silhouette", "runners"),
+)
 def marathon(cv: Canvas, parent, end: float, *, count: int = 14, base: float = 952.0, size: float = 96.0):
     """Runners in silhouette crossing the street's far end from right to left, ``size`` px tall on the line ``base``,
     two strides turn about, all past inside ``end`` seconds."""

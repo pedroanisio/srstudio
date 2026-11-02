@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from . import _stick_scene_contracts as sc
 from . import checks, stick_reel
 from .canvas import Canvas
 from .registry import register
@@ -58,7 +59,7 @@ def _check_lift(lift: Sequence[tuple[float, float]], end: float) -> None:
         last = t
 
 
-@register("prop", "stick-duvet", tags=("home", "bed", "night", "reveal"))
+@register("prop", "stick-duvet", contract=sc.contract('stick-duvet'), tags=("home", "bed", "night", "reveal"))
 def duvet(
     cv: Canvas,
     parent,
@@ -98,7 +99,7 @@ def duvet(
     return heap
 
 
-@register("prop", "stick-eye-mask", tags=("sleep", "bed", "night", "costume"))
+@register("prop", "stick-eye-mask", contract=sc.contract('stick-eye-mask'), tags=("sleep", "bed", "night", "costume"))
 def eye_mask(cv: Canvas, parent, x: float, y: float, *, scale: float = 1.0):
     """A sleep mask on a head centred on (``x``, ``y``), its strap round the head and its eyes stitched shut."""
     if not (all(checks.number(v) for v in (x, y, scale)) and scale > 0):
@@ -123,7 +124,7 @@ def _wave(x: float, y: float, w: float, row: int) -> str:
     return d
 
 
-@register("prop", "stick-recorder", tags=("phone", "recording", "bed", "night"))
+@register("prop", "stick-recorder", contract=sc.contract('stick-recorder'), tags=("phone", "recording", "bed", "night"))
 def recorder(cv: Canvas, parent, x: float, y: float, end: float, *, lines: int = 0, live: bool = False):
     """A phone lying face up, centred on (``x``, ``y``), recording: ``lines`` traces on its screen, one for each sound
     caught, the last one shaking if it is ``live``."""
@@ -148,7 +149,7 @@ def recorder(cv: Canvas, parent, x: float, y: float, end: float, *, lines: int =
     return g
 
 
-@register("prop", "stick-lights-low", tags=("night", "grade", "lamp", "dim"))
+@register("prop", "stick-lights-low", contract=sc.contract('stick-lights-low'), tags=("night", "grade", "lamp", "dim"))
 def lights_low(
     cv: Canvas,
     parent,

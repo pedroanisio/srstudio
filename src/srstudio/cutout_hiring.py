@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from . import _cutout_contracts, checks, locations, look, signature
+from . import _cutout_contracts, anatomy_ledger, checks, locations, look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -103,6 +103,7 @@ def crayon_cv(
 ):
     """The sheet's top middle is (``x``, ``y``), 520 × 560 at scale 1, and whoever holds it is entirely behind it.
     The shoes swing in each of the ``swings`` spans."""
+    anatomy_ledger.loose_hand(cv, "crayon-cv")
     cv.require_font("the CV's title is lettered in it", CutoutHiringError)
     _check_scale(scale)
     if not title.strip():
