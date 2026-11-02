@@ -1,0 +1,11 @@
+{
+  "schema": "srstudio.skeleton/1.0.0",
+  "name": "realistic",
+  "proportions": {"height_m": 1.75, "head_radius_m": 0.105},
+  "hands": {"left": "human", "right": "human"},
+  "rest": {
+    "left_upper_arm.down_up": -1.3962634016, "right_upper_arm.down_up": -1.3962634016,
+    "left_upper_arm.twist_in_out": -0.1745329252, "right_upper_arm.twist_in_out": -0.1745329252,
+    "left_lower_arm.stretch": -0.1745329252, "right_lower_arm.stretch": -0.1745329252
+  }
+}

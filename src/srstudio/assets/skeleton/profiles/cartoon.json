@@ -1,0 +1,11 @@
+{
+  "schema": "srstudio.skeleton/1.0.0",
+  "name": "cartoon",
+  "proportions": {
+    "height_m": 1.0,
+    "head_radius_m": 0.1515,
+    "factors": {"legs": 0.6, "arms": 0.8, "shoulders": 1.1}
+  },
+  "hands": {"left": "three-finger", "right": "three-finger"},
+  "rest": {"left_upper_arm.down_up": -1.2, "right_upper_arm.down_up": -1.2}
+}
