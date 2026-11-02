@@ -7,8 +7,9 @@ carries the signature marks as a desk does. :func:`side_car`, :func:`school_bus`
 own too, for a shot with no car round them; :func:`drive_past` moves a vehicle across the frame. :func:`tally_pad`
 holds a count in fives, and each of its ``strokes`` is added at its time.
 
-Every measure is a reference screen pixel (:func:`srstudio.toon.fx`/``fy``), like the rest of the style, and every key
-is on the composition clock. Bad input is a :class:`srstudio.toon.ToonDataError`.
+Every measure is a reference screen pixel (:func:`srstudio.toon.fx`/``fy``). Road keys follow ``Canvas.local_time``;
+traffic and loose-wheel keys force composition time, and tally strokes use parent visibility.
+Bad input is a :class:`srstudio.toon.ToonDataError`.
 """
 
 from __future__ import annotations
@@ -18,6 +19,7 @@ import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from . import _toon_social_contracts as tc
 from . import checks, toon_world
 from .canvas import Canvas
 from .registry import register
@@ -129,7 +131,12 @@ def _wheel(cv: Canvas, g, x: float, y: float, r: float) -> None:
     cv.ellipse(g, fx(x - r / 2), fy(y - r / 2), fh(r), fh(r), HUB, cv.ink, FINE_W / 2)
 
 
-@register("prop", "toon-side-car", summary="A plain small car from the side, facing left, in any paint, with no badge")
+@register(
+    "prop",
+    "toon-side-car",
+    contract=tc.contract('toon-side-car'),
+    summary="A plain small car from the side, facing left, in any paint, with no badge",
+)
 def side_car(
     cv: Canvas,
     parent,
@@ -161,6 +168,7 @@ def side_car(
 @register(
     "prop",
     "toon-loose-wheel",
+    contract=tc.contract('toon-loose-wheel'),
     summary="A car wheel that lets go of its axle at a set second and rolls away along the ground, turning as it goes",
 )
 def loose_wheel(
@@ -174,25 +182,45 @@ def loose_wheel(
     id: str | None = None,
 ) -> None:
     """A :func:`side_car`'s front wheel, for the car parked at ``at`` with ``wheels=("rear",)``: on its axle until
-    ``start``, then rolling to reference ``to`` along the ground over ``seconds``, turning the distance it covers."""
+    ``start``, then rolling to reference ``to`` along the ground over ``seconds``, turning the distance it covers.
+    Finite placement and positive scale must produce a positive frame-pixel radius, finite geometry and keys;
+    invalid plans fail before drawing."""
     if not (checks.number(seconds) and seconds > 0):
         raise ToonDataError(f"a wheel rolls for over 0 seconds, got {seconds!r}")
     if not (checks.number(start) and start >= 0):
         raise ToonDataError(f"a wheel lets go from second 0, got {start!r}")
+    if not (checks.number(scale) and scale > 0):
+        raise ToonDataError(f"a wheel's scale is finite and over 0, got {scale!r}")
+    if not (isinstance(at, tuple | list) and len(at) == 2 and all(checks.number(v) for v in at)):
+        raise ToonDataError(f"a wheel needs a finite reference point (x, y), got {at!r}")
+    if not checks.number(to):
+        raise ToonDataError(f"a wheel's target is a finite reference x, got {to!r}")
     x, y = at[0] - 96 * scale, at[1] - 28 * scale
     r = 30 * scale
     cx, cy = fx(x), fy(y)
+    radius = fh(r)
+    travel = fx(to) - cx
+    stop = start + seconds
+    geometry = (cx, cy, radius, travel, stop, fx(x - r), fy(y - r), fh(2 * r), fy(y + r / 2))
+    if not all(checks.number(v) for v in geometry) or radius <= 0:
+        raise ToonDataError("a wheel's geometry and end time must remain finite, with a positive frame-pixel radius")
+    turned = math.degrees(travel / radius)
+    if not checks.number(turned):
+        raise ToonDataError("a wheel's travel must produce a finite rotation")
     g = cv.group(parent, id or cv.uid("wheel"), x=cx, y=cy, anchorX=cx, anchorY=cy)
     _wheel(cv, g, x, y, r)
     _line(cv, g, [(x, y - r / 2), (x, y + r / 2)], 3.0)  # a spoke, or a turning wheel would look still
-    travel = fx(to) - cx
-    turned = math.degrees(travel / fh(r))
-    keys = [(0.0, 0.0), (start, 0.0), (start + seconds, 1.0)]
+    keys = [(0.0, 0.0), (start, 0.0), (stop, 1.0)]
     cv.keys(g, "x", [(t, round(cx + travel * k, 3)) for t, k in keys], hold=False, local=False)
     cv.keys(g, "rotation", [(t, round(turned * k, 3)) for t, k in keys], hold=False, local=False)
 
 
-@register("prop", "toon-school-bus", summary="A long yellow bus from the side, facing left, stripes and no lettering")
+@register(
+    "prop",
+    "toon-school-bus",
+    contract=tc.contract('toon-school-bus'),
+    summary="A long yellow bus from the side, facing left, stripes and no lettering",
+)
 def school_bus(cv: Canvas, parent, at: Point = (296.0, 780.0), scale: float = 1.0, id: str | None = None) -> None:
     """The bus with its wheels on the ground at ``at``, ``scale`` times its size about that point."""
     g = _scaled(cv, parent, at, scale, id)
@@ -210,7 +238,12 @@ def school_bus(cv: Canvas, parent, at: Point = (296.0, 780.0), scale: float = 1.
         _wheel(cv, g, wheel, y - 30, 36)
 
 
-@register("prop", "toon-banana", summary="One banana on its side, ripe, a little bruised at the tips")
+@register(
+    "prop",
+    "toon-banana",
+    contract=tc.contract('toon-banana'),
+    summary="One banana on its side, ripe, a little bruised at the tips",
+)
 def banana(cv: Canvas, parent, at: Point = (296.0, 780.0), scale: float = 1.0, id: str | None = None) -> None:
     """The banana lying with its belly on the ground at ``at``, ``scale`` times its size about that point."""
     g = _scaled(cv, parent, at, scale, id)
@@ -251,7 +284,7 @@ def drive_past(
     half = _half_span(passing, scale)
     start, end = max(0.0, passing.at - half / speed), passing.at + half / speed
     g = cv.group(parent, id or cv.uid("g"), start=start, end=end)
-    cv.keys(g, "x", [(t, fh(speed * (passing.at - t))) for t in (start, end)], hold=False)
+    cv.keys(g, "x", [(t, fh(speed * (passing.at - t))) for t in (start, end)], hold=False, local=False)
     middle = (REF_W / 2, y)
     if passing.kind == "bus":
         school_bus(cv, g, middle, scale)
@@ -262,6 +295,7 @@ def drive_past(
 @register(
     "location",
     "toon-car-inside",
+    contract=tc.contract('toon-car-inside'),
     summary="Inside a car from the dashboard: its paint round one wide window, the road going past through the glass",
 )
 def car_inside(
@@ -286,7 +320,12 @@ def car_inside(
     cv.rect(g, fx(236), fy(y), fh(120), fh(30), GLASS_DARK, cv.clear, 0, radius=fh(7))
 
 
-@register("prop", "toon-car-seat", summary="A car seat's back and headrest, behind whoever sits in it")
+@register(
+    "prop",
+    "toon-car-seat",
+    contract=tc.contract('toon-car-seat'),
+    summary="A car seat's back and headrest, behind whoever sits in it",
+)
 def seat(cv: Canvas, parent, x: float = 165.0, colour: str = TRIM) -> None:
     """The seat centred on reference ``x``, its foot under the dashboard."""
     if not checks.number(x):
@@ -299,7 +338,10 @@ def seat(cv: Canvas, parent, x: float = 165.0, colour: str = TRIM) -> None:
 
 
 @register(
-    "prop", "toon-dash-vents", summary="A dashboard's front: two air vents and a glovebox, for under its top edge"
+    "prop",
+    "toon-dash-vents",
+    contract=tc.contract('toon-dash-vents'),
+    summary="A dashboard's front: two air vents and a glovebox, for under its top edge",
 )
 def dash_vents(cv: Canvas, parent) -> None:
     """Drawn over a ledge's front, with no marks of its own: the ledge carries them."""
@@ -312,7 +354,12 @@ def dash_vents(cv: Canvas, parent) -> None:
     cv.rect(g, fx(436), fy(916), fh(44), fh(12), TRIM_LIGHT, cv.clear, 0, radius=fh(6))
 
 
-@register("prop", "toon-steering-wheel", summary="A plain round steering wheel, front on, three spokes and no badge")
+@register(
+    "prop",
+    "toon-steering-wheel",
+    contract=tc.contract('toon-steering-wheel'),
+    summary="A plain round steering wheel, front on, three spokes and no badge",
+)
 def steering_wheel(cv: Canvas, parent, at: Point = (165.0, 850.0), radius: float = 122.0) -> None:
     """The wheel centred on ``at``; a dashboard drawn after it hides its foot."""
     if not (checks.number(radius) and radius > 0):
@@ -342,7 +389,10 @@ def stroke_line(index: int) -> tuple[Point, Point]:
 
 
 @register(
-    "prop", "toon-tally-pad", summary="A spiral pad on the dashboard that keeps a count in fives, stroke by stroke"
+    "prop",
+    "toon-tally-pad",
+    contract=tc.contract('toon-tally-pad'),
+    summary="A spiral pad on the dashboard that keeps a count in fives, stroke by stroke",
 )
 def tally_pad(
     cv: Canvas,

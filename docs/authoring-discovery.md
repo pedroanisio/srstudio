@@ -316,6 +316,58 @@ assert lamp_result is None
 ```
 <!-- toon-care-discovery:end -->
 
+The 21 builders in `toon_cars`, `toon_dinner`, `toon_parlour` and `toon_rooms`
+complete the registered Toon non-character declarations. Passing vehicles use
+`Passing(at, kind, colour)`: `at` is the composition time when the vehicle crosses
+the frame center. Road scrolling follows the canvas clock; tally marks use parent
+visibility. Loose wheels keep translation and rotation proportional to their
+converted radius. Their scale, position and destination must produce finite
+geometry and a positive frame-pixel radius.
+
+Dining dishes accept `(kind, x)` or `(kind, x, at)` rows. They use a fixed table
+height and canvas-keyed opacity reveals. Cones and the parlour case return groups
+with geometry already placed in frame pixels; changing their group `x` adds a
+translation to that placement. The parlour front's `start` and `end` are only
+validation limits: they do not trim traffic or hide the room.
+
+Lit rooms return a dictionary of `toon_rooms.Cue` records. Their closed light maps
+list the room's supported sources; omitted sources receive defaults. A screen's
+first cue names its color, and later cues can retain or change it. Light levels,
+screen colors, tickets and router LEDs follow the canvas clock. The lounge speaker
+ring uses composition keys. `end=0` draws a still; positive `end` bounds generated
+keys without hiding the room.
+
+Create the light layer after the actor and before the foreground desk. This lets
+room lighting reach the character while keeping the signature clear. `dim` fades
+linearly over 1.5 seconds; it can support a quiet mood change, but it does not
+select or animate the actor's expression.
+
+<!-- toon-lit-room-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry, toon
+
+room = registry.get("location", "toon-lounge")
+room_info = room.describe()["contract"]
+dog = registry.get("character", "toon-dog")
+names = dog.describe()["contract"]["vocabularies"]
+pose = toon.Pose(0, names["eyes"][0], names["mouths"][0], names["arms"][0])
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="30", duration=4)
+cv = Canvas(scene, font_asset=None)
+back = cv.group(cv.comp, "back")
+actor = cv.group(cv.comp, "actor")
+light = cv.group(cv.comp, "light")
+front = cv.group(cv.comp, "front")
+cues = room(cv, back, {"lamp": ((0, "on"), (1, "dim")),
+                       "tv": ((0, "on", "blue"),)}, end=4, light=light)
+dog(cv, actor, [pose], enter=0, duration=4)
+toon.desk(cv, front)
+assert room_info["returns"]["x-role"] == "parsed-light-cues"
+```
+<!-- toon-lit-room-discovery:end -->
+
 The 22 parts in `toon_everyday`, `toon_inserts`, `toon_study` and `toon_laptop`
 also publish contracts. Inspect the return before using it:
 

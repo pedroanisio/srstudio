@@ -8,8 +8,8 @@ it, so an arm that sinks goes behind the counter. The counter itself is ``toon_h
 :func:`case` the glass case set into it.
 
 Nothing here carries a brand: the tube has no lettering. Every measure is a reference screen pixel
-(:func:`srstudio.toon.fx`/``fy``), and every key is on the composition clock. Bad input is a
-:class:`srstudio.toon.ToonDataError`.
+(:func:`srstudio.toon.fx`/``fy``). Traffic and held-arm keys use composition time; visibility uses parent time.
+Bad input is a :class:`srstudio.toon.ToonDataError`.
 """
 
 from __future__ import annotations
@@ -17,6 +17,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 
+from . import _toon_social_contracts as tc
 from . import checks, toon_cars
 from .canvas import Canvas
 from .registry import register
@@ -80,7 +81,12 @@ def _wafer(cv: Canvas, g, x: float, y: float, s: float) -> None:
         _line(cv, g, [edge(1, t), edge(-1, t + 0.36)], 3.0, WAFER_LINE)
 
 
-@register("prop", "toon-cone", summary="An ice cream cone with one big scoop on it, vanilla or mint with chips")
+@register(
+    "prop",
+    "toon-cone",
+    contract=tc.contract('toon-cone'),
+    summary="An ice cream cone with one big scoop on it, vanilla or mint with chips",
+)
 def cone(cv: Canvas, parent, at: Point = (296.0, 760.0), flavour: str = "vanilla", scale: float = 1.0):
     """A cone of ``flavour`` with its point at ``at``; returns the group, whose keys move the whole cone."""
     x, y = _point(at, "a cone's point")
@@ -97,7 +103,12 @@ def cone(cv: Canvas, parent, at: Point = (296.0, 760.0), flavour: str = "vanilla
     return g
 
 
-@register("prop", "toon-toothpaste-cone", summary="A cone with a swirl of striped toothpaste and the tube stuck in it")
+@register(
+    "prop",
+    "toon-toothpaste-cone",
+    contract=tc.contract('toon-toothpaste-cone'),
+    summary="A cone with a swirl of striped toothpaste and the tube stuck in it",
+)
 def toothpaste_cone(cv: Canvas, parent, at: Point = (296.0, 760.0), scale: float = 1.0):
     """A cone with a striped toothpaste swirl where the scoop should be and the blank tube upended in its top, its
     point at ``at``; returns the group."""
@@ -122,7 +133,10 @@ def toothpaste_cone(cv: Canvas, parent, at: Point = (296.0, 760.0), scale: float
 
 
 @register(
-    "prop", "toon-parlour-case", summary="The glass case under a parlour counter, with six tubs of ice cream in it"
+    "prop",
+    "toon-parlour-case",
+    contract=tc.contract('toon-parlour-case'),
+    summary="The glass case under a parlour counter, with six tubs of ice cream in it",
 )
 def case(cv: Canvas, parent, top: float = 892.0):
     """The counter front's glass case, its top edge at ``top``, drawn after the ledge; returns the group."""
@@ -192,7 +206,7 @@ def held(
         raise ToonDataError(f"an arm is longer than it is wide, got {root!r} to {at!r}")
     g = cv.group(parent, cv.uid("g"), start=start, end=end, x=fx(bx), y=fy(by), anchorX=fx(bx), anchorY=fy(by))
     if swings:
-        cv.keys(g, "rotation", sorted(swings), hold=False, kind="cubic-in-out")
+        cv.keys(g, "rotation", sorted(swings), hold=False, kind="cubic-in-out", local=False)
     for a, b, kind in spans:
         _colour(kind, HELD, "what an arm holds")
         if not (checks.number(a) and checks.number(b) and a < b):
@@ -223,6 +237,7 @@ def _awning(cv: Canvas, g, y: float) -> None:
 @register(
     "location",
     "toon-parlour-front",
+    contract=tc.contract('toon-parlour-front'),
     summary="An ice cream parlour from behind its counter: pink walls and a shop window on a street, traffic going by",
 )
 def parlour_front(
@@ -265,6 +280,7 @@ def parlour_front(
 @register(
     "location",
     "toon-parlour-back",
+    contract=tc.contract('toon-parlour-back'),
     summary="An ice cream parlour from the customer's side: shelves of cones under a picture board with no words on it",
 )
 def parlour_back(cv: Canvas, parent) -> None:

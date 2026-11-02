@@ -15,8 +15,9 @@ signature on it (ADR 0001), is drawn after that layer, so no light state changes
 A sketch picks a room by name (:data:`ROOMS`, :func:`stage`, :func:`dress`) and gives its cues as data, the way
 a JSON file holds them: ``{"lamp": [[0, "on"], [4.5, "flicker"]], "tv": [[0, "on", "blue"], [3, "on", "red"]]}``.
 
-Every measure is a reference screen pixel (:func:`srstudio.toon.fx`/``fy``). Every key is on the composition
-clock, from 0 to ``end``; with ``end`` 0 (a still) a light holds the level of its one cue at 0.
+Every measure is a reference screen pixel (:func:`srstudio.toon.fx`/``fy``). Room light, ticket and router keys
+follow ``Canvas.local_time``; the speaker ring explicitly uses composition time. With ``end`` 0 (a still), a light
+holds the level of its one cue at 0. Positive ``end`` bounds animation keys without hiding the room.
 """
 
 from __future__ import annotations
@@ -24,8 +25,9 @@ from __future__ import annotations
 import re
 from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Annotated, Any
 
+from . import _toon_social_contracts as tc
 from . import brush, checks, toon_everyday
 from .canvas import Canvas, _at_zero
 from .registry import register
@@ -301,6 +303,7 @@ def _layer(cv: Canvas, parent, light):
 @register(
     "location",
     "toon-lounge",
+    contract=tc.room_contract('toon-lounge', dict[str, list[Annotated[Cue, tc.CUE_FIELDS]]]),
     summary="A living room at night, lit over time: a floor lamp, a wall TV whose glow changes colour, a sofa, a "
     "router that blinks, a smart speaker (ADR 0043)",
 )
@@ -434,6 +437,7 @@ def _lounge_shelf(
 @register(
     "location",
     "toon-counter",
+    contract=tc.room_contract('toon-counter', dict[str, list[Annotated[Cue, tc.CUE_FIELDS]]]),
     summary="A waiting area under fluorescent tubes, lit over time: the tubes, a NOW SERVING board whose colour "
     "and ticket change, a TAKE A NUMBER sign, a plastic chair (ADR 0043)",
 )

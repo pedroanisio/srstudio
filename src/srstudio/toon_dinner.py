@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from . import _toon_social_contracts as tc
 from . import checks, signature
 from .canvas import Canvas
 from .registry import register
@@ -54,6 +55,7 @@ TONES = {"idle": ("#d9ecf2", "#1e293b"), "bad": ("#ffd6d2", "#b42318"), "good": 
 @register(
     "location",
     "toon-restaurant",
+    contract=tc.contract('toon-restaurant'),
     summary="A bistro booth: a terracotta wall, a dark wainscot, a framed seascape, a sconce, a chalk SPECIALS "
     "board and a red leather banquette behind the character",
 )
@@ -114,6 +116,7 @@ def restaurant(
 @register(
     "prop",
     "toon-table",
+    contract=tc.contract('toon-table'),
     summary="A dinner table under a white tablecloth with red stripes at the hem, in the desk's place, signed as the "
     "desk is",
 )
@@ -240,6 +243,7 @@ def _local(cv: Canvas, g, d: str, fill: str | None, sw: float = FINE_W * 0.7, st
 @register(
     "prop",
     "toon-dishes",
+    contract=tc.contract('toon-dishes'),
     summary="Dishes for the dinner table: a side salad, a water glass, a lobster, a plate of empty shells, a wine "
     "bottle, a full and an empty wine glass and the check in its folder; each can arrive on cue",
 )
@@ -274,6 +278,7 @@ MINT_STRIPES = ((-0.92, -0.58), (-0.2, 0.2), (0.58, 0.92))  # each stripe's edge
 @register(
     "prop",
     "toon-mint",
+    contract=tc.contract('toon-mint'),
     summary="A small saucer with one striped mint in a twisted wrapper, set down on cue, or the empty wrapper",
 )
 def mint(
@@ -316,6 +321,7 @@ def mint(
 @register(
     "prop",
     "toon-card-reader",
+    contract=tc.contract('toon-card-reader'),
     summary="A handheld card reader standing on the table whose screen changes on cue: TAP CARD, DECLINED, APPROVED",
 )
 def card_reader(
