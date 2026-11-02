@@ -6,6 +6,7 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 
 - Status: proposed (2026-11-02)
 - Back to the [library README](../../README.md)
+- Extended by [ADR 0184](0184-srlocations-mannequin-blocking.md): a body blocked on the marks, schema 1.1.0
 
 ## Context
 
