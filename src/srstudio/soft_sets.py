@@ -9,18 +9,20 @@ goes dark (``dark``), so a reel moves the world and leaves the cast alone.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable, Sequence
 from typing import NamedTuple
 
 from . import _soft_scene_contracts as dc
-from . import checks, look, signature
+from . import checks, fonts, look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
+from .graphics import captions as _captions
 from .registry import register
 from .soft_props import bench as park_bench
 
 __all__ = ["CAPTIONS", "FINISH", "Dim", "Light", "Shot", "SoftSetError", "bedroom", "finish", "hall_light", "park"]
-__all__ += ["playroom"]
+__all__ += ["MOST_SPACES", "caption_band", "caption_look", "captions", "playroom"]
 
 WIDTH, HEIGHT = 1080, 1920
 Slot = Callable[[object], object] | None
@@ -28,7 +30,9 @@ Stages = Sequence[tuple[float, int]]
 
 CAPTIONS = dict(
     x=80, y=250, width=840, height=180, size=58, color="#1A1714", stroke="#FFFFFF", stroke_width=7, shadow=None
-)  # the Soft style's caption look (ADR 0048), for ``Episode.captions``
+)  # the Soft style's caption look (ADR 0048); a new reel draws it with :func:`captions`, which keeps its words apart
+MOST_SPACES = 4  # the most spaces :func:`captions` sets between two words
+_LINE_HEIGHT = (_captions.__kwdefaults__ or {})["line_height"]  # what graphics.captions sets a line in
 FINISH: dict[str, dict[str, float | str]] = {  # warm corners and a soft lift on what is bright; no grain, no blur
     "vignette": dict(amount=0.22, radius=0.95, softness=0.8, color="#3B2A1E"),
     "bloom": dict(threshold=0.9, radius=16, intensity=0.14),
@@ -114,6 +118,52 @@ class Dim(NamedTuple):
 
 class SoftSetError(SrstudioError, ValueError):
     """A Soft set asked for something it cannot draw."""
+
+
+def caption_look(font: bytes, texts: Sequence[str], **over) -> dict:
+    """:data:`CAPTIONS` with ``over``, and as many spaces between two words (``word_space``) as ``font``, the reel's
+    caption face, needs for every gap of ``texts`` to keep at least an outline's width of background between the two
+    outlined words (:func:`srstudio.fonts.word_gaps`): with less, the outlines meet and the words read as one.
+    Refused when :data:`MOST_SPACES` cannot part them, or a line once spaced, with its outline, is wider than the box
+    (the engine would wrap it onto a line the box has no room for)."""
+    style = {**CAPTIONS, **over}
+    size, outline, width = style["size"], style["stroke_width"], style["width"]
+    for count in range(1, MOST_SPACES + 1):
+        spaced = [re.sub(r" +", " " * count, text) for text in texts]
+        closed = [g for text in spaced for g in fonts.word_gaps(font, text, size, outline=outline) if g.px < outline]
+        if not closed:
+            break
+    else:
+        worst = min(closed, key=lambda g: g.px)
+        raise SoftSetError(
+            f"{MOST_SPACES} spaces leave {worst.px:.1f} px between {worst.left!r} and {worst.right!r} outlined "
+            f"{outline} px wide; the words need at least the outline's width"
+        )
+    for text in spaced:
+        for line in text.split("\n"):
+            if (wide := fonts.text_width(font, line, size) + 2 * outline) > width:
+                raise SoftSetError(
+                    f"caption line {line!r} is {wide:.0f} px wide with {count} spaces between words and its outline, "
+                    f"wider than the caption box ({width} px): break it by hand or split the caption"
+                )
+    return {**style, "word_space": count}
+
+
+def caption_band(text: str, **over) -> tuple[float, float]:
+    """The top and bottom, in frame pixels, of the lines of ``text`` in :data:`CAPTIONS` with ``over``, their outline
+    included: the engine centres the lines in the box, each ``size`` times the line height tall. What sits above a
+    caption (an opening line) ends above the top."""
+    style = {**CAPTIONS, **over}
+    lines = (text.count("\n") + 1) * style["size"] * float(style.get("line_height", _LINE_HEIGHT))
+    middle = style["y"] + style["height"] / 2
+    return middle - lines / 2 - style["stroke_width"], middle + lines / 2 + style["stroke_width"]
+
+
+def captions(ep, specs: Sequence[tuple[float, float, str, str]], font: bytes, **over) -> list:
+    """The Soft caption layer: ``ep.captions(specs)`` in :func:`caption_look`, measured in ``font`` (the bytes of the
+    reel's caption face), so outlined words never run together. The specs, and the words said, stay as written; only
+    the drawn lines get the spaces. Reels published before it drew ``ep.captions(specs, **CAPTIONS)`` and keep it."""
+    return ep.captions(specs, **caption_look(font, [text for _, _, text, _ in specs], **over))
 
 
 def finish(cv: Canvas, parent, id: str = "soft-finish"):
