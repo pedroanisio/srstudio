@@ -229,6 +229,10 @@ def build(out: Path, *, fps: int = 24) -> Path:
     }
     (out / 'listening.score.json').write_text(json.dumps(score_data, indent=2, allow_nan=False) + '\n')
     samples = [listener.sample(i / fps) for i in range(6 * fps)]
+    nods = []
+    for sample in samples:
+        assert sample.head is not None  # this example uses the Toon head rig
+        nods.append(sample.head.nod)
     report = {
         'schema': 'srstudio.acting-continuity/1.0.0',
         'generated_by': {'model': 'GPT-6', 'tool': 'OpenAI Codex'},
@@ -240,7 +244,7 @@ def build(out: Path, *, fps: int = 24) -> Path:
         'listening': {
             'heard_lines': 3,
             'mouth_always_closed': all(s.mouth == 'closed' for s in samples),
-            'max_nod': max(s.head.nod for s in samples),
+            'max_nod': max(nods),
         },
         'continuity': {
             'cut': 3,
