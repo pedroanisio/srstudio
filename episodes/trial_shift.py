@@ -39,13 +39,18 @@ from srstudio import interview as iv_audio
 from trial_shift_audio import (
     ARM,
     AT_DOOR,
-    AVA_APART,
     AVA_HAND,
     AVA_SHOULDER,
     AVA_SIZE,
+    AVA_TUG,
+    BY_THE_DOOR,
     CAPTION_LEAD,
     CAPTION_MIN,
     CAPTION_TAIL,
+    CUP_SCALE,
+    CUP_X,
+    CUP_Y,
+    ENTERS,
     GONE,
     HELD_OUT,
     HOOK,
@@ -59,11 +64,18 @@ from trial_shift_audio import (
     OUT_OF_SIGHT,
     REST,
     SHOULDER,
+    STANDS,
+    STRINGS_TO,
+    TRAY_ARM,
+    TRAY_BEND,
     TRAY_HAND,
+    TRAY_HOLD,
+    TRAY_SHOULDERS,
     TRAY_SIZE,
     TURNS_FRAME,
     TWO,
     WALKS_ON,
+    carried_until,
 )
 
 os.umask(0o077)  # generated outputs are private: folders 700, files 600
@@ -107,8 +119,6 @@ GREEN_INK = 3
 APRON = "M-43 119 L-54 327 L57 327 L43 119 L24 119 L22 154 L-23 154 L-25 119Z"
 TIE_UP = [0.15, 0.5, 0.85]  # she pulls the strings three times, and he rocks with it
 AVA_Y = 1040.0
-AVA_X, AVA_CLOSE, AVA_TAG = 880.0, 660.0, 620.0
-STANDS = {"ava": AVA_CLOSE, "tag": AVA_TAG, "turns": AVA_APART, "wide": AVA_APART, "door": AVA_APART}  # by shot
 TRAY_Y = 800.0
 DOOR_X, DOOR_TOP, DOOR_H = -10.0, 430.0, 1270.0
 FOLDER_HAND = (128.0, 1160.0)
@@ -146,8 +156,8 @@ def milo_units(x: float, y: float) -> tuple[float, float]:
 def on_tray(g):
     tray = cv.group(g, "trial-tray", x=0, y=236)
     cv.rect(tray, -130, 0, 260, 14, "#8D949B", cv.ink, 3, radius=6)
-    props.coffee_cup(cv, tray, -62, -56, 0.5)
-    props.coffee_cup(cv, tray, 56, -56, 0.5)
+    props.coffee_cup(cv, tray, -CUP_X, CUP_Y, CUP_SCALE)
+    props.coffee_cup(cv, tray, CUP_X, CUP_Y, CUP_SCALE)
 
 
 def candidate(g):
@@ -159,7 +169,7 @@ def candidate(g):
     node = ep.perform(
         who,
         group,
-        1010.0,
+        ENTERS,
         TRAY_Y,
         TRAY_SIZE,
         mouth=ep.mouth("candidate"),
@@ -172,15 +182,16 @@ def candidate(g):
     )
     cv.path(who.group, APRON, cutout_trial.GREEN, cv.ink, GREEN_INK)
     cutout_trial.trial_tag(cv, who.group, 0, 190, scale=0.78, id="candidate-tag")
-    on_tray(who.group)
-    for side, shoulder, hand in (("left", (-66, 148), (-TRAY_HAND, 240)), ("right", (67, 148), (TRAY_HAND, 240))):
-        bend = 1 if side == "left" else -1
-        cutout_arm.arm(cv, who.group, f"candidate-{side}", shoulder, [(0.0, *hand)], upper=80, fore=80, bend=bend,
-                       width=5.0, hand=26.0, skin="#F1D0AA")  # fmt: skip
+    carrying = cv.group(who.group, "candidate-carrying")
+    cv.gate(carrying, [(0.0, carried_until(DOWN, CROSSES))])
+    on_tray(carrying)
+    for side, x in (("left", -TRAY_HAND), ("right", TRAY_HAND)):
+        cutout_arm.arm(cv, carrying, f"candidate-{side}", TRAY_SHOULDERS[side], [(0.0, x, TRAY_HOLD)], upper=TRAY_ARM,
+                       fore=TRAY_ARM, bend=TRAY_BEND[side], width=5.0, hand=26.0, skin="#F1D0AA")  # fmt: skip
     friday, turns, wide = spans["friday"][0], spans["turns"][0], spans["wide"][0]
     rows = [
-        (0.0, 1010.0),
-        (BEHIND, 1010.0),
+        (0.0, ENTERS),
+        (BEHIND, ENTERS),
         (TAG, 800.0),
         (friday[0], 800.0),
         (friday[0], 850.0),
@@ -189,8 +200,8 @@ def candidate(g):
         (turns[0], WALKS_ON[0]),
         (turns[1], WALKS_ON[1]),
         (wide[0], WALKS_ON[1]),
-        (wide[0], 272.0),  # clear of the board's code, and still in sight of the door
-        (DOWN - LEAVES, 272.0),
+        (wide[0], BY_THE_DOOR),  # clear of the board's code, and still in sight of the door
+        (DOWN - LEAVES, BY_THE_DOOR),
         (CROSSES + GONE, OUT_OF_SIGHT),
         (DURATION, OUT_OF_SIGHT),
     ]
@@ -235,7 +246,8 @@ def peg(g):
 
 
 def ava(g):
-    """Behind him at the opening, then her close and the tag, cheated along the room so the marks stay in frame."""
+    """Off him from the first frame, pulling his strings from her own side so no arm of hers crosses his, then her close
+    and the tag, cheated along the room so the marks stay in frame."""
     group = cv.group(g, "ava-shots")
     cv.gate(group, seen("open", "ava", "tag", "turns", "wide", "door"))
     who = cast.Barista(cv, tag="ava-trial")
@@ -244,7 +256,7 @@ def ava(g):
     node = ep.perform(
         who,
         group,
-        AVA_X,
+        STANDS["open"],
         AVA_Y,
         AVA_SIZE,
         mouth=ep.mouth("ava", smile=smile),
@@ -268,21 +280,29 @@ def ava(g):
     eyes_y = [(0.0, 8.0), (L[1].start, 8.0), (L[1].start + 0.05, 0.0), (L[10].end, 0.0), (L[10].end + 0.2, -14.0),
               (LAST_LOOK, -14.0), (LAST_LOOK + 0.12, 0.0)]  # fmt: skip
     cv.keys(who.eyes, "y", eyes_y, hold=False)
-    tied = [(0.0, -96.0, 168.0)]
+    tied = [(0.0, *AVA_HAND)]
     for at in TIE_UP:
-        tied += [(at, -96.0, 168.0), (at + 0.12, -86.0, 192.0), (at + 0.3, -96.0, 168.0)]
-    tied += [(L[1].start - 0.1, -96.0, 168.0), (L[1].start + 0.1, -92.0, 316.0)]
-    turn = spans["turns"][0][0]
-    tied += [(turn - 0.5, -92.0, 316.0), (turn - 0.1, *AVA_HAND)]  # off screen: she is not in Milo's close
-    cutout_arm.arm(cv, who.group, "ava-tying", AVA_SHOULDER, tied, upper=96, fore=96, bend=-1, width=5.0, hand=26.0,
+        tied += [(at, *AVA_HAND), (at + 0.12, *AVA_TUG), (at + 0.3, *AVA_HAND)]
+    strings = cv.group(who.group, "apron-strings")  # under her arm, and Milo is drawn over the end of them
+    cv.gate(strings, spans["open"])
+    for axis, rest, pulled in (("x", AVA_HAND[0], AVA_TUG[0]), ("y", AVA_HAND[1], AVA_TUG[1])):
+        keys = [(0.0, 0.0)]
+        for at in TIE_UP:
+            keys += [(at, 0.0), (at + 0.12, pulled - rest), (at + 0.3, 0.0)]
+        cv.keys(strings, axis, keys, hold=False)
+    knot = ((STRINGS_TO[0] - STANDS["open"]) / AVA_SIZE, (STRINGS_TO[1] - AVA_Y) / AVA_SIZE)
+    line = f"M{AVA_HAND[0]} {AVA_HAND[1]} L{knot[0]:.1f} {knot[1]:.1f}"
+    cv.path(strings, line, None, cv.ink, 7)
+    cv.path(strings, line, None, cutout_trial.GREEN, 3)
+    cutout_arm.arm(cv, who.group, "ava-near", AVA_SHOULDER, tied, upper=96, fore=96, bend=-1, width=5.0, hand=26.0,
                    skin=who.skin)  # fmt: skip
     tag = cv.group(who.group, "ava-tag-from-here")
     cv.gate(tag, [(TAG, DURATION)])
     cutout_trial.trial_tag(cv, tag, 0, 188, scale=0.78, id="ava-tag")
-    rows = [(0.0, AVA_X)]
-    x = AVA_X
+    rows = [(0.0, STANDS["open"])]
+    x = STANDS["open"]
     for c in cuts[1:]:
-        to = STANDS.get(c.angle, AVA_X)
+        to = STANDS.get(c.angle, STANDS["open"])
         if to != x:
             rows += [(c.time, x), (c.time, to)]
             x = to
@@ -321,8 +341,7 @@ def milo(g):
         apron, "y", [(0.0, 12.0), (TIE_UP[0] + 0.12, 8.0), (TIE_UP[1] + 0.12, 4.0), (TIE_UP[2] + 0.12, 0.0)], hold=False
     )
     cv.path(apron, APRON, cutout_trial.GREEN, cv.ink, GREEN_INK)
-    turn = spans["turns"][0][0]
-    hangs = [(0.0, 96.0, 326.0), (turn - 0.01, 96.0, 326.0), (turn, *MILO_RIGHT_HAND)]  # on the cut, off Ava's arm
+    hangs = [(0.0, *MILO_RIGHT_HAND)]
     cutout_arm.arm(cv, who.group, "milo-right", MILO_RIGHT_SHOULDER, hangs, upper=96, fore=96, bend=1, width=5.0,
                    hand=26.0, skin=who.skin)  # fmt: skip
     hook = milo_units(HOOK[0], HOOK[1] - 8)
@@ -359,10 +378,10 @@ def close(at, scale, to=(540, 775)):
 
 FRAMES = {  # angle -> scale, x, y
     "open": TWO,
-    "ava": close((AVA_CLOSE, AVA_Y), 1.7),
+    "ava": close((STANDS["ava"], AVA_Y), 1.7),
     "milo": close((MILO_X, MILO_Y), 1.6),
     "behind": close((MILO_X, MILO_Y), 1.2, (540, 900)),  # any tighter or higher, the head behind him reaches the bug
-    "tag": close((AVA_TAG, AVA_Y + 188 * AVA_SIZE), 2.4, (540, 1000)),
+    "tag": close((STANDS["tag"], AVA_Y + 188 * AVA_SIZE), 2.4, (540, 1000)),
     "friday": TWO,
     "turns": TURNS_FRAME,
     "wide": (1.0, 0.0, -140.0),

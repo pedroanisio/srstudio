@@ -19,20 +19,32 @@ from trial_shift_audio import (  # noqa: E402
     AVA_REACH,
     AVA_SHOULDER,
     AVA_SIZE,
+    AVA_TUG,
     BEHIND_HIM,
+    BODY_GONE,
+    BODY_HALF,
     CAPTION_LEAD,
     CAPTION_MIN,
     CAPTION_TAIL,
     CODE_LEFT,
     CUE,
+    CUP_BASE,
+    CUP_HALF,
+    CUP_SCALE,
+    CUP_X,
+    CUP_Y,
     DOOR_RIGHT,
+    ENTERS,
     GONE,
     HAND_RADIUS,
     HEAD_AT_CODE,
+    HEAD_HALF,
     HELD_OUT,
     HOOK,
     KEY_LEFT,
     LEAVES,
+    MACHINE_LEFT,
+    MILO_HEAD_HALF,
     MILO_JAW,
     MILO_RIGHT_HAND,
     MILO_RIGHT_SHOULDER,
@@ -45,14 +57,21 @@ from trial_shift_audio import (  # noqa: E402
     REST,
     SCRIPT,
     SHOULDER,
+    STANDS,
+    STRINGS_TO,
     THE_TAG,
+    TRAY_ARM,
+    TRAY_BEND,
     TRAY_HAND,
+    TRAY_HOLD,
+    TRAY_SHOULDERS,
     TRAY_SIZE,
     TURNS,
     TURNS_FRAME,
     TWO,
     VOICES,
     WALKS_ON,
+    carried_until,
     cue_off,
     extra,
     schedule,
@@ -152,6 +171,12 @@ def test_the_hand_stays_clear_of_a_folded_elbow_on_its_way_to_the_hook_and_out()
         assert 180 - abs(elbow) >= 80, f"the elbow closes to {180 - abs(elbow):.0f} degrees at {k / 100} s"
 
 
+def test_his_upper_arm_drops_under_the_next_hands_fingers_as_he_holds_out_the_spare():
+    aim, _ = cutout_arm.angles(SHOULDER, ARM, ARM, _units(*HELD_OUT), -1)
+    across, down = ARM * math.cos(math.radians(aim)), ARM * math.sin(math.radians(aim))
+    assert down >= abs(across), f"it falls {down:.0f} across {abs(across):.0f}: flat, it lies over the fingers"
+
+
 def test_the_hook_line_leaves_the_prices_on_the_board():
     scale, x, _ = TWO
     assert scale * PASTRY_RIGHT + x < KEY_LEFT
@@ -185,11 +210,54 @@ def _hanging(x, size, shoulder, hand, bend):
     return x + size * elbow, x + size * hand[0]
 
 
-def test_the_arms_between_ava_and_milo_do_not_stack_once_he_turns_to_her():
+def test_the_arms_between_ava_and_milo_never_stack_from_the_first_frame():
     his = _hanging(MILO_X, MILO_SIZE, MILO_RIGHT_SHOULDER, MILO_RIGHT_HAND, 1)
-    hers = _hanging(AVA_APART, AVA_SIZE, AVA_SHOULDER, AVA_HAND, -1)
-    elbows, hands = hers[0] - his[0], hers[1] - his[1]
-    assert elbows >= 16 and hands >= 2 * HAND_RADIUS
+    assert STANDS["open"] == AVA_APART
+    for hand in (AVA_HAND, AVA_TUG):  # at rest, and at the top of each pull on the strings
+        hers = _hanging(STANDS["open"], AVA_SIZE, AVA_SHOULDER, hand, -1)
+        elbows, hands = hers[0] - his[0], hers[1] - his[1]
+        assert elbows >= 16 and hands >= 2 * HAND_RADIUS, f"{hand}: elbows {elbows:.0f}, hands {hands:.0f}"
+
+
+def test_her_pull_on_the_strings_goes_away_from_him():
+    assert AVA_TUG[0] > AVA_HAND[0]
+
+
+def test_the_cups_stand_on_the_tray():
+    assert abs(CUP_Y + CUP_BASE * CUP_SCALE) <= 1.0
+
+
+def _tray_elbow(side):
+    """The rig's x of a hand-on-the-tray elbow, with the bend the Candidate's arm on that side takes."""
+    shoulder, x = TRAY_SHOULDERS[side], TRAY_HAND if side == "right" else -TRAY_HAND
+    aim, _ = cutout_arm.angles(shoulder, TRAY_ARM, TRAY_ARM, (x, TRAY_HOLD), TRAY_BEND[side])
+    return shoulder[0] + TRAY_ARM * math.cos(math.radians(aim))
+
+
+def test_the_candidates_arms_hold_the_tray_outside_the_cups():
+    assert _tray_elbow("right") > CUP_X + CUP_HALF
+    assert _tray_elbow("left") < -(CUP_X + CUP_HALF)
+
+
+def test_the_candidates_elbow_clears_milos_head_while_he_walks_on():
+    assert all(x + TRAY_SIZE * _tray_elbow("right") < MILO_X - MILO_HEAD_HALF for x in WALKS_ON)
+
+
+def test_the_apron_strings_end_behind_him_and_start_in_her_hand():
+    x, y = STRINGS_TO
+    assert MILO_X < x < MILO_X + MILO_JAW  # inside his body, so he covers the end of them
+    assert MILO_Y < y < MILO_Y + MILO_SIZE * REST[1]
+
+
+def test_no_hand_comes_out_of_the_espresso_machine_when_the_candidate_starts_behind_it():
+    assert ENTERS - TRAY_SIZE * TRAY_HAND - HAND_RADIUS >= MACHINE_LEFT
+
+
+def test_the_tray_ends_with_his_body_at_the_door_and_his_head_is_the_last_of_him():
+    beats = extra(Timing(phrases()))
+    assert BODY_GONE + BODY_HALF <= DOOR_RIGHT
+    assert OUT_OF_SIGHT + HEAD_HALF <= DOOR_RIGHT
+    assert beats["down"] - LEAVES < carried_until(beats["down"], beats["crosses"]) < beats["crosses"] + GONE
 
 
 def test_the_cuts_rise_and_end_at_the_door():
