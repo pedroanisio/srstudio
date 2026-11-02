@@ -11,25 +11,7 @@ from srstudio.limbs import HUMAN, ArmProfile, Frame, LimbError, Vec3
 from srstudio.limbs.compile import BakeOptions
 from srstudio.limbs.interaction import AttachedProp, Face, Participant, PropDrawing, PropMesh, bake_interaction
 from srstudio.limbs.motion import Action, Attachment, Motion, TransformKey, TransformTrack
-
-
-def mesh():
-    return PropMesh(
-        "panel",
-        (
-            Face(
-                "surface",
-                (Vec3(-0.3, 0.6, 0.1), Vec3(0.3, 0.6, 0.1), Vec3(0.3, 1.2, 0.1), Vec3(-0.3, 1.2, 0.1)),
-                "#ef9988",
-            ),
-        ),
-    )
-
-
-def canvas():
-    scene = Scene(version="auto")
-    scene.add_project(width=800, height=800, fps="24", duration=2)
-    return Canvas(scene, font_asset=None)
+from support.limbs_interaction import canvas, mesh
 
 
 def test_interaction_interleaves_individual_limb_surfaces_with_props_in_global_depth_order():

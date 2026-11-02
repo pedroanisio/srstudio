@@ -9,8 +9,8 @@ import pytest
 from srstudio import clay, proxy
 from srstudio import composition as c
 from support.composition import PROXY_TONES as TONES
-from support.composition import proxy_plan as plan_for
 from support.composition import proxy_source as source
+from support.composition_proxy import plan_for
 
 
 def test_snapshot_and_work_accelerator_are_immutable_and_content_addressed():

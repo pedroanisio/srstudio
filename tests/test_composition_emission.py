@@ -7,8 +7,8 @@ from dataclasses import FrozenInstanceError, replace
 import pytest
 
 from srstudio import composition as c
-from support.composition import engine_eval as evaluate
 from support.composition import paper, window
+from support.composition_emission import evaluate
 
 
 def test_real_payload_compiles_deterministically_with_closed_resources_and_scoped_ids():

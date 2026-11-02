@@ -5,9 +5,8 @@ from dataclasses import replace
 import pytest
 
 from srstudio import composition as c
-from support.composition import engine_nodes, proxy_source, renderer
-from support.composition import raster_sequence as sequence
-from support.composition import sequence_plan as plan_for
+from support.composition import proxy_source, renderer
+from support.composition_sequences import engine_nodes, plan_for, sequence
 
 
 @pytest.mark.parametrize('backend', ['plates', 'proxy'])

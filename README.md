@@ -203,6 +203,8 @@ Caption breaks can keep phrases whole. With `CaptionLook(keep_together=True)`, o
 
 The library draws in 2D, and what it models in 3D is a clay character or a rigid proxy. `srstudio.clay` bakes a model to meshes, and `srstudio.plates` path-traces a `Plate`, one camera, one set of lights and some placed meshes, into a still cached by its digest. Rafa, who hosts the Host show, is built this way ([ADR 0068](docs/decisions/0068-rafa-clay-host-on-plates.md)).
 
+3D locations come from srlocations, which runs in its own interpreter. `tools/location_export.py` runs there on an export of the pinned srlocations commit, checked file by file, and writes one JSON record of a location's shots: each camera and where every mark lands at the reel's frame size. `srstudio.location_bridge` reads it strictly, checks every pixel against the recorded camera, and gives a reel a mark's feet, scale and whether it is in frame. A location drawn next to our figures is in our cel/ink or clay look, never path-traced realism, and carries no brand, badge, livery or trade dress; its source photographs are Pedro's and stay out of the repository. See [ADR 0179](docs/decisions/0179-srlocations-location-bridge.md).
+
 Drawing digests remain stable; rendered artifacts additionally identify the renderer binary, compiled scenes,
 quality settings and actual print font bytes. Use the path returned by `plates.render` or `print_png` rather than
 constructing it from a drawing digest. [Plate cache ownership](docs/authoring-clips.md#plate-cache-ownership)

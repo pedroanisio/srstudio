@@ -17,13 +17,15 @@ from .model import (
     HandPose,
     HandProfile,
 )
-from .projection import Affine, Camera
+from .projection import Affine, Camera, CameraSample, CameraTrack
 
 __all__ = [
     "Affine",
     "ArmPose",
     "ArmProfile",
     "Camera",
+    "CameraSample",
+    "CameraTrack",
     "ContourCorrection",
     "ContourKey",
     "Diagnostic",

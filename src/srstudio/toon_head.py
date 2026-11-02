@@ -31,6 +31,8 @@ from ._gaze_drawing import EyeLayers as EyeLayers
 from ._gaze_drawing import TrackingEyes as TrackingEyes
 from ._transaction import scene_transaction
 from .canvas import Canvas, _at_zero
+from .face_blends import FaceBlender, FaceFrame, FaceTrack
+from .face_blends import segments as face_segments
 from .gaze import GazePlan
 from .gaze import _fail as _gaze_fail
 from .head_motion import (
@@ -145,6 +147,7 @@ class HeadRig:
     tilt_reach: tuple[float, float] = (0.0, 0.0)
     face_slide: float = FACE_SLIDE
     drawn_as: tuple[str, int] | None = None
+    face_blender: FaceBlender | None = None
 
 
 def _bounds(rig: Seam) -> list[tuple[float, float]]:
@@ -310,11 +313,23 @@ def figure(
     on_face: Callable[[Any], None] | None = None,
     *,
     target_gaze: GazePlan | None = None,
+    face_blends: FaceTrack | None = None,
 ):
     """The character in nested groups (the module's docstring), one drawing per pose run inside the chains, moved by
     ``plan``. The arguments mean what they mean to :func:`srstudio.toon_cast.figure`; ``on_face`` draws into the face's
     group last, so what it adds moves with the head. Returns the outermost group."""
     plan.check_bounds(rig.style, frozen=bool(cv._frozen))
+    frames: tuple[FaceFrame, ...] = ()
+    if face_blends is not None:
+        from .face_blends import _fail
+
+        if not isinstance(face_blends, FaceTrack):
+            raise _fail('face_blends', None, 'a typed FaceTrack')
+        if cv._frozen or enter or target_gaze is not None or any(n != 'ahead' for _, n in plan.gaze):
+            raise _fail('face_blends', None, 'one facial owner, a running canvas and enter=0')
+        if any(n != 'closed' for _, n in mouths):
+            raise _fail('mouths', None, 'one mouth owner; authored blends without speech')
+        frames = face_blends.prepare(rig, tuple(poses), duration)
     if target_gaze is not None:
         if cv._frozen:
             raise _gaze_fail('canvas', 'frozen', 'a running canvas for target gaze', 'gaze.unsupported')
@@ -334,7 +349,12 @@ def figure(
                 on_face,
                 tracking=tracking,
             )
-    return _draw_figure(cv, parent, rig, poses, duration, plan, taps, enter, stickers, mouths, on_face)
+    if not frames:
+        return _draw_figure(cv, parent, rig, poses, duration, plan, taps, enter, stickers, mouths, on_face)
+    with scene_transaction(cv.scene, cv):
+        return _draw_figure(
+            cv, parent, rig, poses, duration, plan, taps, enter, stickers, mouths, on_face, face_frames=frames
+        )
 
 
 def gaze_capabilities(rig: HeadRig) -> dict:
@@ -365,6 +385,7 @@ def _draw_figure(
     on_face: Callable[[Any], None] | None = None,
     *,
     tracking: target_drawing.PreparedGaze | None = None,
+    face_frames: tuple[FaceFrame, ...] = (),
 ):
     """Emit a preflighted performance or the fixed, rig-derived specimen probe."""
     if rig.drawn_as is not None:
@@ -420,13 +441,26 @@ def _draw_figure(
             g = cv.group(face, cv.uid("g"), start=start, end=end)
             _draw(cv, g, _place(list(rig.face()), arms))
             if tracking is None:
-                _eyes(cv, g, look, pose.eyes, arms, plan.gaze, start, end)
+                if face_frames:
+                    for a, b, layers in face_segments(face_frames, start, end):
+                        region = cv.group(g, cv.uid('face-blend-eyes' if layers else 'face-eyes'), start=a, end=b)
+                        if layers is None:
+                            _eyes(cv, region, look, pose.eyes, arms, plan.gaze, a, b)
+                        else:
+                            _draw(cv, region, _place(layers.eyes, arms))
+                else:
+                    _eyes(cv, g, look, pose.eyes, arms, plan.gaze, start, end)
             else:
                 target_drawing.draw_eyes(cv, g, tracking, pose.eyes, arms)
             cheeks, worn = wear_layers(face_of(look), pose.wear) if pose.wear else ([], [])
             nose = [(shape, "ink" if i == 0 else "white") for i, shape in enumerate(look.nose)]
             _draw(cv, g, _place(cheeks + nose + (_whiskers(look) if look.whiskers else []), arms))
-            _draw_mouth(cv, g, look, pose, _place(_mouth(look, pose.mouth), arms), mouths, start, end)
+            if face_frames:
+                for a, b, layers in face_segments(face_frames, start, end):
+                    region = cv.group(g, cv.uid('face-blend-mouth' if layers else 'face-mouth'), start=a, end=b)
+                    _draw(cv, region, _place(layers.mouth if layers else _mouth(look, pose.mouth), arms))
+            else:
+                _draw_mouth(cv, g, look, pose, _place(_mouth(look, pose.mouth), arms), mouths, start, end)
             _draw_blinks(cv, g, look, pose, start, end)
             bare = look.teeth and pose.mouth not in ("none", "grimace", "kiss", "scream")
             _draw(cv, g, _place((_teeth(look) if bare else []) + worn + list(stickers), arms))

@@ -249,6 +249,61 @@ This adapter does not establish biomechanical quality, unsupported orthographic
 raster registration, continuous camera safety between samples, or style approval.
 The complete animated DRAWING proof remains required.
 
+## Register a spatial camera
+
+`composition.spatial_camera(plan, layer=None)` derives a `limbs.Camera` from the
+validated shared camera. With no layer, input points are in world coordinates.
+With a world-layer ID, its complete parent translation, rotation and uniform
+scale are folded into the returned camera; feed it unchanged local geometry.
+The spatial projection applies a drawing parent's inverse affine transform once.
+
+Using the timeline from the planning example:
+
+```python
+from srstudio.limbs import Vec3
+
+camera = c.spatial_camera(timeline.samples[0], "host")
+landmark = camera.project(Vec3(0.1, -0.1, 0.1))
+cameras = m.spatial_cameras(timeline, "host")
+assert cameras.sample(0) == camera
+```
+
+The bridge uses the scene's canonical units. Uniform physical conversion does
+not change projection, so it does not invent a meter length for canonical arms.
+The separate `plate_view` still requires that physical length and retains its
+perspective-only backend envelope. Spatial projection supports orthographic
+views too. Near-plane and singular drawing-parent failures remain typed
+`LimbError`s; invalid scene plans, layer IDs or screen-space layers produce
+`CompositionError` before drawing. Depths are measured in the selected source
+camera's units; compare them only within the same camera.
+
+`scene_motion.spatial_cameras(timeline, layer=None)` revalidates the timeline and
+returns a bounded `limbs.CameraTrack`. It includes every changed held view and
+the terminal camera when different. A `CameraSample(time, camera)` is on the
+scene clock; samples begin at zero, strictly increase within the declared
+0..600-second duration, and number at most 4,097. Sampling is random-access and
+holds the selected camera; it does not interpolate between views.
+
+Pass this track as `camera=` to `limbs.interaction.bake_interaction`, together
+with the original `Participant` motions and `PropDrawing` tracks. The interaction
+baker merges camera cuts with its frame grid before checking frame and node
+budgets. `BakeOptions.offset` shifts the scene clock while motion and prop
+sources still start at local zero. Camera selection retains exact authored scene
+times instead of subtracting and re-adding an offset. Every interval must remain
+nonempty at the baker's existing six-decimal scene-time resolution.
+
+During an inferred released-prop hold, source poses freeze at their original
+end while the camera continues through the remaining project interval. All hand
+and prop surfaces use the same camera and depth ordering at each sample. A later
+invalid projection refuses the whole bake before scene mutation. Static-camera
+interaction output remains unchanged. Other limb compilation entry points still
+accept a single `Camera`; this track adapter is specific to interaction baking.
+
+Generated vectors already contain their projection and must be composed in
+screen space. Do not apply the world layer or shared camera a second time.
+This bridge does not supply shared drawn shading, new rig view capabilities,
+continuous camera-path safety, or the complete animated DRAWING adoption proof.
+
 ## Register a plate view
 
 `plate_view(plan, layer_id)` derives a perspective plate camera and shared lights

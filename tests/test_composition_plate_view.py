@@ -6,14 +6,9 @@ import numpy as np
 import pytest
 
 from srstudio import composition as c
-from srstudio import plates, proxy
+from srstudio import plates
 from support.composition import plate_plan as manifest
-
-
-def engine_project(view, point):
-    camera = view.camera
-    lens = proxy.View(camera.position, camera.target, camera.fov, size=(view.width, view.height))
-    return lens.project([view.point(point)])[0] + view.offset
+from support.composition_plate_view import engine_project
 
 
 def test_default_mapping_reflects_z_converts_meters_and_matches_pixels():
