@@ -9,6 +9,7 @@ from __future__ import annotations
 from functools import lru_cache
 
 from . import wire_jet as geometry
+from ._remaining_part_contracts import vehicle
 from .canvas import Canvas
 from .registry import register
 from .wire_draw import Anchor, Placement, Plate, anchor_of, band, cel_plate, edge_below, place, stroke
@@ -102,43 +103,6 @@ def _shot(
     return _drawing(str(seed), model, sweep, view, round(where.size), around, span, height, light, distance), where
 
 
-@register("prop", "wire-jet", summary="A seeded wireframe fighter jet with its hidden lines removed, from any side")
-def wire_jet(
-    cv: Canvas,
-    parent,
-    at: tuple[float, float] = (540.0, 960.0),
-    width: float = 900.0,
-    seed: str | int = "jet",
-    view: str = "side",
-    model: str | None = None,
-    sweep: float | None = None,
-    palette: str = "night",
-    weight: float = 1.0,
-    id: str | None = None,
-    around: str | None = None,
-    span: float | None = None,
-    height: int | None = None,
-    rows: tuple[float, float] | None = None,
-    tilt: float = 0.0,
-    light: tuple[float, float, float] | None = None,
-    distance: float | None = None,
-):
-    """The jet seeded by ``seed``, centred on ``at`` and ``width`` pixels wide, seen from ``view``
-    (:data:`srstudio.wire_jet.VIEWS`). ``model`` names an airframe, or ``"auto"`` for any of the nine, and ``sweep`` is
-    the Switchblade's wing sweep in degrees. ``palette`` names the ink colours; ``weight`` scales every stroke. A
-    close-up goes ``around`` an anchor (:func:`anchor`) over ``span`` metres, ``height`` pixels tall.
-    ``rows`` keeps only the strokes between two heights, top and bottom in pixels from ``at``, their cuts sloped by
-    ``tilt`` (see :func:`edge`). ``light`` is the light a :func:`plate` of the same shot is shaded by: the two then
-    share one projection. ``distance`` is how far in metres the camera stands from the jet (seen in perspective; none
-    is orthographic)."""
-    if palette not in PALETTES:
-        raise WireJetError(f"unknown palette {palette!r}; one of {', '.join(PALETTES)}")
-    drawing, where = _shot(at, width, seed, view, model, sweep, weight, around, span, height, light, distance)
-    if rows is not None:
-        drawing = band(drawing, rows, WireJetError, tilt)
-    return stroke(cv, parent, drawing, where, colours=PALETTES[palette], weights=WEIGHTS, id=id or cv.uid("wire-jet"))
-
-
 def anchor(
     name: str,
     at: tuple[float, float] = (540.0, 960.0),
@@ -209,3 +173,47 @@ def edge(
     found = anchor_of(drawing, where, name, WireJetError)
     row, slope = edge_below(drawing, where, found, reach=reach, below=below, error=WireJetError)
     return row, slope
+
+
+@register(
+    "prop",
+    "wire-jet",
+    summary="A seeded wireframe fighter jet with its hidden lines removed, from any side",
+    contract=vehicle(
+        'wire-jet', views=tuple(geometry.VIEWS), models=tuple(geometry.AIRFRAMES), anchor=anchor, plate=plate, edge=edge
+    ),
+)
+def wire_jet(
+    cv: Canvas,
+    parent,
+    at: tuple[float, float] = (540.0, 960.0),
+    width: float = 900.0,
+    seed: str | int = "jet",
+    view: str = "side",
+    model: str | None = None,
+    sweep: float | None = None,
+    palette: str = "night",
+    weight: float = 1.0,
+    id: str | None = None,
+    around: str | None = None,
+    span: float | None = None,
+    height: int | None = None,
+    rows: tuple[float, float] | None = None,
+    tilt: float = 0.0,
+    light: tuple[float, float, float] | None = None,
+    distance: float | None = None,
+):
+    """The jet seeded by ``seed``, centred on ``at`` and ``width`` pixels wide, seen from ``view``
+    (:data:`srstudio.wire_jet.VIEWS`). ``model`` names an airframe, or ``"auto"`` for any of the nine, and ``sweep`` is
+    the Switchblade's wing sweep in degrees. ``palette`` names the ink colours; ``weight`` scales every stroke. A
+    close-up goes ``around`` an anchor (:func:`anchor`) over ``span`` metres, ``height`` pixels tall.
+    ``rows`` keeps only the strokes between two heights, top and bottom in pixels from ``at``, their cuts sloped by
+    ``tilt`` (see :func:`edge`). ``light`` is the light a :func:`plate` of the same shot is shaded by: the two then
+    share one projection. ``distance`` is how far in metres the camera stands from the jet (seen in perspective; none
+    is orthographic)."""
+    if palette not in PALETTES:
+        raise WireJetError(f"unknown palette {palette!r}; one of {', '.join(PALETTES)}")
+    drawing, where = _shot(at, width, seed, view, model, sweep, weight, around, span, height, light, distance)
+    if rows is not None:
+        drawing = band(drawing, rows, WireJetError, tilt)
+    return stroke(cv, parent, drawing, where, colours=PALETTES[palette], weights=WEIGHTS, id=id or cv.uid("wire-jet"))

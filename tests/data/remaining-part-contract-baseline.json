@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "generated_by": {
+    "model": "GPT-6",
+    "tool": "OpenAI Codex"
+  },
+  "source_commit": "4ef079c3c87e3f8937609373c5dc7491f3e3fa1e",
+  "scene_sha256": {
+    "cel-room": "6aa22057214f443e56ee9af0a5e95c02e2fba88cfcf7e70a4d2d692e75da19d4",
+    "signature-cactus": "c8a4f1bb0bfcba43cd4cb08a42d2747e668a36b580c39a635b0d6396b0f8425e",
+    "video-tile": "a5ab5e76ae0813f8d1ecbc39e008f47fca3712eae4e4b096eadcdb311b0e15ef",
+    "desk-phone": "225f28c320c27110d61ab40c6c44e401a903455158f424183951f9c0f2e2795e",
+    "apron-spare": "917495b635e11753500f5ced3283942461ba5bb284f578cbda311416569b863e",
+    "trial-tag": "46b5beda33953d668c128a1ea4415b4b9faafb7dd5b9ddac9d9ef53c50fc8f13",
+    "wire-car": "84aabdcddf270e286c7e6186ebbd942c271774d1ebfbe544f2df0d541b09ad81",
+    "wire-jet": "f539fab0b31eab3f29d408fe1358bbfde6dfdfecc7889ac08d048f6611d217aa",
+    "signature-code": "2170bdd8f52d853b3e82db90b17835856c1e0f1e03420d35ba9ed12feb9e20d6",
+    "cel-lettering": "87ee1064f1585fea2d1a339be3a87406f9abc180dab9f44d329a7e7d5a9c7da1",
+    "show-bug": "d02a250b1ae133ab7d0d5aee09c137ef0038947d2e4fe5ce23b927feb88447c3"
+  }
+}

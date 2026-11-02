@@ -8,6 +8,7 @@ copies a real uniform. Both take ``x``, ``y`` and ``scale``, in the units of wha
 from __future__ import annotations
 
 from . import checks
+from ._remaining_part_contracts import contract
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -33,7 +34,13 @@ def _place(what: str, x: float, y: float, scale: float) -> None:
         raise CutoutTrialError(f"{what}'s scale must be a positive number, got {scale!r}")
 
 
-@register("prop", "apron-spare", style="cutout", summary="A spare green apron, held up by its neck loop, ties hanging")
+@register(
+    "prop",
+    "apron-spare",
+    style="cutout",
+    summary="A spare green apron, held up by its neck loop, ties hanging",
+    contract=contract('apron-spare'),
+)
 def apron_spare(cv: Canvas, parent, x: float = 540, y: float = 800, *, scale: float = 1.0, id: str = "apron-spare"):
     """The neck loop's top is (``x``, ``y``) and the apron hangs 330 below it, as from a hook or a hand."""
     _place("an apron", x, y, scale)
@@ -46,7 +53,13 @@ def apron_spare(cv: Canvas, parent, x: float = 540, y: float = 800, *, scale: fl
     return g
 
 
-@register("prop", "trial-tag", style="cutout", summary="A small pinned tag with one short word: TRIAL")
+@register(
+    "prop",
+    "trial-tag",
+    style="cutout",
+    summary="A small pinned tag with one short word: TRIAL",
+    contract=contract('trial-tag'),
+)
 def trial_tag(
     cv: Canvas,
     parent,

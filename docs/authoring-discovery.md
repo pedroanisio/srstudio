@@ -1458,3 +1458,65 @@ crop or speech track. The entry's body uses the engine's native typewriter
 preset; the contract states its start and duration separately from Canvas
 keys. Its screen ignores a speech state at zero and responds to later states;
 the small Handbook follows its initial speech state as well.
+
+## Measured rooms, call props, signatures and wire vehicles
+
+Every default catalog entry now has an authored contract. The contract still
+distinguishes a projected anchor from a scene attachment, and measured
+keyframes from a continuous physical constraint.
+
+<!-- remaining-parts-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, cel, registry
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1920, fps='24', duration=4)
+cv = Canvas(scene, font_asset=None)
+camera = cel.parse_camera([
+    dict(time=0, scale=1, tx=0, ty=0),
+    dict(time=1, scale=1.2, tx=-20, ty=-30),
+])
+world = cel.world(cv, cv.comp, camera, 4)
+room = registry.get('location', 'cel-room')
+assert room.builder(cv, world, camera, camera, 4) is not None
+vehicle = registry.get('prop', 'wire-car')
+helpers = {op.name: op.builder for op in vehicle.contract.operations}
+anchor = helpers['anchor']
+head = anchor('driver-head', at=(540, 960), width=200, seed='contract')
+assert head.scale > 0
+assert vehicle.describe()['contract']['capabilities']['spatial_attachment'] is False
+```
+<!-- remaining-parts-discovery:end -->
+
+Cel camera keys always use local time, regardless of `Canvas.local_time`.
+Draw a room under `cel.world` with the same world samples, and supply its own
+measured room samples. Compensation agrees at those sample times; interpolating
+the world and compensated tracks independently can differ between samples.
+Use the parsers for external camera and caption data. Cel captions draw their
+supplied glyph paths and boxes; transcript strings are not font-layout input.
+Caption lifetimes use offsets from their parent.
+
+The call tile gives its `inside` callback the returned local group before
+drawing the foreground frame. That frame covers surrounding rectangles; it
+is not a clipping mask. Lettered tiles require a font before the callback runs.
+Phone line reveals use parent-local group starts. Phone shake and turnover
+keys follow `Canvas.local_time`, so their clocks differ when local time is
+disabled beneath a later shot. The apron and trial tag are static drawings;
+their names do not imply cloth simulation or solved attachment.
+
+Signature code and cactus return `None` on unsigned canvases. An acting cactus
+requires a signature and uses Canvas-clock flower turns, bloom gates and scale
+pops. The show bug returns its complete fixed-layout group; a direct call
+inherits its parent transform, so place it on the composition for a stationary
+overlay. These marks use built-in paths without fonts.
+
+Wire cars and jets return static projected stroke groups. Their contracts
+expose the existing `anchor`, `plate` and `edge` helpers. Match projection
+arguments between calls: anchor results give parent-space pixels and pixels
+per metre, plates give PNG bytes plus their top-left placement, and edges give
+a row and slope for foreground/background band cuts. Plates require light and
+currently support the `night` palette. Installing the image asset remains the
+caller's responsibility. Unfilled stroke groups do not hide content behind
+the vehicle. Car `spin` and jet `sweep` select a held geometry state; animation
+requires authored motion or sampled drawings.

@@ -146,13 +146,19 @@ def test_cafe_menu_contract_matches_the_actual_boundary():
     assert bad.scene.to_bytes() == before
 
 
-def test_partial_coverage_is_explicit_and_style_filtered(capsys):
+def test_partial_coverage_is_explicit_and_style_filtered(capsys, monkeypatch):
+    monkeypatch.setitem(registry._REGISTRY, 'prop', dict(registry._REGISTRY['prop']))
+
+    @registry.register('prop', 'coverage-cutout-probe', style='cutout')
+    def undeclared():
+        raise AssertionError('coverage inspection must not draw')
+
     info = registry.contract_coverage(style='cutout', kind='prop')
     rows = registry.entries('prop', 'cutout')
     assert info['kinds']['prop']['registered'] == len(rows)
     explicit = sum(entry.contract is not None for entry in rows)
     assert info['kinds']['prop']['explicit_contracts'] == explicit
-    assert info['kinds']['prop']['undeclared_parts']
+    assert info['kinds']['prop']['undeclared_parts'] == ['coverage-cutout-probe']
     assert cli.main(['catalog', '--kind', 'prop', '--style', 'cutout', '--contract-coverage']) == 0
     assert str(explicit) in capsys.readouterr().out
     with pytest.raises(registry.RegistryError):

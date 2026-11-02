@@ -16,6 +16,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 
+from ._remaining_part_contracts import contract
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -97,7 +98,13 @@ def _glyphs(cv: Canvas, parent, id: str, text: str, x: float, y: float, scale: f
         cv.path(g, HASH if ch == "#" else GLYPHS[ch], stroke=colour, sw=_STROKE)
 
 
-@register("graphic", BUG_ID, summary="The show's fixed corner: the OK-eye mark and the reel's number", style="")
+@register(
+    "graphic",
+    BUG_ID,
+    summary="The show's fixed corner: the OK-eye mark and the reel's number",
+    style="",
+    contract=contract('show-bug'),
+)
 def bug(cv: Canvas, parent, number: int):
     """The bug of reel ``number`` on ``parent``, every point of it inside :data:`BUG_BOX`; returns its group."""
     if type(number) is not int or number < 1:

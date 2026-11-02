@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 
 from . import checks
+from ._remaining_part_contracts import contract
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -55,6 +56,7 @@ def _times(values, what: str) -> list[tuple[float, float]]:
     "video-tile",
     style="cutout",
     summary="An invented video call on a laptop's screen: a plain room, whoever the reel seats in it, a name plate",
+    contract=contract('video-tile'),
 )
 def video_tile(
     cv: Canvas,
@@ -107,6 +109,7 @@ def video_tile(
     "desk-phone",
     style="cutout",
     summary="A phone on a desk seen from above: it buzzes, takes lines as they land and can turn itself over",
+    contract=contract('desk-phone'),
 )
 def desk_phone(
     cv: Canvas,

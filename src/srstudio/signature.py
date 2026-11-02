@@ -27,6 +27,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from . import checks
+from ._remaining_part_contracts import contract
 from .canvas import MONO, Canvas, Signature
 from .errors import SrstudioError
 from .registry import register
@@ -162,6 +163,7 @@ def text_width(text: str, height: float) -> float:
     "graphic",
     "signature-code",
     summary="The recurring code (ADR 0001) as stroked glyphs; nothing when the episode is unsigned",
+    contract=contract('signature-code', text_width=text_width),
 )
 def code(
     cv: Canvas,
@@ -224,6 +226,7 @@ _TOKEN = re.compile(r"[A-Za-z]|-?\d+(?:\.\d+)?")
     "signature-cactus",
     summary="The recurring potted cactus (ADR 0001), gradients or pen stroke by "
     "palette; nothing when the episode is unsigned",
+    contract=contract('signature-cactus'),
 )
 def cactus(cv: Canvas, parent, x, y, scale: float = 1, *, act: Act | None = None):
     """A small potted cactus with one flower, its pot's base centred on ``x, y``; 152 units tall at scale 1.

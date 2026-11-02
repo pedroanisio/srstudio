@@ -32,6 +32,7 @@ from typing import Any
 
 from . import _character_contracts as cc
 from . import checks
+from ._remaining_part_contracts import contract
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -454,6 +455,7 @@ BOARD_ENDS = (
     "cel-room",
     summary="A plain wall, a plank floor fanning from a vanishing point and a wooden desk, under the room's own "
     "measured camera inside the world's",
+    contract=contract('cel-room', camera_tracks=camera_tracks, compensate=compensate, world=world),
 )
 def room(
     cv: Canvas,
@@ -618,6 +620,7 @@ def traced(
     "graphic",
     "cel-lettering",
     summary="A caption as traced lettering: timed boxes in the shade colour with the glyphs as white paths",
+    contract=contract('cel-lettering'),
 )
 def lettering(cv: Canvas, parent, caption: Caption):
     g = cv.group(parent, cv.uid("g"), start=caption.start, end=caption.end)

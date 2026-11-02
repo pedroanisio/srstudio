@@ -9,6 +9,7 @@ from __future__ import annotations
 from functools import lru_cache
 
 from . import wire_car as geometry
+from ._remaining_part_contracts import vehicle
 from .canvas import Canvas
 from .registry import register
 from .wire_car import MAX_WIDTH, MIN_WIDTH, WireCarError
@@ -111,43 +112,6 @@ def _shot(
     return _drawing(str(seed), view, round(where.size), around, span, height, light, distance, wheels, spin), where
 
 
-@register("prop", "wire-car", summary="A seeded wireframe car with its hidden lines removed, from the side or a corner")
-def wire_car(
-    cv: Canvas,
-    parent,
-    at: tuple[float, float] = (540.0, 960.0),
-    width: float = 900.0,
-    seed: str | int = "car",
-    view: str = "side",
-    palette: str = "night",
-    weight: float = 1.0,
-    id: str | None = None,
-    around: str | None = None,
-    span: float | None = None,
-    height: int | None = None,
-    rows: tuple[float, float] | None = None,
-    tilt: float = 0.0,
-    light: tuple[float, float, float] | None = None,
-    distance: float | None = None,
-    wheels: str = "all",
-    spin: float = 0.0,
-):
-    """The car seeded by ``seed``, centred on ``at`` and ``width`` pixels wide, seen from ``view``
-    (:data:`srstudio.wire_car.VIEWS`). ``palette`` names the ink colours; ``weight`` scales every stroke. A close-up
-    goes ``around`` an anchor (:func:`anchor`) over ``span`` metres, ``height`` pixels tall.
-    ``rows`` keeps only the strokes between two heights, top and bottom in pixels from ``at``, their cuts sloped by
-    ``tilt`` (see :func:`edge`). ``light`` is the light a :func:`plate` of the same shot is shaded by: the two then
-    share one projection. ``distance`` is how far in metres the camera stands from the car (seen in perspective; none
-    is orthographic), and ``wheels`` which parts are drawn and ``spin`` how far they have turned, in radians
-    (:func:`srstudio.wire_car.project`)."""
-    if palette not in PALETTES:
-        raise WireCarError(f"unknown palette {palette!r}; one of {', '.join(PALETTES)}")
-    drawing, where = _shot(at, width, seed, view, weight, around, span, height, light, distance, wheels, spin)
-    if rows is not None:
-        drawing = band(drawing, rows, WireCarError, tilt)
-    return stroke(cv, parent, drawing, where, colours=PALETTES[palette], weights=WEIGHTS, id=id or cv.uid("wire-car"))
-
-
 def anchor(
     name: str,
     at: tuple[float, float] = (540.0, 960.0),
@@ -215,3 +179,45 @@ def edge(
     found = anchor_of(drawing, where, name, WireCarError)
     row, slope = edge_below(drawing, where, found, reach=reach, below=below, error=WireCarError)
     return row, slope
+
+
+@register(
+    "prop",
+    "wire-car",
+    summary="A seeded wireframe car with its hidden lines removed, from the side or a corner",
+    contract=vehicle('wire-car', views=tuple(geometry.VIEWS), anchor=anchor, plate=plate, edge=edge),
+)
+def wire_car(
+    cv: Canvas,
+    parent,
+    at: tuple[float, float] = (540.0, 960.0),
+    width: float = 900.0,
+    seed: str | int = "car",
+    view: str = "side",
+    palette: str = "night",
+    weight: float = 1.0,
+    id: str | None = None,
+    around: str | None = None,
+    span: float | None = None,
+    height: int | None = None,
+    rows: tuple[float, float] | None = None,
+    tilt: float = 0.0,
+    light: tuple[float, float, float] | None = None,
+    distance: float | None = None,
+    wheels: str = "all",
+    spin: float = 0.0,
+):
+    """The car seeded by ``seed``, centred on ``at`` and ``width`` pixels wide, seen from ``view``
+    (:data:`srstudio.wire_car.VIEWS`). ``palette`` names the ink colours; ``weight`` scales every stroke. A close-up
+    goes ``around`` an anchor (:func:`anchor`) over ``span`` metres, ``height`` pixels tall.
+    ``rows`` keeps only the strokes between two heights, top and bottom in pixels from ``at``, their cuts sloped by
+    ``tilt`` (see :func:`edge`). ``light`` is the light a :func:`plate` of the same shot is shaded by: the two then
+    share one projection. ``distance`` is how far in metres the camera stands from the car (seen in perspective; none
+    is orthographic), and ``wheels`` which parts are drawn and ``spin`` how far they have turned, in radians
+    (:func:`srstudio.wire_car.project`)."""
+    if palette not in PALETTES:
+        raise WireCarError(f"unknown palette {palette!r}; one of {', '.join(PALETTES)}")
+    drawing, where = _shot(at, width, seed, view, weight, around, span, height, light, distance, wheels, spin)
+    if rows is not None:
+        drawing = band(drawing, rows, WireCarError, tilt)
+    return stroke(cv, parent, drawing, where, colours=PALETTES[palette], weights=WEIGHTS, id=id or cv.uid("wire-car"))
