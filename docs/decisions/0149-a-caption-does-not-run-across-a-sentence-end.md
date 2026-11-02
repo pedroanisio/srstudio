@@ -28,6 +28,10 @@ in the middle of the next sentence: `Meetings have been reduced to one. It is`.
 2. **The window has to finish what it starts.** A last word that has a mark of its own, or that ends a sentence of the
    lines, makes a window of whole sentences, and it passes: `You're alive. She's holding line two.` is one spoken line on
    one pill, and `Love it. Evenings?` is the join `stick.word_cues` makes for a sentence too quick for a cue of its own.
+   The fault has one definition, `breaks.breaks_off`, with `breaks.ends_sentence` and `breaks.closes` for a word: the
+   gate (`frame_gates.broken_off`) reads where a sentence ends from the reel's lines, since a burned window may have
+   lost its stops, and the cue chooser of `CaptionLook(keep_together=True)` (ADR 0173) reads it from the cue's own
+   stops. On a window that keeps its stops the two agree, and a test holds them equal.
 3. **It is a build error.** `Episode.finish` refuses before it writes a scene (`text_rules.refuse_captions`), so a pilot
    and a reel never delivered are held too. The reel's subtitles and transcript are written before the build ends, which
    is what the rule reads.

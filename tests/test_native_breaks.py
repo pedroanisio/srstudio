@@ -1,6 +1,6 @@
 """Cue cuts that keep phrases whole (ADR 0173): with ``CaptionLook(keep_together=True)`` no cue ends after a weak
 word, inside a number or inside a name while another cut fits, a moved cut lands on a sentence end when the cue holds
-one (rule 7, ADR 0146), and the default look cuts exactly as before."""
+one (rule 7, ADR 0149), and the default look cuts exactly as before."""
 
 from __future__ import annotations
 
@@ -100,9 +100,11 @@ def _forbidden_cuts(cues: list[str]) -> int:
 
 
 def _broken_off(cues: list[str]) -> int:
-    """Rule 7's second fault: a cue that keeps a sentence end and stops inside the next sentence."""
-    ends = (".", "!", "?")
-    return sum(any(w.endswith(ends) for w in c.split()[:-1]) and not c.endswith(ends) for c in cues)
+    """Rule 7's second fault, by its one definition: a cue that keeps a sentence end and stops inside the next one."""
+    return sum(
+        breaks.breaks_off([breaks.ends_sentence(w) for w in c.split()], closed=breaks.closes(c.split()[-1]))
+        for c in cues
+    )
 
 
 @pytest.mark.parametrize("text", TEXTS)

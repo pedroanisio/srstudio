@@ -7,7 +7,7 @@ rule names those places for any run of words, a cue's or a line's alike. Whoever
 boundaries, chooses another place when one fits, and keeps the forbidden one only when nothing else fits.
 
 A word that ends in ``.``, ``?``, ``!``, ``;``, ``:`` or ``…`` frees the break after it, so a cut at a sentence end is
-always allowed: the rule never pulls a cut away from the place rule 7 (ADR 0146, a window does not run across a
+always allowed: the rule never pulls a cut away from the place rule 7 (ADR 0149, a window does not run across a
 sentence end) wants it. The idea and the three cases are pnkit's ``captions.no_break``.
 """
 
@@ -16,7 +16,20 @@ from __future__ import annotations
 import re
 from collections.abc import Callable, Mapping, Sequence
 
-__all__ = ["ENDS", "JOINS", "NUMBER_WORDS", "STOPS", "WEAK", "bare", "forbidden", "is_number", "kept_together"]
+__all__ = [
+    "ENDS",
+    "JOINS",
+    "NUMBER_WORDS",
+    "STOPS",
+    "WEAK",
+    "bare",
+    "breaks_off",
+    "closes",
+    "ends_sentence",
+    "forbidden",
+    "is_number",
+    "kept_together",
+]
 
 # Function words that need the word after them: articles and determiners, prepositions, conjunctions, auxiliaries and
 # modals, subject pronouns and the infinitive's ``to``. ``it`` and ``you`` are left out: they close a clause as often
@@ -39,6 +52,31 @@ ENDS = (".", "?", "!", "…")  # these end a sentence: the word after opens one
 _PUNCT = ".,;:?!…\"'“”‘’()[]"
 _DIGITS = re.compile(r"[$€£]?\d[\d,.:\-/]*(?:%|[a-z]{1,3})?")
 _I = frozenset({"I", "I'm", "I'll", "I've", "I'd", "I’m", "I’ll", "I’ve", "I’d"})
+
+
+_SENTENCE_END = re.compile(r"(?<![.…])(?:\.|[?!]+)[\"'”’)\]]*\Z")  # an ellipsis trails off, inside its sentence
+_ABBREVIATION = re.compile(r"(?:[a-z]\.){2,}|(?:mr|mrs|ms|dr|st|vs|jr|sr)\.", re.IGNORECASE)
+_MARKED = re.compile(r"[.?!,:;…—–-]+[\"'”’)\]]*\Z")
+
+
+def ends_sentence(word: str) -> bool:
+    """Whether ``word`` ends a sentence by its own stop: ``.``, ``?`` or ``!``, before any closing quote or bracket. An
+    ellipsis trails off inside its sentence, and ``Dr.`` or ``U.S.`` is an abbreviation (rule 7, ADR 0149)."""
+    return bool(_SENTENCE_END.search(word)) and not _ABBREVIATION.fullmatch(word)
+
+
+def closes(word: str) -> bool:
+    """Whether ``word``, the last of a window, has a mark of its own that closes the window: a stop, a comma, a colon,
+    an ellipsis or a dash (rule 7, ADR 0149)."""
+    return bool(_MARKED.search(word))
+
+
+def breaks_off(ends: Sequence[bool], *, closed: bool) -> bool:
+    """Rule 7's second fault, the one definition the build, the delivery gate and the cue chooser share (ADR 0149): a
+    window, one flag a word saying whether a sentence ends there, that holds a sentence end before its last word and
+    stops inside the next sentence, its last word ending none and ``closed`` by no mark of its own. A window of whole
+    sentences does not break off."""
+    return bool(ends) and any(ends[:-1]) and not (ends[-1] or closed)
 
 
 def bare(token: str) -> str:

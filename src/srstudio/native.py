@@ -186,8 +186,9 @@ def _greedy(words: Sequence[Word], look: CaptionLook) -> list[list[Word]]:
 
 
 def _broken_off(words: Sequence[Word]) -> bool:
-    """Rule 7's fault (ADR 0146): a cue that holds a sentence end and stops inside the next sentence."""
-    return any(w.text.endswith(_SENTENCE_END) for w in words[:-1]) and not words[-1].text.endswith(_SENTENCE_END)
+    """Rule 7's fault (ADR 0149) on a cue, read from its own stops: :func:`srstudio.breaks.breaks_off`, the definition
+    the build and the delivery gate refuse by."""
+    return breaks.breaks_off([breaks.ends_sentence(w.text) for w in words], closed=breaks.closes(words[-1].text))
 
 
 def _segments(words: Sequence[Word], look: CaptionLook, stuck: Stuck) -> list[list[Word]]:
@@ -226,7 +227,6 @@ def _cue(words: Sequence[Word]) -> Cue:
 
 
 _CLAUSE_END = tuple(".,!?;:…")
-_SENTENCE_END = tuple(".!?…")
 
 
 def _orphaned(text: str, look: CaptionLook) -> bool:

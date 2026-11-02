@@ -9,7 +9,8 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 - Source of the idea: pnkit, the operator's other kit, `pnkit/captions.py` at commit 7d935e5 (`WEAK`, `is_number`,
   `no_break`, `line_break`) and `tools/caption_gate.py`; rewritten here in srstudio's style rather than copied
 - Builds on [ADR 0021](0021-engine-native-features.md) (the engine wraps a cue by characters) and stays compatible with
-  rule 7 (ADR 0146, `a caption does not run across a sentence end`, on the unmerged `feat/sdk-rules`)
+  rule 7 ([ADR 0149](0149-a-caption-does-not-run-across-a-sentence-end.md), `a caption does not run across a sentence
+  end`)
 - Back to the [library README](../../README.md)
 
 ## Context
@@ -55,9 +56,9 @@ srstudio breaks burned text in three places:
    `keep_together` argument of the wraps.
 6. **Rule 7 stays whole.** A stop always frees the break after it, so the rule never pulls a cut away from a sentence
    end. The cue chooser counts rule 7's fault before its own, so it never trades a forbidden cut for a window that
-   breaks off. A test holds both counts against the greedy fill on the same takes. This branch is built on `develop`,
-   where `feat/sdk-rules` is not merged, so the chooser reads rule 7 from the cue's own punctuation rather than from
-   `frame_gates.broken_off`.
+   breaks off. A test holds both counts against the greedy fill on the same takes. The chooser reads rule 7 from the
+   cue's own punctuation through `breaks.breaks_off`, the one definition `frame_gates.broken_off` refuses by at the
+   build and at delivery (ADR 0149); a test holds the two readings equal on windows that keep their stops.
 7. **`srstudio.caption_breaks.audit(scene, lines)`** reads a built scene and lists each forbidden break, saying whether
    another break would have fitted. It checks cue cuts, the engine's wraps (mirrored) and the kits' text lines. It
    counts only breaks where the reel's lines say the two words in a row. A caption that has lost its stops gets them

@@ -98,3 +98,47 @@ def test_lay_out_keeps_a_name_whole_when_it_fits_and_breaks_it_only_when_nothing
     words = "we flew to New York".split()
     assert breaks.lay_out(words, chars(13), 2) == ["we flew", "to New York"]
     assert breaks.lay_out(words, chars(10), 2) == ["we flew to", "New York"]  # the only layout that fits two lines
+
+
+# -- rule 7's one definition (ADR 0149) -----------------------------------------------------------------------------
+@pytest.mark.parametrize(
+    ("ends", "closed", "fault"),
+    [
+        ((True, False), False, True),
+        ((False, True, False), False, True),
+        ((True, False), True, False),
+        ((True, True), True, False),
+        ((False, True), True, False),
+        ((False, False), False, False),
+        ((True,), True, False),
+        ((), False, False),
+    ],
+)
+def test_a_window_breaks_off_when_a_sentence_ends_inside_it_and_its_last_word_is_open(ends, closed, fault):
+    assert breaks.breaks_off(ends, closed=closed) is fault
+
+
+@pytest.mark.parametrize(
+    ("word", "ends"),
+    [
+        ("it.", True),
+        ("Why?!", True),
+        ('say."', True),
+        ("now!)", True),
+        ("Dr.", False),
+        ("U.S.", False),
+        ("well…", False),
+        ("so...", False),
+        ("it,", False),
+        ("it", False),
+    ],
+)
+def test_a_word_ends_a_sentence_by_its_own_stop(word, ends):
+    assert breaks.ends_sentence(word) is ends
+
+
+@pytest.mark.parametrize(
+    ("word", "closed"), [("it.", True), ("it,", True), ("so...", True), ("well—", True), ("it", False)]
+)
+def test_a_last_word_with_a_mark_of_its_own_closes_a_window(word, closed):
+    assert breaks.closes(word) is closed

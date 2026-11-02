@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import anatomy_ledger, cli, framegraph, text_rules
+from srstudio import anatomy_ledger, cli, framegraph, native, text_rules
 from srstudio.anatomy_ledger import Exemption, ExemptionError
 from srstudio.episode import Episode, EpisodeSpec
 from srstudio.frame_gates import FrameGateError, RunTogether, broken_off
@@ -77,6 +77,22 @@ def test_broken_off_names_the_last_sentence_end_it_crossed():
 
 def test_a_stop_that_is_kept_and_a_last_word_that_trails_off_is_a_whole_window():
     assert broken_off(scene("Take it. Whatever..."), LINES) == []
+
+
+@pytest.mark.parametrize(
+    "window",
+    [
+        "Take it. Whatever",
+        "Take it. Whatever you say.",
+        "Take it.",
+        "it. Whatever you",
+        "Take it. Whatever you,",
+        "Whatever you say.",
+    ],
+)
+def test_the_cue_chooser_reads_rule_7_as_the_gate_does(window):
+    words = [native.Word(w, float(i), float(i) + 0.5) for i, w in enumerate(window.split())]
+    assert native._broken_off(words) is bool(broken_off(scene(window), LINES))
 
 
 def test_a_window_stripped_of_its_last_stop_is_still_whole():

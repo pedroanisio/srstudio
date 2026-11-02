@@ -21,7 +21,7 @@ from collections.abc import Iterable, Iterator, Mapping, Sequence
 from pathlib import Path
 from typing import NamedTuple
 
-from . import framegraph
+from . import breaks, framegraph
 from .framegraph import Drawing, Frame, FrameGraphError
 from .releases import Release
 from .social import DeliveryError, Drift
@@ -44,9 +44,6 @@ __all__ = [
 ]
 
 _WORD = re.compile(r"[a-z0-9$%']+")
-_SENTENCE_END = re.compile(r"(?<![.…])(?:\.|[?!]+)[\"'”’)\]]*\Z")  # an ellipsis trails off, inside its sentence
-_MARKED = re.compile(r"[.?!,:;…—–-]+[\"'”’)\]]*\Z")
-_ABBREVIATION = re.compile(r"(?:[a-z]\.){2,}|(?:mr|mrs|ms|dr|st|vs|jr|sr)\.", re.IGNORECASE)
 _SRT_TIMES = re.compile(r"\d\d:\d\d:\d\d,\d{3} --> ")
 _MARK = re.compile(r"sig-(cactus|code)(?:-\d+)?\Z")
 
@@ -92,17 +89,13 @@ def _plain(word: str) -> str:
     return "".join(_WORD.findall(word.lower().replace("’", "'")))
 
 
-def _ends_sentence(word: str) -> bool:
-    return bool(_SENTENCE_END.search(word)) and not _ABBREVIATION.fullmatch(word)
-
-
 def _boundaries(sentences: Sequence[str]) -> set[tuple[str, str]]:
     """Each pair of words that a sentence end separates in the reel's lines, read as one run of words. A pair the
     lines also say inside a sentence is left out: ``Flush flush`` after ``brought to you by Flush.`` is the jingle."""
     words = " ".join(sentences).split()
     pairs = list(zip(words, words[1:], strict=False))
-    inside = {(_plain(a), _plain(b)) for a, b in pairs if not _ends_sentence(a)}
-    return {(_plain(a), _plain(b)) for a, b in pairs if _ends_sentence(a)} - inside
+    inside = {(_plain(a), _plain(b)) for a, b in pairs if not breaks.ends_sentence(a)}
+    return {(_plain(a), _plain(b)) for a, b in pairs if breaks.ends_sentence(a)} - inside
 
 
 def _windows(root: ET.Element) -> Iterator[str]:
@@ -126,7 +119,7 @@ def run_together(document: bytes, sentences: Sequence[str]) -> list[RunTogether]
     for window in dict.fromkeys(_windows(_root(document))):
         words = window.split()
         for a, b in zip(words, words[1:], strict=False):
-            if (_plain(a), _plain(b)) in boundaries and not _MARKED.search(a):
+            if (_plain(a), _plain(b)) in boundaries and not breaks.closes(a):
                 found.append(RunTogether(window, a, b))
     return found
 
@@ -134,15 +127,21 @@ def run_together(document: bytes, sentences: Sequence[str]) -> list[RunTogether]
 def broken_off(document: bytes, sentences: Sequence[str]) -> list[RunTogether]:
     """Every burned window of the scene ``document`` that keeps a sentence's stop, goes on into the next sentence and
     stops inside it: ``Meetings have been reduced to one. It is``. The stop does not save it, since the reader is left
-    in the middle of a sentence the window has already begun. A last word with a mark of its own, or one that ends a
-    sentence of the lines, is a window that holds whole sentences, and passes (ADR 0149)."""
+    in the middle of a sentence the window has already begun. A burned window may have lost its stops, so a sentence
+    ends where the reel's lines end one; the fault itself is :func:`srstudio.breaks.breaks_off`, which the cue chooser
+    shares. A last word with a mark of its own, or one that ends a sentence of the lines, is a window that holds whole
+    sentences, and passes (ADR 0149)."""
     boundaries = _boundaries(sentences)
-    ends = {_plain(word) for word in " ".join(sentences).split() if _ends_sentence(word)}
+    ends = {_plain(word) for word in " ".join(sentences).split() if breaks.ends_sentence(word)}
     found: list[RunTogether] = []
     for window in dict.fromkeys(_windows(_root(document))):
         words = window.split()
-        crossed = [(a, b) for a, b in zip(words, words[1:], strict=False) if (_plain(a), _plain(b)) in boundaries]
-        if crossed and not _MARKED.search(words[-1]) and _plain(words[-1]) not in ends:
+        if not words:
+            continue
+        pairs = list(zip(words, words[1:], strict=False))
+        crossed = [(a, b) for a, b in pairs if (_plain(a), _plain(b)) in boundaries]
+        flags = [(_plain(a), _plain(b)) in boundaries for a, b in pairs] + [_plain(words[-1]) in ends]
+        if breaks.breaks_off(flags, closed=breaks.closes(words[-1])):
             found.append(RunTogether(window, *crossed[-1]))
     return found
 
