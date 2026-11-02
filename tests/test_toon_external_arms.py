@@ -115,3 +115,22 @@ def test_documented_external_arm_recipe_executes():
     namespace = {}
     exec(compile(code, 'external-arm-recipe', 'exec'), namespace)
     assert namespace['clip'].external_arms == ('right',)
+
+
+@pytest.mark.parametrize('route', ['direct', 'clip'])
+def test_drawing_refusal_is_reported_at_the_external_ownership_boundary(route):
+    from srstudio.toon import ToonDataError
+    from srstudio.toon_bento import Bento
+
+    class NamedOnly(Bento):
+        def gesture(self, arms):
+            raise ToonDataError('this drawing has no separable shared pose')
+
+    cv = stage()
+    rig = replace(BENTO_RIG_2, drawn_as=None, look=replace(BENTO_RIG_2.look, drawing=NamedOnly(number=2)))
+    before = cv.scene.to_bytes()
+    with pytest.raises(HeadMotionError) as caught:
+        draw(cv, ('right',), route, rig=rig)
+    assert caught.value.to_dict()['path'] == 'external_arms'
+    assert isinstance(caught.value.__cause__, ToonDataError)
+    assert cv.scene.to_bytes() == before and not cv.limbs

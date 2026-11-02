@@ -329,8 +329,13 @@ def _external_arms(rig: HeadRig, poses: Sequence[Pose], sides: tuple[str, ...]) 
     for pose in poses:
         if not isinstance(pose, Pose) or pose.arms not in ('desk', 'lean', 'type', 'crossed', 'sigh', 'face', 'face2'):
             raise refuse(None, 'separable shared arm poses throughout the source clock')
-        if isinstance(rig.look.drawing, Posing) and rig.look.drawing.gesture(pose.arms) is not None:
-            raise refuse(pose.arms, 'a shared pose without an indivisible drawing-specific gesture')
+        if isinstance(rig.look.drawing, Posing):
+            try:
+                own = rig.look.drawing.gesture(pose.arms)
+            except ToonDataError as error:
+                raise refuse(pose.arms, 'a drawing supporting this separable shared pose') from error
+            if own is not None:
+                raise refuse(pose.arms, 'a shared pose without an indivisible drawing-specific gesture')
     return frozenset(sides)
 
 
