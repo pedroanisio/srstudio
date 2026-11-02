@@ -74,3 +74,10 @@ def test_limits_choose_the_whole_turn_that_lies_inside_them():
 def test_turn_of_nothing_is_the_identity():
     assert turn(X, 0.0) == Quaternion()
     assert angle_of(Quaternion()) == 0.0
+
+
+def test_the_rotation_helpers_and_the_workspace_are_public():
+    from srstudio import skeleton as sk
+
+    assert (sk.angle_of, sk.compose, sk.decompose) == (angle_of, compose, decompose)
+    assert sk.WORKSPACE == 1000.0

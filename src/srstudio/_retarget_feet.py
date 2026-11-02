@@ -20,7 +20,6 @@ from . import skeleton as sk
 from ._retarget_errors import RetargetInputError
 from ._retarget_pose import ANKLE_SHARE, Tally, clip_scale
 from .limbs.math3d import Frame, Quaternion, Vec3
-from .skeleton._rotation import decompose
 
 # A planted foot in srlocations' walk sits 2 mm under its rest height (the take stands with soft knees) and moves less
 # than a millimetre a second (the record's six-decimal rounding); the lowest foot in flight is 15 mm up, and a foot
@@ -182,7 +181,7 @@ def _read(
     """Read ``local`` (a joint's turn on its parent) into its controls; give back the turn they hold."""
     keys = joint.controls
     limits = [profile.limits_of(key) for key in keys]
-    angles, _ = decompose(
+    angles, _ = sk.decompose(
         joint.rest.inverse() * local, [dof.axis for dof in joint.dofs], [values.get(k, 0.0) for k in keys], limits
     )
     held = joint.rest

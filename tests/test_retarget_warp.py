@@ -11,7 +11,6 @@ from srstudio import retarget as rt
 from srstudio import skeleton as sk
 from srstudio.limbs.math3d import Quaternion
 from srstudio.music import Groove
-from srstudio.skeleton._rotation import angle_of
 
 DATA = Path(__file__).parent / "data" / "motion-bridge"
 WALK = mb.load(DATA / "walk-2m-30fps.json")
@@ -148,7 +147,7 @@ def test_between_frames_the_performance_slerps_each_turn_and_lerps_the_root():
         world = {n: f.rotation for n, f in sk.world(REAL, pose).items()}
         parent = sk.joint(name).parent
         local = world[name] if parent is None else world[parent].inverse() * world[name]
-        assert angle_of(local.inverse() * qa.slerp(qb, 0.5)) < 1e-7, name
+        assert sk.angle_of(local.inverse() * qa.slerp(qb, 0.5)) < 1e-7, name
     middle = [(x + y) / 2 for x, y in zip(a.root_translation, b.root_translation, strict=True)]
     assert math.dist(middle, (pose.root.origin.x, pose.root.origin.y, pose.root.origin.z)) < 1e-9
 

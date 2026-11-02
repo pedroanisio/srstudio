@@ -7,7 +7,6 @@ import pytest
 from srstudio import skeleton as sk
 from srstudio.limbs import Affine, Camera
 from srstudio.limbs.math3d import Frame, Quaternion, Vec3
-from srstudio.skeleton._rotation import angle_of
 
 REAL = sk.preset("realistic")
 TOON = sk.preset("cartoon")
@@ -127,7 +126,7 @@ def test_the_root_frame_carries_the_whole_figure():
     still = sk.world(REAL, sk.pose(REAL, {"neck.nod_down_up": 0.2}, root=Frame()))
     for name, frame in still.items():
         assert close(moved[name].origin, root.point(frame.origin))
-        assert angle_of(moved[name].rotation.inverse() * (turn * frame.rotation)) < 1e-9
+        assert sk.angle_of(moved[name].rotation.inverse() * (turn * frame.rotation)) < 1e-9
 
 
 def test_the_hips_channels_apply_inside_the_root():
@@ -256,7 +255,7 @@ def test_blend_slerps_a_full_joint_rather_than_its_angles():
     mid_world = sk.world(REAL, mid)["right_upper_arm"].rotation
     a_world = sk.world(REAL, a)["right_upper_arm"].rotation
     b_world = sk.world(REAL, b)["right_upper_arm"].rotation
-    assert angle_of(mid_world.inverse() * a_world.slerp(b_world, 0.5)) < 1e-9
+    assert sk.angle_of(mid_world.inverse() * a_world.slerp(b_world, 0.5)) < 1e-9
 
 
 def test_blend_moves_the_root_and_translations_on_a_straight_line():
@@ -265,7 +264,7 @@ def test_blend_moves_the_root_and_translations_on_a_straight_line():
     mid = sk.blend(REAL, a, b, 0.25)
     assert mid.value("hips.up") == pytest.approx(0.15)
     assert mid.root.origin == Vec3(0.5, -1, 0)
-    assert angle_of(mid.root.rotation.inverse() * Quaternion.axis_angle(Vec3(0, 1, 0), 0.25)) < 1e-9
+    assert sk.angle_of(mid.root.rotation.inverse() * Quaternion.axis_angle(Vec3(0, 1, 0), 0.25)) < 1e-9
 
 
 def test_a_blend_stays_on_the_nearest_branch_past_a_right_angle():

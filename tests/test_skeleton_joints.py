@@ -26,6 +26,16 @@ def test_the_table_records_its_schema_and_its_source():
     assert sum(len(j.dofs) for j in sk.JOINTS) == 103
 
 
+def test_the_table_gives_pelvis_and_ankle_heights_as_shares_of_its_height():
+    hips = sk.joint("hips").offset.y
+    leg = sum(sk.joint(f"right_{name}").offset.y for name in ("upper_leg", "lower_leg", "foot"))
+    assert sk.JOINT_TABLE.pelvis_share == -hips > 0
+    assert sk.JOINT_TABLE.ankle_share == -hips - leg
+    assert 0 < sk.JOINT_TABLE.ankle_share < sk.JOINT_TABLE.pelvis_share < 1
+    realistic = sk.preset("realistic")
+    assert math.isclose(realistic.pelvis_height, sk.JOINT_TABLE.pelvis_share * realistic.stature, rel_tol=1e-9)
+
+
 def test_the_digest_is_srlocations_own_over_joint_and_control_names():
     rows = [[row["name"], [dof["name"] for dof in row["dofs"]]] for row in RAW["joints"]]
     digest = hashlib.sha256(json.dumps(rows).encode()).hexdigest()

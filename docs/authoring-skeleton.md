@@ -37,7 +37,10 @@ assert body.support_margin > 0 and drawn["head.tip"].xy[1] < drawn["hips"].xy[1]
 Metres and radians; x right, y down, z forward, as `body` and `limbs`. The ground is y=0. The root is the frame of
 the hips before the hips' own controls, the same frame as `body.BodyKey.root`; `profile.standing_root()` stands the
 zero pose on the ground. `sk.CONTROLS` lists every `joint.dof` key in canonical order, and `sk.joint(name)` gives a
-joint's parent, side, offset and controls with their limits.
+joint's parent, side, offset and controls with their limits. `sk.JOINT_TABLE.pelvis_share` and `ankle_share` are the
+hips' and ankles' heights at the T-stance as shares of the reference height, and a root stands within `sk.WORKSPACE`
+metres of the origin. `sk.compose`, `sk.decompose` and `sk.angle_of` turn a joint's controls into a rotation, read a
+rotation back into them, and measure how far a rotation turns.
 
 ## Profiles
 

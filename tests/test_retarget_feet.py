@@ -12,7 +12,6 @@ from srstudio import skeleton as sk
 from srstudio._retarget_feet import BLEND_S, LockPlan, _arc, reach
 from srstudio._retarget_pose import Tally
 from srstudio.limbs.math3d import Quaternion, Vec3
-from srstudio.skeleton._rotation import angle_of
 
 DATA = Path(__file__).parent / "data" / "motion-bridge"
 WALK = mb.load(DATA / "walk-2m-30fps.json")
@@ -92,7 +91,7 @@ def test_the_lock_moves_only_the_legs_and_keeps_each_foots_turn(profile):
         before, after = sk.world(profile, a), sk.world(profile, b)
         for side in ("left", "right"):
             foot = f"{side}_foot"
-            assert angle_of(before[foot].rotation.inverse() * after[foot].rotation) < 1e-7
+            assert sk.angle_of(before[foot].rotation.inverse() * after[foot].rotation) < 1e-7
 
 
 @pytest.mark.parametrize("profile", [TOON, STICK], ids=["cartoon", "stick"])
@@ -144,7 +143,7 @@ def test_a_target_out_of_reach_straightens_the_leg_toward_it_and_reports_the_mis
     frames = sk.world(TOON, sk.pose(TOON, values, root=pose.root))
     ankle = frames["right_foot"].origin
     assert (ankle - hip).unit().distance((far - hip).unit()) < 1e-9
-    assert angle_of(frames["right_foot"].rotation.inverse() * sk.world(TOON, pose)["right_foot"].rotation) < 1e-7
+    assert sk.angle_of(frames["right_foot"].rotation.inverse() * sk.world(TOON, pose)["right_foot"].rotation) < 1e-7
 
 
 def test_a_target_at_the_hip_leaves_the_leg_as_it_was():
@@ -169,7 +168,7 @@ def test_a_leg_solve_past_a_limit_is_refused_or_clamped_by_the_flag():
 def test_the_shortest_arc_of_opposite_directions_is_half_a_turn_about_the_spare():
     x = Vec3(1, 0, 0)
     turn = _arc(x, -x, Vec3(0, 0, 1))
-    assert turn.rotate(x).distance(-x) < 1e-12 and angle_of(turn) == pytest.approx(math.pi)
+    assert turn.rotate(x).distance(-x) < 1e-12 and sk.angle_of(turn) == pytest.approx(math.pi)
     assert _arc(x, x * 2, Vec3(0, 0, 1)) == Quaternion()
 
 

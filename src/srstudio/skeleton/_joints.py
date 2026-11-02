@@ -88,6 +88,20 @@ class JointTable:
     head_radius: float
     joints: tuple[Joint, ...]
 
+    @property
+    def pelvis_share(self) -> float:
+        """The hips over the soles at the T-stance, as a share of the reference height."""
+        return 0.0 - self._offset_y("hips")
+
+    @property
+    def ankle_share(self) -> float:
+        """The ankles over the soles at the T-stance, as a share of the reference height."""
+        leg = sum(self._offset_y(f"right_{name}") for name in ("upper_leg", "lower_leg", "foot"))
+        return self.pelvis_share - leg
+
+    def _offset_y(self, name: str) -> float:
+        return next(joint.offset.y for joint in self.joints if joint.name == name)
+
 
 def joints_digest(joints: tuple[Joint, ...]) -> str:
     """srlocations' digest of a joint table's names: SHA-256 of ``json.dumps([[joint, [control, ...]], ...])``."""

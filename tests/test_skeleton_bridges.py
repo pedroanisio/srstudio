@@ -12,7 +12,6 @@ from srstudio.limbs.geometry import project_pose
 from srstudio.limbs.math3d import Frame, Quaternion, Vec3
 from srstudio.limbs.model import HandControl
 from srstudio.limbs.motion import Sample
-from srstudio.skeleton._rotation import angle_of
 
 REAL = sk.preset("realistic")
 TOON = sk.preset("cartoon")
@@ -26,7 +25,7 @@ def close(a: Vec3, b: Vec3, tolerance: float = 1e-6) -> bool:
 
 
 def turned(a: Quaternion, b: Quaternion, tolerance: float = 1e-6) -> bool:
-    return angle_of(a.inverse() * b) < tolerance
+    return sk.angle_of(a.inverse() * b) < tolerance
 
 
 def same_pose(a: sk.SkeletonPose, b: sk.SkeletonPose, tolerance: float = 1e-6) -> bool:

@@ -28,6 +28,7 @@ from ._joints import joint as joint
 from ._joints import joints_digest as joints_digest
 from ._joints import parse_joint_table as parse_joint_table
 from ._joints import read_joint_table as read_joint_table
+from ._pose import WORKSPACE as WORKSPACE
 from ._pose import SkeletonPose as SkeletonPose
 from ._pose import add as add
 from ._pose import blend as blend
@@ -45,4 +46,7 @@ from ._profile import SkeletonProfile as SkeletonProfile
 from ._profile import parse_profile as parse_profile
 from ._profile import preset as preset
 from ._profile import read_profile as read_profile
+from ._rotation import angle_of as angle_of
+from ._rotation import compose as compose
+from ._rotation import decompose as decompose
 from ._strict import MAX_RECORD_BYTES as MAX_RECORD_BYTES

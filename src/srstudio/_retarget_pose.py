@@ -27,13 +27,12 @@ from . import motion_bridge as mb
 from . import skeleton as sk
 from ._retarget_errors import LimitBreach, RetargetInputError, RetargetLimitError
 from .limbs.math3d import Frame, Quaternion, Vec3
-from .skeleton._rotation import angle_of, decompose
 
 LIMIT_TOLERANCE = 1e-9  # radians past a limit that are rounding, as skeleton.pose reads them
 RESIDUAL_FLOOR = 1e-6  # radians: a turn the axes cannot hold that is reported, past the clip's eight-decimal rounding
 MAX_LISTED = 512  # limit breaches an error lists; it counts them all
 TIME_TOLERANCE_S = 1e-9  # a time this far past a clip's end is its end
-WORKSPACE = 1000.0  # metres from the origin a root may stand, as skeleton.SkeletonPose holds it
+WORKSPACE = sk.WORKSPACE  # metres from the origin a root may stand, as skeleton.SkeletonPose holds it
 _LEG_BONES = ("left_lower_leg", "left_foot", "right_lower_leg", "right_foot")
 
 
@@ -47,8 +46,8 @@ def _bind() -> dict[str, Quaternion]:
 
 BIND = _bind()
 _TABLE = sk.JOINT_TABLE
-PELVIS_SHARE = -sk.joint("hips").offset.y  # hips over the soles at the T-stance, as a share of the height
-ANKLE_SHARE = PELVIS_SHARE - sum(sk.joint(f"right_{name}").offset.y for name in ("upper_leg", "lower_leg", "foot"))
+PELVIS_SHARE = sk.JOINT_TABLE.pelvis_share
+ANKLE_SHARE = sk.JOINT_TABLE.ankle_share
 
 
 @dataclass(frozen=True)
@@ -234,13 +233,13 @@ def solve(
     for joint in sk.JOINTS:
         rotation = turns.rotations[joint.name]
         if not profile.has(joint.name):
-            tally.drop(joint.name, angle_of(rotation))
+            tally.drop(joint.name, sk.angle_of(rotation))
             continue
         bind = BIND[joint.name]
         turning = [dof for dof in joint.dofs if dof.kind == "rotate"]
         keys = [f"{joint.name}.{dof.name}" for dof in turning]
         limits = [profile.limits_of(key) for key in keys]
-        angles, residual = decompose(
+        angles, residual = sk.decompose(
             bind.inverse() * rotation * bind,
             [dof.axis for dof in turning],
             [near.get(key, 0.0) for key in keys],

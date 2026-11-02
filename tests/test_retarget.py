@@ -12,7 +12,6 @@ from srstudio import retarget as rt
 from srstudio import skeleton as sk
 from srstudio.errors import SrstudioError
 from srstudio.limbs.math3d import Quaternion, Vec3
-from srstudio.skeleton._rotation import angle_of
 
 DATA = Path(__file__).parent / "data" / "motion-bridge"
 WALK_DATA = json.loads((DATA / "walk-2m-30fps.json").read_text())
@@ -72,7 +71,7 @@ def test_every_kept_joint_turns_in_the_world_as_the_clip_does_on_any_proportions
     for index in (0, 17, 44):
         clip = clip_world_turns(WALK, index)
         for name, frame in sk.world(profile, done.poses[index]).items():
-            assert angle_of(frame.rotation.inverse() * clip[name] * bind[name]) < TURN_TOLERANCE, name
+            assert sk.angle_of(frame.rotation.inverse() * clip[name] * bind[name]) < TURN_TOLERANCE, name
 
 
 def test_the_root_scales_by_the_ratio_of_pelvis_heights():
@@ -103,7 +102,7 @@ def test_the_hips_carry_their_turn_in_their_own_controls():
     done = rt.to_pose(WALK, REAL, index=30).pose
     assert done.value("hips.right") == done.value("hips.up") == done.value("hips.forward") == 0.0
     turn = Quaternion(*WALK.frame(30).rotations["hips"])
-    assert angle_of(sk.world(REAL, done)["hips"].rotation.inverse() * turn) < TURN_TOLERANCE
+    assert sk.angle_of(sk.world(REAL, done)["hips"].rotation.inverse() * turn) < TURN_TOLERANCE
 
 
 def test_a_turn_no_control_can_hold_is_reported_by_its_size():
@@ -182,7 +181,7 @@ def test_a_pose_by_time_matches_the_frame_and_slerps_between_frames():
     middle = (WALK.frame(15).time_s + WALK.frame(16).time_s) / 2
     pose = rt.to_pose(WALK, REAL, time=middle).pose
     a, b = (Quaternion(*WALK.frame(i).rotations["hips"]) for i in (15, 16))
-    assert angle_of(sk.world(REAL, pose)["hips"].rotation.inverse() * a.slerp(b, 0.5)) < TURN_TOLERANCE
+    assert sk.angle_of(sk.world(REAL, pose)["hips"].rotation.inverse() * a.slerp(b, 0.5)) < TURN_TOLERANCE
     ra, rb = (Vec3(*WALK.frame(i).root_translation) for i in (15, 16))
     assert pose.root.origin.distance(ra.lerp(rb, 0.5)) < 1e-9
     last = rt.to_pose(WALK, REAL, time=WALK.start_s + WALK.duration_s)
