@@ -144,6 +144,54 @@
       "rule": "bust-open",
       "part": "collage-kai",
       "why": "posted; the frame check reads the figure open at the waist at 11.5 s, but on the posted frame it ends behind the counter top (false finding, signed off by arc4d3 in Slack 1793597983.414849)"
+    },
+    {
+      "reel": "home-anyway",
+      "rule": "hand-count",
+      "part": "rabbit",
+      "why": "delivered before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm that reads as attached on every flagged frame (signed off by arc4d3 in Slack 1793598631.780769); its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "ill-get-this",
+      "rule": "hand-count",
+      "part": "gary",
+      "why": "delivered before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm that reads as attached on every flagged frame (signed off by arc4d3 in Slack 1793598631.780769); its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "ill-get-this",
+      "rule": "hand-count",
+      "part": "rosa",
+      "why": "delivered before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm that reads as attached on every flagged frame (signed off by arc4d3 in Slack 1793598631.780769); its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "it-autoplayed",
+      "rule": "hand-count",
+      "part": "bear",
+      "why": "delivered before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm that reads as attached on every flagged frame (signed off by arc4d3 in Slack 1793598631.780769); its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "it-autoplayed",
+      "rule": "hand-count",
+      "part": "rabbit",
+      "why": "delivered before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm that reads as attached on every flagged frame (signed off by arc4d3 in Slack 1793598631.780769); its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "its-gone",
+      "rule": "hand-count",
+      "part": "rosa",
+      "why": "delivered before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm that reads as attached on every flagged frame (signed off by arc4d3 in Slack 1793598631.780769); its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "texts-back",
+      "rule": "hand-count",
+      "part": "dog",
+      "why": "delivered before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm that reads as attached on every flagged frame (signed off by arc4d3 in Slack 1793598631.780769); its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "texts-back",
+      "rule": "hand-count",
+      "part": "rabbit",
+      "why": "delivered before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm that reads as attached on every flagged frame (signed off by arc4d3 in Slack 1793598631.780769); its picture is frozen (ADR 0174)"
     }
   ]
 }
