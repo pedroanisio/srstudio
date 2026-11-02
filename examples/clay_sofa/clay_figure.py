@@ -1,15 +1,22 @@
-"""Mae and Bruno in clay: each part of the approved rig's drawing inflated into a volume, the face painted from the
-rig's own layers.
+"""Mae and Bruno in clay: the approved rig's drawing inflated into one surface, the face painted from the rig's own
+layers, one pair of arms rigged from the shoulders.
 
 A part is a filled shape of the drawing: the body's coat, the head's coat, each ear's coat. Its volume is the solution
 of a Poisson problem on the shape (zero on the outline, a square root of it as the height), so the outline stays
 exactly the drawn one and the surface meets it at a right angle: seen from the lens the clay has the card's
 silhouette. The body is solved as if mirrored below its base, so it stands on a flat base as wide and deep as the body
-is there. Coordinates are the drawing's reference pixels, x right and y down, with z away from the lens: the front of a
-part is at negative z.
+is there. Head and body are one surface, the skin, cut into even triangles over both outlines: each part's volume solved
+on its own, the surface the body's where the head is not and the head's well inside it, turning from one to the other
+by a weight with no step and no kink, so the chin runs into the chest with no collar line; that weight is each point's
+share of the head, which is how far it turns with the head. Coordinates are the drawing's reference pixels, x right
+and y down, with z away from the lens: the front of a part is at negative z.
+
+The arms are not drawn into the body. Each is a chain from its shoulder (two bones and a paw) whose paw at rest lies
+on the lap where the pose's drawing lays it; a gesture sends the same paw somewhere else, so the arms that rest are
+the arms that move and the figure always has one pair of hands.
 
 The face is the rig's own: its layers (eyes for the pose and the gaze, the mouth or the viseme heard, the lids of a
-blink, the teeth) painted in the drawing's order onto a picture laid flat over the head's front, and the same layers
+blink, the teeth) painted in the drawing's order onto a picture laid flat over the skin's front, and the same layers
 given relief in a normal map: the eyes and teeth stand up, ink lines are pressed in like tool marks, an open mouth is a
 hollow. Outline inks and painted shade are left out: the clay's own volume and the room's key give both.
 """
@@ -25,6 +32,9 @@ import numpy as np
 from PIL import Image, ImageDraw
 from scipy import interpolate, ndimage, sparse
 from scipy.sparse.linalg import spsolve
+from scipy.spatial import Delaunay
+from shapely import contains_xy
+from shapely.geometry import Point as ShapelyPoint
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
 
@@ -137,6 +147,7 @@ class Parts:
     """A rig's drawing sorted into what the clay is made of."""
 
     head: np.ndarray  # the head's coat, an outline polygon
+    head_shape: Sequence[float]  # and as the drawing's brush shape
     ears: tuple[np.ndarray, ...]  # each ear's coat
     ear_layers: tuple[tuple[Layer, ...], ...]  # what is painted on each ear: its coat and its inner colour
     body: np.ndarray  # the body's coat
@@ -205,6 +216,7 @@ def parts_of(rig) -> Parts:
         body_layers.append((shape, colour))
     return Parts(
         head=head,
+        head_shape=skull[head_index][0],
         ears=ears,
         ear_layers=tuple(tuple(e) for e in ear_layers),
         body=flatten(trunk[body_index][0]),
@@ -310,13 +322,13 @@ class Volume:
         )
 
 
-def _rays(outline: np.ndarray, centre: np.ndarray) -> np.ndarray:
+def _rays(outline: np.ndarray, centre: np.ndarray, spokes: int = SPOKES) -> np.ndarray:
     """How far from ``centre`` each spoke meets ``outline``: the first crossing, so a shape that is not star-shaped from
     there is cut along the spoke rather than folded."""
-    angles = np.linspace(0.0, math.tau, SPOKES, endpoint=False)
+    angles = np.linspace(0.0, math.tau, spokes, endpoint=False)
     a, b = outline, np.roll(outline, -1, axis=0)
     edge = b - a
-    reach = np.empty(SPOKES)
+    reach = np.empty(spokes)
     for k, angle in enumerate(angles):
         d = np.array((math.cos(angle), math.sin(angle)))
         denom = d[0] * edge[:, 1] - d[1] * edge[:, 0]
@@ -353,58 +365,73 @@ def _wound(flat: np.ndarray, tris: np.ndarray) -> np.ndarray:
     return out
 
 
-def inflate(outline: np.ndarray, front: float, back: float, *, base: float | None = None, bump=None) -> Volume:
-    """``outline`` as clay, standing ``front`` times its inradius toward the lens and ``back`` away. With ``base`` (a
-    reference y) the part is solved as mirrored there and cut flat on it, so it stands on that line. ``bump(x, y)``
-    adds reference pixels of relief to the front."""
+def _whole(outline: np.ndarray, base: float | None) -> np.ndarray:
+    """The shape a part is solved on: its outline, or with ``base`` (a reference y) its outline and its mirror there,
+    so the part stands on that line once cut flat on it."""
     shape = Polygon(outline).buffer(0)
     if base is not None:
         mirrored = np.stack((outline[:, 0], 2 * base - outline[:, 1]), 1)
         shape = unary_union([shape, Polygon(mirrored).buffer(0)]).buffer(0.5).buffer(-0.5)
     if shape.geom_type != "Polygon":
         raise FigureError(f"a part is one piece, got {shape.geom_type}")
-    whole = np.array(shape.exterior.coords)[:-1]
+    return np.array(shape.exterior.coords)[:-1]
+
+
+def _box(whole: np.ndarray) -> Box:
     x0, y0 = whole.min(0) - 2
     x1, y1 = whole.max(0) + 2
-    box = Box(float(x0), float(y0), float(x1), float(y1))
-    per = 1.0
-    inside = _mask(whole, box, per)
-    field = swell(inside)
-    inradius = float(ndimage.distance_transform_edt(inside).max()) / per
+    return Box(float(x0), float(y0), float(x1), float(y1))
+
+
+def _sample(field: np.ndarray, box: Box, flat: np.ndarray) -> np.ndarray:
+    """``field`` (one value per reference pixel of ``box``) at the reference points ``flat``, 0 off the box."""
+    return ndimage.map_coordinates(field, [flat[:, 1] - box.y0 - 0.5, flat[:, 0] - box.x0 - 0.5], order=1, cval=0.0)
+
+
+@dataclass(frozen=True)
+class Grid:
+    """A shape cut into rings out from its fullest point and spokes round it, the last ring on its outline."""
+
+    flat: np.ndarray  # (n, 2) reference points: the middle, then ring after ring
+    triangles: np.ndarray
+    direction: np.ndarray  # (spokes, 2): each spoke's way out, the outline's normal there
+    box: Box
+
+    @property
+    def rim(self) -> np.ndarray:
+        return np.arange(len(self.flat) - len(self.direction), len(self.flat))
+
+
+def _grid(whole: np.ndarray, box: Box, field: np.ndarray, rings: int, spokes: int) -> Grid:
     peak = np.unravel_index(np.argmax(field), field.shape)
-    centre = np.array((box.x0 + (peak[1] + 0.5) / per, box.y0 + (peak[0] + 0.5) / per))
-    reach = _rays(whole, centre)
-    rho = 1.0 - (1.0 - np.linspace(0.0, 1.0, RINGS + 1)[1:]) ** 1.6  # rings close up toward the outline
-    angles = np.linspace(0.0, math.tau, SPOKES, endpoint=False)
+    centre = np.array((box.x0 + peak[1] + 0.5, box.y0 + peak[0] + 0.5))
+    reach = _rays(whole, centre, spokes)
+    rho = 1.0 - (1.0 - np.linspace(0.0, 1.0, rings + 1)[1:]) ** 1.6  # rings close up toward the outline
+    angles = np.linspace(0.0, math.tau, spokes, endpoint=False)
     direction = np.stack((np.cos(angles), np.sin(angles)), 1)
     flat = centre + (rho[:, None, None] * reach[None, :, None]) * direction[None, :, :]
     flat = np.concatenate((centre[None, :], flat.reshape(-1, 2)))
-    sample = ndimage.map_coordinates(
-        field, [(flat[:, 1] - box.y0) * per - 0.5, (flat[:, 0] - box.x0) * per - 0.5], order=1
-    )
-    sample[-SPOKES:] = 0.0  # the outline itself: exactly on the drawing's line
-    sample = np.clip(sample, 0.0, 1.0)
-    lift = np.zeros(len(flat)) if bump is None else np.asarray(bump(flat[:, 0], flat[:, 1]), float)
-    zf = -(front * inradius * sample + lift * np.minimum(sample * 4.0, 1.0))
-    zb = back * inradius * sample
-    xy = flat.copy()
-    under = np.zeros(len(flat), bool)
+    triangles = [(0, 1 + (k + 1) % spokes, 1 + k) for k in range(spokes)]
+    triangles += [(1 + t[0], 1 + t[2], 1 + t[1]) for t in clay._sheet(rings, spokes, True)]
+    return Grid(flat, _wound(flat, np.array(triangles, int)), direction, box)
+
+
+def _volume(grid: Grid, zf: np.ndarray, zb: np.ndarray, base: float | None) -> Volume:
+    """The two sheets of ``grid`` at the depths ``zf`` and ``zb``, cut flat on ``base`` when it stands on one."""
+    xy = grid.flat.copy()
+    under = np.zeros(len(xy), bool)
     if base is not None:
         under = xy[:, 1] > base
         xy[under, 1] = base
-    triangles = [(0, 1 + (k + 1) % SPOKES, 1 + k) for k in range(SPOKES)]
-    triangles += [(1 + t[0], 1 + t[2], 1 + t[1]) for t in clay._sheet(RINGS, SPOKES, True)]
-    tris = np.array(triangles, int)
-    tris = _wound(flat, tris)
+    tris = grid.triangles
     front_points = np.column_stack((xy, zf))
     back_points = np.column_stack((xy, zb))
     if _vertex_normals(front_points, tris)[0, 2] > 0:  # the middle of the front faces the lens: -z
         tris = tris[:, ::-1].copy()
     nf = _vertex_normals(front_points, tris)
     nb = -_vertex_normals(back_points, tris)
-    rim = np.arange(len(flat) - SPOKES, len(flat))
-    out = np.column_stack((direction, np.zeros(SPOKES)))
-    nf[rim], nb[rim] = out, out
+    out = np.column_stack((grid.direction, np.zeros(len(grid.direction))))
+    nf[grid.rim], nb[grid.rim] = out, out
     nf[under], nb[under] = (0.0, 1.0, 0.0), (0.0, 1.0, 0.0)
     return Volume(
         front=front_points,
@@ -412,10 +439,143 @@ def inflate(outline: np.ndarray, front: float, back: float, *, base: float | Non
         front_normals=nf,
         back_normals=nb,
         triangles=tris,
-        uv=box.uv(flat),
-        box=box,
+        uv=grid.box.uv(grid.flat),
+        box=grid.box,
         depth=(float(-zf.min()), float(zb.max())),
     )
+
+
+def inflate(outline: np.ndarray, front: float, back: float, *, base: float | None = None, bump=None) -> Volume:
+    """``outline`` as clay, standing ``front`` times its inradius toward the lens and ``back`` away. With ``base`` (a
+    reference y) the part is solved as mirrored there and cut flat on it, so it stands on that line. ``bump(x, y)``
+    adds reference pixels of relief to the front."""
+    whole = _whole(outline, base)
+    box = _box(whole)
+    inside = _mask(whole, box, 1.0)
+    field = swell(inside)
+    inradius = float(ndimage.distance_transform_edt(inside).max())
+    grid = _grid(whole, box, field, RINGS, SPOKES)
+    sample = np.clip(_sample(field, box, grid.flat), 0.0, 1.0)
+    sample[grid.rim] = 0.0  # the outline itself: exactly on the drawing's line
+    lift = np.zeros(len(grid.flat)) if bump is None else np.asarray(bump(grid.flat[:, 0], grid.flat[:, 1]), float)
+    zf = -(front * inradius * sample + lift * np.minimum(sample * 4.0, 1.0))
+    zb = back * inradius * sample
+    return _volume(grid, zf, zb, base)
+
+
+# --- head and body as one surface -------------------------------------------------------------------------------------
+
+SPOKES_SKIN = 360  # points round the skin's outline; it is head and body, so it is not star-shaped from any point
+EDGE = 16.0  # reference pixels inside the other part past which a part's edge no longer falls steeply
+SOFT = 8.0  # reference pixels the distances the skin's weights are read from are softened over
+SKIN_STEP = 3.0  # reference pixels between the skin's points inside its outline
+
+
+def _even_grid(whole: np.ndarray, box: Box, rim_points: int, step: float) -> Grid:
+    """A shape cut into even triangles: points ``step`` apart inside it, and ``rim_points`` evenly along its outline,
+    last and in its order. A head on a body is no star from any middle, so it is not cut into spokes from one."""
+    shape = Polygon(whole)
+    ring = shape.exterior
+    along = np.linspace(0.0, ring.length, rim_points, endpoint=False)
+    rim = np.array([ring.interpolate(d).coords[0] for d in along])
+    ahead = np.array([ring.interpolate((d + 0.5) % ring.length).coords[0] for d in along])
+    behind = np.array([ring.interpolate((d - 0.5) % ring.length).coords[0] for d in along])
+    tangent = ahead - behind
+    direction = np.stack((tangent[:, 1], -tangent[:, 0]), 1)
+    direction /= np.linalg.norm(direction, axis=1, keepdims=True)
+    if contains_xy(shape, *(rim + direction * 1.0).T).mean() > 0.5:  # pointing in: the outline runs the other way
+        direction = -direction
+    xs = np.arange(box.x0 + step / 2.0, box.x1, step)
+    ys = np.arange(box.y0 + step / 2.0, box.y1, step)
+    gx, gy = np.meshgrid(xs, ys)
+    inner = np.column_stack((gx.ravel(), gy.ravel()))
+    inner = inner[contains_xy(shape.buffer(-step * 0.45), inner[:, 0], inner[:, 1])]
+    flat = np.concatenate((inner, rim))
+    tris = Delaunay(flat).simplices
+    middle = flat[tris].mean(axis=1)
+    tris = tris[contains_xy(shape, middle[:, 0], middle[:, 1])]  # the hull's triangles over a notch are not the shape
+    used = np.zeros(len(flat), bool)
+    used[tris.ravel()] = True
+    if not used[len(inner) :].all():
+        raise FigureError("a point of the skin's outline is on no triangle")
+    renumber = np.cumsum(used) - 1
+    flat, tris = flat[used], renumber[tris]
+    return Grid(flat, _wound(flat, tris), direction, box)
+
+
+BLEND = 48.0  # reference pixels in from the head's outline over which the surface turns from the body's to the head's
+
+
+def smoothstep(x: np.ndarray) -> np.ndarray:
+    """0 to 1 over ``x`` from 0 to 1, flat at both ends: a weight with no step and no kink."""
+    t = np.clip(x, 0.0, 1.0)
+    return t * t * (3.0 - 2.0 * t)
+
+
+def skin(
+    head: np.ndarray, body: np.ndarray, base: float, depths, forward: float, bump=None
+) -> tuple[Volume, np.ndarray]:
+    """The head's outline and the body's as one clay surface, and each point's share of the head (its weight when the
+    head turns). The body is inflated as :func:`inflate` would and the head too, ``forward`` of it; the surface is the
+    body's where the head is not, the head's from :data:`BLEND` inside the head's outline, and between them turns from
+    one to the other by a weight with no step and no kink, so the chin runs into the chest with no collar line and the
+    head's own edge rounds back to the body. ``depths`` are the head's and the body's (front, back)."""
+    (head_front, head_back), (body_front, body_back) = depths
+    head_whole, body_whole = _whole(head, None), _whole(body, base)
+    union = unary_union([Polygon(head_whole), Polygon(body_whole)]).buffer(1.0).buffer(-1.0)
+    if union.geom_type != "Polygon":
+        raise FigureError(f"the head and the body do not meet: {union.geom_type}")
+    whole = np.array(union.exterior.coords)[:-1]
+    box = _box(whole)
+    grid = _even_grid(whole, box, SPOKES_SKIN, SKIN_STEP)
+
+    def part(outline: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, float]:
+        inside = _mask(outline, box, 1.0)
+        fullness = np.clip(_sample(swell(inside), box, grid.flat), 0.0, 1.0)
+        # how far inside it and how far outside, softened: a distance creases where two parts of an outline are as
+        # near, along a corner's bisector, and a weight read from it would crease there too
+        within = _sample(ndimage.gaussian_filter(ndimage.distance_transform_edt(inside), SOFT), box, grid.flat)
+        without = _sample(ndimage.gaussian_filter(ndimage.distance_transform_edt(~inside), SOFT), box, grid.flat)
+        return fullness, within, without, float(ndimage.distance_transform_edt(inside).max())
+
+    sh, wh, oh, rh = part(head_whole)
+    sb, wb, _, rb = part(body_whole)
+    # the head's share: all of it outside the body, rising from its outline into it over BLEND where it lies on the
+    # body, and where the two outlines meet, shared along the outline between them
+    weight = 1.0 - (1.0 - smoothstep(wh / BLEND)) * smoothstep(wb / BLEND)
+    weight *= 1.0 - smoothstep(oh / BLEND)
+    lift = np.zeros(len(grid.flat)) if bump is None else np.asarray(bump(grid.flat[:, 0], grid.flat[:, 1]), float)
+    # each part's round edge where it is the figure's outline; where it lies over the other part it eases in instead,
+    # so neither edge's steep fall shows as a line across the other
+    head_edge = 1.0 - (1.0 - smoothstep(wh / BLEND)) * smoothstep(wb / EDGE)
+    body_edge = 1.0 - (1.0 - smoothstep(wb / BLEND)) * (1.0 - smoothstep(oh / EDGE))
+    sh, sb = sh * head_edge, sb * body_edge
+    head_near = head_front * rh * sh + lift * np.minimum(sh * 4.0, 1.0) + forward  # toward the lens, from z 0
+    head_far = head_back * rh * sh - forward  # away from it
+    zf = -((1.0 - weight) * body_front * rb * sb + weight * head_near)
+    zb = (1.0 - weight) * body_back * rb * sb + weight * head_far
+    rim = grid.rim  # the outline itself: front and back meet on the drawing's line, at the depth of whose it is
+    zf[rim] = zb[rim] = -forward * weight[rim]
+    return _volume(grid, zf, zb, base), weight
+
+
+def front_of(volume: Volume):
+    """The depth of ``volume``'s front at any point of the drawing: linear inside it, the nearest outside. A base cut
+    flat is left out, its points stacked on one line."""
+    keep = np.zeros(len(volume.front), bool)
+    keep[np.unique(volume.front[:, :2], axis=0, return_index=True)[1]] = True  # the first point at each place only
+    xy, z = volume.front[keep, :2], volume.front[keep, 2]
+    inside = interpolate.LinearNDInterpolator(xy, z)
+    nearest = interpolate.NearestNDInterpolator(xy, z)
+
+    def depth(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+        out = np.asarray(inside(x, y), float)
+        missing = np.isnan(out)
+        if missing.any():
+            out[missing] = nearest(x[missing], y[missing])
+        return out
+
+    return depth
 
 
 # --- the figure -------------------------------------------------------------------------------------------------------
@@ -424,22 +584,167 @@ HEAD_DEPTH = (0.78, 0.62)  # front and back, times the part's inradius: a round 
 BODY_DEPTH = (0.55, 0.45)
 EAR_DEPTH = {"bear": (0.42, 0.42), "rabbit": (0.24, 0.24)}
 MUZZLE, NOSE = 9.0, 7.0  # reference pixels the bear's muzzle and either nose stand off the head
-HEAD_SINK = 0.6  # the share of the chest's depth under the chin the head stands forward by: the chin sits on the chest
+HEAD_SINK = 1.0  # the share of the chest's depth under the chin the head stands forward by: the chin rides on the chest
 BASE = 832.0  # the bust's lowest drawn row: the sofa room shows it whole, its base on the cushion
+
+
+# --- the arms ---------------------------------------------------------------------------------------------------------
+
+UPPER, FORE = 92.0, 96.0  # reference pixels from the shoulder to the elbow and on to the wrist
+THICK = (0.62, 0.5)  # the arm's radius at the shoulder and at the wrist, times the look's limb width
+PRESS = 0.25  # the share of a resting paw's depth pressed into the belly
+POLE = (1.0, 0.25, -0.35)  # the way an elbow bends: out (x by the side), a little down and forward
+SIDES = ("left", "right")  # in the drawing, before any mirror
+SHOULDER_DROP = 24.0  # reference pixels below the drawing's shoulder point, clear of the chin, where an arm is rooted
+
+
+@dataclass(frozen=True)
+class ArmChain:
+    """One arm, rigged from its shoulder: two bones and a paw. The paw at ``rest`` lies on the lap where the pose's
+    drawing lays it; every gesture is that same paw sent somewhere else (:func:`reach`)."""
+
+    side: str
+    shoulder: np.ndarray  # (3,) reference pixels, its z behind the body's front by the arm's radius
+    upper: float
+    fore: float
+    radii: tuple[float, float]  # at the shoulder and at the wrist
+    paw_size: tuple[float, float, float]  # the paw's radii: along the forearm, across it, and deep
+    pad: str  # the paw's pad colour, the drawing's own
+    rest: np.ndarray  # (3,) the middle of the paw at rest
+    pole: np.ndarray  # (3,) unit: the way the elbow bends
+
+
+@dataclass(frozen=True)
+class Joints:
+    """Where an arm's joints are, reference pixels: the paw's middle past the wrist, along the forearm."""
+
+    shoulder: np.ndarray
+    elbow: np.ndarray
+    wrist: np.ndarray
+    paw: np.ndarray
+
+
+def _two_bones(start: np.ndarray, end: np.ndarray, a: float, b: float, pole: np.ndarray) -> tuple[np.ndarray, ...]:
+    """The elbow and the wrist of bones ``a`` and ``b`` from ``start`` toward ``end``: the wrist as near ``end`` as the
+    bones reach, the elbow bent toward ``pole``."""
+    way = end - start
+    far = float(np.linalg.norm(way))
+    if far < 1e-9:
+        raise FigureError("an arm cannot reach its own shoulder")
+    u = way / far
+    d = min(max(far, abs(a - b) + 1e-3), (a + b) * 0.999)
+    bend = math.acos(max(-1.0, min(1.0, (a * a + d * d - b * b) / (2.0 * a * d))))
+    v = pole - (pole @ u) * u
+    if np.linalg.norm(v) < 1e-9:
+        v = np.cross(u, (0.0, 0.0, 1.0))
+    v = v / np.linalg.norm(v)
+    elbow = start + a * (math.cos(bend) * u + math.sin(bend) * v)
+    wrist = start + d * u
+    return elbow, wrist
+
+
+def reach(chain: ArmChain, target: np.ndarray) -> Joints:
+    """``chain`` with its paw's middle sent to ``target`` (reference pixels), or as far toward it as the bones go."""
+    target = np.asarray(target, float)
+    along = chain.paw_size[0] * 0.8
+    wrist_at = target - along * (target - chain.shoulder) / max(float(np.linalg.norm(target - chain.shoulder)), 1e-9)
+    for _ in range(6):  # the paw lies along the forearm, which turns with the elbow: settle both
+        elbow, wrist = _two_bones(chain.shoulder, wrist_at, chain.upper, chain.fore, chain.pole)
+        forearm = (wrist - elbow) / np.linalg.norm(wrist - elbow)
+        wrist_at = target - along * forearm
+    elbow, wrist = _two_bones(chain.shoulder, wrist_at, chain.upper, chain.fore, chain.pole)
+    forearm = (wrist - elbow) / np.linalg.norm(wrist - elbow)
+    return Joints(chain.shoulder.copy(), elbow, wrist, wrist + along * forearm)
+
+
+def arm_meshes(chain: ArmChain, joints: Joints, coat: str, pad: str) -> dict[str, tuple[clay.Mesh, ...]]:
+    """The clay of an arm at ``joints``: the arm a tapering roll from the shoulder through the elbow to the wrist, the
+    paw an egg along the forearm, its pad on its front. Keyed arm, paw and pad, materials ``coat`` and ``pad``."""
+    path = np.concatenate(
+        (np.linspace(joints.shoulder, joints.elbow, 9), np.linspace(joints.elbow, joints.wrist, 9)[1:])
+    )
+    for _ in range(3):  # round the elbow: each inner point toward its neighbours' middle
+        path[1:-1] = 0.5 * path[1:-1] + 0.25 * (path[:-2] + path[2:])
+    run = np.concatenate(([0.0], np.cumsum(np.linalg.norm(np.diff(path, axis=0), axis=1))))
+    radii = chain.radii[0] + (chain.radii[1] - chain.radii[0]) * run / run[-1]
+    arm = clay.Model()
+    arm.ribbon(coat, path, radii.tolist(), sides=20)
+    arm.ell(coat, tuple(joints.shoulder), (chain.radii[0],) * 3)
+    forearm = joints.wrist - joints.elbow
+    turn = math.degrees(math.atan2(forearm[1], forearm[0]))
+    rx, ry, rz = chain.paw_size
+    paw = clay.Model()
+    paw.ell(coat, tuple(joints.paw), (rx, ry, rz), rotation=turn)
+    on = clay.Model()
+    on.ell(pad, tuple(joints.paw + (0.0, 0.0, -rz * 0.72)), (rx * 0.45, ry * 0.42, rz * 0.3), rotation=turn)
+    return {"arm": arm.meshes(), "paw": paw.meshes(), "pad": on.meshes()}
+
+
+def _paws(rig) -> dict[str, tuple[np.ndarray, str]]:
+    """Each paw of the pose's own drawing at rest (``desk``): its box's corners and its pad's colour, by side."""
+
+    under, _ = _arms(rig.look, "desk", 0)
+    coat = rig.look.coat
+    fills = [(flatten(shape), i) for i, (shape, colour) in enumerate(under) if colour == coat]
+    found: dict[str, tuple[np.ndarray, str]] = {}
+    for side in SIDES:
+        mine = [(outline, i) for outline, i in fills if (outline[:, 0].mean() < CENTRE) == (side == "left")]
+        if len(mine) != 2:
+            raise FigureError(f"{rig.look.name}: the desk pose draws an arm and a paw on each side, got {len(mine)}")
+        outline, i = min(mine, key=lambda row: Polygon(row[0]).area)  # the paw is the smaller fill
+        pads = [c for shape, c in under[i + 1 :] if c not in ("ink", coat)]
+        if not pads:
+            raise FigureError(f"{rig.look.name}: the {side} paw has no pad")
+        found[side] = (np.array([outline.min(0), outline.max(0)]), pads[0])
+    return found
+
+
+CENTRE = 185.0  # toon_cast.CENTRE: the drawing's middle column
+
+
+def _chains(rig, surface, body: np.ndarray) -> tuple[ArmChain, ArmChain]:
+    from srstudio.toon_cast import SHOULDERS
+
+    limb = float(rig.look.limb)
+    r0, r1 = THICK[0] * limb, THICK[1] * limb
+    within = Polygon(body).buffer(-r0 * 0.8)
+    out: list[ArmChain] = []
+    for side, (sx, top), (corners, pad) in zip(SIDES, SHOULDERS, (_paws(rig)[k] for k in SIDES), strict=True):
+        x, sy = sx, top + SHOULDER_DROP
+        step = 1.0 if side == "left" else -1.0
+        while not within.contains(ShapelyPoint(x, sy)):  # in from the drawing's shoulder until inside the body
+            x += step
+            if abs(x - sx) > 120.0:
+                raise FigureError(f"{rig.look.name}: no shoulder inside the body on the {side}")
+        shoulder = np.array((x, sy, float(surface(np.array([x]), np.array([sy]))[0]) + r0))
+        (x0, y0), (x1, y1) = corners
+        rx, ry = (x1 - x0) / 2.0, (y1 - y0) / 2.0
+        rz = min(rx, ry) * 0.8
+        px, py = (x0 + x1) / 2.0, (y0 + y1) / 2.0
+        rest = np.array((px, py, float(surface(np.array([px]), np.array([py]))[0]) - rz + PRESS * rz))
+        pole = np.array((POLE[0] * (-1.0 if side == "left" else 1.0), POLE[1], POLE[2]))
+        out.append(
+            ArmChain(side, shoulder, UPPER, FORE, (r0, r1), (rx, ry, rz), pad, rest, pole / np.linalg.norm(pole))
+        )
+    return out[0], out[1]
 
 
 @dataclass(frozen=True)
 class Figure:
-    """One character as clay, in the drawing's reference pixels: what moves with the body, what moves with the head,
-    and where the head sits in front of the body."""
+    """One character as clay, in the drawing's reference pixels: its skin (head and body as one surface, each point's
+    share of the head in ``weights``), its ears on the head, and its one pair of arms, rigged from the shoulders."""
 
     name: str
-    body: Volume
+    body: Volume  # the body and the head alone, as the skin is solved from them
     head: Volume
+    skin: Volume
+    weights: np.ndarray  # per skin vertex: 0 moves with the body, 1 with the head
     ears: tuple[Volume, ...]
+    arms: tuple[ArmChain, ArmChain]
     head_forward: float  # reference pixels the head's middle plane stands in front of the body's
     ear_back: float  # and how far behind the head's middle plane the ears' stand
     parts: Parts
+    extent: tuple[float, float]  # the least and the most x the figure takes at rest, its arms on its lap
 
 
 def _blobs(layers: Sequence[Layer], colours: set[str], height: float, soften: float):
@@ -496,98 +801,16 @@ def figure(rig) -> Figure:
         hi = np.array(overlap.bounds[2:])
         near = (rows >= lo).all(1) & (rows <= hi).all(1)
         forward = float(-body.front[near, 2].min()) * HEAD_SINK if near.any() else 0.0
+    surface, weights = skin(parts.head, parts.body, BASE, (HEAD_DEPTH, BODY_DEPTH), forward, bump)
+    arms = _chains(rig, front_of(surface), parts.body)
+    xs = [surface.front[:, 0]]
+    for chain in arms:
+        for meshes in arm_meshes(chain, reach(chain, chain.rest), "coat", "pad").values():
+            xs += [mesh.vertices[:, 0] for mesh in meshes]
+    every = np.concatenate(xs)
     ear_back = head.depth[1] * 0.35
-    return Figure(name, body, head, ears, forward, ear_back, parts)
-
-
-# --- the arms at rest ---------------------------------------------------------------------------------------------
-
-LIMB_DEPTH = (0.5, 0.35)  # front and back, times the part's inradius: a forearm and a paw are flatter than a head
-LIMB_SINK = 0.25  # the share of a limb's back pressed into what it lies on
-ARMS = ("desk",)  # the arms poses the study models: the reel's every act has its paws on the lap
-
-
-@dataclass(frozen=True)
-class Limb:
-    """One part of the arms a pose draws at rest: a forearm or a paw, laid on the body (and a paw on its forearm),
-    with the layers painted on it."""
-
-    volume: Volume
-    layers: tuple[Layer, ...]
-
-
-def _resting(layers: Sequence[Layer], coat: str) -> list[tuple[np.ndarray, list[Layer]]]:
-    """The arms' layers as parts: each coat-coloured fill starts one, the colours and short ink strokes after it lie on
-    it, the ink outlines are left to the volume."""
-    parts: list[tuple[np.ndarray, list[Layer]]] = []
-    for shape, colour in layers:
-        if colour == coat:
-            parts.append((flatten(shape), []))
-        elif colour == "ink" and len(shape) > OUTLINE_POINTS:
-            continue
-        elif not parts:
-            raise FigureError(f"an arm's {colour} layer comes before any arm")
-        else:
-            parts[-1][1].append((shape, colour))
-    if not parts:
-        raise FigureError("the pose draws no arm")
-    return parts
-
-
-def _laid(volume: Volume, under) -> Volume:
-    """``volume`` laid on the surface ``under(x, y)`` (the depth of what it rests on, at each point of the drawing):
-    its back pressed :data:`LIMB_SINK` of the way in, its rim on that surface."""
-    xy = volume.front[:, :2]
-    zb = volume.back[:, 2]
-    at = under(xy[:, 0], xy[:, 1]) - zb * (1.0 - LIMB_SINK)
-    front = np.column_stack((xy, volume.front[:, 2] + at))
-    back = np.column_stack((xy, zb + at))
-    nf = _vertex_normals(front, volume.triangles)
-    nb = -_vertex_normals(back, volume.triangles)
-    rim = slice(len(xy) - SPOKES, len(xy))
-    nf[rim], nb[rim] = volume.front_normals[rim], volume.back_normals[rim]
-    depth = (float(-front[:, 2].min()), float(back[:, 2].max()))
-    return Volume(front, back, nf, nb, volume.triangles, volume.uv, volume.box, depth)
-
-
-def _surface(body: np.ndarray, over: Sequence[np.ndarray]):
-    """The depth of the clay at any point of the drawing seen from the front: the body's front (linear inside it, the
-    nearest outside), or any part in ``over`` that stands in front of it there."""
-    inside = interpolate.LinearNDInterpolator(body[:, :2], body[:, 2])
-    nearest = interpolate.NearestNDInterpolator(body[:, :2], body[:, 2])
-    parts = [interpolate.LinearNDInterpolator(p[:, :2], p[:, 2]) for p in over]
-
-    def depth(x: np.ndarray, y: np.ndarray) -> np.ndarray:
-        z = inside(x, y)
-        missing = np.isnan(z)
-        if missing.any():
-            z[missing] = nearest(x[missing], y[missing])
-        for part in parts:
-            z = np.fmin(z, part(x, y))  # nearer the lens is less deep; outside a part it has no say
-        return z
-
-    return depth
-
-
-@cache
-def limbs(rig, arms: str) -> tuple[Limb, ...]:
-    """The arms ``rig``'s pose draws at rest for ``arms``, as clay lying on the body: a paw over its forearm."""
-    if arms not in ARMS:
-        raise FigureError(f"the clay study models the arms poses {ARMS}, not {arms!r}")
-    under, over = _arms(rig.look, arms, 0)
-    if over:
-        raise FigureError(f"the {arms} pose draws arms over the face, which the clay study does not model")
-    fig = figure(rig)
-    out: list[Limb] = []
-    for outline, layers in _resting(under, rig.look.coat):
-        laid = _laid(inflate(outline, *LIMB_DEPTH), _surface(fig.body.front, [limb.volume.front for limb in out]))
-        out.append(Limb(laid, tuple(layers)))
-    return tuple(out)
-
-
-def limb_textures(rig, arms: str, index: int) -> tuple[np.ndarray, np.ndarray]:
-    limb = limbs(rig, arms)[index]
-    return textures(list(limb.layers), lifts(list(limb.layers)), limb.volume, rig.look.coat)
+    return Figure(name, body, head, surface, weights, ears, arms, forward, ear_back, parts,
+                  (float(every.min()), float(every.max())))  # fmt: skip
 
 
 STROKE = -0.9  # reference pixels a fur stroke is pressed into the clay
@@ -601,20 +824,18 @@ def textures(paint_layers: Sequence[Layer], raised: Sequence[tuple[Sequence[floa
     return colour, normal_map(relief(raised, volume.box) + thumbs(volume.box))
 
 
-def head_textures(rig, fig: Figure, face: Face) -> tuple[np.ndarray, np.ndarray]:
-    """The head's colour picture and normal map for ``face``: its fur strokes, then the face as toon_head draws it."""
-    coat = fig.parts.coat
-    strokes = [(s, _dim(coat, STROKE_DIM)) for s in fig.parts.head_strokes]
+def skin_textures(rig, fig: Figure, face: Face) -> tuple[np.ndarray, np.ndarray]:
+    """The skin's colour picture and normal map for ``face``, in the drawing's order: the body's belly and fur strokes,
+    the head laid over them in its coat with its own strokes, then the face as toon_head draws it."""
+    parts = fig.parts
+    coat = parts.coat
+    dim = _dim(coat, STROKE_DIM)
     layers = face_layers(rig, face)
-    raised = [(s, STROKE) for s in fig.parts.head_strokes] + lifts(layers)
-    return textures(strokes + layers, raised, fig.head, coat)
-
-
-def body_textures(fig: Figure) -> tuple[np.ndarray, np.ndarray]:
-    coat = fig.parts.coat
-    strokes = [(s, _dim(coat, STROKE_DIM)) for s in fig.parts.body_strokes]
-    raised = [(s, STROKE) for s in fig.parts.body_strokes]
-    return textures(list(fig.parts.body_layers) + strokes, raised, fig.body, coat)
+    painted = [*parts.body_layers, *((s, dim) for s in parts.body_strokes), (parts.head_shape, coat)]
+    painted += [(s, dim) for s in parts.head_strokes] + layers
+    raised = [(s, STROKE) for s in parts.body_strokes] + [(parts.head_shape, 0.0)]
+    raised += [(s, STROKE) for s in parts.head_strokes] + lifts(layers)
+    return textures(painted, raised, fig.skin, coat)
 
 
 def ear_textures(fig: Figure, index: int) -> tuple[np.ndarray, np.ndarray]:

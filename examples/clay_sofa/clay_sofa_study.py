@@ -2,8 +2,9 @@
 """The clay look study: Mae and Bruno as clay figures seated in the sofa room, against the flat cards.
 
     python clay_sofa_study.py perform PROJECT           # → PROJECT/clay/performance.json, from the reel's own staging
-    python clay_sofa_study.py render PROJECT [--push]   # → PROJECT/clay/room/ or push/: every frame's composite
-    python clay_sofa_study.py scene PROJECT [--push]    # → PROJECT/clay-room.scene.xml or clay-push.scene.xml
+    python clay_sofa_study.py render PROJECT [--push]   # → PROJECT/clay/room/ and room-ink/ (or push/, push-ink/):
+                                                        # every frame's composite, plain and with the room's line
+    python clay_sofa_study.py scene PROJECT [--push] [--ink]  # → PROJECT/clay-room[-ink].scene.xml, clay-push[-ink]
 
 PROJECT is the recorded project of it-autoplayed with the room's plates (examples/paintover_proof/lounge_plates.py and
 plate_fronts.py) under plates/, and under clean-plates/ the same room drawn without the soft shadows lounge_plates lays
@@ -33,7 +34,9 @@ HERE = Path(__file__).resolve().parent
 sys.path[:0] = [str(HERE), str(HERE.parent / "paintover_proof"), str(HERE.parent.parent / "episodes")]
 
 import _lounge_set as lounge  # noqa: E402
+import clay_anatomy as ca  # noqa: E402
 import clay_figure as cf  # noqa: E402
+import clay_ink as ci  # noqa: E402
 import clay_room as cr  # noqa: E402
 import numpy as np  # noqa: E402
 import performance as pf  # noqa: E402
@@ -41,7 +44,7 @@ import sofa_room_study as study  # noqa: E402
 
 import it_autoplayed_data as reel  # noqa: E402
 from instagram_posts import PINS, POSTS  # noqa: E402
-from srstudio import clay, look, show, toon, toon_bed, toon_pair, toon_redrawn, toon_world  # noqa: E402
+from srstudio import look, show, toon, toon_bed, toon_pair, toon_redrawn, toon_world  # noqa: E402
 from srstudio.plates import Material  # noqa: E402
 from srstudio.styles import TOON  # noqa: E402
 from srstudio.thumbnail import ShowCover  # noqa: E402
@@ -56,7 +59,7 @@ PUSH_FRAMES = lounge.PUSH_FRAMES + 1  # the push's 110 cameras, and the two-shot
 TAKES = {"two": (0, 110), "mae": (111, 159), "bruno": (160, 190)}
 RIGS = {"mae": toon_redrawn.RABBIT_RIG, "bruno": toon_redrawn.BEAR_RIG}
 PALETTE = TOON.palettes[0]  # the reel's canvas: its ink and white paint the clay's faces
-COATS = {"mae": reel.RABBIT_COAT, "bruno": reel.BEAR_COAT}  # the reel's arm colours
+OWNERS = {"mae": "rabbit", "bruno": "bear"}  # the characters' parts, as the anatomy ledger names them
 
 
 def frames_of(start: float, end: float) -> tuple[int, int]:
@@ -90,13 +93,11 @@ def seats(room: study.Room, performance: pf.Performance) -> dict[str, cr.Seat]:
     per = toon.SCALE * reel.PAIR_SCALE
     back = cr.SOFA_BACK_FRONT - cr.BACK_CLEARANCE
     mae = cr.seat_of(cf.figure(RIGS["mae"]), lounge.SEAT_MAE, two, per, True, back)
-    resting = cr.posed("mae", RIGS["mae"], cf.figure(RIGS["mae"]), performance.at("mae", 0), mae, COATS["mae"])
+    resting = cr.posed("mae", RIGS["mae"], cf.figure(RIGS["mae"]), performance.at("mae", 0), mae)
     bruno_back = back
     for _ in range(8):
         bruno = cr.seat_of(cf.figure(RIGS["bruno"]), lounge.SEAT_BRUNO, two, per, False, bruno_back, cr.ARM_INNER - GAP)
-        his = cr.posed(
-            "bruno", RIGS["bruno"], cf.figure(RIGS["bruno"]), performance.at("bruno", 0), bruno, COATS["bruno"]
-        )
+        his = cr.posed("bruno", RIGS["bruno"], cf.figure(RIGS["bruno"]), performance.at("bruno", 0), bruno)
         short = GAP - cr.clearance(his, resting)
         if short <= 0.0005:
             break
@@ -107,14 +108,14 @@ def seats(room: study.Room, performance: pf.Performance) -> dict[str, cr.Seat]:
 
 
 def figures_at(performance: pf.Performance, frame: int, places: dict[str, cr.Seat]):
-    meshes: list[clay.Mesh] = []
+    """Both figures at ``frame``: each one's posed parts, and the materials they use."""
+    parts: dict[str, tuple[cr.Part, ...]] = {}
     materials: list[Material] = []
     for who in ("mae", "bruno"):
         rig = RIGS[who]
-        posed = cr.posed(who, rig, cf.figure(rig), performance.at(who, frame), places[who], COATS[who])
-        meshes += posed
-        materials += cr.materials(who, rig, posed, COATS[who])
-    return tuple(meshes), tuple(materials)
+        parts[who] = cr.posed_parts(who, rig, cf.figure(rig), performance.at(who, frame), places[who])
+        materials += cr.materials(who, rig, [mesh for part in parts[who] for mesh in part.meshes])
+    return parts, tuple(materials)
 
 
 def clay_root(root: Path) -> Path:
@@ -122,7 +123,9 @@ def clay_root(root: Path) -> Path:
 
 
 def render(root: Path, push: bool, frames: range | None = None) -> dict:
-    """Every frame's three passes and its composite. Returns what the engine spent and where each frame's passes are."""
+    """Every frame's four passes and its composite, plain and inked with the room's line; and on every frame the hands
+    each figure draws, counted by the anatomy rule (ADR 0174). Returns what the engine spent and, per frame, where its
+    passes are and what was counted."""
     cf.use_palette(PALETTE.ink, PALETTE.white)
     room = study.Room.load(root / "plates" / "room.json")
     performance = pf.Performance.load(clay_root(root) / "performance.json")
@@ -138,11 +141,16 @@ def render(root: Path, push: bool, frames: range | None = None) -> dict:
         else:
             take = take_of(n)
             lens, back = lens_of(room, take), lounge.plate(take, "back")
-        meshes, materials = figures_at(performance, n, places)
-        p, k, b = cr.passes(meshes, materials, lens, cache, spent)
-        picture, dark = cr.composite(cr.rgba(root / CLEAN / back), cr.rgba(p), cr.rgba(k), cr.rgba(b))
+        parts, materials = figures_at(performance, n, places)
+        p, k, b, i = cr.passes(parts, materials, lens, cache, spent)
+        picture, _ = cr.composite(cr.rgba(root / CLEAN / back), cr.rgba(p), cr.rgba(k), cr.rgba(b))
         cr.write(clay_root(root) / kind / f"{n:04d}.png", picture)
-        index[n] = dict(P=p.name, K=k.name, B=b.name, back=back, low=_lowest(meshes))
+        cr.write(clay_root(root) / f"{kind}-ink" / f"{n:04d}.png", ci.ink(picture, cr.rgba(i), ci.ROOM_LINE))
+        counted = ca.count({OWNERS[who]: parts[who] for who in parts}, lens)
+        if counted.notes:
+            raise cr.RenderError(f"{kind} frame {n}: " + "; ".join(str(note) for note in counted.notes))
+        meshes = [mesh for who in parts for part in parts[who] for mesh in part.meshes]
+        index[n] = dict(P=p.name, K=k.name, B=b.name, I=i.name, back=back, low=_lowest(meshes), hands=counted.hands)
         print(f"{kind} {n}: {spent.runs} {spent.seconds}", flush=True)
     record = dict(spent=dict(seconds=spent.seconds, runs=spent.runs, cached=spent.cached), frames=index)
     out = clay_root(root) / f"render-{kind}-{min(index)}-{max(index)}.json"
@@ -165,16 +173,20 @@ def _lowest(meshes) -> dict[str, float]:
 class ClaySets(study.Sets):
     """The room's sets with the clay composites where the back plate was, and no front plate over them."""
 
-    def __init__(self, room: study.Room, moving: bool, root: Path):
+    def __init__(self, room: study.Room, moving: bool, root: Path, ink: bool = False):
         super().__init__(room, moving)
         self.root = root
+        self.ink = ink
 
     def composites(self, cv, parent, kind: str, first: int, last: int, start: float, end: float) -> None:
+        folder = f"{kind}-ink" if self.ink else kind
         for n in range(first, last + 1):
-            asset = f"clay-{kind}-{n:04d}"
+            asset = f"clay-{folder}-{n:04d}"
             if asset not in self.added:
                 self.added.add(asset)
-                cv.assets.add_image(id=asset, src=f"clay/{kind}/{n:04d}.png", width=lounge.WIDTH, height=lounge.HEIGHT)
+                cv.assets.add_image(
+                    id=asset, src=f"clay/{folder}/{n:04d}.png", width=lounge.WIDTH, height=lounge.HEIGHT
+                )
             span = study.frame_span(n, last + 1, lounge.PUSH_FPS, end)
             if n == first:  # the shot's first frame holds from the cut
                 span["start"] = start
@@ -214,15 +226,15 @@ def _no_arm(cv, parent, *args, **kwargs):
     return cv.group(parent, cv.uid("g"))
 
 
-def staging_of(root: Path, push: bool) -> tuple[Staging, str]:
+def staging_of(root: Path, push: bool, ink: bool = False) -> tuple[Staging, str]:
     room = study.Room.load(root / "plates" / "room.json")
-    sets = ClaySets(room, push, root)
+    sets = ClaySets(room, push, root, ink)
     reel._room = sets.backdrop
     # the reel's modules stood in for by just what its staging calls of them
     reel.toon_world = SimpleNamespace(sofa=sets.sofa)  # type: ignore[assignment]
     reel.toon_pair = SimpleNamespace(figure=_nothing, aim=toon_pair.aim)  # type: ignore[assignment]  # the cards out
     reel.toon_bed = SimpleNamespace(swung_arm=_no_arm, ARM_WIDTH=toon_bed.ARM_WIDTH)  # type: ignore[assignment]
-    name = "clay-push" if push else "clay-room"
+    name = ("clay-push" if push else "clay-room") + ("-ink" if ink else "")
     staging = Staging(
         sketch=replace(reel.SKETCH, slug=SLUG, title="Clay Sofa"),
         seed=reel.SEED,
@@ -244,9 +256,9 @@ def staging_of(root: Path, push: bool) -> tuple[Staging, str]:
     return staging, name
 
 
-def scene(root: Path, push: bool) -> Path:
+def scene(root: Path, push: bool, ink: bool = False) -> Path:
     reel.validate(reel.SKETCH)
-    staging, name = staging_of(root, push)
+    staging, name = staging_of(root, push, ink)
     ep = build(root, staging, {"--voice"})
     if ep is None:
         raise cr.RenderError(f"the staging of {name} built no episode")
@@ -263,8 +275,8 @@ def main(argv: list[str]) -> None:
     if len(argv) < 3 or argv[1] not in ("perform", "render", "scene"):
         raise SystemExit(__doc__)
     command, root, flags = argv[1], Path(argv[2]).resolve(), set(argv[3:])
-    if flags - {"--push"}:
-        raise SystemExit("the only flag is --push")
+    if flags - {"--push", "--ink"} or ("--ink" in flags and command != "scene"):
+        raise SystemExit("the flags are --push, and --ink for a scene")
     clay_root(root).mkdir(exist_ok=True)
     if command == "perform":
         performance = pf.capture(root, ROOM_FRAMES)
@@ -273,7 +285,7 @@ def main(argv: list[str]) -> None:
     elif command == "render":
         render(root, "--push" in flags)
     else:
-        print(scene(root, "--push" in flags))
+        print(scene(root, "--push" in flags, "--ink" in flags))
 
 
 if __name__ == "__main__":

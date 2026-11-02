@@ -1,10 +1,12 @@
 """The clay look study (examples/clay_sofa): Mae and Bruno as clay figures seated in the sofa room.
 
-The figures keep the drawing: each part's outline is the drawn outline, the face is the rig's own layers, the arms at
-rest are the pose's own. They sit on the room's cushion, as the room's cameras see it (checked against the room
-record's own projection), without passing through the arm or each other. The performance record of the reel is read
-strictly, and the passes are put together as the study says. The engine runs only as a stand-in script here: the study
-renders its passes outside this suite.
+The figures keep the drawing: each part's outline is the drawn outline, the face is the rig's own layers. Head and body
+are one surface; each figure has one pair of arms, rigged from the shoulders, and every gesture moves those two arms;
+the anatomy rule counts their hands as it counts a drawn figure's (ADR 0174). The gasp and the jump lift the whole
+figure off the cushion and set it back, rigid. They sit on the room's cushion, as the room's cameras see it (checked
+against the room record's own projection), without passing through the arm or each other. The performance record of
+the reel is read strictly, and the passes are put together as the study says, plain and inked in the room's own line.
+The engine runs only as a stand-in script here: the study renders its passes outside this suite.
 """
 
 import json
@@ -16,6 +18,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from shapely.geometry import Point as ShapelyPoint
 from shapely.geometry import Polygon
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -41,14 +44,19 @@ def kit():
     os.umask(mask)
     sys.path[:0] = [str(FOLDER), str(ROOT / "examples" / "paintover_proof"), str(ROOT / "episodes")]
     try:
+        import clay_anatomy
         import clay_figure
+        import clay_ink
         import clay_room
         import clay_sofa_study
         import performance
     finally:
         sys.path[:] = path
         os.umask(mask)
-    return dict(cf=clay_figure, cr=clay_room, study=clay_sofa_study, pf=performance)
+    return dict(
+        cf=clay_figure, cr=clay_room, study=clay_sofa_study, pf=performance, ca=clay_anatomy, ci=clay_ink,
+        reel=clay_sofa_study.reel,
+    )  # fmt: skip
 
 
 @pytest.fixture(scope="module")
@@ -94,7 +102,7 @@ def test_every_front_faces_the_lens_with_no_hole_at_its_middle(kit, rigs):
     cf = kit["cf"]
     for rig in rigs.values():
         fig = cf.figure(rig)
-        volumes = [fig.body, fig.head, *fig.ears, *(limb.volume for limb in cf.limbs(rig, "desk"))]
+        volumes = [fig.body, fig.head, fig.skin, *fig.ears]
         for volume in volumes:
             p, t = volume.front, volume.triangles
             normal = np.cross(p[t[:, 1]] - p[t[:, 0]], p[t[:, 2]] - p[t[:, 0]])
@@ -128,26 +136,24 @@ def test_the_face_is_painted_from_the_rigs_own_layers_for_each_state(kit, rigs):
     rest = cf.Face("narrow", "ahead", False, "flat", "flat")
     talking = replace(rest, mouth="teeth")
     blinking = replace(rest, blink=True)
-    pictures = [cf.head_textures(rig, fig, face)[0] for face in (rest, talking, blinking)]
+    pictures = [cf.skin_textures(rig, fig, face)[0] for face in (rest, talking, blinking)]
     assert pictures[0].shape == pictures[1].shape == pictures[2].shape
     assert not np.array_equal(pictures[0], pictures[1]) and not np.array_equal(pictures[0], pictures[2])
     assert rest.key() != talking.key() != blinking.key()
 
 
-def test_the_paws_lie_on_the_lap_and_a_pose_the_study_does_not_model_is_refused(kit, rigs):
+def test_the_paws_at_rest_lie_on_the_lap(kit, rigs):
     cf = kit["cf"]
     for rig in rigs.values():
         fig = cf.figure(rig)
-        limbs = cf.limbs(rig, "desk")
-        assert len(limbs) == 4  # two forearms, two paws
-        for k, limb in enumerate(limbs):  # each part lies on the body and on the parts laid before it
-            surface = cf._surface(fig.body.front, [earlier.volume.front for earlier in limbs[:k]])
-            rim = limb.volume.back[-cf.SPOKES :]
-            under = surface(rim[:, 0], rim[:, 1])
-            assert (rim[:, 2] >= under - 1e-6).all()  # its rim on what it lies on or in it, never in front of it
-            assert (limb.volume.front[:, 2] < under.min()).any()  # and the limb stands out of it
-        with pytest.raises(cf.FigureError, match="type"):
-            cf.limbs(rig, "type")
+        surface = cf.front_of(fig.skin)
+        for chain in fig.arms:
+            joints = cf.reach(chain, chain.rest)
+            paw = joints.paw
+            under = float(surface(np.array([paw[0]]), np.array([paw[1]]))[0])
+            # the paw's back pressed into the belly's front, no deeper than a third of the paw
+            assert under - 1e-6 <= paw[2] + chain.paw_size[2] <= under + chain.paw_size[2] * 0.34
+            assert Polygon(fig.parts.body).contains(ShapelyPoint(paw[0], paw[1]))  # on the lap, not beside it
 
 
 def test_only_mae_and_bruno_are_built(kit):
@@ -182,8 +188,8 @@ def test_a_seat_keeps_the_card_size_its_back_on_the_sofa_and_the_arm_clear(kit, 
     seat = cr.seat_of(fig, (-0.391, 0.374, 0.3), lens, 1.2, False, back_at, right)
     x, _, z = seat.at[0] / 100.0, seat.at[1], seat.at[2] / 100.0
     per = seat.per / 100.0
-    assert z + fig.body.depth[1] * per == pytest.approx(back_at, abs=1e-4)
-    assert x + (fig.body.front[:, 0].max() - cr.SEAT_X) * per <= right + 1e-6
+    assert z + fig.skin.depth[1] * per == pytest.approx(back_at, abs=1e-4)
+    assert x + (fig.extent[1] - cr.SEAT_X) * per <= right + 1e-6  # its arms too
     assert 1.2 / cr.pixels_per_metre((x, cr.CUSHION_TOP, z), lens) == pytest.approx(per, rel=1e-3)
     assert -seat.at[1] / 100.0 == pytest.approx(cr.CUSHION_TOP - cr.SINK)
 
@@ -208,13 +214,11 @@ def test_the_pair_sits_clear_of_the_arm_and_of_each_other(kit, rigs, tmp_path):
     room = type("R", (), {"takes": {"two": dict(TWO)}})()
     places = study.seats(room, performance)
     posed = {
-        who: cr.posed(
-            who, rigs[who], kit["cf"].figure(rigs[who]), performance.at(who, 0), places[who], study.COATS[who]
-        )
+        who: cr.posed(who, rigs[who], kit["cf"].figure(rigs[who]), performance.at(who, 0), places[who])
         for who in ("mae", "bruno")
     }
     assert cr.clearance(posed["bruno"], posed["mae"]) >= study.GAP - 0.0006
-    right = max(float(m.vertices[:, 0].max()) for m in posed["bruno"] if "body" in m.material) / 100.0
+    right = max(float(m.vertices[:, 0].max()) for m in posed["bruno"]) / 100.0  # his resting arms too
     assert right <= cr.ARM_INNER
     for who in ("mae", "bruno"):  # each sits on the cushion, pressed in as far as the cards
         low = max(float(m.vertices[:, 1].max()) for m in posed[who]) / -100.0
@@ -451,23 +455,268 @@ def test_the_heads_pictures_are_refused_without_the_face_they_show(kit, rigs):
         cr._textures(rigs["mae"], "head")
 
 
+# --- round 2: one pair of arms, real body motion, one surface, the room's ink ----------------------------------------
+
+
+def frame_of(kit, **change):
+    """One performance frame, parsed under the record's own rules."""
+    return kit["pf"]._frame(resting_frame(**change), "test frame")
+
+
+def wow_arms(kit) -> list[dict]:
+    """Bruno's raised hands at the end of their swing, as the two-shot records them (performance.late_hands)."""
+    from srstudio import toon_bed, toon_pair, toon_sketch
+
+    reel, (sx, sy) = kit["reel"], toon_sketch.SEAT
+    rows = []
+    for root, target in reel.WOW_HANDS:
+        degrees, length = toon_pair.aim(root, target)
+        at = reel.BRUNO_AT
+        local = [(root[0] - at[0]) / reel.PAIR_SCALE + sx, (root[1] - at[1]) / reel.PAIR_SCALE + sy]
+        rows.append(dict(root=local, degrees=degrees, length=length / reel.PAIR_SCALE, width=toon_bed.ARM_WIDTH))
+    return rows
+
+
+def gestures(kit) -> dict:
+    """Every gesture of the reel the clay performs with its arms: the Wow, the gasp's flinch, the pat."""
+    reel = kit["reel"]
+    pat = 14.15
+    patting = kit["pf"].pat_hand(reel, pat, pat - 0.5, pat + 1.2, pat + 0.04 + reel.PAT_EVERY)  # a paw up
+    assert len(patting) == 1
+    return {
+        "wow": dict(arms=wow_arms(kit)),
+        "gasp": dict(tilt=reel.GASP_TILT),
+        "pat": dict(arms=[dict(root=list(a.root), degrees=a.degrees, length=a.length, width=a.width) for a in patting]),
+    }
+
+
+def parts_by_id(parts) -> dict:
+    return {part.id: part for part in parts}
+
+
+def points(part) -> np.ndarray:
+    return np.concatenate([mesh.vertices for mesh in part.meshes])
+
+
 @pytest.mark.parametrize("who", ["mae", "bruno"])
-def test_a_gasp_keeps_the_clay_seated_and_raises_the_head_as_far_as_the_cards(kit, rigs, who):
-    cr, pf = kit["cr"], kit["pf"]
-    data = record()
-    data["cast"][who][1] = resting_frame(lift=-58.0, tilt=-5.0)
-    performance = pf.Performance.parse(data)
-    rig, fig = rigs[who], kit["cf"].figure(rigs[who])
+def test_a_clay_figure_has_one_pair_of_arms_rooted_at_its_shoulders_and_no_hands_in_its_body(kit, rigs, who):
+    cf, cr = kit["cf"], kit["cr"]
+    rig = rigs[who]
+    fig = cf.figure(rig)
+    assert [chain.side for chain in fig.arms] == ["left", "right"]
+    body = Polygon(fig.parts.body)
+    for chain in fig.arms:
+        shoulder = ShapelyPoint(chain.shoulder[0], chain.shoulder[1])
+        assert body.contains(shoulder)  # the arm grows from the body
+        assert chain.shoulder[1] < rig.neck[1] + 40.0  # up at the shoulder, not at the hip
+        assert (chain.shoulder[0] < cr.SEAT_X) == (chain.side == "left")
+    parts = cr.local_parts(who, rig, fig, frame_of(kit))
+    hands = [part for part in parts if part.hand is not None]
+    assert sorted(part.hand.word for part in hands) == ["left", "right"]  # one pair, counted
+    assert all(part.chain == part.hand.word for part in hands)  # each on its own chain
+    assert {part.chain for part in parts if part.chain} == {"left", "right"}
+    # the body carries no arm and no paw: nothing the pose's arms draw is painted or modelled into it
+    from srstudio.toon_cast import _arms
+
+    under, _ = _arms(rig.look, "desk", 0)
+    drawn = {tuple(shape) for shape, _ in under}
+    assert not drawn & {tuple(shape) for shape, _ in fig.parts.body_layers}
+    assert not drawn & {tuple(shape) for shape, _ in fig.parts.ear_layers[0] + fig.parts.ear_layers[1]}
+    assert [part.id for part in parts if part.chain is None and part.hand is None] == [
+        f"{who}-skin",
+        f"{who}-ear0",
+        f"{who}-ear1",
+    ]
+
+
+@pytest.mark.parametrize("gesture", ["wow", "gasp", "pat"])
+def test_every_gesture_moves_the_two_resting_arms_and_nothing_else(kit, rigs, gesture):
+    cr, cf = kit["cr"], kit["cf"]
+    rig, fig = rigs["bruno"], cf.figure(rigs["bruno"])
+    rest = parts_by_id(cr.local_parts("bruno", rig, fig, frame_of(kit)))
+    moved = parts_by_id(cr.local_parts("bruno", rig, fig, frame_of(kit, **gestures(kit)[gesture])))
+    assert moved.keys() == rest.keys()  # the same parts: no arm appears, none is left behind
+    changed = {k for k in rest if not np.allclose(points(rest[k]), points(moved[k]))}
+    assert changed and all(rest[k].chain for k in changed)  # only the arms' chains move
+    paws = [k for k in changed if rest[k].hand is not None]
+    assert paws  # and a hand goes with its arm
+    for k in rest:  # the resting chains are the moving ones: a chain is whole at rest and in the gesture
+        if rest[k].chain:
+            assert moved[k].chain == rest[k].chain and moved[k].hand == rest[k].hand
+
+
+def test_the_raised_paws_reach_the_flat_cards_hands(kit, rigs):
+    cr, cf = kit["cr"], kit["cf"]
+    rig, fig = rigs["bruno"], cf.figure(rigs["bruno"])
+    frame = frame_of(kit, arms=wow_arms(kit))
+    targets = cr.arm_targets(fig, frame)
+    for chain in fig.arms:
+        joints = cf.reach(chain, targets[chain.side])
+        assert joints.paw[1] < rig.neck[1] - 120.0  # up beside the head, not a stub at the shoulder
+        bones = (joints.elbow - joints.shoulder, joints.wrist - joints.elbow)
+        assert np.linalg.norm(bones[0]) == pytest.approx(chain.upper)  # bones keep their length
+        assert np.linalg.norm(bones[1]) == pytest.approx(chain.fore)
+
+
+def test_the_anatomy_rule_counts_the_clay_hands_and_refuses_a_second_pair(kit, rigs):
+    ca, cr, cf = kit["ca"], kit["cr"], kit["cf"]
+    from srstudio.anatomy_ledger import HAND_COUNT
+
+    lens = cr.camera_of(TWO["eye"], TWO["look_at"], TWO["lens"])
+    performance = resting_performance(kit)
+    room = type("R", (), {"takes": {"two": dict(TWO)}})()
+    places = kit["study"].seats(room, performance)
+    wow = frame_of(kit, arms=wow_arms(kit))
+    figures = {
+        "rabbit": cr.posed_parts("mae", rigs["mae"], cf.figure(rigs["mae"]), frame_of(kit), places["mae"]),
+        "bear": cr.posed_parts("bruno", rigs["bruno"], cf.figure(rigs["bruno"]), wow, places["bruno"]),
+    }
+    counted = ca.count(figures, lens)
+    assert counted.hands == {"rabbit": 2, "bear": 2} and counted.notes == []
+    # round 1's rig: the paws at rest left on the body while a second pair goes up
+    second = tuple(
+        cr.Part(f"{part.id}-again", part.meshes, part.hand, part.chain) for part in figures["bear"] if part.chain
+    )
+    doubled = {**figures, "bear": (*figures["bear"], *second)}
+    refused = ca.count(doubled, lens)
+    assert refused.hands["bear"] == 4
+    assert [(note.rule, note.part) for note in refused.notes] == [(HAND_COUNT, "bear")]
+    # hidden paws still count: a second pair pushed behind the sofa is still drawn
+    hidden = tuple(
+        cr.Part(p.id, tuple(cr.clay.Mesh(m.material, m.vertices + (0.0, 0.0, 400.0), m.normals, m.triangles)
+                            for m in p.meshes), p.hand, p.chain)
+        for p in second
+    )  # fmt: skip
+    assert ca.count({**figures, "bear": (*figures["bear"], *hidden)}, lens).hands["bear"] == 4
+
+
+@pytest.mark.parametrize("who, motion", [("bruno", dict(lift=-58.0, tilt=-5.0)), ("mae", dict(lift=-28.0))])
+def test_the_gasp_and_the_jump_lift_the_whole_figure_off_the_cushion_rigid(kit, rigs, who, motion):
+    cr, cf = kit["cr"], kit["cf"]
+    rig, fig = rigs[who], cf.figure(rigs[who])
     seat = cr.Seat((0.0, -37.4, 30.0), 0.16, who == "mae")
-    rest, gasp = (cr.posed(who, rig, fig, performance.at(who, n), seat, "#806040") for n in (0, 1))
-    lowest = [max(float(m.vertices[:, 1].max()) for m in posed) for posed in (rest, gasp)]
-    assert lowest[1] == pytest.approx(lowest[0], abs=1e-6)  # the base stays on the cushion
-    base = [m.vertices[m.normals[:, 1] > 0.999] for m in gasp if m.material.endswith("body")]
-    assert base and all(np.allclose(v[:, 1], lowest[1]) for v in base if len(v))  # flat on it, not rocked off
-    body, head = cr.chains(rig, performance.at(who, 1), who == "mae")
-    card = cr._shift(0.0, -58.0) @ cr._turn(-5.0, (cr.SEAT_X, cr.PAIR_Y))
-    if who == "mae":
-        card = card @ cr._scale(-1.0, 1.0, (cr.SEAT_X, cr.PAIR_Y))
-    neck = np.array([*rig.neck, 1.0])
-    # where the card's goes, within what a turn moves a point up or down that a shear does not (2.2 px at 5°)
-    assert head @ neck == pytest.approx(card @ neck, abs=2.5)
+    rest = cr.posed_parts(who, rig, fig, frame_of(kit), seat)
+    up = cr.posed_parts(who, rig, fig, frame_of(kit, **motion), seat)
+    lift = cr.figure_motion(frame_of(kit, **motion), who == "mae")
+    linear = lift[:2, :2]
+    assert np.allclose(linear @ linear.T, np.eye(2))  # a turn and a move: no stretch, no shear
+    lowest = [max(float(points(p)[:, 1].max()) for p in parts) for parts in (rest, up)]  # engine y is down
+    assert lowest[1] < lowest[0] - 0.5  # the base leaves the cushion (centimetres)
+    for a, b in zip(rest, up, strict=True):
+        if a.chain:
+            continue  # the gasp also flinches the arms: their own test
+        d0 = np.linalg.norm(points(a)[::97, None] - points(a)[None, ::97], axis=2)
+        d1 = np.linalg.norm(points(b)[::97, None] - points(b)[None, ::97], axis=2)
+        assert np.allclose(d0, d1, atol=1e-6)  # every part keeps its shape
+
+
+def test_the_figure_settles_back_on_the_cushion_and_never_presses_through_it(kit, rigs):
+    cr, cf = kit["cr"], kit["cf"]
+    rig, fig = rigs["bruno"], cf.figure(rigs["bruno"])
+    seat = cr.Seat((0.0, -37.4, 30.0), 0.16, False)
+    rest = max(float(points(p)[:, 1].max()) for p in cr.posed_parts("bruno", rig, fig, frame_of(kit), seat))
+    for share in np.linspace(0.0, 1.0, 11):  # the gasp's lift and tilt share their keys: one runs as far as the other
+        frame = frame_of(kit, lift=-58.0 * share, tilt=-5.0 * share)
+        low = max(float(points(p)[:, 1].max()) for p in cr.posed_parts("bruno", rig, fig, frame, seat))
+        assert low <= rest + 1e-6  # never deeper into the cushion than at rest
+    back = max(float(points(p)[:, 1].max()) for p in cr.posed_parts("bruno", rig, fig, frame_of(kit), seat))
+    assert back == pytest.approx(rest)
+
+
+@pytest.mark.parametrize("who", ["mae", "bruno"])
+def test_head_and_body_are_one_surface_with_no_seam_at_the_neck(kit, rigs, who):
+    cf = kit["cf"]
+    rig = rigs[who]
+    fig = cf.figure(rig)
+    skin = fig.skin
+    # one connected surface: every triangle reaches every other through shared edges
+    tris = skin.triangles
+    edges = np.sort(np.concatenate([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]]), axis=1)
+    from scipy.sparse import coo_matrix
+    from scipy.sparse.csgraph import connected_components
+
+    n = len(skin.front)
+    graph = coo_matrix((np.ones(len(edges)), (edges[:, 0], edges[:, 1])), shape=(n, n))
+    assert connected_components(graph, directed=False)[0] == 1
+    # it covers the drawing's head and its body, as one outline
+    union = Polygon(fig.parts.head).buffer(0).union(Polygon(fig.parts.body).buffer(0))
+    rim = Polygon(skin.front[-cf.SPOKES_SKIN :, :2]).buffer(0)
+    assert rim.symmetric_difference(union).area < 0.02 * union.area
+    # where the head's outline crosses the body, the surface turns smoothly: no crease, no ring
+    p = skin.front
+    normal = np.cross(p[tris[:, 1]] - p[tris[:, 0]], p[tris[:, 2]] - p[tris[:, 0]])
+    normal /= np.maximum(np.linalg.norm(normal, axis=1, keepdims=True), 1e-12)
+    centre = p[tris].mean(axis=1)
+    head_line, body = Polygon(fig.parts.head).exterior, Polygon(fig.parts.body).buffer(-12.0)
+    near = np.array([head_line.distance(ShapelyPoint(c[0], c[1])) < 8.0 and body.contains(ShapelyPoint(c[0], c[1]))
+                     for c in centre])  # fmt: skip
+    assert near.sum() > 50
+    order = {tuple(e): k for k, e in enumerate(np.sort(tris[:, [0, 1]], axis=1).tolist())}
+    worst = 0.0
+    for k in np.nonzero(near)[0]:
+        for a, b in ((0, 1), (1, 2), (2, 0)):
+            other = order.get(tuple(sorted((int(tris[k, a]), int(tris[k, b])))))
+            if other is not None and other != k:
+                worst = max(worst, float(np.degrees(np.arccos(np.clip(normal[k] @ normal[other], -1, 1)))))
+    assert worst < 30.0
+    # the head's weight runs from the body to the head without a step
+    assert fig.weights.min() >= 0.0 and fig.weights.max() <= 1.0
+    jump = np.abs(fig.weights[edges[:, 0]] - fig.weights[edges[:, 1]])
+    assert jump.max() < 0.5
+
+
+def test_the_room_line_is_read_from_the_rooms_own_plates(kit):
+    ci = kit["ci"]
+    assert ci.ROOM_LINE == ci.Line("#000000", 9.0, 4.0)  # lounge_plates.INK, INK_WIDTH, FINE_WIDTH
+
+
+def test_the_ink_draws_the_rooms_line_round_the_figures_and_the_fine_one_inside(kit):
+    ci = kit["ci"]
+    ids = np.zeros((60, 120, 4))
+    ids[..., 3] = 1.0
+    ids[:, 40:, :3] = ci.id_colour("bruno", "skin")  # the figure from column 40
+    ids[:, 80:, :3] = ci.id_colour("bruno", "arm-left")  # an arm on it from column 80
+    plain = np.zeros((60, 120, 4))
+    plain[..., :3], plain[..., 3] = 0.6, 1.0
+    inked = ci.ink(plain, ids, ci.ROOM_LINE)
+    row = inked[30, :, :3]
+    line = np.all(np.abs(row - 0.0) < 0.02, axis=1)  # the room's ink is black
+    heavy = np.nonzero(line[20:60])[0] + 20
+    fine = np.nonzero(line[65:100])[0] + 65
+    assert len(heavy) == pytest.approx(9, abs=1) and heavy.min() < 40 <= heavy.max()  # straddles the outline
+    assert len(fine) == pytest.approx(4, abs=1)
+    assert np.allclose(inked[30, :25, :3], 0.6) and np.allclose(inked[30, 50:70, :3], 0.6)  # nothing else changes
+    assert np.allclose(inked[30, 110:, :3], 0.6)
+
+
+def test_each_part_has_its_own_id_colour_and_the_figures_tell_apart(kit):
+    ci = kit["ci"]
+    colours = {(who, part): tuple(ci.id_colour(who, part)) for who in ("mae", "bruno") for part in ci.PARTS}
+    assert len(set(colours.values())) == len(colours)
+    assert all(any(c) for c in colours.values())  # none is the sofa's black
+    for (who, _), colour in colours.items():
+        assert (colour[2] > 0.5) == (who == "bruno")
+    with pytest.raises(ci.InkError, match="no part"):
+        ci.id_colour("mae", "tail")
+
+
+def test_an_engine_pass_holds_the_gpu_lock(kit, tmp_path, monkeypatch):
+    cr = kit["cr"]
+    lock = tmp_path / "gpu.lock"
+    monkeypatch.setenv("SRSTUDIO_GPU_LOCK", str(lock))
+    seen = '"$(dirname "$0")/seen"'
+    body = f'if flock -n "{lock}" true; then echo free > {seen}; else echo held > {seen}; fi; printf png > plate.png'
+    monkeypatch.setenv("SRSTUDIO_ENGINE", str(fake_engine(tmp_path, body)))
+    cr.render(small_plate(kit), tmp_path / "cache", "P", cr.Spent.new())
+    assert (tmp_path / "seen").read_text().strip() == "held"
+
+
+def test_a_pat_is_his_arm_toward_her_paw_through_the_shot_and_nothing_outside_it(kit):
+    pf, reel = kit["pf"], kit["reel"]
+    pat = 14.15
+    assert pf.pat_hand(reel, pat, pat - 0.5, pat + 1.2, pat - 0.6) == ()
+    before = pf.pat_hand(reel, pat, pat - 0.5, pat + 1.2, pat - 0.2)
+    up = pf.pat_hand(reel, pat, pat - 0.5, pat + 1.2, pat + 0.04 + reel.PAT_EVERY)
+    assert len(before) == len(up) == 1 and before[0].root == up[0].root
+    assert up[0].degrees == pytest.approx(before[0].degrees + reel.PAT_RISE)
+    assert before[0].root[0] < 165.0  # his arm on her side: the left chain's
