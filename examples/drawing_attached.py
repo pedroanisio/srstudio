@@ -25,6 +25,7 @@ from srstudio import scene_motion as m
 from srstudio.acting import PerformancePlan
 from srstudio.character_clips import ToonClip
 from srstudio.limbs import Frame, Quaternion, Vec3
+from srstudio.limbs.motion import Motion
 from srstudio.toon import fx, fy
 from srstudio.toon_bento import _HIS_SHOULDERS
 from srstudio.toon_cast import PIVOT, SHOULDERS
@@ -66,15 +67,18 @@ def shoulder_frame(time: float, *, placement: c.Transform | None = None) -> Fram
     return Frame(world.point(native * transform.scale), rotation * lean)
 
 
-def attached_mesh(time: float, *, placement: Callable[[float], c.Transform] | None = None) -> tuple[clay.Mesh, ...]:
+def attached_mesh(
+    time: float, *, placement: Callable[[float], c.Transform] | None = None, motion: Motion | None = None
+) -> tuple[clay.Mesh, ...]:
     """Rigidly place the real rig; freeze the cup's world placement outside contact."""
     arm = shoulder_frame(time, placement=placement(time) if placement else None)
-    attachment = carry_motion().attachments[0]
+    motion = motion or carry_motion()
+    attachment = motion.attachments[0]
     contact_time = min(attachment.release, max(attachment.attach, time))
     prop = shoulder_frame(contact_time, placement=placement(contact_time) if placement else None)
     origin = np.array((HAND_ORIGIN.x, HAND_ORIGIN.y, HAND_ORIGIN.z))
     result = []
-    for mesh in hand_mesh(time):
+    for mesh in hand_mesh(time, motion=motion):
         frame = prop if mesh.material in ('cup', 'coffee') else arm
         axes = [frame.rotation.rotate(v) for v in (Vec3(1, 0, 0), Vec3(0, 1, 0), Vec3(0, 0, 1))]
         rotation = np.array([(v.x, v.y, v.z) for v in axes]).T

@@ -257,8 +257,17 @@ clock. Both painter windows use the original six-second path clock, avoiding
 rounding differences between locally offset path keys and global foot keys.
 The three-second depth replacement remains an explicit cut. At the default
 12-fps world cadence, the complete plan has 80 intervals and 196 raw render
-jobs, with 180,355 planned nodes and 6,705,311,568 bytes of working storage.
+jobs, with 178,661 planned nodes and 6,692,351,952 bytes of working storage.
 These are planned costs, not observed peak memory or a completed cold render.
+
+The native trunk faces each camera, so it turns at the four-second camera cut.
+Nothing stays attached to that shoulder across the cut
+([ADR 0215](decisions/0215-frontal-shoulder-camera-cuts.md)). The candidate
+retimes the shared grip path to release the cup at 3.6 seconds, in its
+pickup pose, and `check_cuts` refuses any carry held across a declared cut.
+With the shared timing, the held cup moved 64 cm in world space at the cut.
+Each rigid paw drawing takes its solved sole's yaw, so the toes follow the
+solver's forward axis in every shot. A tilted sole raises an error.
 
 `tests/test_drawing_body_support.py` exercises support, planted sole positions,
 bone lengths, native pelvis registration, source preparation and full-size

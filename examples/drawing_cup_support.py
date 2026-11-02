@@ -19,6 +19,7 @@ from examples.drawing_hand import hand_recipe
 from srstudio import clay, proxy
 from srstudio import composition as c
 from srstudio.limbs import Quaternion, Vec3
+from srstudio.limbs.motion import Motion
 
 SUPPORT_TONES = ('#454c56', '#697683', '#93a3b0', '#c5d0d8')
 MAX_CLEARANCE_SWING = 0.03  # Radians; a larger correction needs a newly authored reach.
@@ -101,15 +102,18 @@ def _clearance(meshes: tuple[clay.Mesh, ...], rest: clay.Mesh, shoulder: np.ndar
     )
 
 
-def supported_mesh(time: float, *, placement: Callable[[float], c.Transform]) -> tuple[clay.Mesh, ...]:
+def supported_mesh(
+    time: float, *, placement: Callable[[float], c.Transform], motion: Motion | None = None
+) -> tuple[clay.Mesh, ...]:
     """The hand/cup and fixed floor support, in the existing centimeter clay basis."""
     if type(time) not in (int, float) or not 0 <= time <= 6:
         raise ValueError('support time must lie in 0..6 seconds')
-    attachment = carry_motion().attachments[0]
+    motion = motion or carry_motion()
+    attachment = motion.attachments[0]
     reference = attachment.attach if time < 3 else attachment.release
-    rest = next(mesh for mesh in attached_mesh(reference, placement=placement) if mesh.material == 'cup')
+    rest = next(mesh for mesh in attached_mesh(reference, placement=placement, motion=motion) if mesh.material == 'cup')
     stand = _stand(rest)
-    meshes = attached_mesh(time, placement=placement)
+    meshes = attached_mesh(time, placement=placement, motion=motion)
     if attachment.attach < time < attachment.release:
         point = shoulder_frame(time, placement=placement(time)).origin
         meshes = _clearance(meshes, rest, np.array((point.x, point.y, -point.z)))

@@ -136,6 +136,7 @@ def test_supported_scene_places_actual_feet_on_their_world_anchors(example, fps)
             layer = next(layer for layer in plan.spec.layers if layer.id == f'{leg.side}-foot-{suffix}')
             expected = leg.sole.origin * 100 + offset
             assert layer.transform.translation == pytest.approx((expected.x, expected.y, expected.z), abs=1e-9)
+            assert layer.transform == example.foot_transform(leg, time)  # Toes follow the solved sole.
             fields = c.form_lighting(plan, layer.id, time)
             assert fields and all(field.vertices for field in fields)
             if leg.planted:

@@ -19,18 +19,56 @@ from examples.drawing_hand import hand_recipe
 from examples.drawing_proof import SIZE, sample, schedule
 from examples.drawing_world import WorldStudy
 
-from srstudio import body, framegraph
+from srstudio import body, clay, framegraph
 from srstudio import composition as c
 from srstudio import scene_motion as m
 from srstudio import toon_bento as bento
 from srstudio.acting import PerformancePlan
 from srstudio.character_clips import ToonClip
 from srstudio.limbs import Frame, Quaternion, Vec3
+from srstudio.limbs.motion import Motion
 from srstudio.toon import SCALE as NATIVE_SCALE
 from srstudio.toon import fx, fy
 from srstudio.toon_cast import PIVOT, SHOULDERS
 
 METERS_PER_DRAWING_PIXEL = bento.SIZE * NATIVE_SCALE * WORLD_SCALE / 100
+CAMERA_CUTS = (4,)  # drawing_proof.sample replaces the camera here; the trunk turns to face the new view.
+CARRY_KEYS = (1.2, 2.0, 2.8, 3.6)
+
+
+def check_cuts(motion: Motion) -> None:
+    """Refuse a prop held by the frontal native shoulder through a camera cut.
+
+    Non-spatial native ink must face the camera exactly, so the trunk, and the
+    shoulder the spatial arm hangs from, turns with every new camera. An empty
+    arm may follow it; a held prop would jump in world space.
+    """
+    for attachment in motion.attachments:
+        for cut in CAMERA_CUTS:
+            if attachment.attach <= cut <= attachment.release:
+                raise ValueError(
+                    f'{attachment.name} is attached to the frontal shoulder across the camera cut at {cut:g} seconds'
+                )
+
+
+@cache
+def candidate_carry() -> Motion:
+    """The shared grip path and pickup pose, retimed so the cup is set down before the cut."""
+    source = carry_motion()
+    contact, attachment = source.contacts[0], source.attachments[0]
+    if len(contact.target.keys) != len(CARRY_KEYS) or any(
+        key.velocity is not None or key.angular_velocity is not None for key in contact.target.keys
+    ):
+        raise ValueError('candidate carry retimes four positional grip keys')
+    keys = tuple(replace(key, time=time) for key, time in zip(contact.target.keys, CARRY_KEYS, strict=True))
+    release = CARRY_KEYS[-1]
+    carry = replace(
+        source,
+        contacts=(replace(contact, end=release, target=replace(contact.target, keys=keys)),),
+        attachments=(replace(attachment, release=release),),
+    )
+    check_cuts(carry)
+    return carry
 
 
 @cache
@@ -140,13 +178,14 @@ def _body_events() -> tuple[float, ...]:
         sorted(
             {key.time for key in plan.score.roots}
             | {time for step in plan.score.steps for time in (step.start, step.end)}
-            | {
-                time % 3
-                for attachment in carry_motion().attachments
-                for time in (attachment.attach, attachment.release)
-            }
         )
     )
+
+
+def _scene_events() -> tuple[float, ...]:
+    """Body events in both painter windows, plus the absolute carry events."""
+    carry = {time for attachment in candidate_carry().attachments for time in (attachment.attach, attachment.release)}
+    return tuple(sorted({time + offset for time in _body_events() for offset in (0, 3) if time + offset < 6} | carry))
 
 
 def leg_source(*, fps: int = 12) -> tuple[c.AssetBinding, c.VectorSource]:
@@ -254,24 +293,44 @@ def body_transform(time: float) -> c.Transform:
     return replace(transform, translation=(origin.x, origin.y, origin.z))
 
 
+def candidate_mesh(time: float) -> tuple[clay.Mesh, ...]:
+    """The spatial arm and cup on the supported root, driven by the retimed carry."""
+    return attached_mesh(time, placement=body_transform, motion=candidate_carry())
+
+
+def foot_transform(leg: body.LegPose, time: float) -> c.Transform:
+    """Place one rigid foot drawing at its solved sole, toes along the sole's forward axis.
+
+    The paw is drawn from the front, so its card normal (+z) is the toe
+    direction; the sole's yaw turns that normal. A tilted sole has no frontal
+    paw drawing and is refused instead of flattened.
+    """
+    rotation = leg.sole.rotation
+    if abs(rotation.x) > 1e-12 or abs(rotation.z) > 1e-12:
+        raise ValueError(f'{leg.side} foot drawing needs a level sole; only yaw is drawable')
+    point = leg.sole.origin * 100 + body_offset(time)
+    yaw = math.degrees(2 * math.atan2(rotation.y, rotation.w))
+    return c.Transform((point.x, point.y, point.z), (0.0, yaw + 0.0, 0.0))
+
+
 def body_scene(*, fps: int = 12, size: tuple[int, int] = SIZE) -> WorldStudy:
     """Place Bento's upper body, authored leg paths and attached arm in the shared world."""
     plan = body_plan()
-    events = tuple(sorted({time + offset for time in _body_events() for offset in (0, 3) if time + offset < 6}))
+    check_cuts(candidate_carry())
+    events = _scene_events()
     original = attached_scene(fps=fps, size=size, events=events)
     timeline = original.timeline
     leg_binding, legs = leg_source(fps=fps)
     foot_binding, feet = foot_source()
     figure, native = figure_source(performance=upper_performance(), candidate='candidate.hybrid-supported-figure')
-    old_hand = next(source for source in timeline.rasters if source.id == 'hand')
-    assert isinstance(old_hand, c.RasterSequence)
     snapshots: list[c.RasterFrame] = []
     vertices: list[tuple[float, float, float]] = []
-    for frame in old_hand.frames:
-        meshes = attached_mesh(frame.time, placement=body_transform)
+    for frame in schedule(fps=fps, size=size, events=events):
+        meshes = candidate_mesh(frame.time)
         vertices.extend((float(x), float(y), float(-z)) for mesh in meshes for x, y, z in mesh.vertices)
         source = c.proxy_source('hand', meshes, hand_recipe(), basis='clay', lighting='scene', meters_per_unit=0.01)
-        snapshots.append(c.RasterFrame(frame.time, source))
+        if not snapshots or source != snapshots[-1].source:
+            snapshots.append(c.RasterFrame(frame.time, source))
     hand = c.RasterSequence('hand', 6, tuple(snapshots))
     xs, ys, zs = zip(*vertices, strict=True)
     hand_binding = replace(
@@ -313,8 +372,7 @@ def body_scene(*, fps: int = 12, size: tuple[int, int] = SIZE) -> WorldStudy:
                 for time in times:
                     pose = plan.sample(time if time < 3 else time - 3)
                     foot = next(leg for leg in pose.legs if leg.side == side)
-                    point = foot.sole.origin * 100 + body_offset(time)
-                    transform = c.Transform((point.x, point.y, point.z))
+                    transform = foot_transform(foot, time)
                     # A planted sole has one held transform, not one identical
                     # manifest record for every frame of the camera and body.
                     if not keys or keys[-1].value != transform:
