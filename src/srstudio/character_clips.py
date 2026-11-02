@@ -141,6 +141,7 @@ class ToonClip:
     taps: tuple[float, ...] = ()
     target_gaze: GazePlan | None = None
     face_blends: FaceTrack | None = None
+    external_arms: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -324,6 +325,9 @@ def _check(cv: Canvas, clip: CharacterClip, end: float) -> None:
     elif isinstance(clip, ToonClip):
         if not isinstance(clip.rig, HeadRig) or not isinstance(clip.head, HeadPlan):
             raise _fail('rig/head', None, 'a HeadRig and a HeadPlan')
+        from .toon_head import _external_arms
+
+        _external_arms(clip.rig, clip.poses, clip.external_arms)
         _poses(clip, end)
         _track(clip.mouths, 'mouths', end, names=VISEMES)
         _sequence(clip.taps, 'taps')
@@ -395,6 +399,7 @@ def _draw(cv: Canvas, parent: Group, clip: CharacterClip, end: float) -> None:
             mouths=clip.mouths,
             target_gaze=clip.target_gaze,
             face_blends=clip.face_blends,
+            external_arms=clip.external_arms,
         )
     elif isinstance(clip, GlossClip):
         if clip.who == 'sunny':
