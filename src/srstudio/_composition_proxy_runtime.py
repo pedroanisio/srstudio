@@ -30,7 +30,7 @@ def decode(value: object) -> c.ProxySource:
 
 
 def prepare_proxy(plan: c.ValidatedScenePlan, layer: str, source: c.ProxySource) -> c.PreparedProxy:
-    binding, view, sources = payload.context(plan, layer, source)
+    payload.context(plan, layer, source)
     response = _call(
         {
             'schema': wire.SCHEMA,
@@ -41,6 +41,13 @@ def prepare_proxy(plan: c.ValidatedScenePlan, layer: str, source: c.ProxySource)
         },
         plan.spec.budget,
     )
+    return prepared_decode(response, plan, layer, source)
+
+
+def prepared_decode(
+    response: dict, plan: c.ValidatedScenePlan, layer: str, source: c.ProxySource, *, sequence: bool = False
+) -> c.PreparedProxy:
+    binding, view, sources = payload.context(plan, layer, source, sequence=sequence)
     wire.fields(response, {'schema', 'status', 'passes', 'digest'})
     if type(response['passes']) is not list or len(response['passes']) != len(sources):
         raise wire.fail(None, 'exactly the required light/ID pass evidence')
@@ -54,11 +61,13 @@ def prepare_proxy(plan: c.ValidatedScenePlan, layer: str, source: c.ProxySource)
     return replace(asset, digest=response['digest'])
 
 
-def convert(plan: c.ValidatedScenePlan, asset: c.PreparedProxy, images: tuple[bytes, ...]) -> bytes:
+def convert(
+    plan: c.ValidatedScenePlan, asset: c.PreparedProxy, images: tuple[bytes, ...], *, sequence: bool = False
+) -> bytes:
     response = _call(
         {
             'schema': wire.SCHEMA,
-            'operation': 'convert-proxy',
+            'operation': 'convert-proxy-frame' if sequence else 'convert-proxy',
             'plan': asdict(plan),
             'layer': asset.layer,
             'source': encode(asset.source),

@@ -22,7 +22,9 @@ closed scene/resources in a bounded worker. `compile_bundle` and `emit_bundle`
 combine verified vectors and static plates with bounded rendering and portable
 image resources, including bounded printed labels. `prepare_proxy` adds static
 light/part-ID conversion under the same camera, lighting and worker budgets.
-Animated plate and proxy adapters remain open under SDK-P2-07.
+`RasterSequence` adds baked geometry/appearance timelines under that shared
+static view. Animated scene cameras, lights and parent transforms remain open
+under SDK-P2-07.
 A valid manifest alone is not a rendered scene,
 approval of a new style, or proof of a host's declared geometry.
 
@@ -320,6 +322,98 @@ shared projection, all four conversion results, content-sensitive cache reuse,
 malformed inputs, forged evidence and real-engine part-ID registration.
 Animation, temporal stability and style approval require the separate
 [DRAWING acceptance study](../DRAWING.md#proof-and-acceptance-gates).
+
+## Animate held raster snapshots
+
+`RasterSequence` stores immutable `RasterFrame` snapshots on a finite source
+clock. Each snapshot contains a complete `PlateSource` or `ProxySource`, so
+geometry, materials, texture pixels, printed labels and proxy conversion controls
+can change over time. Frames start at zero, strictly increase, and remain below
+`duration`. Each is held until the next frame; the last holds until the source
+ends. This is baked playback with explicit replacements, not mesh interpolation
+or a promise of continuous motion.
+
+```python
+from srstudio import clay, composition as c, plates
+
+def snapshot(x, color):
+    model = clay.Model()
+    model.box("skin", (x, 0, 0), (0.2, 0.2, 0.2))
+    return c.plate_source(
+        "host", tuple(model.meshes()), (plates.Material("skin", color),), basis="clay"
+    )
+
+first = snapshot(0, "#C88762")
+second = snapshot(-0.12, "#00AAFF")
+source = c.RasterSequence(
+    "host", 2, (c.RasterFrame(0, first), c.RasterFrame(0.5, second), c.RasterFrame(1.5, first))
+)
+binding = c.AssetBinding(
+    "host", "rafa", 1, "plates", c.Bounds((-1, -1, -1), (1, 1, 1)),
+    nodes=256, memory_bytes=16 * 1024**2, duration=source.duration,
+    plates=c.raster_jobs(source, width=64, height=64, memory_bytes=8 * 1024**2),
+)
+clock = c.TemporalPolicy(0.5, 1.375, source_start=0.25, rate=2)
+spec = c.ScenePlan(
+    c.StylePin("toon", c.style_revision("toon")), 64, 64, c.FrameRate(4), 2, 7,
+    "meter", c.CameraSpec("perspective", (0, 0, 10), (0, 0, 0), (32, 32), 100, 10),
+    c.LightRig("lit", (c.LightSpec("ambient", "ambient", "#FFFFFF", 1),)),
+    (c.LayerSpec("host", "host", 1, clock),), c.RenderBudget(timeout=120),
+)
+plan = c.preflight(spec, (binding,))
+schedule = c.raster_schedule(plan, "host", source)
+prepared = c.prepare_raster_sequence(plan, "host", source)
+```
+
+This example illustrates the protocol using a box; its host binding does not
+approve new geometry as a character. Pass `prepared` to `compile_bundle` or
+`emit_bundle`. The schedule contains source sample indices and half-open scene
+intervals: `[0.5, 0.625)`, `[0.625, 1.125)` and `[1.125, 1.375)`. At an exact
+boundary only the new snapshot is visible. Source offsets and playback rates
+are applied once. Decimal-to-rational clock arithmetic avoids accumulating
+successive interval errors, and intervals that collapse at scene-time floating
+precision are refused.
+
+To use proxies, supply `ProxySource` snapshots, set the binding backend to
+`"proxy"`, and select one supported pass in the layer. Every snapshot must
+support that pass. A sequence keeps one source ID, backend, physical unit scale
+and proxy oversampling factor. The shared scene camera, lights and parent
+transforms remain static; snapshots can contain baked object motion in source
+coordinates. Host code samples its motion explicitly before snapshotting. No
+builder, mutable array, live recipe mapping or callback crosses the worker
+boundary.
+
+`raster_jobs` declares unique raw jobs for the complete source. Identical
+geometry/appearance snapshots share render work; proxy palette/grain-only
+changes can reuse raw light/ID images and still get converted again. Print
+jobs include their label attempts. `raster_sequence_digest` includes every
+source snapshot, timestamp and the finite duration. Job dimensions bound the
+registered view including overscan, and proxy oversampling applies once.
+
+Preparation verifies every snapshot, including ones outside the selected clip,
+under the original validated plan and binding. Animated anchors, declared
+contacts, source duration and shared budgets retain their original identities.
+Rendered geometry does not independently certify a host-declared anchor.
+Emission renders only snapshots whose held intervals intersect the clip and
+reuses verified cache entries across retimed cuts and out-of-order builds.
+Repeated output images are sent once per sequence with checked image references.
+The portable scene stores explicit visibility intervals and selected PNGs.
+
+A source contains at most 1024 snapshots. Combined source buffers and prepared
+resources each stay within eight MiB, even when a snapshot repeats. The binding's
+node declaration covers all prepared snapshots; memory covers at least eight
+times the complete source buffers and prepared resources, plus each proxy's
+conversion requirements. Worker deadlines/address-space caps, render attempts,
+pixel/sample limits and final bundle/IPC byte caps remain enforced. A failed
+snapshot leaves the cache untouched; completed render entries may survive a
+later runtime failure, but publication never installs a partial bundle.
+
+The [timeline tests](../tests/test_composition_sequences.py) cover source clocks,
+held boundaries, invalid unseen snapshots, closed IPC, animated anchor records,
+cold/warm work and real-rendered plate/proxy motion. Smoothness, moving scene
+cameras, shared-light vector picture adapters, receivers and the complete
+animated [drawing acceptance study](../DRAWING.md#proof-and-acceptance-gates)
+remain separate requirements.
 
 ## Render and publish a mixed bundle
 
