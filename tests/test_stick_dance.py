@@ -371,6 +371,44 @@ def test_head_centroids_read_the_centre_of_the_skin_coloured_pixels(tmp_path):
     assert all(c[1] == pytest.approx(12, abs=0.01) for c in centres)
 
 
+def test_a_box_reads_each_of_two_heads_on_its_own_where_their_shared_centre_drifts(tmp_path):
+    _ffmpeg()
+    skin = tuple(int(stick.SKIN[i : i + 2], 16) for i in (1, 3, 5))
+
+    def two(left_r):  # a still head on the right; the left one only changes how much of it shows
+        def paint(x, y):
+            if (x - 10) ** 2 + (y - 12) ** 2 <= left_r**2 or (x - 40) ** 2 + (y - 12) ** 2 <= 36:
+                return skin
+            return (40, 90, 160)
+
+        return paint
+
+    paths = [_png(tmp_path / f"{r}.png", 52, 26, two(r)) for r in (3, 6)]
+    shared = [x for x, _ in sd.head_centroids(paths)]
+    assert shared[0] - shared[1] > 5  # neither head moved, yet the pooled centre did
+    right = sd.head_centroids(paths, box=(26, 0, 52, 26))
+    left = sd.head_centroids(paths, box=(0, 0, 26, 26))
+    assert [c[0] for c in right] == pytest.approx([40, 40], abs=0.01)
+    assert [c[0] for c in left] == pytest.approx([10, 10], abs=0.01)
+    assert all(c[1] == pytest.approx(12, abs=0.01) for c in left + right)
+
+
+@pytest.mark.parametrize("box", [(0, 0, 0, 5), (5, 0, 2, 5), (0, 0, 5), (0, 0, 5.0, 5), [0, 0, 5, 5], (-1, 0, 5, 5)])
+def test_a_box_that_is_not_a_rectangle_of_whole_pixels_is_refused(tmp_path, box):
+    _ffmpeg()
+    blank = _png(tmp_path / "blank.png", 8, 8, lambda x, y: (0, 0, 0))
+    with pytest.raises(sd.RenderedTrackError, match="box"):
+        sd.head_centroids([blank], box=box)
+
+
+def test_a_box_with_no_head_inside_it_is_refused(tmp_path):
+    _ffmpeg()
+    skin = tuple(int(stick.SKIN[i : i + 2], 16) for i in (1, 3, 5))
+    one = _png(tmp_path / "one.png", 20, 10, lambda x, y: skin if x < 5 else (0, 0, 0))
+    with pytest.raises(sd.RenderedTrackError, match=r"inside \(10, 0, 20, 10\)"):
+        sd.head_centroids([one], box=(10, 0, 20, 10))
+
+
 def test_head_centroids_refuse_frames_they_cannot_read(tmp_path):
     _ffmpeg()
     blank = _png(tmp_path / "blank.png", 8, 8, lambda x, y: (0, 0, 0))

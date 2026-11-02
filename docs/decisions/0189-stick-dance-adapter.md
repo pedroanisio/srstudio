@@ -62,7 +62,10 @@ inside a beat.
   `False`, and published figures draw byte for byte as before (tested). This is the only change to `stick.py`.
 - **The groove is checked on the drawing.** `StickDance.track("head", "up")` and `track("hip", "right")` give the
   drawn positions in head radii. `SEAT_GROOVE_BOB` and `SEAT_GROOVE_SWAY` must find no miss on them. The test reads
-  rendered frames too: `head_centroids` decodes the engine's PNGs with ffmpeg and takes the centre of the skin pixels.
+  rendered frames too: `head_centroids` decodes the engine's PNGs with ffmpeg and takes the centre of the skin pixels,
+  inside a `box` when a frame holds several figures. The centre of two heads together moves with how many pixels of
+  each read as skin, and a change of a few pixels in one head moves it by a share of the distance between them: on
+  the car proof, the pooled sway reads 29 ms late while each head alone lands within 3 ms of the beat.
   For two bars of seat-groove, the head must cycle once a beat (± 0.02) and its low point and sideways extreme must land
   within 0.02 s of the beat, which is half a picture.
 - **Errors.** `StickDanceError(SrstudioError, ValueError)` is the base. Its children are `ExpressionError` and
@@ -71,9 +74,10 @@ inside a beat.
 
 Measured on the drawing, seat-groove reads 1.000 cycles a beat on both channels. The head drops in 0.198 s, rises in
 0.267 s and moves 0.380 head radius peak to peak, with its low point 1 ms after the beat. The hips snap in 0.136 s and
-return in 0.329 s over 0.200 head radius. From the engine's frames of a single figure, the bob reads 0.198 s down,
-0.267 s up and 0.383 peak to peak, with its low point 2 ms before the beat. The sway reads 0.137 s and 0.328 s, with
-its extreme 5 ms after the beat.
+return in 0.329 s over 0.200 head radius. From the engine's frames of a single figure, the bob reads 0.195 s down,
+0.270 s up and 0.381 peak to peak, with its low point 2 ms after the beat. The sway reads 0.132 s and 0.333 s, with
+its extreme 2 ms before the beat. On the car proof's engine frames, each friend's head read in its own half lands its
+low point within 5 ms of the beat and its sideways extreme within 3 ms (0.38 and 0.20 head radius peak to peak).
 
 ## Rejected alternatives
 

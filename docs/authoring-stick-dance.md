@@ -85,7 +85,8 @@ entry's `hold` turns the face's look for that phrase.
 
 `track("head", "up")` and `track("hip", "right")` are the drawn positions in head radii, ready for `measure_dance`. To
 read rendered frames, render PNGs with the engine and pass them to `head_centroids`. It returns the centre of the skin
-pixels in each frame. Divide by the rig's head radius in pixels (`stick.HEAD_R` times your `scale`) before you measure.
+pixels in each frame. With several figures in a frame, read each inside its own `box` (left, top, right, bottom):
+the centre of two heads together moves with how many pixels of each read as skin. Divide by the rig's head radius in pixels (`stick.HEAD_R` times your `scale`) before you measure.
 A frame with no head raises `RenderedTrackError`.
 
 `examples/dance_stick/dance_stick_study.py` builds the proof clip. It has two friends in a car and a standing routine,

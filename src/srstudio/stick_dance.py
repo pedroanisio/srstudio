@@ -417,14 +417,29 @@ def head_centroids(
     colours: Sequence[str] = (SKIN, SKIN_SHADE),
     tolerance: int = SKIN_TOLERANCE,
     max_frames: int = MAX_RENDERED,
+    box: tuple[int, int, int, int] | None = None,
 ) -> tuple[tuple[float, float], ...]:
     """The centre, in pixels of each frame, of the pixels painted in the head's ``colours`` (the Stick skin and its
     shade), each channel within ``tolerance``. A frame is decoded by ``ffmpeg``; a frame with no head in it is
-    refused rather than read as zero."""
+    refused rather than read as zero.
+
+    ``box`` (left, top, right, bottom, in frame pixels) reads only the pixels inside it, so each of several figures is
+    read on its own: the centre of two heads together moves with how many pixels of each read as skin, and a change of
+    a few pixels in one head shifts it by a share of the distance between them."""
     if type(max_frames) is not int or not 1 <= len(paths) <= max_frames <= MAX_RENDERED:
         raise RenderedTrackError(f"read 1..{max_frames} frames (at most {MAX_RENDERED}), got {len(paths)}")
     if type(tolerance) is not int or not 0 <= tolerance <= 64:
         raise RenderedTrackError(f"tolerance is a whole number in 0..64 per channel, got {tolerance!r}")
+    if box is not None and not (
+        isinstance(box, tuple)
+        and len(box) == 4
+        and all(type(v) is int for v in box)
+        and 0 <= box[0] < box[2]
+        and 0 <= box[1] < box[3]
+    ):
+        raise RenderedTrackError(
+            f"box is (left, top, right, bottom) whole pixels with left < right, top < bottom: {box!r}"
+        )
     wanted = np.array([[int(c[i : i + 2], 16) for i in (1, 3, 5)] for c in colours], dtype=np.int16)
     found = shutil.which(ffmpeg)
     if found is None:
@@ -438,9 +453,12 @@ def head_centroids(
         if done.returncode != 0 or len(done.stdout) != width * height * 3:
             raise RenderedTrackError(f"cannot decode {path}: {done.stderr.decode(errors='replace').strip()}")
         pixels = np.frombuffer(done.stdout, np.uint8).reshape(height, width, 1, 3).astype(np.int16)
+        left, top, right, bottom = box if box is not None else (0, 0, width, height)
+        pixels = pixels[top:bottom, left:right]
         hit = (np.abs(pixels - wanted).max(axis=3) <= tolerance).any(axis=2)
         ys, xs = np.nonzero(hit)
         if len(xs) == 0:
-            raise RenderedTrackError(f"no head in {path}: no pixel within {tolerance} of {', '.join(colours)}")
-        centres.append((float(xs.mean()), float(ys.mean())))
+            where = f" inside {box}" if box is not None else ""
+            raise RenderedTrackError(f"no head in {path}{where}: no pixel within {tolerance} of {', '.join(colours)}")
+        centres.append((float(xs.mean()) + left, float(ys.mean()) + top))
     return tuple(centres)
