@@ -26,9 +26,10 @@ there, so
 
 Quaternions are Hamilton's, (w, x, y, z), and turn vectors actively. Units are in the field names: metres (``_m``),
 seconds (``_s``). The record keeps srlocations' world axes, x right, y up, z away from the viewer, and says so in
-``axes``. This reader gives srstudio's, the ones ``srstudio.body`` uses: x right, y down, z forward toward the viewer.
-The change is a half turn about x, ``(x, y, z) -> (x, -y, -z)``: a proper rotation, so a quaternion's
-``(w, x, y, z)`` becomes ``(w, x, -y, -z)`` and forward kinematics holds in either frame.
+``axes``; the mannequin faces +z. This reader gives the axes ``srstudio.body`` and ``srstudio.skeleton`` use: x right,
+y down, z the figure's anatomical forward. The change is ``(x, y, z) -> (x, -y, z)``, the one the skeleton's joint
+table was made with, so a rotation R becomes M R M with M = diag(1, -1, 1), a quaternion's ``(w, x, y, z)`` becomes
+``(w, -x, y, -z)``, and forward kinematics holds in either frame because M is orthogonal.
 
 This module imports only the standard library and two stdlib-only srstudio modules (``errors`` and
 ``location_bridge``, for the one srlocations pin): the exporter loads it by path in srlocations' interpreter and checks
@@ -71,7 +72,7 @@ __all__ = [
 SCHEMA = "srstudio.motion"
 SCHEMA_VERSION = "1.0.0"
 RECORDED_AXES = {"x": "right", "y": "up", "z": "away"}  # srlocations' world, as the record holds it
-AXES = {"x": "right", "y": "down", "z": "forward, toward the viewer"}  # srstudio's, as this reader gives it
+AXES = {"x": "right", "y": "down", "z": "anatomical forward"}  # srstudio.body's and skeleton's, as this reader gives
 MAX_BYTES = 32_000_000  # a 30 fps frame with world positions is about 4 KB, so four minutes is under 30 MB
 MAX_FRAMES = 7_200  # four minutes at 30 fps
 MAX_FPS = 240.0
@@ -527,13 +528,14 @@ def _clip(
 
 
 def _point_to_srstudio(point: Vec3) -> Vec3:
-    """srlocations' x right, y up, z away to srstudio's x right, y down, z toward the viewer."""
-    return (point[0], 0.0 - point[1], 0.0 - point[2])  # 0.0 - : a zero stays a positive zero
+    """srlocations' x right, y up, z forward to srstudio's x right, y down, z forward: y alone changes sign."""
+    return (point[0], 0.0 - point[1], point[2])  # 0.0 - : a zero stays a positive zero
 
 
 def _quat_to_srstudio(q: Quat) -> Quat:
-    """The same rotation seen in srstudio's axes: a half turn about x keeps w and x and negates y and z."""
-    return (q[0], q[1], 0.0 - q[2], 0.0 - q[3])
+    """The same rotation in srstudio's axes, M R M with M = diag(1, -1, 1): an axis turns as a pseudovector, -M v, so
+    w and y stay and x and z change sign."""
+    return (q[0], 0.0 - q[1], q[2], 0.0 - q[3])
 
 
 # --- quaternions and vectors ---------------------------------------------------------------------------------------

@@ -48,11 +48,15 @@ rotation identity, the figure stands in srlocations' T-stance. A joint's rotatio
 
 ### Axes
 
-The record keeps srlocations' axes, x right, y up, z away from the viewer, and the reader converts. `MotionClip` is in
-`srstudio.body`'s axes: x right, y down, z forward toward the viewer. The change is a half turn about x, so
-`(x, y, z)` becomes `(x, -y, -z)` and a quaternion `(w, x, y, z)` becomes `(w, x, -y, -z)`. It is a proper rotation:
-forward kinematics holds in either frame, and a rotation stays a rotation. A BVH file's own frame is a third one (z
-toward the viewer), and it stops at the exporter.
+The record keeps srlocations' axes, x right, y up, z away from the viewer, and the reader converts. The mannequin faces
++z. `MotionClip` is in the axes of `srstudio.body` and `srstudio.skeleton`: x right, y down, z the figure's anatomical
+forward. The change is `(x, y, z)` to `(x, -y, z)`, the one the skeleton's joint table ([ADR
+0185](0185-shared-skeleton.md)) was made with, so a clip's bones are that table's at the mannequin's height and a test
+holds them to it. A rotation R becomes M R M with M = diag(1, -1, 1); an axis turns as a pseudovector, so a quaternion
+`(w, x, y, z)` becomes `(w, -x, y, -z)`. M is orthogonal, so forward kinematics holds in either frame. A half turn
+about x, `(x, -y, -z)`, would also keep y down, but it turns the figure to face -z, its back to the viewer of every
+srstudio style, and its bones would no longer be the skeleton's. A BVH file's own frame is a third one (z toward the
+viewer), and it stops at the exporter.
 
 ### What the exporter reads
 

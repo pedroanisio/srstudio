@@ -70,8 +70,8 @@ def test_the_walk_covers_two_metres_in_two_seconds():
     assert clip.duration_s == pytest.approx(2.0)
     assert clip.frame(30).time_s == pytest.approx(1.0)
     first, last = clip.frames[0].root_translation, clip.frames[-1].root_translation
-    # srlocations walks the figure 2 m along its z, away from the viewer: srstudio's z is toward the viewer
-    assert last[2] - first[2] == pytest.approx(-2.0, abs=1e-6)
+    # the figure walks 2 m the way it faces, anatomical forward, which is +z in srstudio as in srlocations
+    assert last[2] - first[2] == pytest.approx(2.0, abs=1e-6)
     assert last[0] - first[0] == pytest.approx(0.0, abs=1e-6)
 
 
@@ -109,21 +109,43 @@ def test_the_posed_sequence_moves_the_right_arm():
     assert first["hips"] == pytest.approx(last["hips"], abs=1e-9)
 
 
-def test_the_axes_are_converted_as_a_half_turn_about_x():
-    """srlocations' (x, y, z) is srstudio's (x, -y, -z): a proper rotation, so a quaternion (w, x, y, z) becomes
-    (w, x, -y, -z). Checked against the raw record, so the reader cannot pass by converting nothing."""
+def test_the_axes_are_converted_by_negating_y():
+    """srlocations' (x, y, z) is srstudio's (x, -y, z): y flips and anatomical forward stays +z, so a rotation R
+    becomes M R M with M = diag(1, -1, 1), and a quaternion (w, x, y, z) becomes (w, -x, y, -z). Checked against the
+    raw record, so the reader cannot pass by converting nothing."""
     clip = mb.load(POSES)
     raw = POSES_DATA["frames"][7]
     frame = clip.frame(7)
     x, y, z = raw["root_translation_m"]
-    assert frame.root_translation == (x, -y, -z)
+    assert frame.root_translation == (x, -y, z)
     for index, (name, _) in enumerate(mb.CANONICAL_JOINTS):
         w, a, b, c = raw["local_rotations_wxyz"][index]
-        assert frame.rotations[name] == (w, a, -b, -c)
+        assert frame.rotations[name] == (w, -a, b, -c)
         px, py, pz = raw["world_positions_m"][index]
-        assert frame.world_positions is not None and frame.world_positions[name] == (px, -py, -pz)
+        assert frame.world_positions is not None and frame.world_positions[name] == (px, -py, pz)
     offset = POSES_DATA["joints"][joint_index("left_upper_arm")]["rest_offset_m"]
-    assert clip.joint("left_upper_arm").rest_offset == (offset[0], -offset[1], -offset[2])
+    assert clip.joint("left_upper_arm").rest_offset == (offset[0], -offset[1], offset[2])
+
+
+def test_the_face_and_toes_point_to_anatomical_forward():
+    """srstudio.body's z is the figure's anatomical forward, so the eyes and toes sit ahead of their bones on +z."""
+    clip = mb.load(WALK)
+    for name in ("left_eye", "right_eye", "jaw", "left_toes", "right_toes"):
+        assert clip.joint(name).rest_offset[2] > 0, name
+
+
+def test_the_rest_offsets_are_the_shared_skeletons():
+    """The record's bones are srstudio.skeleton's joint table at the mannequin's height, axis for axis. The thumbs
+    are left out: the table bakes their splay into the first joint's rest, the record into the T-stance offsets."""
+    from srstudio import skeleton
+
+    table = skeleton.JOINT_TABLE
+    clip = mb.load(WALK)
+    for joint in table.joints[1:]:
+        if "thumb" in joint.name:
+            continue
+        scaled = tuple(table.reference_height_m * value for value in (joint.offset.x, joint.offset.y, joint.offset.z))
+        assert clip.joint(joint.name).rest_offset == pytest.approx(scaled, abs=1e-4), joint.name
 
 
 def test_text_and_data_read_the_same_clip():
