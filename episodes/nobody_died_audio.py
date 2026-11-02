@@ -14,6 +14,8 @@ is no music, and the foley is synthesized in the build.
 
 from __future__ import annotations
 
+import math
+
 from srstudio.interview import NOTO_SANS_BOLD, Interview, Schedule, Spoken, Timing, main
 from srstudio.song import Singer
 
@@ -44,6 +46,7 @@ PEEK = CUE_TAIL + 0.95  # after "I've always admired...": the phone, close, CALL
 TURNS = CUE_TAIL + 0.90  # after "Nobody writes that if it's fine.": the phone turns itself over
 BULB = CUE_TAIL + 1.20  # after "Who died?": the held bracket on Rosa under the bulb
 ENDING = 0.45  # the lamp under her arm, and out on the last word
+HOLD = 1.0  # a phone text reads this long from when it lands, past the 0.8333 s minimum (ADR 0150)
 INTERVIEW = Interview(
     slug="nobody-died",
     title="Nobody Died",
@@ -110,6 +113,20 @@ def extra(t: Timing) -> dict:
             {"time": p[10]["end"] + CUE_TAIL, "angle": "rosa"},
         ],
     }
+
+
+class CardError(ValueError):
+    """A phone text that cannot be carried over its cut."""
+
+
+def carried(landed: float, cut: float) -> tuple[float, float]:
+    """The span a phone text that lands at ``landed`` is carried into the next shot, from the ``cut`` that ends its own
+    shot, so it reads for :data:`HOLD` on the frames with the cut where it is. Its own shot is too short to hold it."""
+    if not (math.isfinite(landed) and math.isfinite(cut) and 0 <= landed < cut):
+        raise CardError(f"a phone text lands before the cut it is carried over, got {landed!r} and {cut!r}")
+    if landed + HOLD <= cut:
+        raise CardError(f"a phone text that lands at {landed} reads for {HOLD} s before the cut at {cut}: no carry")
+    return cut, landed + HOLD
 
 
 if __name__ == "__main__":

@@ -1,12 +1,29 @@
-"""Nobody Died as data: the lines as decided, three real holds, the voices, and the post."""
+"""Nobody Died as data: the lines as decided, three real holds, the voices, the post, and the carried phone texts."""
 
 import sys
 from pathlib import Path
+from typing import cast
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "episodes"))
 
-from nobody_died_audio import BULB, CUE, CUE_TAIL, PEEK, SCRIPT, TURNS, VOICES, extra, schedule  # noqa: E402
+import pytest  # noqa: E402
+
+from nobody_died_audio import (  # noqa: E402
+    BULB,
+    CUE,
+    CUE_TAIL,
+    HOLD,
+    PEEK,
+    SCRIPT,
+    TURNS,
+    VOICES,
+    CardError,
+    carried,
+    extra,
+    schedule,
+)
+from srstudio import cutout_call, interview, text_rules  # noqa: E402
 from srstudio.releases import load  # noqa: E402
 
 
@@ -101,3 +118,41 @@ def test_a_cut_after_a_line_waits_for_its_caption_cue():
     ]
     crossed = [(c, a, b) for c in extra(Timing(p))["camera_cuts"] for a, b in cues if a + 1e-9 < c["time"] < b - 1e-9]
     assert not crossed
+
+
+def test_a_phone_text_is_held_past_the_reading_minimum():
+    assert HOLD >= text_rules.MINIMUM + 0.1  # a frame either side of the measure's edges still reads
+
+
+def landings() -> dict[str, tuple[float, float, float]]:
+    """Each phone text: when it lands, the cut that ends its shot, and the cut after that."""
+    p = phrases()
+    beats = extra(cast(interview.Timing, Timing(p)))  # extra reads only the phrases
+    cuts = [c["time"] for c in beats["camera_cuts"]]
+    angles = [c["angle"] for c in beats["camera_cuts"]]
+    phone, turns = angles.index("phone"), angles.index("turns")
+    face_up = beats["turn"] + cutout_call.TURN / 2  # the face opens on the second half of the turn
+    return {
+        "DON'T WORRY": (beats["worry"], cuts[phone + 1], cuts[phone + 2]),
+        "MOM (9)": (face_up, cuts[turns + 1], cuts[turns + 2]),
+    }
+
+
+@pytest.mark.parametrize("text", ["DON'T WORRY", "MOM (9)"])
+def test_each_phone_text_is_carried_over_the_cut_for_the_minimum(text):
+    landed, cut, after = landings()[text]
+    start, end = carried(landed, cut)
+    assert start == cut  # from the cut, so the run on the frames does not break and the cut stays where it is
+    assert end - landed >= text_rules.MINIMUM + 0.1
+    assert end < after  # gone before the shot it is carried into ends
+
+
+def test_a_text_held_long_enough_in_its_own_shot_is_not_carried():
+    with pytest.raises(CardError):
+        carried(1.0, 1.0 + HOLD + 0.1)
+
+
+@pytest.mark.parametrize("landed, cut", [(2.0, 1.5), (float("nan"), 2.0), (1.0, float("inf"))])
+def test_a_card_lands_before_its_cut(landed, cut):
+    with pytest.raises(CardError):
+        carried(landed, cut)

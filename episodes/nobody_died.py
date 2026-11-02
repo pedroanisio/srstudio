@@ -12,6 +12,9 @@ it, DON'T WORRY, and the color goes out of him. "Nobody writes that if it's fine
 
 The manager is heard down the laptop's speaker. No music: the foley is synthesized here. It declares no engine safe
 area, so captions are placed inside x 80–920 by hand.
+
+DON'T WORRY and MOM (9) land too late in their shots to be read there, so each is carried over the cut into the next
+shot on a key-line bar until it has been up for HOLD (ADR 0150): the cuts and the takes stay where they are.
 """
 
 import os
@@ -19,7 +22,7 @@ from dataclasses import replace
 
 from _common import project_root
 from instagram_posts import POSTS
-from nobody_died_audio import INTERVIEW
+from nobody_died_audio import INTERVIEW, carried
 from srstudio import (
     CAFE,
     Episode,
@@ -295,9 +298,18 @@ def rosa(g):
 cupboard = cutout_counter.back_room(cv, ep.comp, in_room=rosa, shots=[ROSA_SHOT], push=(0.0, 0.01), opens=0.0)
 cutout_key.camera(cv, cupboard, [(0.0, ROOM_FRAME)], box=ROOM_BOX)
 
-hook = cutout_key.key_line(cv, ep.comp, "FINAL INTERVIEW", 0.0, 3.0, top=250, font=(ROOT / ep.spec.font).read_bytes())
+FONT = (ROOT / ep.spec.font).read_bytes()
+hook = cutout_key.key_line(cv, ep.comp, "FINAL INTERVIEW", 0.0, 3.0, top=250, font=FONT)
+CARRIED = (  # text, when it is readable on the phone, the cut that ends its shot, the bar's top in the next shot
+    ("DON'T WORRY", WORRY, PHONE_SHOT[1], 270),  # the close: on his beanie, clear of his brows and the bug
+    ("MOM (9)", TURN + cutout_call.TURN / 2, TURN_SHOT[1], cutout_key.TOP),  # the tile: the wall over the manager
+)
+cards = [
+    cutout_key.key_line(cv, ep.comp, text, *carried(landed, cut), top=top, font=FONT, id=f"carried-{i}")
+    for i, (text, landed, cut, top) in enumerate(CARRIED)
+]
 spoken = ep.captions(ep.spoken_captions(min_seconds=0.84), x=80, y=1420, width=920, size=60)
-ep.hide_on_cover(hook, *spoken)
+ep.hide_on_cover(hook, *cards, *spoken)
 ep.markers(extra=[("marker-peek", PEEK, "Call me"), ("marker-lamp", L[11].start, "The lamp")])
 ep.instagram(POSTS["nobody-died"])
 ep.finish()
