@@ -40,7 +40,7 @@ DESCRIPTION = (
 ACCESSIBILITY = (
     "Two cartoon news anchors at a desk in front of a bright monitor wall. Vera, older with a silver bob and half-moon "
     "glasses, reads from a source card: a man has walked home to Hull from Chile, fifty thousand kilometers with no "
-    "transport. Gus, with red curls and a tangerine jacket, asks if not even a bus. Vera says he set off in 1998 on a "
+    "transport. Gus, with brown curls and an orange jacket, asks if not even a bus. Vera says he set off in 1998 on a "
     "walk meant to take twelve years. Gus says that is his builder, who will not come out when it drizzles, while the "
     "man swam the English Channel. Vera says the man does not know what comes next. Gus says give it twelve years. "
     "Vera lowers her glasses: twenty-eight."
@@ -118,7 +118,10 @@ SKETCH = Sketch(SLUG, TITLE, (news_kit.VERA, news_kit.GUS), LINES, BEATS, END, c
 EVENTS = ("card", "builder", "callback", "stare", "end")
 POST = InstagramPost(
     title="Sound like your builder?",
-    description=f"Parody desk, real story.\n{SOURCE.outlet}, {SOURCE.date}: {SOURCE.headline}",
+    description=(
+        f"Parody desk, real story.\n{SOURCE.outlet}, {SOURCE.date}: {SOURCE.headline}\n"
+        "dpa, Nov 1, 2026: Briton Karl Bushby Returns Home After a 28-Year Walk"
+    ),
     credit="Voices: ElevenLabs premade voices Matilda and Charlie. Original characters, drawn in code.",
     hashtags=("#hull", "#walking", "#adventure", "#parodynews"),
     thumbnail=Thumbnail(

@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 
 from sr_core.scene import Scene, read
 
+from . import _composition_text as text_assets
 from . import _composition_wire as wire
 from . import _scene_motion_wire as tw
 from . import composition as c
@@ -30,15 +31,13 @@ def compile_timeline(request: dict) -> c.CompiledScene:
     vectors = {}
     total = 0
     for value in request['vectors']:
-        item = wire.fields(value, {'id', 'xml'})
-        name = item['id']
+        name, xml, fonts = wire.vector_decode(value)
         if type(name) is not str or name not in bindings or name in vectors:
             raise wire.fail(None, 'one source per vector binding')
-        xml = wire.xml_decode(item['xml'])
-        total += len(xml)
+        total += len(xml) + text_assets.validate(fonts)
         if total > MAX_BYTES:
             raise wire.fail(None, 'bounded combined bundle inputs')
-        vectors[name] = prepare_vector(bindings[name], xml)
+        vectors[name] = prepare_vector(bindings[name], xml, fonts=fonts)
     if vectors.keys() != bindings.keys():
         raise wire.fail(None, 'exactly the required vector sources')
     tw.expansion(timeline, vectors)
@@ -109,7 +108,10 @@ def compile_timeline(request: dict) -> c.CompiledScene:
             'seed': str(spec.seed),
         },
     )
-    if images:
+    has_text = any(asset.fonts for asset in vectors.values())
+    if has_text:
+        root.find('project').set('fontPolicy', 'pinned')  # type: ignore[union-attr]
+    if images or has_text:
         shelf = ET.SubElement(root, 'assets')
         for digest in sorted(images):
             ET.SubElement(shelf, 'image', image_metadata[digest])
@@ -137,17 +139,12 @@ def compile_timeline(request: dict) -> c.CompiledScene:
                 )
                 ET.SubElement(group, 'layer', {'id': prefix + '__image', 'asset': raster['image'], 'x': '0', 'y': '0'})
                 continue
-            source = ET.fromstring(vectors[layer.asset].xml)
-            mapping = {
-                node.attrib['id']: prefix + '__' + node.attrib['id'] for node in source.iter() if 'id' in node.attrib
-            }
-            for node in source.iter():
-                if 'id' in node.attrib:
-                    node.set('id', mapping[node.attrib['id']])
-                for attr in ('fill', 'stroke'):
-                    value = node.get(attr, '')
-                    if value.startswith('url(#'):
-                        node.set(attr, f'url(#{mapping[value[5:-1]]})')
+            asset = vectors[layer.asset]
+            source = text_assets.portable(ET.fromstring(asset.xml), asset.fonts)
+            text_assets.scope(source, prefix)
+            source_assets = source.find('assets')
+            if source_assets is not None and len(source_assets):
+                shelf.extend(source_assets)
             source_paints = source.find('paints')
             if source_paints is not None:
                 paints.extend(source_paints)
@@ -175,7 +172,8 @@ def compile_timeline(request: dict) -> c.CompiledScene:
     nodes = sum(1 for _ in root.iter())
     if (
         nodes > timeline.cost.nodes
-        or len(xml) + sum(map(len, images.values())) > MAX_BYTES
+        or len(xml) + sum(map(len, images.values())) + sum(len(r.data) for r in text_assets.resources(vectors.values()))
+        > MAX_BYTES
         or len(xml) * 8 > spec.budget.max_memory_bytes
     ):
         raise c._fail('budget.output', (nodes, len(xml)), 'bounded timeline output', 'composition.budget')

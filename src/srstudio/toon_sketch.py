@@ -470,7 +470,7 @@ def recorder(
     (``python3 <episode>_audio.py PROJECT [--ffmpeg PATH] [--place-only]``, the help from ``doc``); ``validate`` checks
     the sketch once the arguments are parsed, before anything is recorded; ``foley_of`` and ``sounds`` as in
     :func:`record_episode`. ``--place-only`` asks no voice and needs no consent: the beats are moved onto the recording
-    that is already there (:func:`srstudio.sketch.place_again`).
+    that is already there and the lips read again with ``mouth`` (:func:`srstudio.sketch.place_again`).
 
     ``cover`` is the post's cover, laid out with the project's own ``cover_font`` (its path inside the project) on a
     ``cover_size`` frame before any take is paid for, so a headline too wide or too tall stops the recording rather
@@ -492,7 +492,7 @@ def recorder(
             validate(sk)
         check_cover(project)
         if place_only:
-            sketch.place_again(sk, project)
+            sketch.place_again(sk, project, mouth=mouth)
             return {}
         return record_episode(sk, project, env, ffmpeg, seed, note, mouth=mouth, foley_of=foley_of, sounds=sounds)
 

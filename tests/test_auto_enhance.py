@@ -89,6 +89,22 @@ def test_a_mention_in_the_body_is_not_a_trailer(repo):
     assert "no commit on develop" in reasons(repo)[0]
 
 
+STRANDED = "feat: x\n\nWhy.\n\nEnhances: new-reel\nEnhancement-Kind: props\n\nCo-Authored-By: A <a@example.com>"
+
+
+def test_trailers_stranded_above_the_co_author_are_refused_with_the_reason(repo):
+    commit(repo, STRANDED, REAL)
+    (reason,) = reasons(repo)
+    assert "does not count" in reason and "middle paragraph" in reason
+
+
+def test_the_pregate_catches_stranded_trailers_before_the_merge(repo):
+    git(repo, "checkout", "-q", "-b", "feat/x")
+    commit(repo, STRANDED, REAL)
+    (row,) = auto_enhance.unsound(repo)
+    assert row.slugs == ("new-reel",) and any("middle paragraph" in p for p in row.problems)
+
+
 def test_one_commit_cannot_pay_for_two_videos(repo):
     commit(repo, message(extra="Enhances: other-reel\n"), REAL)
     assert "one commit enhances one video" in reasons(repo)[0]

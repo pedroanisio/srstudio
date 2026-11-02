@@ -7,6 +7,7 @@ import sys
 from dataclasses import asdict
 from pathlib import Path
 
+from . import _composition_text as text_assets
 from . import _composition_wire as wire
 from . import composition as c
 from ._bounded_process import BoundedProcessError, ProcessLimits, run
@@ -69,7 +70,9 @@ def _call_worker(request: dict, budget: c.RenderBudget, *, command: tuple[str, .
     return response
 
 
-def prepare_vector(binding: c.AssetBinding, xml: bytes, *, budget: c.RenderBudget | None = None) -> c.PreparedVector:
+def prepare_vector(
+    binding: c.AssetBinding, xml: bytes, *, fonts: tuple[c.VectorFont, ...] = (), budget: c.RenderBudget | None = None
+) -> c.PreparedVector:
     if type(binding) is not c.AssetBinding:
         raise c._fail('binding', None, 'AssetBinding')
     _graph(binding, [0])
@@ -80,11 +83,18 @@ def prepare_vector(binding: c.AssetBinding, xml: bytes, *, budget: c.RenderBudge
     if binding.nodes > budget.max_nodes:
         raise c._fail('budget.max_nodes', binding.nodes, f'<= {budget.max_nodes}', 'composition.budget')
     response = _call(
-        {'schema': wire.SCHEMA, 'operation': 'prepare', 'binding': asdict(binding), 'xml': wire.xml_encode(xml)}, budget
+        {
+            'schema': wire.SCHEMA,
+            'operation': 'prepare',
+            'binding': asdict(binding),
+            'xml': wire.xml_encode(xml),
+            'fonts': wire.fonts_encode(fonts),
+        },
+        budget,
     )
     wire.fields(response, {'schema', 'status', 'prepared'})
-    asset = wire.prepared(binding, xml, response['prepared'])
-    if asset.digest != hashlib.sha256(xml).hexdigest():
+    asset = wire.prepared(binding, xml, response['prepared'], fonts=fonts)
+    if asset.digest != c.vector_source_digest(c.VectorSource(binding.id, xml, fonts)):
         raise wire.fail(asset.digest, 'the exact source content hash')
     return asset
 
@@ -108,6 +118,9 @@ def compile_scene(plan: c.ValidatedScenePlan, assets: tuple[c.PreparedVector | c
             name, metadata = asset.id, None
         else:
             raise c._fail('assets', None, 'VectorSource or PreparedVector records')
+        text_assets.validate(asset.fonts)
+        if asset.fonts:
+            raise c._fail('assets.fonts', None, 'compile_bundle for portable font resources', 'composition.capability')
         if type(name) is not str:
             raise c._fail('assets.id', name, 'a source identifier')
         _id(name, 'assets.id')
