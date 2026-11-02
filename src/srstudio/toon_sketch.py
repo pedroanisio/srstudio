@@ -48,6 +48,7 @@ from . import (
     sketch,
     soundtrack,
     subtitles,
+    thumbnail,
     toon,
     toon_head,
     toon_props,
@@ -461,16 +462,35 @@ def recorder(
     validate: Callable[[sketch.Sketch], object] | None = None,
     foley_of: Foley = sound_effects,
     sounds: Sounds | None = None,
+    cover: thumbnail.Thumbnail | None = None,
+    cover_font: str = "",
+    cover_size: tuple[int, int] = (1080, 1920),
 ) -> Callable[..., int]:
     """The ``main`` of an episode's recording script: :func:`srstudio.recording.main` around :func:`record_episode`
     (``python3 <episode>_audio.py PROJECT [--ffmpeg PATH] [--place-only]``, the help from ``doc``); ``validate`` checks
     the sketch once the arguments are parsed, before anything is recorded; ``foley_of`` and ``sounds`` as in
     :func:`record_episode`. ``--place-only`` asks no voice and needs no consent: the beats are moved onto the recording
-    that is already there (:func:`srstudio.sketch.place_again`)."""
+    that is already there (:func:`srstudio.sketch.place_again`).
+
+    ``cover`` is the post's cover, laid out with the project's own ``cover_font`` (its path inside the project) on a
+    ``cover_size`` frame before any take is paid for, so a headline too wide or too tall stops the recording rather
+    than the delivery after the encode. A cover without its font is refused when the recorder is made."""
+    if cover is not None and not cover_font:
+        raise thumbnail.ThumbnailError("a cover to check needs cover_font, the font's path inside the project")
+
+    def check_cover(project: Path) -> None:
+        if cover is None:
+            return
+        try:
+            font = (project / cover_font).read_bytes()
+        except OSError as e:
+            raise thumbnail.ThumbnailError(f"the cover font {cover_font} is not in {project}: {e.strerror}") from None
+        thumbnail.layout(cover, font, *cover_size)
 
     def record(project: Path, env: Mapping[str, str], ffmpeg: str, place_only: bool = False) -> dict:
         if validate is not None:
             validate(sk)
+        check_cover(project)
         if place_only:
             sketch.place_again(sk, project)
             return {}
