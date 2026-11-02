@@ -98,6 +98,29 @@ def test_the_pill_stays_inside_the_safe_area_and_clear_of_the_bug():
         )
 
 
+def test_a_line_too_wide_for_one_row_is_broken_by_hand_onto_two():
+    text = "my best friend who's\nalways on 2%"
+    cv = canvas()
+    wide = lambda line, size: 30.0 * len(line)  # noqa: E731
+    with pytest.raises(OpenerError, match="safe area"):
+        opener.draw(canvas(), cv.comp, text.replace("\n", " "), 3.0, measure=wide, top=440.0)
+    g = opener.draw(cv, cv.comp, text, 3.0, measure=wide, top=440.0)
+    root = tree(cv)
+    assert text in [t.get("text") for t in root.iter("text")]
+    node = next(n for n in root.iter("group") if n.get("id") == g.id)
+    pill = next(n for n in node.iter("shape"))
+    assert float(pill.get("width")) == 30.0 * len("my best friend who's") + opener.PAD
+    assert float(pill.get("height")) == opener.HEIGHT + opener.ROW
+    assert opener.box(600.0, 440.0, rows=2)[3] == 440.0 + opener.HEIGHT + opener.ROW
+    assert opener.seconds(text) == opener.seconds(text.replace("\n", " "))
+
+
+@pytest.mark.parametrize("text", ["my\nbest\nfriend", "my mom\n", "\nmy mom", "my\n\nmom", "my \nmom", "my\n mom"])
+def test_a_line_breaks_once_between_two_words(text):
+    with pytest.raises(OpenerError):
+        opener.check(text, 9.0)
+
+
 def test_a_send_v2_claim_is_on_the_send_test_like_a_send_v1_one():
     from srstudio.releases import Release
     from srstudio.social import InstagramPost

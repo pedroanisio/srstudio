@@ -5,6 +5,7 @@ The brief asks for one line in the voice of the person who sends the reel ("my m
 is about and the pattern, never the show's: no character's name, no "Okayville", no hashtag or handle, and never an ask
 (the send test's no-bait rule, :mod:`srstudio.send_gate`). :func:`check` refuses wording that breaks those rules and a
 window too short to read it in, and :func:`draw` sets the line on a dark pill that stays inside the vertical safe area.
+A line too wide for one row in the reel's font carries one hand break (``\n``) between two words and takes two rows.
 
 The reading window is the longer of the reading minimum every text on a reel holds (:data:`MINIMUM`, the engine's
 LEG-SHORT limit) and the line's length read at :data:`READ_CPS`, the 17 characters a second the Netflix Timed Text
@@ -31,6 +32,7 @@ __all__ = [
     "MINIMUM",
     "PAD",
     "READ_CPS",
+    "ROW",
     "SAFE",
     "SIZE",
     "OpenerError",
@@ -44,6 +46,7 @@ READ_CPS = 17.0  # characters a second (Netflix Timed Text Style Guide, English,
 MAX_CHARS = 50
 SIZE = 52  # pixels, the letters' size
 HEIGHT = 84.0  # the pill's height in frame pixels
+ROW = 60.0  # what a second row adds to it
 PAD = 64.0  # the pill's width beyond its words
 BG, INK = "#15131f", "#ffffff"
 SAFE = layout.VERTICAL.region(1080, 1920)  # frame pixels: x 80 to 920, y 220 to 1420
@@ -70,6 +73,9 @@ def check(text: str, end: float, *, names: Iterable[str] = ()) -> str:
     ``names`` are the reel's character names, which the line must not use."""
     if not text or text != text.strip() or len(text) > MAX_CHARS:
         raise OpenerError(f"an opening line is 1 to {MAX_CHARS} characters with no edge spaces, got {text!r}")
+    rows = text.split("\n")
+    if len(rows) > 2 or any(not row or row != row.strip() for row in rows):
+        raise OpenerError(f"an opening line breaks at most once, between two words, got {text!r}")
     if capitals := _capitals(text):
         raise OpenerError(f"an opening line is in lower case, as a person types it, except 'I': {capitals}")
     lowered = text.lower()
@@ -88,10 +94,10 @@ def check(text: str, end: float, *, names: Iterable[str] = ()) -> str:
     return text
 
 
-def box(width: float, top: float) -> tuple[float, float, float, float]:
-    """The pill's ``(left, top, right, bottom)`` in frame pixels for a pill ``width`` wide at ``top``."""
+def box(width: float, top: float, *, rows: int = 1) -> tuple[float, float, float, float]:
+    """The pill's ``(left, top, right, bottom)`` in frame pixels: ``rows`` rows, ``width`` wide, at ``top``."""
     left = round(CENTER - width / 2, 2)
-    return left, top, round(left + width, 2), top + HEIGHT
+    return left, top, round(left + width, 2), top + HEIGHT + (rows - 1) * ROW
 
 
 def draw(
@@ -108,14 +114,16 @@ def draw(
     measured in the reel's font by ``measure``; the group that holds it. Refused unless :func:`check` passes and the
     pill sits inside the vertical safe area, which keeps it clear of the show's bug as well."""
     check(text, end, names=names)
-    width = round(measure(text, SIZE) + PAD, 2)
-    left, y0, right, y1 = box(width, top)
+    rows = text.split("\n")
+    width = round(max(measure(row, SIZE) for row in rows) + PAD, 2)
+    left, y0, right, y1 = box(width, top, rows=len(rows))
     if not (math.isfinite(width) and SAFE.x0 <= left and right <= SAFE.x1 and SAFE.y0 <= y0 and y1 <= SAFE.y1):
         raise OpenerError(
             f"the opening line {text!r} at ({left}, {y0}) to ({right}, {y1}) runs outside the safe area "
             f"{SAFE.as_tuple()}"
         )
     g = cv.group(parent, cv.uid("opener"), start=0.0, end=end)
-    cv.rect(g, left, y0, width, HEIGHT, BG, cv.clear, 0, radius=round(HEIGHT / 3, 2))
-    cv.text(g, cv.uid("opener-line"), text, left, y0, int(width), int(HEIGHT), SIZE, color=INK, wrap="none")
+    height = y1 - y0
+    cv.rect(g, left, y0, width, height, BG, cv.clear, 0, radius=round(HEIGHT / 3, 2))
+    cv.text(g, cv.uid("opener-line"), text, left, y0, int(width), int(height), SIZE, color=INK, wrap="none")
     return g
