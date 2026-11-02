@@ -302,6 +302,22 @@ def plan_scene(
         previous_forms = form_state
     layer_assets = {layer.id: assets[layer.asset] for layer in spec.layers}
     nodes = 16 + sum(layer_assets[name].nodes + 8 for span in spans for name in span.layers)
+    if nodes > spec.budget.max_nodes:
+        # Raster preparation is transient; output contains image references,
+        # not another copy of every mesh/ID-pass node at every interval. Keep
+        # the previous estimate/identity when it fits. The tighter bound still
+        # reserves all base preparation plus every native vector copy and the
+        # image asset, placement groups and window wrappers for each raster.
+        nodes = min(
+            nodes,
+            base.cost.nodes
+            + 16
+            + sum(
+                (layer_assets[name].nodes if layer_assets[name].backend == 'vector' else 0) + 8
+                for span in spans
+                for name in span.layers
+            ),
+        )
     retained_pixels = sum(
         8 * max(job.width * job.height for job in layer_assets[item.layer].plates) + 4096
         for span in spans
