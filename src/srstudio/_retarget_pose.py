@@ -102,9 +102,12 @@ class RetargetReport:
 
 @dataclass
 class Tally:
-    """Collects clamps, breaches, residuals and dropped turns over many samples, then reports or refuses once."""
+    """Collects clamps, breaches, residuals and dropped turns over many samples, then reports or refuses once. With
+    ``hold_values`` False it records what it would hold but returns each value as it is: how a clip is read before its
+    frames are played (ADR 0204)."""
 
     clamp: bool
+    hold_values: bool = True
     clamps: dict[str, list[float]] = field(default_factory=dict)
     breaches: list[LimitBreach] = field(default_factory=list)
     breach_count: int = 0
@@ -122,6 +125,8 @@ class Tally:
             row = self.clamps.setdefault(key, [0, 0.0, time_s])
             row[0] += 1
             row[1] = max(row[1], abs(value - held))
+            if not self.hold_values:
+                return value
         else:
             self.breach_count += 1
             if len(self.breaches) < MAX_LISTED:

@@ -51,13 +51,16 @@ def test_the_map_rises_everywhere_and_runs_both_ways():
     assert all(beats.song_time(c) == pytest.approx(t, abs=1e-12) for t, c in zip(times, mapped, strict=True))
 
 
-def test_uneven_beats_map_straight_between_anchors_and_keep_the_edge_rates_to_the_clips_ends():
+def test_uneven_beats_keep_each_stretchs_mean_rate_and_the_edge_rates_to_the_clips_ends():
+    """Each beat lands on its beat and each stretch keeps its mean rate; inside a stretch the rate eases from one
+    beat's to the next (ADR 0204), so a stretch's middle sits near, not on, the straight line's middle."""
     song = Groove(129, offset=0.5)
     beats = rt.beat_map(WALK, [0.1, 0.6, 1.0, 1.9], song, start=song.at(2))
     s = [song.at(2, k) for k in range(4)]
     assert [a for a, _ in beats.anchors] == pytest.approx(s)
+    assert [beats.clip_time(a) for a, _ in beats.anchors] == [0.1, 0.6, 1.0, 1.9]
     middle = (s[1] + s[2]) / 2
-    assert beats.clip_time(middle) == pytest.approx(0.8)
+    assert 0.6 < beats.clip_time(middle) < 1.0 and beats.clip_time(middle) == pytest.approx(0.8, abs=0.01)
     head, tail = 0.5 / SONG.beat, 0.9 / SONG.beat
     assert beats.rates == pytest.approx([head, 0.4 / SONG.beat, tail])
     assert beats.start_s == pytest.approx(s[0] - 0.1 / head) and beats.clip_time(beats.start_s) == pytest.approx(0)
@@ -137,19 +140,41 @@ def test_on_each_song_beat_the_performance_is_the_clips_frame(lock_feet):
         assert played.pose(song) == frames.poses[15 * k]
 
 
-def test_between_frames_the_performance_slerps_each_turn_and_lerps_the_root():
+SPLINE_FROM_SLERP = 0.005  # radians; measured 0.0016 at the left hip of the walk, halfway between frames 15 and 16
+
+
+def test_between_frames_the_performance_plays_each_control_and_the_root_on_a_smooth_curve():
+    """Between frames each control and the hips' place follow a cubic spline through the frames (ADR 0204): at a
+    frame, the frame; across it, speed and acceleration continue; halfway, within a few thousandths of a radian of
+    the straight turn (the slerp) between the two frames."""
     played = walk_on_song(REAL, False)
     a, b = WALK.frame(15), WALK.frame(16)
-    song = walk_map().song_time((a.time_s + b.time_s) / 2)
-    pose = played.pose(song)
-    for name in ("hips", "left_upper_leg", "right_upper_arm"):  # three controls each: the slerp is held exactly
+    pose = played.pose(walk_map().song_time((a.time_s + b.time_s) / 2))
+    for name in ("hips", "left_upper_leg", "right_upper_arm"):
         qa, qb = Quaternion(*a.rotations[name]), Quaternion(*b.rotations[name])
         world = {n: f.rotation for n, f in sk.world(REAL, pose).items()}
         parent = sk.joint(name).parent
         local = world[name] if parent is None else world[parent].inverse() * world[name]
-        assert sk.angle_of(local.inverse() * qa.slerp(qb, 0.5)) < 1e-7, name
+        assert sk.angle_of(local.inverse() * qa.slerp(qb, 0.5)) < SPLINE_FROM_SLERP, name
     middle = [(x + y) / 2 for x, y in zip(a.root_translation, b.root_translation, strict=True)]
-    assert math.dist(middle, (pose.root.origin.x, pose.root.origin.y, pose.root.origin.z)) < 1e-9
+    assert math.dist(middle, (pose.root.origin.x, pose.root.origin.y, pose.root.origin.z)) < 1e-3
+    at_frame = walk_map().song_time(b.time_s)
+    e = 1e-5
+    for key in (
+        "hips.twist_left_right",
+        "left_upper_leg.front_back",
+        "right_upper_leg.front_back",
+        "left_lower_leg.stretch",
+    ):
+
+        def value(t, key=key):
+            return played.pose(t).value(key)
+
+        before, after = (value(at_frame) - value(at_frame - e)) / e, (value(at_frame + e) - value(at_frame)) / e
+        bend_before = (value(at_frame) - 2 * value(at_frame - e) + value(at_frame - 2 * e)) / e**2
+        bend_after = (value(at_frame + 2 * e) - 2 * value(at_frame + e) + value(at_frame)) / e**2
+        assert abs(after - before) <= 2 * e * max(abs(bend_before), abs(bend_after)) + 1e-6, key
+        assert bend_after == pytest.approx(bend_before, rel=0.02, abs=0.05), key
 
 
 def test_the_performance_keeps_planted_feet_still_on_the_songs_clock():
@@ -172,15 +197,14 @@ def test_frames_sample_the_song_at_a_picture_rate_with_one_report():
     assert one.pose == played.pose(played.start_s + 0.3) and one.report.profile == "cartoon"
 
 
-INTERPOLATION_RESIDUAL = 0.01  # radians; measured 0.0037 at the knees of the walk sampled at 60 fps
-
-
-def test_between_frames_a_two_control_joint_loses_only_what_its_axes_cannot_hold():
-    """A knee turns about two axes; the slerp of two such turns leaves them a little, and the report says by how
-    much. Joints with three controls hold every slerp exactly."""
+def test_between_frames_a_joint_loses_only_what_its_frames_lose():
+    """Controls are played between frames, not turns, so nothing between frames passes what a joint's axes can hold;
+    the report carries only what the frames themselves could not (ADR 0204). A slerp of two knee turns used to leave a
+    two-control knee by up to 0.004 radians between frames."""
     report = walk_on_song(REAL, False).frames(60).report
-    assert {row.joint for row in report.residuals} == {"left_lower_leg", "right_lower_leg"}
-    assert 1e-4 < report.worst_residual_rad < INTERPOLATION_RESIDUAL
+    frames = rt.retarget(WALK, REAL, lock_feet=False).report
+    assert {row.joint for row in report.residuals} <= {row.joint for row in frames.residuals}
+    assert report.worst_residual_rad <= frames.worst_residual_rad < rt.RESIDUAL_FLOOR
     still = rt.perform(STAND, REAL, rt.beat_map(STAND, CLIP_GROOVE, SONG), lock_feet=False).frames(60).report
     assert still.residuals == () and still.worst_residual_rad < rt.RESIDUAL_FLOOR
 
