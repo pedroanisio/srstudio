@@ -99,6 +99,7 @@ scene can have cars and jets, and then for a 30 s piece of Pedro driving the car
   is the next step for a curved wing or a bonnet.
 - The engine's motion blur did not change a 3D object in a still, so the 3D pilot has none; it keeps the car's cruise
   at 9 m/s so a wheel turns 14 degrees a frame, under half a spoke gap, by calculation, not seen in motion.
-- The paint shader's radius turns small features (his eyes in a close-up) to dots, and the light bands darken a dark
-  jacket; both are tuned by eye on the pilot and are not a property of the meshes.
+- The paint shader's radius turns small features (his eyes in a close-up) to dots, tuned by eye on the pilot and not a
+  property of the meshes. The blazer's darkness is not the shader's: with the finish removed it measures a luma of
+  0.119 raw and 0.122 painted, so it is the light or the material.
 - Coverage of the plate path is by the wire tests; the layered piece (`pedro_drive_toon`) is a pilot, not a part.
