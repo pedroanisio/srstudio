@@ -326,6 +326,14 @@ retains the same limits. See [ADR 0208](decisions/0208-coalesced-vector-timeline
 The timeline assembly worker receives closed JSON with a 32 MiB transport cap;
 existing static composition workers retain their 16 MiB cap. Source buffers,
 combined vector/image inputs and complete bundle files each have an 8 MiB cap.
+
+Within planning, each distinct resolved scene receives full preflight once.
+Internal raster-view bridges reuse that immediate result while retaining their
+backend, clipping, units and overscan checks. Public `plate_view` calls still
+revalidate supplied plans. This avoids multiplying full scene validation by the
+number of raster layers; the one-million planned-record limit remains enforced.
+See [ADR 0209](decisions/0209-reuse-validated-timeline-views.md).
+
 The worker recomputes the schedule, validates every image reference and PNG,
 checks the final schema and bounds the output node count. Publication creates a
 private directory (0700) with private files (0600) through an atomic rename.

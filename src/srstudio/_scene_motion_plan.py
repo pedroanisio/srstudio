@@ -17,6 +17,7 @@ from . import plates
 from . import scene_motion as m
 from ._composition_forms import resolved as form_lighting
 from ._composition_paths import expansion_bytes as path_expansion
+from ._composition_plate_view import _from_validated_plan
 from ._composition_preflight import _digest, _graph, _pose_key
 from ._composition_review import check_source
 
@@ -138,9 +139,11 @@ def _events(
         len(sources[layer.asset].frames) + sum(len(group) for group in sources[layer.asset].raw)
         for layer in raster_layers
     )
-    # Each view bridge revalidates the complete manifest. Include those visits
-    # and every source snapshot in the expansion bound before evaluating views.
-    visits = len(events) * (count[0] * (1 + len(raster_layers)) + source_records)
+    # Each distinct scene receives full preflight once. Its internal bridges
+    # reuse that result while visiting layers/bindings and eight bounds corners;
+    # every source snapshot is still checked against every resolved view.
+    bridges = len(raster_layers) * (len(spec.layers) + len(base.bindings) + 8)
+    visits = len(events) * (count[0] + bridges + source_records)
     if visits > m.MAX_TIMELINE_RECORDS:
         raise m._fail('records', f'at most {m.MAX_TIMELINE_RECORDS} planned record visits')
     return tuple(sorted(events)), schedules
@@ -154,7 +157,7 @@ def _views(plan: c.ValidatedScenePlan, sources: dict[str, _Source]) -> dict[str,
             continue
         info = sources[layer.asset]
         binding = bindings[layer.asset]
-        view = c.plate_view(plan, layer.id, meters_per_unit=info.frames[0].meters_per_unit)
+        view = _from_validated_plan(plan, layer.id, meters_per_unit=info.frames[0].meters_per_unit)
         oversample = info.frames[0].recipe.oversample if isinstance(info.frames[0], c.ProxySource) else 1
         view = replace(view, width=view.width * oversample, height=view.height * oversample)
         if max(view.width, view.height) > 8192:
