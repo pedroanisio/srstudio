@@ -230,6 +230,12 @@ def test_a_root_scaled_out_of_the_workspace_is_refused():
         rt.retarget(edited(far), giant, lock_feet=False)
 
 
+def test_the_guides_recipe_runs():
+    guide = (Path(__file__).resolve().parents[1] / "docs" / "authoring-retarget.md").read_text()
+    code = guide.split("<!-- retarget-recipe:start -->")[1].split("```python\n")[1].split("```")[0]
+    exec(compile(code, "authoring-retarget.md", "exec"), {"MOTION_RECORD": DATA / "walk-2m-30fps.json"})
+
+
 def test_every_retarget_error_shares_one_base():
     for cls in (
         rt.RetargetInputError,

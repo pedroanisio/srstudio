@@ -207,6 +207,8 @@ The library draws in 2D, and what it models in 3D is a clay character or a rigid
 
 Motion comes from the same place. `tools/motion_export.py` runs in srlocations' interpreter on the same pinned export and writes one JSON record of a mannequin's motion, from a location module and a figure in it or from a BVH take: the 55 joints with their rest offsets and, per frame, the root and each joint's rotation as a unit quaternion. `srstudio.motion_bridge` reads it strictly, checks forward kinematics of the rotations against srlocations' own joint positions, and gives `MotionClip` and `MotionFrame` objects in srstudio's axes, by canonical joint name. See [ADR 0187](docs/decisions/0187-srlocations-motion-bridge.md).
 
+`srstudio.retarget` plays such a clip on any character. It reads each joint's turn into a `skeleton.SkeletonProfile`'s controls, scales the hips' path by pelvis height, refuses a turn past the profile's limits unless `clamp=True`, and reports every residual, clamp and dropped joint; feet the clip plants are held still by solving the leg; and `perform` moves the clip's beats onto a `music.Groove` through a monotonic map with bounded rates. See [ADR 0188](docs/decisions/0188-retarget-mannequin-motion.md) and the [guide](docs/authoring-retarget.md).
+
 Drawing digests remain stable; rendered artifacts additionally identify the renderer binary, compiled scenes,
 quality settings and actual print font bytes. Use the path returned by `plates.render` or `print_png` rather than
 constructing it from a drawing digest. [Plate cache ownership](docs/authoring-clips.md#plate-cache-ownership)
