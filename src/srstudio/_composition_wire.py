@@ -94,7 +94,9 @@ def prepared_metadata(asset: c.PreparedVector) -> dict:
     return {'digest': asset.digest, 'bounds': asdict(asset.bounds), 'nodes': asset.nodes}
 
 
-def prepared(binding: c.AssetBinding, xml: bytes, value: object) -> c.PreparedVector:
+def prepared(
+    binding: c.AssetBinding, xml: bytes, value: object, *, fonts: tuple[c.VectorFont, ...] = ()
+) -> c.PreparedVector:
     data = fields(value, {'digest', 'bounds', 'nodes'})
     if (
         type(data['digest']) is not str
@@ -103,7 +105,7 @@ def prepared(binding: c.AssetBinding, xml: bytes, value: object) -> c.PreparedVe
         or not 1 <= data['nodes'] <= binding.nodes
     ):
         raise fail(None, 'a SHA-256 identity and bounded node count')
-    return c.PreparedVector(binding, xml, data['digest'], record(c.Bounds, data['bounds']), data['nodes'])
+    return c.PreparedVector(binding, xml, data['digest'], record(c.Bounds, data['bounds']), data['nodes'], fonts)
 
 
 def read_diagnostic(value: object) -> dict:
@@ -140,7 +142,7 @@ def cause_decode(value: object, depth: int = 0) -> SrstudioError | None:
         raise fail(None, 'a bounded diagnostic type name')
     details = read_diagnostic(data['diagnostic'])
     # Literal imports only: a reply cannot name code for the host to import.
-    from . import layout, parts
+    from . import fonts, layout, parts
     from .head_motion import HeadMotionError
     from .limbs.errors import LimbError
     from .plates import PlateError
@@ -156,6 +158,7 @@ def cause_decode(value: object, depth: int = 0) -> SrstudioError | None:
         HeadMotionError,
         LimbError,
         PlateError,
+        fonts.FontError,
     )
     known = {cls.__module__ + '.' + cls.__name__: cls for cls in classes}
     cls = known.get(data['type'], SrstudioError)
@@ -167,3 +170,37 @@ def cause_decode(value: object, depth: int = 0) -> SrstudioError | None:
         error.residual = details['residual']
     error.__cause__ = cause_decode(data['cause'], depth + 1)
     return error
+
+
+def fonts_encode(items: tuple[c.VectorFont, ...]) -> list[dict]:
+    from ._composition_text import validate
+
+    validate(items)
+    return [{'id': f.id, 'data': xml_encode(f.data), 'license_text': f.license_text} for f in items]
+
+
+def fonts_decode(value: object) -> tuple[c.VectorFont, ...]:
+    from ._composition_text import MAX_FONTS, validate
+
+    if type(value) is not list or len(value) > MAX_FONTS:
+        raise fail(None, 'a bounded list of font records')
+    result = []
+    for item in value:
+        data = fields(item, {'id', 'data', 'license_text'})
+        result.append(c.VectorFont(data['id'], xml_decode(data['data']), data['license_text']))
+    fonts = tuple(result)
+    validate(fonts)
+    return fonts
+
+
+def vector_encode(name: str, asset: c.PreparedVector) -> dict:
+    result: dict = {'id': name, 'xml': xml_encode(asset.xml)}
+    if asset.fonts:
+        result['fonts'] = fonts_encode(asset.fonts)
+    return result
+
+
+def vector_decode(value: object) -> tuple[str, bytes, tuple[c.VectorFont, ...]]:
+    names = {'id', 'xml'} | ({'fonts'} if type(value) is dict and 'fonts' in value else set())
+    data = fields(value, names)
+    return data['id'], xml_decode(data['xml']), fonts_decode(data.get('fonts', []))

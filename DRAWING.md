@@ -90,6 +90,13 @@ compiled scenes carry unapproved provenance. The production default still
 requires approved versions. Review does not relax capability or budget checks
 and does not replace the proof and operator approval required for adoption.
 
+Protected native text can use the compiler's
+[pinned font bundle workflow](docs/composition-preflight.md#native-text-and-pinned-fonts).
+The host owns font and license bytes; explicit text clipping bounds the native
+geometry. Static and timeline bundles preserve source clocks and text layout.
+This provides the information-layer transport needed by the hybrid proof;
+the complete proof and its adoption gates still apply.
+
 ### Runnable example with current APIs
 
 This example demonstrates typed projection through a transformed drawing parent, an existing shade primitive, a reusable light rig, and protected information above a world finish. It does not render a 3D object, cast a contact shadow, or implement the proposed scene compiler. The `lighting` value is ready for an existing plate definition; it does not automatically light the 2D shade.

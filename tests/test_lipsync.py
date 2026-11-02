@@ -89,6 +89,20 @@ def test_a_mouth_seen_large_reads_the_finer_poses_by_spelling():
     assert "wide" not in letter_poses("me live read", plain) and "lip" not in letter_poses("live", plain)
 
 
+def test_a_figure_is_spoken_so_the_mouth_moves_through_its_digits():
+    """An aligned take of "At 20," times the characters "2" and "0" while the voice says "twenty": a mouth that read
+    only letters stayed shut through every number a reel says."""
+    assert letter_poses("At 20,", SPEECH_MOUTH) == ["open", "teeth", None, "round", "teeth", None]
+    assert letter_poses("1998", SPEECH_MOUTH) == ["round", "teeth", "open", "teeth"]
+    assert letter_poses("50,000", SPEECH_MOUTH) == ["open", "teeth", None, "open", "teeth", "open"]
+    states = [pose for _, pose in phoneme_states(phones("20", step=0.2), 0.4, style=SPEECH_MOUTH)]
+    assert set(states[:-1]) >= {"round", "teeth"} and "closed" not in states[1:-1]
+
+
+def test_without_spelling_a_digit_stays_silent_as_it_shipped():
+    assert letter_poses("20", INK_MOUTH) == [None, None]
+
+
 def test_without_spelling_letters_keep_their_plain_poses():
     assert letter_poses("phone", INK_MOUTH) == ["closed", "open", "round", "teeth", "open"]
     assert letter_poses("wow", INK_MOUTH) == ["teeth", "round", "teeth"]

@@ -20,7 +20,7 @@ def table():
 
 def test_the_table_records_its_schema_and_its_source():
     assert sk.JOINT_TABLE.schema == "srstudio.skeleton-joints/1.0.0"
-    assert sk.JOINT_TABLE.srlocations_commit == "4ae2278214de6e704d8dcbab8f293b6a47438483"
+    assert sk.JOINT_TABLE.srlocations_commit == "be0aabced115e4e885adba380c72f2f63f80959c"
     assert sk.JOINT_TABLE.reference_height_m == 1.75
     assert len(sk.JOINTS) == 55
     assert sum(len(j.dofs) for j in sk.JOINTS) == 103

@@ -26,7 +26,9 @@ rotations on it with forward kinematics, and bridges to the records `body` and `
 ### The joint table, schema `srstudio.skeleton-joints/1.0.0`
 
 `src/srstudio/assets/skeleton/humanoid.json` is srlocations' mannequin, read once at srlocations commit
-`4ae2278214de6e704d8dcbab8f293b6a47438483` and converted to srstudio's axes:
+`4ae2278214de6e704d8dcbab8f293b6a47438483` and converted to srstudio's axes. Its `srlocations_commit` follows
+`location_bridge.SRLOCATIONS_COMMIT` when a pin move leaves srlocations' mannequin, `interchange` and stock mannequin
+unchanged (`be0aabc` did):
 
 | Field | Holds |
 |---|---|

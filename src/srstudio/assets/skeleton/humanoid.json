@@ -1,6 +1,6 @@
 {
   "schema": "srstudio.skeleton-joints/1.0.0",
-  "srlocations_commit": "4ae2278214de6e704d8dcbab8f293b6a47438483",
+  "srlocations_commit": "be0aabced115e4e885adba380c72f2f63f80959c",
   "srlocations_joints_digest": "88629dcb422eb384692b6c893174a25066573d322d4f81b54c46a24538bf438d",
   "reference_height_m": 1.75,
   "head_radius": 0.06,

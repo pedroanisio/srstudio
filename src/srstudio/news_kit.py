@@ -613,8 +613,9 @@ def eye_track(acts: Sequence[tuple[float, Pose]], end: float, period: float, pha
 def mouth_track(
     acts: Sequence[tuple[float, Pose]], visemes: Track, end: float, rate: float = MOUTH_RATE
 ) -> list[tuple[float, str]]:
-    """The mouth through the beats. A ``"talk"`` beat takes the viseme track, or on a silent master a plain open and
-    shut, and any other beat holds its expression whatever the track does."""
+    """The mouth through the beats. A ``"talk"`` beat takes the viseme track, opening on the state already due when it
+    starts (a beat lands on the heard word, the track leads it), or on a silent master a plain open and shut, and any
+    other beat holds its expression whatever the track does."""
     rows: list[tuple[float, str]] = []
     ends = [at for at, _ in acts[1:]] + [end]
     for (at, pose), stop in zip(acts, ends, strict=True):
@@ -623,7 +624,8 @@ def mouth_track(
             continue
         said = [(t, state) for t, state in visemes if at <= t < stop]
         if said:
-            rows += said if said[0][0] == at else [(at, "closed"), *said]
+            due = max(((t, state) for t, state in visemes if t < at), default=(at, "closed"))[1]
+            rows += said if said[0][0] == at else [(at, due), *said]
         elif visemes:
             rows.append((at, "closed"))
         else:

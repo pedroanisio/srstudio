@@ -13,6 +13,7 @@ from pathlib import Path
 
 from sr_core.scene import Scene, read
 
+from . import _composition_text as text_assets
 from . import composition as c
 from ._composition_preflight import _camera, _pose
 from ._composition_vector import MAX_XML_BYTES, prepare_vector
@@ -123,7 +124,10 @@ def assemble(
             'seed': str(spec.seed),
         },
     )
-    if rasters:
+    has_text = any(source.find('assets/text') is not None for source in roots.values())
+    if has_text:
+        root.find('project').set('fontPolicy', 'pinned')  # type: ignore[union-attr]
+    if rasters or has_text:
         shelf = ET.SubElement(root, 'assets')
         seen = set()
         images = (image for raster in rasters.values() for image in raster.get('frames', (raster,)))
@@ -191,14 +195,10 @@ def assemble(
         # Source IDs and references are scoped per placement, including repeated
         # uses of an asset. Parent transforms are already flattened into poses.
         source = ET.fromstring(ET.tostring(roots[layer.asset]))
-        mapping = {n.attrib['id']: f'l{index}__{n.attrib["id"]}' for n in source.iter() if 'id' in n.attrib}
-        for node in source.iter():
-            if 'id' in node.attrib:
-                node.set('id', mapping[node.attrib['id']])
-            for name in ('fill', 'stroke'):
-                value = node.get(name, '')
-                if value.startswith('url(#'):
-                    node.set(name, f'url(#{mapping[value[5:-1]]})')
+        text_assets.scope(source, f'l{index}')
+        source_assets = source.find('assets')
+        if source_assets is not None and len(source_assets):
+            shelf.extend(source_assets)
         source_paints = source.find('paints')
         if source_paints is not None:
             paints.extend(source_paints)

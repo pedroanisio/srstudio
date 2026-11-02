@@ -880,9 +880,10 @@ hold, sine, quadratic, cubic, quartic, quintic, exponential or circular easing.
 Animated rotations use a conservative full-circle envelope; correlated tracks
 can therefore need more generous declared bounds than a sampled screenshot.
 
-External assets, text/fonts, includes, instances, expressions, deformation,
+External assets, includes, instances, expressions, deformation,
 effects, overshooting curves and unsupported shape kinds fail explicitly. The
 adapter does not execute a builder or render while discovering those features.
+Native text with host-owned pinned fonts uses the bundle workflow below.
 The host remains responsible for payload provenance and authored anchor meaning:
 validating XML cannot prove that it was made by a particular approved builder.
 The worked example obtains its drawing directly from `parts.drawing('papers', 1)`.
@@ -903,6 +904,66 @@ expansion budget failures before launching work. The worker repeats semantic
 validation, verifies actual payloads and compiles the result. Input and result
 messages use closed, bounded JSON with base64 bytes; executable Python objects
 are never deserialized.
+
+## Native text and pinned fonts
+
+Keep captions as native `<text>` assets when composing information layers.
+The host supplies a `VectorFont(id, data, license_text)` for every source
+`<font>`. `data` is immutable font bytes; `license_text` is the complete
+redistribution notice. Source paths are labels, never files the compiler opens.
+Font family, weight and SHA-256 must match the supplied bytes. The source project
+must declare `fontPolicy="pinned"`.
+
+Text declares `fontAsset`, positive width/height and `overflow="clip"`.
+For Canvas authors, pass `overflow="clip"` to `cv.text(...)`. This is an authored
+layout decision: the compiler never inserts clipping or changes text to make it
+fit. Explicit clipping gives a conservative rectangle for the complete animated
+envelope, including glyph overhang. Transforms, opacity and visibility retain
+their original source clock. Text strings, size, alignment, line height, spacing,
+direction, language, wrapping and local gradient colors remain native.
+
+Given a candidate vector `binding`, its complete `source_xml`, a `spec` using
+that binding, and host-loaded font/license bytes for source font ID `font`:
+
+```python
+from dataclasses import replace
+from srstudio import composition as c
+
+source = c.VectorSource(
+    binding.id, source_xml, (c.VectorFont("font", font_bytes, license_text),)
+)
+binding = replace(
+    binding,
+    candidate=c.CandidateSource(spec.style.name, c.vector_source_digest(source)),
+)
+plan = c.preflight(spec, (binding,), purpose="candidate-review")
+compiled = c.compile_bundle(plan, (source,), engine=engine, cache=cache)
+```
+
+The binding still needs an independent `candidate.` part name, correct bounds,
+node count, source duration and memory allowance. `vector_source_digest` pins
+XML, font bytes and license notices; without fonts it retains the previous XML
+SHA-256 identity. Production bindings continue to require approved references.
+Call `prepare_vector(binding, xml, fonts=source.fonts)` to inspect the envelope
+separately. Both `VectorSource` and `PreparedVector` work in `compile_bundle`,
+`emit_bundle`, `scene_motion.compile_timeline` and `scene_motion.emit_timeline`.
+`compile_scene` and `emit_scene` refuse fonts with a bundle remedy because a
+single XML file cannot carry their companion resources.
+
+Bundles publish exact font bytes and license notices under content-addressed
+flat filenames alongside XML and images, atomically. Repeated placements scope
+asset/font/paint references independently and deduplicate physical resources.
+Font-only builds invoke no renderer and do not access a render cache.
+
+Limits are 16 fonts per source, 64 KiB per UTF-8 license, 4096 characters per text
+asset, 32768 total UTF-8 text bytes, and text dimensions at most 8192 units each.
+The eight MiB combined source and bundle caps include fonts/licenses. Declared
+source memory covers eight times the combined input bytes. Upright TrueType
+outline fonts are supported; bitmap/color/SVG fonts, text animators, spans,
+fallback lists and external font loading are refused. Font metadata validation
+does not certify typographic suitability or glyph coverage; review strict final
+renders at delivery size. The contract tests compare source and compiled native
+caption pixels across offset/rate-adjusted static and timeline windows.
 
 ## Runtime limits
 

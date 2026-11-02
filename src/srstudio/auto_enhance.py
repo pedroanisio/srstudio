@@ -63,11 +63,14 @@ _FORMAT = _FIELD.join(
         "%H",
         "%(trailers:key=Enhances,valueonly,separator=%x2C)",
         "%(trailers:key=Enhancement-Kind,valueonly,separator=%x2C)",
-        f"%s{_RECORD}",
+        "%s",
+        f"%b{_RECORD}",
     )
 ).replace(_FIELD, "%x1f").replace(_RECORD, "%x1e")  # fmt: skip
 _NEW_TEST = re.compile(r"^\+\s*(?:async\s+)?def test_\w+", re.MULTILINE)
 _BUMP = re.compile(r"^\+schema_version: ", re.MULTILINE)
+_TRAILER = re.compile(r"^([A-Za-z][\w-]*):\s*(\S.*)$")
+STRANDED = "its trailers sit in a middle paragraph, and git reads only the last one as trailers"
 
 
 class EnhanceError(DeliveryError):
@@ -155,12 +158,30 @@ def ledger(repo: Path, revisions: str = BRANCH) -> list[Enhancement]:
     log = _git(repo, "log", revisions, "--no-merges", "--grep=^Enhances:", f"--format={_FORMAT}")
     rows = []
     for record in filter(str.strip, log.split(_RECORD)):
-        commit, named, kind, subject = record.strip().split(_FIELD)
+        commit, named, kind, subject, body = record.strip().split(_FIELD)
         slugs = tuple(filter(None, (s.strip() for s in named.split(","))))
-        if slugs:  # the words in a body's middle paragraph are no trailer, and claim nothing
+        if slugs:
             kinds = tuple(filter(None, (k.strip() for k in kind.split(","))))
             rows.append(Enhancement(commit, slugs, kinds, subject, _problems(repo, commit, slugs, kinds)))
+        elif stranded := _stranded(body):  # a mention in prose claims nothing; a trailer block in the wrong place does
+            slugs, kinds = stranded
+            problems = (STRANDED, *_problems(repo, commit, slugs, kinds))
+            rows.append(Enhancement(commit, slugs, kinds, subject, problems))
     return rows
+
+
+def _stranded(body: str) -> tuple[tuple[str, ...], tuple[str, ...]] | None:
+    """The videos and kinds of a block of only trailer lines, naming both, that is not the message's last paragraph."""
+    paragraphs = [p.strip() for p in re.split(r"\n\s*\n", body.strip()) if p.strip()]
+    for block in paragraphs[:-1]:
+        pairs = [_TRAILER.match(line.strip()) for line in block.splitlines()]
+        found = [(m.group(1), m.group(2).strip()) for m in pairs if m]
+        if len(found) == len(pairs) and {"Enhances", "Enhancement-Kind"} <= {key for key, _ in found}:
+            return (
+                tuple(value for key, value in found if key == "Enhances"),
+                tuple(value for key, value in found if key == "Enhancement-Kind"),
+            )
+    return None
 
 
 def unsound(repo: Path) -> list[Enhancement]:

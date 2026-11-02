@@ -362,6 +362,15 @@ def spatial_camera(plan: ValidatedScenePlan, layer: str | None = None) -> Spatia
 
 
 @dataclass(frozen=True)
+class VectorFont:
+    """Host-owned font bytes and redistribution notice, referenced by source font ID."""
+
+    id: str
+    data: bytes
+    license_text: str
+
+
+@dataclass(frozen=True)
 class PreparedVector:
     """Verified immutable XML and measured envelope; the host owns drawing provenance."""
 
@@ -370,6 +379,7 @@ class PreparedVector:
     digest: str
     bounds: Bounds
     nodes: int
+    fonts: tuple[VectorFont, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -378,6 +388,14 @@ class VectorSource:
 
     id: str
     xml: bytes
+    fonts: tuple[VectorFont, ...] = ()
+
+
+def vector_source_digest(source: VectorSource) -> str:
+    """Pin XML, font bytes and licenses; fontless sources retain their XML hash."""
+    from ._composition_text import source_digest
+
+    return source_digest(source)
 
 
 @dataclass(frozen=True)
@@ -691,11 +709,13 @@ class CompiledScene:
     nodes: int
 
 
-def prepare_vector(binding: AssetBinding, xml: bytes, *, budget: RenderBudget | None = None) -> PreparedVector:
+def prepare_vector(
+    binding: AssetBinding, xml: bytes, *, fonts: tuple[VectorFont, ...] = (), budget: RenderBudget | None = None
+) -> PreparedVector:
     """Verify a host-prepared vector under a process memory cap and preemptive deadline."""
     from ._composition_runtime import prepare_vector as prepare
 
-    return prepare(binding, xml, budget=budget)
+    return prepare(binding, xml, fonts=fonts, budget=budget)
 
 
 def compile_scene(plan: ValidatedScenePlan, assets: tuple[PreparedVector | VectorSource, ...]) -> CompiledScene:
