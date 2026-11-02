@@ -14,7 +14,7 @@ from support.tip_tablet import canvas
 MODULES = {'srstudio.toon_everyday', 'srstudio.toon_inserts', 'srstudio.toon_study', 'srstudio.toon_laptop'}
 ENTRIES = [e for e in registry.entries() if e.module in MODULES]
 FOOTPRINTS = {'toon-phone', 'toon-speaker', 'toon-receipt', 'toon-take-a-number', 'toon-clipboard'}
-HANDLES = {'toon-tv-menu', 'toon-remote', 'toon-open-laptop'}
+HANDLES = {'toon-tv-menu', 'toon-tv-browse', 'toon-remote', 'toon-open-laptop'}
 
 
 def measure(text, size):
@@ -28,6 +28,7 @@ OPTIONS = {
     'toon-take-a-number': dict(serving=((0, 1), (2, 2)), measure=measure),
     'toon-clipboard': dict(title='Form', fields=(toon_everyday.Field('Name', 'Sam', 1),), measure=measure),
     'toon-tv-menu': dict(label='Episode 1', seen=0.5, measure=measure),
+    'toon-tv-browse': dict(clock='10:15', title='Ferry', runtime='2h', measure=measure),
     'toon-remote': dict(at=(300, 600)),
     'toon-stars': dict(filled=3),
     'toon-highlighter': dict(at=(100, 900), paw='#c49a6c'),

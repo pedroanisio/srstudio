@@ -601,6 +601,58 @@ def test_a_tv_menu_clears_the_caption_band():
         assert slot.y >= bottom or slot.y + slot.h <= top
 
 
+def test_a_tv_browse_row_letters_its_heading_clock_and_the_focused_title():
+    cv = canvas()
+    toon_everyday.tv_browse(cv, cv.comp, "10:15", title="THE QUIET FERRY", runtime="2h 38m", measure=measure, id="b")
+    assert layer_texts(cv, "b") == ["MOVIES", "10:15", "THE QUIET FERRY", "2h 38m"]
+    assert not group(cv, "b-row").findall("animate")  # a still row
+
+
+def test_a_tv_browse_row_steps_one_tile_left_on_each_tick_and_holds_between():
+    cv = canvas()
+    toon_everyday.tv_browse(cv, cv.comp, "11:00", steps=(0.5, 0.8, 1.1), measure=measure, id="b")
+    assert layer_texts(cv, "b") == ["MOVIES", "11:00"]
+    step = fx(toon_everyday.BROWSE_STEP)
+    xs = keys(group(cv, "b-row"), "x")
+    assert [t for t, _ in xs] == [0.0, 0.5, 0.8, 1.1]
+    assert [round(x0 - x1, 2) for (_, x0), (_, x1) in zip(xs, xs[1:], strict=False)] == [step, step, step]
+    tiles = [g for g in group(cv, "b-row").iter("group") if str(g.get("id")).startswith("b-tile-")]
+    assert len(tiles) >= 3 + 2  # one more past every step, and the tile beside the focus at the last
+
+
+@pytest.mark.parametrize("clock", ["", "25:00", "10:75", "ten fifteen", "10.15", 1015])
+def test_a_tv_browse_refuses_a_clock_that_is_not_one(clock):
+    cv = canvas()
+    with pytest.raises(ToonDataError, match="clock"):
+        toon_everyday.tv_browse(cv, cv.comp, clock, measure=measure)
+
+
+@pytest.mark.parametrize(
+    "kwargs, match",
+    [
+        (dict(title="THE QUIET FERRY", steps=(0.5,)), "still"),
+        (dict(runtime="2h 38m"), "title"),
+        (dict(title="A TITLE NO ROW OF THIS MENU COULD EVER HOPE TO HOLD"), "title"),
+        (dict(title="  "), "title"),
+        (dict(steps=(0.5, 0.4)), "rising"),
+        (dict(steps=(-0.1,)), "second"),
+        (dict(steps=(0.5, 0.55)), "apart"),
+    ],
+)
+def test_a_tv_browse_refuses_what_it_cannot_show(kwargs, match):
+    cv = canvas()
+    with pytest.raises(ToonDataError, match=match):
+        toon_everyday.tv_browse(cv, cv.comp, "10:15", measure=measure, **kwargs)
+
+
+def test_a_tv_browse_clears_the_caption_band():
+    top, bottom = toon.CAPTION_TOP, toon.CAPTION_TOP + toon.CAPTION_H
+    for slot in (toon_everyday.BROWSE_HEAD, toon_everyday.BROWSE_CLOCK, toon_everyday.BROWSE_TITLE,
+                 toon_everyday.BROWSE_RUNTIME):  # fmt: skip
+        assert slot.y >= bottom or slot.y + slot.h <= top
+    assert toon_everyday.TILE_TOP >= bottom
+
+
 def test_a_remote_lies_in_a_hand_and_refuses_a_scale_it_cannot_draw():
     cv = canvas()
     toon_everyday.remote(cv, cv.comp, (200, 800), scale=0.6, tilt=-20.0, id="r")

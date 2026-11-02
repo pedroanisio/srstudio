@@ -62,6 +62,7 @@ __all__ = [
     "phone",
     "receipt",
     "remote",
+    "tv_browse",
     "tv_menu",
     "ring_keys",
     "stars",
@@ -417,6 +418,109 @@ def tv_menu(cv: Canvas, parent, label: str, seen: float, *, measure: Measure, id
     bar = cv.group(g, f"{id}-seen", anchorX=fh(x), anchorY=fh(BAR_TOP), x=fh(x), y=fh(BAR_TOP), scaleX=seen)
     _rect(cv, bar, x, BAR_TOP, w, BAR_H, MENU_SEEN, 0, radius=4)
     TV_MENU_LABEL.draw(cv, g, shown, "menu-text")
+    return g
+
+
+BROWSE_HEADING = "MOVIES"
+BROWSE_X, BROWSE_W, BROWSE_STEP = 40.0, 300.0, 324.0  # the focused tile's left edge and width; a tile and its gap
+BROWSE_HEAD = Slot(BROWSE_X, 340.0, 300.0, 56.0, 62, MENU_INK, "start")
+BROWSE_CLOCK = Slot(392.0, 340.0, 160.0, 56.0, 62, MENU_INK, "end")
+BROWSE_TITLE = Slot(BROWSE_X, 852.0, 512.0, 64.0, 76, MENU_INK, "start")
+BROWSE_RUNTIME = Slot(BROWSE_X, 924.0, 512.0, 52.0, 56, "#aab3c6", "start")
+BROWSE_RING = 10.0  # frame pixels: the focus ring's line
+BROWSE_GAP = 0.15  # seconds the row takes at least between two steps: one tick, one tile
+BROWSE_SKIES = ("#3d5a80", "#6b4f7a", "#2f5d50", "#7a5a3d", "#4a4e69")  # the unfocused tiles' stills, in turn
+SEA, SEA_SKY, HULL, CABIN, FUNNEL = "#7d8794", "#b9c0c9", "#e8ecf2", "#cfd5de", "#c0453b"
+_CLOCK = re.compile(r"([01]?\d|2[0-3]):[0-5]\d")
+
+
+def _still(cv: Canvas, g, x: float, kind: int) -> None:
+    """One unfocused tile's still: a sky and a shape on it, a hill, a moon or a roofline, and no lettering."""
+    _rect(cv, g, x, TILE_TOP, BROWSE_W, TILE_H, BROWSE_SKIES[kind % len(BROWSE_SKIES)], FINE_W, radius=10)
+    shape = kind % 3
+    if shape == 0:
+        _ellipse(cv, g, x + 40, TILE_TOP + TILE_H - 150, 260, 220, TILE_FLOOR, 0)
+    elif shape == 1:
+        _ellipse(cv, g, x + 190, TILE_TOP + 70, 64, 64, MENU_SEEN, 0)
+    else:
+        for k, h in enumerate((150.0, 230.0, 120.0, 190.0)):
+            _rect(cv, g, x + 30 + k * 62, TILE_TOP + TILE_H - h, 54, h - 6, TILE_FLOOR, 0)
+
+
+def _ferry(cv: Canvas, g, x: float) -> None:
+    """The focused tile's still: a small ferry on a grey sea under a pale sky."""
+    _rect(cv, g, x, TILE_TOP, BROWSE_W, TILE_H, SEA_SKY, FINE_W, radius=10)
+    _rect(cv, g, x, TILE_TOP + 250, BROWSE_W, TILE_H - 250, SEA, 0)
+    _line(cv, g, [(x + 84, TILE_TOP + 236), (x + 222, TILE_TOP + 236), (x + 204, TILE_TOP + 262),
+                  (x + 100, TILE_TOP + 262), (x + 84, TILE_TOP + 236)], FINE_W * 0.6, fill=HULL)  # fmt: skip
+    _rect(cv, g, x + 116, TILE_TOP + 208, 74, 28, CABIN, FINE_W * 0.6, radius=3)
+    _rect(cv, g, x + 160, TILE_TOP + 186, 14, 22, FUNNEL, FINE_W * 0.6)
+
+
+@register(
+    "prop",
+    "toon-tv-browse",
+    contract=dc.contract('toon-tv-browse'),
+    summary="A full-frame TV browse row: a heading, a corner clock, tiles of stills with the first in focus, its "
+    "title and running time under it, or the row stepping left a tile a tick. An invented interface, no app name or "
+    "logo",
+)
+def tv_browse(
+    cv: Canvas,
+    parent,
+    clock: str,
+    *,
+    measure: Measure,
+    title: str | None = None,
+    runtime: str = "",
+    steps: Sequence[float] = (),
+    id: str = "tv-browse",
+):
+    """The whole frame as a television's list of films at ``clock`` (``H:MM`` or ``HH:MM``): a row of tiles whose first
+    is in focus. A still row letters the focused film's ``title`` and ``runtime`` under it, its still a ferry on a
+    grey sea; a browsing row steps one tile left at each of ``steps`` (project seconds, rising, at least
+    :data:`BROWSE_GAP` apart), the focus staying put, and letters no title. Returns its group."""
+    if not (isinstance(clock, str) and _CLOCK.fullmatch(clock)):
+        raise ToonDataError(f"a menu's clock reads H:MM or HH:MM, got {clock!r}")
+    if runtime and title is None:
+        raise ToonDataError("a running time belongs to a title: give the title too")
+    if title is not None and steps:
+        raise ToonDataError("a title is lettered under a still row: a browsing row has none")
+    when: list[float] = []
+    for k, t in enumerate(steps):
+        if not checks.number(t) or t < 0:
+            raise ToonDataError(f"step {k}: a second is a number >= 0, got {t!r}")
+        if when and t <= when[-1]:
+            raise ToonDataError(f"steps need rising seconds: {t} after {when[-1]}")
+        if when and t - when[-1] < BROWSE_GAP:
+            raise ToonDataError(f"steps are at least {BROWSE_GAP} s apart: {t} after {when[-1]}")
+        when.append(float(t))
+    shown_title = None if title is None else BROWSE_TITLE.fit(measure, title, "the menu's title")
+    shown_runtime = BROWSE_RUNTIME.fit(measure, runtime, "the title's running time") if runtime else ""
+    head = BROWSE_HEAD.fit(measure, BROWSE_HEADING, "the menu's heading")
+    shown_clock = BROWSE_CLOCK.fit(measure, clock, "the menu's clock")
+    g = cv.group(parent, id, x=fx(0), y=fy(0))
+    _rect(cv, g, -8, REF_TOP - 8, REF_W + 16, 1080, MENU_BG, 0)
+    BROWSE_HEAD.draw(cv, g, head, "menu-text")
+    BROWSE_CLOCK.draw(cv, g, shown_clock, "menu-text")
+    row = cv.group(g, f"{id}-row")
+    for k in range(len(when) + 2):
+        tile = cv.group(row, f"{id}-tile-{k}")
+        x = BROWSE_X + k * BROWSE_STEP
+        if k == 0 and shown_title is not None:
+            _ferry(cv, tile, x)
+        else:
+            _still(cv, tile, x, k)
+    if when:
+        cv.keys(row, "x", [(0.0, 0.0)] + [(t, -fh(BROWSE_STEP) * (n + 1)) for n, t in enumerate(when)],
+                hold=True, local=False)  # fmt: skip
+    # the focus, which stays where it is
+    cv.rect(g, fh(BROWSE_X - 10), fh(TILE_TOP - 10), fh(BROWSE_W + 20), fh(TILE_H + 20), cv.clear, MENU_SEEN,
+            BROWSE_RING, radius=fh(16))  # fmt: skip
+    if shown_title is not None:
+        BROWSE_TITLE.draw(cv, g, shown_title, "menu-text")
+    if shown_runtime:
+        BROWSE_RUNTIME.draw(cv, g, shown_runtime, "menu-text")
     return g
 
 

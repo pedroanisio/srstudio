@@ -13505,6 +13505,23 @@
         }
       ]
     },
+    "toon-tv-browse": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-02",
+          "note": "A full-frame TV list of films: a heading, a corner clock, tiles of stills with the first in focus, its title and running time under it, or the row stepping left a tile a tick. An invented interface with no app name or logo. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "bca2bda5655e8c9484f9c264145ad58bae3fd8f6d7a4af70ccc469df0ca7894e",
+          "rig": null
+        }
+      ]
+    },
     "toon-remote": {
       "kind": "prop",
       "style": "toon",
