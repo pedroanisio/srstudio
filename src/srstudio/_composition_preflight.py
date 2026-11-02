@@ -10,6 +10,7 @@ import re
 from bisect import bisect_right
 from dataclasses import asdict, fields
 from fractions import Fraction
+from typing import Literal
 
 from . import composition as c
 from . import parts, styles
@@ -204,7 +205,7 @@ def _contacts(spec: c.ScenePlan, layers: dict, assets: dict, poses: dict) -> int
     return samples
 
 
-def _binding(binding: c.AssetBinding, style: str) -> dict:
+def _binding(binding: c.AssetBinding, style: str, *, purpose: str = 'production') -> dict:
     path = f'bindings.{binding.id}'
     if any(a > b for a, b in zip(binding.bounds.minimum, binding.bounds.maximum, strict=True)):
         raise c._fail(path + '.bounds', asdict(binding.bounds), 'ordered source bounds')
@@ -227,6 +228,10 @@ def _binding(binding: c.AssetBinding, style: str) -> dict:
     for job in binding.plates:
         if not _SHA.fullmatch(job.key):
             raise c._fail(path + '.plates.key', job.key, 'a content SHA-256')
+    if binding.candidate is not None:
+        from ._composition_review import candidate_identity
+
+        return candidate_identity(binding, style, purpose)
     try:
         version = parts.pin(binding.part, binding.version)
         part = parts.get(binding.part)
@@ -316,7 +321,14 @@ def _clocks(spec: c.ScenePlan) -> None:
                     )
 
 
-def preflight(spec: c.ScenePlan, bindings: tuple[c.AssetBinding, ...]) -> c.ValidatedScenePlan:
+def preflight(
+    spec: c.ScenePlan,
+    bindings: tuple[c.AssetBinding, ...],
+    *,
+    purpose: Literal['production', 'candidate-review'] = 'production',
+) -> c.ValidatedScenePlan:
+    if type(purpose) is not str or purpose not in ('production', 'candidate-review'):
+        raise c._fail('purpose', purpose, 'production or candidate-review', 'composition.candidate')
     if type(spec) is not c.ScenePlan or type(bindings) is not tuple or not 1 <= len(bindings) <= c.MAX_LAYERS:
         raise c._fail('scene/bindings', None, 'a ScenePlan and 1..256 immutable asset bindings')
     if any(type(binding) is not c.AssetBinding for binding in bindings):
@@ -340,13 +352,24 @@ def preflight(spec: c.ScenePlan, bindings: tuple[c.AssetBinding, ...]) -> c.Vali
     poses: dict[str, tuple[Frame, float]] = {}
     revisions = []
     used: dict[str, c.AssetBinding] = {}
+    candidates: dict[tuple[str, int], c.CandidateSource] = {}
     information_seen = False
     for layer in spec.layers:
         if layer.asset not in assets:
             raise c._fail(f'layers.{layer.id}.asset', layer.asset, 'an existing asset binding', 'composition.reference')
         asset = assets[layer.asset]
         if asset.id not in used:
-            revisions.append(_binding(asset, spec.style.name))
+            revisions.append(_binding(asset, spec.style.name, purpose=purpose))
+            if asset.candidate is not None:
+                key = (asset.part, asset.version)
+                if key in candidates and candidates[key] != asset.candidate:
+                    raise c._fail(
+                        f'bindings.{asset.id}.candidate',
+                        asdict(asset.candidate),
+                        'one content identity per candidate part/version; increment the version for changed content',
+                        'composition.candidate',
+                    )
+                candidates[key] = asset.candidate
             used[asset.id] = asset
         _layer(layer, asset, spec, layers)
         if information_seen and layer.role == 'picture':
@@ -415,7 +438,14 @@ def preflight(spec: c.ScenePlan, bindings: tuple[c.AssetBinding, ...]) -> c.Vali
         if value > limit:
             raise c._fail('budget.' + name, value, f'<= {limit}', 'composition.budget')
     ordered = tuple(used[name] for name in sorted(used))
-    digest = _digest(
-        {'spec': asdict(spec), 'bindings': [asdict(a) for a in ordered], 'versions': revisions, 'cost': asdict(cost)}
-    )
-    return c.ValidatedScenePlan(spec, ordered, cost, digest, len(spec.contacts))
+    declarations = []
+    for asset in ordered:
+        declaration = asdict(asset)
+        if asset.candidate is None:
+            del declaration['candidate']  # Preserve pre-review production identities.
+        declarations.append(declaration)
+    identity = {'spec': asdict(spec), 'bindings': declarations, 'versions': revisions, 'cost': asdict(cost)}
+    if purpose != 'production':
+        identity['purpose'] = purpose
+    digest = _digest(identity)
+    return c.ValidatedScenePlan(spec, ordered, cost, digest, len(spec.contacts), purpose)

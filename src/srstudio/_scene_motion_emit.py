@@ -169,7 +169,9 @@ def compile_timeline(request: dict) -> c.CompiledScene:
             group.extend(original)
     if not len(paints):
         root.remove(paints)
-    xml = ET.tostring(root, encoding='utf-8', xml_declaration=True)
+    from ._composition_review import mark
+
+    xml = mark(ET.tostring(root, encoding='utf-8', xml_declaration=True), timeline.base)
     nodes = sum(1 for _ in root.iter())
     if (
         nodes > timeline.cost.nodes

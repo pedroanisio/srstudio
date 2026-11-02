@@ -150,6 +150,10 @@ def context(
     binding = next(b for b in plan.bindings if b.id == source.id)
     if binding.backend != 'proxy' or (binding.duration is not None) != sequence:
         raise fail('binding', 'a finite sequence proxy binding' if sequence else 'a static proxy binding')
+    if not sequence:
+        from ._composition_review import check_source
+
+        check_source(binding, source_digest(source))
     if len(selected.passes) != 1 or (selected.passes == ('under',) and not source.recipe.under):
         raise fail('passes', 'one selected pass per layer; under requires designated under geometry')
     raw = sources(source)

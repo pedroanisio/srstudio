@@ -31,6 +31,74 @@ full DRAWING cross-backend adoption proof remains open under SDK-P2-07.
 A valid manifest alone is not a rendered scene,
 approval of a new style, or proof of a host's declared geometry.
 
+## Review a new candidate drawing
+
+New geometry has its own `candidate.<name>` identity. A host supplies a
+`CandidateSource` with the intended existing style and exact immutable source
+digest, then explicitly selects `purpose="candidate-review"`. This parameter is
+not part of agent-authored scene JSON. The default `production` purpose continues
+to require approved, verified part versions. Review mode does not relax checks
+on registered parts or grant approval to candidate drawings.
+
+```python
+import hashlib
+from sr_core.scene import Scene
+from srstudio import Canvas, composition as c
+
+source = Scene(version="auto")
+source.add_project(width=64, height=64, fps="24", duration=1)
+cv = Canvas(source, font_asset=None, width=64, height=64)
+cv.rect(cv.comp, 2, 3, 12, 9, "#DA8844")
+xml = source.to_bytes()
+binding = c.AssetBinding(
+    "tile", "candidate.original-tile", 1, "vector",
+    c.Bounds((2, 3, 0), (14, 12, 0)), nodes=20, memory_bytes=16384,
+    candidate=c.CandidateSource("cutout", hashlib.sha256(xml).hexdigest()),
+)
+spec = c.ScenePlan(
+    c.StylePin("cutout", c.style_revision("cutout")), 64, 64, c.FrameRate(),
+    1, 7, "meter", c.CameraSpec(scale=1), c.LightRig("flat"),
+    (c.LayerSpec("tile", "tile", 1, c.TemporalPolicy(0, 1), space="screen"),),
+    c.RenderBudget(),
+)
+plan = c.preflight(spec, (binding,), purpose="candidate-review")
+compiled = c.compile_scene(plan, (c.VectorSource("tile", xml),))
+assert plan.describe()["candidates"][0]["approval"] is None
+assert b"srstudio.candidate-review/1.0.0" in compiled.xml
+```
+
+Use the digest for the complete source, including conversion recipes and every
+held snapshot:
+
+| Source | Candidate digest |
+|---|---|
+| Vector XML bytes | `hashlib.sha256(xml).hexdigest()` |
+| `PlateSource` | `c.plate_source_digest(source)` |
+| `ProxySource` | `c.proxy_source_digest(source)` |
+| `RasterSequence` | `c.raster_sequence_digest(source)` |
+
+Raw `PlateWork` keys continue to describe renderer jobs; they are not substitutes
+for a proxy's full recipe identity or a sequence's complete source identity.
+Preparation checks the candidate digest against actual content before rendering
+or cache lookup. A changed pin fails with `composition.candidate`. Change the
+candidate version when revising its content; one plan cannot assign conflicting
+content to the same candidate name/version. No approval database is modified,
+and identity history across separate builds remains the host's responsibility.
+
+`scene_motion.sample_scene` and `plan_scene` accept the same explicit `purpose`.
+Their plans retain it through static samples, terminal validation, bounded
+workers, warm-cache reuse and final assembly. Compiled review XML carries a
+non-rendering JSON provenance comment with candidate names, versions, hashes,
+style revision and null approvals. `plan.describe()` returns the same metadata
+after revalidating the plan. A preflight description is declared provenance;
+successful preparation/compilation supplies the content verification.
+
+Review retains the normal view, contact, pass, shadow, output, memory and runtime
+budget checks. It cannot enable an unsupported backend feature. The intended
+style still has a pinned library revision; selecting it is not evidence that
+the candidate matches its approved look. Adoption remains subject to the
+[DRAWING proof and approval gates](../DRAWING.md#proof-and-acceptance-gates).
+
 ## Sample shared scene motion
 
 `scene_motion.sample_scene(spec, bindings, motion, time)` returns a validated

@@ -100,6 +100,9 @@ def prepare_plate(plan: c.ValidatedScenePlan, layer: str, source: c.PlateSource)
     if binding.backend != 'plates' or binding.duration is not None or len(binding.plates) != 1:
         raise _fail('binding', 'a static plate binding with one source job')
     digest = source_digest(source)
+    from ._composition_review import check_source
+
+    check_source(binding, digest)
     job = binding.plates[0]
     if job.key != digest:
         raise _fail('job.key', 'the exact plate_source_digest of the immutable source')

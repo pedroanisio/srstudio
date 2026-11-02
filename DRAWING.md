@@ -83,6 +83,13 @@ The table defines the complete target contract. [srstudio.composition](src/srstu
 
 The proposed preflight parses strict typed input, checks the whole plan, resolves capabilities and asset versions, and returns an immutable validated plan plus a cost estimate. Emission consumes that plan. Errors carry a stable code, field path, offending value/reference, and a remedy, so an agent can repair its request. Failed validation leaves both the scene and render cache untouched. Runtime budget exhaustion cancels work with a typed error and never publishes a partial output. Existing typed failures such as `LimbError`, `HeadMotionError`, and `PlateError` remain the underlying causes.
 
+For adoption evidence, the host can explicitly select the
+[candidate-review workflow](docs/composition-preflight.md#review-a-new-candidate-drawing).
+New drawings then use separate `candidate.` identities and exact source hashes;
+compiled scenes carry unapproved provenance. The production default still
+requires approved versions. Review does not relax capability or budget checks
+and does not replace the proof and operator approval required for adoption.
+
 ### Runnable example with current APIs
 
 This example demonstrates typed projection through a transformed drawing parent, an existing shade primitive, a reusable light rig, and protected information above a world finish. It does not render a 3D object, cast a contact shadow, or implement the proposed scene compiler. The `lighting` value is ready for an existing plate definition; it does not automatically light the 2D shade.

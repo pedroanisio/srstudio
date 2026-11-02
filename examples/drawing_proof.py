@@ -90,9 +90,9 @@ def hand_world(point: Vec3) -> tuple[float, float, float]:
 def hand_camera(frame: Sample) -> Camera:
     """Explicit registration for this candidate's centered proxy camera.
 
-    The approved-part compiler cannot bind this new candidate car yet. This
-    adapter shares the actual legacy proxy View; it does not label the car as an
-    approved part merely to obtain a ValidatedScenePlan.
+    This fixture still uses the legacy proxy View; migrating its car to the
+    compiler's candidate-review path is separate from this explicit adapter.
+    It does not label the candidate as an approved part to obtain a plan.
     """
     view = frame.view
     position = Vec3(view.position[0], view.position[1], -view.position[2])
