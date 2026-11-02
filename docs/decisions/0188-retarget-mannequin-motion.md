@@ -67,7 +67,8 @@ does; only positions follow the profile's proportions.
 ### Planted feet
 
 On other proportions the hips travel the clip's path scaled by pelvis height while the legs are another length, so a
-foot the clip holds still drifts: on the walk fixture, 4.27 mm on `cartoon` and 8.63 mm on `stick`.
+foot the clip holds still drifts: on the walk fixture, 4.27 mm on `cartoon` and 0.73 mm on `stick`, whose cast legs
+keep nearly the walk's proportions.
 
 A foot is planted in a frame where the clip's foot joint is within `PLANT_HEIGHT_M` (10 mm) of its standing height and
 moves at most `PLANT_SPEED_M_S` (0.1 m/s), the faster of the steps into and out of the frame. On the walk, planted
@@ -88,9 +89,10 @@ without a whole leg (hip, knee, foot) is not held.
 | On the walk fixture | Unlocked slip | Locked slip | Worst miss |
 |---|---|---|---|
 | `cartoon` | 4.27 mm | 0.45 mm | 0.45 mm: the cartoon's legs are short for its pelvis height, so a straight leg falls short |
-| `stick` | 8.63 mm | 0.05 mm | 0.05 mm |
+| `stick` | 0.73 mm | 0.10 mm | 0.10 mm |
 
-A test holds the locked slip under 1 mm and the unlocked over it on both presets, so it fails if the lock stops working.
+A test holds the locked slip under 1 mm on both presets and under a quarter of the unlocked slip, and the cartoon's
+unlocked slip over 1 mm, so it fails if the lock stops working.
 On `realistic`, where the clip already plants its feet, the lock moves no joint more than 0.1 mm.
 
 ### Beat warp

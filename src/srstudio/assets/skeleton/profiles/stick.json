@@ -1,7 +1,12 @@
 {
   "schema": "srstudio.skeleton/1.0.0",
   "name": "stick",
-  "proportions": {"height_m": 1.6, "head_radius_m": 0.11, "factors": {"torso": 0.9, "shoulders": 0.7, "hips": 0.5}},
+  "proportions": {
+    "height_m": 1.6,
+    "head_radius_m": 0.11,
+    "factors": {"torso": 0.9, "shoulders": 0.7, "hips": 0.5},
+    "lengths_m": {"torso": 0.3982, "upper_arm": 0.1853, "forearm": 0.1853, "thigh": 0.3049, "shin": 0.3049}
+  },
   "hands": {"left": "mitten", "right": "mitten"},
   "omit": ["left_eye", "right_eye", "jaw", "left_toes", "right_toes"],
   "rest": {"left_upper_arm.down_up": -1.3, "right_upper_arm.down_up": -1.3}
