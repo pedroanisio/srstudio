@@ -813,3 +813,58 @@ timeline in both cases. Keep those clocks aligned when nesting shots;
 inspect nested move, dive, sweep and reveal metadata before reusing a plan.
 Mind spotlight and lens are drawn overlays, with absolute x tracks; they
 do not calculate lighting or magnification.
+
+## News graphics and insert timelines
+
+The 27 non-character builders in `news_kit` and `news_inked` expose explicit
+contracts. Select the version deliberately: names such as `news-phone` and
+`news-phone@2` retain distinct drawings. Most builders return `None`; place
+related graphics under a caller-owned group to move or hide them together.
+Both caption builders return their complete text-panel group. Their cue
+visibility is held, with no native word-level karaoke.
+
+These layouts use frame pixels for a 1080×1920 composition. The route insert
+uses phone-screen pixels below the header, with `(0, 0)` at frame `(190, 616)`.
+Its `draw` argument is a duration. The marker moves linearly with segment
+times proportional to distance; each full route leg appears at its segment
+start. The route is a schematic drawing, not a geographic map asset.
+
+<!-- news-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, news_inked, registry
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1920, fps='30', duration=8)
+cv = Canvas(scene, font_asset=None)
+
+# Version 2's desk has no lettering and needs no font asset.
+desk = registry.get('prop', 'news-desk@2')
+parent = cv.group(cv.comp, 'news-shot', start=1, end=7)
+assert desk(cv, parent) is None
+
+route = registry.get('graphic', 'news-route').describe()['contract']
+arguments = route['arguments']['properties']
+assert arguments['draw']['x-role'] == 'duration'
+assert arguments['track']['items']['x-space'] == 'phone-map'
+
+# A later corridor stop starts a short step; it is not the arrival time.
+keys = news_inked.corridor_keys(((1, 250, 250), (3, 400, 250)))
+assert keys == [(1, 250, 250), (3, 250, 250), (3.22, 400, 250)]
+```
+<!-- news-discovery:end -->
+
+Bind the show font and supply `measure(text, size)` using that font for text
+builders. Version 1's desk includes lettering; version 2's does not. A
+`Source` supplies the outlet, date and headline to display; constructing it
+does not verify the source. Bubble `clock` and oven `time` are display copy,
+not animation timestamps. The oven's digits remain fixed when its label
+changes. Money-app inserts draw a UI without making service calls.
+
+Animation keys use the composition clock even with `Canvas.local_time=True`.
+Visibility intervals use parent time, including phone-message arrivals,
+button refusals, door cuts and count changes. Align those clocks when placing
+these graphics in sequence shots. The studio's `end` parameter is accepted
+for compatibility but changes neither its sweep times nor its visibility;
+use the caller-owned parent to limit the shot. Corridor targets are panel
+pixels, and the dots have no skeletal, balance or collision constraints.
