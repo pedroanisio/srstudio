@@ -1,12 +1,20 @@
 """The clay figures in the sofa room: posed on each frame from the reel's performance, seen by the room's own cameras,
-rendered in three passes and laid into the room's plates.
+rendered in four passes and laid into the room's plates.
 
     P  the figures on stand-ins of the sofa, path traced: their clay, and the shadow and bounce they put on the sofa
     K  the same, rastered flat: the figures white, the sofa black, so the sofa covers what stands behind it
     B  the stand-ins alone, path traced: the sofa without the figures, to measure what they changed on it
+    I  the figures rastered flat with each part in its own colour, the sofa black: where the room's line goes
+       (:mod:`clay_ink`)
+
+A figure moves whole (the gasp's tilt and lift, the jump) as the reel moves its card: a turn and a shift, never a
+stretch. Within it the skin turns with the body and the head by each point's share, the ears with the head, and the two
+arms with the body, their paws wherever the frame sends them. Every engine pass holds the GPU lock (ADR 0171).
 
 The room's back plate times P/B on the sofa is the plate with the figures' shadow on it; the figures from P over that,
-where K says they are seen, is the frame. The room's cel plates are never redrawn: they are srlocations' (pinned) and
+where K says they are seen, is the frame. The sofa's arm goes last, off the room's front plate with its own line,
+because the flat has it in front of Bruno's right side and the raster passes draw the figures over the stand-ins
+whatever stands nearer (:func:`drawn_arm`). The room's cel plates are never redrawn: they are srlocations' (pinned) and
 this study only reads them. Units: the room's metres (x right, y up, z away) as srlocations writes them, the engine's
 centimetres (x right, y down, z away) as scene-render reads them.
 """
@@ -21,17 +29,22 @@ import shutil
 import subprocess
 import tempfile
 import time
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
 
 import clay_figure as cf
+import clay_ink
 import numpy as np
-from performance import Arm, Frame
-from PIL import Image
+from performance import Frame
+from PIL import Image, ImageDraw
 from scipy import ndimage
+from shapely.geometry import MultiPoint
+from shapely.geometry.base import BaseGeometry
 
-from srstudio import clay, plates
+from srstudio import clay, gpu, plates
+from srstudio.anatomy import Side
 from srstudio.plates import Camera, Light, Material, Placed, Plate, Texture
 
 WIDTH, HEIGHT = 1080, 1920
@@ -128,17 +141,18 @@ SOFA = "#7a4a7e"  # _lounge_set.SOFA: the stand-ins bounce the sofa's own colour
 
 @cache
 def sofa() -> tuple[clay.Mesh, ...]:
-    """The seat, the arm, the base and the back, at lounge_plates' sizes and places (its back() and seat())."""
+    """The back, the base, the cushion and the arm, at lounge_plates' sizes and places (its back() and seat())."""
     return (
         slab("stand-in", (2.6, 0.76, 0.3), 0.08, (-1.37, 0.597, 0.68)),
         slab("stand-in", (2.4, 0.205, 0.58), 0.016, (-1.4, 0.1475, 0.31)),
-        slab("stand-in", (2.3, 0.127, 0.6), 0.03, (-1.28, 0.3105, 0.3)),
+        slab("stand-in", (2.3, 0.127, 0.6), CUSHION_EDGE, (-1.28, 0.3105, 0.3)),
         slab("stand-in", (0.19, 0.61, 0.5), 0.075, (-0.095, 0.345, 0.23)),
     )
 
 
 CUSHION_TOP = 0.3105 + 0.127 / 2
-ARM_INNER = -0.095 - 0.19 / 2  # the arm's inner face, metres: nothing sits through it
+CUSHION_EDGE = 0.03  # the cushion's rounded edge, metres: a base sits behind it, on the flat of the cushion
+CUSHION_FRONT = 0.3 - 0.6 / 2  # the cushion's front face, metres
 
 
 # --- where the clay sits ----------------------------------------------------------------------------------------------
@@ -153,29 +167,17 @@ class Seat:
     mirror: bool
 
 
-def seat_of(
-    fig: cf.Figure,
-    card_seat,
-    lens: Camera,
-    card_px_per_ref: float,
-    mirror: bool,
-    back_at: float,
-    right: float | None = None,
-) -> Seat:
+def seat_of(fig: cf.Figure, card_seat, lens: Camera, card_px_per_ref: float, mirror: bool, back_at: float) -> Seat:
     """The seat of a figure that, through the two-shot ``lens``, lands on the column of the card's seat point
     ``card_seat`` (metres) and stands as tall on screen as the card at ``card_px_per_ref`` frame pixels to the reference
-    pixel, its back at depth ``back_at`` (metres); with ``right``, moved left as far as it takes for its widest row to
-    end there. The size sets the depth and the depth the size, so a few rounds settle both."""
+    pixel, its back at depth ``back_at`` (metres). The size sets the depth and the depth the size, so a few rounds
+    settle both."""
     ex, ez = lens.position[0] / 100.0, lens.position[2] / 100.0
-    xs = fig.body.front[:, 0]
-    reach = (SEAT_X - xs.min()) if mirror else (xs.max() - SEAT_X)
     per = card_px_per_ref / pixels_per_metre(card_seat, lens)
     x = z = 0.0
     for _ in range(8):
-        z = back_at - fig.body.depth[1] * per
+        z = back_at - fig.skin.depth[1] * per
         x = ex + (card_seat[0] - ex) * (z - ez) / (card_seat[2] - ez)
-        if right is not None:
-            x = min(x, right - reach * per)
         per = card_px_per_ref / pixels_per_metre((x, CUSHION_TOP, z), lens)
     return Seat(engine((x, CUSHION_TOP - SINK, z)), 100.0 * per, mirror)
 
@@ -223,33 +225,32 @@ def _scale(sx: float, sy: float, about) -> np.ndarray:
     return np.array([[sx, 0, ax - sx * ax], [0, sy, ay - sy * ay], [0, 0, 1.0]])
 
 
-def _shear(degrees: float, base_y: float) -> np.ndarray:
-    """A 3x3 homogeneous 2D shear that moves a point sideways as far as ``_turn(degrees)`` about a point on the line
-    ``base_y`` moves the point straight above it, and leaves that line where it is."""
-    k = -_turn(degrees, (0.0, 0.0))[0, 1]  # how far the turn takes a point one pixel above its pivot sideways
-    return np.array([[1, -k, k * base_y], [0, 1, 0], [0, 0, 1.0]])
+def figure_motion(frame: Frame, mirror: bool) -> np.ndarray:
+    """The whole figure's move at ``frame``, as the reel moves the card: the gasp's tilt turns it about the middle of
+    its base, the gasp's and the jump's lift raises it, and Mae is mirrored about the seat line. A turn and a move,
+    never a stretch or a shear: the figure rises off the cushion and settles back on it whole."""
+    flip = _scale(-1.0, 1.0, (SEAT_X, PAIR_Y)) if mirror else np.eye(3)
+    return _shift(0.0, frame.lift) @ _turn(frame.tilt, (SEAT_X, PAIR_Y)) @ flip
+
+
+def _within(rig, frame: Frame) -> np.ndarray:
+    """toon_head's body groups inside the figure: the lean, then the breath."""
+    return _turn(frame.lean, BODY_PIVOT) @ _scale(1.0, 1.0 + rig.style.breath_scale * frame.breath, BODY_PIVOT)
+
+
+def _head(rig, frame: Frame) -> np.ndarray:
+    """toon_head's head groups inside the body's: turn · nod · idle, and the breath's lift."""
+    neck = rig.neck
+    head = _turn(frame.turn, neck) @ _shift(0.0, frame.nod) @ _turn(frame.roll, neck)
+    head = head @ _shift(0.0, frame.idle_y) @ _turn(frame.idle_roll, neck)
+    return head @ _shift(0.0, -frame.breath * rig.style.breath_px)
 
 
 def chains(rig, frame: Frame, mirror: bool) -> tuple[np.ndarray, np.ndarray]:
     """The 2D transforms toon_head's nested groups put on the body and on the head at ``frame``, in reference pixels:
-    pair (mirror, gasp, jump) · lean · breath, then turn · nod · idle · lift for the head.
-
-    The card hops and rocks on the seat: the gasp's and the jump's ``lift`` moves it whole and its ``tilt`` turns it
-    about the middle of its base, so the base leaves the seat. Clay stays seated: the lift raises the head as far as the
-    card's, and stretches the body under it from its base; the tilt leans the figure as far at the neck as the card's
-    turn, as a shear that keeps the base on the cushion."""
-    seat = (SEAT_X, PAIR_Y)
-    rock = _shear(frame.tilt, PAIR_Y)
-    flip = _scale(-1.0, 1.0, seat) if mirror else np.eye(3)
-    stretch = _scale(1.0, 1.0 + frame.lift / (rig.neck[1] - PAIR_Y), seat)  # the neck up by lift, the base kept
-    within = _turn(frame.lean, BODY_PIVOT) @ _scale(1.0, 1.0 + rig.style.breath_scale * frame.breath, BODY_PIVOT)
-    body = stretch @ rock @ flip @ within  # the card turns, then hops: so the clay leans, then stretches
-    neck = rig.neck
-    head = _shift(0.0, frame.lift) @ rock @ flip @ within @ _turn(frame.turn, neck)
-    head = head @ _shift(0.0, frame.nod) @ _turn(frame.roll, neck)
-    head = head @ _shift(0.0, frame.idle_y) @ _turn(frame.idle_roll, neck)
-    head = head @ _shift(0.0, -frame.breath * rig.style.breath_px)
-    return body, head
+    the figure's move (mirror, gasp, jump) · lean · breath, then turn · nod · idle · lift for the head."""
+    body = figure_motion(frame, mirror) @ _within(rig, frame)
+    return body, body @ _head(rig, frame)
 
 
 def _lift3(m2: np.ndarray) -> np.ndarray:
@@ -269,21 +270,28 @@ def head_swivel(rig, fig: cf.Figure, frame: Frame) -> np.ndarray:
     # the front of the head is at -z: a yaw takes it toward +x, a pitch toward +y (down)
     turn = np.array([[cy, 0, -sy], [0, 1, 0], [sy, 0, cy]])
     nod = np.array([[1, 0, 0], [0, cp, -sp], [0, sp, cp]])
-    about = np.array([rig.neck[0], rig.neck[1], -fig.head_forward])
+    about = np.array([rig.neck[0], rig.neck[1], 0.0])
     m = np.eye(4)
     m[:3, :3] = turn @ nod
     m[:3, 3] = about - m[:3, :3] @ about
     return m
 
 
-def _place(points: np.ndarray, normals: np.ndarray | None, m: np.ndarray, seat: Seat):
-    local = points @ m[:3, :3].T + m[:3, 3]
-    world = np.array(seat.at) + seat.per * (local - (SEAT_X, cf.BASE, 0.0))
+def _apply(points: np.ndarray, normals: np.ndarray | None, m: np.ndarray):
+    moved = points @ m[:3, :3].T + m[:3, 3]
     if normals is None:
-        return world, None
-    turned = normals @ np.linalg.inv(m[:3, :3])  # the inverse transpose, row-wise
-    turned /= np.linalg.norm(turned, axis=1, keepdims=True)
-    return world, turned
+        return moved, None
+    return moved, normals @ np.linalg.inv(m[:3, :3])  # the inverse transpose, row-wise; not yet unit
+
+
+def _unit_rows(v: np.ndarray) -> np.ndarray:
+    return v / np.maximum(np.linalg.norm(v, axis=1, keepdims=True), 1e-12)
+
+
+def _place(points: np.ndarray, normals: np.ndarray | None, m: np.ndarray, seat: Seat):
+    local, turned = _apply(points, normals, m)
+    world = np.array(seat.at) + seat.per * (local - (SEAT_X, cf.BASE, 0.0))
+    return world, None if turned is None else _unit_rows(turned)
 
 
 def _mesh(material: str, points, normals, triangles, uvs, m: np.ndarray, seat: Seat) -> clay.Mesh:
@@ -297,55 +305,100 @@ def _shifted(volume: cf.Volume, dz: float) -> tuple[np.ndarray, np.ndarray]:
 
 
 TILE = 300.0  # reference pixels to one tile of the clay's thumb marks on the back of a part
+GASP_TILT = -5.0  # it_autoplayed_data.GASP_TILT: the tilt the reel keys on the gasp alone, at its fullest
+FLINCH = (0.0, -42.0, -18.0)  # reference pixels the paws come up toward the chest at the gasp's fullest
+RAISED_FORWARD = 24.0  # reference pixels in front of the shoulder a raised paw is held
 
 
-def posed(who: str, rig, fig: cf.Figure, frame: Frame, seat: Seat, coat_arm: str) -> tuple[clay.Mesh, ...]:
-    """Every mesh of ``who`` at ``frame``, in the room."""
-    body2, head2 = chains(rig, frame, seat.mirror)
-    body_m = _lift3(body2)
-    head_m = _lift3(head2) @ head_swivel(rig, fig, frame)
+@dataclass(frozen=True)
+class Part:
+    """One part of a figure as posed: its meshes, the hand it is if it is one (its side as drawn, before any mirror),
+    and the arm chain it belongs to if it does."""
+
+    id: str
+    meshes: tuple[clay.Mesh, ...]
+    hand: Side | None = None
+    chain: str | None = None
+
+
+def arm_targets(fig: cf.Figure, frame: Frame) -> dict[str, np.ndarray]:
+    """Where each paw goes at ``frame``, reference pixels before the body's lean: on the lap at rest; drawn up toward
+    the chest as far into the gasp as its tilt is; to the flat card's hand wherever the reel draws one (the Wow, the
+    pat), on the chain of the side its shoulder is on. A chain has one paw: two hands on one side are refused."""
+    out = {chain.side: chain.rest.copy() for chain in fig.arms}
+    share = min(max(frame.tilt / GASP_TILT, 0.0), 1.0)
+    for side in out:
+        out[side] = out[side] + share * np.array(FLINCH)
+    taken: set[str] = set()
+    for arm in frame.arms:
+        side = "left" if arm.root[0] < SEAT_X else "right"
+        if side in taken:
+            raise cf.FigureError(f"two hands on the {side} arm at once: a figure has one pair")
+        taken.add(side)
+        chain = next(c for c in fig.arms if c.side == side)
+        turn = math.radians(arm.degrees)
+        tip = (arm.root[0] + arm.length * math.cos(turn), arm.root[1] + arm.length * math.sin(turn))
+        out[side] = np.array((tip[0], tip[1], chain.shoulder[2] - RAISED_FORWARD))
+    return out
+
+
+def local_parts(who: str, rig, fig: cf.Figure, frame: Frame) -> tuple[Part, ...]:
+    """Every part of ``who`` at ``frame`` within the figure, before its move and its seat: the skin (each point turned
+    with the body and the head by its share of each), the ears on the head, the two arms on the body."""
+    within = _within(rig, frame)
+    body_m = _lift3(within)
+    head_m = _lift3(within @ _head(rig, frame)) @ head_swivel(rig, fig, frame)
     face = cf.Face(frame.eyes, frame.gaze, frame.blink, frame.mouth, frame.pose_mouth)
-    out = []
-    v = fig.body
-    out.append(_mesh(f"{who}-body", v.front, v.front_normals, v.triangles, v.uv, body_m, seat))
-    out.append(_mesh(f"{who}-coat", v.back, v.back_normals, v.triangles[:, ::-1], v.back[:, :2] / TILE, body_m, seat))
-    for k, limb in enumerate(cf.limbs(rig, frame.pose_arms)):  # the paws on the lap ride the body
-        v = limb.volume
-        out.append(_mesh(f"{who}-limb{k}-{frame.pose_arms}", v.front, v.front_normals, v.triangles, v.uv, body_m, seat))
-        out.append(
-            _mesh(f"{who}-coat", v.back, v.back_normals, v.triangles[:, ::-1], v.back[:, :2] / TILE, body_m, seat)
-        )
-    front, back = _shifted(fig.head, -fig.head_forward)
-    h = fig.head
-    out.append(_mesh(f"{who}-face-{face.key()}", front, h.front_normals, h.triangles, h.uv, head_m, seat))
-    out.append(_mesh(f"{who}-coat", back, h.back_normals, h.triangles[:, ::-1], back[:, :2] / TILE, head_m, seat))
+    v, w = fig.skin, fig.weights[:, None]
+    parts = []
+    sheets = []
+    for points, normals, tris, uv, material in (
+        (v.front, v.front_normals, v.triangles, v.uv, f"{who}-face-{face.key()}"),
+        (v.back, v.back_normals, v.triangles[:, ::-1], v.back[:, :2] / TILE, f"{who}-coat"),
+    ):
+        (pb, nb), (ph, nh) = _apply(points, normals, body_m), _apply(points, normals, head_m)
+        sheets.append(clay.Mesh(material, pb * (1.0 - w) + ph * w, _unit_rows(nb * (1.0 - w) + nh * w), tris, uv))
+    parts.append(Part(f"{who}-skin", tuple(sheets)))
     for k, ear in enumerate(fig.ears):
-        front, back = _shifted(ear, -fig.head_forward + fig.ear_back)
-        out.append(_mesh(f"{who}-ear{k}", front, ear.front_normals, ear.triangles, ear.uv, head_m, seat))
-        out.append(
-            _mesh(f"{who}-coat", back, ear.back_normals, ear.triangles[:, ::-1], back[:, :2] / TILE, head_m, seat)
-        )
-    for arm in frame.arms:  # the two-shot draws his raised arms in the shot, not in his groups: they do not lean
-        out.append(
-            _arm(f"{who}-arm", arm, np.eye(4) if not seat.mirror else _lift3(_scale(-1.0, 1.0, (SEAT_X, 0))), seat)
-        )
-    return tuple(out)
+        front, back = _shifted(ear, fig.ear_back)
+        pf, nf = _apply(front, ear.front_normals, head_m)
+        pb, nb = _apply(back, ear.back_normals, head_m)
+        parts.append(Part(f"{who}-ear{k}", (
+            clay.Mesh(f"{who}-ear{k}", pf, _unit_rows(nf), ear.triangles, ear.uv),
+            clay.Mesh(f"{who}-coat", pb, _unit_rows(nb), ear.triangles[:, ::-1].copy(), back[:, :2] / TILE),
+        )))  # fmt: skip
+    targets = arm_targets(fig, frame)
+    for chain in fig.arms:
+        made = cf.arm_meshes(chain, cf.reach(chain, targets[chain.side]), f"{who}-arm", f"{who}-pad")
+        for name, meshes in made.items():
+            moved = []
+            for mesh in meshes:
+                points, normals = _apply(mesh.vertices, mesh.normals, body_m)
+                moved.append(
+                    clay.Mesh(mesh.material, points, _unit_rows(normals), mesh.triangles, points[:, :2] / TILE)
+                )
+            hand = Side.LEFT if chain.side == "left" else Side.RIGHT
+            parts.append(Part(f"{who}-{name}-{chain.side}", tuple(moved), hand if name == "paw" else None, chain.side))
+    return tuple(parts)
 
 
-ARM_DEPTH = 18.0  # reference pixels behind the body's middle plane the raised arms grow from: "behind him"
+def posed_parts(who: str, rig, fig: cf.Figure, frame: Frame, seat: Seat) -> tuple[Part, ...]:
+    """Every part of ``who`` at ``frame``, moved with the whole figure and seated in the room (engine centimetres)."""
+    m = _lift3(figure_motion(frame, seat.mirror))
+    return tuple(
+        Part(
+            part.id,
+            tuple(_mesh(x.material, x.vertices, x.normals, x.triangles, x.uvs, m, seat) for x in part.meshes),
+            part.hand,
+            part.chain,
+        )  # fmt: skip
+        for part in local_parts(who, rig, fig, frame)
+    )
 
 
-def _arm(material: str, arm: Arm, m: np.ndarray, seat: Seat) -> clay.Mesh:
-    """A raised arm as a clay roll from the shoulder, as long as the drawing's, its end rounded as a paw."""
-    model = clay.Model()
-    half = arm.width / 2.0 * 0.9
-    angle = math.radians(arm.degrees)
-    reach = arm.length - half * 0.3
-    a = np.array((arm.root[0], arm.root[1], ARM_DEPTH))
-    b = a + (reach * math.cos(angle), reach * math.sin(angle), -ARM_DEPTH * 0.6)
-    model.capsule(material, tuple(a), tuple(b), half)
-    mesh = model.meshes()[0]
-    return _mesh(material, mesh.vertices, mesh.normals, mesh.triangles, mesh.vertices[:, :2] / TILE, m, seat)
+def posed(who: str, rig, fig: cf.Figure, frame: Frame, seat: Seat) -> tuple[clay.Mesh, ...]:
+    """Every mesh of ``who`` at ``frame``, in the room."""
+    return tuple(mesh for part in posed_parts(who, rig, fig, frame, seat) for mesh in part.meshes)
 
 
 # --- materials --------------------------------------------------------------------------------------------------------
@@ -368,33 +421,29 @@ def _clay(name: str, colour: str, colour_map: np.ndarray | None = None, normal_m
 @cache
 def _textures(rig, key: str, face: cf.Face | None = None):
     fig = cf.figure(rig)
-    if key == "body":
-        return cf.body_textures(fig)
     if key.startswith("ear"):
         return cf.ear_textures(fig, int(key[3:]))
-    if key.startswith("limb"):
-        index, arms = key[4:].split("-")
-        return cf.limb_textures(rig, arms, int(index))
     if face is None:
-        raise RenderError(f"the head's pictures need the face it shows ({key})")
-    return cf.head_textures(rig, fig, face)
+        raise RenderError(f"the skin's pictures need the face it shows ({key})")
+    return cf.skin_textures(rig, fig, face)
 
 
-def materials(who: str, rig, meshes, arm_coat: str) -> tuple[Material, ...]:
+def materials(who: str, rig, meshes) -> tuple[Material, ...]:
     """The materials ``meshes`` of ``who`` use."""
     out = {}
+    fig = cf.figure(rig)
     for mesh in meshes:
         name = mesh.material
         if name in out or not name.startswith(who):
             continue
         part = name[len(who) + 1 :]
-        if part == "coat":
+        if part in ("coat", "arm"):
             out[name] = _clay(name, rig.look.coat)
-        elif part == "arm":
-            out[name] = _clay(name, arm_coat)
-        elif part == "body" or part.startswith("ear"):
-            out[name] = _clay(name, rig.look.coat, *_textures(rig, part))
-        elif part.startswith("limb"):
+        elif part == "pad":
+            out[name] = _clay(name, fig.arms[0].pad)
+        elif part == "toe":
+            out[name] = _clay(name, cf.INK)
+        elif part.startswith("ear"):
             out[name] = _clay(name, rig.look.coat, *_textures(rig, part))
         elif part.startswith("face-"):
             eyes, gaze, blink, mouth, pose_mouth = part[5:].split("-")
@@ -472,22 +521,23 @@ def render(plate: Plate, cache_dir: Path, kind: str, spent: Spent, *, raster: bo
                     if not target.exists():
                         plates.write_png(target, texture.pixels)
         (root / "plate.scene.xml").write_bytes(document)
-        start = time.perf_counter()
-        done = subprocess.run(
-            [
-                str(engine_path.resolve()),
-                "render",
-                "plate.scene.xml",
-                "--time",
-                "0",
-                "--output",
-                "plate.png",
-                "--strict",
-            ],
-            cwd=root,
-            capture_output=True,
-            text=True,
-        )
+        with gpu.held():  # one GPU job at a time (ADR 0171); the wait is not the render's
+            start = time.perf_counter()
+            done = subprocess.run(
+                [
+                    str(engine_path.resolve()),
+                    "render",
+                    "plate.scene.xml",
+                    "--time",
+                    "0",
+                    "--output",
+                    "plate.png",
+                    "--strict",
+                ],
+                cwd=root,
+                capture_output=True,
+                text=True,
+            )
         seconds = time.perf_counter() - start
         if done.returncode != 0:
             raise RenderError(f"the engine could not render a {kind} pass: {done.stderr.strip()[-800:]}")
@@ -511,8 +561,29 @@ def lights() -> tuple[Light, ...]:
     return (FILL, Light(KEY.id, KEY.kind, KEY.color, KEY.intensity, engine(KEY_AT), KEY.radius))
 
 
-def passes(figures: tuple[clay.Mesh, ...], mats: tuple[Material, ...], lens: Camera, cache_dir: Path, spent: Spent):
-    """The three passes of one frame: P, K, and B (which a still camera shares across its frames)."""
+def id_materials(parts: Mapping[str, Sequence[Part]]) -> tuple[tuple[clay.Mesh, ...], tuple[Material, ...]]:
+    """Every part of every figure in its own flat colour (:func:`clay_ink.id_colour`), lit by nothing but itself: what
+    the ink reads to tell where one part ends and another begins. A pad and an arm are drawn as their paw, so the line
+    runs round arm and paw as one shape and none rings the wrist."""
+    meshes: list[clay.Mesh] = []
+    mats: dict[str, Material] = {}
+    for who, posed_parts in parts.items():
+        for part in posed_parts:
+            name = part.id[len(who) + 1 :]
+            name = "paw-" + name[4:] if name.startswith(("pad-", "arm-")) else name
+            material = f"id-{who}-{name}"
+            if material not in mats:
+                r, g, b = (int(round(v * 255)) for v in clay_ink.id_colour(who, name))
+                mats[material] = Material(material, "#000000", roughness=1.0, emissive=f"#{r:02X}{g:02X}{b:02X}")
+            meshes += [clay.Mesh(material, m.vertices, m.normals, m.triangles) for m in part.meshes]
+    return tuple(meshes), tuple(mats[k] for k in sorted(mats))
+
+
+def passes(
+    parts: Mapping[str, Sequence[Part]], mats: tuple[Material, ...], lens: Camera, cache_dir: Path, spent: Spent
+) -> tuple[Path, Path, Path, Path]:
+    """The four passes of one frame: P, K, B (which a still camera shares across its frames) and I, the parts' IDs."""
+    figures = tuple(mesh for posed_parts in parts.values() for part in posed_parts for mesh in part.meshes)
     stand = sofa()
     lit = lights()
     p = Plate(WIDTH, HEIGHT, lens, lit, (Placed(stand), Placed(figures)), (*mats, STAND_IN))
@@ -520,16 +591,22 @@ def passes(figures: tuple[clay.Mesh, ...], mats: tuple[Material, ...], lens: Cam
     masked_sofa = tuple(clay.Mesh("mask-off", m.vertices, m.normals, m.triangles) for m in stand)
     k = Plate(WIDTH, HEIGHT, lens, (FILL,), (Placed(masked_sofa), Placed(masked_figures)), (MASK_ON, MASK_OFF))
     b = Plate(WIDTH, HEIGHT, lens, lit, (Placed(stand),), (STAND_IN,))
+    id_meshes, id_mats = id_materials(parts)
+    i = Plate(WIDTH, HEIGHT, lens, (FILL,), (Placed(masked_sofa), Placed(id_meshes)), (*id_mats, MASK_OFF))
     return (
         render(p, cache_dir, "P", spent),
         render(k, cache_dir, "K", spent, raster=True),
         render(b, cache_dir, "B", spent),
+        render(i, cache_dir, "I", spent, raster=True),
     )
 
 
 # --- the composite ----------------------------------------------------------------------------------------------------
 
-SHADOW_FLOOR, SHADOW_NOISE, SHADOW_SOFT = 0.22, 0.025, 1.2
+# the floor is as dark as the room's own soft shadow under a card goes (lounge_plates' plates/back.png over the
+# clean-plates/back.png drawn without it: 0.673 to 0.681 on the two-shot and both close-ups); a seat that only the
+# fill reaches, as under Bruno lifted on the gasp, reads as that shadow and not as a black cut
+SHADOW_FLOOR, SHADOW_NOISE, SHADOW_SOFT = 0.673, 0.025, 1.2
 
 
 def rgba(path: Path) -> np.ndarray:
@@ -570,6 +647,51 @@ def composite(back: np.ndarray, p: np.ndarray, k: np.ndarray, b: np.ndarray) -> 
     out[..., :3] = out[..., :3] * (1.0 - cover[..., None]) + p[..., :3] * cover[..., None]
     out[..., 3] = np.maximum(out[..., 3], cover)
     return out, dark
+
+
+ARM_LINE = 14.0  # frame pixels past the stand-in's front face: the drawn arm's own line round it
+
+
+def arm_cover(lens: Camera) -> BaseGeometry:
+    """Where the sofa arm's stand-in falls on the frame through ``lens``: its front face, and any side the lens sees
+    above the cushion, which hides the rest. The room's front plate draws the arm there."""
+    arm = sofa()[-1].vertices
+    face = arm[arm[:, 2] < arm[:, 2].min() + 1e-6]
+    lo, hi = arm.min(0), arm.max(0)
+    cut = np.array([(x, -100.0 * CUSHION_TOP, z) for x in (lo[0], hi[0]) for z in (lo[2], hi[2])])  # engine y is down
+    above = np.concatenate((arm[arm[:, 1] <= -100.0 * CUSHION_TOP], cut))  # the stand-in cut at the cushion's top
+    hulls = [MultiPoint(project(points, lens)).convex_hull for points in (face, above)]
+    return hulls[0].union(hulls[1])
+
+
+def drawn_arm(front: np.ndarray, lens: Camera, ids: np.ndarray, paws: Sequence[np.ndarray]) -> np.ndarray:
+    """The sofa's arm off the room's ``front`` plate, seen through ``lens``: the plate wherever the arm stand-in falls
+    on the frame (its front face, and any side the lens sees above the cushion, which hides the rest), with its line,
+    and clear everywhere else, so the seat strip beside it and a base resting on the cushion stay out. A paw stays
+    clear too, with its own line: within each of ``paws`` (a paw's outline on the frame, pixels) wherever the frame's
+    ID pass ``ids`` shows a paw's colour (the pass draws the stand-in black, so a paw seen there is in front of it).
+    The forearm drawn in the paw's colour runs on under the flat's arm, as in the flat."""
+    shape = arm_cover(lens).buffer(ARM_LINE)
+    mask = Image.new("L", (front.shape[1], front.shape[0]), 0)
+    ImageDraw.Draw(mask).polygon(list(shape.exterior.coords), fill=255)
+    out = front.copy()
+    out[..., 3] *= np.asarray(mask, dtype=np.float64) / 255.0
+    if paws:
+        outlines = Image.new("L", mask.size, 0)
+        for paw in paws:
+            hull = MultiPoint(np.asarray(paw, float)).convex_hull.buffer(math.ceil(clay_ink.ROOM_LINE.heavy / 2.0))
+            ImageDraw.Draw(outlines).polygon(list(hull.exterior.coords), fill=255)
+        out[(np.asarray(outlines) > 0) & clay_ink.paw_pixels(ids, clay_ink.ROOM_LINE), 3] = 0.0
+    return out
+
+
+def over(picture: np.ndarray, top: np.ndarray) -> np.ndarray:
+    """``top`` laid over ``picture``."""
+    a = top[..., 3:]
+    out = picture.copy()
+    out[..., :3] = picture[..., :3] * (1.0 - a) + top[..., :3] * a
+    out[..., 3] = np.maximum(picture[..., 3], top[..., 3])
+    return out
 
 
 def write(path: Path, picture: np.ndarray) -> None:
