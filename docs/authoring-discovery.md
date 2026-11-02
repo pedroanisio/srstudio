@@ -1113,3 +1113,55 @@ and parent-pixel displacements independent of its drawing scale. The vacuum
 instead multiplies its travel by scale. None creates a physical grip or
 contact constraint, and the floor map's fixed route does not adapt to custom
 room geometry.
+
+## Collage table and corner props
+
+The 16 builders in `collage_things` declare their return ownership, drawing
+origins, sizes, copy and animation clocks. Most return a group translated
+to `x/y` in the parent. That origin may be a center, foot, handle end or
+top: inspect the constraints before aligning a prop with a hand or surface.
+The stool's origin is a seat reference, not a fitted contact point.
+`collage-counter`, `collage-ring-corner` and `collage-eye-twitch` instead bake
+coordinates into their drawings and return an untranslated group. The
+counter uses the fixed 1080x1920 layout.
+
+<!-- collage-thing-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, collage_things, registry
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1920, fps='24', duration=6)
+cv = Canvas(scene, font_asset=None, local_time=True)
+sequence = cv.comp.add_sequence(id='shots')
+sequence.add_group(id='lead', end=2)
+shot = sequence.add_group(id='paper-shot', end=4)
+
+contract = registry.get('prop', 'collage-resume').describe()['contract']
+assert contract['arguments']['properties']['turn']['x-timebase'] == 'composition'
+assert contract['returns']['x-anchors']['origin'] == [0, 0]
+paper = collage_things.resume(cv, shot, 540, 900, w=500, turn=3)
+# The sheet turns one second into this shot: turn uses project seconds.
+# Its heading is drawn in paths, so this example needs no font asset.
+cv.gate(paper, ((0, 4),), local=True)
+assert cv.local_time is True
+```
+<!-- collage-thing-discovery:end -->
+
+The resume's scale and face change share project time. Its 0.3-second turn
+is a linear squeeze to a thin sliver and back, with the blank back revealed
+at the midpoint. Eye-twitch cues also use project time: each closes the eye
+for 0.09 seconds, and overlapping or touching cues keep it closed until the
+last cue ends. The eyelid overlays a held face in that figure's coordinates;
+it does not track a moving head. Parent it with the figure to share placement.
+
+Other props are static. Use caller-owned animation to move them; `torn`
+selects a receipt silhouette and `off_hook` omits a handset. Draw a separate
+`collage-handset` for a receiver held elsewhere. The gravy boat accepts zero
+through five forks; the wallet accepts at most two card colors and retains
+an empty third slot. None supplies a physical grip or contact solver.
+
+Readout copy is literal. A nonempty desk-phone display or till readout needs
+an explicit positive lettering `size` and a bound font; discovery separates
+that size from prop dimensions. Text is not automatically fitted. Bank-card
+names likewise need a font, while the resume and receipt use drawn paths.

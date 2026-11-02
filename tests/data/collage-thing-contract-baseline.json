@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0.0",
+  "generated_by": {
+    "model": "GPT-6",
+    "tool": "OpenAI Codex"
+  },
+  "source_commit": "cee7ddc57f517ff226061aa2997b8fa631ff0af5",
+  "scene_sha256": {
+    "collage-handset": "b97b5859f902240ee593b6f51f80929e614701ea9a2097acf2f707afd6674583",
+    "collage-desk-phone": "2c5d9df7f896395690c4a9865344d3dcdc1b2567baf7a6fab644402a1f622d83",
+    "collage-resume": "1aef79d16815384466cdeac23809d010eca33eb0c5508ca68a81de6f19c867f6",
+    "collage-fork": "e7e5d7d10b753fc86b749ad19c7c464627a1038326814b74879da544cb51d039",
+    "collage-gravy-boat": "22e47a687007eca974b76afb8b9111612030b379b238e7b09440f945c91786f2",
+    "collage-tiny-cup": "34fd42ebc356b7eee6374b79e7d1a162834918670c54e316c81cd917daf025d3",
+    "collage-wine-glass": "14bc97e61042cbc207769b8f4794ddcbafb871799de438a7b0f15d19012fc3ba",
+    "collage-bank-card": "6daf9543472cc9b5f85a080f81d1f2835b42102538dbc85e5fd27db600867fa3",
+    "collage-receipt": "55de2e00308e72c3381cc6f267fa63c44a1abfe60275dfe10af2c538bc590b47",
+    "collage-wallet": "81aaa241ad23ed54164f4cf9c1c01ae3f5eb6f170a10affdfde1b929d0816ccd",
+    "collage-counter": "4733732b1f2bb3add6ac0f0015ad9dda487b9d84520570707d8df07e37a80c8a",
+    "collage-till": "abc856bed6a78a48534fc82e3bee36987f3d107d69b666f16e914d8c08ced457",
+    "collage-stool": "f7c7a082dead54fcd8b10f0ee453757f1f7cd1e13cffd467528f38364b8356a9",
+    "collage-towel": "d9214efebc8a588a62f8d138e946c867b9306e646f7c855324002d8fb8120417",
+    "collage-ring-corner": "be031faca0109c843d43e3de4afb51ca3532bf10ef7e7e96825f552a1f70739c",
+    "collage-eye-twitch": "a885aa04d90cd5cc3e8507ae6ededc144b8240e8efda6c1b456e0449e11b7ffb"
+  }
+}
