@@ -95,7 +95,7 @@ def _lights(rig: c.LightRig, scale: float) -> tuple[plates.Light, ...]:
 def plate_view(plan: c.ValidatedScenePlan, layer: str, *, meters_per_unit: float | None = None) -> PlateView:
     if type(plan) is not c.ValidatedScenePlan or type(layer) is not str:
         raise c._fail('plan/layer', None, 'a validated plan and layer identifier')
-    if c.preflight(plan.spec, plan.bindings) != plan:
+    if c.preflight(plan.spec, plan.bindings, purpose=plan.purpose) != plan:
         raise c._fail('plan', plan.digest, 'the current reproducible preflight result', 'composition.version')
     spec = plan.spec
     layers = {item.id: item for item in spec.layers}

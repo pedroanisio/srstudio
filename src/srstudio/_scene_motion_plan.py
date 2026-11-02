@@ -7,6 +7,7 @@ import math
 from bisect import bisect_right
 from dataclasses import asdict, dataclass, replace
 from fractions import Fraction
+from typing import Literal
 
 from . import _composition_plate_wire as pw
 from . import _composition_proxy as proxy
@@ -15,6 +16,7 @@ from . import composition as c
 from . import plates
 from . import scene_motion as m
 from ._composition_preflight import _digest, _graph, _pose_key
+from ._composition_review import check_source
 
 
 @dataclass(frozen=True)
@@ -62,6 +64,7 @@ def _sources(base: c.ValidatedScenePlan, sources: tuple[m.RasterSource, ...]) ->
         if source.id not in bindings or source.id in result:
             raise m._fail('rasters', 'exactly one source per raster binding')
         binding = bindings[source.id]
+        check_source(binding, digest)
         backend = 'plates' if isinstance(frames[0], c.PlateSource) else 'proxy'
         if binding.backend != backend or binding.duration != duration:
             raise m._fail('rasters.' + source.id, 'matching binding backend and source duration')
@@ -195,8 +198,9 @@ def plan_scene(
     motion: m.SceneMotion,
     *,
     rasters: tuple[m.RasterSource, ...],
+    purpose: Literal['production', 'candidate-review'] = 'production',
 ) -> m.SceneTimeline:
-    base = m.sample_scene(spec, bindings, motion, 0)
+    base = m.sample_scene(spec, bindings, motion, 0, purpose=purpose)
     sources = _sources(base, rasters)
     times, schedules = _events(base, motion, sources)
     # Cache complete semantic checks, not only drawings. Identical resolved
@@ -219,7 +223,7 @@ def plan_scene(
             resolved = spec
         fingerprint = _digest(asdict(resolved))
         if fingerprint not in known:
-            known[fingerprint] = c.preflight(resolved, bindings)
+            known[fingerprint] = c.preflight(resolved, bindings, purpose=purpose)
             contact_samples += known[fingerprint].cost.contact_samples
             _limit(spec, 'max_contact_samples', contact_samples)
             metadata_bytes += _metadata_size(known[fingerprint])

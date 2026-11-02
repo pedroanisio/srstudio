@@ -65,10 +65,13 @@ watch the entire video separately.
 
 ## Contract boundaries
 
-The production composition compiler requires approved part versions. This car
-is new candidate geometry, so the fixture uses the existing `proxy.layers`
-proof path and an explicit centered-camera adapter for the hand. It does not
-reuse an unrelated approved part name to pass preflight. The adapter's tests
+The production composition compiler requires approved part versions. An explicit
+[candidate-review workflow](composition-preflight.md#review-a-new-candidate-drawing)
+now accepts independently named, content-pinned new geometry through the shared
+compiler. This fixture still uses the existing `proxy.layers` proof path and an
+explicit centered-camera adapter for the hand; migration to that shared workflow
+remains part of the combined proof. It does not reuse an unrelated approved part
+name to pass preflight. The adapter's tests
 compare against `proxy.View.project` and exercise near-plane refusal.
 
 The following acceptance work remains: measured raster landmark/contact and

@@ -96,7 +96,7 @@ def dispatch(raw: bytes) -> dict:
     if type(request['assets']) is not list or not 1 <= len(request['assets']) <= c.MAX_LAYERS:
         raise wire.fail(None, 'a bounded list of source payloads')
     # Recheck all manifest relationships before parsing any geometry.
-    if c.preflight(plan.spec, plan.bindings) != plan:
+    if c.preflight(plan.spec, plan.bindings, purpose=plan.purpose) != plan:
         raise c._fail('plan', plan.digest, 'the current preflight result', 'composition.version')
     bindings = {b.id: b for b in plan.bindings}
     assets = []

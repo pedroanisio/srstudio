@@ -121,6 +121,7 @@ def plan_scene(
     motion: SceneMotion,
     *,
     rasters: tuple[RasterSource, ...] = (),
+    purpose: Literal['production', 'candidate-review'] = 'production',
 ) -> SceneTimeline:
     """Plan output-frame samples, authored cuts and source boundaries before execution.
 
@@ -131,7 +132,7 @@ def plan_scene(
     """
     from ._scene_motion_plan import plan_scene as plan
 
-    return plan(spec, bindings, motion, rasters=rasters)
+    return plan(spec, bindings, motion, rasters=rasters, purpose=purpose)
 
 
 def compile_timeline(
@@ -287,7 +288,12 @@ def _contact_motion(spec: c.ScenePlan, tracks: tuple[TransformTrack, ...]) -> No
 
 
 def sample_scene(
-    spec: c.ScenePlan, bindings: tuple[c.AssetBinding, ...], motion: SceneMotion, time: float
+    spec: c.ScenePlan,
+    bindings: tuple[c.AssetBinding, ...],
+    motion: SceneMotion,
+    time: float,
+    *,
+    purpose: Literal['production', 'candidate-review'] = 'production',
 ) -> c.ValidatedScenePlan:
     """Validate and sample one scene time without changing source clocks.
 
@@ -300,7 +306,7 @@ def sample_scene(
     if type(motion) is not SceneMotion:
         raise _fail('input', 'a SceneMotion record')
     _graph(motion, [0])
-    base = c.preflight(spec, bindings)
+    base = c.preflight(spec, bindings, purpose=purpose)
     if type(time) not in (int, float) or not 0 <= time <= spec.duration:
         raise _fail('time', 'a finite non-boolean scene time within [0, duration]')
     count = len(motion.camera) + sum(len(t.keys) for t in motion.lights) + sum(len(t.keys) for t in motion.transforms)
@@ -336,7 +342,7 @@ def sample_scene(
     if not count:
         return base
     sampled = _sample_spec(spec, motion, time)
-    return base if sampled == spec else c.preflight(sampled, bindings)
+    return base if sampled == spec else c.preflight(sampled, bindings, purpose=purpose)
 
 
 def _sample_spec(spec: c.ScenePlan, motion: SceneMotion, time: float) -> c.ScenePlan:

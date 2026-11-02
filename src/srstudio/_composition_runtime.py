@@ -92,7 +92,7 @@ def prepare_vector(binding: c.AssetBinding, xml: bytes, *, budget: c.RenderBudge
 def compile_scene(plan: c.ValidatedScenePlan, assets: tuple[c.PreparedVector | c.VectorSource, ...]) -> c.CompiledScene:
     if type(plan) is not c.ValidatedScenePlan or type(assets) is not tuple or not 1 <= len(assets) <= c.MAX_LAYERS:
         raise c._fail('plan/assets', None, 'a validated plan and immutable bounded source tuple')
-    if c.preflight(plan.spec, plan.bindings) != plan:
+    if c.preflight(plan.spec, plan.bindings, purpose=plan.purpose) != plan:
         raise c._fail('plan', plan.digest, 'the current reproducible preflight result', 'composition.version')
     bindings = {b.id: b for b in plan.bindings}
     sources = []

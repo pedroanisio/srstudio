@@ -11,7 +11,7 @@ from .limbs.projection import Camera
 def spatial_camera(plan: c.ValidatedScenePlan, layer: str | None = None) -> Camera:
     if type(plan) is not c.ValidatedScenePlan or (layer is not None and type(layer) is not str):
         raise c._fail('plan/layer', None, 'a validated plan and optional layer identifier')
-    if c.preflight(plan.spec, plan.bindings) != plan:
+    if c.preflight(plan.spec, plan.bindings, purpose=plan.purpose) != plan:
         raise c._fail('plan', plan.digest, 'the current reproducible preflight result', 'composition.version')
     frame, scale = Frame(), 1.0
     if layer is not None:

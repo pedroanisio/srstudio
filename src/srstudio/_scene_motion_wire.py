@@ -47,7 +47,13 @@ def checked(timeline: m.SceneTimeline) -> m.SceneTimeline:
         total += count[0]
         if total > m.MAX_TIMELINE_RECORDS:
             raise wire.fail(None, 'bounded timeline record visits')
-    expected = m.plan_scene(timeline.base.spec, timeline.base.bindings, timeline.motion, rasters=timeline.rasters)
+    expected = m.plan_scene(
+        timeline.base.spec,
+        timeline.base.bindings,
+        timeline.motion,
+        rasters=timeline.rasters,
+        purpose=timeline.base.purpose,
+    )
     if expected != timeline:
         raise wire.fail(None, 'the current reproducible scene timeline')
     return expected
@@ -69,11 +75,12 @@ def encode(timeline: m.SceneTimeline) -> dict:
         'motion': asdict(timeline.motion),
         'rasters': sources,
         'digest': timeline.digest,
+        'purpose': timeline.base.purpose,
     }
 
 
 def decode(value: object) -> m.SceneTimeline:
-    data = wire.fields(value, {'spec', 'bindings', 'motion', 'rasters', 'digest'})
+    data = wire.fields(value, {'spec', 'bindings', 'motion', 'rasters', 'digest', 'purpose'})
     if any(type(data[k]) is not list or len(data[k]) > c.MAX_LAYERS for k in ('bindings', 'rasters')):
         raise wire.fail(None, 'bounded binding/source lists')
     sources = []
@@ -93,6 +100,7 @@ def decode(value: object) -> m.SceneTimeline:
         tuple(wire.record(c.AssetBinding, b) for b in data['bindings']),
         wire.record(m.SceneMotion, data['motion']),
         rasters=tuple(sources),
+        purpose=data['purpose'],
     )
     if data['digest'] != result.digest:
         raise wire.fail(None, 'the exact recomputed timeline identity')
