@@ -2786,7 +2786,7 @@
         ],
         "remaining": [
           "Complete raster registration/contact, occlusion, palette and continuous-join measurements across the clip",
-          "Continuous authored expression blends and whole-body locomotion; the candidate declares expression and depth replacements as cuts",
+          "Integrate the separately implemented authored face blends and world-anchored biped support into the hybrid candidate; it still declares expression and depth replacements as cuts",
           "Shared drawn shading and caster/receiver contracts; the candidate uses an authored ground shadow mask",
           "Approved information-layer equivalence, compatibility fingerprints and complete temporal visual review",
           "Operator approval of the completed proof before style adoption"
@@ -2801,12 +2801,23 @@
     {
       "id": "SDK-P4-01",
       "priority": "P4",
-      "status": "open",
+      "status": "complete",
       "title": "Extend constraints to whole-body performance",
       "problem": "The reusable spatial solver is centered on arms and hands. Drawn leg poses and Soft's local foot pins and walking cues exist, but there is no shared spatial support/balance or locomotion contract coordinating these across rigs with torso and root motion.",
       "evidence": ["src/srstudio/limbs/model.py:ArmProfile", "src/srstudio/limbs/motion.py:Motion", "src/srstudio/stick.py:RigPose", "src/srstudio/blob.py:drawings", "src/srstudio/blob.py:walking"],
       "change": "Add opt-in torso/root coordination and leg/foot contact primitives with explicit supported anatomy and movement envelopes before expanding to locomotion.",
       "acceptance": ["Foot contacts retain their world anchors", "Support and joint constraints are validated", "Random-access deterministic sampling", "Rendered weight-shift and step examples"],
+      "resolution": "Added an opt-in closed body score, explicit stylized anatomy, root/torso tracks, world-anchored soles, sequential lift/plant steps and rooted shoulder frames. Both legs reuse analytic two-segment solving with hip, knee, ankle and foot-yaw envelopes. Every requested sample validates a declared static mass proxy against the planted-foot convex hull; compilation also checks a bounded grid and event boundaries. Unsupported support, reach, twist, timing, geometry and budgets fail with typed repair fields. Original solid and diagnostic body drawings retain the complete performance clock across cuts and preflight all source geometry before mutation. Tests cover world-transform invariance, distinct body proportions, random-access sampling, endpoint derivatives, malformed data and rollback. Flat-ground quasi-static support is the explicit contract; this does not certify dynamics, rolling feet, collision avoidance, a human gait, hand contacts or automatic adaptation of existing registered characters.",
+      "verification": ["src/srstudio/body.py", "tests/test_body.py", "tests/test_body_contracts.py", "tests/test_body_drawing.py", "tests/test_body_example.py", "examples/body_steps.py", "docs/authoring-body.md", "docs/decisions/0181-world-anchored-biped-support.md"],
+      "rendered_evidence": {
+        "path": "../generated/sdk-body-support/v1/",
+        "scope": "Six-second 1920x1080 study with two weight transfers and two steps, shown in solid and diagnostic views. Strict final rendering produced 144 uncut and 144 cut frames; all 144 pairs are pixel-identical. Strict H.264 encoding produced 144 frames at 24 fps. Frame-sequence review inspected all source frames in contact sheets and full-size frames 42, 102 and 143; this is not video playback or audience preference measurement.",
+        "minimum_sampled_support_margin_m": 0.051172130814332084,
+        "maximum_sampled_planted_anchor_residual_m": 0.0,
+        "pixel_report": "review/pixels.json",
+        "video": "review/steps.mp4",
+        "review_index": "index.html"
+      },
       "complexity": "XL"
     },
     {
@@ -2836,7 +2847,7 @@
       "complexity": "M"
     }
   ],
-  "recommended_order": ["SDK-P2-07", "SDK-P3-06", "SDK-P4-01"],
+  "recommended_order": ["SDK-P2-07", "SDK-P3-06"],
   "agent_authoring_guidance": [
     "Discover registered versions, explicit capabilities, coordinate spaces and clocks before choosing a builder; keep unknown metadata unknown.",
     "Use parse_score and compile_performance for supported coordinated intent, character clips for placement, and windows of one performance for cuts. Inspect family capabilities before requesting a channel.",
