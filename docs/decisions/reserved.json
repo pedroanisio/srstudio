@@ -7,6 +7,7 @@
     {"number": "0203", "name": "dance-style-from-reference-video", "owner": "worskpace-db", "reserved": "2026-11-02"},
     {"number": "0204", "name": "gesture-timing", "owner": "worskpace-db", "reserved": "2026-11-02"},
     {"number": "0205", "name": "full-body-groove", "owner": "worskpace-db", "reserved": "2026-11-02"},
-    {"number": "0207", "name": "explicit-native-ink-groups", "owner": "sdk-ergonomics", "reserved": "2026-11-02"}
+    {"number": "0207", "name": "explicit-native-ink-groups", "owner": "sdk-ergonomics", "reserved": "2026-11-02"},
+    {"number": "0208", "name": "coalesced-vector-timeline-spans", "owner": "sdk-ergonomics", "reserved": "2026-11-02"}
   ]
 }
