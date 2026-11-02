@@ -43,6 +43,7 @@ import clay_room as cr  # noqa: E402
 import numpy as np  # noqa: E402
 import performance as pf  # noqa: E402
 import sofa_room_study as study  # noqa: E402
+from shapely import contains_xy  # noqa: E402
 
 import it_autoplayed_data as reel  # noqa: E402
 from instagram_posts import PINS, POSTS  # noqa: E402
@@ -89,7 +90,41 @@ KNOWN_DIFFERENCES = (
     "no shadow from him",
     "Mae sits further right along the cushion than her card, which the two-shot cuts at the frame's left edge: the "
     "clay sits whole inside it",
+    "Bruno's right shoulder sits deeper than his left, so its upper arm stays under the sofa arm and the forearm comes "
+    "out from under it as the flat's does; that arm shows shorter beside the cover than the flat's whole arm",
 )
+# the sofa arm over Bruno's right side, in his drawing's reference pixels: :func:`cover_edge` on the two-shot puts the
+# stand-in's edge at 286.4 over the rows his upper arm runs down; the tuck keeps 1.4 pixels inside it, which sets his
+# right shoulder back from -27.5 to -20.5
+TUCKS = {"bruno": cf.Tuck("right", 285.0)}
+
+
+def figure_of(who: str) -> cf.Figure:
+    """``who`` as clay on this sofa: Bruno's right arm tucked under the sofa's arm."""
+    return cf.figure(RIGS[who], TUCKS.get(who))
+
+
+def cover_edge(seat: cr.Seat, lens: cr.Camera, fig: cf.Figure) -> float:
+    """The innermost x (reference pixels) on ``fig``'s skin front, seated at ``seat`` and seen through ``lens``, that
+    the sofa arm's stand-in covers, over the rows the resting right upper arm runs down from the shoulder to the
+    elbow. A row the stand-in does not reach raises: the tuck would not hold there."""
+    if seat.mirror:
+        raise cr.RenderError("the cover's edge is read on an unmirrored figure only")
+    chain = next(c for c in fig.arms if c.side == "right")
+    joints = cf.reach(chain, chain.rest)
+    cover = cr.arm_cover(lens)
+    depth = cf.front_of(fig.skin)
+    xs = np.arange(fig.extent[0], fig.extent[1] + 40.0, 0.5)
+    edges = []
+    for y in np.linspace(joints.shoulder[1], joints.elbow[1], 9):
+        points = np.stack((xs, np.full_like(xs, y), depth(xs, np.full_like(xs, y))), 1)
+        seen = cr.project(np.array(seat.at) + seat.per * (points - (cr.SEAT_X, cf.BASE, 0.0)), lens)
+        under = contains_xy(cover, seen[:, 0], seen[:, 1])
+        if not under.any():
+            raise cr.RenderError(f"the sofa arm does not reach row {y:.0f} of the upper arm")
+        edges.append(float(xs[under].min()))
+    return min(edges)
+
 
 GAP = 0.006  # metres the clay keeps from the other figure: touching, not passing through
 FRAME_MARGIN = 16.0  # frame pixels the two-shot keeps clear between each figure's silhouette and the frame's side
@@ -122,8 +157,8 @@ def seats(room: study.Room, performance: pf.Performance) -> dict[str, cr.Seat]:
     back = cr.SOFA_BACK_FRONT - cr.BACK_CLEARANCE
     card = lounge.SEAT_MAE
     for _ in range(6):
-        mae = cr.seat_of(cf.figure(RIGS["mae"]), card, two, per, True, back)
-        resting = cr.posed("mae", RIGS["mae"], cf.figure(RIGS["mae"]), performance.at("mae", 0), mae)
+        mae = cr.seat_of(figure_of("mae"), card, two, per, True, back)
+        resting = cr.posed("mae", RIGS["mae"], figure_of("mae"), performance.at("mae", 0), mae)
         cut = FRAME_MARGIN - _across(resting, two)[0]
         if cut <= 0.25 and (card == lounge.SEAT_MAE or cut >= -0.25):
             break
@@ -132,8 +167,8 @@ def seats(room: study.Room, performance: pf.Performance) -> dict[str, cr.Seat]:
         raise cr.RenderError(f"Mae does not settle inside the two-shot: {cut:.2f} px past its margin")
     bruno_back = back
     for _ in range(8):
-        bruno = cr.seat_of(cf.figure(RIGS["bruno"]), lounge.SEAT_BRUNO, two, per, False, bruno_back)
-        his = cr.posed("bruno", RIGS["bruno"], cf.figure(RIGS["bruno"]), performance.at("bruno", 0), bruno)
+        bruno = cr.seat_of(figure_of("bruno"), lounge.SEAT_BRUNO, two, per, False, bruno_back)
+        his = cr.posed("bruno", RIGS["bruno"], figure_of("bruno"), performance.at("bruno", 0), bruno)
         short = GAP - cr.clearance(his, resting)
         if short <= 0.0005:
             break
@@ -149,7 +184,7 @@ def figures_at(performance: pf.Performance, frame: int, places: dict[str, cr.Sea
     materials: list[Material] = []
     for who in ("mae", "bruno"):
         rig = RIGS[who]
-        parts[who] = cr.posed_parts(who, rig, cf.figure(rig), performance.at(who, frame), places[who])
+        parts[who] = cr.posed_parts(who, rig, figure_of(who), performance.at(who, frame), places[who])
         materials += cr.materials(who, rig, [mesh for part in parts[who] for mesh in part.meshes])
     return parts, tuple(materials)
 

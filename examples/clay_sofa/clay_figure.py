@@ -19,7 +19,10 @@ down and forward onto the thigh, narrowing from the elbow to the wrist, its clay
 depth is solved so the arm shows from the front as long as the flat draws it, though the bones keep the reach the Wow
 needs. The paw is a flat mitten as wide and tall as the flat's paw, its pad on its face and three toe marks below,
 turned to lie along the belly; it lies over its forearm's end, as the flat's paw does, and the ID pass draws arm and
-paw in one colour, so the ink runs one outline from the forearm round the paw.
+paw in one colour, so the ink runs one outline from the forearm round the paw. Where the room covers one side of the
+figure (a :class:`Tuck`: the sofa's arm over Bruno's right side), that side's arm tucks in under the cover: its
+shoulder sits just as deep as it takes for none of its upper arm to show beside the cover's edge, so the forearm comes
+out from under the cover to the paw, as the flat draws it.
 
 The face is the rig's own: its layers (eyes for the pose and the gaze, the mouth or the viseme heard, the lids of a
 blink, the teeth) painted in the drawing's order onto a picture laid flat over the skin's front, and the same layers
@@ -619,6 +622,26 @@ SHOWN_STEP = 0.5  # reference pixels between the points an arm's shown length is
 FIT_STEPS = 40  # bisections at the most: the solve ends whatever the arm shows
 POLE = (1.0, 1.0, 0.8)  # out (x by the side), down and back: the elbow at the side, by the hip
 ARM_SAMPLES = 25  # points along an arm's middle line, shoulder to wrist
+TUCK_STEP = 0.5  # reference pixels of depth a tucked shoulder is set back by at a time
+TUCK_RING = 48  # points round each ring of the upper arm that a tuck looks at
+
+
+@dataclass(frozen=True)
+class Tuck:
+    """Where the room covers one side of a figure at rest: on ``side`` (in the drawing, before any mirror) everything
+    outward of ``edge`` (reference pixels: past it on the right side, short of it on the left) lies under the room's
+    drawn front, as the sofa's arm lies over Bruno's right side. That side's arm tucks in under it."""
+
+    side: str
+    edge: float
+
+    def __post_init__(self) -> None:
+        if self.side not in SIDES:
+            raise FigureError(f"a tuck on no side the figure has: {self.side!r}")
+
+    def beside(self, x: np.ndarray) -> np.ndarray:
+        """Where ``x`` lies beside the cover, on the open side of its edge."""
+        return x < self.edge if self.side == "right" else x > self.edge
 
 
 @dataclass(frozen=True)
@@ -983,6 +1006,63 @@ def _shown_on(rim: Polygon, depth: Callable[[np.ndarray, np.ndarray], np.ndarray
     return line, outside | (line[:, 2] - size < depth(line[:, 0], line[:, 1]))
 
 
+def upper_seen(fig: Figure, chain: ArmChain, joints: Joints) -> np.ndarray:
+    """The points of ``chain``'s upper arm and shoulder ball at ``joints`` that show from the front: turned to the lens,
+    and outside the skin's rim or in front of its front. Rings of :data:`TUCK_RING` points round the middle line from
+    the shoulder to the elbow, and the ball on as many meridians; the elbow's points nearer the forearm's bone than the
+    upper arm's are the forearm's, which comes out from under the cover."""
+    return _upper_seen_on(_rim(fig.skin), front_of(fig.skin), chain, joints)
+
+
+def _upper_seen_on(rim: Polygon, depth: Callable[[np.ndarray, np.ndarray], np.ndarray], chain: ArmChain,
+                   joints: Joints) -> np.ndarray:  # fmt: skip
+    path, radii = arm_line(chain, joints)
+    centres, sizes = path[: ELBOW_AT + 1], radii[: ELBOW_AT + 1]
+    along = np.gradient(centres, axis=0)
+    along /= np.maximum(np.linalg.norm(along, axis=1, keepdims=True), 1e-12)
+    across = np.cross(along, (0.0, 0.0, 1.0))
+    flat = np.linalg.norm(across, axis=1) < 1e-6
+    across[flat] = np.cross(along[flat], (1.0, 0.0, 0.0))
+    across /= np.linalg.norm(across, axis=1, keepdims=True)
+    up = np.cross(along, across)
+    turn = np.linspace(0.0, math.tau, TUCK_RING, endpoint=False)
+    out = np.cos(turn)[None, :, None] * across[:, None, :] + np.sin(turn)[None, :, None] * up[:, None, :]
+    rings = (centres[:, None, :] + sizes[:, None, None] * out).reshape(-1, 3)
+    polar = np.linspace(0.0, math.pi, TUCK_RING // 2)[:, None]
+    ball = np.stack((np.sin(polar) * np.cos(turn), np.cos(polar) * np.ones_like(turn), np.sin(polar) * np.sin(turn)), 2)
+    ball = ball.reshape(-1, 3)
+    points = np.concatenate((rings, joints.shoulder + chain.radii[0] * ball))
+    facing = np.concatenate((out.reshape(-1, 3), ball))[:, 2] < 0.0
+    # the elbow's points nearer the forearm's bone are the forearm's
+    upper = _off(points, joints.shoulder, joints.elbow) < _off(points, joints.elbow, joints.wrist)
+    shown = ~contains_xy(rim, points[:, 0], points[:, 1]) | (points[:, 2] < depth(points[:, 0], points[:, 1]))
+    return points[facing & upper & shown]
+
+
+def _off(points: np.ndarray, a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    """How far each of ``points`` is from the segment ``a`` to ``b``."""
+    ab = b - a
+    t = np.clip(((points - a) @ ab) / float(ab @ ab), 0.0, 1.0)
+    return np.linalg.norm(points - (a + t[:, None] * ab), axis=1)
+
+
+def _tucked(name: str, chain: ArmChain, rim: Polygon, depth: Callable[[np.ndarray, np.ndarray], np.ndarray],
+            tuck: Tuck) -> ArmChain:  # fmt: skip
+    """``chain`` with its shoulder set back from its solved depth, :data:`TUCK_STEP` at a time, to the nearest depth at
+    which none of its upper arm shows beside ``tuck``'s edge; never past the far end of SHOULDER_BACK, where an arm that
+    still shows raises."""
+    start = float(chain.shoulder[2])
+    steps = max(0, math.ceil((SHOULDER_BACK[1] - start) / TUCK_STEP))
+    for k in range(steps + 1):
+        z = min(start + k * TUCK_STEP, SHOULDER_BACK[1])
+        moved = replace(chain, shoulder=np.array((chain.shoulder[0], chain.shoulder[1], z)))
+        seen = _upper_seen_on(rim, depth, moved, reach(moved, moved.rest))
+        if not tuck.beside(seen[:, 0]).any():
+            return moved
+    raise FigureError(f"{name}: the {chain.side} arm's upper arm shows beside the cover's edge at {tuck.edge:.1f} at "
+                      f"every depth to {SHOULDER_BACK[1]:.0f}")  # fmt: skip
+
+
 def arm_pieces(fig: Figure, chain: ArmChain, joints: Joints) -> list[float]:
     """Each separate piece of ``chain`` at ``joints`` that shows from the front (:func:`arm_shown`), its length."""
     return _pieces(*_shown(fig, chain, joints))
@@ -1065,8 +1145,9 @@ def _blobs(layers: Sequence[Layer], colours: set[str], height: float, soften: fl
 
 
 @cache
-def figure(rig) -> Figure:
-    """``rig`` as clay. The muzzle and the nose are modelled; everything else on the face is painted and pressed."""
+def figure(rig, tuck: Tuck | None = None) -> Figure:
+    """``rig`` as clay, with the arm on ``tuck``'s side tucked under the room's cover. The muzzle and the nose are
+    modelled; everything else on the face is painted and pressed."""
     name = rig.look.name
     if name not in EAR_DEPTH:
         raise FigureError(f"the clay study builds Mae and Bruno only, not {name!r}")
@@ -1093,6 +1174,9 @@ def figure(rig) -> Figure:
         _fitted(name, left, rim, depth, flat["left"].length),
         _fitted(name, right, rim, depth, flat["right"].length),
     )
+    if tuck is not None:
+        first, second = (_tucked(name, c, rim, depth, tuck) if c.side == tuck.side else c for c in arms)
+        arms = (first, second)
     xs = [surface.front[:, 0]]
     for chain in arms:
         for meshes in arm_meshes(chain, reach(chain, chain.rest), "coat", "pad").values():

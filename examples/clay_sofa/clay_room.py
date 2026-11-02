@@ -41,6 +41,7 @@ from performance import Frame
 from PIL import Image, ImageDraw
 from scipy import ndimage
 from shapely.geometry import MultiPoint
+from shapely.geometry.base import BaseGeometry
 
 from srstudio import clay, gpu, plates
 from srstudio.anatomy import Side
@@ -651,6 +652,18 @@ def composite(back: np.ndarray, p: np.ndarray, k: np.ndarray, b: np.ndarray) -> 
 ARM_LINE = 14.0  # frame pixels past the stand-in's front face: the drawn arm's own line round it
 
 
+def arm_cover(lens: Camera) -> BaseGeometry:
+    """Where the sofa arm's stand-in falls on the frame through ``lens``: its front face, and any side the lens sees
+    above the cushion, which hides the rest. The room's front plate draws the arm there."""
+    arm = sofa()[-1].vertices
+    face = arm[arm[:, 2] < arm[:, 2].min() + 1e-6]
+    lo, hi = arm.min(0), arm.max(0)
+    cut = np.array([(x, -100.0 * CUSHION_TOP, z) for x in (lo[0], hi[0]) for z in (lo[2], hi[2])])  # engine y is down
+    above = np.concatenate((arm[arm[:, 1] <= -100.0 * CUSHION_TOP], cut))  # the stand-in cut at the cushion's top
+    hulls = [MultiPoint(project(points, lens)).convex_hull for points in (face, above)]
+    return hulls[0].union(hulls[1])
+
+
 def drawn_arm(front: np.ndarray, lens: Camera, ids: np.ndarray, paws: Sequence[np.ndarray]) -> np.ndarray:
     """The sofa's arm off the room's ``front`` plate, seen through ``lens``: the plate wherever the arm stand-in falls
     on the frame (its front face, and any side the lens sees above the cushion, which hides the rest), with its line,
@@ -658,13 +671,7 @@ def drawn_arm(front: np.ndarray, lens: Camera, ids: np.ndarray, paws: Sequence[n
     clear too, with its own line: within each of ``paws`` (a paw's outline on the frame, pixels) wherever the frame's
     ID pass ``ids`` shows a paw's colour (the pass draws the stand-in black, so a paw seen there is in front of it).
     The forearm drawn in the paw's colour runs on under the flat's arm, as in the flat."""
-    arm = sofa()[-1].vertices
-    face = arm[arm[:, 2] < arm[:, 2].min() + 1e-6]
-    lo, hi = arm.min(0), arm.max(0)
-    cut = np.array([(x, -100.0 * CUSHION_TOP, z) for x in (lo[0], hi[0]) for z in (lo[2], hi[2])])  # engine y is down
-    above = np.concatenate((arm[arm[:, 1] <= -100.0 * CUSHION_TOP], cut))  # the stand-in cut at the cushion's top
-    hulls = [MultiPoint(project(points, lens)).convex_hull for points in (face, above)]
-    shape = hulls[0].union(hulls[1]).buffer(ARM_LINE)
+    shape = arm_cover(lens).buffer(ARM_LINE)
     mask = Image.new("L", (front.shape[1], front.shape[0]), 0)
     ImageDraw.Draw(mask).polygon(list(shape.exterior.coords), fill=255)
     out = front.copy()

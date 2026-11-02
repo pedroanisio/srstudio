@@ -90,7 +90,7 @@ def clay_base(performance: pf.Performance, places: dict, room: Room, push: bool)
         eye = np.array(lens.position, float)
         for who in ("mae", "bruno"):
             rig = cs.RIGS[who]
-            meshes = cr.posed(who, rig, cf.figure(rig), performance.at(who, n), places[who])
+            meshes = cr.posed(who, rig, cs.figure_of(who), performance.at(who, n), places[who])
             low = max(float(m.vertices[:, 1].max()) for m in meshes) / -100.0
             gaps[who].append(round(low - cr.CUSHION_TOP, 5))
             facing[who] += underside_facing(meshes, eye)
@@ -178,7 +178,7 @@ def arm_chains(performance: pf.Performance) -> dict:
     out = {}
     for who in ("mae", "bruno"):
         rig = cs.RIGS[who]
-        fig = cf.figure(rig)
+        fig = cs.figure_of(who)
         stray, highest = 0.0, {chain.side: np.inf for chain in fig.arms}
         for n in range(cs.ROOM_FRAMES):
             targets = cr.arm_targets(fig, performance.at(who, n))
@@ -215,7 +215,7 @@ def rest_arms() -> dict:
     out = {}
     for who in ("mae", "bruno"):
         rig = cs.RIGS[who]
-        fig = cf.figure(rig)
+        fig = cs.figure_of(who)
         flat = cf.flat_rest_arms(rig)
         boxes = cf._paws(rig)
         outline = Polygon(fig.parts.body).buffer(0).union(Polygon(fig.parts.head).buffer(0))
@@ -256,7 +256,7 @@ def chin_fall() -> dict:
     per reference pixel (an undercut under the chin reads as a collar; the tests hold it above -0.5)."""
     out = {}
     for who in ("mae", "bruno"):
-        fig = cf.figure(cs.RIGS[who])
+        fig = cs.figure_of(who)
         depth = cf.front_of(fig.skin)
         head = Polygon(fig.parts.head)
         ys = np.arange(head.bounds[3] - 80.0, cf.BASE - 10.0, 2.0)
@@ -273,7 +273,7 @@ def placement(room: Room, performance: pf.Performance, places: dict) -> dict:
     two = cs.lens_of(room, "two")
     out = {}
     for who, card in (("mae", lounge.SEAT_MAE), ("bruno", lounge.SEAT_BRUNO)):
-        posed = cr.posed(who, cs.RIGS[who], cf.figure(cs.RIGS[who]), performance.at(who, 0), places[who])
+        posed = cr.posed(who, cs.RIGS[who], cs.figure_of(who), performance.at(who, 0), places[who])
         v = np.concatenate([m.vertices for m in posed]) / 100.0
         base = v[:, 1] > -(cr.CUSHION_TOP - cr.SINK) - 0.005  # engine y is down: the lowest half centimetre
         out[who] = dict(
@@ -308,7 +308,7 @@ def body_lift(performance: pf.Performance, places: dict, spans: dict[str, tuple[
         rig, lifts, worst = cs.RIGS[who], [], 0.0
         for n in range(first, last + 1):
             frame = performance.at(who, n)
-            meshes = cr.posed(who, rig, cf.figure(rig), frame, places[who])
+            meshes = cr.posed(who, rig, cs.figure_of(who), frame, places[who])
             low = max(float(m.vertices[:, 1].max()) for m in meshes) / -100.0
             lifts.append(round(low - cr.CUSHION_TOP + cr.SINK, 5))
             m = cr.figure_motion(frame, places[who].mirror)[:2, :2]
@@ -425,7 +425,7 @@ def main(argv: list[str]) -> None:
         kind: json.loads((project / "clay" / f"render-{kind}-0-{count - 1}.json").read_text())
         for kind, count in (("room", cs.ROOM_FRAMES), ("push", cs.PUSH_FRAMES))
     }
-    rest = {who: cr.posed(who, cs.RIGS[who], cf.figure(cs.RIGS[who]), performance.at(who, 0), places[who])
+    rest = {who: cr.posed(who, cs.RIGS[who], cs.figure_of(who), performance.at(who, 0), places[who])
             for who in ("mae", "bruno")}  # fmt: skip
     measures = dict(
         spans=dict(room_frames=cs.ROOM_FRAMES, push_frames=cs.PUSH_FRAMES, fps=pf.FPS, takes=cs.TAKES),

@@ -868,6 +868,54 @@ def test_the_resting_arm_shows_in_one_piece_and_its_shoulder_stays_under_the_ski
         assert s[2] - chain.radii[0] >= float(front(np.array([s[0]]), np.array([s[1]]))[0])
 
 
+def beside(chain_side: str, x: np.ndarray, edge: float) -> np.ndarray:
+    """Where ``x`` falls short of a tuck's ``edge``: on the open side of the cover, which lies outward of it."""
+    return x < edge if chain_side == "right" else x > edge
+
+
+def test_an_arm_the_sofa_arm_covers_tucks_its_upper_arm_in_under_it(kit, rigs):
+    """The sofa's arm covers Bruno's right side, as in the flat, so his right arm reads as tucked under it: none of
+    its upper arm or shoulder shows beside the cover (a strip running up along its edge would show with no line to
+    hide it in the plain look), and its forearm shows in one piece from the cover's edge to the paw. The shoulder sits
+    just as deep as that takes, and the other arm keeps its own solve."""
+    cf, study = kit["cf"], kit["study"]
+    tuck = study.TUCKS["bruno"]
+    fig, free = study.figure_of("bruno"), cf.figure(rigs["bruno"])
+    chain = next(c for c in fig.arms if c.side == tuck.side)
+    joints = cf.reach(chain, chain.rest)
+    seen = cf.upper_seen(fig, chain, joints)
+    assert len(seen) == 0 or not beside(chain.side, seen[:, 0], tuck.edge).any()
+    line, shown = cf._shown(fig, chain, joints)
+    out = shown & beside(chain.side, line[:, 0], tuck.edge)
+    assert len(cf._pieces(line, out)) == 1
+    assert abs(float(line[out, 0].max() if chain.side == "right" else line[out, 0].min()) - tuck.edge) <= 1.0
+    nearer = replace(chain, shoulder=chain.shoulder - (0.0, 0.0, cf.TUCK_STEP))
+    again = cf.upper_seen(fig, nearer, cf.reach(nearer, nearer.rest))
+    assert len(again) and beside(chain.side, again[:, 0], tuck.edge).any()  # no deeper than it takes
+    other = next(c for c in fig.arms if c.side != tuck.side)
+    assert np.allclose(other.shoulder, next(c for c in free.arms if c.side != tuck.side).shoulder)
+
+
+def test_the_tuck_lies_where_the_two_shot_draws_the_sofa_arm(kit, rigs):
+    """The tuck's edge is the sofa arm stand-in's edge, as the two-shot sees it over Bruno's skin where his upper arm
+    runs, a pixel or two inside it so nothing shows past the drawn arm."""
+    study, cr = kit["study"], kit["cr"]
+    performance = resting_performance(kit)
+    room = type("R", (), {"takes": {"two": dict(TWO)}})()
+    places = study.seats(room, performance)
+    lens = cr.camera_of(TWO["eye"], TWO["look_at"], TWO["lens"])
+    edge = study.cover_edge(places["bruno"], lens, study.figure_of("bruno"))
+    assert study.TUCKS["bruno"].edge <= edge <= study.TUCKS["bruno"].edge + 3.0
+
+
+def test_a_tuck_no_depth_can_keep_the_upper_arm_under_is_refused(kit, rigs):
+    cf = kit["cf"]
+    with pytest.raises(cf.FigureError, match="right arm"):
+        cf.figure.__wrapped__(rigs["bruno"], cf.Tuck("right", 400.0))
+    with pytest.raises(cf.FigureError, match="no side"):
+        cf.Tuck("up", 400.0)
+
+
 def test_the_ink_draws_one_outline_from_the_forearm_into_the_paw(kit, rigs):
     """The ID pass gives an arm its paw's colour, so the room's line runs round arm and paw as one shape and no ring
     is drawn where the forearm goes into the paw."""
