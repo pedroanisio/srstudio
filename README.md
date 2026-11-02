@@ -215,6 +215,8 @@ Any character dances to any song with `srstudio.dance`: moves are data on the sh
 
 Our dances learn from real dancers without copying them: `tools/pose_extract.py` reads a reference video's dancer in its own interpreter, and `srstudio.dance_study` turns the pose into style statistics on the beat grid, a `srstudio.dance-style` record of ranges that `dance_style.check` holds any of our dances to. Only those numbers enter the repository. See [ADR 0196](docs/decisions/0196-dance-style-from-reference-video.md).
 
+Toon characters dance on their approved head rig. `srstudio.toon_dance` fits a character's skeleton to its drawing, turns each picture of a dance into one transform of the whole figure, head channels inside the rig's envelope, held faces, and limb-track arms that ride the body, and reads the groove back from the numbers and from rendered pictures. See [ADR 0190](docs/decisions/0190-toon-dance-adapter.md).
+
 Drawing digests remain stable; rendered artifacts additionally identify the renderer binary, compiled scenes,
 quality settings and actual print font bytes. Use the path returned by `plates.render` or `print_png` rather than
 constructing it from a drawing digest. [Plate cache ownership](docs/authoring-clips.md#plate-cache-ownership)

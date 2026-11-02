@@ -23,7 +23,7 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
-from typing import Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from . import _gaze_drawing as target_drawing
 from . import anatomy_ledger, brush, drawing_events
@@ -60,6 +60,7 @@ from .toon_cast import (
     _draw_blinks,
     _draw_mouth,
     _eye,
+    _limb_layer,
     _mouth,
     _place,
     _teeth,
@@ -67,6 +68,9 @@ from .toon_cast import (
     pose_hands,
 )
 from .toon_torso import depth_in
+
+if TYPE_CHECKING:
+    from .limbs.integration import LimbTrack
 
 __all__ = [
     "FACE_SLIDE",
@@ -314,10 +318,15 @@ def figure(
     *,
     target_gaze: GazePlan | None = None,
     face_blends: FaceTrack | None = None,
+    limbs: tuple[LimbTrack, ...] = (),
 ):
     """The character in nested groups (the module's docstring), one drawing per pose run inside the chains, moved by
     ``plan``. The arguments mean what they mean to :func:`srstudio.toon_cast.figure`; ``on_face`` draws into the face's
-    group last, so what it adds moves with the head. Returns the outermost group."""
+    group last, so what it adds moves with the head. ``limbs`` replace the drawn arms on their sides, as they do in
+    :func:`srstudio.toon_cast.figure`: drawn once in the body's own groups behind the head chain, over the trunk and in
+    front, so they ride the lean and the breath; every pose then holds the ``desk`` arms.
+
+    Returns the outermost group."""
     plan.check_bounds(rig.style, frozen=bool(cv._frozen))
     frames: tuple[FaceFrame, ...] = ()
     if face_blends is not None:
@@ -348,12 +357,25 @@ def figure(
                 mouths,
                 on_face,
                 tracking=tracking,
+                limbs=limbs,
             )
     if not frames:
-        return _draw_figure(cv, parent, rig, poses, duration, plan, taps, enter, stickers, mouths, on_face)
+        return _draw_figure(cv, parent, rig, poses, duration, plan, taps, enter, stickers, mouths, on_face, limbs=limbs)
     with scene_transaction(cv.scene, cv):
         return _draw_figure(
-            cv, parent, rig, poses, duration, plan, taps, enter, stickers, mouths, on_face, face_frames=frames
+            cv,
+            parent,
+            rig,
+            poses,
+            duration,
+            plan,
+            taps,
+            enter,
+            stickers,
+            mouths,
+            on_face,
+            face_frames=frames,
+            limbs=limbs,
         )
 
 
@@ -386,8 +408,22 @@ def _draw_figure(
     *,
     tracking: target_drawing.PreparedGaze | None = None,
     face_frames: tuple[FaceFrame, ...] = (),
+    limbs: tuple[LimbTrack, ...] = (),
 ):
     """Emit a preflighted performance or the fixed, rig-derived specimen probe."""
+    sides: frozenset[str] = frozenset()
+    slots: list[str] = []
+    if limbs:
+        from .limbs.compile import LayerTargets
+        from .limbs.integration import Facing, draw_tracks, prepare_tracks
+
+        held = sorted({pose.arms for pose in poses} - {"desk"})
+        if held:
+            raise ToonDataError(f"{rig.look.name}: limb tracks draw the arms of desk poses only, not {held}")
+        limbs = prepare_tracks(cv, limbs, duration)
+        facing = Facing(front=True)  # faces the viewer and never flips, as toon_cast.figure's characters do
+        sides = facing.slots(limbs)
+        slots = [facing.slot(track.motion.arm.side) for track in limbs]
     if rig.drawn_as is not None:
         anatomy_ledger.note_part(cv, *rig.drawn_as)
     with drawing_events.drawing(rig):
@@ -412,6 +448,7 @@ def _draw_figure(
         _animate(cv, lean, "rotation", plan.lean)
         breath = cv.group(lean, cv.uid("breath"), **seat)
         _animate(cv, breath, "scaleY", plan.breath, style.breath_scale, 1.0)
+        behind = _limb_layer(cv, breath, "desk") if limbs else None
         trunk = cv.group(breath, cv.uid("trunk")) if rig.head_over else None
         turn = cv.group(breath, cv.uid("turn"), rotation=rig.tilt, **neck)
         _animate(cv, turn, "rotation", plan.turn, base=rig.tilt)
@@ -466,7 +503,10 @@ def _draw_figure(
             _draw(cv, g, _place((_teeth(look) if bare else []) + worn + list(stickers), arms))
 
             body = cv.group(trunk, cv.uid("g"), start=start, end=end)
-            pose_hands(cv, look, body.id, arms)
+            if limbs:
+                pose_hands(cv, look, body.id, arms, sides, slots)
+            else:
+                pose_hands(cv, look, body.id, arms)
             _draw(cv, body, _place(list(rig.trunk()), arms))
             if arms == "type":
 
@@ -476,10 +516,13 @@ def _draw_figure(
                 swap_frames(cv, body, start, end, taps, frame_of)
                 over: list[Layer] = []
             else:
-                under, over = _arms(look, arms, 0)
+                under, over = _arms(look, arms, 0, sides)
                 _draw(cv, body, _place(under, arms))
             if over:
                 _draw(cv, cv.group(front, cv.uid("g"), start=start, end=end), _place(over, arms))
+        if limbs:
+            layers = LayerTargets(behind, _limb_layer(cv, trunk, "desk"), _limb_layer(cv, front, "desk"))
+            draw_tracks(cv, layers, limbs, id=cv.uid("limbs"), facing=facing)
         if on_face is not None:
             on_face(face)
         return lean
