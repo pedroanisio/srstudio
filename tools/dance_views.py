@@ -2,7 +2,7 @@
 
     python tools/dance_views.py OUT.mp4 [--moves a,b | --phrases a,b [--ensemble] [--formation line] [--canon 0.5]
         [--seed 0]] [--characters realistic,cartoon,stick] [--views front,left,top,three-quarter] [--bars-each 2]
-        [--bpm 129] [--fps 25]
+        [--bpm 129] [--fps 25] [--floor] [--track song.wav] [--speed 0.25]
 
 One row per character, one column per view. ``--moves`` dances each move for ``--bars-each`` bars in order (all
 presets by default) through ``dance_pose`` with limits clamped. ``--phrases`` dances counted phrases (ADR 0194) in
@@ -13,6 +13,11 @@ stays put while the body travels and turns over it; ``--ensemble`` puts every ch
 dances from :func:`dance_floor.seated` (``stick@seated``), ``@stance`` from :func:`dance_floor.stance`. The track is
 ``music.render`` at the same tempo.
 
+``--floor`` dances ``--moves`` through ``dance_floor`` as phrases are, so footwork and held feet show: a move drawn
+without it is the pose alone, with no floor pass, no footwork and no lifted foot. ``--track`` plays a song instead of
+the click (give ``--bpm`` its tempo): the json beside it may name ``phase_s``, the first beat, and the song starts
+there so the first count lands on it. ``--speed`` slows the picture and the sound together, for reading a gesture.
+
 Axes are the skeleton's: x right, y down, z anatomical forward. ``front`` draws (x, y); ``left``, seen from the
 character's left side, draws (z, y), so the character faces screen right; ``top``, seen from above, draws (x, z), so its
 front points down the screen and a tick on the head shows where the head faces; ``three-quarter`` looks from a front
@@ -22,12 +27,13 @@ corner and a little above. It draws bones only: no style, no face. A planted foo
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import os
 import subprocess
 import sys
 import tempfile
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -45,6 +51,7 @@ CELL, TOP_BAR, BOTTOM_BAR = 360, 56, 48
 MAX_BARS = 64
 MAX_FPS = 60
 MAX_CANON = 4.0
+SPEED_RANGE = (0.125, 1.0)
 SPACING = 0.9  # dancers of an ensemble stand this share of the tallest one's height apart: about an arm's span
 BPM_RANGE = (40.0, 240.0)
 FIGURE_PX = 235  # a character's stature on screen; leaves room for arms overhead
@@ -53,6 +60,7 @@ ABOVE = math.radians(20)  # and looks down this much
 SKIP = frozenset({"left_eye", "right_eye", "jaw"})
 COLOURS = {"torso": (235, 235, 235), "head": (235, 235, 235), "arm": (255, 170, 60), "leg": (90, 170, 255)}
 BG, GRID, MUTED, INK, PLANT = (24, 26, 32), (52, 56, 66), (170, 174, 182), (235, 235, 235), (110, 220, 140)
+PELVIS = (240, 90, 200)  # the top view's hip line and the way the pelvis faces, drawn over the trunk
 JOINTS = {joint.name: joint for joint in sk.JOINTS}
 Plan = tuple[tuple[str, int, int], ...]
 Point = Callable[[sk.Vec3], tuple[float, float]]
@@ -216,6 +224,22 @@ def stage(
     return Stage(tuple(parts), rows)
 
 
+def floor_stage(sheet: Sheet, moves: Sequence[str] | None, groove: music.Groove, bars_each: int) -> Stage:
+    """The moves in order, ``bars_each`` bars each, performed through the floor pass by each row's character."""
+    parts = plan(moves, bars_each)
+    known = dance.moves()
+    try:
+        routine = dance.Routine(
+            parts[-1][2],
+            tuple(dance.Entry(start, end, known[name]) for name, start, end in parts),
+            groove.beats_per_bar,
+        )
+        rows = tuple((dance_floor.perform(routine, c.profile, groove, base=c.base(), clamp=True),) for c in sheet.cast)
+    except dance.DanceError as error:
+        raise ViewsError(f"the moves do not stand on the floor: {error}") from None
+    return Stage(parts, rows)
+
+
 @dataclass(frozen=True)
 class Camera:
     """How one cell maps the world: the cell's corner, the scale, and the floor's height (y down)."""
@@ -328,6 +352,8 @@ def _figure(
             )
     radius = profile.proportions.head_radius_m * camera.scale
     head = camera.point(world["head"].origin)
+    if view == "top" and {"hips", "left_upper_leg", "right_upper_leg"} <= world.keys():
+        _pelvis(draw, camera, world)
     if view == "top":
         middle = head
         facing = world["head"].rotation.rotate(sk.Vec3(0.0, 0.0, 1.0))
@@ -341,6 +367,20 @@ def _figure(
         top = camera.point(sk.tips(profile, posed)["head"])
         middle = ((head[0] + top[0]) / 2, (head[1] + top[1]) / 2)
     draw.ellipse([middle[0] - radius, middle[1] - radius, middle[0] + radius, middle[1] + radius], outline=INK, width=3)
+
+
+def _pelvis(draw: ImageDraw.ImageDraw, camera: Camera, world: Mapping[str, sk.Frame]) -> None:
+    """Seen from above the shoulders hide the hips, so the hip line and a tick the way the pelvis faces are drawn
+    over them: the pelvis's turn reads against the shoulders' line."""
+    left, right = camera.point(world["left_upper_leg"].origin), camera.point(world["right_upper_leg"].origin)
+    draw.line([left, right], fill=PELVIS, width=6)
+    middle = ((left[0] + right[0]) / 2, (left[1] + right[1]) / 2)
+    facing = world["hips"].rotation.rotate(sk.Vec3(0.0, 0.0, 1.0))
+    length = math.hypot(facing.x, facing.z) or 1.0
+    reach = math.dist(left, right) * 0.6
+    draw.line(
+        [middle, (middle[0] + facing.x / length * reach, middle[1] + facing.z / length * reach)], fill=PELVIS, width=4
+    )
 
 
 def _cell_image() -> tuple[Image.Image, ImageDraw.ImageDraw]:
@@ -424,6 +464,34 @@ def render_frame(sheet: Sheet, show: Plan | Stage, groove: music.Groove, t: floa
     return image
 
 
+def track_phase(track: Path) -> float:
+    """The seconds into ``track`` of its first beat: ``phase_s`` (or ``tempo.phase_s``) in the json beside it, 0
+    without one."""
+    if not track.is_file():
+        raise ViewsError(f"no track at {track}")
+    side = track.with_suffix(".json")
+    if not side.is_file():
+        return 0.0
+    try:
+        found = json.loads(side.read_text())
+    except (OSError, ValueError) as error:
+        raise ViewsError(f"{side}: not a json record: {error}") from None
+    tempo = found.get("tempo", found) if isinstance(found, dict) else None
+    phase = tempo.get("phase_s", 0.0) if isinstance(tempo, dict) else None
+    if isinstance(phase, bool) or not isinstance(phase, int | float) or not 0 <= phase < 60:
+        raise ViewsError(f"{side}: phase_s {phase!r} is seconds in 0..60")
+    return float(phase)
+
+
+def atempo(speed: float) -> str:
+    """The ffmpeg audio filter that plays at ``speed``: one ``atempo`` takes 0.5 at the least, so they are chained."""
+    links = []
+    while speed < 0.5 - 1e-9:  # bounded: SPEED_RANGE halves at most twice
+        links.append("atempo=0.5")
+        speed *= 2
+    return ",".join([*links, f"atempo={speed:.6g}"])
+
+
 def write(
     out: Path,
     *,
@@ -438,11 +506,19 @@ def write(
     formation: str = "line",
     canon_beats: float = 0.0,
     seed: int = 0,
+    floor: bool = False,
+    track: Path | None = None,
+    speed: float = 1.0,
     ffmpeg: str = "ffmpeg",
 ) -> Path:
     """Render the views to ``out`` (H.264 with AAC, mode 600) and return it."""
     if moves is not None and phrases is not None:
         raise ViewsError("draw moves or phrases, not both")
+    if floor and phrases is not None:
+        raise ViewsError("phrases are always on the floor: --floor is for --moves")
+    if not SPEED_RANGE[0] <= speed <= SPEED_RANGE[1]:
+        raise ViewsError(f"speed {speed} outside {SPEED_RANGE[0]:g}..{SPEED_RANGE[1]:g}")
+    phase = None if track is None else track_phase(track)
     if ensemble and phrases is None:
         raise ViewsError("an ensemble dances phrases: give --phrases")
     sheet = Sheet(tuple(characters), tuple(views), ensemble)
@@ -455,14 +531,22 @@ def write(
     if phrases is not None:
         show = stage(sheet, phrases, groove, formation=formation, canon_beats=canon_beats, seed=seed)
         bars = show.bars + (1 if ensemble and canon_beats else 0)
+    elif floor:
+        show = floor_stage(sheet, moves, groove, bars_each)
+        bars = show.bars
     else:
         show = plan(moves, bars_each)
         bars = show[-1][2]
-    count = round(groove.at(bars) * fps)
+    count = round(groove.at(bars) / speed * fps)
     width, height = sheet.size
     out.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=out.parent) as scratch:
-        wav = music.write_wav(Path(scratch) / "track.wav", music.render(groove, [music.Section(0, bars)]), 48000)
+        sound = [
+            "-i",
+            str(music.write_wav(Path(scratch) / "track.wav", music.render(groove, [music.Section(0, bars)]), 48000)),
+        ]
+        if track is not None:
+            sound = ["-ss", f"{phase:.4f}", "-i", str(track)]
         command = [
             ffmpeg,
             "-y",
@@ -478,8 +562,8 @@ def write(
             str(fps),
             "-i",
             "-",
-            "-i",
-            str(wav),
+            *sound,
+            *([] if speed == 1.0 else ["-af", atempo(speed)]),
             "-c:v",
             "libx264",
             "-pix_fmt",
@@ -497,7 +581,7 @@ def write(
             assert encoder.stdin is not None
             try:
                 for n in range(count):
-                    encoder.stdin.write(render_frame(sheet, show, groove, n / fps).tobytes())
+                    encoder.stdin.write(render_frame(sheet, show, groove, n * speed / fps).tobytes())
                 encoder.stdin.close()
             except BrokenPipeError:  # the encoder stopped reading; its exit status says why
                 pass
@@ -523,6 +607,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--formation", default="line", choices=dance_floor.FORMATIONS)
     parser.add_argument("--canon", type=float, default=0.0, help="beats each dancer comes in after the one before")
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--floor", action="store_true", help="dance --moves through the floor pass: footwork shows")
+    parser.add_argument("--track", type=Path, help="a song to dance to; the json beside it may name phase_s")
+    parser.add_argument("--speed", type=float, default=1.0, help="picture and sound together, 0.125..1")
     args = parser.parse_args(argv)
     try:
         written = write(
@@ -538,6 +625,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             formation=args.formation,
             canon_beats=args.canon,
             seed=args.seed,
+            floor=args.floor,
+            track=args.track,
+            speed=args.speed,
         )
     except ViewsError as error:
         print(f"dance_views: {error}", file=sys.stderr)
