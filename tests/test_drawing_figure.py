@@ -95,6 +95,18 @@ def test_authored_root_hold_and_depth_cut_are_explicit():
     assert world_root(6) == Vec3(40, 0, 115)
 
 
+def test_ground_anchor_uses_the_actual_bento_sole_coordinate_system():
+    from examples.drawing_figure import ROOT
+
+    from srstudio import toon_bento as bento
+    from srstudio.toon import fx, fy
+
+    # The foot path ends at drawing y=881. Bento maps his original drawing
+    # into Toon reference space before the native frame conversion.
+    sole = bento._at(bento.PIVOT_X, 881)
+    assert ROOT == (fx(sole[0]), fy(sole[1]), 0)
+
+
 def vector_scene(study, *, floor=False):
     layers = tuple(
         layer for layer in study.timeline.base.spec.layers if layer.asset == 'figure' or (floor and layer.id == 'floor')

@@ -19,11 +19,14 @@ from sr_core.scene import Scene
 from srstudio import Canvas
 from srstudio import composition as c
 from srstudio import scene_motion as m
+from srstudio import toon_bento as bento
 from srstudio.limbs import Quaternion, Vec3
 from srstudio.toon import fx, fy
-from srstudio.toon_cast import PIVOT
 
-ROOT = (fx(PIVOT[0]), fy(881), 0.0)
+# Bento's sole is authored in his drawing space, before Toon reference/frame
+# conversion. Using 881 directly as a Toon coordinate places it below ground.
+_SOLE = bento._at(bento.PIVOT_X, 881)
+ROOT = (fx(_SOLE[0]), fy(_SOLE[1]), 0.0)
 SCALE = 0.18  # Authored centimeters per native source pixel.
 
 
