@@ -28,6 +28,7 @@ from .social import Drift
 
 __all__ = ["after_build", "body_defects", "hand_defects", "listing", "open_bust", "published", "third_arms"]
 
+_SCALE = 1.0  # frame pixels to a mask pixel, for what hides a hand: one frame pixel, so a sliver still shows it
 LEGS = "-legs"  # the group a Cutout actor draws its optional legs in
 
 
@@ -48,12 +49,29 @@ def hand_defects(releases: Mapping[str, Release], episodes: Path, first: Mapping
 
 
 def third_arms(frame: Frame, drawn: Mapping[str, Drawing], limbs: Sequence[Limb]) -> list[tuple[str, Side, int]]:
-    """Each arm of a character with more than one hand on ``frame``, and how many."""
+    """Each arm of a character with more than one hand on ``frame``, and how many. A hand is on the frame when some of
+    it is drawn inside the frame and not every pixel of it is under a solid shape drawn in front: one faded out, out
+    beyond the edge or wholly behind a wall is not seen, and one partly seen counts."""
     index = {node.id: i for i, node in enumerate(frame.nodes)}
+    drawn_on = [limb for limb in limbs if limb.id in index and frame.box(index[limb.id], drawn) is not None]
+    crowded = {arm for arm, count in Counter((limb.owner, limb.side) for limb in drawn_on).items() if count > 1}
     shown = Counter(
-        (limb.owner, limb.side) for limb in limbs if limb.id in index and frame.box(index[limb.id], drawn) is not None
+        (limb.owner, limb.side)
+        for limb in drawn_on
+        if (limb.owner, limb.side) in crowded and _seen(frame, index[limb.id], drawn)
     )
     return [(owner, side, count) for (owner, side), count in sorted(shown.items(), key=str) if count > 1]
+
+
+def _seen(frame: Frame, at: int, drawn: Mapping[str, Drawing]) -> bool:
+    box = frame.box(at, drawn)
+    if box is None:
+        return False
+    inside = box.within(frame.width, frame.height)
+    if inside.area <= 0:
+        return False
+    members = {at, *frame.descendants(at)}
+    return not bool(frame.in_front(members, drawn, inside, _SCALE).all())
 
 
 def open_bust(frame: Frame, members: Sequence[int], drawn: Mapping[str, Drawing]) -> bool:

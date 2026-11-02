@@ -211,6 +211,37 @@ def test_a_faded_hand_is_not_on_the_frame():
     assert anatomy_gate.third_arms(Frame(1.0, 1080.0, 1920.0, nodes), drawn, _limbs("a", "b")) == []
 
 
+def test_a_hand_wholly_behind_a_solid_shape_is_not_on_the_frame():
+    shown, drawn = frame(("a", box(0, 0, 10, 10)), ("b", box(20, 0, 30, 10)), ("wall", box(15, -5, 40, 20)))
+    assert anatomy_gate.third_arms(shown, drawn, _limbs("a", "b")) == []
+
+
+def test_a_hand_partly_behind_a_solid_shape_is_still_on_the_frame():
+    shown, drawn = frame(("a", box(0, 0, 10, 10)), ("b", box(20, 0, 30, 10)), ("wall", box(15, -5, 28, 20)))
+    assert anatomy_gate.third_arms(shown, drawn, _limbs("a", "b")) == [("gary", Side.LEFT, 2)]
+
+
+def test_a_hand_behind_a_see_through_shape_is_still_on_the_frame():
+    shown, drawn = frame(("a", box(0, 0, 10, 10)), ("b", box(20, 0, 30, 10)), ("glass", box(15, -5, 40, 20)))
+    drawn["glass"] = Drawing(drawn["glass"].outlines, False)
+    assert anatomy_gate.third_arms(shown, drawn, _limbs("a", "b")) == [("gary", Side.LEFT, 2)]
+
+
+def test_a_hand_in_front_of_a_solid_shape_is_still_on_the_frame():
+    shown, drawn = frame(("wall", box(15, -5, 40, 20)), ("a", box(0, 0, 10, 10)), ("b", box(20, 0, 30, 10)))
+    assert anatomy_gate.third_arms(shown, drawn, _limbs("a", "b")) == [("gary", Side.LEFT, 2)]
+
+
+def test_a_hand_beyond_the_edge_of_the_frame_is_not_on_it():
+    shown, drawn = frame(("a", box(0, 0, 10, 10)), ("b", box(1100, 0, 1130, 10)))
+    assert anatomy_gate.third_arms(shown, drawn, _limbs("a", "b")) == []
+
+
+def test_a_hand_cut_by_the_edge_of_the_frame_is_still_on_it():
+    shown, drawn = frame(("a", box(0, 0, 10, 10)), ("b", box(1070, 0, 1100, 10)))
+    assert anatomy_gate.third_arms(shown, drawn, _limbs("a", "b")) == [("gary", Side.LEFT, 2)]
+
+
 def test_two_characters_each_have_their_own_arms():
     shown, drawn = frame(("a", box(0, 0, 10, 10)), ("b", box(20, 0, 30, 10)))
     limbs = [Limb("gary", Side.LEFT, "a"), Limb("omar", Side.LEFT, "b")]

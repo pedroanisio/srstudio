@@ -32,7 +32,10 @@ Three rules join the two of ADR 0145, in the same ledger, the same list and the 
   it is on that character's arm, and otherwise `Episode.finish` refuses the reel. `on_arm` changes no drawing.
 - `arm-third`, on the frames. A Collage `arm` with a hand and a `reach` record a `Limb` (owner, side, node) in
   `anatomy.json`. Two live hands on one arm of one character on one frame are refused. One hand at a time, as a reel cuts
-  between shots, is fine.
+  between shots, is fine. A hand is on the frame when part of it is drawn inside the frame and not every pixel of it is
+  under a solid shape drawn in front; a hand faded out, beyond the edge or wholly behind a wall is not seen, and a hand
+  partly seen counts. A shot that parks its earlier hand behind the set while an insert shows another
+  (`thought-of-you` at 3.5 s) is one hand on the frame.
 - `bust-open`, on the frames. A figure declared `BUST` whose bottom is a `figure_gates.Cut` that `refused` holds, and
   which drew no `-legs` group of its own, is refused, and now at the build. ADR 0073's check stays as it was for every
   figure at first delivery. An undeclared character is refused, never passed.
