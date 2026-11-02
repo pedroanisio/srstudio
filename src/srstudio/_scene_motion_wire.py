@@ -112,12 +112,14 @@ def references(timeline: m.SceneTimeline) -> tuple[Reference, ...]:
 
 
 def expansion(timeline: m.SceneTimeline, vectors: dict[str, c.PreparedVector]) -> None:
+    from ._composition_paths import expansion_bytes
+
     layers = {layer.id: layer for layer in timeline.base.spec.layers}
     bound = 4096
     for span in timeline.spans:
         bound += 256
         for name in span.layers:
             asset = vectors.get(layers[name].asset)
-            bound += len(asset.xml) + 256 * (asset.nodes + 8) if asset else 2048
+            bound += len(asset.xml) + 256 * (asset.nodes + 8) + expansion_bytes(asset.binding) if asset else 2048
     if bound > pw.MAX_BYTES or timeline.cost.memory_bytes + 8 * bound > timeline.base.spec.budget.max_memory_bytes:
         raise c._fail('budget.expansion', bound, 'bounded timeline XML and working storage', 'composition.budget')

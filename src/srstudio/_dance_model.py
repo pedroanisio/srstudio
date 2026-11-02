@@ -11,17 +11,19 @@ from __future__ import annotations
 import math
 import re
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING
 
 from . import checks
-from .errors import SrstudioError
+from ._dance_curve import MAX_POINTS, MIN_POINTS, Curve
+from ._dance_errors import DanceError, MoveError, RoutineError
 
 if TYPE_CHECKING:
     from ._dance_phrase import Phrase
 
 __all__ = [
     "CHAINS",
+    "CURVE_POINTS",
     "FEET",
     "JOINTS",
     "ROOT",
@@ -29,6 +31,7 @@ __all__ = [
     "TARGETS",
     "WAVEFORMS",
     "Contact",
+    "Curve",
     "DanceError",
     "Entry",
     "Move",
@@ -49,18 +52,6 @@ MAX_ROOT = 4.0  # head radii a pattern may move the root, either way
 MAX_TURN = math.pi  # radians a pattern may turn a joint, either way
 NAME = re.compile(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*\Z")
 TOLERANCE = 1e-6
-
-
-class DanceError(SrstudioError, ValueError):
-    """A dance move, routine, reading or song map that cannot be used as given."""
-
-
-class MoveError(DanceError):
-    """A pattern, contact or move outside its contract: an unknown target, a bound broken, feet left unplanted."""
-
-
-class RoutineError(DanceError):
-    """A routine that does not fit its track: an overlap, a bar past the end, a transition longer than its entry."""
 
 
 def _skeleton() -> dict[str, tuple[str, ...]]:
@@ -100,7 +91,8 @@ TARGETS = frozenset(ROOT) | frozenset(f"{joint}.{dof}" for joint, dofs in JOINTS
 CHAINS = ("root", "torso", "head", "left_arm", "right_arm", "left_leg", "right_leg")
 SUPPORTS = ("seat", "feet", "either")
 FEET = ("left_foot", "right_foot")
-WAVEFORMS = ("sine", "hold")
+WAVEFORMS = ("sine", "hold", "curve")
+CURVE_POINTS = (MIN_POINTS, MAX_POINTS)  # how many samples a curve holds
 _TORSO = frozenset({"hips", "spine", "chest", "upper_chest"})
 _HEAD = frozenset({"neck", "head", "left_eye", "right_eye", "jaw"})
 _LEG = frozenset({"upper_leg", "lower_leg", "foot", "toes"})
@@ -139,13 +131,18 @@ def mirrored(target: str, value: float) -> tuple[str, float]:
     return f"{_swap(joint)}.{dof}", value
 
 
-def wave(kind: str, snap: float, u: float) -> float:
+def wave(kind: str, snap: float, u: float, curve: Curve | None = None) -> float:
     """The waveform at ``u`` of its cycle, counted from the hit: +1 at the hit, -1 at the far extreme.
 
     ``sine`` leaves the hit slowly, over ``1 - snap`` of the cycle, and strikes back onto it in ``snap``; both strokes
     are half cosines, so the motion eases at either extreme. ``hold`` rests at each extreme and moves between them in
-    strokes of ``snap`` each, landing on the hit at ``u = 0`` and on the far extreme at ``u = 1/2``."""
+    strokes of ``snap`` each, landing on the hit at ``u = 0`` and on the far extreme at ``u = 1/2``. ``curve`` plays a
+    gesture's own cycle, ``curve``, and ignores ``snap`` (ADR 0199)."""
     _shape(kind, snap)
+    if kind == "curve":
+        if not isinstance(curve, Curve):
+            raise MoveError("a curve waveform plays a Curve", code="dance.curve", path="curve")
+        return curve.value(u)
     if kind == "sine":
         away = 1 - snap
         return math.cos(math.pi * u / away) if u < away else -math.cos(math.pi * (u - away) / snap)
@@ -161,7 +158,7 @@ def wave(kind: str, snap: float, u: float) -> float:
 def _shape(kind: object, snap: object) -> None:
     if kind not in WAVEFORMS:
         raise MoveError(f"waveform {kind!r} is not one of {WAVEFORMS}", code="dance.waveform", path="waveform")
-    top = 0.95 if kind == "sine" else 0.5
+    top = 0.5 if kind == "hold" else 0.95
     if not (checks.number(snap) and 0.05 <= snap <= top):
         raise MoveError(f"snap {snap!r} of a {kind} lies in 0.05..{top}", code="dance.snap", path="snap", actual=snap)
 
@@ -188,7 +185,8 @@ class Pattern:
 
     ``cycles`` count per ``beat`` or per ``bar``; the hit lands ``phase`` beats after the grid's beat; ``swing`` is
     where the off-beat eighth lands in the beat (0.5 straight, 2/3 a triplet swing). Amplitudes and biases are head
-    radii on the root and radians on a joint, so a move scales to any character."""
+    radii on the root and radians on a joint, so a move scales to any character. A ``curve`` waveform carries the
+    gesture's own cycle in ``curve``, samples from the hit (ADR 0199); no other waveform takes samples."""
 
     target: str
     amplitude: float
@@ -200,6 +198,8 @@ class Pattern:
     swing: float = 0.5
     intensity: float = 1.0
     bias: float = 0.0
+    curve: tuple[float, ...] = ()
+    shape: Curve | None = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         chain(self.target)
@@ -215,10 +215,26 @@ class Pattern:
         _shape(self.waveform, self.snap)
         _within(self.swing, 0.5, 0.75, "swing")
         _within(self.intensity, 0, 2, "intensity")
+        if self.waveform == "curve":
+            shape = Curve(self.curve)
+            object.__setattr__(self, "shape", shape)
+            object.__setattr__(self, "curve", shape.points)
+        elif self.curve != ():
+            raise MoveError(
+                f"{self.target}: only a curve waveform takes samples, not {self.waveform}",
+                code="dance.curve",
+                path="curve",
+            )
+        else:
+            object.__setattr__(self, "shape", None)
 
-    def timing(self) -> tuple[float, str, float, str, float]:
+    def wave(self, u: float, snap: float | None = None) -> float:
+        """The pattern's waveform at ``u`` of its cycle, with ``snap`` in place of its own when given."""
+        return wave(self.waveform, self.snap if snap is None else snap, u, self.shape)
+
+    def timing(self) -> tuple[float, str, float, str, float, tuple[float, ...]]:
         """What places the pattern in time: two patterns that share it differ only in size and shape."""
-        return (self.cycles, self.per, self.phase, self.waveform, self.swing)
+        return (self.cycles, self.per, self.phase, self.waveform, self.swing, self.curve)
 
     def cycles_per_beat(self, beats_per_bar: int) -> float:
         return self.cycles if self.per == "beat" else self.cycles / beats_per_bar
@@ -353,20 +369,7 @@ class Move:
         patterns = []
         for p in self.patterns:
             target, amplitude = mirrored(p.target, p.amplitude)
-            patterns.append(
-                Pattern(
-                    target,
-                    amplitude,
-                    p.cycles,
-                    p.per,
-                    p.phase,
-                    p.waveform,
-                    p.snap,
-                    p.swing,
-                    p.intensity,
-                    mirrored(p.target, p.bias)[1],
-                )
-            )
+            patterns.append(replace(p, target=target, amplitude=amplitude, bias=mirrored(p.target, p.bias)[1]))
         lags = tuple((_swap(name), beats) for name, beats in self.lags)
         contacts = tuple(Contact(_swap(c.foot), c.start, c.end) for c in self.contacts)
         return Move(self.name, self.support, tuple(patterns), self.loop_beats, lags, contacts, self.description)

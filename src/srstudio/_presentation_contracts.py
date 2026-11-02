@@ -106,6 +106,32 @@ _CONTRACTS = {
             'changed framing uses held scale keys; unchanged framing sets a static scale.',
         ),
     ),
+    'smallprint-card': timed(
+        ('question', P(role='display-copy', description='The question in the words people type; checked as copy.')),
+        ('measure', MEASURE),
+        ('id', ID),
+        returns=GROUP,
+        clock='composition',
+        constraints=(
+            FONT,
+            'At most two lines, fitted from size 44 down to 32 in steps of two; a word wider than the card or a '
+            'question still over two lines fails. Requires start < end.',
+            'The card drops y=-12 to zero over 0.18 seconds with cubic-out composition keys. Returns its group.',
+        ),
+    ),
+    'smallprint-stamp': timed(
+        ('finding', P(role='display-copy', description='A Stamp: the finding in capitals and its named source.')),
+        ('measure', MEASURE),
+        returns=GROUP,
+        clock='composition',
+        constraints=(
+            FONT,
+            'The stamp fits from size 58 down to 36 across the safe area, turned -4 degrees; it fails if still too '
+            'wide. Requires start < end.',
+            'It pops in at start and fades in over 0.06 seconds on the composition clock. The source, at most two '
+            'lines, is a sibling group under parent from start+0.2, not inside the returned stamp group.',
+        ),
+    ),
     'host-label': timed(
         ('measure', MEASURE),
         ('id', ID),

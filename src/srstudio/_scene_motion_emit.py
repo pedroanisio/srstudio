@@ -158,7 +158,7 @@ def compile_timeline(request: dict) -> c.CompiledScene:
                 'group',
                 {
                     'id': prefix,
-                    **_placement(layer, plan.spec, poses),
+                    **_placement(layer, plan.spec, poses, asset.binding),
                     'start': _number(temporal.start),
                     'end': _number(temporal.end),
                     'timeOffset': _number((temporal.start - temporal.source_start) / temporal.rate),

@@ -6,6 +6,8 @@ import math
 
 import numpy as np
 import pytest
+from scipy.sparse import coo_matrix
+from scipy.sparse.csgraph import connected_components
 
 from srstudio import wire_mesh
 from srstudio.wire_mesh import CREASE, WireMeshError, car_model, jet_model, smooth_mesh, to_scene
@@ -159,3 +161,79 @@ def test_the_jets_surfaces_face_out_of_their_own_part(jet):
         fuselage.material, fuselage.vertices - centre, fuselage.normals, fuselage.triangles, fuselage.uvs
     )
     assert (facing_out(shifted) > 0).mean() > 0.9
+
+
+def welded(mesh) -> tuple[np.ndarray, np.ndarray]:
+    """Each vertex's welded id, and the triangles in those ids, less any that lost a corner to the weld."""
+    _, ids = np.unique(np.round(mesh.vertices, 3), axis=0, return_inverse=True)
+    ids = ids.ravel()
+    tris = ids[mesh.triangles]
+    keep = (tris[:, 0] != tris[:, 1]) & (tris[:, 1] != tris[:, 2]) & (tris[:, 2] != tris[:, 0])
+    return ids, tris[keep]
+
+
+def against_their_neighbours(mesh) -> float:
+    """The share of directed edges used twice: two faces sharing an edge wound the same way, one of them inside out."""
+    _, tris = welded(mesh)
+    edges = np.concatenate([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]])
+    _, counts = np.unique(edges, axis=0, return_counts=True)
+    return float((counts > 1).sum() / len(counts))
+
+
+def inside_out(mesh) -> list[float]:
+    """The signed volume of each closed piece that came out negative: a solid wound with its faces inward."""
+    ids, tris = welded(mesh)
+    size = ids.max() + 1
+    graph = coo_matrix(
+        (np.ones(len(tris) * 2), (np.r_[tris[:, 0], tris[:, 1]], np.r_[tris[:, 1], tris[:, 2]])), (size, size)
+    )
+    _, piece = connected_components(graph, directed=False)
+    where = np.zeros((size, 3))
+    where[ids] = mesh.vertices
+    bad = []
+    for n in np.unique(piece[tris[:, 0]]):
+        own = tris[piece[tris[:, 0]] == n]
+        a, b, c = where[own[:, 0]], where[own[:, 1]], where[own[:, 2]]
+        middle = where[np.unique(own)].mean(axis=0)
+        volume = np.einsum("ij,ij->i", np.cross(a - middle, b - middle), c - middle).sum() / 6.0
+        if volume < 0:
+            bad.append(float(volume))
+    return bad
+
+
+def test_a_cube_is_a_solid_wound_outward():
+    mesh = smooth_mesh(cube(), "paint", away)
+    assert against_their_neighbours(mesh) == 0.0
+    assert inside_out(mesh) == []
+
+
+def test_a_cube_wound_inward_reads_as_inside_out():
+    assert inside_out(smooth_mesh(cube(), "paint", lambda c: -np.asarray(c, float)))
+
+
+def test_each_seat_of_a_car_faces_away_from_itself_not_from_the_car():
+    seats = next(p for p in car_model("monday").parts if p.material == wire_mesh.KIND_MATERIAL["leather"]).mesh
+    assert against_their_neighbours(seats) < 0.002
+    assert inside_out(seats) == []
+
+
+def test_each_seat_of_a_jet_faces_away_from_itself():
+    seats = [p.mesh for p in jet_model("monday").parts if p.material == wire_mesh.JET_MATERIAL["leather"]]
+    assert seats
+    for mesh in seats:
+        assert against_their_neighbours(mesh) < 0.002
+        assert inside_out(mesh) == []
+
+
+def test_an_open_sheet_still_asks_the_rule_it_was_given():
+    sheet = [[(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)]]
+    out = wire_mesh._solids(sheet, lambda c: np.array([0.0, 0.0, 7.0]))
+    assert out(np.array(to_scene((0.5, 0.5, 0)))).tolist() == [0.0, 0.0, 7.0]
+
+
+def test_a_cube_with_one_face_wound_backward_is_turned_round():
+    faces = cube()
+    faces[2] = faces[2][::-1]
+    mesh = smooth_mesh(faces, "paint", wire_mesh._solids(faces, lambda c: -np.asarray(c, float)))
+    assert against_their_neighbours(mesh) == 0.0
+    assert inside_out(mesh) == []

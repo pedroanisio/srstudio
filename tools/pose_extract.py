@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Follow one dancer through a video with a pose estimator and write the reading as one record srstudio reads
-(ADR 0196).
+(ADR 0200).
 
 The estimator is MediaPipe's Pose Landmarker (Apache-2.0, 33 BlazePose landmarks in the image and in metres). It runs
 in its own interpreter, so srstudio gains no dependency; build it once, as docs/authoring-dance.md says:
@@ -14,15 +14,16 @@ with TRACK under the workspace, such as ``$WS/generated/dance-study/NAME/pose-tr
 
 A class video holds several dancers and the camera moves. Every frame the estimator looks for up to five bodies in the
 whole frame and for one in a crop around where the dancer is expected, at a higher resolution. The tracker keeps the
-dancer by place (a jump measured in body sizes from where the dancer should be) and by the colours of their clothes
-(the torso and the legs, compared with the dancer's own: the mean of the first ``SETTLE`` matches, then learned slowly
-from close ones). When the clothes cannot be seen (a hip or knee
-too faint), the body where the dancer should be is kept by place alone, for at most ``BLIND_RUN`` frames in a row and
-only when no other body stands near it; the record says so with a null appearance. A frame where no body passes is
-written as lost, never filled in. The first frame picks the dancer: the most central large body
-(``--pick central``), or the body nearest a point (``--pick 0.4,0.5``, shares of the frame). A central pick assumes the
-camera follows the dancer, so after a jump the dancer is found only near the middle of the frame: in a class, the
-dancers beside the lead wear the same clothes often enough that colours alone do not tell them apart.
+dancer by place (a jump measured in body sizes from where the dancer should be) and by the colours of their clothes (the
+torso and the legs, compared with the dancer's own: the mean of the first ``SETTLE`` matches, then learned slowly from
+close ones). When the clothes cannot be seen (a hip or knee too faint), the body where the dancer should be is kept by
+place alone, for at most ``BLIND_RUN`` frames in a row and only when no other body stands near it; the record says so
+with a null appearance. A frame where no body passes is written as lost, never filled in. A picture that repeats the
+last distinct one (a screen recording writes them) is written as a repeat, with no landmarks, and the tracker does not
+step: it is no new observation. The first frame picks the dancer: the most central large body (``--pick central``), or
+the body nearest a point (``--pick 0.4,0.5``, shares of the frame). A central pick assumes the camera follows the
+dancer, so after a jump the dancer is found only near the middle of the frame: in a class, the dancers beside the lead
+wear the same clothes often enough that colours alone do not tell them apart.
 
 The record holds per-frame landmarks of a real person, so it is written only outside this repository, under the
 workspace's ``generated/`` (directory 700, file 600), and never committed. It is checked with ``srstudio.pose_track``,
@@ -82,6 +83,13 @@ SAME = 0.15  # body sizes: two readings this near are one body, seen whole and i
 LEARN = 0.05  # how much a confident match updates the dancer's colours
 SETTLE = 15  # the dancer's colours are the mean of their first matches with clothes seen, not one frame's
 LEARN_LIMIT = 0.25
+# A picture repeats the last distinct one when, over 8 x 8 blocks of its grey levels, no block differs by more than
+# REPEAT_HIGH summed levels and at most REPEAT_SHARE of the blocks differ by more than REPEAT_LOW: ffmpeg's mpdecimate
+# test at hi=64*4, lo=64*2, frac=0.33. A screen recording of a video writes such repeats (ADR 0199).
+REPEAT_BLOCK = 8
+REPEAT_HIGH = 64 * 4
+REPEAT_LOW = 64 * 2
+REPEAT_SHARE = 0.33
 CROP_BONUS = 0.02  # a crop's landmarks are read at a higher resolution: prefer them on a tie
 HUE_BINS, SAT_BINS, VAL_BINS = 12, 6, 6
 IMAGE_DECIMALS, WORLD_DECIMALS, COST_DECIMALS = 5, 4, 4
@@ -353,9 +361,27 @@ class Tracker:
 # --- the record ----------------------------------------------------------------------------------------------------
 
 
+def repeats(last: np.ndarray, grey: np.ndarray) -> bool:
+    """Whether the grey picture ``grey`` repeats ``last``, the last distinct one: mpdecimate's test, per 8 x 8 block."""
+    if last.shape != grey.shape or grey.ndim != 2:
+        raise ExtractError(f"pictures of one video share one grey size, not {last.shape} and {grey.shape}")
+    rows, cols = (side // REPEAT_BLOCK * REPEAT_BLOCK for side in grey.shape)
+    if not rows or not cols:
+        raise ExtractError(f"a picture of {grey.shape} is smaller than one {REPEAT_BLOCK}-pixel block")
+    change = np.abs(grey[:rows, :cols].astype(np.int32) - last[:rows, :cols].astype(np.int32))
+    blocks = change.reshape(rows // REPEAT_BLOCK, REPEAT_BLOCK, cols // REPEAT_BLOCK, REPEAT_BLOCK).sum(axis=(1, 3))
+    return bool(blocks.max() <= REPEAT_HIGH and np.mean(blocks > REPEAT_LOW) <= REPEAT_SHARE)
+
+
+def repeat_entry(index: int, fps: float) -> dict:
+    """A frame whose picture repeats the last distinct one: its clock, and no new observation."""
+    entry: dict = {"index": index, "t_s": round(index / fps, 6), "repeat": True}
+    return entry | {"image": None, "world": None, "box": None, "position": None, "appearance": None}
+
+
 def frame_entry(index: int, fps: float, body: Candidate | None, match: Match | None, width: int, height: int) -> dict:
     """One frame of the record; a lost frame carries its clock and nothing else."""
-    entry: dict = {"index": index, "t_s": round(index / fps, 6)}
+    entry: dict = {"index": index, "t_s": round(index / fps, 6), "repeat": False}
     if body is None or match is None:
         return entry | {"image": None, "world": None, "box": None, "position": None, "appearance": None}
     image = [
@@ -497,7 +523,7 @@ def extract(  # pragma: no cover - runs the estimator, in its own interpreter
     fps = float(capture.get(cv2.CAP_PROP_FPS))
     width, height = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)), int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
     tracker = Tracker(width, height, pick, point)
-    frames, index = [], 0
+    frames, index, last = [], 0, None
     with landmarker(FULL_POSES) as full, landmarker(CROP_POSES) as close:
         while True:
             ok, bgr = capture.read()
@@ -506,6 +532,12 @@ def extract(  # pragma: no cover - runs the estimator, in its own interpreter
             if index < start or (count is not None and index >= start + count):
                 index += 1
                 continue
+            grey = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+            if last is not None and repeats(last, grey):
+                frames.append(repeat_entry(index, fps))
+                index += 1
+                continue
+            last = grey
             rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
             bodies = bodies_from(full.detect(mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)), width, height)
             box = tracker.crop()

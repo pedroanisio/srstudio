@@ -116,6 +116,8 @@ def _pose_key(frame: Frame, scale: float) -> dict:
 def _check_camera(
     layer: c.LayerSpec, binding: c.AssetBinding, pose: tuple[Frame, float], camera: c.CameraSpec, axes: tuple
 ) -> None:
+    from ._composition_paths import spatial
+
     frame, scale = pose
     if layer.space == 'screen':
         if frame.origin.z != 0 or abs(frame.rotation.rotate(Vec3(0, 0, 1)).z - 1) > 1e-9:
@@ -124,7 +126,7 @@ def _check_camera(
             )
         return
     forward = axes[0]
-    if binding.backend == 'vector':
+    if binding.backend == 'vector' and not spatial(binding):
         normal = frame.rotation.rotate(Vec3(0, 0, 1))
         if abs(normal.dot(forward) + 1) > 1e-8:
             raise c._fail(

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Measure a reference dancer's style, check our dances against it, and build the local proof page (ADR 0196).
+"""Measure a reference dancer's style, check our dances against it, and build the local proof page (ADR 0200).
 
     python tools/dance_study.py measure TRACK.json --audio VIDEO --name NAME --description TEXT --out STYLE.json
     python tools/dance_study.py check STYLE.json --out FINDINGS.json [--bars 8] [--fps 30] [--audio VIDEO]
@@ -109,7 +109,7 @@ def measure(track: pt.PoseTrack, groove: music.Groove, *, name: str, description
         seconds=round(len(track.frames) / track.fps, 3),
         frames=len(track.frames),
         used=body.used,
-        rejected=dict(body.rejected),
+        rejected=dict(body.rejected) | {"repeat": body.repeats},
         bpm=groove.bpm,
         beats_per_bar=groove.beats_per_bar,
         offset_s=groove.offset,
@@ -283,6 +283,11 @@ MEASURE_PT = {
     "snap_ratio": "subida/descida",
     "hit_offset": "acento antes(−)/depois(+) da batida",
     "lag": "atraso",
+    "peak_speed_phase": "momento mais rápido (fração do ciclo depois do acento)",
+    "attack": "chegada ao acento (batidas)",
+    "release": "saída do acento (batidas)",
+    "peak_acceleration": "aceleração máxima (amplitudes por batida²)",
+    "profile_distance": "diferença do perfil de velocidade",
 }
 
 
@@ -300,6 +305,15 @@ def _span(span: tuple[float, float] | None, unit: str = "") -> str:
     if unit == "rad":
         return f"{math.degrees(span[0]):.0f}° a {math.degrees(span[1]):.0f}°"
     return f"{_num(span[0])} a {_num(span[1])}"
+
+
+def _gesture(c: dance_style.ChannelTarget) -> str:
+    """The channel's gesture timing in words, or how many windows read more than a sine when too few did."""
+    timed = c.evidence.get("timed", 0)
+    if c.attack is None or c.release is None:
+        return f"sem dados suficientes ({timed} janelas com mais que um seno)"
+    profile = "perfil medido" if c.velocity is not None else "janelas discordam do perfil"
+    return f"chegada {_span(c.attack)}, saída {_span(c.release)} batidas; {profile} ({timed} janelas)"
 
 
 def page(style: dance_style.DanceStyle, findings: dict, *, footage: str | None, views: str | None, closest: str) -> str:
@@ -320,6 +334,7 @@ def page(style: dance_style.DanceStyle, findings: dict, *, footage: str | None, 
             f"<td>{_span(c.snap_ratio)}</td>"
             f"<td>{_num(c.noise, unit)}</td>"
             f"<td>{c.evidence['read']}/{c.evidence['windows']}</td>"
+            f"<td>{_gesture(c)}</td>"
             "</tr>"
         )
     lags = "".join(
@@ -389,7 +404,7 @@ aquela medida.</p>
 <div class="table"><table>
 <tr><th>Canal</th><th>Confiança</th><th>Valor típico</th><th>Tamanho do balanço</th>
 <th>Ciclos por batida</th><th>Acento (batidas)</th><th>Subida/descida</th><th>Ruído por quadro</th>
-<th>Janelas lidas</th></tr>
+<th>Janelas lidas</th><th>Tempo do gesto</th></tr>
 {"".join(rows)}
 </table></div>
 <h3>Atrasos em cadeia (quanto uma parte se mexe depois da outra, em batidas)</h3>
@@ -424,7 +439,7 @@ _UNMEASURED_PT = {
 
 def _explain(miss: dict) -> str:
     low, high, ours = miss["low"], miss["high"], miss["ours_median"]
-    unit = "rad" if miss["channel"] in _RAD else ""
+    unit = "rad" if miss["channel"] in _RAD and miss["measure"] in ("level", "peak_to_peak", "range") else ""
     parts = []
     if miss["below"]:
         parts.append(f"{miss['below']} abaixo")

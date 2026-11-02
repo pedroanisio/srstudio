@@ -785,3 +785,13 @@ def test_every_rig_is_seen_by_the_rig_gate():
 def test_the_angle_of_a_full_turn_stays_small_enough_to_read():
     for rig in news_inked.RIGS.values():
         assert math.fabs(head_motion.limit(rig.style, "turn")) <= 6.0
+
+
+def test_a_specimen_shuts_the_mouth_at_each_beat_it_does_not_open_on():
+    shown = news_inked.mouths_shown(4.0, 4, [0.0, 1.0, 2.0])
+    track = news_inked.mouths_shown(4.0, 4)
+    assert (0.0, "closed") not in set(shown) - set(track)  # the first mouth already opens on the first beat
+    assert set(shown) - set(track) == {(1.0, "closed"), (2.0, "closed")} - set(track)
+    assert [at for at, _ in shown] == sorted(at for at, _ in shown)
+    rows = news_kit.mouth_track(tuple((at, Pose(news_kit.EYES[0], "talk")) for at in (0.0, 1.0, 2.0)), shown, 4.0)
+    assert dict(rows)[1.0] == "closed" and dict(rows)[2.0] == "closed"  # under any reel policy, not the due state

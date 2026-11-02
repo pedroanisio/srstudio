@@ -11,6 +11,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+from . import _presentation_contracts as dc
 from . import host_kit
 from .errors import SrstudioError
 from .registry import register
@@ -81,7 +82,10 @@ def wrap(text: str, size: float, width: float, measure: Measure) -> list[str]:
 
 
 @register(
-    "graphic", "smallprint-card", summary="The question as people type it, in a search box at the top of the frame"
+    "graphic",
+    "smallprint-card",
+    summary="The question as people type it, in a search box at the top of the frame",
+    contract=dc.contract("smallprint-card"),
 )
 def card(cv, parent, question: str, start: float, end: float, measure: Measure, id: str = "smallprint-card"):
     """The question in a search box over his head from ``start`` to ``end``: paper, an ink rule, a lens, two lines at
@@ -117,7 +121,12 @@ def spread(text: str, size: float, measure: Measure) -> float:
     return (measure(text, size) + 80.0) * math.cos(turn) + size * 1.6 * math.sin(turn)
 
 
-@register("graphic", "smallprint-stamp", summary="A finding stamped in red on a panel, its source in ink under it")
+@register(
+    "graphic",
+    "smallprint-stamp",
+    summary="A finding stamped in red on a panel, its source in ink under it",
+    contract=dc.contract("smallprint-stamp"),
+)
 def stamp(cv, parent, finding: Stamp, start: float, end: float, measure: Measure):
     """``finding`` stamped at ``start``, a little crooked, the way a stamp lands, its source under it. Returns its
     group."""
