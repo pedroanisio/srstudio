@@ -9,6 +9,7 @@ import pytest
 from srstudio import composition as c
 from srstudio import scene_motion as m
 from support.composition import paper
+from support.composition_curves import figure_source
 from support.composition_emission import evaluate
 
 
@@ -157,34 +158,6 @@ def test_a_single_spring_key_is_a_bounded_hold(prepare):
     binding, xml = pin(binding, root)
     prepared = prepare(binding, xml)
     assert prepared.bounds.minimum[0] == 5
-
-
-def figure_source(monkeypatch):
-    from pathlib import Path
-
-    monkeypatch.syspath_prepend(str(Path(__file__).parents[1]))
-    from examples.drawing_proof import figure_performance
-    from sr_core.scene import Scene
-
-    from srstudio import Canvas
-
-    scene = Scene(version='auto')
-    scene.add_project(width=1080, height=1920, fps='24', duration=6)
-    cv = Canvas(scene, font_asset=None)
-    figure_performance().window(0, 6).place(cv, cv.comp, id='figure')
-    xml = scene.to_bytes()
-    binding = c.AssetBinding(
-        'figure',
-        'candidate.hybrid-figure',
-        1,
-        'vector',
-        c.Bounds((-10000, -10000, 0), (10000, 10000, 0)),
-        duration=6,
-        nodes=3000,
-        memory_bytes=64 * 1024**2,
-        candidate=c.CandidateSource('toon', hashlib.sha256(xml).hexdigest()),
-    )
-    return binding, xml
 
 
 def test_actual_hybrid_face_source_is_accepted_without_rewriting_its_animation(monkeypatch):

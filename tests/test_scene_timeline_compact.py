@@ -16,7 +16,7 @@ from srstudio import scene_motion as m
 def figure():
     # Build the actual candidate; a padded string would not exercise its nested
     # clocks, native springs, gradients and held facial drawing replacements.
-    from test_composition_curves import figure_source
+    from support.composition_curves import figure_source
 
     with pytest.MonkeyPatch.context() as patch:
         return figure_source(patch)
@@ -217,7 +217,7 @@ def test_compact_worker_keeps_fonts_rasters_and_independent_native_clocks(tmp_pa
     from srstudio._scene_motion_compact import select
     from srstudio._scene_motion_worker import dispatch
     from support.composition import plate_source, prepared_plate_plan, renderer
-    from test_composition_text import caption
+    from support.composition_text import caption
 
     binding, drawing = rectangle('figure', '#88aacc', panel=True)
     forms = (c.FormSurface('surface', mode='ink'),)
@@ -303,8 +303,8 @@ def test_lit_and_projected_forms_keep_each_span_while_native_ink_is_reused(tmp_p
     from srstudio._composition_vector import prepare_vector
     from srstudio._scene_motion_compact import select
     from srstudio._scene_motion_worker import dispatch
-    from test_composition_forms import form
-    from test_composition_spatial_paths import POINTS, fixture
+    from support.composition_forms import form
+    from support.composition_spatial_paths import POINTS, fixture
 
     plan, diffuse = form(animated=True)
     ink = replace(diffuse, id='ink')
@@ -369,7 +369,7 @@ def test_output_working_memory_and_non_reusable_geometry_remain_bounded():
     from srstudio._composition_vector import prepare_vector
     from srstudio._scene_motion_compact import select
     from support.composition import paper
-    from test_composition_forms import form
+    from support.composition_forms import form
 
     plan, source = form(animated=True)
     timeline = m.plan_scene(plan.spec, plan.bindings, m.SceneMotion(), purpose=plan.purpose)
