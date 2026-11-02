@@ -72,6 +72,30 @@ gesture whose acceleration has corners, as a spline's has at its samples, reads 
 5% low at 24; and the fastest moment sits on a flat top of the speed, so it reads within 0.015 of the cycle. Comparisons
 between two stages read both sides the same way, so these limits cancel there.
 
+### A repeated picture is no observation
+
+The reference is a 30 fps screen recording, and about a third of its pictures repeat the one before. ffmpeg's
+`mpdecimate` at `hi=64*4:lo=64*2:frac=0.33` keeps 587 of the first 900. Read as an observation, a repeat is a moment
+of zero speed followed by a double step. That fakes acceleration spikes and moves the fastest moment, which are the
+measures this decision adds. On a synthetic track with 35% of its pictures repeated, the whip read its peak
+acceleration 2.6 times too high and its velocity profile 0.25 away from the same track without repeats.
+
+`srstudio.pose-track/1.1.0` therefore records repeats. Each frame says whether its picture repeats the last distinct
+one (`repeat`). A repeated frame carries its clock and no landmarks, and the first frame cannot repeat. A `1.0.0`
+record reads as before, every frame its own picture.
+
+`tools/pose_extract.py` applies the same test per 8 x 8 block of grey levels, against the last distinct picture. It
+writes a match as a repeat without running the estimator, and the tracker does not step on it.
+
+The study counts a repeat as not seen (`BodyTrack.repeats`). Its jump check spans repeats, scaled by the real time
+between the two distinct pictures. `measure_dance` fits each channel on the frames seen, at their real times, so
+nothing is differentiated across a repeat. With the repeats left out, the same synthetic track measures within a
+profile distance of 0.001 and 0.5% of its peak acceleration.
+
+What remains is a bound, not a bias. Distinct pictures arrive irregularly, at about 20 a second, and a fit can only
+hold the overtones they cover. `measure_dance` already limits its overtones to what the samples' places in the folded
+cycle can tell, and a reading carries the widest gap they leave.
+
 ### A gesture's timing is kept to the picture
 
 `tests/test_dance_timing_stages.py` follows one gesture, a whip on the right upper arm (a slow lift and a strike back

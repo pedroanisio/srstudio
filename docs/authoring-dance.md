@@ -220,7 +220,9 @@ them.
 
 2. Extract the dancer: `$WS/generated/venvs/pose/bin/python -I tools/pose_extract.py VIDEO --out
    $WS/generated/dance-study/NAME/pose-track.json` follows the most central large person, or `--pick 0.4,0.5` the one
-   nearest that point. A frame where the dancer cannot be told from a neighbour is written as lost, never guessed.
+   nearest that point. A frame where the dancer cannot be told from a neighbour is written as lost, never guessed. A
+   picture that repeats the last distinct one, as a screen recording writes them, is written as a repeat and measured
+   as not seen ([ADR 0204](decisions/0204-gesture-timing.md)).
 3. Measure and check, in srstudio's own interpreter: `python tools/dance_study.py measure TRACK --audio VIDEO --name
    NAME --description TEXT --out src/srstudio/assets/dance/styles/NAME.json`, then `python tools/dance_study.py check
    STYLE --audio VIDEO --out $WS/generated/dance-study/NAME/findings.json` dances every standing preset and a choreographed

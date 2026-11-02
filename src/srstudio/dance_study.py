@@ -1,7 +1,7 @@
 """How a body dances, measured the same way on a real dancer and on ours, so the two can be compared (ADR 0203).
 
-A reference video is read by a pose estimator (``tools/pose_extract.py``) into a ``srstudio.pose-track/1.0.0``
-record; :func:`reference_body` turns the record into a :class:`BodyTrack`. One of our dances, any sequence of
+A reference video is read by a pose estimator (``tools/pose_extract.py``) into a ``srstudio.pose-track`` record;
+:func:`reference_body` turns the record into a :class:`BodyTrack`. One of our dances, any sequence of
 :class:`dance.DanceFrame` (a move, a routine, a phrase) sampled on a preset skeleton, becomes one with
 :func:`dance_body`. :func:`measure_style` measures either on a song's beat grid with the same code, and
 :mod:`srstudio.dance_style` turns a reference's measures into targets and lists what one of ours misses.
@@ -16,8 +16,10 @@ The estimator is a model, so its frames are untrusted. A frame is refused, and c
 dancer was lost, when a hip or a shoulder is seen with too little confidence, when a bone of the legs or the torso is
 far from its own length in the rest of the clip, and when a point jumps further in one frame than a body can move. An
 arm whose bone is far from its length is left out of that frame, which is counted under ``arm``, and a point seen with
-too little confidence is left out of the channels that use it in that frame. Nothing is filled in: each channel is
-measured on the runs of frames where it is seen.
+too little confidence is left out of the channels that use it in that frame. A frame whose picture repeats the last
+distinct one is no observation and is not seen either (ADR 0204): read as one, it is a moment of zero speed and then a
+double step. The jump check spans the repeats, by the real time between the two distinct pictures. Nothing is filled
+in: each channel is measured on the runs of frames where it is seen, at their real times.
 
 Each channel is read in windows of :data:`WINDOW_BEATS` beats, every :data:`HOP_BEATS`: the groove of the window by
 :func:`dance.measure_dance` (its size, cycles per beat, snap and hit against the beat), and the window's range. A
@@ -157,7 +159,8 @@ def _xyz(v: sk.Vec3) -> np.ndarray:
 @dataclass(frozen=True, eq=False)
 class BodyTrack:
     """``points`` (frames x 13 x 3) in head radii from the hips' middle, skeleton axes; ``seen`` (frames x 13) which
-    are usable; ``start`` the first frame's second; ``rejected`` how many frames were refused, by reason."""
+    are usable; ``start`` the first frame's second; ``rejected`` how many frames were refused, by reason; ``repeats``
+    how many frames repeated the last distinct picture and so were no observation (ADR 0204)."""
 
     fps: int
     start: float
@@ -165,6 +168,7 @@ class BodyTrack:
     seen: np.ndarray
     rejected: Mapping[str, int]
     source: str
+    repeats: int = 0
 
     def __post_init__(self) -> None:
         _bad(type(self.fps) is not int or not 1 <= self.fps <= 240, f"fps {self.fps!r} is a whole number", "fps")
@@ -173,6 +177,7 @@ class BodyTrack:
         _bad(self.points.shape != (n, len(POINTS), 3) or n < 1, "points are frames x 13 x 3", "points")
         _bad(self.seen.shape != (n, len(POINTS)) or self.seen.dtype != bool, "seen is frames x 13 of bool", "seen")
         _bad(not np.isfinite(self.points[self.seen]).all(), "a seen point is a finite place", "points")
+        _bad(type(self.repeats) is not int or not 0 <= self.repeats <= n, "repeats count frames", "repeats")
 
     @property
     def frames(self) -> int:
@@ -197,8 +202,11 @@ def reference_body(track: pt.PoseTrack, *, min_visibility: float = MIN_VISIBILIT
     points = np.full((n, len(POINTS), 3), np.nan)
     seen = np.zeros((n, len(POINTS)), bool)
     rejected = {"lost": 0, "low_confidence": 0, "implausible": 0, "jump": 0, "arm": 0}
+    repeated = np.array([frame.repeat for frame in track.frames], bool)
     index = {name: i for i, name in enumerate(pt.LANDMARKS)}
     for f, frame in enumerate(track.frames):
+        if frame.repeat:
+            continue
         if frame.world is None or frame.image is None:
             rejected["lost"] += 1
             continue
@@ -218,6 +226,8 @@ def reference_body(track: pt.PoseTrack, *, min_visibility: float = MIN_VISIBILIT
     medians = {bone: _median_length(points, seen, bone) for bone in BONES}
     last = None
     for f in range(n):
+        if repeated[f]:  # no new picture: the last distinct one still stands, a frame further back
+            continue
         if not seen[f].any():
             last = None
             continue
@@ -230,17 +240,19 @@ def reference_body(track: pt.PoseTrack, *, min_visibility: float = MIN_VISIBILIT
             rejected["arm"] += 1
             for side in {name.split("_")[0] for name in broken}:
                 seen[f, [_AT[p] for p in ARM_POINTS if p.startswith(side)]] = False
-        if last is not None and last == f - 1:
+        if last is not None and repeated[last + 1 : f].all():  # the last distinct picture, however many repeats ago
             both = seen[f] & seen[last]
             step = np.linalg.norm(points[f, both] - points[last, both], axis=1)
-            if both.any() and float(step.max()) > MAX_STEP * 30 / fps:
+            if both.any() and float(step.max()) > MAX_STEP * 30 / fps * (f - last):
                 rejected["jump"] += 1
                 seen[f] = False
                 last = None
                 continue
         last = f
     points[~seen] = np.nan
-    return BodyTrack(fps, track.frames[0].time_s, points, seen, MappingProxyType(rejected), "reference")
+    return BodyTrack(
+        fps, track.frames[0].time_s, points, seen, MappingProxyType(rejected), "reference", int(repeated.sum())
+    )
 
 
 def _mid(points: np.ndarray, a: str, b: str) -> np.ndarray:
@@ -749,7 +761,7 @@ def pose_record(
     source: str = "0" * 64,
     clamp: bool = True,
 ) -> dict:
-    """A ``srstudio.pose-track/1.0.0`` record of one of our dances as a perfect estimator facing the dancer would write
+    """A ``srstudio.pose-track`` record of one of our dances as a perfect estimator facing the dancer would write
     it: the study's round trip, and a record for tests and recipes that holds no real person. Landmarks the skeleton
     does not place (eyes, mouth, fingers, heels, toes) are put on the nearest point it does."""
     track = dance_body(frames, fps, profile=profile, clamp=clamp)
@@ -785,6 +797,7 @@ def pose_record(
                 "box": [0.25, 0.1, 0.75, 0.9],
                 "position": 0.0,
                 "appearance": 0.0,
+                "repeat": False,
             }
         )
     return {
