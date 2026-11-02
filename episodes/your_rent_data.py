@@ -100,21 +100,21 @@ ROWS = (
     (hold(0.0, THREE, "", *TOP), SIPS, SAYS, BESIDE),
     (priced(0.3, THREE, 0, *TOP), SIPS, SAYS, BESIDE),
     (say(1.7, "goat", 1, "shock", "flat", "desk"), FROZEN, SAYS, BESIDE),
-    (say(2.3, "frog", 2, "half", "flat", "desk"), FROZEN, SAYS, BESIDE),
-    (first(3.1, "goat", 3, "For one room?", "wide", "open", "desk"), FROZEN, SAYS, BESIDE),
-    (part(4.1, "goat", 3, 3, "That's robbery.", "narrow", "flat", "desk"), FROZEN, SAYS, BESIDE),
-    (say(5.2, TWO, 4, *TOP, "hoof"), HOOF, HAND, REST),
-    (say(7.2, "frog", 5, "teary", "grin", "desk"), HOOF, TOUCHED, REST),
-    (priced(8.2, "goat", 6, "half", "flat", "desk"), HOOF, TOUCHED, REST),
-    (say(10.2, "raccoon", 7, "wide", "grin", "lean"), HOOF, TOUCHED, REST),
-    (hold(11.4, "goat", "", "side", "none", "desk", "look"), HOOF, TOUCHED, REST),  # [1.2 s]: he sees Lewis
-    (say(12.6, "goat", 8, "narrow", "flat", "desk"), HOOF, TOUCHED, REST),
+    (say(2.45, "frog", 2, "half", "flat", "desk"), FROZEN, SAYS, BESIDE),
+    (first(3.3, "goat", 3, "For one room?", "wide", "open", "desk"), FROZEN, SAYS, BESIDE),
+    (part(4.3, "goat", 3, 3, "That's robbery.", "narrow", "flat", "desk"), FROZEN, SAYS, BESIDE),
+    (say(5.25, TWO, 4, *TOP, "hoof"), HOOF, HAND, REST),
+    (say(7.55, "frog", 5, "teary", "grin", "desk"), HOOF, TOUCHED, REST),
+    (priced(8.7, "goat", 6, "half", "flat", "desk"), HOOF, TOUCHED, REST),
+    (say(10.98, "raccoon", 7, "wide", "grin", "lean"), HOOF, TOUCHED, REST),
+    (hold(12.2, "goat", "", "side", "none", "desk", "look"), HOOF, TOUCHED, REST),  # [1.2 s]: he sees Lewis
+    (say(13.4, "goat", 8, "narrow", "flat", "desk"), HOOF, TOUCHED, REST),
 )
 BEATS = tuple(row[0] for row in ROWS)
 ACTS = {"goat": tuple(r[1] for r in ROWS), "frog": tuple(r[2] for r in ROWS), "raccoon": tuple(r[3] for r in ROWS)}
 ONCE = ("hoof", "look")
 HELD = 1.2  # seconds of the hold before the last line: no speech, no new caption
-END = 13.95  # the cut comes on "hundred": the last take ends at 13.87
+END = 14.75  # the cut comes on "hundred": the last take ends at 14.67
 SKETCH = Sketch(SLUG, TITLE, (DAD, FERN, LEWIS), LINES, BEATS, END, tail=0.1, bare=BARE)
 HUM = replace(foley.HUM, seconds=1.6)
 
