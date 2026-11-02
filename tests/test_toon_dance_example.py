@@ -5,6 +5,7 @@ import importlib.util
 import json
 import os
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import pytest
@@ -54,19 +55,35 @@ def test_the_numbers_meet_the_seat_groove(built):
     assert numbers["numbers"]["clamped"] == 0 and "rendered" not in numbers
 
 
-def test_the_page_is_local_and_says_what_was_not_rendered(built):
+def test_the_page_is_local_in_portuguese_and_says_what_was_not_rendered(built):
     module, out = built
     text = (out / "index.html").read_text()
-    assert 'src="dance-toon.mp4"' in text and "What to judge" in text and "no engine was given" in text
-    assert "views.mp4" not in text  # the three-view video is shown only when it is there
+    assert '<html lang="pt-BR">' in text and 'src="dance-toon.mp4"' in text
+    assert "O que mudou" in text and "O que julgar" in text and "nenhum motor foi dado" in text
+    assert "views.mp4" not in text and "arms.png" not in text  # shown only when they are there
+    assert "../v1/index.html" not in text  # the previous version is linked only when it is there
     assert "https://" not in text and "http://" not in text  # nothing to fetch: it opens as a local file
     (out / "views.mp4").write_bytes(b"")
+    (out / "arms.png").write_bytes(b"")
+    (out.parent / "v1").mkdir(exist_ok=True)
+    (out.parent / "v1" / "index.html").write_text("")
     numbers = json.loads((out / "measurements.json").read_text())
     numbers["rendered"] = {**numbers["numbers"], "pictures": 3, "radius_px": 58.4}
     numbers["rendered"]["sway"] = {**numbers["rendered"]["sway"], "misses": ["peak to peak 0.3, not 0.17..0.23"]}
+    numbers["stills"] = {"arm_pixels": 1000, "arm_pixels_differ": 12, "raised_frame": 279}
     text = module.page(out, numbers).read_text()
-    assert 'src="views.mp4"' in text and "top (x, z, front down the screen)" in text
-    assert "peak to peak 0.3, not 0.17..0.23" in text and "Measured on rendered pictures" in text
+    assert 'src="views.mp4"' in text and "topo (x, z, a frente para baixo na tela)" in text
+    assert "peak to peak 0.3, not 0.17..0.23" in text and "Medido nas imagens renderizadas" in text
+    assert 'src="arms.png"' in text and "12 diferem (1.20%)" in text and "imagem 279" in text
+    assert 'href="../v1/index.html"' in text
+
+
+def test_the_still_scenes_draw_the_dance_at_rest_and_the_approved_drawing(tmp_path):
+    rest, approved = example().still_scenes(tmp_path)
+    rest_ids = {e.get("id") or "" for e in ET.parse(rest).iter()}
+    approved_ids = {e.get("id") or "" for e in ET.parse(approved).iter()}
+    assert any(i.startswith("arm-left-") for i in rest_ids)  # the dance's own arms
+    assert not any(i.startswith("arm-") for i in approved_ids)  # the rig's own desk arms
 
 
 def test_the_example_needs_an_engine_or_says_it_has_none(tmp_path, monkeypatch):

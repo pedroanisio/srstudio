@@ -4,9 +4,11 @@
 
 builds ``OUT/dance-toon.scene.xml`` with its synthesised track, encodes ``OUT/dance-toon.mp4`` with the engine
 (software H.264, ``--strict``), renders a small check of the seat groove picture by picture and reads the groove back
-out of the drawn pixels, and writes ``OUT/measurements.json`` and the review page ``OUT/index.html``. ``--no-engine``
-writes the scene and the numbers measured on the drawing's own transforms only. The page plays a three-view video
-``views.mp4`` beside the clip when one is there.
+out of the drawn pixels, renders three stills (the dance at rest, the approved drawing drawn by its rig with its own
+arms, and a raised arm) with the two rest arms side by side in ``OUT/arms.png``, and writes ``OUT/measurements.json``
+and the review page ``OUT/index.html``, in Portuguese. ``--no-engine`` writes the scene and the numbers measured on the
+drawing's own transforms only. The page plays a three-view video ``views.mp4`` beside the clip when one is there, and
+links the previous version at ``../v1/index.html`` when there is one.
 """
 
 from __future__ import annotations
@@ -22,11 +24,12 @@ from typing import Any
 import numpy as np
 from sr_core.scene import Scene
 
-from srstudio import PEACH, Canvas, gpu, music, toon
+from srstudio import PEACH, Canvas, gpu, music, toon, toon_head
 from srstudio import dance as dn
 from srstudio import toon_dance as td
 from srstudio.digest import sha256
-from srstudio.toon import SCALE
+from srstudio.head_motion import HeadPlan
+from srstudio.toon import SCALE, Pose, fx, fy
 
 GROOVE = music.Groove(129)
 BARS = 14
@@ -50,6 +53,8 @@ PUMPED = FIT.hold(  # the arm-pump's arm lifted to the side and unbent, so the p
         "left_lower_arm.stretch": 0.0,
     }
 )
+RAISED_BAR = 6  # the still with the arm up: the first beat of bar 7, the arm held up since bar 5's transition
+ARMS_BOX = (20.0, 640.0, 400.0, 830.0)  # the drawing's arms, reference pixels: the stills compared side by side
 
 
 def routine() -> dn.Routine:
@@ -119,6 +124,70 @@ def check_scene(out: Path) -> tuple[Path, td.ToonDance, float]:
     return path, performance, FIT.radius * SCALE * CHECK_SCALE
 
 
+def still_scenes(out: Path) -> tuple[Path, Path]:
+    """Two one-picture scenes of the dog alone on a plain ground: the dance at rest (every move at intensity 0, so
+    the skeleton stays at its fitted rest) with the dance's own arms, and the approved drawing drawn by its rig with
+    the rig's own desk arms. Returns their paths."""
+    duration = 1.0
+    rest = dn.Routine(1, (dn.Entry(0, 1, dn.moves()["seat-groove"], intensity=0.0),))
+    performance = td.perform(FIT, rest, GROOVE, 0.0, duration)
+    paths = []
+    for name in ("rest", "approved"):
+        scene, cv = _scene(1080, 1920, duration, PEACH.background)
+        if name == "rest":
+            td.draw(cv, cv.comp, performance)
+        else:
+            face = FIT.rest_face
+            toon_head.figure(cv, cv.comp, FIT.rig, [Pose(0, face.eyes, face.mouth, "desk")], duration, HeadPlan())
+        _checked(scene)
+        path = out / f"{name}.scene.xml"
+        path.write_bytes(scene.to_bytes(layout="pretty"))
+        paths.append(path)
+    return paths[0], paths[1]
+
+
+def _picture(engine: str, scene: Path, frame: int, path: Path) -> Path:
+    _run(
+        [
+            engine,
+            "render",
+            str(scene),
+            "--frames",
+            f"{frame}..{frame + 1}",
+            "-o",
+            str(path.with_suffix("")) + "_%04d.png",
+        ]
+    )
+    rendered = path.with_name(f"{path.stem}_{frame:04d}.png")
+    rendered.replace(path)
+    return path
+
+
+def stills(out: Path, engine: str, dance: Path) -> dict[str, Any]:
+    """The rest still beside the approved still, their arms side by side in ``arms.png``, and a raised arm from the
+    dance's scene ``dance``; returns how many pixels of the arms differ between the two rest stills."""
+    from PIL import Image
+
+    rest_scene, approved_scene = still_scenes(out)
+    rest = _picture(engine, rest_scene, 0, out / "rest.png")
+    approved = _picture(engine, approved_scene, 0, out / "approved.png")
+    frame = round(GROOVE.at(RAISED_BAR) * td.FPS)
+    _picture(engine, dance, frame, out / "raised.png")
+    x0, y0, x1, y1 = ARMS_BOX
+    box = (round(fx(x0)), round(fy(y0)), round(fx(x1)), round(fy(y1)))
+    a = np.asarray(Image.open(rest).convert("RGB").crop(box)).astype(int)
+    b = np.asarray(Image.open(approved).convert("RGB").crop(box)).astype(int)
+    differ = int((np.abs(a - b).max(axis=2) > 32).sum())
+    gap = 24
+    side = Image.new("RGB", (2 * a.shape[1] + gap, a.shape[0]), (255, 255, 255))
+    side.paste(Image.fromarray(b.astype(np.uint8)), (0, 0))
+    side.paste(Image.fromarray(a.astype(np.uint8)), (a.shape[1] + gap, 0))
+    side.save(out / "arms.png")
+    for name in ("rest.png", "approved.png", "raised.png", "arms.png"):
+        (out / name).chmod(0o600)
+    return {"arm_pixels": int(a.shape[0] * a.shape[1]), "arm_pixels_differ": differ, "raised_frame": frame}
+
+
 def _checked(scene: Scene) -> None:
     errors = [f for f in scene.check() if f.severity == "error"]
     if errors:
@@ -182,6 +251,7 @@ def measured(performance: td.ToonDance) -> dict[str, Any]:
 
 
 TARGETS = {"bob": ("1", "0.19", "0.26", "0.26..0.50", "min"), "sway": ("1", "0.12", "0.32", "0.17..0.23", "either")}
+AXES = {"bob": "sobe e desce", "sway": "balanço lateral"}
 
 
 def _rows(readings: dict[str, Any]) -> str:
@@ -189,9 +259,9 @@ def _rows(readings: dict[str, Any]) -> str:
     for axis in ("bob", "sway"):
         r = readings[axis]
         target = TARGETS[axis]
-        verdict = "meets the target" if not r["misses"] else "; ".join(r["misses"])
+        verdict = "atinge a meta" if not r["misses"] else "; ".join(r["misses"])
         rows.append(
-            f"<tr><th>{axis}</th><td>{r['cycles_per_beat']:.3f} <small>({target[0]})</small></td>"
+            f"<tr><th>{AXES[axis]}</th><td>{r['cycles_per_beat']:.3f} <small>({target[0]})</small></td>"
             f"<td>{r['onto_s']:.3f} <small>({target[1]})</small></td>"
             f"<td>{r['away_s']:.3f} <small>({target[2]})</small></td>"
             f"<td>{r['peak_to_peak']:.3f} <small>({target[3]})</small></td>"
@@ -200,41 +270,69 @@ def _rows(readings: dict[str, Any]) -> str:
     return "\n".join(rows)
 
 
+def _stills(out: Path, numbers: dict[str, Any]) -> str:
+    """The stills' section, or what was not rendered."""
+    still = numbers.get("stills")
+    if not still or not (out / "arms.png").is_file():
+        return "<h2>Imagens paradas</h2><p>Não renderizadas: nenhum motor foi dado.</p>"
+    share = 100 * still["arm_pixels_differ"] / still["arm_pixels"]
+    return f"""<h2>Em repouso, lado a lado com a v2 aprovada</h2>
+<figure><img src="arms.png" alt="Os braços da v2 aprovada à esquerda e os da dança em repouso à direita">
+<figcaption>À esquerda, os braços do desenho aprovado (toon-dog@2), desenhados agora pelo próprio rig com os braços
+dele. À direita, os braços da dança com o esqueleto parado na pose de repouso. Dos {still["arm_pixels"]} pixels deste
+recorte, {still["arm_pixels_differ"]} diferem ({share:.2f}%).</figcaption></figure>
+<div class="stills">
+<figure><img src="approved.png" alt="O desenho aprovado inteiro"><figcaption>A v2 aprovada, inteira.</figcaption>
+</figure>
+<figure><img src="rest.png" alt="A dança em repouso inteira"><figcaption>A dança em repouso, inteira.</figcaption>
+</figure>
+<figure><img src="raised.png" alt="O braço esquerdo levantado"><figcaption>Do clipe, imagem {still["raised_frame"]}
+(compasso {RAISED_BAR + 1}): o braço esquerdo levantado ao lado da cabeça.</figcaption></figure>
+</div>"""
+
+
 def page(out: Path, numbers: dict[str, Any]) -> Path:
-    """The review page beside the clip: it opens as a local file."""
+    """The review page beside the clip, in Portuguese: it opens as a local file."""
     head = (
-        "<tr><th></th><th>cycles / beat</th><th>onto the hit, s</th><th>away, s</th>"
-        "<th>peak to peak, head radii</th><th>hit</th><th>against the target</th></tr>"
+        "<tr><th></th><th>ciclos por batida</th><th>até o golpe, s</th><th>volta, s</th>"
+        "<th>pico a pico, raios da cabeça</th><th>golpe</th><th>contra a meta</th></tr>"
     )
     sections = [
-        f'<h2>Measured on the drawing\'s transforms</h2><table>{head}{_rows(numbers["numbers"])}</table>'
-        "<p class=note>The drawn head's centre, carried by the body transform and the head rig's channels, over the "
-        "first eight bars. Targets in brackets; strokes are held to 0.02 s (sway 0.025 s).</p>"
+        f"<h2>Medido nas transformações do desenho</h2><table>{head}{_rows(numbers['numbers'])}</table>"
+        "<p class=note>O centro da cabeça desenhada, levado pela transformação do corpo e pelos canais do rig da "
+        "cabeça, nos primeiros oito compassos. Metas entre parênteses; os golpes valem até 0,02 s (balanço 0,025 s)."
+        "</p>"
     ]
     if numbers.get("rendered"):
         r = numbers["rendered"]
         sections.append(
-            f"<h2>Measured on rendered pictures</h2><table>{head}{_rows(r)}</table>"
-            f"<p class=note>{r['pictures']} pictures of the seat groove rendered by the engine at a quarter size; the "
-            f"centroid of everything drawn, over a head radius of {r['radius_px']} px. The drop must land within "
-            "0.02 s of the beat.</p>"
+            f"<h2>Medido nas imagens renderizadas</h2><table>{head}{_rows(r)}</table>"
+            f"<p class=note>{r['pictures']} imagens do balanço sentado renderizadas pelo motor a um quarto do tamanho; "
+            f"o centroide de tudo o que está desenhado, sobre um raio de cabeça de {r['radius_px']} px. A descida "
+            "precisa cair a até 0,02 s da batida.</p>"
         )
     else:
-        sections.append("<h2>Measured on rendered pictures</h2><p>Not rendered: no engine was given.</p>")
+        sections.append("<h2>Medido nas imagens renderizadas</h2><p>Não renderizado: nenhum motor foi dado.</p>")
     views = (
-        '<figure><video src="views.mp4" controls loop playsinline></video><figcaption>The same moves on the shared '
-        "skeleton, two bars each. Rows are characters; columns are front (x, y), left (z, y, facing screen right) "
-        "and top (x, z, front down the screen).</figcaption></figure>"
+        '<figure><video src="views.mp4" controls loop playsinline></video><figcaption>Os mesmos passos no esqueleto '
+        "compartilhado, dois compassos cada. As linhas são os personagens de referência do esqueleto (realista, "
+        "cartoon, palito), não o cão; as colunas são frente (x, y), lado esquerdo (z, y, virado para a direita da "
+        "tela) e topo (x, z, a frente para baixo na tela).</figcaption></figure>"
         if (out / "views.mp4").is_file()
         else ""
     )
+    previous = (
+        '<p>A versão anterior, que você recusou, continua em <a href="../v1/index.html">v1</a>.</p>'
+        if (out.parent / "v1" / "index.html").is_file()
+        else ""
+    )
     text = f"""<!doctype html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="generator" content="{GENERATOR}">
-<title>Toon dog dancing</title>
+<title>Cão Toon dançando</title>
 <style>
   :root {{ --bg: #f6f6f4; --fg: #1d1f24; --muted: #5b606b; --card: #ffffff; --line: #d9dbe0; --bad: #a3271f; }}
   @media (prefers-color-scheme: dark) {{ :root {{ --bg: #16181d; --fg: #e8e9ec; --muted: #9aa0ab; --card: #1f2229;
@@ -244,10 +342,13 @@ def page(out: Path, numbers: dict[str, Any]) -> Path:
   h1 {{ font-size: 1.5rem; margin: 0 0 4px; }}
   h2 {{ font-size: 1.1rem; margin: 24px 0 8px; }}
   p.lead, .note, figcaption {{ color: var(--muted); }}
+  a {{ color: inherit; }}
   .clips {{ display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 16px; align-items: start; }}
-  @media (max-width: 760px) {{ .clips {{ grid-template-columns: 1fr; }} }}
+  .stills {{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }}
+  @media (max-width: 760px) {{ .clips, .stills {{ grid-template-columns: 1fr; }} }}
   figure {{ margin: 0; }}
-  video {{ width: 100%; border-radius: 8px; background: #000; display: block; }}
+  video, img {{ width: 100%; border-radius: 8px; display: block; }}
+  video {{ background: #000; }}
   table {{ border-collapse: collapse; width: 100%; display: block; overflow-x: auto; }}
   th, td {{ border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; }}
   td {{ font-variant-numeric: tabular-nums; }}
@@ -259,31 +360,51 @@ def page(out: Path, numbers: dict[str, Any]) -> Path:
 </head>
 <body>
 <main>
-<h1>Toon dog dancing</h1>
-<p class="lead">The approved dog (v2 drawing and head rig) on the dance SDK, at 129 BPM and 25 pictures a second.
-Fourteen bars: the seat groove for eight, the left arm raised for the last four, then head nod, shoulder shimmy and arm
-pump for two bars each. Proposed: nothing merges until you approve the look.</p>
+<h1>Cão Toon dançando, v2</h1>
+<p class="lead">O cão aprovado (desenho v2 e rig da cabeça) dançando a 129 BPM, 25 imagens por segundo. São catorze
+compassos: oito de balanço sentado, com o braço esquerdo levantado nos últimos quatro, e depois aceno de cabeça,
+sacudida de ombros e braço bombeando, dois compassos cada. É uma proposta: nada entra sem a sua aprovação.</p>
+{previous}
 <div class="clips">
 <figure><video src="dance-toon.mp4" controls loop playsinline></video>
-<figcaption>The styled clip, with its synthesised track.</figcaption></figure>
+<figcaption>O clipe com a trilha sintetizada.</figcaption></figure>
 {views}
 </div>
-{"".join(sections)}
+{_stills(out, numbers)}
 <section>
-<h2>What to judge</h2>
+<h2>O que mudou</h2>
+<p>Na v1 os braços eram tubos da mesma largura do ombro à pata, com bolas nas juntas, e saíam de ombros fora do
+contorno do corpo. Por isso pareciam patas de inseto. Agora cada braço é o braço aprovado da v2: o mesmo traço de
+pelo que afina para dentro do corpo, uma só linha de tinta por baixo, a sombra sob o antebraço e a mesma pata. Ele
+nasce do mesmo ponto dentro do tronco que o desenho aprovado usa, e não há bolas nas juntas.</p>
+<p>A única diferença em relação à v2 é que o braço se move. O ombro, o cotovelo e o pulso seguem os ossos do
+esqueleto, e a largura acompanha cada osso: um ponto no meio do antebraço tem a largura do meio do antebraço
+aprovado, mesmo quando o osso aparece mais curto ou mais longo na tela. Cada imagem desenha o braço exatamente onde o
+esqueleto está naquela imagem, sem suavizar, reamostrar nem segurar poses, então a velocidade e a aceleração de cada
+gesto são as do esqueleto.</p>
+<p>O esqueleto do cão foi reajustado ao desenho: os ombros ficam de 24 a 26 px dentro do corpo, e em repouso o
+cotovelo, o pulso e a pata caem a menos de 1 px dos da v2. O balanço não mudou: as medidas abaixo são as mesmas da
+v1.</p>
+</section>
+<section>
+<h2>O que julgar</h2>
 <ul>
-<li>The bob: a quick drop onto every beat and a slower rise, the whole dog together; the head never rotates within a
-beat.</li>
-<li>The sway: a short snap sideways that lands with the drop, then a slow return.</li>
-<li>Bars 5 to 8: the raised left arm rides the body with no lag; the paw drawn over the side of the head.</li>
-<li>The arms: the approved drawing's own arms posed on the skeleton all through, so the paws lift off the desk with
-the bob.</li>
-<li>Faces held per phrase: grin, eyes closed on the nod, smirk on the shimmy, shout on the pump.</li>
-<li>The shoulder shimmy is a forward-back motion: seen from the front it reads mostly through the shoulders' small
-lift and the face sliding sideways.</li>
-<li>The dog has no legs: it dances seated only, so no standing routine follows.</li>
+<li>Em repouso: os braços da dança ao lado dos da v2 aprovada. Devem ser praticamente iguais.</li>
+<li>Compassos 5 a 8: o braço esquerdo levantado ainda parece o braço da v2, saindo de dentro do corpo, com a pata
+desenhada sobre o lado da cabeça; ele acompanha o corpo sem atraso.</li>
+<li>Compassos 13 e 14, o braço bombeando: quando o antebraço aponta para a câmera ele fica curto na tela. Veja se
+ainda lê como braço.</li>
+<li>O sobe e desce: uma descida rápida em cada batida e uma subida mais lenta, o cão inteiro junto; a cabeça nunca
+gira dentro de uma batida.</li>
+<li>O balanço lateral: um golpe curto para o lado junto com a descida, e uma volta lenta.</li>
+<li>Rostos mantidos por frase: sorriso, olhos fechados no aceno, sorriso de lado na sacudida, grito no braço
+bombeando.</li>
+<li>A sacudida de ombros é um movimento para frente e para trás: de frente, ela aparece sobretudo na pequena subida
+dos ombros e no rosto deslizando para o lado.</li>
+<li>O cão não tem pernas: dança só sentado.</li>
 </ul>
 </section>
+{"".join(sections)}
 </main>
 </body>
 </html>
@@ -306,6 +427,7 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("give --engine (or SRSTUDIO_ENGINE), or --no-engine")
         encode(scene, args.engine)
         numbers["rendered"] = rendered(args.out, args.engine)
+        numbers["stills"] = stills(args.out, args.engine, scene)
     (args.out / "measurements.json").write_text(json.dumps(numbers, indent=2) + "\n")
     print(page(args.out, numbers))
     return 0
