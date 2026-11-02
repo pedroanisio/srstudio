@@ -5,6 +5,7 @@ from __future__ import annotations
 import time
 import xml.etree.ElementTree as ET
 
+from . import _composition_text as text_assets
 from . import _composition_wire as wire
 from . import composition as c
 from ._composition_emit import assemble, check_expansion
@@ -32,16 +33,14 @@ def compile_bundle(request: dict) -> c.CompiledScene:
             raise c._fail('budget.timeout', None, 'bundle assembly within the deadline', 'composition.budget')
 
     for item in request['vectors']:
-        value = wire.fields(item, {'id', 'xml'})
-        name = value['id']
+        name, xml, fonts = wire.vector_decode(item)
         if type(name) is not str or name in roots or name not in bindings or bindings[name].backend != 'vector':
             raise wire.fail(None, 'one source per vector binding')
-        xml = wire.xml_decode(value['xml'])
-        total += len(xml)
+        total += len(xml) + text_assets.validate(fonts)
         if total > MAX_BYTES:
             raise wire.fail(total, 'at most eight MiB of combined bundle inputs')
-        asset = prepare_vector(bindings[name], xml)
-        roots[name], sizes[name] = ET.fromstring(asset.xml), len(xml)
+        asset = prepare_vector(bindings[name], xml, fonts=fonts)
+        roots[name], sizes[name] = text_assets.portable(ET.fromstring(asset.xml), fonts), len(xml) + 256 * len(fonts)
         checkpoint()
     image_names = set()
     for item in request['rasters']:
