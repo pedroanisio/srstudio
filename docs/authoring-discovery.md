@@ -1232,3 +1232,70 @@ choose sufficiently dense samples and inspect the result. `frames()` takes
 a finite positive time step, while `eased()` samples ordered scalar keys
 with its two supported easings. `chew()` replaces viseme keys inside a span
 on a 0.12-second grid and preserves keys outside it.
+
+
+## Collage rooms, photographs and illustrated interfaces
+
+The 33 builders in `collage_sets`, `collage_odds`, `collage_photo`,
+`collage_article` and `collage_forecast` declare placement, clocks and return
+ownership. The 13 rooms use fixed 1080×1920 furniture layouts. Each returns
+one whole group with a softened, slightly overscanned backdrop and a sharp
+signature shelf. Their lights, clocks and newsroom globe are static drawings.
+Add actors separately. Room contracts expose the actual `signature_box`,
+`marks_box` and `zoom_pivot` helpers; the last computes a pivot that preserves
+12-pixel signature margins under a uniform zoom, without emitting a camera.
+
+<!-- collage-context-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, collage_photo, registry
+from srstudio.collage_group import Place
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1920, fps='24', duration=4)
+cv = Canvas(scene, font_asset=None)
+room = registry.get('location', 'collage-living-room')
+operations = {op.name: op.builder for op in room.contract.operations}
+pivot = operations['zoom_pivot']('living-room', (540, 1100), 1.4)
+assert len(pivot) == 2
+
+photo = collage_photo.print_photo(
+    cv, cv.comp,
+    places={'gary': Place(540, 1800, 0.6)},
+    poses={'gary': ('wide', 'grin', 'shrug')},
+    x=90, y=600, width=900, blur=('gary',),
+)
+record = registry.get('prop', 'collage-photo-print').describe()['contract']
+assert record['arguments']['properties']['places']['additionalProperties'][
+    'x-python-type'
+] == 'srstudio.collage_group.Place'
+assert photo is not cv.comp
+```
+<!-- collage-context-discovery:end -->
+
+A photo print composes a static room, posed figures and a foreground sofa
+inside a crop mask, then adds its border and gloss. `Place` supplies each
+figure's fixed-layout position and positive scale. Pose keys must match place
+keys. Blur names select actors; their blur radius compensates for figure
+scale before the entire photo is scaled. The returned group is the whole
+print, positioned and rotated at its top-left. Its `width` describes the
+image, excluding the border. This is a drawing assembled from poses, not a
+capture of another scene's current animation.
+
+Cake cuts, doctor-scale drops, weather-map slides and message-thread cues
+use composition seconds even when `Canvas.local_time` is enabled. Sensor-tap
+water, timer digits, viewfinder countdowns and flash fades use the Canvas
+clock. A timer's first digit is visible before its start cue; viewfinder
+brackets remain after its countdown. Eye-chart lifetime groups and gates
+require a project-aligned parent with `local_time=False`. These are authored
+visibility and transform changes, without a physical simulation.
+
+Article and thread builders return a wrapper containing the whole phone.
+Their contents are illustrations: body-copy bars, a landscape placeholder,
+and message bubbles. They do not fetch articles or send messages. Article
+headlines and thread messages preflight estimated text fit; this is not a
+promise to fit every field, including sender and contact copy. Read their
+constraints before choosing dimensions. Chart bars, the TV and call buttons
+are likewise static drawings. Glass and jug geometry keeps parent-space
+coordinates even though their root transform scales around an authored base;
+do not treat that base as a new local origin.

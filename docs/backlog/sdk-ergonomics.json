@@ -24,11 +24,11 @@
   "catalog_observation": {
     "parts": 734,
     "characters": 75,
-    "entries_with_explicit_part_contract": 659,
+    "entries_with_explicit_part_contract": 692,
     "all_default_characters_have_explicit_contracts": true,
     "noncharacter_parts": 659,
-    "noncharacter_parts_with_explicit_contracts": 584,
-    "source": "Fresh-process registry observation on 2026-11-02 after 22 everyday Collage contracts and five existing helper operations. Baselines were captured from 906fd314 after the separately recorded flip-card preflight repair. See review_verification.collage_everyday_contracts.",
+    "noncharacter_parts_with_explicit_contracts": 617,
+    "source": "Fresh-process registry observation on 2026-11-02 after 33 Collage room, photo, clinic and interface contracts and three existing room helper operations. Baselines were captured from 6c0d45ee after the separately recorded preflight repairs. See review_verification.collage_context_contracts.",
     "by_kind": {
       "character": {
         "registered": 75,
@@ -36,11 +36,11 @@
       },
       "prop": {
         "registered": 461,
-        "explicit_contracts": 420
+        "explicit_contracts": 440
       },
       "location": {
         "registered": 115,
-        "explicit_contracts": 88
+        "explicit_contracts": 101
       },
       "graphic": {
         "registered": 83,
@@ -58,6 +58,39 @@
     }
   },
   "review_verification": {
+    "collage_context_contracts": {
+      "baseline_source_commit": "6c0d45eee4c408ac53b5906ac224a992f85e51ce",
+      "missing_contract_and_guide_regressions_red": 69,
+      "initial_green": 1,
+      "selected_regressions": {
+        "passed": 2378,
+        "skipped": 0
+      },
+      "new_tests": 70,
+      "new_explicit_contracts": 33,
+      "existing_helpers_exposed_as_operations": 3,
+      "unchanged_drawing_baselines": 33,
+      "unchanged_implementation_definitions": 62,
+      "implementation_comparison_scope": "Top-level functions/classes compared by AST after removing registration decorators; bodies and docstrings are unchanged.",
+      "new_real_engine_evaluation_cases": 2,
+      "branch_inclusive_coverage_percent": 96.16423554835224,
+      "branch_coverage_percent": 92.13973799126637,
+      "coverage_scope": [
+        "src/srstudio/_collage_context_contracts.py",
+        "src/srstudio/collage_article.py",
+        "src/srstudio/collage_forecast.py",
+        "src/srstudio/collage_odds.py",
+        "src/srstudio/collage_photo.py",
+        "src/srstudio/collage_sets.py",
+        "src/srstudio/contracts.py",
+        "src/srstudio/registry.py"
+      ],
+      "ruff": "passed",
+      "format": "passed",
+      "mypy_source_files": 333,
+      "retained_artifacts": "../generated/sdk-collage-context-contracts/v1/",
+      "qualification": "Discovery for 13 rooms and 20 photo, clinic and illustrated interface props, with three actual room helpers, typed placement records, crop and return ownership, composition versus canvas clocks, and random-access flash evaluation. Preflight repairs were committed before these drawing baselines. The remaining catalog and broader animation review findings stay open."
+    },
     "collage_place_record": {
       "baseline_source_commit": "a179dbc3e014cb839d1719c9d326de04bf2f4659",
       "red": 1,
@@ -1804,15 +1837,20 @@
           "srstudio.ink_vacuum",
           "srstudio.ink_captcha",
           "srstudio.collage_things",
-          "srstudio.collage_everyday"
+          "srstudio.collage_everyday",
+          "srstudio.collage_sets",
+          "srstudio.collage_odds",
+          "srstudio.collage_photo",
+          "srstudio.collage_article",
+          "srstudio.collage_forecast"
         ],
         "additional_parts": [
           "toon-headset"
         ],
-        "new_contracts": 531,
-        "current_explicit_noncharacter_contracts": 584,
+        "new_contracts": 564,
+        "current_explicit_noncharacter_contracts": 617,
         "current_registered_noncharacters": 659,
-        "remaining_undeclared": 75,
+        "remaining_undeclared": 42,
         "evidence": [
           "tests/test_counter_store_contracts.py",
           "tests/data/counter-store-contract-baseline.json",
@@ -1891,9 +1929,13 @@
           "src/srstudio/_collage_everyday_contracts.py",
           "tests/test_collage_everyday_contracts.py",
           "tests/support/collage_everyday_contracts.py",
-          "tests/data/collage-everyday-contract-baseline.json"
+          "tests/data/collage-everyday-contract-baseline.json",
+          "src/srstudio/_collage_context_contracts.py",
+          "tests/test_collage_context_contracts.py",
+          "tests/support/collage_context_contracts.py",
+          "tests/data/collage-context-contract-baseline.json"
         ],
-        "qualification": "The full catalog expansion remains open. All 109 non-character builders in Stick-prefixed modules and all 158 in Toon-prefixed modules now declare authored contracts, alongside the completed Cutout families. These module counts do not include other families sharing their style names. Drawing baselines remain unchanged; specific correctness repairs are recorded separately as P1 findings. Host, Mind and Map kits now declare all 31 non-character builders. Both News kit versions now declare their 27 non-character builders. The five Soft scene, bedtime, closet and inbox modules add 18 declared builders. The Soft prop and odds modules add 32 declared builders, with effect limits, held versus linear motion, callback ownership and expression-clock qualifications. Blob now declares all 12 non-character builders and exposes eight existing layout helpers without inventing spatial attachments. All 19 Ink non-character builders now declare clocks, actual return scope, timed records and typed delegation targets while retaining explicitly open variadic envelopes. The Collage table and corner module adds 16 contracts with actual drawing origins, copy, fork/card limits, return ownership and project-clock animation. Everyday Collage adds 22 contracts and five real reach/sampling helper operations, with phone-screen ownership, mixed clock qualifications and explicit limits of sampled sleeve motion. The 75 remaining non-character entries still require source review and executable semantic evidence."
+        "qualification": "The full catalog expansion remains open. All 109 non-character builders in Stick-prefixed modules and all 158 in Toon-prefixed modules now declare authored contracts, alongside the completed Cutout families. These module counts do not include other families sharing their style names. Drawing baselines remain unchanged; specific correctness repairs are recorded separately as P1 findings. Host, Mind and Map kits now declare all 31 non-character builders. Both News kit versions now declare their 27 non-character builders. The five Soft scene, bedtime, closet and inbox modules add 18 declared builders. The Soft prop and odds modules add 32 declared builders, with effect limits, held versus linear motion, callback ownership and expression-clock qualifications. Blob now declares all 12 non-character builders and exposes eight existing layout helpers without inventing spatial attachments. All 19 Ink non-character builders now declare clocks, actual return scope, timed records and typed delegation targets while retaining explicitly open variadic envelopes. The Collage table and corner module adds 16 contracts with actual drawing origins, copy, fork/card limits, return ownership and project-clock animation. Everyday Collage adds 22 contracts and five real reach/sampling helper operations, with phone-screen ownership, mixed clock qualifications and explicit limits of sampled sleeve motion. Collage rooms, photos, clinic props and illustrated interfaces add 33 contracts and three actual room layout helpers, with sharp signature ownership, typed Place records, crop semantics and verified clocks. The 42 remaining non-character entries still require source review and executable semantic evidence."
       },
       "evidence": [
         "src/srstudio/registry.py:contract_coverage",

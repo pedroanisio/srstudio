@@ -14,6 +14,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from . import checks, ink_meter
+from ._collage_context_contracts import contract
 from .canvas import Canvas
 from .collage import INK, _cut, _paper, _poly, draw_shapes
 from .collage_everyday import BEZEL, CARD_GLYPH, CARD_LEADING, _letter, bubble, phone
@@ -75,7 +76,12 @@ def _gated(cv: Canvas, parent, a: float, b: float):
     return g
 
 
-@register("prop", "collage-weather-map", summary="A paper weather map of invented land: a lettered arrow, a clock card")
+@register(
+    "prop",
+    "collage-weather-map",
+    summary="A paper weather map of invented land: a lettered arrow, a clock card",
+    contract=contract('collage-weather-map'),
+)
 def weather_map(
     cv: Canvas,
     parent,
@@ -202,7 +208,12 @@ def _message_layout(
     return boxes
 
 
-@register("prop", "collage-thread", summary="A phone open on an invented thread: a clock, a contact, bubbles, no app")
+@register(
+    "prop",
+    "collage-thread",
+    summary="A phone open on an invented thread: a clock, a contact, bubbles, no app",
+    contract=contract('collage-thread'),
+)
 def thread(
     cv: Canvas,
     parent,

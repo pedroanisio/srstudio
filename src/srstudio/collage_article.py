@@ -10,6 +10,7 @@ style (ADR 0026); it holds no timing, and returns its group for the caller to ke
 from __future__ import annotations
 
 from . import checks, collage_everyday, ink_meter
+from ._collage_context_contracts import contract
 from .canvas import Canvas
 from .collage import INK, _cut, _paper, draw_shapes
 from .collage_everyday import BEZEL, CARD_GLYPH, CARD_LEADING, phone
@@ -55,7 +56,12 @@ def _check(headline: str, w: float, room: float, size: float) -> None:
         raise ArticleError(f"{headline!r} does not fit a page {w} wide at {size} px")
 
 
-@register("prop", "collage-article", summary="A phone open on an invented article: a headline, no masthead, no faces")
+@register(
+    "prop",
+    "collage-article",
+    summary="A phone open on an invented article: a headline, no masthead, no faces",
+    contract=contract('collage-article'),
+)
 def article(
     cv: Canvas, parent, x: float, y: float, w: float, h: float, headline: str, *, size: float = 66.0, sender: str = ""
 ) -> object:

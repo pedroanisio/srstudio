@@ -15,6 +15,7 @@ from __future__ import annotations
 from collections.abc import Collection, Mapping
 
 from . import checks, collage, collage_sets
+from ._collage_context_contracts import contract
 from ._collage_place import Place
 from .canvas import Canvas
 from .collage import INK, _cut, _paper, draw_shapes, figure_shapes
@@ -65,7 +66,12 @@ def _digits(cv: Canvas, parent, start: float, seconds: int, tick: float, box: tu
         cv.gate(digit, [(0.0 if i == 0 else _tick(start, tick, i), _tick(start, tick, i + 1))])
 
 
-@register("prop", "collage-phone-timer", summary="A phone propped on three paper books, its self-timer counting")
+@register(
+    "prop",
+    "collage-phone-timer",
+    summary="A phone propped on three paper books, its self-timer counting",
+    contract=contract('collage-phone-timer'),
+)
 def timer(
     cv: Canvas,
     parent,
@@ -93,7 +99,12 @@ def timer(
     return g
 
 
-@register("prop", "collage-viewfinder", summary="The phone camera's frame lines and its countdown over a shot")
+@register(
+    "prop",
+    "collage-viewfinder",
+    summary="The phone camera's frame lines and its countdown over a shot",
+    contract=contract('collage-viewfinder'),
+)
 def viewfinder(cv: Canvas, parent, *, start: float, seconds: int = MAX_SECONDS, tick: float = 1.0):
     """The shot seen through the phone on the books: white corner brackets and a paper disc counting ``seconds``
     down from ``start``, one digit per ``tick``, under the caption pill and over the heads; the disc goes with the
@@ -113,7 +124,12 @@ def viewfinder(cv: Canvas, parent, *, start: float, seconds: int = MAX_SECONDS, 
     return g
 
 
-@register("prop", "collage-sofa", summary="The front of the living room's sofa: seat and arms, paper cut")
+@register(
+    "prop",
+    "collage-sofa",
+    summary="The front of the living room's sofa: seat and arms, paper cut",
+    contract=contract('collage-sofa'),
+)
 def sofa(cv: Canvas, parent):
     """The sofa's seat front from :data:`SOFA_TOP` down, its seams and its two arms: in front of a lineup seated on
     it, it hides the busts' cut-off bottoms."""
@@ -131,7 +147,12 @@ def sofa(cv: Canvas, parent):
     return g
 
 
-@register("prop", "collage-flash", summary="The camera's flash: the frame white, held, then fading")
+@register(
+    "prop",
+    "collage-flash",
+    summary="The camera's flash: the frame white, held, then fading",
+    contract=contract('collage-flash'),
+)
 def flash(cv: Canvas, parent, at: float, *, hold: float = 1.2, fade: float = 0.5):
     """White over the whole frame from ``at`` (project seconds), held ``hold`` seconds, fading over ``fade``."""
     numbers = (at, hold, fade)
@@ -177,7 +198,12 @@ def _blur(cv: Canvas, radius: float) -> str:
         return cv.effect(f"collage-photo-blur-{radius:.6g}", "blur", radius=radius)
 
 
-@register("prop", "collage-photo-print", summary="A printed photo: a still of the lineup in its room, paper border")
+@register(
+    "prop",
+    "collage-photo-print",
+    summary="A printed photo: a still of the lineup in its room, paper border",
+    contract=contract('collage-photo-print'),
+)
 def print_photo(
     cv: Canvas,
     parent,
