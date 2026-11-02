@@ -24,11 +24,12 @@ PILOTS = ROOT / "episodes" / "pilots"
 if str(PILOTS) not in sys.path:
     sys.path.insert(0, str(PILOTS))
 
+import fake_mars_data  # noqa: E402
 import news_story  # noqa: E402
 import seabird_jet_lag_data  # noqa: E402
 import space_haiku_data  # noqa: E402
 
-REELS = (seabird_jet_lag_data, space_haiku_data)
+REELS = (seabird_jet_lag_data, space_haiku_data, fake_mars_data)
 reel = pytest.mark.parametrize("pilot", REELS, ids=lambda m: m.SLUG)
 
 
@@ -140,6 +141,16 @@ def test_the_haiku_gets_one_chime_a_line_both_times():
 def test_the_sign_off_ends_on_the_anchor_credited_for_it():
     assert space_haiku_data.LOWERS[-1][1:] == ("HAIKU BY", "VERA STILLMAN, ANCHOR")
     assert space_haiku_data.BEATS[-1].who == "vera"
+
+
+def test_the_chat_names_no_agency():
+    chat = " ".join((fake_mars_data.CHAT, fake_mars_data.VERDICT, *(m.text for m in fake_mars_data.MESSAGES)))
+    assert "nasa" not in chat.lower()
+
+
+def test_fake_mars_opens_and_closes_on_houston():
+    assert fake_mars_data.LINES[0].text.endswith("In Houston.")
+    assert fake_mars_data.LINES[-1].text.endswith("In Houston.")
 
 
 @reel
@@ -304,7 +315,7 @@ def test_notes_name_the_new_fact_about_gus_for_the_cast_bible():
     assert "wife" in (folder(seabird_jet_lag_data) / "notes.md").read_text(encoding="utf-8")
 
 
-@pytest.mark.parametrize("module", ["seabird_jet_lag_audio", "space_haiku_audio"])
+@pytest.mark.parametrize("module", ["seabird_jet_lag_audio", "space_haiku_audio", "fake_mars_audio"])
 def test_the_recording_carries_the_banner(module):
     text = (PILOTS / f"{module}.py").read_text(encoding="utf-8")
     assert "ARCHITECTURAL REQUIREMENT: LLMs will always produce some form of error." in text
