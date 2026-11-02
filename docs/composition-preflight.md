@@ -877,16 +877,35 @@ ellipses, local linear/radial gradients, and numeric transform/opacity or boolea
 visibility keys. Scalar lengths are explicit source units. Keys use local or
 composition seconds, held endpoint extrapolation, and non-overshooting linear,
 hold, sine, quadratic, cubic, quartic, quintic, exponential or circular easing.
+Numeric channels also support native `spring`, `catmull-rom` and default `tcb`
+segments. Spring keys may specify finite `stiffness` and `mass` in `[1e-9, 1e9]`,
+`damping` in `[0, 1e9]`, and boolean `carry`. At most eight consecutive segments
+may carry velocity; longer chains must be authored as bounded sampled keys.
+Custom TCB tension/continuity/bias parameters remain unsupported.
+
+These curves keep their original XML and source clock. Preparation bounds spring
+excursions through oscillator energy, including endpoint correction and carried
+arrival velocity; spline bounds use their cubic control hulls. Native exponential
+endpoint snaps and floating-point cancellation receive conservative allowances.
+Opacity curves must stay inside `[0, 1]` within numeric tolerance; visibility
+remains discrete. Parameters attached to a non-spring key are refused.
 Animated rotations use a conservative full-circle envelope; correlated tracks
 can therefore need more generous declared bounds than a sampled screenshot.
 
 External assets, includes, instances, expressions, deformation,
-effects, overshooting curves and unsupported shape kinds fail explicitly. The
+effects, other unsupported curves and unsupported shape kinds fail explicitly. The
 adapter does not execute a builder or render while discovering those features.
 Native text with host-owned pinned fonts uses the bundle workflow below.
 The host remains responsible for payload provenance and authored anchor meaning:
 validating XML cannot prove that it was made by a particular approved builder.
 The worked example obtains its drawing directly from `parts.drawing('papers', 1)`.
+
+The [native curve tests](../tests/test_composition_curves.py) exercise the public
+and worker boundaries, malformed parameters, interior extrema, mixed curves,
+bounded carry chains and actual engine evaluation across timeline cuts. The
+hybrid candidate's complete frontal figure also compiles into two timeline spans
+with identical full-size pixels at three times inside its facial transition.
+This does not establish arbitrary rig viewpoints or complete hybrid-scene adoption.
 
 Each placement scopes its IDs and paint references. A parent transform and the
 camera are applied once; the emitted layer clock maps to source seconds without
@@ -1134,8 +1153,8 @@ memory is a planning allowance, not measured process RSS. The separate hard
 worker address-space cap also includes runtime overhead. Cache reuse can make
 actual render work smaller; preflight does not inspect cache contents.
 
-Cross-layer shadow receivers, split-pass intersections and per-layer finish
-currently refuse with `composition.capability`. A lit scene refuses vector
+Shadow requests require the explicit authored-mask contract below; missing masks,
+split-pass intersections and per-layer finish refuse with `composition.capability`. A lit scene refuses vector
 picture assets without a shared-light adapter. Missing passes are never dropped.
 These refusals keep unsupported emission behavior explicit while its adapters
 are implemented.
@@ -1201,3 +1220,54 @@ source-buffer limits and conservative projected-XML expansion checks apply befor
 camera's near plane are refused; this adapter does not clip them. It does not infer hidden surfaces, triangulate
 volumes, sort intersecting surfaces, cast shadows or approve an asset. Keep overlap passes and caster/receiver
 contracts explicit. The combined DRAWING proof remains a separate acceptance requirement.
+
+## Bind an authored shadow mask
+
+An authored ground shadow can declare its caster, receiver surface and light instead of being an unrelated
+dark shape. This is a geometric registration contract for an authored mask. It does not compute the caster's
+silhouette, penumbra, occlusion or physical shadow intensity.
+
+```python
+from srstudio import composition as c
+
+shadow = c.ShadowMask(
+    caster='car',
+    receiver='ground',
+    receiver_surface='floor',
+    caster_anchor='shadow-origin',
+    mask_anchor='center',
+    light='key',
+    tolerance=0.00001,
+)
+```
+
+Attach `shadow` to the mask layer's `shadow_mask` field, set that layer's `parent='ground'`, and set the car
+layer's `shadow_receiver='ground'`. Order the layers as ground, mask, car. Each caster requesting a shadow
+must have exactly one matching mask covering its entire layer interval. The receiver's interval contains both.
+All three layers are world-space pictures; protected information cannot act as a mask or receiver.
+
+The ground binding supplies a `FormSurface` named `floor` with a static, closed, strictly convex `FormPath`.
+The mask binding supplies exactly one ink surface with the same geometry restrictions. Every mask vertex must
+lie on and inside the actual receiver polygon after both layers' complete parent transforms. Shapes with
+changing local vertices, concave receivers, repeated corners and chained mask receivers are refused.
+
+The caster and mask bindings declare the named anchors. The `key` light must be directional, have positive intensity and travel
+toward the receiver from the caster anchor. Preflight projects that anchor along the light and compares it with
+the mask anchor, which must lie inside the mask polygon. `tolerance` is in scene world units, capped at `0.01`.
+Linear anchor tracks are checked at the union of their mapped source keys and interval endpoints; with fixed
+polygons and a fixed directional light, this bounds the complete source segments. Checks consume the shared
+`max_contact_samples` budget. A missing mask is a capability error; invalid bindings report `composition.shadow`.
+
+Use timeline compilation for moving world parents, cameras or lights. Each sampled configuration must satisfy
+the complete authored mask interval; the compiler does not deform or reposition a mask to repair a changed
+caster or light. The mask remains attached to the receiver while the shared camera projects both once.
+
+Preparation verifies the source XML in the bounded worker before any raster cache work: mask and receiver
+fills must be visible, every ancestor must remain visible with positive opacity, and native visibility animation
+or timing wrappers are refused. Layer intervals own visibility. Masks are fill-only, so a stroke cannot extend
+outside the validated receiver. Static scene, bundle and timeline emitters recheck these rules.
+
+The [shadow tests](../tests/test_composition_shadows.py) include malformed inputs, missing and duplicated masks,
+source-clock drift, worker payload checks, unchanged unshadowed fingerprints, and an actual 320×240 render under
+a moving parent and camera cut. This scoped evidence does not replace the complete 1080×1920 hybrid proof,
+its palette/occlusion review, or operator approval.

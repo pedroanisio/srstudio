@@ -148,8 +148,10 @@ def _inputs(plan: c.ValidatedScenePlan, assets: Assets) -> tuple[dict[str, c.Pre
     )
     checked_vectors: dict[str, c.PreparedVector] = {}
     checked_plates: dict[str, Placement] = {}
+    from ._composition_shadows import prepare_vector as shadow_prepare
+
     for name, asset in sorted(vectors.items()):
-        checked = c.prepare_vector(bindings[name], asset.xml, fonts=asset.fonts, budget=plan.spec.budget)
+        checked = shadow_prepare(plan, bindings[name], asset)
         if type(asset) is c.PreparedVector and checked != asset:
             raise _failure('assets.' + name, 'unchanged prepared vector evidence')
         checked_vectors[name] = checked

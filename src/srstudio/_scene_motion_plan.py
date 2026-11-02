@@ -38,7 +38,9 @@ def _limit(spec: c.ScenePlan, name: str, value: int) -> None:
 
 
 def _metadata_size(record: c._Record) -> int:
-    return len(json.dumps(asdict(record), separators=(',', ':'), allow_nan=False).encode('utf-8'))
+    from ._composition_shadows import definition
+
+    return len(json.dumps(definition(record), separators=(',', ':'), allow_nan=False).encode('utf-8'))
 
 
 def _sources(base: c.ValidatedScenePlan, sources: tuple[m.RasterSource, ...]) -> dict[str, _Source]:
