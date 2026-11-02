@@ -6,12 +6,14 @@ import hashlib
 import struct
 import zlib
 
+import numpy as np
+
 from . import composition as c
 
 MAX_BYTES = 8 * 1024**2
 
 
-def verify(data: bytes, width: int, height: int) -> str:
+def _raw(data: bytes, width: int, height: int) -> bytes:
     def fail() -> c.CompositionError:
         return c._fail('image', None, 'a complete bounded RGBA8 PNG at the declared dimensions', 'composition.payload')
 
@@ -67,4 +69,37 @@ def verify(data: bytes, width: int, height: int) -> str:
         or any(value > 4 for value in raw[:: width * 4 + 1])
     ):
         raise fail()
+    return raw
+
+
+def verify(data: bytes, width: int, height: int) -> str:
+    _raw(data, width, height)
     return hashlib.sha256(data).hexdigest()
+
+
+def decode(data: bytes, width: int, height: int) -> np.ndarray:
+    """Worker-only RGBA8 decoding after the same strict bounded stream verification."""
+    raw = _raw(data, width, height)
+    rows = np.frombuffer(raw, dtype=np.uint8).reshape(height, width * 4 + 1)
+    output = np.zeros((height, width * 4), dtype=np.uint8)
+    for y, row in enumerate(rows):
+        kind, values = int(row[0]), row[1:]
+        prior = output[y - 1] if y else np.zeros(width * 4, dtype=np.uint8)
+        target = output[y]
+        if kind == 0:
+            target[:] = values
+        elif kind == 1:
+            target[:] = np.cumsum(values.reshape(width, 4), axis=0, dtype=np.uint64).reshape(-1)
+        elif kind == 2:
+            np.add(values, prior, out=target)
+        else:
+            for x, value in enumerate(values):
+                a, b, d = int(target[x - 4]) if x >= 4 else 0, int(prior[x]), int(prior[x - 4]) if x >= 4 else 0
+                if kind == 3:
+                    prediction = (a + b) // 2
+                else:
+                    p = a + b - d
+                    pa, pb, pc = abs(p - a), abs(p - b), abs(p - d)
+                    prediction = a if pa <= pb and pa <= pc else b if pb <= pc else d
+                target[x] = (int(value) + prediction) & 255
+    return output.reshape(height, width, 4)

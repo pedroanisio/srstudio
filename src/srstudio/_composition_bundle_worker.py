@@ -49,9 +49,11 @@ def compile_bundle(request: dict) -> c.CompiledScene:
             type(name) is not str
             or name in rasters
             or name not in layers
-            or bindings[layers[name].asset].backend != 'plates'
+            or bindings[layers[name].asset].backend not in ('plates', 'proxy')
         ):
-            raise wire.fail(None, 'one raster per plate placement')
+            raise wire.fail(None, 'one raster per plate or proxy placement')
+        if len(layers[name].passes) != 1:
+            raise wire.fail(None, 'one explicitly selected raster pass per layer')
         view = c.plate_view(plan, name, meters_per_unit=value['meters_per_unit'])
         png = wire.xml_decode(value['png'])
         digest = verify(png, view.width, view.height)
@@ -69,11 +71,9 @@ def compile_bundle(request: dict) -> c.CompiledScene:
         }
         sizes[layers[name].asset] = 1024
         checkpoint()
-    if (
-        set(roots) != {b.id for b in bindings.values() if b.backend == 'vector'}
-        or set(rasters) != {layer.id for layer in layers.values() if bindings[layer.asset].backend == 'plates'}
-        or any(b.backend == 'proxy' for b in bindings.values())
-    ):
+    if set(roots) != {b.id for b in bindings.values() if b.backend == 'vector'} or set(rasters) != {
+        layer.id for layer in layers.values() if bindings[layer.asset].backend != 'vector'
+    }:
         raise wire.fail(None, 'exactly the supported sources for every manifest layer')
     check_expansion(plan, sizes)
     result = assemble(plan, roots, rasters, checkpoint)

@@ -265,7 +265,9 @@ def prepared_encode(asset: c.PreparedPlate) -> dict:
     }
 
 
-def prepared_decode(value: object, plan: c.ValidatedScenePlan, layer: str, source: c.PlateSource) -> c.PreparedPlate:
+def prepared_decode(
+    value: object, plan: c.ValidatedScenePlan, layer: str, source: c.PlateSource, *, view: c.PlateView | None = None
+) -> c.PreparedPlate:
     data = wire.fields(value, {'xml', 'resources', 'bounds', 'nodes', 'width', 'height', 'offset', 'digest'})
     binding = next(b for b in plan.bindings if b.id == source.id)
     if type(data['resources']) is not list or not 1 <= len(data['resources']) <= MAX_RESOURCES:
@@ -296,7 +298,8 @@ def prepared_decode(value: object, plan: c.ValidatedScenePlan, layer: str, sourc
             raise wire.fail(total, 'at most eight MiB of prepared resources')
         names.add(expected)
         resources.append(c.PlateResource(expected, content))
-    view = c.plate_view(plan, layer, meters_per_unit=source.meters_per_unit)
+    if view is None:
+        view = c.plate_view(plan, layer, meters_per_unit=source.meters_per_unit)
     if any(type(data[k]) is not int for k in ('width', 'height', 'nodes')) or not 1 <= data['nodes'] <= binding.nodes:
         raise wire.fail(None, 'typed bounded dimensions and node count')
     offset = data['offset']
