@@ -20,6 +20,12 @@ from srstudio import facts
         ("1,045 birds", 1045.0),
         ("0.5 s", 0.5),
         ("two thousand", 2000.0),
+        ("finish ninth", 9.0),
+        ("NEEDED: 9TH.", 9.0),
+        ("he came 3rd", 3.0),
+        ("the 21st", 21.0),
+        ("twenty-third", 23.0),
+        ("twentieth", 20.0),
     ],
 )
 def test_a_number_is_found_written_either_way(text, value):
@@ -29,6 +35,24 @@ def test_a_number_is_found_written_either_way(text, value):
 @pytest.mark.parametrize("text", ["a 3D-printed habitat", "at 3:01", "the first year", "no number here"])
 def test_a_word_or_a_clock_is_not_a_number(text):
     assert facts.numbers_in(text) == set()
+
+
+def test_an_ordinal_is_its_own_value_not_the_tens_before_it():
+    assert facts.numbers_in("the twenty-third") == {23.0}
+
+
+@pytest.mark.parametrize("text", ["the second half", "wait a second", "at first", "4the win", "12throw"])
+def test_a_word_that_only_looks_ordinal_is_not_a_number(text):
+    assert facts.numbers_in(text) == set()
+
+
+def test_a_place_on_screen_is_checked_against_the_place_in_the_sources():
+    sources = "He needed ninth and finished third."
+    assert facts.unsourced(("NEEDED: 9TH. FINISHED: 3RD.",), sources) == []
+    assert facts.unsourced(("He came fourth.", "FINISHED: 4TH."), sources) == [
+        "4 in 'He came fourth.'",
+        "4 in 'FINISHED: 4TH.'",
+    ]
 
 
 def test_a_number_in_the_sources_is_found_either_way_round():

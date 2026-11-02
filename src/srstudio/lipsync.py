@@ -8,7 +8,9 @@ Two drivers share one reading of the letters (:func:`letter_poses`):
 
   - ``spelling`` reads English spelling, not single letters: *ph* is an f, the *h* of *th*, *sh*, *ch* and *wh* holds
     the consonant, *w* and *qu* round the lips, a silent
-    final *e* (*come*, *make*) and a silent *gh* (*light*) hold the pose before them;
+    final *e* (*come*, *make*) and a silent *gh* (*light*) hold the pose before them; a figure is said as words its
+    digits do not spell (*20* is "twenty"), so each run of digits alternates the vowel of the digit's name with teeth
+    instead of leaving the mouth shut;
   - ``close_bilabials``: every *b*, *m* and *p* closes the mouth on the sample nearest it, so a quick bilabial that
     falls between two samples is never lost (a scream stays open);
   - ``lead``: the mouth shows each sound this many seconds early, as animators lead the track;
@@ -45,6 +47,7 @@ SPEECH_MOUTH = PhonemeStyle(spelling=True, close_bilabials=True, lead=0.04, min_
 VOWELS = "aeiouy"
 FINE_WIDE, FINE_LIP = "eiy", "fv"  # the letters ``PhonemeStyle.fine`` reads as its two more poses
 _HOLD = "hold"  # a silent letter: the pose before it
+DIGIT_NAMES = ("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine")
 
 
 class LipSyncError(SrstudioError, ValueError):
@@ -83,11 +86,27 @@ def _respell(word: str, poses: list[str | None]) -> None:
             poses[i] = poses[i - 1] if i else "teeth"
 
 
+def _figure(digits: str, style: PhonemeStyle) -> list[str | None]:
+    """A run of digits as the mouth says it: the vowel of each digit's name, teeth on every second digit."""
+    vowel = [next(c for c in DIGIT_NAMES[int(d)] if c in VOWELS) for d in digits]
+    return ["teeth" if k % 2 else _plain(v, style) for k, v in enumerate(vowel)]
+
+
 def letter_poses(text: Sequence[str], style: PhonemeStyle) -> list[str | None]:
     """The pose of each character of ``text`` (a string, or the tokens of a take); None between words."""
     low = [c.lower() for c in text]
     out = [_plain(c, style) for c in low]
     if style.spelling:
+        i = 0
+        while i < len(low):
+            if len(low[i]) == 1 and low[i] in "0123456789":
+                j = i
+                while j < len(low) and len(low[j]) == 1 and low[j] in "0123456789":
+                    j += 1
+                out[i:j] = _figure("".join(low[i:j]), style)
+                i = j
+            else:
+                i += 1
         i = 0
         while i < len(low):
             if len(low[i]) == 1 and low[i].isalpha():
