@@ -323,7 +323,9 @@ def dance_body(
 @dataclass(frozen=True)
 class Channel:
     """A measure of the body in every frame: its ``unit``, how far a monocular estimate with a moving camera can be
-    trusted on it (``good``, ``fair`` or ``poor``) and why, the points it reads, and whether it is read as a groove."""
+    trusted on it (``good``, ``fair`` or ``poor``) and why, the points it reads, whether it is read as a groove, and the
+    ``provenance`` of what it reads (ADR 0202). Every channel here reads the estimator's world landmarks, so every one
+    is ``estimated-3d``, even one whose quantity lies in the picture's plane."""
 
     name: str
     unit: str
@@ -331,6 +333,7 @@ class Channel:
     why: str
     points: tuple[str, ...]
     groove: bool = True
+    provenance: str = pt.ESTIMATED_3D
 
 
 _LEGS = ("left_hip", "right_hip", "left_knee", "right_knee", "left_ankle", "right_ankle")

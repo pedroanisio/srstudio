@@ -197,7 +197,7 @@ reads to about one picture when the channel carries noise of five percent of its
 
 The dance study ([ADR 0203](decisions/0203-dance-style-from-reference-video.md)) measures how a real dancer moves and
 holds our dances to it. It copies no routine: only style statistics on the beat grid reach the repository, as a
-`srstudio.dance-style/1.0.0` record of ranges. The footage, its frames and its per-frame landmarks stay under the
+`srstudio.dance-style/1.1.0` record of ranges. The footage, its frames and its per-frame landmarks stay under the
 workspace's `generated/` (`$WS/generated`, `$WS` the workspace that holds this checkout) on the machine that made
 them.
 
@@ -247,6 +247,15 @@ assert arms.misses and arms.misses[0].severity >= arms.misses[-1].severity
 ```
 <!-- dance-study:end -->
 
-Each miss names the channel, the measure, our value, the reference's range and the trust of the channel; the score is
-their summed severity. Read `torso.lean` and `torso.roll` lightly: a single camera reads depth poorly. A reference
+Each miss names the channel, the measure, our value, the reference's range and the confidence the channel is held at;
+the score is their summed severity. Each channel states the provenance of what it reads
+([ADR 0202](decisions/0202-limb-volume-and-provenance.md)):
+
+- `measured-2d` is a place in the picture;
+- `estimated-3d` is the estimator's depth, world metres or a rotation derived from them, held at most `fair`;
+- `unobserved` is never a target.
+
+`pose_track.frame_provenance` says which bone twists a frame determines. A forearm's roll needs the knuckles to span
+more than the landmarks' noise, and a single camera rarely gives that. A `1.0.0` record reads with its provenance
+taken from the channels. Read `torso.lean` and `torso.roll` lightly: a single camera reads depth poorly. A reference
 measures no travel across the floor: its camera follows the dancer and its estimator's metres start at the hips.

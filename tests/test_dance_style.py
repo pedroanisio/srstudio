@@ -1,12 +1,15 @@
-"""Dance-style targets (ADR 0203): ranges derived from a reference's measures, a strict ``srstudio.dance-style/1.0.0``
-record, and the check that lists, ranked, what one of our dances misses."""
+"""Dance-style targets (ADR 0203): ranges derived from a reference's measures, a strict ``srstudio.dance-style/1.1.0``
+record holding each channel's provenance and the confidence it allows (ADR 0202), and the check that lists, ranked,
+what one of our dances misses."""
 
+import dataclasses
 import json
 
 import pytest
 
 from srstudio import dance, dance_style
 from srstudio import dance_study as ds
+from srstudio import pose_track as pt
 from srstudio.music import Groove
 
 GROOVE = Groove(120)
@@ -172,3 +175,79 @@ def test_a_style_file_is_named_after_its_style(tmp_path, bounce_style):
     (tmp_path / "other.json").write_text(dance_style.dump_style(bounce_style))
     with pytest.raises(dance_style.StyleValueError, match="holds the style"):
         dance_style.styles(tmp_path)
+
+
+# --- provenance (ADR 0202) ------------------------------------------------------------------------------------------
+
+
+def test_every_channel_states_its_provenance_and_holds_estimates_at_most_fair(bounce_style):
+    for target in bounce_style.channels:
+        assert target.provenance == ds.CHANNEL[target.name].provenance == "estimated-3d"
+        cap = dance_style.CONFIDENCE_CAP["estimated-3d"]
+        assert target.confidence == max(target.trust, cap, key=list(dance_style.TRUST).index)
+    tilt = next(c for c in bounce_style.channels if c.name == "shoulders.tilt")
+    assert tilt.trust == "good" and tilt.confidence == "fair"
+    data = _data(bounce_style)
+    assert data["schema"] == "srstudio.dance-style/1.1.0"
+    assert {c["provenance"] for c in data["channels"]} == {"estimated-3d"}
+
+
+def test_a_miss_weighs_by_the_held_confidence(bounce_style):
+    found = dance_style.check(bounce_style, frames("arm-pump"), GROOVE, FPS)
+    arms = next(m for m in found.misses if m.channel == "arms.height" and m.measure == "peak_to_peak")
+    assert arms.trust == "fair"
+    assert arms.severity <= dance_style.TRUST["fair"] * dance_style.IMPORTANCE["peak_to_peak"] * 4.0
+
+
+def test_an_image_only_track_leaves_twists_unobserved_and_no_target_stands_on_one():
+    picture = tuple((0.5, 0.5, 0.0, 0.95, 0.95) for _ in pt.LANDMARKS)
+    twist = pt.frame_provenance(picture, None).twists["right_lower_arm"]
+    assert twist.provenance == pt.UNOBSERVED
+    with pytest.raises(dance_style.StyleValueError, match="unobserved"):
+        dance_style.ChannelTarget(
+            "arms.reach", "ratio", "fair", "a twist", None, (0.1, 0.2), None, None, None, None, None,
+            {"frames": 1, "windows": 0, "read": 0, "still": 0, "locked": 0}, provenance=twist.provenance,
+        )  # fmt: skip
+    empty = dance_style.ChannelTarget(
+        "arms.reach", "ratio", "fair", "a twist", None, None, None, None, None, None, None,
+        {"frames": 1, "windows": 0, "read": 0, "still": 0, "locked": 0}, provenance=twist.provenance,
+    )  # fmt: skip
+    assert empty.confidence is None
+
+
+def test_deriving_a_style_never_targets_an_unobserved_channel(monkeypatch):
+    reading = ds.measure_style(ds.dance_body(frames("bounce"), FPS), GROOVE)
+    chan = ds.CHANNEL["arms.reach"]
+    monkeypatch.setitem(ds.CHANNEL, "arms.reach", dataclasses.replace(chan, provenance="unobserved"))
+    style = dance_style.derive(reading, name="bounce", description="ours", reference=REFERENCE, generated_by=BY)
+    reach = next(c for c in style.channels if c.name == "arms.reach")
+    assert all(getattr(reach, m) is None for m in dance_style.MEASURES)
+    assert "unobserved" in style.unmeasured["arms.reach"]
+
+
+@pytest.mark.parametrize(
+    ("change", "words"),
+    [
+        (lambda d: d["channels"][5].update(confidence="good"), "confidence"),
+        (lambda d: d["channels"][5].update(provenance="measured-2d"), "provenance"),
+        (lambda d: d["channels"][5].update(provenance="seen"), "provenance"),
+    ],
+)
+def test_a_record_cannot_claim_more_than_its_provenance_allows(bounce_style, change, words):
+    with pytest.raises(dance_style.StyleValueError, match=words):
+        dance_style.parse_style(_edit(bounce_style, change))
+
+
+def test_a_record_of_the_first_minor_reads_with_its_provenance_from_the_channels(bounce_style):
+    data = _data(bounce_style)
+    data["schema"] = "srstudio.dance-style/1.0.0"
+    for channel in data["channels"]:
+        del channel["provenance"], channel["confidence"]
+    old = dance_style.parse_style(json.dumps(data))
+    assert old == bounce_style
+    data["channels"][0]["provenance"] = "estimated-3d"
+    with pytest.raises(dance_style.StyleFormatError, match="unknown"):
+        dance_style.parse_style(json.dumps(data))
+    shipped = dance_style.styles()["studio-hiphop"]
+    assert {c.provenance for c in shipped.channels} == {"estimated-3d"}
+    assert "good" not in {c.confidence for c in shipped.channels}

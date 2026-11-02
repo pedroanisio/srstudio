@@ -4,7 +4,13 @@ our dances misses (ADR 0203).
 :func:`derive` turns a :class:`dance_study.StyleReading` of a reference into a :class:`DanceStyle`. Each channel's
 targets are ranges, never single numbers: the middle half of the reference's windows (25th to 75th percentile),
 widened by the estimate's own noise, and left out (None) where the reference gave too little evidence. The record is
-``srstudio.dance-style/1.0.0``, strict JSON, and holds only these numbers: no frame, landmark or time of the reference.
+``srstudio.dance-style/1.1.0``, strict JSON, and holds only these numbers: no frame, landmark or time of the reference.
+
+Each channel carries the provenance of what it reads (ADR 0202) and the ``confidence`` that provenance allows: a
+channel read from the estimator's 3D estimate (``estimated-3d``) is held at most ``fair`` whatever its ``trust``
+(:data:`CONFIDENCE_CAP`), and a miss weighs by that confidence. An ``unobserved`` channel is never a target: it has no
+ranges, the record refuses one that has, and it is listed under ``unmeasured``. A ``1.0.0`` record, written before
+provenance, reads with each channel's provenance from :data:`dance_study.CHANNEL` and the confidence it allows.
 
 :func:`check` samples nothing itself: it takes any sequence of :class:`dance.DanceFrame` (a move, a routine, a
 phrase), measures it on a preset skeleton with the same code as the reference, and returns :meth:`DanceStyle.misses`,
@@ -22,6 +28,7 @@ from dataclasses import dataclass, fields
 from importlib import resources
 from pathlib import Path
 
+from . import pose_track as pt
 from . import skeleton as sk
 from ._dance_model import DanceError
 from ._dance_sample import DanceFrame
@@ -41,6 +48,7 @@ from .dance_study import (
 from .music import Groove
 
 __all__ = [
+    "CONFIDENCE_CAP",
     "IMPORTANCE",
     "SCHEMA",
     "TRUST",
@@ -62,9 +70,11 @@ __all__ = [
     "styles",
 ]
 
-SCHEMA = "srstudio.dance-style/1.0.0"
+SCHEMA = "srstudio.dance-style/1.1.0"
+LEGACY_SCHEMA = "srstudio.dance-style/1.0.0"  # before provenance: read, never written
 MAX_BYTES = 1_000_000
 TRUST = {"good": 1.0, "fair": 0.6, "poor": 0.25}
+CONFIDENCE_CAP = {pt.MEASURED_2D: "good", pt.ESTIMATED_3D: "fair"}  # the most a channel of each provenance is held
 IMPORTANCE = {
     "level": 1.0,
     "peak_to_peak": 1.0,
@@ -127,7 +137,9 @@ class Reference:
 class ChannelTarget:
     """A channel's ranges: ``level`` (its value), ``peak_to_peak`` (the groove's size), ``range`` (how far it travels in
     a window), ``cycles_per_beat``, ``snap_ratio`` (rise over fall) and ``hit_offset`` (beats from the beat); None
-    where the reference could not say. ``evidence`` is how many frames and windows the ranges stand on."""
+    where the reference could not say. ``evidence`` is how many frames and windows the ranges stand on.
+    ``provenance`` is what the channel reads; ``confidence``, the lower of ``trust`` and what the provenance allows, is
+    what its misses weigh by, and None for an ``unobserved`` channel, which holds no range."""
 
     name: str
     unit: str
@@ -141,6 +153,40 @@ class ChannelTarget:
     snap_ratio: Range | None
     hit_offset: Range | None
     evidence: Mapping[str, int]
+    provenance: str = pt.ESTIMATED_3D
+    confidence: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.provenance not in pt.PROVENANCES:
+            raise StyleValueError(
+                f"{self.name} provenance is one of {list(pt.PROVENANCES)}, not {self.provenance!r}",
+                path=f"{self.name}.provenance",
+            )
+        if self.trust not in TRUST:
+            raise StyleValueError(f"{self.name} trust is one of {list(TRUST)}", path=f"{self.name}.trust")
+        if self.provenance == pt.UNOBSERVED:
+            held = [m for m in MEASURES if getattr(self, m) is not None]
+            if held or self.confidence is not None:
+                raise StyleValueError(
+                    f"{self.name} is unobserved: it cannot be a target, and holds no range or confidence ({held})",
+                    path=f"{self.name}.provenance",
+                )
+            return
+        allowed = held_confidence(self.trust, self.provenance)
+        if self.confidence is None:
+            object.__setattr__(self, "confidence", allowed)
+        elif self.confidence != allowed:
+            raise StyleValueError(
+                f"{self.name} confidence is {allowed!r}: trust {self.trust!r} held at most "
+                f"{CONFIDENCE_CAP[self.provenance]!r} for {self.provenance}, not {self.confidence!r}",
+                path=f"{self.name}.confidence",
+            )
+
+
+def held_confidence(trust: str, provenance: str) -> str:
+    """The confidence a channel of ``trust`` is held at when it reads data of ``provenance``: the lower of the two."""
+    order = list(TRUST)
+    return order[max(order.index(trust), order.index(CONFIDENCE_CAP[provenance]))]
 
 
 @dataclass(frozen=True)
@@ -186,11 +232,13 @@ class DanceStyle:
             raise DanceStyleError("a style checks a dance_study.StyleReading", path="reading")
         out = []
         for target in self.channels:
+            if target.confidence is None:  # unobserved: no target
+                continue
             ours = reading.channels[target.name]
             for measure in MEASURES:
                 span = getattr(target, measure)
                 if span is not None:
-                    out.extend(_miss(target.name, measure, target.unit, target.trust, span, _ours(ours, measure)))
+                    out.extend(_miss(target.name, measure, target.unit, target.confidence, span, _ours(ours, measure)))
         for lag in self.lags:
             if lag.beats is not None:
                 found = reading.lags[lag.key].beats
@@ -236,6 +284,12 @@ def _span(spread: Spread | None, widen: float, enough: bool, floor: float | None
 
 def _channel_target(reading: ChannelReading, frame_beats: float) -> ChannelTarget:
     chan = CHANNEL[reading.name]
+    if chan.provenance == pt.UNOBSERVED:  # never a target: no range, whatever the reading says
+        counts = {"frames": reading.frames, "windows": reading.windows, "read": 0, "still": 0, "locked": 0}
+        return ChannelTarget(
+            reading.name, reading.unit, chan.trust, chan.why, None, None, None, None, None, None, None, counts,
+            pt.UNOBSERVED,
+        )  # fmt: skip
     # Sizes widen by twice the reading's noise, and by at least half the unit's floor: a difference smaller than the
     # floor does not show, and a range narrower than it would fail on the record's own rounding.
     widen = max(2 * (reading.noise or 0.0), FLOOR[reading.unit] / 2)
@@ -261,6 +315,7 @@ def _channel_target(reading: ChannelReading, frame_beats: float) -> ChannelTarge
             "still": reading.still,
             "locked": reading.locked,
         },
+        chan.provenance,
     )
 
 
@@ -287,7 +342,7 @@ def derive(
         reference,
         tuple(_channel_target(reading.channels[c], frame_beats) for c in CHANNEL),
         tuple(_lag_target(reading.lags[f"{a}>{b}"], frame_beats) for a, b in LAGS),
-        dict(UNMEASURED),
+        dict(UNMEASURED) | {c.name: f"unobserved: {c.why}" for c in CHANNEL.values() if c.provenance == pt.UNOBSERVED},
     )
     return parse_style(dump_style(style))  # the record it writes is the record it reads
 
@@ -326,6 +381,8 @@ def dump_style(style: DanceStyle) -> str:
                 "name": c.name,
                 "unit": c.unit,
                 "trust": c.trust,
+                "provenance": c.provenance,
+                "confidence": c.confidence,
                 "why": c.why,
                 "noise": c.noise,
                 **{m: _range_data(getattr(c, m)) for m in MEASURES},
@@ -376,11 +433,13 @@ def parse_style(text: str | bytes) -> DanceStyle:
     top = _fields(
         data, "record", ("schema", "name", "description", "generated_by", "reference", "channels", "lags", "unmeasured")
     )
-    if top["schema"] != SCHEMA:
+    if top["schema"] not in (SCHEMA, LEGACY_SCHEMA):
         kind = StyleSchemaError if isinstance(top["schema"], str) else StyleFormatError
-        raise kind(f"schema is {SCHEMA}, not {top['schema']!r}", path="schema")
+        raise kind(f"schema is {SCHEMA} (or {LEGACY_SCHEMA}), not {top['schema']!r}", path="schema")
+    legacy = top["schema"] == LEGACY_SCHEMA
     generated = _fields(top["generated_by"], "generated_by", ("tool", "model"))
-    channels = tuple(_channel(item, f"channels[{i}]") for i, item in enumerate(_list(top["channels"], "channels", 64)))
+    items = _list(top["channels"], "channels", 64)
+    channels = tuple(_channel(item, f"channels[{i}]", legacy) for i, item in enumerate(items))
     if [c.name for c in channels] != list(CHANNEL):
         raise StyleValueError(f"channels are {list(CHANNEL)}, in that order", path="channels")
     lags = tuple(_lag(item, f"lags[{i}]") for i, item in enumerate(_list(top["lags"], "lags", 16)))
@@ -448,8 +507,9 @@ def _reference(value: object) -> Reference:
     )
 
 
-def _channel(value: object, path: str) -> ChannelTarget:
-    keys = ("name", "unit", "trust", "why", "noise", *MEASURES, "evidence")
+def _channel(value: object, path: str, legacy: bool = False) -> ChannelTarget:
+    added = () if legacy else ("provenance", "confidence")
+    keys = ("name", "unit", "trust", *added, "why", "noise", *MEASURES, "evidence")
     entry = _fields(value, path, keys)
     name = _text(entry["name"], f"{path}.name", NAME_DOTTED)
     if name not in CHANNEL:
@@ -470,6 +530,12 @@ def _channel(value: object, path: str) -> ChannelTarget:
     if not chan.groove and any(spans[m] is not None for m in MEASURES[1:]):
         raise StyleValueError(f"{name} is read as a level, never as a groove", path=path)
     noise = None if entry["noise"] is None else _number(entry["noise"], f"{path}.noise", 0.0, 100.0)
+    provenance = chan.provenance if legacy else entry["provenance"]
+    if provenance != chan.provenance:
+        raise StyleValueError(f"{name} reads {chan.provenance} data: its provenance is not {provenance!r}", path=path)
+    confidence = None if legacy else entry["confidence"]
+    if confidence is not None and confidence not in TRUST:
+        raise StyleValueError(f"{path}.confidence is one of {list(TRUST)} or null", path=f"{path}.confidence")
     return ChannelTarget(
         name,
         chan.unit,
@@ -483,6 +549,8 @@ def _channel(value: object, path: str) -> ChannelTarget:
         spans["snap_ratio"],
         spans["hit_offset"],
         counts,
+        str(provenance),
+        None if confidence is None else str(confidence),
     )
 
 
