@@ -317,7 +317,8 @@ assert lamp_result is None
 <!-- toon-care-discovery:end -->
 
 The 21 builders in `toon_cars`, `toon_dinner`, `toon_parlour` and `toon_rooms`
-complete the registered Toon non-character declarations. Passing vehicles use
+declare the traffic, dining and room contracts. Newer Toon orbit props and sets
+still require their own semantic declarations. Passing vehicles use
 `Passing(at, kind, colour)`: `at` is the composition time when the vehicle crosses
 the frame center. Road scrolling follows the canvas clock; tally marks use parent
 visibility. Loose wheels keep translation and rotation proportional to their
@@ -556,3 +557,50 @@ when the prop needs a mesh and depth ordering across articulated limbs. Some bui
 drawing: `cafe-window` returns its clipped view, and `tree` its animated canopy. Their contracts identify that
 limitation. `captions` returns layers placed directly in the composition; its start/end values use the composition
 clock, independently of `Canvas.local_time`. Other core graphic animation keys use the canvas clock.
+
+## Stick household and everyday drawings
+
+The 49 builders in `stick_home`, `stick_office` and `stick_odds` declare their
+coordinate units, return values, choices and animation clocks. They draw in
+frame pixels for the 1080×1920 Stick layout; changing canvas dimensions does not
+scale fixed furniture or typography. These drawings provide no spatial grip,
+collision geometry or anatomical solver.
+
+Check the returned coordinate frame before attaching or moving a prop.
+`stick-handset` bakes its center and scale into the geometry, so assigning its
+group `x` adds a translation. `stick-box`, `stick-receipt`, `stick-drill` and the
+other explicitly local props return a group whose transform owns placement.
+Their origin is an authored drawing reference, not a verified physical contact.
+For example, the truck's tires extend below its authored y reference.
+
+Opacity gates and motion keys use the canvas clock: composition time by default,
+local time with `Canvas.local_time=True`. The caller-phone shake lasts 0.25 seconds
+per ring and moves in parent pixels, independently of the phone's scale. A flame
+or spark `rate` counts alternating drawings per second; a complete two-drawing
+cycle takes `2/rate` seconds.
+
+An animation limit does not necessarily hide the drawing. The overhead figure's
+feet stop at `end`, but its body remains. A scanner's `end` finishes its scan line.
+A robe or passenger drawing covering a whole interval omits its opacity gate.
+Use a caller-owned parent to control complete shot visibility, and give a robe
+the same validated keys, poses and transforms as its figure.
+
+<!-- stick-drawing-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry
+
+entry = registry.get("prop", "stick-receipt")
+contract = entry.describe()["contract"]
+assert contract["returns"]["x-space"] == "returned-group"
+assert contract["capabilities"]["spatial_attachment"] is False
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="24", duration=6)
+cv = Canvas(scene, font_asset=None, local_time=True)
+shot = cv.group(cv.comp, "receipt-shot", start=2, end=5)
+receipt = entry(cv, shot, 540, 900, 300, unroll=(0.5, 1.5))
+# Local unroll keys run within the shot; the outer parent hides all receipt geometry.
+# The receipt starts at 2% height and holds its full height after unrolling.
+```
+<!-- stick-drawing-discovery:end -->
