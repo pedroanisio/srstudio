@@ -140,7 +140,7 @@ def jobs(source: c.ProxySource, *, width: int, height: int, memory_bytes: int) -
 
 
 def context(
-    plan: c.ValidatedScenePlan, layer: str, source: c.ProxySource
+    plan: c.ValidatedScenePlan, layer: str, source: c.ProxySource, *, sequence: bool = False
 ) -> tuple[c.AssetBinding, c.PlateView, tuple[c.PlateSource, ...]]:
     size = validate_source(source)
     view = c.plate_view(plan, layer, meters_per_unit=source.meters_per_unit)
@@ -148,13 +148,19 @@ def context(
     if selected.asset != source.id:
         raise fail('source.id', 'the source for the selected layer')
     binding = next(b for b in plan.bindings if b.id == source.id)
-    if binding.backend != 'proxy' or binding.duration is not None:
-        raise fail('binding', 'a static proxy binding')
+    if binding.backend != 'proxy' or (binding.duration is not None) != sequence:
+        raise fail('binding', 'a finite sequence proxy binding' if sequence else 'a static proxy binding')
     if len(selected.passes) != 1 or (selected.passes == ('under',) and not source.recipe.under):
         raise fail('passes', 'one selected pass per layer; under requires designated under geometry')
     raw = sources(source)
-    if {j.key for j in binding.plates} != {pw.source_digest(p) for p in raw}:
-        raise fail('jobs', 'exactly the unique proxy_jobs declarations for this source')
+    declared, required_keys = {j.key for j in binding.plates}, {pw.source_digest(p) for p in raw}
+    if not (required_keys <= declared if sequence else required_keys == declared):
+        raise fail(
+            'jobs',
+            'the required raw jobs within the validated sequence'
+            if sequence
+            else 'exactly the unique proxy_jobs declarations for this source',
+        )
     n = source.recipe.oversample
     view = replace(view, width=view.width * n, height=view.height * n)
     pixels = view.width * view.height

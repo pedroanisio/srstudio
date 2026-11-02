@@ -2,7 +2,7 @@
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 ---
 
-# ADR 0146: Hand chirality is a build error
+# ADR 0147: Hand chirality is a build error
 
 - Status: accepted (2026-11-01), ordered by arc4d3; written by Claude Opus 5.5 in Claude Code
 - Follows [ADR 0142](0142-news-hands-are-a-pair.md), [ADR 0143](0143-bento-hands-are-a-pair.md) and
@@ -86,7 +86,7 @@ its next build.
 - `side=` is a declaration. A caller who says the wrong side of a Collage arm is not caught: an arm drawn by coordinates
   does not know whose shoulder it left.
 - A single-drawing prop carries its side in the table, but a caller can still place it on the other arm. The table
-  stops it being undeclared, and rule 2 (ADR 0147) asks whose arm it is on.
+  stops it being undeclared, and rule 2 (ADR 0148) asks whose arm it is on.
 - A pilot is not built by `srstudio build` and leaves no record, so `episodes/publish_pilots.py` has nothing to read.
   Its build still refuses in `Episode.finish`.
 

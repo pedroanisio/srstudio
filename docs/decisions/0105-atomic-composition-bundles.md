@@ -43,7 +43,9 @@ This adapter supports static plates and existing vector features;
 [texture snapshots](0106-verified-plate-textures.md) add UV-bound color/normal maps.
 [Printed labels](0144-bounded-composition-prints.md) add verified font and render
 dependencies. [Static proxies](0145-bounded-composition-proxies.md) add shared-view
-light/ID rendering and worker conversion. Animated geometry, orthographic plate views and animated
+light/ID rendering and worker conversion. [Held timelines](0146-bounded-raster-timelines.md)
+add baked geometry/appearance snapshots. Animated scene cameras/lights/parents,
+orthographic plate views and animated
 drawing approval remain outside its supported contract. See the
 [guide](../composition-preflight.md#render-and-publish-a-mixed-bundle) and
 [tests](../../tests/test_composition_bundles.py).

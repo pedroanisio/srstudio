@@ -1,4 +1,4 @@
-"""The delivery gate of the anatomy rules and its listing (ADR 0146)."""
+"""The delivery gate of the anatomy rules and its listing (ADR 0147)."""
 
 from __future__ import annotations
 

@@ -11,7 +11,9 @@ in a bounded worker. compile_bundle and emit_bundle combine verified vectors and
 static plates with bounded rendering, verified caching and atomic publication.
 Printed labels retain immutable recipes/font bytes and share the plate render budget.
 Static proxies share the camera/lights and convert verified light/ID passes in
-a bounded worker. Animated plate and proxy adapters remain unsupported.
+a bounded worker. RasterSequence verifies and emits held geometry/appearance
+snapshots on explicit source clocks. Animated scene cameras, lights and parent
+transforms remain unsupported.
 """
 
 from __future__ import annotations
@@ -525,6 +527,46 @@ class PreparedProxy:
     digest: str
 
 
+@dataclass(frozen=True)
+class RasterFrame:
+    """An owned source snapshot held from this source time until the next snapshot."""
+
+    time: float
+    source: PlateSource | ProxySource
+
+
+@dataclass(frozen=True)
+class RasterSequence:
+    """A bounded baked timeline. Frames begin at zero; the last holds until duration."""
+
+    id: str
+    duration: float
+    frames: tuple[RasterFrame, ...]
+
+
+@dataclass(frozen=True)
+class RasterSpan(_Record):
+    sample: int = field(metadata={'minimum': 0, 'maximum': MAX_RECORD_ITEMS - 1})
+    start: float = field(metadata={'minimum': 0, 'maximum': 600})
+    end: float = field(metadata={'minimum': 0, 'maximum': 600})
+
+
+@dataclass(frozen=True)
+class PreparedRasterFrame:
+    time: float
+    asset: PreparedPlate | PreparedProxy
+
+
+@dataclass(frozen=True)
+class PreparedRasterSequence:
+    binding: AssetBinding
+    source: RasterSequence
+    layer: str
+    plan_digest: str
+    frames: tuple[PreparedRasterFrame, ...]
+    digest: str
+
+
 def proxy_source(
     id: str,
     meshes: tuple[Mesh, ...],
@@ -559,6 +601,34 @@ def prepare_proxy(plan: ValidatedScenePlan, layer: str, source: ProxySource) -> 
     from ._composition_proxy_runtime import prepare_proxy as prepare
 
     return prepare(plan, layer, source)
+
+
+def raster_sequence_digest(source: RasterSequence) -> str:
+    """Identity of all held snapshots, their times and the complete source duration."""
+    from ._composition_sequence import source_digest
+
+    return source_digest(source)
+
+
+def raster_jobs(source: RasterSequence, *, width: int, height: int, memory_bytes: int) -> tuple[PlateWork, ...]:
+    """Declare unique raw jobs for the entire timeline, including proxy passes and labels."""
+    from ._composition_sequence import jobs
+
+    return jobs(source, width=width, height=height, memory_bytes=memory_bytes)
+
+
+def raster_schedule(plan: ValidatedScenePlan, layer: str, source: RasterSequence) -> tuple[RasterSpan, ...]:
+    """Map source snapshots into half-open scene intervals, applying the clip clock once."""
+    from ._composition_sequence import schedule
+
+    return schedule(plan, layer, source)
+
+
+def prepare_raster_sequence(plan: ValidatedScenePlan, layer: str, source: RasterSequence) -> PreparedRasterSequence:
+    """Verify every plate/proxy snapshot in one bounded worker without rendering."""
+    from ._composition_sequence_runtime import prepare_sequence
+
+    return prepare_sequence(plan, layer, source)
 
 
 @dataclass(frozen=True)
@@ -625,7 +695,7 @@ class CompiledBundle:
 
 def compile_bundle(
     plan: ValidatedScenePlan,
-    assets: tuple[PreparedVector | VectorSource | PreparedPlate | PreparedProxy, ...],
+    assets: tuple[PreparedVector | VectorSource | PreparedPlate | PreparedProxy | PreparedRasterSequence, ...],
     *,
     engine: Path,
     cache: Path,
@@ -642,7 +712,7 @@ def compile_bundle(
 
 def emit_bundle(
     plan: ValidatedScenePlan,
-    assets: tuple[PreparedVector | VectorSource | PreparedPlate | PreparedProxy, ...],
+    assets: tuple[PreparedVector | VectorSource | PreparedPlate | PreparedProxy | PreparedRasterSequence, ...],
     output: Path,
     *,
     engine: Path,

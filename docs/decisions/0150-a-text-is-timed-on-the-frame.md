@@ -2,11 +2,11 @@
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 ---
 
-# ADR 0149: A text is timed on the frame, not per layer
+# ADR 0150: A text is timed on the frame, not per layer
 
 - Status: accepted (2026-11-01), ordered by arc4d3; written by Claude Opus 5.5 in Claude Code
 - Follows [ADR 0078](0078-strict-findings-at-first-delivery.md) and
-  [ADR 0148](0148-a-caption-does-not-run-across-a-sentence-end.md)
+  [ADR 0149](0149-a-caption-does-not-run-across-a-sentence-end.md)
 - Back to the [library README](../../README.md)
 
 ## Context

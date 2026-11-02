@@ -158,7 +158,7 @@ def main(argv=None):
     strict = sub.add_parser("strict", help="list the reels shipped with findings proven false (ADR 0078)")
     strict.add_argument("--scripts", type=Path, default=_scripts_default(), help="the episodes folder")
     strict.add_argument("--delivery", type=Path, default=_delivery_default(), help="the delivery folder")
-    bodies = sub.add_parser("anatomy", help="list what is published against the anatomy and text rules (ADR 0146)")
+    bodies = sub.add_parser("anatomy", help="list what is published against the anatomy and text rules (ADR 0147)")
     bodies.add_argument("--manifest", type=Path, nargs="*", default=None, help="the delivery manifests to read")
     enhance = sub.add_parser(
         "enhance", help="the auto-enhance mode, its ledger, its kinds and a check of this branch's claims (ADR 0056)"
@@ -815,7 +815,7 @@ def _strict(args: argparse.Namespace) -> int:
 def _anatomy_frames(project: Path) -> int:
     """The rules that read the frames, on what was just built: rule 2 of the anatomy rules and the timing of a text.
     Measuring takes the engine, so a build with no engine says it did not measure, and the first delivery still does
-    (ADR 0147, ADR 0149). 1 for a fault."""
+    (ADR 0148, ADR 0150). 1 for a fault."""
     scenes = sorted(project.glob("*.scene.xml"))
     if not scenes:
         return 0

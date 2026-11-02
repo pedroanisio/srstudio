@@ -4,7 +4,7 @@
   "reviewed_on": "2026-11-01",
   "reviewed_source_commit": "ea60f48d",
   "reviewed_working_tree": "Refreshed review of develop at ea60f48d and the uncommitted explicit drawing-event migration. Catalog counts were rechecked unchanged. New schedule, deferred-execution, composition, contract, cache and maintainability findings retain the complete P0-P4 scope. Earlier verification entries keep their original scope.",
-  "implementation_updated_on": "2026-11-01",
+  "implementation_updated_on": "2026-11-02",
   "character_contract_coverage": {
     "default_registered_characters": 70,
     "default_characters_with_explicit_contracts": 70,
@@ -54,6 +54,29 @@
     }
   },
   "review_verification": {
+    "composition_sequences": {
+      "baseline_source_commit": "4cef1d90",
+      "checked_develop_commit": "2832b337",
+      "tdd_regressions": [
+        "Missing sequence API and bundle support",
+        "Animated anchor contracts lost by derived static bindings",
+        "Collapsed clock intervals and inconsistent proxy oversampling",
+        "Missing executable guide",
+        "Extreme integer times escaped typed validation",
+        "Mixed raster IPC limit depended on layer ordering"
+      ],
+      "new_module_branch_inclusive_coverage_percent": 93,
+      "coverage_scope": "Three new raster-sequence modules; unchanged 80% gate. Broader scoped composition coverage is retained with the artifact verification. This is not a full-library suite run.",
+      "renderer_sha256": "90bf26f00439e3615206fa8c7ea4accea8cf5be009e188b60d7c5938ec4e0b4a",
+      "real_engine_evidence": [
+        "Plate and proxy geometry motion",
+        "Half-open held-frame boundaries",
+        "Out-of-order evaluation and cut/source-clock parity",
+        "Zero new renders on warm and clipped builds"
+      ],
+      "retained_artifacts": "../generated/sdk-composition-sequences/v1/",
+      "qualification": "Held snapshots under a static shared view. No interpolation, easing, biomechanical continuity, animated camera/light/parent support or operator style approval is claimed. SDK-P2-07 remains open."
+    },
     "composition_proxies": {
       "baseline_source_commit": "3b1e0fe9",
       "initial_missing_adapter_regressions_red": 8,
@@ -1188,13 +1211,14 @@
           "Static mixed vector/plate bundles reverify all inputs, render unique jobs under nested limits, verify PNGs and warm caches, and atomically publish portable scene/image directories",
           "Immutable UV and RGBA8 snapshots preserve color/normal maps, normal strength, sheen and subsurface settings; source snapshots deduplicate dimensions plus pixels, bounded workers generate content-addressed PNG/OBJ resources, and legacy untextured identities remain unchanged",
           "Static printed labels retain immutable typed recipes, actual font bytes and explicit licenses; bounded workers compile closed scenes/fonts, cold bundles render labels under per-source and shared attempt/memory/deadline limits, verify PNGs and publish only complete plate artifacts",
-          "Static proxies retain immutable recipe/geometry inputs with explicit scene-light ownership; proxy_jobs derives light/ID and optional under-only jobs, bounded preparation shares plate geometry validation, conversion verifies PNGs and preserves rgba/back/front/under semantics, and mixed bundles deduplicate raw renders while reprocessing palette/grain changes"
+          "Static proxies retain immutable recipe/geometry inputs with explicit scene-light ownership; proxy_jobs derives light/ID and optional under-only jobs, bounded preparation shares plate geometry validation, conversion verifies PNGs and preserves rgba/back/front/under semantics, and mixed bundles deduplicate raw renders while reprocessing palette/grain changes",
+          "Immutable plate/proxy RasterSequence snapshots preserve original animated bindings and source clocks; raster_jobs derives unique bounded work, every frame is verified before cache access, only visible held intervals render, image tables deduplicate IPC payloads, and real-engine boundary/cut/random-access tests verify replacement timing"
         ],
         "remaining": [
-          "Animated plate and animated proxy payload adapters under shared camera/light contracts",
+          "Animated scene camera, light and parent tracks beyond baked geometry/appearance snapshots under a static shared view",
           "Cross-backend rendering evidence for the complete DRAWING.md contract"
         ],
-        "verification": ["tests/test_composition_preflight.py", "tests/test_composition_emission.py", "tests/test_composition_runtime.py", "tests/test_bounded_process.py", "tests/test_composition_example.py", "tests/test_composition_plate_view.py", "tests/test_composition_plates.py", "tests/test_composition_bundles.py", "tests/test_composition_textures.py", "tests/test_composition_prints.py", "tests/test_bundle_primitives.py", "tests/test_plate_runtime_limits.py", "tests/test_plate_render_sessions.py", "docs/composition-preflight.md", "docs/authoring-benchmark.md", "docs/decisions/0144-bounded-composition-prints.md", "tests/test_composition_proxy.py", "docs/decisions/0145-bounded-composition-proxies.md"]
+        "verification": ["tests/test_composition_preflight.py", "tests/test_composition_emission.py", "tests/test_composition_runtime.py", "tests/test_bounded_process.py", "tests/test_composition_example.py", "tests/test_composition_plate_view.py", "tests/test_composition_plates.py", "tests/test_composition_bundles.py", "tests/test_composition_textures.py", "tests/test_composition_prints.py", "tests/test_bundle_primitives.py", "tests/test_plate_runtime_limits.py", "tests/test_plate_render_sessions.py", "docs/composition-preflight.md", "docs/authoring-benchmark.md", "docs/decisions/0144-bounded-composition-prints.md", "tests/test_composition_proxy.py", "docs/decisions/0145-bounded-composition-proxies.md", "tests/test_composition_sequences.py", "docs/decisions/0146-bounded-raster-timelines.md"]
       },
       "evidence": [
         "DRAWING.md#agent-facing-composition-contract"

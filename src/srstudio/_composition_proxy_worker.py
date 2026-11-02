@@ -17,8 +17,10 @@ from ._composition_png import decode as decode_png
 from ._composition_proxy_runtime import decode
 
 
-def prepare_proxy(plan: c.ValidatedScenePlan, layer: str, source: c.ProxySource) -> c.PreparedProxy:
-    binding, view, sources = payload.context(plan, layer, source)
+def prepare_proxy(
+    plan: c.ValidatedScenePlan, layer: str, source: c.ProxySource, *, sequence: bool = False
+) -> c.PreparedProxy:
+    binding, view, sources = payload.context(plan, layer, source, sequence=sequence)
     jobs = {job.key: job for job in binding.plates}
     passes = tuple(
         prepare_source(plan, layer, part, binding, jobs[pw.source_digest(part)], pass_view)
@@ -37,7 +39,9 @@ def convert(request: dict) -> bytes:
     wire.fields(request, {'schema', 'operation', 'plan', 'layer', 'source', 'images'})
     plan = wire.record(c.ValidatedScenePlan, request['plan'])
     source = decode(request['source'])
-    _, view, sources = payload.context(plan, request['layer'], source)
+    _, view, sources = payload.context(
+        plan, request['layer'], source, sequence=request['operation'] == 'convert-proxy-frame'
+    )
     if type(request['images']) is not list or len(request['images']) != len(sources):
         raise payload.fail('images', 'one verified PNG for each light/ID pass')
     images = tuple(wire.xml_decode(value) for value in request['images'])

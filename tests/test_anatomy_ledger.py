@@ -1,4 +1,4 @@
-"""What a build noted of a character's body, the closed list of what is excused, and the refusal (ADR 0146)."""
+"""What a build noted of a character's body, the closed list of what is excused, and the refusal (ADR 0147)."""
 
 from __future__ import annotations
 
