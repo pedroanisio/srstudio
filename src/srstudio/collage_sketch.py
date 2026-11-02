@@ -187,6 +187,33 @@ class Shot:
     measure: Callable[..., float]  # the advance width of a text at a size, in the style's font
 
 
+@dataclass(frozen=True)
+class Overlay:
+    """What :attr:`Staging.overlay` draws with: ``parent`` is the composition, so what it draws is over every shot and
+    out of any camera's reach, under the captions. ``first_line_end`` is when the first spoken line stops, from its take
+    on a recording, or where the next line starts on the scripted clock (:func:`first_line_end`)."""
+
+    cv: Canvas
+    parent: object
+    beats: Sequence[sketch.Beat]
+    end: float
+    measure: Callable[..., float]
+    first_line_end: float
+
+
+def first_line_end(root: Path, sk: sketch.Sketch, voiced: bool) -> float:
+    """When the first spoken line stops: on a recording the end of its last word in ``voiced/speech.json``, not of the
+    file, which keeps a short tail; on the scripted clock the start of the next line. A recording with no first take is
+    a :class:`srstudio.sketch.SketchError`, because a window read from nothing is no window."""
+    if not voiced:
+        return sketch.line_spans(sk)[0][1]
+    takes, _ = sketch.load_speech(Path(root) / "voiced" / "speech.json", sk.cast)
+    words = sketch.words_of(takes[0].alignment) if takes else []
+    if not words:
+        raise sketch.SketchError(f"{sk.slug}: voiced/speech.json has no first line to time: record again")
+    return round(takes[0].at + words[-1][2], 6)
+
+
 def solo(cv: Canvas, parent, app: sketch.Appearance, mouths: sketch.Mouths) -> collage.Point:
     """The default cast of a shot: the appearance's character alone, on its poses; returns its face, the pivot of a
     zoom onto it."""
@@ -280,6 +307,9 @@ class Staging:
     sounds: Callable[[Sequence[Beat], float], Sequence[Sound]] = lambda beats, end: ()
     # where the pill of a line goes, by its text, when a shot's picture fills the usual place; empty keeps them all
     caption_tops: Mapping[str, float] = field(default_factory=dict)
+    # draws what stays over every shot, under the captions and out of the camera's reach (see Overlay), as Toon's does:
+    # a reel's opening line. What it returns, if anything, is hidden on the cover. None draws nothing and reads no take
+    overlay: Callable[[Overlay], object | None] | None = None
 
     def set_of(self, beats: Sequence[Beat], app: Appearance) -> str:
         """The set this appearance plays on."""
@@ -487,6 +517,11 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
             camera.crash_zoom(cv, g, at, ZOOM_SCALE, duration=ZOOM_SNAP)
     for i, at in enumerate(whips):
         camera.whip_streaks(cv, ep.comp, at, WHIP_PAPER, seed=staging.seed + i)
+    if staging.overlay is not None:
+        said = first_line_end(root, sk, voiced)
+        drawn = staging.overlay(Overlay(cv, ep.comp, sk.beats, sk.end, measure, said))
+        if drawn is not None:
+            ep.hide_on_cover(drawn)
     lines = toon.load_script(root / ep.spec.dialogue)
     collage.captions(
         cv,
