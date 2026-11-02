@@ -100,7 +100,7 @@ named foot the bridge does not find flat is left out. `body.support_margin` says
 inside. The centre of mass is this module's own: the bridge carries `body`'s torso mass proxy, not a segment-weighted
 centre.
 
-**A bent-knee, wide stance.** A class dancer stands low on a wide base: the dance study ([ADR 0196](0196-dance-style-from-reference-video.md)) measured the knees
+**A bent-knee, wide stance.** A class dancer stands low on a wide base: the dance study ([ADR 0203](0203-dance-style-from-reference-video.md)) measured the knees
 bent 26°–62° and the stance 3.1–7.2 head radii wide, where the rest pose stands straight and narrow. `stance` lays both
 feet flat at `±width / 2` hip heights, then finds the hips' drop by bisection (40 halvings over at most 0.7 hip
 heights) at which the leg solve bends the knees by `bend`. A drop the feet cannot follow (a wide base on straight legs)
@@ -144,7 +144,7 @@ them the bounce is half time, but the cartoon's standing foot rolls past its lim
 Each key keeps its own timing: a `hit` holds the last pose for 65 % of the span and strikes in the last
 `HIT_SHARE` (35 %) at about three times a `smooth`'s peak speed; a `smooth` leaves and lands at rest with its peak
 speed at the middle. These are the timing waveforms this ADR ships; a per-key attack, release and peak-speed time
-belongs to the timing work's `curve` waveform in the moves schema, which a key is to name once it lands.
+belongs to the gesture-timing work's (ADR 0204) `curve` waveform in the moves schema, which a key is to name once it lands.
 
 ### Review
 
