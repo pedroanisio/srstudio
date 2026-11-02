@@ -48,6 +48,8 @@ _GRID = 2048  # places the fitted curve is read at, a fraction of a millisecond 
 _FLAT = 1e-9
 PROFILE_POINTS = 32  # places a velocity profile is read at: a 16th note apart on a two-beat cycle
 STROKE = 0.8  # an attack or release runs from 10% to 90% of the way between the extremes: -0.8 to +0.8
+SIGNIFICANT = 13.8  # an overtone's two coefficients against their noise, chi-squared on 2: 1 in 1000 by chance
+_EXACT = 1e-20  # a residual this small, against the series' power, is rounding: every overtone is kept
 
 
 class DanceMeasureError(DanceError):
@@ -65,7 +67,11 @@ class DanceReading:
     The gesture's timing (ADR 0199), counted from the hit: ``peak_speed_phase`` the share of the cycle after the hit at
     which it moves fastest; ``attack`` the seconds from 10% to 90% of the way onto the hit, ``release`` off it;
     ``peak_acceleration`` the largest acceleration in amplitudes (half the peak to peak) per beat squared; ``velocity``
-    the speed toward the hit side, over its largest, at :data:`PROFILE_POINTS` places from the hit."""
+    the speed toward the hit side, over its largest, at :data:`PROFILE_POINTS` places from the hit; ``shape`` the
+    cycle itself at those places, ``+1`` at the hit and ``-1`` at the far extreme; ``overtones`` how many the curve
+    holds. Overtones above it were either asked for by no one, finer than the widest gap the samples leave in the
+    cycle, or under the series' own noise: what the timing measures read is no sharper than that. At one overtone the
+    curve is a sine, and its timing is the sine's whatever the gesture's was."""
 
     cycles_per_beat: float
     period: float
@@ -82,6 +88,8 @@ class DanceReading:
     release: float | None = None
     peak_acceleration: float | None = None
     velocity: tuple[float, ...] = ()
+    shape: tuple[float, ...] = ()
+    overtones: int = 0
 
     @property
     def onto(self) -> float:
@@ -308,15 +316,44 @@ def _refined(x: np.ndarray, times: np.ndarray, hz: float, fps: int, span: int) -
     return best
 
 
-def _curve(x: np.ndarray, times: np.ndarray, hz: float, shape: int) -> tuple[np.ndarray, np.ndarray, np.ndarray, float]:
+def _overtones(x: np.ndarray, basis: np.ndarray, coefficients: np.ndarray, most: int) -> int:
+    """The highest of ``most`` overtones whose two coefficients stand above the noise the fit leaves (a Wald test at
+    :data:`SIGNIFICANT`), at least one; all of them where the fit leaves only rounding."""
+    left = x - basis @ coefficients
+    spare = len(x) - basis.shape[1]
+    noise = float(left @ left) / max(spare, 1)
+    if spare < 1 or noise <= _EXACT * float(x @ x) / len(x):
+        return most
+    spread = noise * np.linalg.pinv(basis.T @ basis)
+    keep = [1]
+    for k in range(1, most + 1):
+        pair = [k, most + k]
+        c = coefficients[pair]
+        if float(c @ np.linalg.lstsq(spread[np.ix_(pair, pair)], c, rcond=None)[0]) > SIGNIFICANT:
+            keep.append(k)
+    return max(keep)
+
+
+def _curve(
+    x: np.ndarray, times: np.ndarray, hz: float, shape: int
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, float, int]:
     """One cycle read at ``_GRID`` places from the grid's offset, its first and second derivatives in units per
-    second, and the widest gap the samples leave in it, as a fraction of the cycle. A cycle sampled at only a few places
-    carries only the overtones those places can tell."""
+    second, the widest gap the samples leave in it, as a fraction of the cycle, and the overtones it holds.
+
+    A cycle carries only the overtones its samples can tell: no more than half the places they land on, no more than
+    the widest gap between them allows (a curve of ``k`` overtones is held by samples no gap wider than ``1/(2k)``
+    apart, Gröchenig's bound), and none whose size the series' own noise could give."""
     places = np.sort(times * hz % 1.0)
     gaps = np.diff(places, append=places[0] + 1)
-    harmonics = min(shape, (int(np.sum(gaps > 1e-3)) - 1) // 2)
+    widest = float(np.max(gaps))
+    harmonics = min(shape, (int(np.sum(gaps > 1e-3)) - 1) // 2, int(1 / (2 * widest)))
     _bad(harmonics < 1, "the samples land on too few places in the cycle to show its shape", "series")
-    coefficients = _fit(x, _basis(times, hz, harmonics))
+    basis = _basis(times, hz, harmonics)
+    coefficients = _fit(x, basis)
+    kept = _overtones(x, basis, coefficients, harmonics)
+    if kept < harmonics:
+        harmonics = kept
+        coefficients = _fit(x, _basis(times, hz, harmonics))
     grid = np.arange(_GRID) / _GRID / hz
     k = np.arange(1, harmonics + 1)
     turns = 2 * np.pi * hz * np.outer(grid, k)
@@ -324,7 +361,7 @@ def _curve(x: np.ndarray, times: np.ndarray, hz: float, shape: int) -> tuple[np.
     curve = coefficients[0] + np.cos(turns) @ a + np.sin(turns) @ b
     velocity = np.cos(turns) @ (w * b) - np.sin(turns) @ (w * a)
     acceleration = -(np.cos(turns) @ (w * w * a) + np.sin(turns) @ (w * w * b))
-    return curve, velocity, acceleration, float(np.max(gaps))
+    return curve, velocity, acceleration, widest, harmonics
 
 
 def _strokes(y: np.ndarray) -> tuple[float, float]:
@@ -344,9 +381,9 @@ def _strokes(y: np.ndarray) -> tuple[float, float]:
 
 def _timing(
     curve: np.ndarray, velocity: np.ndarray, acceleration: np.ndarray, side: str, beat: float, period: float
-) -> tuple[float, float, float, float, tuple[float, ...]]:
+) -> tuple[float, float, float, float, tuple[float, ...], tuple[float, ...]]:
     """The gesture's timing from the hit on ``side``: the place of its fastest moment, its attack and release in
-    seconds, its peak acceleration per beat squared in amplitudes, and its velocity profile."""
+    seconds, its peak acceleration per beat squared in amplitudes, its velocity profile and its normalized cycle."""
     sign = 1.0 if side == "max" else -1.0
     half = float(np.ptp(curve)) / 2
     hit = int(np.argmax(sign * curve))
@@ -356,13 +393,15 @@ def _timing(
     a = sign * acceleration[order] * beat * beat / half
     speed = np.abs(v)
     release, attack = _strokes(y)
-    profile = v[:: len(v) // PROFILE_POINTS] / float(speed.max())
+    step = len(v) // PROFILE_POINTS
+    profile = v[::step] / float(speed.max())
     return (
         float(np.argmax(speed)) / len(v),
         attack * period,
         release * period,
         float(np.max(np.abs(a))),
         tuple(float(np.clip(p, -1.0, 1.0)) for p in profile),
+        tuple(float(np.clip(p, -1.0, 1.0)) for p in y[::step]),
     )
 
 
@@ -407,7 +446,7 @@ def measure_dance(
     times = (start - groove.offset + np.arange(len(x)) / fps)[present]
     x = x[present]
     hz = _refined(x, times, hz, fps, len(present))
-    curve, velocity, acceleration, gap = _curve(x, times, hz, harmonics)
+    curve, velocity, acceleration, gap, overtones = _curve(x, times, hz, harmonics)
     low, high = int(np.argmin(curve)) / _GRID, int(np.argmax(curve)) / _GRID
     period = 1 / hz
     rise = (high - low) % 1.0 * period
@@ -427,4 +466,5 @@ def measure_dance(
         place - round(place),
         gap * period,
         *timing,
+        overtones,
     )

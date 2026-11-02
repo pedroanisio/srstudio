@@ -19,6 +19,7 @@ from srstudio.music import Groove
 GROOVE = Groove(122.65)  # the reference's tempo
 FPS = 30
 SHARE = 0.35  # of pictures a 30 fps screen recording of the reference repeats
+LOST = 0.15  # of pictures the estimator loses the dancer in, as it does on the reference
 
 
 def whip(n: int = 24, strike: float = 0.25) -> tuple[float, ...]:
@@ -39,6 +40,11 @@ MOVE = dance.Move(
 CLEAN = ds.pose_record(list(dance.frames(MOVE, GROOVE, 0.0, 16 * GROOVE.beat, FPS)), FPS)
 _rng = random.Random(7)
 REPEATS = sorted(i for i in range(1, len(CLEAN["frames"])) if _rng.random() < SHARE)
+_lose = random.Random(11)
+for _frame in CLEAN["frames"][1:]:
+    if _lose.random() < LOST:  # whether or not the recorder then repeats it
+        for _key in pt.FRAME_KEYS[2:]:
+            _frame[_key] = None
 
 
 def recorded(marked: bool) -> dict:
@@ -75,11 +81,13 @@ def test_repeats_left_out_measure_as_the_track_without_them():
     assert marked.release == pytest.approx(clean.release, abs=0.003)
 
 
-def test_repeats_read_as_observations_fake_acceleration_and_bend_the_profile():
-    """What the reference read before the track said which pictures repeat: the same gesture, its peak acceleration
-    read 2.6 times too high."""
+def test_repeats_read_as_observations_bend_the_profile_and_the_acceleration():
+    """What the reference read before the track said which pictures repeat. Each repeat is a stop and a double step,
+    which the fit cannot follow: it reads them as noise, keeps fewer overtones, and the gesture's profile and peak
+    acceleration come out as another gesture's."""
     clean, seen = read(CLEAN), read(recorded(marked=False))
-    assert seen.peak_acceleration > 2 * clean.peak_acceleration
+    assert seen.overtones < clean.overtones
+    assert abs(seen.peak_acceleration / clean.peak_acceleration - 1) > 0.5
     assert dance.profile_distance(seen.velocity, clean.velocity) > 0.2
 
 
@@ -93,3 +101,27 @@ def test_a_repeat_does_not_hide_a_jump_across_it():
     for row in data["frames"][after]["world"]:
         row[0] += 2.0  # two metres sideways in one picture
     assert ds.reference_body(pt.from_data(data)).rejected["jump"] >= 1
+
+
+def study(data: dict) -> ds.StyleReading:
+    return ds.measure_style(ds.reference_body(pt.from_data(data)), GROOVE)
+
+
+def test_repeats_cost_the_study_no_window_and_no_travel():
+    """A repeat is no observation, but it is no lost dancer either: a window's coverage counts the distinct pictures,
+    and a path is read between them at their real times."""
+    clean, marked = study(CLEAN), study(recorded(marked=True))
+    arms, seen = clean.channels["arms.height"], marked.channels["arms.height"]
+    assert clean.channels["arms.height"].windows > 0
+    assert (seen.windows, seen.read, seen.locked) == (arms.windows, arms.read, arms.locked)
+    assert seen.peak_to_peak is not None and arms.peak_to_peak is not None
+    assert seen.peak_to_peak.p50 == pytest.approx(arms.peak_to_peak.p50, rel=0.02)
+    hands, path = clean.channels["hands.travel"].level, marked.channels["hands.travel"].level
+    assert hands is not None and path is not None
+    assert path.p50 == pytest.approx(hands.p50, rel=0.05)
+
+
+def test_the_body_says_which_frames_repeat():
+    body = ds.reference_body(pt.from_data(recorded(marked=True)))
+    assert [int(i) for i in body.repeated.nonzero()[0]] == REPEATS
+    assert not ds.reference_body(pt.from_data(CLEAN)).repeated.any()

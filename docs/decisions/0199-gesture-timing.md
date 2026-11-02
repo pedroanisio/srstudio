@@ -92,9 +92,88 @@ between the two distinct pictures. `measure_dance` fits each channel on the fram
 nothing is differentiated across a repeat. With the repeats left out, the same synthetic track measures within a
 profile distance of 0.001 and 0.5% of its peak acceleration.
 
-What remains is a bound, not a bias. Distinct pictures arrive irregularly, at about 20 a second, and a fit can only
-hold the overtones they cover. `measure_dance` already limits its overtones to what the samples' places in the folded
-cycle can tell, and a reading carries the widest gap they leave.
+A repeat is neither seen nor lost. A study window's coverage counts the distinct pictures, and a path (`hands.travel`,
+`feet.travel`) is read between the seen pictures on either side of repeats, as long as those pictures lie within the
+quarter beat the path is read at. On the reference, 540 of 1,507 frames repeat: 967 distinct pictures in 50.2 seconds,
+19.3 a second. Counted as lost, the repeats left `hips.bounce`, `knees.bend` and `arms.height` with no window at all.
+
+### What the samples can tell
+
+Distinct pictures arrive irregularly: on the reference, the gap from one to the next is one frame 588 times, two
+frames 254 times, three 90 times, four 31 times and five 3 times. A fit cannot hold overtones the samples cannot
+tell, and a fit that tries rings between them. Read at 12 overtones, the reference's `shoulders.tilt` windows put
+their peak acceleration between 146 and 1,810 amplitudes per beat squared, and one at 102,360; their fitted peak to
+peak exceeded the data's own range.
+
+`measure_dance` now keeps an overtone only where the samples can tell it, and the reading says how many it kept
+(`overtones`). Three limits apply, and the lowest one wins:
+
+- **Places.** No more than half the distinct places the samples land on in the folded cycle, as before.
+- **Widest gap.** No more than `1 / (2 * widest gap)`, as a share of the cycle. Gröchenig's bound: samples no gap
+  wider than that apart determine a curve of that many overtones.
+- **Noise.** No overtone whose two coefficients a Wald test against the fit's own residual cannot tell from noise
+  (chi-squared on two degrees, 13.8, 1 in 1,000 by chance). The highest overtone that passes sets the count.
+
+That bound is what remains of recoverable speed and acceleration. A gesture's overtones above it are not read. Its
+peak acceleration and the sharpness of its profile are then lower bounds, and at one overtone the curve is a sine,
+whose timing is a sine's whatever the dancer did. In tests:
+
+- A sine read through scatter of a tenth of its amplitude keeps at most two overtones and its peak acceleration
+  within 15%.
+- A whip with scatter of 1% keeps at least five, its profile within 0.05 and its fastest moment within 0.02 of a
+  cycle.
+- Sixteen pictures to a cycle, always on the same sixteen places, keep at most eight.
+
+The same bound changes what repeats read as observations do to a reading. The fit takes each stop-and-double-step
+for noise and keeps fewer overtones: 3 instead of 11 on the synthetic track. The profile is still 0.27 away, and the
+peak acceleration is read at 133 against 342, as another gesture's.
+
+### The study reads each channel's timing
+
+`dance_study.ChannelReading` now carries each channel's gesture timing across its windows:
+
+- the overtones each read window holds;
+- `timed`, the windows that hold more than a sine (two overtones or more);
+- across the timed windows, `peak_speed_phase` (read round the cycle, so a cluster across the hit is one cluster),
+  `attack` and `release` in beats, and `peak_acceleration`;
+- the mean one-cycle `velocity` and `shape` profiles from the hit, and each window's distance from the mean
+  velocity profile (`profile_spread`).
+
+The snap ratio is read on timed windows too: a sine's rise is its fall.
+
+On the reference, the read windows' overtones are 1 at the median. Only four channels have any timed window:
+`head.bob` 4 of 12 read, `shoulders.tilt` 3 of 22, `head.sway` 2 of 14, `hips.bounce` and `knees.bend` 1 each. Their
+cycles do not agree either: `head.bob`'s read windows run from 0.29 to 1.1 cycles a beat, and its timed windows'
+velocity profiles lie 0.29 from their mean at the median.
+
+### The style holds it: `srstudio.dance-style/1.1.0`
+
+1.1 adds per channel `peak_speed_phase`, `attack`, `release` and `peak_acceleration` as ranges, `velocity` (the mean
+profile, 32 numbers) and `profile_distance` (how far from it a dance's may lie). It also adds `timed` to the
+evidence and `repeat` to the reference's refused frames. A 1.0 record reads as before, with no timing.
+
+A timing range stands only where all three hold:
+
+- at least `MIN_WINDOWS` (4) windows are timed;
+- the channel's trust is `good`, read in the picture's own plane, since a timing read through the estimator's depth
+  guess carries that guess's jitter into its second derivative;
+- for the profile, the windows agree: the 75th percentile of their distances from the mean is at most 0.15.
+
+A check compares a phase either way round the cycle. A dance whose channel holds no more than a sine misses a timing
+range as holding none.
+
+Re-measured from the re-extracted track, `studio-hiphop` holds timing on one channel, `head.bob`:
+
+| Measure | Range |
+|---|---|
+| attack | 0.32 to 0.73 beats |
+| release | 1.21 to 1.87 beats |
+| fastest moment | 0.82 to 0.89 of the cycle |
+| peak acceleration | 4.6 to 145.6 amplitudes per beat squared |
+
+It holds no profile, since the windows disagree. Every peak-to-peak range narrowed, because the fit no longer holds
+the noise's overtones. `hips.bounce` went from 0.73..1.56 to 0.11..0.78 head radii. The snap ratio stands only on
+`head.bob`, at 1.29 to 2.55.
 
 ### A gesture's timing is kept to the picture
 

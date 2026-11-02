@@ -243,7 +243,8 @@ body = ds.reference_body(track)  # hips-relative, in head radii; refused frames 
 assert body.used == len(bounce) and sum(body.rejected.values()) == 0
 reference = dance_style.Reference(
     "a synthetic bounce", track.source.sha256, track.estimator.name, track.estimator.version,
-    track.estimator.model_sha256, 8.0, len(bounce), body.used, dict(body.rejected), 120.0, 4, 0.0,
+    track.estimator.model_sha256, 8.0, len(bounce), body.used,
+    dict(body.rejected) | {"repeat": body.repeats}, 120.0, 4, 0.0,  # a repeated picture counts as refused
 )  # fmt: skip
 style = dance_style.derive(
     ds.measure_style(body, groove), name="bounce-study", description="our bounce, measured back",
@@ -258,3 +259,9 @@ assert arms.misses and arms.misses[0].severity >= arms.misses[-1].severity
 Each miss names the channel, the measure, our value, the reference's range and the trust of the channel; the score is
 their summed severity. Read `torso.lean` and `torso.roll` lightly: a single camera reads depth poorly. A reference
 measures no travel across the floor: its camera follows the dancer and its estimator's metres start at the hips.
+
+A style also holds each channel's gesture timing (`srstudio.dance-style/1.1.0`): where in the cycle it is fastest, its
+attack and release in beats, its peak acceleration, and its mean velocity profile. A window counts toward them only
+when its curve holds more than a sine above the estimate's noise, and the profile only when those windows agree, so a
+noisy reference gives fewer of these ranges than of the others. `ChannelTarget.evidence["timed"]` says how many windows
+the timing stands on ([ADR 0199](decisions/0199-gesture-timing.md)).
