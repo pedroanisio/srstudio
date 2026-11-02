@@ -120,5 +120,7 @@ listing each violation), `skeleton.mismatch`, `skeleton.support` and `skeleton.i
 - Moves are written once against canonical control names and run on any profile that has those joints; a move that
   names a control the character omits is refused by name.
 - Adapters that draw from `body` or `limbs` records can be fed from a skeleton pose without change.
-- limbs' human thumb has two phalanges and the skeleton's has three; `hand_profile` gives limbs a three-bone thumb.
+- limbs' `HUMAN` thumb has three segments, as the skeleton's has ([limbs catalog](../catalog/limbs.md)), so a
+  human hand from `hand_profile` has limbs' human topology. limbs' simplified three-finger hand keeps a two-segment
+  thumb; `hand_profile` gives it the skeleton's three, which limbs takes as the profile's own anatomy.
 - Moving the srlocations pin re-reads the table and compares digests before anything else.

@@ -487,6 +487,19 @@ def test_a_hand_profile_mirrors_its_limbs_kind(kind, side):
     assert made.palm_width > 0 and made.palm_length > 0
 
 
+@pytest.mark.parametrize("kind", ["human", "mitten", "paw", "gripper"])
+def test_a_hand_profile_has_the_bones_of_its_limbs_kind(kind):
+    """limbs' HUMAN thumb has three segments like the skeleton's; only three-finger keeps limbs' two-segment thumb."""
+    made = sk.hand_profile(sk.SkeletonProfile("x", REAL.proportions, hands=(kind, kind)), "right")
+    assert [len(d.lengths) for d in made.digits] == [len(d.lengths) for d in limbs.HANDS[kind].digits]
+
+
+def test_a_three_finger_hand_keeps_the_skeletons_three_thumb_bones():
+    made = sk.hand_profile(sk.SkeletonProfile("x", REAL.proportions, hands=("three-finger",) * 2), "right")
+    assert [len(d.lengths) for d in made.digits] == [3, 3, 3]
+    assert len(limbs.HANDS["three-finger"].digits[0].lengths) == 2
+
+
 def test_a_hand_profile_sets_the_thumb_across_from_the_little_finger():
     made = sk.hand_profile(REAL, "right")
     digits = {d.name: d for d in made.digits}
