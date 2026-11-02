@@ -1,12 +1,14 @@
 """tools/dance_views.py: front, left and top orthographic views of dances on the shared skeleton, for review."""
 
 import importlib.util
+import math
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+from PIL import ImageChops
 
 from srstudio import dance, music
 from srstudio import skeleton as sk
@@ -137,3 +139,38 @@ def test_the_tool_writes_a_video_with_sound(tmp_path):
     )
     assert sorted(probe.stdout.split()) == ["audio", "video"]
     assert oct(out.stat().st_mode & 0o777) == "0o600"
+
+
+# --- the volume look (ADR 0202) -------------------------------------------------------------------------------------
+
+# Hands with no fingers, so nothing but the forearm's own drawing could show its roll.
+PLAIN = sk.SkeletonProfile("plain", sk.preset("realistic").proportions, hands=("none", "none"))
+
+
+def _twisted(turn):
+    return sk.add(PLAIN, sk.pose(PLAIN), {"right_lower_arm.twist_in_out": turn})
+
+
+def test_the_line_look_cannot_show_a_forearm_twist_and_the_volume_look_can():
+    plain, twisted = _twisted(0.0), _twisted(math.pi / 2)
+    lines = [views.pose_image(PLAIN, p, ("front",), look="lines").tobytes() for p in (plain, twisted)]
+    assert lines[0] == lines[1]
+    volume = [views.pose_image(PLAIN, p, ("front",), look="volume") for p in (plain, twisted)]
+    changed = ImageChops.difference(volume[0], volume[1]).getbbox()
+    assert changed is not None
+    # Nothing on the body's side of the elbow changes: the roll shows on the forearm and the hand it carries. The
+    # margin is half the widest stroke the look draws, rounded up.
+    (elbow,) = views.cell_points(PLAIN, plain, "front", ("right_lower_arm",))
+    assert changed[0] >= elbow[0] - math.ceil(max(views.STROKES.values()) / 2)
+
+
+def test_the_volume_look_is_the_default_and_a_look_must_be_known(tmp_path):
+    sheet = views.Sheet(("stick",), ("front",))
+    plan = views.plan(["bob"], 1)
+    default = views.render_frame(sheet, plan, GROOVE, 0.2)
+    assert default.tobytes() == views.render_frame(sheet, plan, GROOVE, 0.2, look="volume").tobytes()
+    assert default.tobytes() != views.render_frame(sheet, plan, GROOVE, 0.2, look="lines").tobytes()
+    with pytest.raises(views.ViewsError, match="unknown look"):
+        views.write(tmp_path / "out.mp4", look="clay", **TINY)
+    with pytest.raises(views.ViewsError, match="unknown look"):
+        views.pose_image(PLAIN, _twisted(0.0), ("front",), look="clay")
