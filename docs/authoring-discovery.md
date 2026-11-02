@@ -936,3 +936,60 @@ the door leaves. Nonempty shut intervals form a union; open drawings appear
 in the gaps up to `end`. Empty shut intervals keep the default door closed.
 The handshake insert and tipping mop draw their own motion; neither creates
 biomechanical constraints or a world-space contact anchor.
+
+## Soft props, appliances and effects
+
+The 32 registered builders in `soft_props` and `soft_odds` declare their
+drawing origins, units, timed records and callback ownership. Each returns
+a group. Most place a local drawing at parent-pixel `x`/`y` and scale its
+geometry and child motion together. The bench, parcel stack and time card
+instead bake parent coordinates into their geometry. The glare lamp scales
+its body while keeping `reach` as an independent parent-pixel radius.
+
+Inspect schedule vocabularies before constructing them. Washer `loads` take
+`brick`, `ball`, `coins` or `shovel`; smoke and grill flame rows start at zero
+and use levels 0..3. `BadgeState` and `TimeState` separate literal display
+copy from their visibility spans. Their text needs a bound font. The phone's
+`screen` and beach call's `guest` receive an existing group once; their return
+values are ignored and their drawings are not clipped to the suggested box.
+
+<!-- soft-prop-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry, soft_odds
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1920, fps='30', duration=6)
+cv = Canvas(scene, font_asset=None)
+cv.local_time = True
+
+washer = registry.get('prop', 'soft-washer').describe()['contract']
+load = washer['arguments']['properties']['loads']['items']['prefixItems']
+assert load[0]['x-timebase'] == 'canvas'
+assert 'brick' in load[1]['enum']
+
+machine = soft_odds.washer(
+    cv, cv.comp, x=540, y=1600, scale=1.2, end=6, stop=4,
+    open_at=((1, 5), (2, 3)), loads=((1, 'brick'),),
+)
+# Hide the complete machine at the end; its own end limits selected effects.
+cv.gate(machine, ((0, 6),))
+assert machine.id == 'soft-washer'
+```
+<!-- soft-prop-discovery:end -->
+
+Overlapping washer door intervals form a union: the nested interval above
+does not close the door early. The drum rotates linearly until `stop`, then
+holds; loads ride in its group. `end` limits door and load visibility, while
+the machine body remains. TV and fridge `off` times extinguish their picture
+or indicator, and the grill's `end` limits flame and char overlays. Use a
+caller-owned gate when the entire object must disappear.
+
+Motion styles are explicit. Tongs snap between held angles, rumble lines
+shake in held steps, smoke loops interpolate linearly, and dust specks fall
+once and hold their final positions. A cake turn squeezes its flat drawing
+and swaps the lettering at the narrowest point. Its candle and the beach's
+sea and palm use renderer expressions; `Canvas.local_time` selects keyframe
+clocks without rewriting those expressions. These illustrations provide no
+grip, collision, fluid, lighting or biomechanical solver. The hush finger
+draws an extra forearm and finger, so authors must coordinate it with the rig.

@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0.0",
+  "generated_by": {
+    "model": "GPT-6",
+    "tool": "OpenAI Codex"
+  },
+  "source_commit": "e8a2e0d6a570b935c324215f2d60090fd7122973",
+  "scene_sha256": {
+    "soft-cake": "8e4b21ba24f0056c97668562b4314cd97c1ea00981699d616019078683762c08",
+    "soft-bench": "a95fe58b867412acf8ecd425f98ef06900103a662dcc28184e5388812d4368b6",
+    "soft-briefcase": "c365d54fc7b06dcdc0e985a7dee72d2ec1de877c096712c3ce984a0732d9ea7c",
+    "soft-necktie": "88eac87d30c7d2fd065ecea99634ed0624d7253412a40ed49903874f827a5ad4",
+    "soft-shovel": "5a68ca38d07c654d1ca183665c3aac0fa3bf6a107f0c9a8d07a3c52f46cbb16e",
+    "soft-hive": "5b1e072b11289a29052012ec83d07779666ac812827b97037ee047aee1605ffc",
+    "soft-cane": "3b9cfff44e8ff2dfc89430b28bd365b9a37397e6e8bfc283ca3e89343c5f3a44",
+    "soft-phone": "3801d1b0303ad787af9dcafdd36a8863936d4dc73adaf484258745a4b0e6050e",
+    "soft-glare-lamp": "5e3f04ee0fe6b98493f51fe4dbcd8a15b53e16e862dc85264c567f9ae4f6a843",
+    "soft-parcels": "465be5279184b4a125b1c42e3572adba2e95a218790265ed53aae352cc27dc7d",
+    "soft-whisk": "de4ca6f0c5d5967f03adcd3aed0af2481435a948024b4c0ac862275488377e24",
+    "soft-tongs": "7b17144c28aa4c281aa9e6c0f3bfd22ea5085997d8b3b9e23c083620f37c7c88",
+    "soft-grill": "7a85e398c2adf231e0867c58a32f21b9f95761503b38466348c07d491ca3b7a3",
+    "soft-smoke": "abfb25b730c0dd36ef5d70a260477132e055dd81d05cf51201eeabe922469562",
+    "soft-pizza-box": "3a68a83be67b024120d73d2f06a38b2f6ea54177b973784d7ab1e523068c2b32",
+    "soft-bottle": "704beea94c54358651fce4ac79c838c96cffa78bff2e69ce16b538e2cc929877",
+    "soft-washer": "c6c24ff62aaa0e3b21a1fdc67b3280091ade920291600d2d8bd9375d4e7ce489",
+    "soft-brick": "b20650478dbd9b36e8e28b742c3c3bd1a9259b1406d2d6f26b0fdee0b2debbb8",
+    "soft-bowling-ball": "733c21c6f55f5da308b106fadc4704439e16726bf8a6f76dd6f5cc7fb87f2d42",
+    "soft-coin-bag": "8ada8b406ddd146b5522e56214b243a5b5b5ff8094fc4baa2c4ef6d5af734890",
+    "soft-tv": "d024353cae57bfd8d0e322d1e7e805643c21b6ce549e7225679bd84ef65a7353",
+    "soft-home-fridge": "479b80772bb82677a966a30a69180cfa377348c97af987c9355bacbff59cb788",
+    "soft-dust": "96bf41c1b998034a467e3d4701aea107f60798ec522327e08899e01c07e11347",
+    "soft-notice": "033bfa8fe6b7ebab2288b32a71b0c476d76e2e87518c0024689df2b4a769ca81",
+    "soft-book": "0f6f49b77426a1cef0d1f95684b680e1df40f9247e5b71f4c2ca677f0759f645",
+    "soft-yogurt": "d421cf262d60b5580fe62f2f39bc3821b576881ee4404a6585974e4d60d8506c",
+    "soft-rumble": "57801f5228feb723325caf898b2b31d6ae8d6c81f2f679a23b19acf7727a5bfb",
+    "soft-hush-finger": "e382f84c12fc3030d860151f3304d4ba06fc9967ede56003fea783e9d4f7c0ee",
+    "soft-status-badge": "5ee30b01353281d1b017973bf6cb7a5641a9fcb305e997ea79f4980722f5ab88",
+    "soft-beach-call": "f61d1a4f3e8bdc6b07d478192d08789261a0a6d28c48e7967c569c3dcd16712a",
+    "soft-time-card": "2623a75e072cd986c0af1e79a348a1df35580672ff5cabd6ef993db9b7bc2040",
+    "soft-dimmer": "7c1389aaa038b354cca6eb5482fc4ea4b96933de6d9d78a70671374560d75cfe"
+  }
+}
