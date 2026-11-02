@@ -424,6 +424,28 @@ def test_a_flip_card_refuses_a_side_it_could_not_show_whole(sides):
         collage_everyday.flip_card(cv, cv.comp, sides)
 
 
+@pytest.mark.parametrize('local', [False, True])
+@pytest.mark.parametrize(
+    'sides', [((0, ' '),), ((0, 'YES'), (3, 'A' * 30)), ((0, 'YES'), (3, ' '.join(['WORD'] * 40)))]
+)
+def test_flip_card_checks_all_copy_before_mutating_the_scene(local, sides):
+    cv = canvas()
+    cv.local_time = local
+    before = body(cv)
+    with pytest.raises(EverydayError, match='does not fit'):
+        collage_everyday.flip_card(cv, cv.comp, sides)
+    assert body(cv) == before
+
+
+@pytest.mark.parametrize('at', [-1, float('nan'), float('inf'), True, '1', collage_everyday.FOREVER])
+def test_flip_card_rejects_unusable_side_times_with_its_own_error_before_drawing(at):
+    cv = canvas()
+    before = body(cv)
+    with pytest.raises(EverydayError, match='time'):
+        collage_everyday.flip_card(cv, cv.comp, ((at, 'YES'),))
+    assert body(cv) == before
+
+
 # -- the magnifying glass ---------------------------------------------------------------------------------------------
 def test_the_magnifying_glass_is_registered():
     assert registry.get("prop", "collage-magnifying-glass").builder is collage_everyday.magnifying_glass

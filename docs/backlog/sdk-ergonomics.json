@@ -1158,6 +1158,32 @@
   ],
   "findings": [
     {
+      "id": "SDK-P1-22",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Preflight every flip-card side before drawing",
+      "problem": "A rejected side left an empty or partly drawn card behind, including font assets from earlier sides. Invalid timestamps reached Canvas after scene mutation, and a side starting at the visibility sentinel silently disappeared.",
+      "resolution": "Validate finite nonnegative increasing times below FOREVER and fit-check all side copy before creating any nodes. Failures raise EverydayError. Valid cards remain byte-identical on both Canvas settings.",
+      "verification": [
+        "tests/test_collage_everyday.py:test_flip_card_checks_all_copy_before_mutating_the_scene",
+        "tests/test_collage_everyday.py:test_flip_card_rejects_unusable_side_times_with_its_own_error_before_drawing"
+      ],
+      "acceptance": [
+        "Invalid first or later side copy leaves the scene unchanged",
+        "Invalid timestamps fail at the builder boundary before mutation",
+        "Valid cards retain their drawing and clock behavior"
+      ],
+      "verification_summary": {
+        "red": 12,
+        "passed": 339,
+        "new_cases": 12,
+        "skipped": 0,
+        "branch_inclusive_module_coverage_percent": 98.24281150159744,
+        "module_branch_coverage_percent": 95.5223880597015,
+        "retained_artifacts": "../generated/sdk-collage-card-preflight/v1/"
+      }
+    },
+    {
       "id": "SDK-P1-21",
       "priority": "P1",
       "status": "complete",

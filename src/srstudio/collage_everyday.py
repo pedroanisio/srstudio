@@ -236,16 +236,21 @@ def flip_card(
 ) -> object:
     """A card ``w`` by ``h`` centred on ``x, y``, showing each of ``sides`` (``(from, text)``, project seconds) in
     turn, in type that is measured against the card: it turns edge-on over :data:`FLIP` seconds at each change, so the
-    change reads as the card being turned, and refuses a side it could not show whole."""
+    change reads as the card being turned. Times must increase, be nonnegative and stay below :data:`FOREVER`.
+    All side times and copy are checked before drawing, including whether each side fits whole."""
     if not sides:
         raise EverydayError("a flip card needs at least one side")
-    times = [at for at, _ in sides]
-    if times != sorted(set(times)):
-        raise EverydayError(f"a flip card's sides run forward in time, got {times}")
+    times = checks.rising(
+        (at for at, _ in sides),
+        EverydayError,
+        lambda i, at: f"a flip card's side {i} time {at!r} must increase, be nonnegative and stay below {FOREVER}",
+        end=FOREVER,
+    )
     _size(w, "a card's width"), _size(h, "a card's height"), _size(size, "a card's type size")
+    for _, text in sides:
+        _check_fits(text, w, h, size)
     g = cv.group(parent, cv.uid("g"), x=x, y=y, rotation=tilt)
     for i, (at, text) in enumerate(sides):
-        _check_fits(text, w, h, size)
         side = cv.group(g, cv.uid("g"))
         cv.gate(side, [(at, times[i + 1] if i + 1 < len(sides) else FOREVER)], local=False)
         draw_shapes(cv, side, _paper(_cut(f"flip-card-{i}", _box(w, h), 3), CARD_FILLS[i % len(CARD_FILLS)]))
