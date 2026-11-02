@@ -103,11 +103,11 @@ print(result.work)
 ```
 
 This world input is a component of the combined-proof migration. The original
-`drawing_proof` still builds its retained candidate through the legacy path;
-the spatial hand, protected information and complete acceptance matrix
-have not yet moved into this world timeline. The combined candidate below adds
-the native figure. No existing drawing or approval
-changes. Run `pytest tests/test_drawing_world.py` with `SRSTUDIO_ENGINE` set to
+`drawing_proof` still builds its retained candidate through the legacy path.
+The combined components below add the native figure, spatial hand/cup and
+protected information to this shared world. The complete acceptance matrix
+remains open. No existing drawing or approval changes.
+Run `pytest tests/test_drawing_world.py` with `SRSTUDIO_ENGINE` set to
 exercise numeric registration, transformed parents, tire contact, receiver
 failures and real-render cold/warm equivalence.
 
@@ -138,10 +138,10 @@ snippet above to compile these combined picture layers.
 
 This candidate declares a ground-level root; it does not yet constrain each
 sole with the body solver. The three-second depth change remains a cut, and
-the rig retains its authored ink colors. Hand, protected information, body
-support, rig form lighting and the complete animated acceptance measurements
-remain open. The retained legacy `drawing_proof` and the 30-second showcase are
-unchanged.
+the rig retains its authored ink colors. The following components add the hand
+and information; body support, rig form lighting and the complete animated
+acceptance measurements remain open. The retained legacy `drawing_proof` and
+the 30-second showcase are unchanged.
 
 The [combined-component verification](../../generated/sdk-world-figure/v2/verification.json)
 records six exact 1080×1920 pixel comparisons with the unchanged native figure,
@@ -150,13 +150,84 @@ eight verified cached car renders with zero new engine invocations; its opening
 pixels at 0 and 0.25 seconds match exactly. These checks establish native drawing
 and clock preservation, not complete body support or raster-contact acceptance.
 
+The [sole-anchor regression](../../generated/sdk-world-figure/v3/verification.json)
+corrects a drawing/reference-space mix-up: Bento's authored sole coordinate
+must pass through his reference mapping before conversion to native pixels.
+The previous root used native y=1479.53 instead of 1806.81. All 17 figure tests,
+including six full-size native pixel comparisons, pass with the corrected
+placement. This fixes the static anchor; animated per-foot support remains open.
+
+### Shared hand and cup
+
+[`drawing_hand.hand_scene`](../examples/drawing_hand.py) adds a scene-lit hand and
+cup sequence to the combined picture. This is newly authored candidate geometry:
+tapered tubes follow every arm and digit joint, a closed palm prism uses the
+rig's palm corners and thickness, and the cup follows the existing attachment
+track through the camera cut and release. Four explicit palettes retain sleeve,
+skin, cup and coffee material identities. The existing native Toon hand adapter
+and legacy proof remain unchanged for comparison.
+
+All meshes declare centimeter scale and clay handedness. The compiler owns
+their shared camera, lights and depth testing, including finger/cup occlusion.
+The opening holds the 0.5-second pose; later snapshots use original motion time.
+At the default 12 fps, the combined picture has 66 intervals and declares 160
+actual raw render jobs: 28 for the car and 132 for hand geometry/view pairs.
+An unchanged rebuild reuses verified renders. This work is explicitly included
+in the candidate budget; no core limit is raised.
+
+The [hand-world measurements](../../generated/sdk-world-hand/v1/measurements.json)
+check 7,062 projected landmarks over all 66 full-size intervals, including cup
+vertices and the actual arm/digit joints. The maximum coordinate residual is
+below `1e-12` pixel. The conservative full plan declares 439,378 nodes and
+6,075,706,784 bytes of working storage, within the existing 500,000-node and
+8-GiB limits. These are numeric registration and planned-cost measurements;
+they do not measure rendered skin contact or observed peak memory.
+
+The retained 216×384, 2-fps-world render test completes 30 cold raw jobs and
+rebuilds with zero warm invocations. Bundle bytes and source identities match;
+held and out-of-order repeated frames are pixel-identical. Visual inspection
+shows the hand/cup as an isolated study above the car, not an arm attached to
+the native figure. These component checks do not establish whole-body integration.
+
+Use `hand_scene()` in the build snippet above to include this drawing. Its new
+volumes and palette still require the complete animated acceptance review and
+operator approval. This stage does not establish collision-free skin surfaces,
+the full-size contact/occlusion thresholds, character body support, character
+form lighting or approved information-layer equivalence.
+
+### Native information in the combined scene
+
+[`drawing_information.complete_scene`](../examples/drawing_information.py)
+composes the picture layers with the original candidate's title, subtitle and
+caption pill. Text keeps its native layout, explicit clipping, font bytes and
+license. The screen information layer has no world parent or form-light fields
+and remains above every picture layer.
+
+The scene's native `background="#efe8df"` restores the original clear color
+without inserting an extra picture layer. This retains the original text-edge
+compositing path and adds no raw render jobs. At the default cadence, the
+complete layer plan retains the hand candidate's 160 raw jobs and the existing
+node, memory and output limits.
+
+Use `complete_scene()` in the build snippet to include the background and
+information. This reproduces the existing candidate layout; that layout itself
+has no drawing approval. Equivalence to an approved information layer and the
+complete rendered acceptance matrix remain required before adoption.
+
+The full-size information test compares native and compiled 1080×1920 RGBA
+pixels before and after the camera cut, with exact equality. The separate
+[combined preview](../../generated/sdk-world-information/v4/complete-preview.json)
+reuses 30 cached raw renders at 216×384 and a 2-fps world cadence. Its held and
+repeated frames, opaque background, and title/caption regions pass exact pixel
+checks. It is a reduced preview, not the default 12-fps full-size acceptance proof.
+
 The production composition compiler requires approved part versions. An explicit
 [candidate-review workflow](composition-preflight.md#review-a-new-candidate-drawing)
 now accepts independently named, content-pinned new geometry through the shared
-compiler. This fixture still uses the existing `proxy.layers` proof path and an
-explicit centered-camera adapter for the hand; migration to that shared workflow
-remains part of the combined proof. It does not reuse an unrelated approved part
-name to pass preflight. The adapter's tests
+compiler. The retained legacy `drawing_proof` fixture uses the `proxy.layers`
+path and an explicit centered-camera adapter for the hand; the new
+`complete_scene` uses the shared compiler for every layer. Neither fixture
+reuses an unrelated approved part name to pass preflight. The legacy adapter's tests
 compare against `proxy.View.project` and exercise near-plane refusal.
 
 The following acceptance work remains: measured raster landmark/contact and
