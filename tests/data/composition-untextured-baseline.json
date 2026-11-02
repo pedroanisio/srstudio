@@ -4,6 +4,7 @@
     "model": "GPT-6"
   },
   "source_commit": "8bba8887",
+  "plan_digest": "d9e6b9a649a6b027f6a67e596c4d8603eda1a3445be31218fde901e8350eb151",
   "source_digest": "4dee431a376945ccabe1f9b071909b8e5980ad62c86d0e8e6f0a9b9ba8ebdd7c",
   "prepared_digest": "133257e38d8a43d11b2fd85738e8266f8ddfcb30fe58b904e99cc3e8ea17b4ef",
   "xml_sha256": "b0dcb0b5abe954208a7f3d5ec785fd80c9740d7cc2a2bbb7685c5667b086604b",

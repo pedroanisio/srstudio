@@ -2,6 +2,7 @@
 
 from dataclasses import replace
 
+import numpy as np
 from sr_core.scene import Scene
 
 from srstudio import Canvas, clay, parts
@@ -89,3 +90,14 @@ def prepared_plate_plan(item):
         plates=(replace(base.bindings[0].plates[0], key=c.plate_source_digest(item)),),
     )
     return c.preflight(base.spec, (binding,))
+
+
+def mesh():
+    """A one-quad textured mesh named for the plate material ``skin``, with UVs on its corners."""
+    return clay.Mesh(
+        'skin',
+        np.array([[-0.25, -0.25, 0], [0.25, -0.25, 0], [0.25, 0.25, 0], [-0.25, 0.25, 0]]),
+        np.tile([0.0, 0.0, -1.0], (4, 1)),
+        np.array([[0, 2, 1], [0, 3, 2]]),
+        np.array([[0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]]),
+    )
