@@ -12,8 +12,9 @@ static plates with bounded rendering, verified caching and atomic publication.
 Printed labels retain immutable recipes/font bytes and share the plate render budget.
 Static proxies share the camera/lights and convert verified light/ID passes in
 a bounded worker. RasterSequence verifies and emits held geometry/appearance
-snapshots on explicit source clocks. Animated scene cameras, lights and parent
-transforms remain unsupported.
+snapshots on explicit source clocks. ``scene_motion`` samples camera, light and
+parent tracks into static validated plans; animated bundle emission and aggregate
+motion render budgets remain unsupported.
 """
 
 from __future__ import annotations

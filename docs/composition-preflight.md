@@ -23,10 +23,86 @@ combine verified vectors and static plates with bounded rendering and portable
 image resources, including bounded printed labels. `prepare_proxy` adds static
 light/part-ID conversion under the same camera, lighting and worker budgets.
 `RasterSequence` adds baked geometry/appearance timelines under that shared
-static view. Animated scene cameras, lights and parent transforms remain open
-under SDK-P2-07.
+static view. `srstudio.scene_motion` now samples typed camera, light and parent
+tracks into validated static plans. Whole-timeline scheduling, aggregate work
+accounting and animated bundle emission remain open under SDK-P2-07.
 A valid manifest alone is not a rendered scene,
 approval of a new style, or proof of a host's declared geometry.
+
+## Sample shared scene motion
+
+`scene_motion.sample_scene(spec, bindings, motion, time)` returns a validated
+scene at an explicit scene-second time. It samples the shared camera, world
+lights and local parent transforms before the normal composition preflight.
+The source clocks, duration, layer windows, approved bindings and contact
+declarations remain attached to the result. Existing `plate_view`,
+`prepare_plate`, `prepare_proxy` and compilation APIs can consume that result.
+
+```python
+from dataclasses import replace
+from srstudio import composition as c, scene_motion as m
+
+binding = c.AssetBinding(
+    "host", "rafa", 1, "plates", c.Bounds((-1, -1, -1), (1, 1, 1)),
+    plates=(c.PlateWork("a" * 64, 64, 64, 48, 4, 1, 1024**2),),
+)
+spec = c.ScenePlan(
+    c.StylePin("toon", c.style_revision("toon")), 64, 64, c.FrameRate(),
+    1, 7, "meter",
+    c.CameraSpec("perspective", (0, 0, 10), (0, 0, 0), (32, 32), 100, 10),
+    c.LightRig("lit", (c.LightSpec("ambient", "ambient", "#FFFFFF", 1),)),
+    (c.LayerSpec("host", "host", 1, c.TemporalPolicy(0, 1)),), c.RenderBudget(),
+)
+motion = m.SceneMotion(
+    camera=(
+        m.CameraKey(0, spec.camera, "smootherstep"),
+        m.CameraKey(1, replace(spec.camera, position=(0.1, 0, 10), target=(0.1, 0, 0))),
+    ),
+    transforms=(m.TransformTrack("host", (
+        m.TransformKey(0, c.Transform(), "smoothstep"),
+        m.TransformKey(1, c.Transform(rotation=(0, 0, 360))),
+    )),),
+)
+sample = m.sample_scene(spec, (binding,), motion, 0.5)
+view = c.plate_view(sample, "host")
+```
+
+This example declares host work for planning; actual geometry preparation still
+requires the matching real source digest and sufficient resource declarations.
+
+Tracks begin at zero with the base scene value, use strictly increasing times
+within the scene duration and hold their last value. Omitted tracks keep the
+base values. Easing belongs to the outgoing segment: `linear`, `smoothstep`
+(zero endpoint velocity), `smootherstep` (zero endpoint velocity and acceleration),
+or `hold` (a cut exactly at the next key). These derivative guarantees apply to
+the authored numeric channels; they do not certify biomechanical motion or
+screen-space derivative continuity after perspective projection.
+
+Translation, scale, camera coordinates and light parameters interpolate
+independently. XYZ Euler angles retain authored winding: 0 to 360 completes a
+turn. No shortest-arc or quaternion path is inferred. Light IDs and kinds stay
+fixed. Color and camera projection changes require held segments; they never
+silently blend or switch halfway through a numeric transition.
+
+`parse_motion` accepts closed `srstudio.scene-motion/1.0.0` JSON or plain mappings.
+Records are immutable, reject unknown fields and nonfinite/boolean numbers,
+and use the composition parser's input-byte, depth and graph bounds. Sampling
+permits at most 1,024 keys across all tracks. Every declared track is checked,
+including keys after the requested time. Camera envelopes are checked at the
+requested sample; a valid endpoint is not proof of a safe continuous camera path.
+
+Continuous contacts permit unchanged ancestry or a common rigid animated
+ancestor. Independent motion of the contact branches and varying common scale
+are refused because the static planner's affine residual proof does not cover
+them. This restriction is explicit even when one requested frame happens to
+place both anchors together.
+
+**A sampled plan is one static view.** Its cost describes that view over the
+original clip; it does not budget a batch of views. Its digest identifies the
+resolved scene, so repeated held samples can share the existing verified render
+cache. Sampling neither creates files nor emits an animated bundle. Timeline
+sampling, combined render budgets, complete animated emission and the DRAWING
+adoption proof remain required before SDK-P2-07 is complete.
 
 ## Register a plate view
 
