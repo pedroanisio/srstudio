@@ -148,8 +148,8 @@ def curve_document(schema=None, **pattern):
     }
 
 
-def test_the_moves_schema_is_1_1_and_reads_a_curve():
-    assert dance.MOVES_SCHEMA == "srstudio.dance-moves/1.1.0"
+def test_the_moves_schema_reads_a_curve():
+    assert dance.MOVES_SCHEMA == "srstudio.dance-moves/1.2.0"
     move = parse_moves(json.dumps(curve_document()))["probe"]
     assert move.patterns[0].waveform == "curve" and move.patterns[0].curve == whip()
 
@@ -193,8 +193,8 @@ def test_a_curve_that_breaks_the_model_is_refused_at_its_path():
     assert caught.value.to_dict()["path"].startswith("$.moves[0].patterns[0]")
 
 
-def test_the_shipped_presets_are_a_1_1_document():
+def test_the_shipped_presets_are_a_1_2_document():
     from importlib.resources import files
 
     data = json.loads(files("srstudio").joinpath("assets/dance/moves.json").read_text())
-    assert data["schema"] == "srstudio.dance-moves/1.1.0"
+    assert data["schema"] == "srstudio.dance-moves/1.2.0"

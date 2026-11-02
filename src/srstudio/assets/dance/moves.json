@@ -1,5 +1,5 @@
 {
-  "schema": "srstudio.dance-moves/1.1.0",
+  "schema": "srstudio.dance-moves/1.2.0",
   "generated_by": {
     "tool": "Claude Code",
     "model": "Claude Opus 5.5 (claude-opus-5-5)"
@@ -1329,6 +1329,651 @@
           "bias": -0.15
         }
       ]
+    },
+    {
+      "name": "two-step",
+      "description": "The hip-hop two-step: the right foot lands out on one, the weight rolls onto it and the left touches in on two; the left lands out on three, the weight rolls back and the right touches in on four. The hips dip at half time, and the trunk, neck and arms follow them a link at a time.",
+      "support": "feet",
+      "loop_beats": 4,
+      "patterns": [
+        {
+          "target": "root.up",
+          "amplitude": -0.14,
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 0,
+          "waveform": "sine",
+          "snap": 0.35,
+          "bias": -0.14
+        },
+        {
+          "target": "left_lower_arm.stretch",
+          "amplitude": 0,
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "waveform": "sine",
+          "snap": 0.5,
+          "bias": -1.0
+        },
+        {
+          "target": "right_lower_arm.stretch",
+          "amplitude": 0,
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "waveform": "sine",
+          "snap": 0.5,
+          "bias": -1.0
+        }
+      ],
+      "follow": [
+        {
+          "target": "hips.left_right",
+          "source": "weight",
+          "gain": -0.14,
+          "lag": 0.0,
+          "frequency": 3.0,
+          "damping": 0.7
+        },
+        {
+          "target": "hips.twist_left_right",
+          "source": "weight",
+          "gain": 0.14,
+          "lag": 0.08,
+          "frequency": 2.5,
+          "damping": 0.6
+        },
+        {
+          "target": "spine.left_right",
+          "source": "hips.left_right",
+          "gain": -0.55,
+          "lag": 0.06,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "chest.left_right",
+          "source": "spine.left_right",
+          "gain": 0.6,
+          "lag": 0.06,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "upper_chest.left_right",
+          "source": "chest.left_right",
+          "gain": 0.5,
+          "lag": 0.06,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "neck.tilt_left_right",
+          "source": "upper_chest.left_right",
+          "gain": 0.8,
+          "lag": 0.06,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "head.tilt_left_right",
+          "source": "neck.tilt_left_right",
+          "gain": 0.5,
+          "lag": 0.06,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "spine.twist_left_right",
+          "source": "hips.twist_left_right",
+          "gain": -0.5,
+          "lag": 0.03,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "chest.twist_left_right",
+          "source": "spine.twist_left_right",
+          "gain": 0.7,
+          "lag": 0.03,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "upper_chest.twist_left_right",
+          "source": "chest.twist_left_right",
+          "gain": 0.8,
+          "lag": 0.03,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "neck.turn_left_right",
+          "source": "upper_chest.twist_left_right",
+          "gain": -0.6,
+          "lag": 0.03,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "head.turn_left_right",
+          "source": "neck.turn_left_right",
+          "gain": 0.5,
+          "lag": 0.03,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "left_upper_arm.front_back",
+          "source": "upper_chest.twist_left_right",
+          "gain": 3.0,
+          "lag": 0.1,
+          "frequency": 2.0,
+          "damping": 0.45
+        },
+        {
+          "target": "right_upper_arm.front_back",
+          "source": "upper_chest.twist_left_right",
+          "gain": -3.0,
+          "lag": 0.1,
+          "frequency": 2.0,
+          "damping": 0.45
+        }
+      ],
+      "footwork": {
+        "shift": 1.0,
+        "inward": 0.09,
+        "settle": 0.1,
+        "strokes": [
+          {
+            "foot": "right_foot",
+            "from": 3.5,
+            "beats": 0.5,
+            "kind": "step",
+            "to": [
+              0.0,
+              0.0
+            ],
+            "height": 0.1
+          },
+          {
+            "foot": "left_foot",
+            "from": 0.75,
+            "beats": 0.5,
+            "kind": "touch",
+            "to": [
+              0.17,
+              0.0
+            ],
+            "height": 0.06,
+            "pitch": 0.35
+          },
+          {
+            "foot": "left_foot",
+            "from": 1.5,
+            "beats": 0.5,
+            "kind": "step",
+            "to": [
+              0.0,
+              0.0
+            ],
+            "height": 0.1
+          },
+          {
+            "foot": "right_foot",
+            "from": 2.75,
+            "beats": 0.5,
+            "kind": "touch",
+            "to": [
+              -0.17,
+              0.0
+            ],
+            "height": 0.06,
+            "pitch": 0.35
+          }
+        ],
+        "weight": [
+          {
+            "beat": 0.0,
+            "right": 0.02
+          },
+          {
+            "beat": 0.75,
+            "right": 0.98
+          },
+          {
+            "beat": 2.0,
+            "right": 0.98
+          },
+          {
+            "beat": 2.75,
+            "right": 0.02
+          }
+        ]
+      }
+    },
+    {
+      "name": "heel-rock",
+      "description": "A side-to-side rock: the weight rocks onto the right foot and the left heel lifts, onto the left and the right heel lifts, and the right foot comes off the floor on the and of four. The knees take a bounce on every beat; the pelvis drops on the free side and turns after the weight.",
+      "support": "feet",
+      "loop_beats": 4,
+      "patterns": [
+        {
+          "target": "root.up",
+          "amplitude": -0.15,
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "waveform": "sine",
+          "snap": 0.4,
+          "bias": -0.15
+        },
+        {
+          "target": "left_lower_arm.stretch",
+          "amplitude": 0,
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "waveform": "sine",
+          "snap": 0.5,
+          "bias": -1.1
+        },
+        {
+          "target": "right_lower_arm.stretch",
+          "amplitude": 0,
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "waveform": "sine",
+          "snap": 0.5,
+          "bias": -1.1
+        }
+      ],
+      "follow": [
+        {
+          "target": "hips.left_right",
+          "source": "weight",
+          "gain": -0.14,
+          "lag": 0.0,
+          "frequency": 3.0,
+          "damping": 0.7
+        },
+        {
+          "target": "hips.twist_left_right",
+          "source": "weight",
+          "gain": 0.2,
+          "lag": 0.08,
+          "frequency": 2.5,
+          "damping": 0.6
+        },
+        {
+          "target": "spine.left_right",
+          "source": "hips.left_right",
+          "gain": -0.55,
+          "lag": 0.06,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "chest.left_right",
+          "source": "spine.left_right",
+          "gain": 0.6,
+          "lag": 0.06,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "upper_chest.left_right",
+          "source": "chest.left_right",
+          "gain": 0.5,
+          "lag": 0.06,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "neck.tilt_left_right",
+          "source": "upper_chest.left_right",
+          "gain": 0.8,
+          "lag": 0.06,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "head.tilt_left_right",
+          "source": "neck.tilt_left_right",
+          "gain": 0.5,
+          "lag": 0.06,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "spine.twist_left_right",
+          "source": "hips.twist_left_right",
+          "gain": -0.4,
+          "lag": 0.03,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "chest.twist_left_right",
+          "source": "spine.twist_left_right",
+          "gain": 0.7,
+          "lag": 0.03,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "upper_chest.twist_left_right",
+          "source": "chest.twist_left_right",
+          "gain": 0.8,
+          "lag": 0.03,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "neck.turn_left_right",
+          "source": "upper_chest.twist_left_right",
+          "gain": -0.6,
+          "lag": 0.03,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "head.turn_left_right",
+          "source": "neck.turn_left_right",
+          "gain": 0.5,
+          "lag": 0.03,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "left_upper_arm.front_back",
+          "source": "upper_chest.twist_left_right",
+          "gain": 3.0,
+          "lag": 0.1,
+          "frequency": 2.0,
+          "damping": 0.45
+        },
+        {
+          "target": "right_upper_arm.front_back",
+          "source": "upper_chest.twist_left_right",
+          "gain": -3.0,
+          "lag": 0.1,
+          "frequency": 2.0,
+          "damping": 0.45
+        }
+      ],
+      "footwork": {
+        "shift": 1.0,
+        "inward": 0.09,
+        "settle": 0.1,
+        "strokes": [
+          {
+            "foot": "left_foot",
+            "from": 0.75,
+            "beats": 0.75,
+            "kind": "heel",
+            "pitch": 0.45
+          },
+          {
+            "foot": "right_foot",
+            "from": 2.5,
+            "beats": 0.75,
+            "kind": "heel",
+            "pitch": 0.45
+          },
+          {
+            "foot": "right_foot",
+            "from": 3.25,
+            "beats": 0.5,
+            "kind": "lift",
+            "height": 0.12
+          }
+        ],
+        "weight": [
+          {
+            "beat": 0.75,
+            "right": 0.98
+          },
+          {
+            "beat": 1.5,
+            "right": 0.98
+          },
+          {
+            "beat": 2.5,
+            "right": 0.02
+          },
+          {
+            "beat": 3.75,
+            "right": 0.02
+          }
+        ]
+      }
+    },
+    {
+      "name": "twist-groove",
+      "description": "A groove that turns: the weight stands on one foot, the pelvis turns, and the free foot swivels on its ball and lifts; then the same on the other foot. The chest turns against the pelvis, the head keeps facing front, and the arms swing late.",
+      "support": "feet",
+      "loop_beats": 4,
+      "patterns": [
+        {
+          "target": "root.up",
+          "amplitude": -0.14,
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "waveform": "sine",
+          "snap": 0.4,
+          "bias": -0.14
+        },
+        {
+          "target": "hips.twist_left_right",
+          "amplitude": 0.2,
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 0.5,
+          "waveform": "sine",
+          "snap": 0.5
+        },
+        {
+          "target": "left_lower_arm.stretch",
+          "amplitude": 0,
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "waveform": "sine",
+          "snap": 0.5,
+          "bias": -1.0
+        },
+        {
+          "target": "right_lower_arm.stretch",
+          "amplitude": 0,
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "waveform": "sine",
+          "snap": 0.5,
+          "bias": -1.0
+        }
+      ],
+      "follow": [
+        {
+          "target": "hips.left_right",
+          "source": "weight",
+          "gain": -0.14,
+          "lag": 0.0,
+          "frequency": 3.0,
+          "damping": 0.7
+        },
+        {
+          "target": "spine.left_right",
+          "source": "hips.left_right",
+          "gain": -0.55,
+          "lag": 0.06,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "chest.left_right",
+          "source": "spine.left_right",
+          "gain": 0.6,
+          "lag": 0.06,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "upper_chest.left_right",
+          "source": "chest.left_right",
+          "gain": 0.5,
+          "lag": 0.06,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "neck.tilt_left_right",
+          "source": "upper_chest.left_right",
+          "gain": 0.8,
+          "lag": 0.06,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "head.tilt_left_right",
+          "source": "neck.tilt_left_right",
+          "gain": 0.5,
+          "lag": 0.06,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "spine.twist_left_right",
+          "source": "hips.twist_left_right",
+          "gain": -0.4,
+          "lag": 0.03,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "chest.twist_left_right",
+          "source": "spine.twist_left_right",
+          "gain": 0.7,
+          "lag": 0.03,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "upper_chest.twist_left_right",
+          "source": "chest.twist_left_right",
+          "gain": 0.8,
+          "lag": 0.03,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "neck.turn_left_right",
+          "source": "upper_chest.twist_left_right",
+          "gain": -0.6,
+          "lag": 0.03,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "head.turn_left_right",
+          "source": "neck.turn_left_right",
+          "gain": 0.5,
+          "lag": 0.03,
+          "frequency": 3.0,
+          "damping": 0.6
+        },
+        {
+          "target": "left_upper_arm.front_back",
+          "source": "upper_chest.twist_left_right",
+          "gain": 3.0,
+          "lag": 0.1,
+          "frequency": 2.0,
+          "damping": 0.45
+        },
+        {
+          "target": "right_upper_arm.front_back",
+          "source": "upper_chest.twist_left_right",
+          "gain": -3.0,
+          "lag": 0.1,
+          "frequency": 2.0,
+          "damping": 0.45
+        }
+      ],
+      "footwork": {
+        "shift": 1.0,
+        "inward": 0.09,
+        "settle": 0.1,
+        "strokes": [
+          {
+            "foot": "left_foot",
+            "from": 0.125,
+            "beats": 0.375,
+            "kind": "pivot",
+            "turn": 0.3,
+            "pitch": 0.15
+          },
+          {
+            "foot": "left_foot",
+            "from": 0.5,
+            "beats": 0.375,
+            "kind": "pivot",
+            "turn": 0.0,
+            "pitch": 0.15
+          },
+          {
+            "foot": "left_foot",
+            "from": 0.875,
+            "beats": 0.375,
+            "kind": "lift",
+            "height": 0.1
+          },
+          {
+            "foot": "right_foot",
+            "from": 2.125,
+            "beats": 0.375,
+            "kind": "pivot",
+            "turn": -0.3,
+            "pitch": 0.15
+          },
+          {
+            "foot": "right_foot",
+            "from": 2.5,
+            "beats": 0.375,
+            "kind": "pivot",
+            "turn": 0.0,
+            "pitch": 0.15
+          },
+          {
+            "foot": "right_foot",
+            "from": 2.875,
+            "beats": 0.375,
+            "kind": "lift",
+            "height": 0.1
+          }
+        ],
+        "weight": [
+          {
+            "beat": 0.0,
+            "right": 0.98
+          },
+          {
+            "beat": 1.25,
+            "right": 0.98
+          },
+          {
+            "beat": 2.0,
+            "right": 0.02
+          },
+          {
+            "beat": 3.25,
+            "right": 0.02
+          }
+        ]
+      }
     }
   ]
 }

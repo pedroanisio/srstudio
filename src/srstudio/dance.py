@@ -1,6 +1,6 @@
 """Dance moves timed on music, independent of any drawing style, so any character can dance to any song (ADR 0186).
 
-A :class:`Move` is versioned data (``srstudio.dance-moves/1.1.0``, the presets in ``assets/dance/moves.json``): one
+A :class:`Move` is versioned data (``srstudio.dance-moves/1.2.0``, the presets in ``assets/dance/moves.json``): one
 :class:`Pattern` per canonical ``"joint.dof"`` of srlocations' mannequin, or per root axis, each a waveform that hits
 its amplitude on the beat. :func:`sample` reads a move or a :class:`Routine` (``srstudio.dance-routine/1.0.0``, bar
 ranges of moves with transitions and held faces) on a :class:`music.Groove` into a :class:`DanceFrame`; :func:`frames`
@@ -16,6 +16,11 @@ A move's :class:`Follow` records carry its swing (ADR 0201): a joint follows ano
 :func:`dance_pose.body_series` reads off any character, and :data:`SEAT_GROOVE_SWING` holds the seat-groove to the car
 reel's curve.
 
+A move's :class:`Footwork` (ADR 0205) states what the feet do in beats, each :class:`Stroke` a lift, a step, a touch or
+a pivot, and where the weight stands, each :class:`WeightKey` a share on the right foot. A follower may read the
+:data:`WEIGHT` or another follower, so the weight drives the pelvis and the chain above it, a link at a time;
+:mod:`srstudio.dance_floor` solves the legs onto the goals, and :mod:`srstudio.dance_groove` measures the result.
+
 Amplitudes are body-relative: head radii on the root, radians on joints. Turning deltas into a pose, and keeping
 planted feet planted, is the skeleton's and :mod:`srstudio.dance_floor`'s job.
 """
@@ -23,6 +28,7 @@ planted feet planted, is the skeleton's and :mod:`srstudio.dance_floor`'s job.
 from __future__ import annotations
 
 from ._dance_curve import CurveError
+from ._dance_footwork import FOOT_KINDS, MAX_STROKES, MAX_WEIGHT_KEYS, FootGoal, Footwork, Steps, Stroke, WeightKey
 from ._dance_measure import (
     PROFILE_POINTS,
     SEAT_GROOVE_BOB,
@@ -37,20 +43,22 @@ from ._dance_measure import (
     SwingReading,
     SwingTarget,
     measure_dance,
-    profile_distance,
     measure_lag,
     measure_path,
     measure_swing,
+    profile_distance,
 )
 from ._dance_model import (
     CHAINS,
     CURVE_POINTS,
     FEET,
     JOINTS,
+    MAX_CHAIN,
     ROOT,
     SUPPORTS,
     TARGETS,
     WAVEFORMS,
+    WEIGHT,
     Contact,
     Curve,
     DanceError,
@@ -87,6 +95,16 @@ from ._dance_sample import MAX_FPS, MAX_FRAMES, DanceFrame, frames, sample
 from ._dance_song import SongMap, SongMapError, SongPart, song_map
 
 __all__ = [
+    "FOOT_KINDS",
+    "MAX_CHAIN",
+    "MAX_STROKES",
+    "MAX_WEIGHT_KEYS",
+    "WEIGHT",
+    "FootGoal",
+    "Footwork",
+    "Steps",
+    "Stroke",
+    "WeightKey",
     "CHAINS",
     "CURVE_POINTS",
     "EASES",

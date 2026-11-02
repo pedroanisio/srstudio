@@ -179,7 +179,7 @@ def test_a_follower_is_bounded_by_its_gain_times_its_source():
 
 def test_a_move_checks_its_followers():
     lean = Follow("spine.left_right", "root.right", 0.5)
-    with pytest.raises(MoveError, match="no pattern moves"):
+    with pytest.raises(MoveError, match="which nothing moves"):
         swung(Follow("spine.left_right", "root.up", 0.5))
     with pytest.raises(MoveError, match="one pattern or one follower"):
         swung(
@@ -292,8 +292,8 @@ def test_a_follow_list_is_bounded_and_complete():
         parse_moves(json.dumps(doc))
 
 
-def test_the_shipped_moves_are_one_one():
-    assert dance.MOVES_SCHEMA == "srstudio.dance-moves/1.1.0"
+def test_the_shipped_moves_carry_followers():
+    assert dance.MOVES_SCHEMA == "srstudio.dance-moves/1.2.0"
     assert all(dance.moves()[name].follows for name in ("seat-groove", "bob", "sway", "head-nod"))
 
 
