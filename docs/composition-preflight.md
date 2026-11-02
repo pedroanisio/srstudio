@@ -877,16 +877,35 @@ ellipses, local linear/radial gradients, and numeric transform/opacity or boolea
 visibility keys. Scalar lengths are explicit source units. Keys use local or
 composition seconds, held endpoint extrapolation, and non-overshooting linear,
 hold, sine, quadratic, cubic, quartic, quintic, exponential or circular easing.
+Numeric channels also support native `spring`, `catmull-rom` and default `tcb`
+segments. Spring keys may specify finite `stiffness` and `mass` in `[1e-9, 1e9]`,
+`damping` in `[0, 1e9]`, and boolean `carry`. At most eight consecutive segments
+may carry velocity; longer chains must be authored as bounded sampled keys.
+Custom TCB tension/continuity/bias parameters remain unsupported.
+
+These curves keep their original XML and source clock. Preparation bounds spring
+excursions through oscillator energy, including endpoint correction and carried
+arrival velocity; spline bounds use their cubic control hulls. Native exponential
+endpoint snaps and floating-point cancellation receive conservative allowances.
+Opacity curves must stay inside `[0, 1]` within numeric tolerance; visibility
+remains discrete. Parameters attached to a non-spring key are refused.
 Animated rotations use a conservative full-circle envelope; correlated tracks
 can therefore need more generous declared bounds than a sampled screenshot.
 
 External assets, includes, instances, expressions, deformation,
-effects, overshooting curves and unsupported shape kinds fail explicitly. The
+effects, other unsupported curves and unsupported shape kinds fail explicitly. The
 adapter does not execute a builder or render while discovering those features.
 Native text with host-owned pinned fonts uses the bundle workflow below.
 The host remains responsible for payload provenance and authored anchor meaning:
 validating XML cannot prove that it was made by a particular approved builder.
 The worked example obtains its drawing directly from `parts.drawing('papers', 1)`.
+
+The [native curve tests](../tests/test_composition_curves.py) exercise the public
+and worker boundaries, malformed parameters, interior extrema, mixed curves,
+bounded carry chains and actual engine evaluation across timeline cuts. The
+hybrid candidate's complete frontal figure also compiles into two timeline spans
+with identical full-size pixels at three times inside its facial transition.
+This does not establish arbitrary rig viewpoints or complete hybrid-scene adoption.
 
 Each placement scopes its IDs and paint references. A parent transform and the
 camera are applied once; the emitted layer clock maps to source seconds without
