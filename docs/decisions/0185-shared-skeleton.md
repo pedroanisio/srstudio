@@ -86,7 +86,9 @@ margin from body's own mass proxy over the feet flat on y=0, through body's publ
 body's support takes only exact ground soles, so each planted sole is set on y=0 with its yaw for the footprint while
 its leg is reported where it is. With no foot down there is no `BodyPose`. `to_arm_pose`
 and `to_hand_pose` give `limbs.ArmPose` and `limbs.HandPose` for one side, in limbs' own frame conventions, and
-`arm_profile`, `hand_profile` and `body_profile` give each module the anatomy of this character. `wrist_control`
+`arm_profile`, `hand_profile` and `body_profile` give each module the anatomy of this character; `body_profile`
+sets body's `shoulder_width` to the distance between the upper arms' joints, so a body plan places the shoulders where
+the skeleton does rather than at body's default of 1.5 hip widths. `wrist_control`
 gives the limbs `HandControl` that turns limbs' arm frame into this hand's frame: at zero forearm twist limbs' palm
 faces where the skeleton's palm does not, so limbs' forearm twist carries half a turn.
 

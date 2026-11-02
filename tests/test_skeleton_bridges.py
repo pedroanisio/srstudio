@@ -144,6 +144,34 @@ def test_a_compiled_body_plan_comes_through_the_skeleton_unchanged():
             assert ours.foot_yaw == pytest.approx(theirs.foot_yaw, abs=1e-6)
 
 
+@pytest.mark.parametrize("profile", [REAL, TOON, STICK], ids=["realistic", "cartoon", "stick"])
+def test_a_body_profile_carries_the_characters_shoulder_width(profile):
+    rest = sk.world(profile, sk.pose(profile))
+    across = rest["right_upper_arm"].origin - rest["left_upper_arm"].origin
+    assert sk.body_profile(profile).shoulder_width == pytest.approx(across.length)
+
+
+@pytest.mark.parametrize("profile", [REAL, TOON, STICK], ids=["realistic", "cartoon", "stick"])
+def test_a_body_plan_puts_the_shoulders_where_the_skeleton_does(profile):
+    shape = sk.body_profile(profile)
+    drop = 0.03 * profile.pelvis_height
+    score = body.BodyScore(
+        duration=1,
+        roots=(
+            body.BodyKey(0, Frame(Vec3(0, -profile.pelvis_height + drop + profile.offset("right_upper_leg").y, 0))),
+        ),
+        stance=(
+            body.FootAnchor("left", Frame(Vec3(-shape.hip_width / 2, 0, 0))),
+            body.FootAnchor("right", Frame(Vec3(shape.hip_width / 2, 0, 0))),
+        ),
+        profile=shape,
+    )
+    sampled = body.compile_body(score).sample(0.5)
+    world = sk.world(profile, sk.from_body_pose(profile, sampled))
+    for frame, side in zip(sampled.shoulders, SIDES, strict=True):
+        assert close(frame.origin, world[f"{side}_upper_arm"].origin)
+
+
 def test_a_body_pose_round_trips_to_the_same_skeleton_pose():
     pose = crouch(REAL)
     back = sk.from_body_pose(REAL, sk.to_body_pose(REAL, pose), base=pose)

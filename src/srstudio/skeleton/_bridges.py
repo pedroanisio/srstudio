@@ -126,11 +126,17 @@ def _torso_height(profile: SkeletonProfile) -> float:
     return _drop(profile).y - rise
 
 
+def _shoulder_width(profile: SkeletonProfile) -> float:
+    """From one shoulder joint (the upper arm's) to the other at rest, across the upper chest."""
+    return 2 * abs(sum(profile._offset(BY_NAME[name]).x for name in ("right_shoulder", "right_upper_arm")))
+
+
 def body_profile(profile: SkeletonProfile) -> BodyProfile:
-    """body's anatomy for this character: hip width, thigh, shin, ankle height and foot from its bones, and the torso
-    from the hip joints to the shoulders. The sole's width and heel are the table's, from srlocations' foot solid,
-    scaled with the foot. body's joint envelopes, stride and speed stay body's defaults. A character too small or large
-    for body's 0.01..2 metre bounds raises body's own BodyError."""
+    """body's anatomy for this character: hip width, thigh, shin, ankle height and foot from its bones, the torso
+    from the hip joints to the shoulders, and the shoulder width between the upper arms' joints, so body places the
+    shoulders where the skeleton does. The sole's width and heel are the table's, from srlocations' foot solid, scaled
+    with the foot. body's joint envelopes, stride and speed stay body's defaults. A character too small or large for
+    body's 0.01..2 metre bounds raises body's own BodyError."""
     width = 2 * abs(profile._offset(BY_NAME["right_upper_leg"]).x)
     toes, foot = BY_NAME["right_toes"], profile._scale(BY_NAME["right_foot"])
     toe = profile._offset(toes).z + _TOE_REACH * profile._scale(toes)
@@ -144,6 +150,7 @@ def body_profile(profile: SkeletonProfile) -> BodyProfile:
         heel=heel,
         toe=toe,
         torso_height=_torso_height(profile),
+        shoulder_width=_shoulder_width(profile),
         support_margin=min(BodyProfile.support_margin, min(foot_width / 2, heel, toe) / 2),
     )
 

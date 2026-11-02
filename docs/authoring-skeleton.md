@@ -76,7 +76,7 @@ sk.SkeletonProfile(
 
 | To | From | Notes |
 |---|---|---|
-| `to_body_pose(profile, pose, time=, planted=)` | `from_body_pose(profile, body, base=)` | Needs both legs and a foot flat on y=0 (within 1e-6 m and rad). The support is body's public `support_footprint`, `support_hull` and `support_margin` over the planted soles, each set on y=0 with its yaw. Back from body, a torso turn is shared along the spine; a straight leg's knee faces across the hips. |
+| `to_body_pose(profile, pose, time=, planted=)` | `from_body_pose(profile, body, base=)` | `body_profile` gives body this character's legs, torso, sole and shoulder width. Needs both legs and a foot flat on y=0 (within 1e-6 m and rad). The support is body's public `support_footprint`, `support_hull` and `support_margin` over the planted soles, each set on y=0 with its yaw. Back from body, a torso turn is shared along the spine; a straight leg's knee faces across the hips. |
 | `to_arm_pose(profile, pose, side)` | `from_arm_pose(profile, base, side, arm)` | limbs' wrist frame follows the forearm across the elbow's hinge; `arm_profile` gives `limbs.reach` this arm. |
 | `to_hand_pose(profile, pose, side)` | `from_hand_pose(profile, base, side, hand)` | The hand's frame and every digit joint; `hand_profile` gives limbs this hand kind; `wrist_control` turns limbs' arm frame into this hand. |
 
