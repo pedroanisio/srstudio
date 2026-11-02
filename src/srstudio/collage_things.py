@@ -406,7 +406,8 @@ def ring_corner(
 @register("prop", "collage-eye-twitch", summary="One eyelid of a Collage character, twitching over a held smile")
 def twitch(cv: Canvas, parent, who: str, times: Sequence[float], *, side: int = 1) -> object:
     """``who``'s eye on ``side`` (-1 its left on screen, 1 its right) shut for :data:`TWITCH` at each project second
-    of ``times``, in that figure's coordinates, over a held face; returns the group."""
+    of ``times``, in that figure's coordinates, over a held face; returns the group. Overlapping or touching
+    closures keep the eye shut until the last cue ends."""
     if who not in LOOKS:
         raise ThingError(f"{who!r} is not in the Collage cast")
     if side not in (-1, 1):
@@ -421,6 +422,10 @@ def twitch(cv: Canvas, parent, who: str, times: Sequence[float], *, side: int = 
     cv.line(g, ex - 44, ey + 8, ex + 44, ey + 8, INK, 7)
     states: list[tuple[float, float]] = [(0.0, 0.0)]
     for t in seconds:
-        states += [(round(t, 6), 1.0), (round(t + TWITCH, 6), 0.0)]
+        start, end = round(t, 6), round(t + TWITCH, 6)
+        if len(states) > 1 and start <= states[-1][0]:
+            states[-1] = (end, 0.0)
+        else:
+            states += [(start, 1.0), (end, 0.0)]
     cv.keys(g, "opacity", states, local=False)
     return g

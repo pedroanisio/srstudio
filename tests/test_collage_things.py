@@ -10,6 +10,7 @@ from srstudio import Canvas, collage, collage_things, flat_counter, registry, sk
 from srstudio.canvas import Signature
 from srstudio.collage_group import GroupError, Lineup, Place
 from srstudio.collage_things import ThingError
+from support.acting import evaluate
 
 
 def canvas() -> Canvas:
@@ -104,6 +105,36 @@ def test_the_twitch_shuts_the_eye_on_the_callers_clock():
     anim = next(e for e in node if e.tag.endswith("animate"))
     times = [float(k.get("time")) for k in anim]
     assert 1.0 in times and 2.0 in times
+
+
+@pytest.mark.parametrize('local', [False, True])
+@pytest.mark.parametrize('times,end', [((1, 1.04), 1.13), ((1, 1.09), 1.18), ((1, 1.04, 1.12), 1.21)])
+def test_overlapping_twitches_keep_the_eye_shut_until_the_last_cue_ends(local, times, end):
+    cv = canvas()
+    cv.local_time = local
+    g = collage_things.twitch(cv, cv.comp, 'brent', times)
+    node = ET.fromstring(cv.scene.to_bytes()).find(f'.//group[@id="{g.id}"]')
+    anim = node.find('animate')
+    assert anim.get('timeBase', 'composition') == 'composition'
+    assert [(float(k.get('time')), float(k.get('value'))) for k in anim] == [(0, 0), (1, 1), (end, 0)]
+
+
+@pytest.mark.parametrize('local', [False, True])
+def test_twitch_overlap_evaluates_on_project_clock_in_a_later_shot(local, scene_render, tmp_path):
+    cv = canvas()
+    cv.local_time = local
+    sequence = cv.comp.add_sequence(id='shots')
+    sequence.add_group(id='lead', start=0, end=2)
+    shot = sequence.add_group(id='shot', start=0, end=3)
+    g = collage_things.twitch(cv, shot, 'brent', (3, 3.04))
+    path = tmp_path / 'twitch.xml'
+    path.write_bytes(cv.scene.to_bytes())
+    states = []
+    for time, expected in ((3.10, 1), (3.14, 0), (2.99, 0), (3.10, 1)):
+        node = next(n for n in evaluate(scene_render, path, time) if n['id'] == g.id)
+        assert node['world_opacity'] == expected
+        states.append(node)
+    assert states[0] == states[-1]
 
 
 def test_a_held_group_keys_nothing():

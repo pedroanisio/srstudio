@@ -1130,6 +1130,31 @@
   ],
   "findings": [
     {
+      "id": "SDK-P1-20",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Keep overlapping Collage eye twitches closed for their full duration",
+      "problem": "Each twitch appended an independent reopening key. A second cue inside the first closure reopened early when Canvas sorted those keys.",
+      "resolution": "Merge overlapping and touching closures at the existing six-decimal key precision, preserving project-clock behavior and separated cues.",
+      "verification": [
+        "tests/test_collage_things.py:test_overlapping_twitches_keep_the_eye_shut_until_the_last_cue_ends",
+        "tests/test_collage_things.py:test_twitch_overlap_evaluates_on_project_clock_in_a_later_shot"
+      ],
+      "acceptance": [
+        "Overlapping, touching and chained cues remain closed until the last cue ends",
+        "Real-engine random-access evaluation agrees in nonzero sequence shots for both Canvas clock settings"
+      ],
+      "verification_summary": {
+        "red": 8,
+        "passed": 92,
+        "new_cases": 8,
+        "skipped": 0,
+        "branch_inclusive_module_coverage_percent": 94.86404833836858,
+        "module_branch_coverage_percent": 83.33333333333333,
+        "retained_artifacts": "../generated/sdk-collage-twitch/v1/"
+      }
+    },
+    {
       "id": "SDK-P1-19",
       "priority": "P1",
       "status": "complete",
