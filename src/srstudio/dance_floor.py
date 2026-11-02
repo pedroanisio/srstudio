@@ -101,6 +101,7 @@ MAX_SHIFT = 0.5  # hip heights the balance may shift the hips
 REACH_SHARE = 0.995  # a held leg straightens to this share of its length before the hips sink
 MAX_SINK = 0.3  # hip heights the hips may sink to keep a held foot in reach
 EPSILON_S = 1e-6
+EDGE_HALVINGS = 64  # bisection steps that find where a plant starts or ends between two scan steps
 MAX_DANCERS = 16
 MAX_JITTER_BEATS = 0.04
 MAX_SIZE_VARIATION = 0.06
@@ -279,16 +280,30 @@ class _Pass:
                 first = i
                 while i + 1 < len(scan) and side in _sides(scan[i + 1][1]):
                     i += 1
-                t0, frame = scan[first]
+                t0 = scan[first][0] if first == 0 else self._edge(side, scan[first - 1][0], scan[first][0])
+                t1 = scan[i][0] if i + 1 == len(scan) else self._edge(side, scan[i + 1][0], scan[i][0])
+                frame = self.frame_at(t0)
                 free = sk.world(self.profile, self._free(frame, Vec3())[0])
                 ball = ball_of(self.profile, free, side)
                 out[side].append(
-                    _Hold(
-                        side, t0, scan[i][0], (ball.x, ball.z), heading(free[f"{side}_foot"].rotation), frame.floor.turn
-                    )
+                    _Hold(side, t0, t1, (ball.x, ball.z), heading(free[f"{side}_foot"].rotation), frame.floor.turn)
                 )
                 i += 1
         return out
+
+    def _edge(self, side: str, off: float, on: float) -> float:
+        """The time nearest ``off`` at which ``side`` is still planted, between a scan step where it is not (``off``)
+        and the next where it is (``on``), either way round: a bisection of at most ``EDGE_HALVINGS``, so a plant
+        holds every frame that says the foot is planted, not only those from the scan's first planted step."""
+        for _ in range(EDGE_HALVINGS):
+            mid = (off + on) / 2
+            if mid in (off, on):
+                break
+            if side in _sides(self.frame_at(mid)):
+                on = mid
+            else:
+                off = mid
+        return on
 
     def _hold(self, side: str, t: float) -> tuple[_Hold, float] | None:
         """The hold that reaches ``t`` and its weight: 1 inside it, easing to 0 over ``BLEND_S`` outside."""

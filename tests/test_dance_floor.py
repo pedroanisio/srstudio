@@ -142,6 +142,19 @@ def test_planted_feet_hold_within_the_bound(name, preset):
 
 
 @pytest.mark.parametrize("name, preset", CASES)
+def test_a_foot_lies_flat_on_the_floor_at_every_frame_it_is_planted(name, preset):
+    profile = sk.preset(preset)
+    run = performed(name, preset)
+    floor = floor_of(profile, sk.rest_pose(profile))
+    for f in run.frames(FPS):
+        world = sk.world(profile, f.pose)
+        for foot in f.planted:
+            sole = world[foot].point(sk.Vec3(0.0, profile.length("ankle"), 0.0))
+            down = world[foot].rotation.rotate(sk.Vec3(0.0, 1.0, 0.0))
+            assert sole.y == pytest.approx(floor, abs=1e-9) and down.y == pytest.approx(1.0, abs=1e-9), (f.time, foot)
+
+
+@pytest.mark.parametrize("name, preset", CASES)
 def test_the_body_stays_over_its_feet(name, preset):
     run = performed(name, preset)
     assert run.balance(FPS) == ()
