@@ -124,7 +124,7 @@ def test_verified_png_decoder_preserves_all_standard_filter_rows(filter_type):
 
 def test_proxy_bundle_converts_selected_pass_and_reuses_verified_raw_renders(tmp_path):
     from srstudio import plates
-    from test_composition_bundles import renderer
+    from support.composition import renderer
 
     item = source(oversample=1)
     plan = plan_for(item)
@@ -221,7 +221,7 @@ def test_conversion_refuses_invalid_raw_images(direct_worker, monkeypatch, bad):
 
 @pytest.mark.parametrize('change', ['passes', 'xml', 'source', 'identity', 'binding', 'duplicate', 'missing'])
 def test_forged_proxy_evidence_fails_before_cache_mutation(direct_worker, tmp_path, change):
-    from test_composition_bundles import renderer
+    from support.composition import renderer
 
     item = source()
     plan = plan_for(item)
@@ -288,7 +288,7 @@ def test_shared_full_and_under_geometry_deduplicates_raw_jobs(direct_worker):
 
 
 def test_palette_change_reuses_raw_cache_but_rebuilds_converted_pixels(direct_worker, tmp_path):
-    from test_composition_bundles import renderer
+    from support.composition import renderer
 
     item = source(oversample=1)
     plan = plan_for(item)
@@ -477,7 +477,7 @@ def test_snapshot_stops_copying_when_the_combined_buffer_budget_is_exhausted(mon
 
 
 def test_proxy_layers_combine_with_vector_information_and_share_raw_jobs(direct_worker, tmp_path):
-    from test_composition_bundles import mixed, renderer
+    from support.composition import mixed, renderer
 
     vector_plan, vector_assets = mixed()
     item = source(oversample=1)

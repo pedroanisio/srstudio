@@ -1,57 +1,19 @@
 """Closed mixed scenes render within shared limits and publish complete bundles."""
 
 import hashlib
-import sys
 import xml.etree.ElementTree as ET
 from dataclasses import replace
 
-import numpy as np
 import pytest
-from sr_core.scene import Scene
 
-from srstudio import Canvas, plates
 from srstudio import composition as c
-from support.composition import plate_source, prepared_plate_plan
-
-
-def mixed():
-    item = plate_source()
-    base = prepared_plate_plan(item)
-    scene = Scene(version='auto')
-    scene.add_project(width=64, height=64, fps='24', duration=1)
-    canvas = Canvas(scene, font_asset=None, width=64, height=64)
-    canvas.rect(canvas.comp, 0, 0, 8, 8, '#FF0000')
-    xml = scene.to_bytes()
-    mark = c.AssetBinding('mark', 'rafa', 1, 'vector', c.Bounds((0, 0, 0), (8, 8, 0)), nodes=16, memory_bytes=16384)
-    layer = c.LayerSpec(
-        'mark', 'mark', 1, c.TemporalPolicy(0, 1), role='information', space='screen', transform=c.Transform((3, 4, 0))
-    )
-    plan = c.preflight(replace(base.spec, layers=base.spec.layers + (layer,)), base.bindings + (mark,))
-    return plan, (c.prepare_plate(plan, 'host', item), c.VectorSource('mark', xml))
+from srstudio import plates
+from support.composition import mixed, plate_source, prepared_plate_plan, renderer
 
 
 @pytest.fixture
 def inputs():
     return mixed()
-
-
-def renderer(tmp_path, body=None):
-    fixture = tmp_path / 'fixture.png'
-    plates.write_png(fixture, np.full((64, 64, 4), (0, 0, 255, 255), dtype=np.uint8))
-    engine = tmp_path / 'engine'
-    engine.write_text(
-        f'#!{sys.executable}\n'
-        + (
-            body
-            or f'''import sys
-from pathlib import Path
-assert Path(sys.argv[2]).is_file()
-Path(sys.argv[sys.argv.index('--output') + 1]).write_bytes(Path({str(fixture)!r}).read_bytes())
-'''
-        )
-    )
-    engine.chmod(0o700)
-    return engine
 
 
 def test_mixed_bundle_is_complete_private_and_warm_cache_launches_nothing(inputs, tmp_path):
