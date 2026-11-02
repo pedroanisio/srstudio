@@ -3,6 +3,7 @@
 
     python lounge_plates.py PROJECT         # → PROJECT/plates: the two-shot, both close-ups, and room.json
     python lounge_plates.py PROJECT --push  # and a far, back, front and tracker plate for every frame of the push
+    python lounge_plates.py PROJECT --push --only far   # only those layers again, their seconds updated in room.json
 
 Run it with srlocations' interpreter (it imports srlocations; srstudio's cannot). Each layer is its own Location holding
 only its solids, on a transparent sky: the far room, which the studies blur as the approved shot does; the back, which
@@ -37,6 +38,7 @@ from srlocations.surfaces import Surface
 
 WALL = (8.0, 3.6)  # its width and height, metres
 WALL_Z = 1.3
+CONSOLE, CONSOLE_TOP = (0.35, 0.24), 1.2  # the far unit hangs: its height and depth, and its top, wall below it
 WALL_HORIZON, WALL_SCALE = 1072.0, 579.0  # the horizon's frame row, and px per metre at the wall
 PATCH_X, PATCH_Y = (-0.014, 0.8), (1.345, 1.777)  # where the TV hung, in the wall's metres
 SHADOW = 0.55  # the darkest a contact shadow gets, at its middle
@@ -213,6 +215,7 @@ def materials(registry: Registry) -> None:
         ("shade", s.LAMP_SHADE),
         ("console", s.CONSOLE),
         ("speaker", s.SPEAKER),
+        ("cap", s.SPEAKER_CAP),
         ("near", "#ffffff"),
         ("wall", s.WALL_MID),
         ("patch", s.STRIPE),
@@ -226,7 +229,12 @@ def far() -> list:
     wall, shelf_y = WALL_Z, 2.17
     parts = [
         Box(size=(*WALL, 0.1), at=(0, WALL[1] / 2, wall + 0.05), material="lounge.wall", name="wall", role="wall"),
-        Box(size=(1.07, 1.2, 0.24), at=(0.47, 0.6, wall - 0.12), material="lounge.console", name="console"),
+        Box(
+            size=(1.07, *CONSOLE),
+            at=(0.47, CONSOLE_TOP - CONSOLE[0] / 2, wall - 0.12),
+            material="lounge.console",
+            name="console",
+        ),  # fmt: skip
         Box(size=(1.1, 0.024, 0.12), at=(0.42, shelf_y, wall - 0.06), material="lounge.shelf", name="shelf"),
         slab((0.42, 0.125, 0.12), 0.04, (0.17, shelf_y + 0.075, wall - 0.07), "lounge.router", "router"),
         Cylinder(
@@ -235,7 +243,9 @@ def far() -> list:
         Cylinder(
             0.006, 0.2, at=(0.29, shelf_y + 0.2, wall - 0.07), material="lounge.router", name="aerial-right", roll=-6
         ),
-        slab((0.12, 0.2, 0.04), 0.05, (0.5, shelf_y + 0.115, wall - 0.03), "lounge.speaker", "speaker"),
+        slab((0.12, 0.168, 0.04), 0.028, (0.5, shelf_y + 0.099, wall - 0.03), "lounge.speaker", "speaker"),
+        # the lid, a little nearer than the body so it closes over the body's shoulders, as toon_everyday draws it
+        slab((0.12, 0.04, 0.04), 0.017, (0.5, shelf_y + 0.197, wall - 0.036), "lounge.cap", "speaker-cap"),
         Cylinder(0.011, 1.5, at=(-0.905, 0.75, 1.0), material="lounge.pole", name="pole"),
         shade(0.215, 0.135, 0.31, (-0.905, 1.62, 1.0), "lounge.shade", "shade"),
     ]
@@ -477,6 +487,30 @@ def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def only(words: list[str]) -> set[str]:
+    """The layers `--only a,b` names, or all of them and the tracker."""
+    every = {*s.LAYERS, "track"}
+    if "--only" not in words:
+        return every
+    index = words.index("--only") + 1
+    named = set(words[index].split(",")) if index < len(words) else set()
+    if not named or named - every:
+        raise SystemExit(f"--only takes some of {sorted(every)}, got {sorted(named)}")
+    return named
+
+
+def merged(plates: Path, seconds: dict, push: dict, commit: str, engine_sha256: str) -> tuple[dict, dict]:
+    """A partial redraw's seconds over the record of the full one, which the same engine and srlocations drew."""
+    record = json.loads((plates / "room.json").read_text())
+    if (record["srlocations_commit"], record["engine_sha256"]) != (commit, engine_sha256):
+        raise SystemExit("--only redraws over plates of the same srlocations and engine; draw them all again")
+    if push and not record["push"]:
+        raise SystemExit("--only --push needs plates drawn with --push")
+    if push:
+        push = {**push, "seconds": {**record["push"]["seconds"], **push["seconds"]}}
+    return {**record["seconds"], **seconds}, push or record["push"]
+
+
 def main() -> None:
     commit = s.pinned(Path(srlocations.__file__).resolve().parent)
     project = Path(sys.argv[1]).resolve()
@@ -505,9 +539,10 @@ def main() -> None:
         "bruno": close_up("bruno", s.RIG_BRUNO, s.SEAT_BRUNO, s.BRUNO_FRAME, s.BRUNO_YAW, s.CLOSE_LENS, s.CLOSE_RISE),
     }
     frames = {frame: pushed(frame) for frame in range(s.PUSH_FRAMES)} if "--push" in sys.argv[2:] else {}
+    redrawn = only(sys.argv[2:])
     locations = {layer: built(layer, registry, {**still, **{t.name: t for t in frames.values()}}) for layer in s.LAYERS}
     seconds: dict[str, float] = {}
-    for layer in s.LAYERS:
+    for layer in (layer for layer in s.LAYERS if layer in redrawn):
         for name in still:
             began = time.perf_counter()
             renderer.render(locations[layer], name, plates / s.plate(name, layer), styled[layer])
@@ -518,7 +553,7 @@ def main() -> None:
         for take in frames.values():
             track.shot(take.name, take.eye, take.look_at, lens=take.lens)
         dots = Styled(Look([Flat({})], sky=SKY, name="track"), width=s.WIDTH, height=s.HEIGHT)
-        spent = dict.fromkeys((*s.LAYERS, "track"), 0.0)
+        spent = dict.fromkeys((layer for layer in (*s.LAYERS, "track") if layer in redrawn), 0.0)
         for frame, take in frames.items():
             for layer in spent:
                 began = time.perf_counter()
@@ -535,6 +570,8 @@ def main() -> None:
             "eye": [list(t.eye) for t in frames.values()],
         }
     engine = Path(renderer.engine)
+    if redrawn != {*s.LAYERS, "track"}:
+        seconds, push = merged(plates, seconds, push, commit, digest(engine))
     written = dict(
         seconds={layer: seconds[f"two-{layer}"] for layer in s.LAYERS},
         engine=str(engine),

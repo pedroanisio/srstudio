@@ -15,6 +15,14 @@ and its sofa for the plates of each camera and touches nothing else, so a rig, a
 On the push one plate of each depth shows per frame, and the rigs ride a group that takes each frame's scale and place
 from the room's own projection of the seat. A study for the paintover pilot's look decision, never a release: it
 declares no post and no part, and stays out of episodes/ so nothing ships it.
+
+Two staging rules hold if these cameras go into a reel (arc4d3, 2026-11-02). They are notes for that reel, not kit:
+
+- Alone on the sofa. While the other character is in the scene, their near shoulder or edge stays in frame on the
+  close-up; an empty seat shows only when the script says they have gone. This study's close-ups break it: the rigs
+  are the approved ones, which cheat the other character out, so Mae's close-up shows Bruno's seat empty.
+- Signature marks. The cactus and SR-1028 appear in each scene's establishing shot and on the cover; a close-up may
+  leave them out, and there is never a second cactus.
 """
 
 import json

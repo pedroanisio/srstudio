@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from srstudio import TOON, sketch
+from srstudio import TOON, sketch, toon_everyday
 
 ROOT = Path(__file__).resolve().parent.parent
 FOLDER = ROOT / "examples" / "paintover_proof"
@@ -305,6 +305,10 @@ def test_the_push_starts_on_the_two_shot_and_eases_to_its_scale(lounge):
     assert lounge.magnification(lounge.PUSH_FRAMES - 1) == pytest.approx(lounge.PUSH_SCALE)
     assert (steps > 0).all()
     assert steps[0] < steps[lounge.PUSH_FRAMES // 2] and steps[-1] < steps[lounge.PUSH_FRAMES // 2]
+
+
+def test_the_speaker_s_lid_is_the_approved_speaker_s(lounge):
+    assert lounge.SPEAKER_CAP == toon_everyday.CAP
 
 
 def test_the_plate_names_keep_the_cameras_apart(lounge):

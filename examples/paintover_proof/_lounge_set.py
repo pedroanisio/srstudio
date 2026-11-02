@@ -72,6 +72,7 @@ SHELF, ROUTER, ROUTER_LED = "#c48a5a", "#2b2f38", "#5cff8a"
 LAMP_POLE, LAMP_SHADE = "#3a3a46", "#c9b78f"
 CONSOLE = "#6b4a3a"
 SPEAKER = "#d8dde6"
+SPEAKER_CAP = "#2b2d35"  # the speaker's lid: toon_everyday.CAP
 
 
 class PinError(RuntimeError):
