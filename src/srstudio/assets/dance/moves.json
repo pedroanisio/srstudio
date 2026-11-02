@@ -90,8 +90,9 @@
           "cycles": 1,
           "per": "beat",
           "phase": 0,
-          "amplitude": -0.18,
-          "snap": 0.45
+          "amplitude": -0.09,
+          "snap": 0.45,
+          "bias": -0.09
         },
         {
           "target": "right_lower_leg.stretch",
@@ -99,8 +100,9 @@
           "cycles": 1,
           "per": "beat",
           "phase": 0,
-          "amplitude": -0.18,
-          "snap": 0.45
+          "amplitude": -0.09,
+          "snap": 0.45,
+          "bias": -0.09
         },
         {
           "target": "left_upper_leg.front_back",
@@ -236,8 +238,9 @@
           "cycles": 2,
           "per": "beat",
           "phase": 0,
-          "amplitude": -0.1,
-          "snap": 0.35
+          "amplitude": -0.05,
+          "snap": 0.35,
+          "bias": -0.05
         },
         {
           "target": "right_lower_leg.stretch",
@@ -245,8 +248,9 @@
           "cycles": 2,
           "per": "beat",
           "phase": 0,
-          "amplitude": -0.1,
-          "snap": 0.35
+          "amplitude": -0.05,
+          "snap": 0.35,
+          "bias": -0.05
         },
         {
           "target": "left_shoulder.down_up",
@@ -621,8 +625,9 @@
           "cycles": 0.25,
           "per": "beat",
           "phase": 3.25,
-          "amplitude": -0.35,
-          "snap": 0.5
+          "amplitude": -0.175,
+          "snap": 0.5,
+          "bias": -0.175
         },
         {
           "target": "left_lower_leg.stretch",
@@ -630,8 +635,9 @@
           "cycles": 0.25,
           "per": "beat",
           "phase": 1.25,
-          "amplitude": -0.35,
-          "snap": 0.5
+          "amplitude": -0.175,
+          "snap": 0.5,
+          "bias": -0.175
         },
         {
           "target": "right_upper_leg.front_back",
