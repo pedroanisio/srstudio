@@ -12,11 +12,10 @@ import pytest
 
 from srstudio import releases, saga_reel
 from srstudio.saga import SagaError
-from srstudio.timeline import Take
+from support.saga import SECONDS_A_WORD, recorded
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
 REELS = tuple(sorted(p.name.removeprefix("saga_").removesuffix("_audio.py") for p in EPISODES.glob("saga_*_audio.py")))
-SECONDS_A_WORD = 0.35  # a calm speaking rate for the synthetic recording
 
 
 @pytest.fixture(scope="module", params=REELS)
@@ -26,26 +25,6 @@ def reel(request):
         return importlib.import_module(f"saga_{request.param}_audio").REEL
     finally:
         sys.path.pop(0)
-
-
-def recorded(reel, rate: float = SECONDS_A_WORD) -> list[Take]:
-    """A synthetic recording of ``reel``: every word at ``rate``, the hold after the last, effects at their kept
-    length; letters stand in for phones."""
-    out, start = [], 0.0
-    for t in reel.takes:
-        if t.is_effect:
-            words, length = (), t.longest
-        else:
-            words = tuple(
-                {"text": w, "start": round(0.05 + i * rate, 3), "end": round(0.05 + (i + 1) * rate, 3)}
-                for i, w in enumerate(t.text.split())
-            )
-            length = words[-1]["end"] + 0.05
-        phones = tuple({"c": c, "start": 0.05 + i * 0.06, "end": 0.11 + i * 0.06} for i, c in enumerate(t.text.lower()))
-        duration = round(length + t.hold, 3)
-        out.append(Take(t.id, t.actor, "", t.text, round(start, 3), duration, words=words, phones=phones))
-        start += duration
-    return out
 
 
 def test_the_reels_are_numbered_in_order_with_distinct_saga_slugs():

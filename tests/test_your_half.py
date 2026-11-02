@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from srstudio import saga_reel
-from test_saga_episodes import recorded
+from support.saga import recorded
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
 
