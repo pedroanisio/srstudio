@@ -20,6 +20,7 @@ from your_rent_data import (
     SEED,
     SKETCH,
     TINTS,
+    captions,
     dress,
     lens,
     opening,
@@ -40,6 +41,7 @@ STAGING = Staging(
     camera=lens,
     bare=BARE,
     opening=opening,
+    captions=captions,
     loudness="-14",
     bleed=True,
 )

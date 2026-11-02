@@ -17,13 +17,14 @@ and :func:`sounds` the room.
 from __future__ import annotations
 
 from dataclasses import replace
+from functools import partial
 
-from srstudio import camera, foley, opener, scripting, sketch, toon_house, toon_pair, toon_props, toon_sets
+from srstudio import camera, foley, opener, scripting, sketch, toon, toon_house, toon_pair, toon_props, toon_sets
 from srstudio.scripting import at
 from srstudio.sketch import Beat, Line, Sketch
 from srstudio.toon import fx, fy
 from srstudio.toon_pair import Act
-from srstudio.toon_sketch import Sound
+from srstudio.toon_sketch import Sound, fit_captions
 from srstudio.toon_voices import speaker, tinted
 from srstudio.voice import Transcript, TranscriptMismatch, check_transcript
 
@@ -50,7 +51,8 @@ LEWIS = speaker("lewis", "Will", "raccoon", "deadpan")
 TINTS = tinted(DAD, FERN, LEWIS)
 TEXT = "my dad finding out my rent"  # the viewer's own line (send-v2)
 NAMES = ("fern", "lewis", "brian", "matilda", "will")
-OPENER_TOP = 460.0  # frame px: under the caption band (334 to 429), over every face
+OPENER_TOP = 222.0  # frame px: the top of the safe area, read before the captions under it
+BAND = 259.0  # reference px: the pills' top at frame y 345, show.CLEAR under the bug, so a long line passes under it
 THREE, TWO = "hamster", "sloth"  # never seen: the names of the three-shot and the two-shot
 BARE = (THREE, TWO)
 
@@ -143,9 +145,21 @@ def validate(sk: Sketch = SKETCH) -> None:
         raise sketch.SketchError(f"the look holds {HELD} s and the last line follows it")
 
 
+def caption_top() -> int:
+    """The frame y of the pills' top, as :func:`srstudio.toon.captions` sets it."""
+    return int(round(toon.fy(BAND)))
+
+
 def opening(cv, parent, said, measure):
-    """The viewer's own line, from the first frame until the first line stops."""
-    return opener.draw(cv, parent, TEXT, said, measure=measure, top=OPENER_TOP, names=NAMES)
+    """The viewer's own line, from the first frame until the first line stops, above the first caption."""
+    return opener.draw(cv, parent, TEXT, said, measure=measure, top=OPENER_TOP, names=NAMES, caption_top=caption_top())
+
+
+def captions(cv, parent, lines, measure, tints) -> None:
+    """The style's pills, lowered to :data:`BAND` and held clear of the show's bug."""
+    size = partial(measure, size=toon.CAPTION_SIZE)
+    fit_captions(lines, size, cv.width)
+    toon.captions(cv, parent, lines, size, tints=tints, band=BAND, clear_bug=True)
 
 
 def sounds(beats, end) -> tuple[Sound, ...]:

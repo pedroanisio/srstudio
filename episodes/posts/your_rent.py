@@ -33,7 +33,7 @@ RELEASE = Release(
         send_line="You're twenty-two hundred.",
     ),
     style="Toon",
-    video="your-rent-v2",  # the keeper: the first master ran four lines into the ones before them
+    video="your-rent-v3",  # the keeper: v1 ran lines together, v2 had the opening line under the captions
     parts={
         "show-bug": 1,
         "signature-cactus": 1,

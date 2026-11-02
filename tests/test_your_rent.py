@@ -58,3 +58,13 @@ def test_the_opening_line_is_the_viewers_and_names_nobody(data):
     assert opener.check(data.TEXT, opener.seconds(data.TEXT), names=data.NAMES) == data.TEXT
     with pytest.raises(opener.OpenerError):
         opener.check(data.TEXT, opener.seconds(data.TEXT) - 0.1, names=data.NAMES)
+
+
+def test_the_opening_line_is_above_the_captions_and_every_pill_keeps_off_the_bug(data):
+    from srstudio import show, toon
+
+    top = data.caption_top()
+    assert top >= show.BUG_BOX[3] + show.CLEAR  # every pill, however long, passes under the bug
+    left, y0, right, y1 = opener.box(600.0, data.OPENER_TOP)
+    assert y1 <= top and opener.SAFE.y0 <= y0
+    assert top == int(round(toon.fy(data.BAND)))
