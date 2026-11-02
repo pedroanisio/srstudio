@@ -20,7 +20,7 @@
     "P3": "Integration, documentation, evidence or maintainability improvement",
     "P4": "Broader capability or measurement-led optimization"
   },
-  "assessment": "Strong reusable primitives, explicit character discovery, common non-character drawing contracts, coordinated acting with opt-in transition policies, executable cross-system recipes and scoped numeric regression envelopes. Core callback and prop-option defects have atomic preflight and repairable failures. Common authoring failures now expose explicit repair fields with bounded SDK/CLI payloads. Head mechanics, records, seeded noise, speech analysis and behavioral planning now have separate implementation owners behind the existing public API. Limb transform, gesture, contact and skeletal sampling also have separate owners while retaining public records and shared interpolation. Explicit drawing events now cover synchronous and deferred execution without profiler inference. Rendered caches bind actual renderer and print-font inputs while retaining stable drawing identities. Scoped continuity discovery distinguishes source derivatives, estimated joins and held compiler output. Remaining priorities include broader contracts, bounded scene composition, drawing adoption evidence and broader body/gaze capabilities. Discovery deliberately retains unknown semantics for other non-character families. Numeric validity does not establish perceptual quality.",
+  "assessment": "Strong reusable primitives, explicit character discovery, common non-character drawing contracts, coordinated acting with opt-in transition policies, executable cross-system recipes and scoped numeric regression envelopes. Core callback and prop-option defects have atomic preflight and repairable failures. Common authoring failures now expose explicit repair fields with bounded SDK/CLI payloads. Head mechanics, records, seeded noise, speech analysis and behavioral planning now have separate implementation owners behind the existing public API. Limb transform, gesture, contact and skeletal sampling also have separate owners while retaining public records and shared interpolation. Explicit drawing events now cover synchronous and deferred execution without profiler inference. Rendered caches bind actual renderer and print-font inputs while retaining stable drawing identities. Scoped continuity discovery distinguishes source derivatives, estimated joins and held compiler output. Remaining priorities include broader contracts, bounded scene composition, drawing adoption evidence and broader body/emotion capabilities. Discovery deliberately retains unknown semantics for other non-character families. Numeric validity does not establish perceptual quality.",
   "catalog_observation": {
     "parts": 703,
     "characters": 70,
@@ -50,6 +50,28 @@
     "qualification": "Fresh-process registry.entries() observation after the latest implemented contract batch. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates."
   },
   "review_verification": {
+    "target_gaze": {
+      "implementation_commit": "fe54e334",
+      "rendered_study_red": {"failed": 2},
+      "caption_overlap_red": {"failed": 1},
+      "final_engine_enabled_tests": {"passed": 183, "skipped": 0},
+      "branch_inclusive_coverage_percent": {"gaze": 93, "gaze_drawing": 89, "example": 90, "total": 91},
+      "coverage_scope": "Two gaze modules and the executable example, unchanged 80% gate. This is not a full-library suite run.",
+      "rendered_frames": 96,
+      "rendered_size": [1920, 1080],
+      "rendered_fps": 24,
+      "strict_render_findings": [],
+      "cut_uncut_pixel_equality_times": [1.25, 2.875],
+      "geometry_clearance_times": [0.5, 1.25, 2.875, 3.5],
+      "engine_sha256": "90bf26f00439e3615206fa8c7ea4accea8cf5be009e188b60d7c5938ec4e0b4a",
+      "scene_sha256": "9b7960abbc5e92288d2f46196b00c226241249896cc538bed84553c01c55cd95",
+      "video_sha256": "d455c04db7ac017590b6780871649f5ba3158150df26b288f2885ee9c78437b0",
+      "mypy_source_files": 289,
+      "retained_artifacts": "../generated/sdk-target-gaze/v2/",
+      "visual_review": "OpenAI Codex (GPT-6) inspected the contact sheet and full frames at 2 and 2.75 seconds. Corrected character framing clears the captions; wide eyes show rightward direction, and half eyes retain lid occlusion over pupil layers. This is sampled visual inspection, not every-frame inspection or a human perceptual rating.",
+      "human_ratings": null,
+      "qualification": "Continuous target gaze is opt-in for drawings declaring pupil layers. Eye/head controls are authored limits, not anatomy. Toon output is stylized pupil translation plus face_x/nod, not world-space fixation. Named-state approximation requires explicit vocabulary/error allowance and returns eye keys only. The example exercises Critter Sloth and Inked Fox; unsupported rigs are refused. Existing drawing approval and the broader animated DRAWING.md adoption proof remain separate."
+    },
     "plate_texture_identity": {
       "baseline_source_commit": "e15fe9cc",
       "identity_and_snapshot_red": {
@@ -941,12 +963,14 @@
     {
       "id": "SDK-P4-02",
       "priority": "P4",
-      "status": "open",
+      "status": "complete",
       "title": "Support target-based gaze where rigs can draw it",
       "problem": "The shared gaze planner has four named states and held eye transitions. It cannot express continuous target tracking or a richer eye/head relationship across rig families.",
       "evidence": ["src/srstudio/head_motion.py:GAZES", "src/srstudio/head_motion.py:_gaze", "src/srstudio/toon_head.py:gaze_states"],
       "change": "Introduce typed target gaze with explicit eye/head limits and latency, capability-gated continuous sampling, and deliberate mappings for rigs that only support named states.",
       "acceptance": ["No silent substitution for unsupported gaze", "Target motion remains deterministic across cuts and sampling order", "Bounds and eye/head timing tests plus rendered review"],
+      "resolution": "Added strict typed target/observer tracks, separate eye/head limits and latency, deterministic bounded angle sampling, explicit named-state approximation and capability-gated pupil transforms. Acting bindings retain the full performance clock across cuts and reject conflicting ownership. The two-style study exports reproducible inputs and source hashes, passes strict full-size encoding, and has exact cut/uncut rendered-pixel tests. A rendered-review framing defect was fixed with a geometry-clearance regression test. Limits and sampled visual review are recorded in review_verification.target_gaze.",
+      "verification": ["tests/test_gaze.py", "tests/test_gaze_drawing.py", "tests/test_acting_target_gaze.py", "tests/test_target_gaze_example.py", "examples/target_gaze.py", "docs/authoring-acting.md", "docs/decisions/0108-source-clock-target-gaze.md"],
       "complexity": "L"
     },
     {
@@ -963,7 +987,7 @@
       "complexity": "M"
     }
   ],
-  "recommended_order": ["SDK-P2-06", "SDK-P2-07", "SDK-P3-06", "SDK-P4-01", "SDK-P4-02", "SDK-P4-04"],
+  "recommended_order": ["SDK-P2-06", "SDK-P2-07", "SDK-P3-06", "SDK-P4-01", "SDK-P4-04"],
   "agent_authoring_guidance": [
     "Discover registered versions, explicit capabilities, coordinate spaces and clocks before choosing a builder; keep unknown metadata unknown.",
     "Use parse_score and compile_performance for supported coordinated intent, character clips for placement, and windows of one performance for cuts. Inspect family capabilities before requesting a channel.",

@@ -134,6 +134,20 @@ only; it does not transfer head follow. `toon_head.gaze_capabilities(rig)` descr
 the drawing mapping and emission budget. Existing drawing paths are unchanged when
 no target is supplied.
 
+The [two-style target-gaze study](../examples/target_gaze.py) renders the same target
+on Critter Sloth and Inked Fox, with cuts during target motion and a later expression
+change. It exports the exact target JSON, sampled states, capabilities and source
+hashes. Its cut and uncut builds use identical framing for pixel comparisons.
+
+```sh
+python examples/target_gaze.py ../generated/sdk-target-gaze-study
+scene-render validate ../generated/sdk-target-gaze-study/target-gaze.scene.xml --deny-warnings
+scene-render encode ../generated/sdk-target-gaze-study/target-gaze.scene.xml --strict
+```
+
+See the [target-gaze design decision](decisions/0108-source-clock-target-gaze.md) for
+the limits of the pupil-layer contract and named-state approximation.
+
 ### Opt-in acting transition policies
 
 Score schema `srstudio.acting/1.1.0` adds a versioned `policy` to each beat. Existing
