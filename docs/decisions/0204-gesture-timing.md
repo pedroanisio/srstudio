@@ -225,6 +225,55 @@ The drawing adapters of the stick and Toon styles are not on the base this decis
 skeleton pose sampled at its own picture times. Their own stage test belongs with them: the same gesture, measured at
 their pictures, held to the source.
 
+### The presets keep their shapes: the reference cannot time them
+
+A preset takes the reference's timing only where the style holds that timing for the channel the preset moves, and
+the timing matches the preset's own cycle. No preset meets that, so every preset keeps its current shape:
+
+- **The arm gestures** (`clap`, `point-up`, `raise-the-roof`, `hand-wave-side`, `arm-pump`, `arm-wave-overhead`)
+  move `arms.height` and `arms.reach`. On the reference those read 1 and 2 windows, none of them timed: the arms leave
+  the picture or are refused in most frames. `hands-up` holds a pose and has nothing to time.
+- **`shoulder-roll`** moves `shoulders.tilt`, which has 3 timed windows out of 22, under the 4 a range needs, and
+  those 3 disagree on the profile, 0.38 from their mean at the median. Its front-back roll and `shoulder-shimmy`
+  read on `torso.twist`, which has no timed window and is of `fair` trust.
+- **`head-nod`** moves `head.bob`, the one channel with timing ranges. Its timed windows run at 0.3 to 1.1 cycles a
+  beat, mostly slower than the nod's one cycle a beat, so their attack and release in beats (0.32..0.73 and
+  1.21..1.87) describe a slower head motion than a nod. Their profiles disagree (0.29 from their mean), so there is
+  no profile to give it.
+- **`sway` and `hip-sway`** tilt the head along `head.sway`, which has 2 timed windows. Their hips move channels the
+  reference cannot time.
+- **`bob`, `bounce` and `step-touch`** move `hips.bounce` and `knees.bend`. Each has one timed window and `fair` trust,
+  which holds no timing range.
+- **`seat-groove`** is being retuned by the separate decision on swing, and this decision does not change it.
+
+A preset's shape changes when a reference times its channel: a recording at full picture rate, with the dancer's arms
+and head in frame, read by the same study.
+
+### A gesture is not the straight blend of its key poses
+
+The operator's principle, stated as a test (`tests/test_dance_timing_baseline.py`). It follows a pose tracker's
+holdout, which predicts a reviewed in-between from the poses around it and compares the prediction to a straight blend.
+Every moving pattern of every preset is set beside the straight blend of its own key poses: the hit and the far
+extreme, reached at the same moments, with a straight line between them. Its in-between must differ from the blend
+in three ways:
+
+- its velocity profile, by more than 0.15;
+- its fastest moment, by more than 0.05 of the cycle;
+- its attack, as a share of its own stroke, by more than 0.05.
+
+A control checks that a straight blend fails all three when set beside its own blend.
+
+All 69 moving patterns pass; every one is a `sine` or a `hold`. The smallest margins:
+
+| Check | Threshold | Smallest | Pattern | Median |
+|---|---|---|---|---|
+| Velocity profile | 0.15 | 0.228 | `arm-pump` right arm height (sine) | 0.303 |
+| Fastest moment | 0.05 | 0.055 | `step-touch` root to the right (hold) | 0.206 |
+| Attack share | 0.05 | 0.148 | `step-touch` root to the right (hold) | 0.196 |
+
+The rise is compared to within half a cycle of the highest overtone read (24), since a `hold` step is read through
+that curve and no finer.
+
 ## Rejected alternatives
 
 - **Linear interpolation between samples.** Speed is constant between samples and jumps at each one; acceleration is a
@@ -238,5 +287,9 @@ their pictures, held to the source.
 
 ## Consequences
 
-- A pattern can carry a measured cycle; the presets still read as before until a measurement replaces their shape.
+- A pattern can carry a measured cycle; the presets still read as before until a reference that can time them
+  replaces their shape.
+- Every timing reading says how many overtones it stands on. Below two, it says nothing about the gesture's timing,
+  and the study and the style count it for none.
+- The shipped style's peak-to-peak and snap ranges changed: they no longer hold the fit's noise.
 - A curve that rings or peaks away from its hit is refused when it is read, never drawn.
