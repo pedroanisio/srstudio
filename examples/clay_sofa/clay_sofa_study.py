@@ -16,6 +16,9 @@ stay on the sofa for every camera, so a close-up shows the other one's edge. The
 clay: a card needs the seat's edge to hide its base, the clay sits on the seat and the K pass already says where the
 sofa stands in front of it.
 
+Known differences from the flat, for the operator's eye: Bruno sits on his card's column, over the sofa's drawn arm as
+the flat lays him, so the sofa's arm takes no bounce or shadow from him (:data:`KNOWN_DIFFERENCES`).
+
 A look study for the operator's decision on Mae and Bruno, never a release: it declares no post and no part, and stays
 out of episodes/ so nothing ships it.
 """
@@ -82,13 +85,16 @@ def lens_of(room: study.Room, take: str, frame: int | None = None) -> cr.Camera:
     return cr.camera_of(eye, tuple(np.array(lounge.LOOK_AT) + ahead), lounge.LENS)
 
 
-GAP = 0.006  # metres the clay keeps from the arm and from the other figure: touching, not passing through
+KNOWN_DIFFERENCES = ("no sofa-arm bounce or shadow on Bruno's right side; he sits over the drawn arm as the flat does",)
+
+GAP = 0.006  # metres the clay keeps from the other figure: touching, not passing through
 
 
 def seats(room: study.Room, performance: pf.Performance) -> dict[str, cr.Seat]:
     """Where each figure sits, on the column of its card's seat on the two-shot and as tall as the card there. Mae
     sits back against the sofa; the drawing lays Bruno over her, so he sits as far forward as it takes for none of him
-    to pass through her (at rest, on frame 0), and as far left as it takes to clear the sofa's arm."""
+    to pass through her (at rest, on frame 0). Bruno's column runs over the sofa's drawn arm, and the flat lays him over
+    it: so does this study (the arm has no stand-in in the passes)."""
     two = lens_of(room, "two")
     per = toon.SCALE * reel.PAIR_SCALE
     back = cr.SOFA_BACK_FRONT - cr.BACK_CLEARANCE
@@ -96,7 +102,7 @@ def seats(room: study.Room, performance: pf.Performance) -> dict[str, cr.Seat]:
     resting = cr.posed("mae", RIGS["mae"], cf.figure(RIGS["mae"]), performance.at("mae", 0), mae)
     bruno_back = back
     for _ in range(8):
-        bruno = cr.seat_of(cf.figure(RIGS["bruno"]), lounge.SEAT_BRUNO, two, per, False, bruno_back, cr.ARM_INNER - GAP)
+        bruno = cr.seat_of(cf.figure(RIGS["bruno"]), lounge.SEAT_BRUNO, two, per, False, bruno_back)
         his = cr.posed("bruno", RIGS["bruno"], cf.figure(RIGS["bruno"]), performance.at("bruno", 0), bruno)
         short = GAP - cr.clearance(his, resting)
         if short <= 0.0005:

@@ -23,8 +23,13 @@ room's line round it. The measures run over every frame of each span, for each f
 - hands: on every frame the hands each figure draws, as the anatomy rule (ADR 0174) counts them on the render.
 - body lift: through the gasp and the jump, each frame's lift of the base off the cushion, and how far the figure's
   move strays from a turn and a shift (0 for no stretch and no shear).
+- placement: each clay seat's column on the two-shot against its card's, and its base's depth against the cushion.
+- rest arms: how long each arm shows from the front at rest against the flat's arm, its width at the wrist, whether
+  the elbow stays inside the outline, and how much longer the clay's line runs laid over the belly than bare.
+- chin fall: down each column beside the muzzle, the steepest the skin's front falls back (an undercut is a collar).
 - neck seam: on the two-shot's frame 60, the darkest line across each figure's neck on its P pass (the luminance below
   the column's own smooth run), this round against round 1.
+- known differences: what the study does not match in the flat, listed for the operator.
 """
 
 from __future__ import annotations
@@ -32,6 +37,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -46,6 +52,7 @@ import numpy as np  # noqa: E402
 import performance as pf  # noqa: E402
 import room_compare as rc  # noqa: E402
 from compare import alpha  # noqa: E402
+from shapely.geometry import Point, Polygon  # noqa: E402
 from sofa_room_study import Room, centroid  # noqa: E402
 
 os.umask(0o077)  # generated outputs are private: folders 700, files 600
@@ -197,6 +204,73 @@ def arm_chains(performance: pf.Performance) -> dict:
     return out
 
 
+def rest_arms() -> dict:
+    """Each figure's arms at rest against the flat's: how long each shows from the front (from where it leaves the
+    body to the wrist) and the flat's own arm, the width at the wrist against the flat's, whether the elbow stays
+    inside the outline, and how much longer the clay's line is laid over the belly than the bones run (the bones keep
+    their length; only the roll over them bends)."""
+    out = {}
+    for who in ("mae", "bruno"):
+        rig = cs.RIGS[who]
+        fig = cf.figure(rig)
+        flat = cf.flat_rest_arms(rig)
+        outline = Polygon(fig.parts.body).buffer(0).union(Polygon(fig.parts.head).buffer(0))
+        sides = {}
+        for chain in fig.arms:
+            joints = cf.reach(chain, chain.rest)
+            laid, radii = cf.arm_line(chain, joints)
+            bare, _ = cf.arm_line(replace(chain, lap=None, skin=None), joints)
+            sides[chain.side] = dict(
+                shown_ref_px=round(cf.arm_shown(fig, chain, joints), 2),
+                flat_ref_px=round(flat[chain.side].length, 2),
+                wrist_width_ref_px=round(2.0 * float(radii[-1]), 2),
+                flat_width_ref_px=flat[chain.side].width,
+                elbow_inside=bool(outline.buffer(-chain.radii[0]).contains(Point(joints.elbow[0], joints.elbow[1]))),
+                laid_over_bare=round(_length(laid) / _length(bare), 4),
+            )
+        out[who] = sides
+    return out
+
+
+def _length(path: np.ndarray) -> float:
+    return float(np.linalg.norm(np.diff(path, axis=0), axis=1).sum())
+
+
+def chin_fall() -> dict:
+    """Down each column beside the muzzle, from above the chin to the base, the steepest the skin's front falls back
+    per reference pixel (an undercut under the chin reads as a collar; the tests hold it above -0.5)."""
+    out = {}
+    for who in ("mae", "bruno"):
+        fig = cf.figure(cs.RIGS[who])
+        depth = cf.front_of(fig.skin)
+        head = Polygon(fig.parts.head)
+        ys = np.arange(head.bounds[3] - 80.0, cf.BASE - 10.0, 2.0)
+        out[who] = {
+            f"{dx:+.0f}": round(float((np.diff(-depth(np.full_like(ys, head.centroid.x + dx), ys)) / 2.0).min()), 3)
+            for dx in (-90.0, -70.0, 70.0, 90.0)
+        }
+    return out
+
+
+def placement(room: Room, performance: pf.Performance, places: dict) -> dict:
+    """Each clay seat's column on the two-shot against its card's seat, and its base's depth on frame 0 against the
+    cushion's front and rounded edge (metres; a base behind the edge rests on the flat of the cushion)."""
+    two = cs.lens_of(room, "two")
+    out = {}
+    for who, card in (("mae", lounge.SEAT_MAE), ("bruno", lounge.SEAT_BRUNO)):
+        posed = cr.posed(who, cs.RIGS[who], cf.figure(cs.RIGS[who]), performance.at(who, 0), places[who])
+        v = np.concatenate([m.vertices for m in posed]) / 100.0
+        base = v[:, 1] > -(cr.CUSHION_TOP - cr.SINK) - 0.005  # engine y is down: the lowest half centimetre
+        out[who] = dict(
+            card_column_px=round(float(cr.project([cr.engine(card)], two)[0][0]), 2),
+            clay_column_px=round(float(cr.project([places[who].at], two)[0][0]), 2),
+            base_nearest_z_m=round(float(v[base, 2].min()), 4),
+            cushion_front_z_m=cr.CUSHION_FRONT,
+            cushion_edge_m=cr.CUSHION_EDGE,
+        )
+    return out
+
+
 def hands(record: dict) -> dict:
     """The hands each figure draws on every frame, as the render counted them with the rule."""
     rows = sorted(record["frames"].items(), key=lambda kv: int(kv[0]))
@@ -262,10 +336,7 @@ def neck_seam(project: Path, round1: Path | None, room: Room, places: dict, fram
         p, k = (cr.rgba(root / "clay" / "cache" / kind / entry[kind]) for kind in ("P", "K"))
         for who in ("mae", "bruno"):
             rig, seat = cs.RIGS[who], places[who]
-            fig = cf.figure(rig)
-            local = np.array(
-                [[cr.SEAT_X, rig.neck[1], -fig.head_forward], [cr.SEAT_X + 60.0, rig.neck[1], -fig.head_forward]]
-            )
+            local = np.array([[cr.SEAT_X, rig.neck[1], 0.0], [cr.SEAT_X + 60.0, rig.neck[1], 0.0]])
             world, _ = cr._place(local, None, np.eye(4), seat)
             at, side = cr.project(world, lens)
             half = int(round(float(np.hypot(*(side - at)))))
@@ -370,10 +441,14 @@ def main(argv: list[str]) -> None:
             flat=rc.drift(project / "plates" / "push" / "track", project / "marks"),
             clay=clay_drift(room, project / "plates" / "push" / "track"),
         ),
+        placement=placement(room, performance, places),
         arm_chains=arm_chains(performance),
+        rest_arms=rest_arms(),
+        chin_fall_per_ref_px=chin_fall(),
         hands_per_figure=dict(room=hands(renders["room"]), push=hands(renders["push"])),
         body_lift=body_lift(performance, places, GASP_AND_JUMP),
         neck_seam=neck_seam(project, round1, room, places),
+        known_differences=list(cs.KNOWN_DIFFERENCES),
         ink=dict(colour=ci.ROOM_LINE.colour, heavy_px=ci.ROOM_LINE.heavy, fine_px=ci.ROOM_LINE.fine),
         render_seconds=dict(
             clay=cost(renders), plates=dict(stills=room.seconds, push=room.pushed()["seconds"])

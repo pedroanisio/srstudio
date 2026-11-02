@@ -4,7 +4,8 @@ The figures keep the drawing: each part's outline is the drawn outline, the face
 are one surface; each figure has one pair of arms, rigged from the shoulders, and every gesture moves those two arms;
 the anatomy rule counts their hands as it counts a drawn figure's (ADR 0174). The gasp and the jump lift the whole
 figure off the cushion and set it back, rigid. They sit on the room's cushion, as the room's cameras see it (checked
-against the room record's own projection), without passing through the arm or each other. The performance record of
+against the room record's own projection), each on its card's column without passing through the other; Bruno lies over
+the drawn sofa arm as the flat lays him. The performance record of
 the reel is read strictly, and the passes are put together as the study says, plain and inked in the room's own line.
 The engine runs only as a stand-in script here: the study renders its passes outside this suite.
 """
@@ -180,16 +181,16 @@ def test_the_clay_camera_sees_the_seats_where_the_room_record_does(kit, take, ca
         assert cr.pixels_per_metre(seat, lens) == pytest.approx(ppm, rel=0.002)
 
 
-def test_a_seat_keeps_the_card_size_its_back_on_the_sofa_and_the_arm_clear(kit, rigs):
+def test_a_seat_keeps_the_card_size_its_column_and_its_back_on_the_sofa(kit, rigs):
     cr = kit["cr"]
     lens = cr.camera_of(TWO["eye"], TWO["look_at"], TWO["lens"])
     fig = kit["cf"].figure(rigs["bruno"])
-    back_at, right = 0.5, -0.2
-    seat = cr.seat_of(fig, (-0.391, 0.374, 0.3), lens, 1.2, False, back_at, right)
+    back_at, card = 0.5, (-0.391, 0.374, 0.3)
+    seat = cr.seat_of(fig, card, lens, 1.2, False, back_at)
     x, _, z = seat.at[0] / 100.0, seat.at[1], seat.at[2] / 100.0
     per = seat.per / 100.0
     assert z + fig.skin.depth[1] * per == pytest.approx(back_at, abs=1e-4)
-    assert x + (fig.extent[1] - cr.SEAT_X) * per <= right + 1e-6  # its arms too
+    assert cr.project([seat.at], lens)[0][0] == pytest.approx(cr.project([cr.engine(card)], lens)[0][0], abs=0.01)
     assert 1.2 / cr.pixels_per_metre((x, cr.CUSHION_TOP, z), lens) == pytest.approx(per, rel=1e-3)
     assert -seat.at[1] / 100.0 == pytest.approx(cr.CUSHION_TOP - cr.SINK)
 
@@ -208,7 +209,7 @@ def test_clearance_measures_the_gap_and_a_pass_through(kit):
     assert cr.clearance(front, [box_mesh(cr.clay, 50.0, 60.0, 0.0, 5.0)]) == float("inf")
 
 
-def test_the_pair_sits_clear_of_the_arm_and_of_each_other(kit, rigs, tmp_path):
+def test_the_pair_sits_clear_of_each_other_on_the_cushion(kit, rigs, tmp_path):
     study, cr = kit["study"], kit["cr"]
     performance = resting_performance(kit)
     room = type("R", (), {"takes": {"two": dict(TWO)}})()
@@ -218,8 +219,6 @@ def test_the_pair_sits_clear_of_the_arm_and_of_each_other(kit, rigs, tmp_path):
         for who in ("mae", "bruno")
     }
     assert cr.clearance(posed["bruno"], posed["mae"]) >= study.GAP - 0.0006
-    right = max(float(m.vertices[:, 0].max()) for m in posed["bruno"]) / 100.0  # his resting arms too
-    assert right <= cr.ARM_INNER
     for who in ("mae", "bruno"):  # each sits on the cushion, pressed in as far as the cards
         low = max(float(m.vertices[:, 1].max()) for m in posed[who]) / -100.0
         assert low == pytest.approx(cr.CUSHION_TOP - cr.SINK, abs=1e-6)
@@ -663,6 +662,93 @@ def test_head_and_body_are_one_surface_with_no_seam_at_the_neck(kit, rigs, who):
     assert fig.weights.min() >= 0.0 and fig.weights.max() <= 1.0
     jump = np.abs(fig.weights[edges[:, 0]] - fig.weights[edges[:, 1]])
     assert jump.max() < 0.5
+
+
+UNDERCUT = 0.5  # the most the front may fall back per reference pixel down under the chin: 27 degrees off the lens
+
+
+@pytest.mark.parametrize("who", ["mae", "bruno"])
+def test_the_chin_runs_down_into_the_chest_with_no_undercut(kit, rigs, who):
+    """A head that stands out as a ball in front of the chest leaves a ledge under the chin, turned down from the
+    light: on the frame it reads as a dark collar even with no line drawn. Down every column under the cheeks, from
+    above the chin to the base, the front never falls back steeper than :data:`UNDERCUT`."""
+    cf = kit["cf"]
+    fig = cf.figure(rigs[who])
+    depth = cf.front_of(fig.skin)
+    head = Polygon(fig.parts.head)
+    ys = np.arange(head.bounds[3] - 80.0, cf.BASE - 10.0, 2.0)
+    for dx in (-90.0, -70.0, 70.0, 90.0):  # beside the muzzle, whose own relief is modelled
+        near = -depth(np.full_like(ys, head.centroid.x + dx), ys)
+        fall = np.diff(near) / 2.0
+        assert fall.min() >= -UNDERCUT, (dx, float(ys[int(np.argmin(fall))]), float(fall.min()))
+
+
+def test_the_flat_rest_arm_is_read_from_the_drawing(kit, rigs):
+    cf = kit["cf"]
+    for rig in rigs.values():
+        flat = cf.flat_rest_arms(rig)
+        torso = rig.look.drawing.torso
+        for side in ("left", "right"):
+            arm = flat[side]
+            assert arm.width == torso.arm
+            assert len(arm.path) >= 3 and (arm.path[0][0] < cf.CENTRE) == (side == "left")
+    bear = cf.flat_rest_arms(rigs["bruno"])  # the flat's own numbers, measured off toon_torso.arm_path
+    assert bear["left"].length == pytest.approx(77.6, abs=0.1)
+    assert bear["right"].length == pytest.approx(81.9, abs=0.1)
+    rabbit = cf.flat_rest_arms(rigs["mae"])
+    assert rabbit["left"].length == pytest.approx(73.9, abs=0.1)
+    assert rabbit["right"].length == pytest.approx(77.2, abs=0.1)
+
+
+def test_an_arm_shows_only_where_it_is_in_front_of_the_skin(kit, rigs):
+    cf = kit["cf"]
+    fig = cf.figure(rigs["bruno"])
+    chain = replace(fig.arms[0], lap=None, skin=None)  # the bare line: nothing laid on the lap
+    joints = cf.reach(chain, chain.rest)
+    ahead = cf.Joints(*(j + (0.0, 0.0, -400.0) for j in (joints.shoulder, joints.elbow, joints.wrist, joints.paw)))
+    line, _ = cf.arm_line(chain, ahead)
+    whole = np.linalg.norm(np.diff(line[:, :2], axis=0), axis=1).sum()
+    assert cf.arm_shown(fig, chain, ahead) == pytest.approx(whole, rel=0.01)  # all in front: all of it shows
+    behind = cf.Joints(*(j + (0.0, 0.0, 400.0) for j in (joints.shoulder, joints.elbow, joints.wrist, joints.paw)))
+    assert cf.arm_shown(fig, chain, behind) == 0.0  # all inside or behind the body: none of it
+
+
+@pytest.mark.parametrize("who", ["mae", "bruno"])
+def test_the_resting_arm_folds_into_depth_and_shows_as_long_as_the_flats(kit, rigs, who):
+    """The rigid bones (the Wow needs all their reach) fold at rest the way a seated arm does: the upper arm down
+    the side inside the body, the forearm coming forward onto the lap. Seen from the front the arm shows from where it
+    leaves the body to the wrist about as long as the flat draws it, the elbow inside the figure's outline, the arm as
+    wide at the wrist as the flat's."""
+    cf = kit["cf"]
+    rig = rigs[who]
+    fig = cf.figure(rig)
+    flat = cf.flat_rest_arms(rig)
+    outline = Polygon(fig.parts.body).buffer(0).union(Polygon(fig.parts.head).buffer(0))
+    for chain in fig.arms:
+        assert (chain.upper, chain.fore) == (cf.UPPER, cf.FORE)
+        joints = cf.reach(chain, chain.rest)
+        assert cf.arm_shown(fig, chain, joints) == pytest.approx(flat[chain.side].length, abs=4.0)
+        elbow = ShapelyPoint(joints.elbow[0], joints.elbow[1])
+        assert outline.buffer(-chain.radii[0]).contains(elbow)  # it does not poke out of the silhouette
+        assert 2.0 * chain.radii[1] == pytest.approx(flat[chain.side].width)
+
+
+def test_each_figure_sits_on_its_cards_column_and_its_base_on_the_cushion(kit, rigs):
+    """Bruno on his card's column, over the drawn arm as the flat lays him (the arm is no stand-in in the passes);
+    each base on the cushion, behind its rounded front edge, so it presses into the seat and shadows it."""
+    study, cr, cf = kit["study"], kit["cr"], kit["cf"]
+    performance = resting_performance(kit)
+    room = type("R", (), {"takes": {"two": dict(TWO)}})()
+    places = study.seats(room, performance)
+    lens = cr.camera_of(TWO["eye"], TWO["look_at"], TWO["lens"])
+    for who in ("mae", "bruno"):
+        x = float(cr.project([places[who].at], lens)[0][0])
+        assert x == pytest.approx(SEEN["two"][who][0], abs=1.5)
+        posed = cr.posed(who, rigs[who], cf.figure(rigs[who]), performance.at(who, 0), places[who])
+        v = np.concatenate([m.vertices for m in posed]) / 100.0
+        base = v[:, 1] > -(cr.CUSHION_TOP - cr.SINK) - 0.005  # engine y is down: the lowest half centimetre
+        assert v[base, 2].min() >= cr.CUSHION_FRONT + cr.CUSHION_EDGE
+    assert len(cr.sofa()) == 3  # the seat, the cushion and the back: the arm is the plate's alone
 
 
 def test_the_room_line_is_read_from_the_rooms_own_plates(kit):

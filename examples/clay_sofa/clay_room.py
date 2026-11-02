@@ -137,17 +137,19 @@ SOFA = "#7a4a7e"  # _lounge_set.SOFA: the stand-ins bounce the sofa's own colour
 
 @cache
 def sofa() -> tuple[clay.Mesh, ...]:
-    """The seat, the arm, the base and the back, at lounge_plates' sizes and places (its back() and seat())."""
+    """The back, the base and the cushion, at lounge_plates' sizes and places (its back() and seat()). The sofa's arm
+    has no stand-in: the flat lays Bruno over the drawn arm, and so does this study, so the arm takes no bounce or
+    shadow from him and covers none of him."""
     return (
         slab("stand-in", (2.6, 0.76, 0.3), 0.08, (-1.37, 0.597, 0.68)),
         slab("stand-in", (2.4, 0.205, 0.58), 0.016, (-1.4, 0.1475, 0.31)),
-        slab("stand-in", (2.3, 0.127, 0.6), 0.03, (-1.28, 0.3105, 0.3)),
-        slab("stand-in", (0.19, 0.61, 0.5), 0.075, (-0.095, 0.345, 0.23)),
+        slab("stand-in", (2.3, 0.127, 0.6), CUSHION_EDGE, (-1.28, 0.3105, 0.3)),
     )
 
 
 CUSHION_TOP = 0.3105 + 0.127 / 2
-ARM_INNER = -0.095 - 0.19 / 2  # the arm's inner face, metres: nothing sits through it
+CUSHION_EDGE = 0.03  # the cushion's rounded edge, metres: a base sits behind it, on the flat of the cushion
+CUSHION_FRONT = 0.3 - 0.6 / 2  # the cushion's front face, metres
 
 
 # --- where the clay sits ----------------------------------------------------------------------------------------------
@@ -162,28 +164,17 @@ class Seat:
     mirror: bool
 
 
-def seat_of(
-    fig: cf.Figure,
-    card_seat,
-    lens: Camera,
-    card_px_per_ref: float,
-    mirror: bool,
-    back_at: float,
-    right: float | None = None,
-) -> Seat:
+def seat_of(fig: cf.Figure, card_seat, lens: Camera, card_px_per_ref: float, mirror: bool, back_at: float) -> Seat:
     """The seat of a figure that, through the two-shot ``lens``, lands on the column of the card's seat point
     ``card_seat`` (metres) and stands as tall on screen as the card at ``card_px_per_ref`` frame pixels to the reference
-    pixel, its back at depth ``back_at`` (metres); with ``right``, moved left as far as it takes for its widest row to
-    end there. The size sets the depth and the depth the size, so a few rounds settle both."""
+    pixel, its back at depth ``back_at`` (metres). The size sets the depth and the depth the size, so a few rounds
+    settle both."""
     ex, ez = lens.position[0] / 100.0, lens.position[2] / 100.0
-    reach = (SEAT_X - fig.extent[0]) if mirror else (fig.extent[1] - SEAT_X)  # its arms at rest on its lap too
     per = card_px_per_ref / pixels_per_metre(card_seat, lens)
     x = z = 0.0
     for _ in range(8):
         z = back_at - fig.skin.depth[1] * per
         x = ex + (card_seat[0] - ex) * (z - ez) / (card_seat[2] - ez)
-        if right is not None:
-            x = min(x, right - reach * per)
         per = card_px_per_ref / pixels_per_metre((x, CUSHION_TOP, z), lens)
     return Seat(engine((x, CUSHION_TOP - SINK, z)), 100.0 * per, mirror)
 
@@ -276,7 +267,7 @@ def head_swivel(rig, fig: cf.Figure, frame: Frame) -> np.ndarray:
     # the front of the head is at -z: a yaw takes it toward +x, a pitch toward +y (down)
     turn = np.array([[cy, 0, -sy], [0, 1, 0], [sy, 0, cy]])
     nod = np.array([[1, 0, 0], [0, cp, -sp], [0, sp, cp]])
-    about = np.array([rig.neck[0], rig.neck[1], -fig.head_forward])
+    about = np.array([rig.neck[0], rig.neck[1], 0.0])
     m = np.eye(4)
     m[:3, :3] = turn @ nod
     m[:3, 3] = about - m[:3, :3] @ about
@@ -366,7 +357,7 @@ def local_parts(who: str, rig, fig: cf.Figure, frame: Frame) -> tuple[Part, ...]
         sheets.append(clay.Mesh(material, pb * (1.0 - w) + ph * w, _unit_rows(nb * (1.0 - w) + nh * w), tris, uv))
     parts.append(Part(f"{who}-skin", tuple(sheets)))
     for k, ear in enumerate(fig.ears):
-        front, back = _shifted(ear, -fig.head_forward + fig.ear_back)
+        front, back = _shifted(ear, fig.ear_back)
         pf, nf = _apply(front, ear.front_normals, head_m)
         pb, nb = _apply(back, ear.back_normals, head_m)
         parts.append(Part(f"{who}-ear{k}", (
