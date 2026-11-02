@@ -201,17 +201,7 @@ class Overlay:
     first_line_end: float
 
 
-def first_line_end(root: Path, sk: sketch.Sketch, voiced: bool) -> float:
-    """When the first spoken line stops: on a recording the end of its last word in ``voiced/speech.json``, not of the
-    file, which keeps a short tail; on the scripted clock the start of the next line. A recording with no first take is
-    a :class:`srstudio.sketch.SketchError`, because a window read from nothing is no window."""
-    if not voiced:
-        return sketch.line_spans(sk)[0][1]
-    takes, _ = sketch.load_speech(Path(root) / "voiced" / "speech.json", sk.cast)
-    words = sketch.words_of(takes[0].alignment) if takes else []
-    if not words:
-        raise sketch.SketchError(f"{sk.slug}: voiced/speech.json has no first line to time: record again")
-    return round(takes[0].at + words[-1][2], 6)
+first_line_end = sketch.first_line_end  # shared by every style that shows an opening line
 
 
 def solo(cv: Canvas, parent, app: sketch.Appearance, mouths: sketch.Mouths) -> collage.Point:
