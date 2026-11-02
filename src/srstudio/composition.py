@@ -215,6 +215,7 @@ class ScenePlan(_Record):
     budget: RenderBudget
     contacts: tuple[ContactSpec, ...] = ()
     schema: Literal['srstudio.scene-plan/1.0.0'] = SCHEMA
+    background: str | None = None  # Opaque #RRGGBB project clear color; None retains transparency.
 
 
 @dataclass(frozen=True)
@@ -301,7 +302,13 @@ class FormPath(_Record):
 
 @dataclass(frozen=True)
 class FormSurface(_Record):
-    """A named shape's lighting field; ink explicitly retains the authored fill/stroke."""
+    """A named shape's lighting field; ink explicitly retains authored fill/stroke.
+
+    Native ink may instead name a nonempty group, owning every descendant shape.
+    Groups retain their original opacity, transforms and clocks. Ownership must
+    be exclusive: nested fields and shape overrides within an ink group fail.
+    Diffuse lighting and spatial paths always name individual shapes.
+    """
 
     node: str
     palette: tuple[str, ...] = ()

@@ -55,6 +55,7 @@ from .toon_cast import (
     Look,
     Mouths,
     Point,
+    Posing,
     _arms,
     _draw,
     _draw_blinks,
@@ -299,6 +300,45 @@ def _eyes(cv: Canvas, parent, look: Look, kind: str, arms: str, gaze, start: flo
         cv.keys(layer, "opacity", keys, local=False)
 
 
+def _external_arms(rig: HeadRig, poses: Sequence[Pose], sides: tuple[str, ...]) -> frozenset[str]:
+    """Validate candidate-only delegation before allocating any drawing or ledger nodes."""
+
+    def refuse(actual, expected):
+        return HeadMotionError(
+            f'external_arms: expected {expected}',
+            code='head.external_arms',
+            path='external_arms',
+            actual=actual,
+            expected=expected,
+            remedy='Use an unapproved candidate, unique left/right sides and separable shared arm poses.',
+        )
+
+    if (
+        type(sides) is not tuple
+        or len(sides) > 2
+        or any(type(side) is not str or side not in ('left', 'right') for side in sides)
+        or len(set(sides)) != len(sides)
+    ):
+        raise refuse(sides, 'an immutable tuple of at most two distinct left/right sides')
+    if not sides:
+        return frozenset()
+    if rig.drawn_as is not None:
+        raise refuse(rig.drawn_as, 'a candidate rig with drawn_as=None')
+    if type(poses) not in (tuple, list) or not 1 <= len(poses) <= 20000:
+        raise refuse(None, '1..20000 finite authored poses')
+    for pose in poses:
+        if not isinstance(pose, Pose) or pose.arms not in ('desk', 'lean', 'type', 'crossed', 'sigh', 'face', 'face2'):
+            raise refuse(None, 'separable shared arm poses throughout the source clock')
+        if isinstance(rig.look.drawing, Posing):
+            try:
+                own = rig.look.drawing.gesture(pose.arms)
+            except ToonDataError as error:
+                raise refuse(pose.arms, 'a drawing supporting this separable shared pose') from error
+            if own is not None:
+                raise refuse(pose.arms, 'a shared pose without an indivisible drawing-specific gesture')
+    return frozenset(sides)
+
+
 def figure(
     cv: Canvas,
     parent,
@@ -314,10 +354,12 @@ def figure(
     *,
     target_gaze: GazePlan | None = None,
     face_blends: FaceTrack | None = None,
+    external_arms: tuple[str, ...] = (),
 ):
     """The character in nested groups (the module's docstring), one drawing per pose run inside the chains, moved by
     ``plan``. The arguments mean what they mean to :func:`srstudio.toon_cast.figure`; ``on_face`` draws into the face's
     group last, so what it adds moves with the head. Returns the outermost group."""
+    delegated = _external_arms(rig, poses, external_arms)
     plan.check_bounds(rig.style, frozen=bool(cv._frozen))
     frames: tuple[FaceFrame, ...] = ()
     if face_blends is not None:
@@ -348,12 +390,27 @@ def figure(
                 mouths,
                 on_face,
                 tracking=tracking,
+                external_arms=delegated,
             )
     if not frames:
-        return _draw_figure(cv, parent, rig, poses, duration, plan, taps, enter, stickers, mouths, on_face)
+        return _draw_figure(
+            cv, parent, rig, poses, duration, plan, taps, enter, stickers, mouths, on_face, external_arms=delegated
+        )
     with scene_transaction(cv.scene, cv):
         return _draw_figure(
-            cv, parent, rig, poses, duration, plan, taps, enter, stickers, mouths, on_face, face_frames=frames
+            cv,
+            parent,
+            rig,
+            poses,
+            duration,
+            plan,
+            taps,
+            enter,
+            stickers,
+            mouths,
+            on_face,
+            face_frames=frames,
+            external_arms=delegated,
         )
 
 
@@ -386,6 +443,7 @@ def _draw_figure(
     *,
     tracking: target_drawing.PreparedGaze | None = None,
     face_frames: tuple[FaceFrame, ...] = (),
+    external_arms: frozenset[str] = frozenset(),
 ):
     """Emit a preflighted performance or the fixed, rig-derived specimen probe."""
     if rig.drawn_as is not None:
@@ -466,17 +524,17 @@ def _draw_figure(
             _draw(cv, g, _place((_teeth(look) if bare else []) + worn + list(stickers), arms))
 
             body = cv.group(trunk, cv.uid("g"), start=start, end=end)
-            pose_hands(cv, look, body.id, arms)
+            pose_hands(cv, look, body.id, arms, external_arms)
             _draw(cv, body, _place(list(rig.trunk()), arms))
             if arms == "type":
 
                 def frame_of(into, frame: int) -> None:
-                    _draw(cv, into, _place(_arms(look, "type", frame)[0], "type"))
+                    _draw(cv, into, _place(_arms(look, "type", frame, external_arms)[0], "type"))
 
                 swap_frames(cv, body, start, end, taps, frame_of)
                 over: list[Layer] = []
             else:
-                under, over = _arms(look, arms, 0)
+                under, over = _arms(look, arms, 0, external_arms)
                 _draw(cv, body, _place(under, arms))
             if over:
                 _draw(cv, cv.group(front, cv.uid("g"), start=start, end=end), _place(over, arms))

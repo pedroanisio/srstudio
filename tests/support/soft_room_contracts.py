@@ -39,6 +39,7 @@ OPTIONS = {
     'soft-mail-screen': dict(counts=(soft_inbox.Count('1', 1, 3), soft_inbox.Count('2', 3, 5)), scale=2),
     'soft-mail-list': dict(rows=('First', 'Second'), marked=1, scroll=((0, 0), (1, -20), (2, -30)), scale=2),
     'soft-call-screen': dict(pressed=2),
+    'soft-battery-screen': dict(levels=(soft_inbox.Level(41, 1, 3), soft_inbox.Level(2, 3, 5)), scale=2),
     'soft-star-card': dict(x=500, y=1200, tap=1, stars=3, scale=2),
 }
 SLOTS = {

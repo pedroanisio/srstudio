@@ -297,6 +297,21 @@ def late_hands(reel, beats, t: float) -> tuple[Arm, ...]:
     return tuple(arms)
 
 
+def pat_hand(reel, pat: float, start: float, end: float, t: float) -> tuple[Arm, ...]:
+    """Bruno's arm patting her paw in his close-up, from ``start`` to ``end`` of the shot (the reel draws it only when
+    the pat falls in that shot): its shoulder in his own drawing's reference pixels, its angle eased over the reel's
+    pat swing as toon_bed keys it, on his left arm as the reel's anatomy ledger names it."""
+    from srstudio import toon_pair, toon_sketch
+
+    if not (start - 1e-9 <= t < end - 1e-9):
+        return ()
+    sx, sy = toon_sketch.SEAT
+    close = reel.BRUNO_CLOSE  # the close-up draws him at scale 1
+    local = (reel.PAT_ROOT[0] - close[0] + sx, reel.PAT_ROOT[1] - close[1] + sy)
+    _, length = toon_pair.aim(reel.PAT_ROOT, reel.PAT_PAW)
+    return (Arm(local, _eased(reel.pat_swing(pat), t, "cubic-out"), length, 52.0),)
+
+
 def capture(root: Path, frames: int) -> Performance:
     """Build the reel's flat control in ``root`` with its figure calls recorded, and sample both characters on every
     frame of ``frames`` from the shots recorded."""
@@ -338,7 +353,12 @@ def capture(root: Path, frames: int) -> Performance:
         for part, who in CHARACTERS.items():
             values = sample(prepared[id(shot), part], t)
             lift, tilt = body_motion(reel, shot.beats, who, t, name, frame_px)
-            arms = late_hands(reel, shot.beats, t) if who == "bruno" else ()
+            arms: tuple[Arm, ...] = ()
+            if who == "bruno":
+                arms = late_hands(reel, shot.beats, t)
+                pat = at(shot.beats, "pat") if name == "bruno" else None
+                if pat is not None and shot.app.start <= pat < shot.app.end:
+                    arms = (*arms, *pat_hand(reel, pat, shot.app.start, shot.app.end, t))
             cast[who].append(Frame(**values, lift=lift, tilt=tilt, arms=arms))
     return Performance(SCHEMA, FPS, frames, rows, cast)
 

@@ -54,6 +54,18 @@ def test_complete_private_bundle_has_held_intervals_and_warm_reuse(tmp_path):
     assert (first.xml, first.resources, first.digest) == (second.xml, second.resources, second.digest)
 
 
+def test_large_preparation_bound_emits_the_same_small_raster_scene(tmp_path):
+    original = fixture()
+    bindings = tuple(replace(binding, nodes=300_000) for binding in original.base.bindings)
+    timeline = m.plan_scene(original.base.spec, bindings, original.motion, rasters=original.rasters)
+    engine = renderer(tmp_path)
+    first = emit(original, tmp_path, engine, name='original')
+    with plates.render_session(max_invocations=0):
+        second = emit(timeline, tmp_path, engine, name='large-declaration')
+    assert (first.xml, first.resources, first.digest) == (second.xml, second.resources, second.digest)
+    assert second.nodes == sum(1 for _ in ET.fromstring(second.xml).iter()) <= timeline.cost.nodes
+
+
 @pytest.mark.parametrize('bad', ['digest', 'cost', 'sample', 'span', 'terminal', 'source', 'type'])
 def test_forged_timeline_is_rejected_before_cache_or_output_mutation(tmp_path, bad):
     timeline = fixture()

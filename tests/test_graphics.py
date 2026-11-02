@@ -136,3 +136,27 @@ def test_a_caller_named_part_keeps_its_name_on_a_custom_instance(builder, args, 
     declared = texts(render(cv))
     assert expected.format("posting") in declared
     assert expected.format("offer") in declared
+
+
+def test_captions_set_word_space_spaces_between_words_and_keep_the_lines():
+    cv = fresh()
+    graphics.captions(cv, [(0, 1, "You're on 2%?", "one"), (1, 2, "Can you get the ride?\nMine's resting.", "two")])
+    graphics.captions(cv, [(2, 3, "You're on 2%?", "wide"), (3, 4, "Can you  get\nthe ride?", "wider")], word_space=2)
+    shown = texts(render(cv))
+    assert shown["one"] == "You're on 2%?" and shown["two"] == "Can you get the ride?\nMine's resting."
+    assert shown["wide"] == "You're  on  2%?" and shown["wider"] == "Can  you  get\nthe  ride?"
+
+
+def test_captions_space_the_words_of_a_highlighted_line_too():
+    cv = fresh()
+    graphics.captions(cv, [(0, 1, "a b c", "lit")], highlights={"lit": [("a b ", False), ("c", True)]}, word_space=2)
+    asset = node(render(cv), "lit")
+    assert "".join(span.text or "" for span in asset.iter("span")) == "a  b  c"
+
+
+@pytest.mark.parametrize("word_space", [0, 1.5, True, -1])
+def test_captions_refuse_a_word_space_that_is_not_a_count_of_spaces(word_space):
+    cv = fresh()
+    with pytest.raises(graphics.CaptionError, match="word_space"):
+        graphics.captions(cv, [(0, 1, "a b", "x")], word_space=word_space)
+    assert list(render(cv).iter("text")) == []  # refused before anything is drawn

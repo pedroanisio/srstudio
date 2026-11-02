@@ -40,6 +40,8 @@ __all__ = [
     "parse_css",
     "inspect_ttf",
     "text_width",
+    "WordGap",
+    "word_gaps",
     "install",
     "as_font",
     "fetch_url",
@@ -260,6 +262,55 @@ def text_width(data: bytes, text: str, size: float) -> float:
         return struct.unpack(">H", hmtx[at : at + 2])[0]
 
     return sum(advance(cmap.get(ord(ch), 0)) for ch in text) * size / upm
+
+
+@dataclass(frozen=True)
+class WordGap:
+    """The background left between the words ``left`` and ``right`` of one line, in pixels."""
+
+    left: str
+    right: str
+    px: float
+
+
+def word_gaps(data: bytes, text: str, size: float, *, outline: float = 0.0) -> list[WordGap]:
+    """The background between each two neighbouring words of ``text`` (lines split at ``\\n``) set in this font at
+    ``size`` pixels, with an ``outline`` that wide drawn outside every letter: the right side bearing of the last
+    letter, the advance of the spaces between, and the left side bearing of the next letter, from each glyph's box in
+    the ``glyf`` table, less the outline reaching in from both words. Zero or less means the outlines meet and the
+    two words read as one. Glyph advances only, no kerning, as :func:`text_width` measures."""
+    tables = _tables(data)
+    for name in (b"head", b"cmap", b"hhea", b"hmtx", b"loca", b"glyf"):
+        if name not in tables:
+            raise FontError(f"font has no {name.decode()!r} table")
+    head, loca, glyf = tables[b"head"], tables[b"loca"], tables[b"glyf"]
+    (upm,) = struct.unpack(">H", head[18:20])
+    (long_loca,) = struct.unpack(">h", head[50:52])
+    (metrics,) = struct.unpack(">H", tables[b"hhea"][34:36])
+    if not upm or not metrics:
+        raise FontError("font 'head' or 'hhea' table is inconsistent")
+    cmap, hmtx = _cmap(tables[b"cmap"]), tables[b"hmtx"]
+
+    def ink(ch: str) -> tuple[float, float]:
+        """The letter's left and right side bearings, in pixels."""
+        glyph = cmap.get(ord(ch), 0)
+        if long_loca:
+            start, end = struct.unpack(">II", loca[4 * glyph : 4 * glyph + 8])
+        else:
+            start, end = (2 * v for v in struct.unpack(">HH", loca[2 * glyph : 2 * glyph + 4]))
+        if end <= start or end > len(glyf):
+            raise FontError(f"no outline to measure for {ch!r}")
+        x_min, _, x_max, _ = struct.unpack(">hhhh", glyf[start + 2 : start + 10])
+        at = 4 * min(glyph, metrics - 1)
+        (advance,) = struct.unpack(">H", hmtx[at : at + 2])
+        return x_min * size / upm, (advance - x_max) * size / upm
+
+    gaps = []
+    for line in text.split("\n"):
+        for left, spaces, right in re.findall(r"(\S+)(\s+)(?=(\S+))", line):
+            px = ink(left[-1])[1] + text_width(data, spaces, size) + ink(right[0])[0] - 2 * outline
+            gaps.append(WordGap(left, right, px))
+    return gaps
 
 
 # -- install -----------------------------------------------------------------------------------------------------

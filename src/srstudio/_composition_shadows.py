@@ -13,11 +13,11 @@ from .limbs.math3d import Vec3
 
 
 def definition(record: c._Record) -> dict:
-    """Adding an unused shadow field does not change existing scene identities or costs."""
+    """Unused optional scene fields do not change existing identities or metadata costs."""
 
     def clean(value):
         if isinstance(value, dict):
-            return {k: clean(v) for k, v in value.items() if k != 'shadow_mask' or v is not None}
+            return {k: clean(v) for k, v in value.items() if k not in ('shadow_mask', 'background') or v is not None}
         if isinstance(value, (tuple, list)):
             return [clean(v) for v in value]
         return value

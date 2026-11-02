@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ._scene_motion_compact import Layout
 
 from . import _composition_plate_wire as pw
 from . import _composition_proxy_runtime as proxy
@@ -111,15 +115,7 @@ def references(timeline: m.SceneTimeline) -> tuple[Reference, ...]:
     return tuple(dict.fromkeys((span.scene, r.layer, r.frame) for span in timeline.spans for r in span.rasters))
 
 
-def expansion(timeline: m.SceneTimeline, vectors: dict[str, c.PreparedVector]) -> None:
-    from ._composition_paths import expansion_bytes
+def expansion(timeline: m.SceneTimeline, vectors: dict[str, c.PreparedVector]) -> Layout | None:
+    from ._scene_motion_compact import select
 
-    layers = {layer.id: layer for layer in timeline.base.spec.layers}
-    bound = 4096
-    for span in timeline.spans:
-        bound += 256
-        for name in span.layers:
-            asset = vectors.get(layers[name].asset)
-            bound += len(asset.xml) + 256 * (asset.nodes + 8) + expansion_bytes(asset.binding) if asset else 2048
-    if bound > pw.MAX_BYTES or timeline.cost.memory_bytes + 8 * bound > timeline.base.spec.budget.max_memory_bytes:
-        raise c._fail('budget.expansion', bound, 'bounded timeline XML and working storage', 'composition.budget')
+    return select(timeline, vectors, pw.MAX_BYTES)

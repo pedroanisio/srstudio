@@ -5,7 +5,8 @@ import xml.etree.ElementTree as ET
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import WARM, Canvas, Signature, blob, flat_counter, registry, soft_props, soft_sets
+from srstudio import WARM, Canvas, Signature, blob, flat_counter, fonts, graphics, registry, soft_props, soft_sets
+from srstudio.sample import SYSTEM_FONTS
 from srstudio.soft_props import SoftPropError, TimeState
 from srstudio.soft_sets import SoftSetError
 from support.soft_props import canvas
@@ -393,3 +394,109 @@ def test_a_park_refuses_shots_out_of_order():
     cv = signed()
     with pytest.raises(SoftSetError, match="shots"):
         soft_sets.park(cv, cv.comp, shots=(soft_sets.Shot(2.0), soft_sets.Shot(1.0)))
+
+
+def test_a_park_by_day_is_the_park_it_always_was():
+    plain, day = signed(), signed()
+    soft_sets.park(plain, plain.comp, seated=[(0.0, 9.0)])
+    soft_sets.park(day, day.comp, seated=[(0.0, 9.0)], night=False)
+    assert plain.scene.to_bytes() == day.scene.to_bytes()
+    assert not {"soft-park-stars", "soft-park-lamp", "soft-park-dark"} & set(groups(plain))
+
+
+def test_a_park_at_night_has_stars_a_lit_lamp_and_a_dark_over_the_cast():
+    cv = signed()
+    soft_sets.park(cv, cv.comp, seated=[(0.0, 9.0)], cast=lambda g: cv.group(g, "the-cast"), night=True)
+    ids = [g.get("id") for g in tree(cv).iter("group")]
+    assert {"soft-park-stars", "soft-park-lamp"} <= set(ids)
+    assert ids.index("soft-park-lamp") < ids.index("the-cast") < ids.index("soft-park-dark")
+    assert b"soft-park-night-sky" in cv.scene.to_bytes() and b"soft-park-sky" not in cv.scene.to_bytes()
+
+
+def test_the_dark_of_a_park_at_night_goes_with_the_shots_and_its_marks_stay_put():
+    cv = signed()
+    shots = (soft_sets.Shot(0.0), soft_sets.Shot(1.0, 1.4, 300.0, 1000.0))
+    soft_sets.park(cv, cv.comp, shots=shots, night=True)
+    found = groups(cv)
+    assert found["soft-park-dark"] in list(found["soft-park-room"].iter("group"))
+    front = found["soft-park-front"]
+    assert front.find(".//key") is None and "sig-cactus" in {g.get("id") for g in front.iter("group")}
+
+
+@pytest.mark.parametrize("night", ["yes", 1, None])
+def test_a_park_refuses_a_night_that_is_not_a_yes_or_no(night):
+    cv = signed()
+    with pytest.raises(SoftSetError, match="night"):
+        soft_sets.park(cv, cv.comp, night=night)
+
+
+# -- the Soft caption layer: the background between outlined words --------------------------------------------------
+class Reel:
+    """What :func:`soft_sets.captions` needs of an episode: its captions, drawn on a canvas, the specs kept."""
+
+    def __init__(self):
+        self.cv, self.specs = signed(), []
+
+    def captions(self, specs, **style):
+        self.specs.extend(specs)
+        return graphics.captions(self.cv, specs, **style)
+
+    def drawn(self) -> dict[str, str]:
+        return {t.get("id"): t.get("text") for t in tree(self.cv).iter("text")}
+
+
+FONT = next(f for f in SYSTEM_FONTS if f.exists()).read_bytes()  # DejaVu Sans Bold: its space is wide, so a wide
+# outline stands in for the Soft look's narrow Poppins space
+LINES = [(0.0, 1.0, "You're on 2%?", "one"), (1.0, 2.0, "Can you get the ride?\nMine's resting.", "two")]
+
+
+@pytest.mark.parametrize("outline", [7, 12])
+def test_a_soft_caption_leaves_an_outline_s_width_of_background_between_its_words(outline):
+    reel = Reel()
+    layers = soft_sets.captions(reel, LINES, FONT, stroke_width=outline)
+    assert len(layers) == 2 and reel.specs == LINES  # the words said stay as written
+    for _, _, text, name in LINES:
+        drawn = reel.drawn()[name]
+        assert drawn.split() == text.split() and drawn.count("\n") == text.count("\n")
+        gaps = fonts.word_gaps(FONT, drawn, soft_sets.CAPTIONS["size"], outline=outline)
+        assert len(gaps) == len(text.split()) - 1 - text.count("\n")
+        assert min(g.px for g in gaps) >= outline
+
+
+def test_one_space_closes_between_outlined_words_where_the_font_s_space_is_narrow():
+    """What the layer measures: at a 12 px outline DejaVu's space closes, as the Soft look's 7 px closes Poppins'."""
+    one = fonts.word_gaps(FONT, "get the", soft_sets.CAPTIONS["size"], outline=12)
+    assert one[0].px < 12
+    reel = Reel()
+    soft_sets.captions(reel, [(0.0, 1.0, "get the", "x")], FONT, stroke_width=12)
+    assert reel.drawn()["x"] == "get  the"
+    reel = Reel()
+    soft_sets.captions(reel, [(0.0, 1.0, "get the", "x")], FONT)  # 7 px leaves DejaVu's words apart: one space
+    assert reel.drawn()["x"] == "get the"
+
+
+def test_a_soft_caption_line_too_wide_once_spaced_is_refused_before_anything_is_drawn():
+    reel = Reel()
+    with pytest.raises(SoftSetError, match="wider than the caption box"):
+        soft_sets.captions(reel, [(0.0, 1.0, "And a photo of us. And text my mom I'm alive.", "x")], FONT)
+    assert reel.specs == [] and reel.drawn() == {}
+
+
+def test_an_outline_no_count_of_spaces_can_part_is_refused():
+    with pytest.raises(SoftSetError, match="spaces"):
+        soft_sets.captions(Reel(), [(0.0, 1.0, "a b", "x")], FONT, stroke_width=80, width=4000)
+
+
+def test_published_soft_reels_keep_the_look_they_shipped_with():
+    assert soft_sets.CAPTIONS == dict(
+        x=80, y=250, width=840, height=180, size=58, color="#1A1714", stroke="#FFFFFF", stroke_width=7, shadow=None
+    )
+
+
+def test_a_caption_band_is_its_lines_centred_in_the_box_with_their_outline():
+    size, box = soft_sets.CAPTIONS["size"], soft_sets.CAPTIONS["height"]
+    line = size * 1.14  # graphics.captions' line height
+    top, bottom = soft_sets.caption_band("You're on 2%?")
+    assert (top, bottom) == pytest.approx((250 + (box - line) / 2 - 7, 250 + (box + line) / 2 + 7))
+    two = soft_sets.caption_band("Can you get the ride?\nMine's resting.", y=330)
+    assert two == pytest.approx((330 + box / 2 - line - 7, 330 + box / 2 + line + 7))

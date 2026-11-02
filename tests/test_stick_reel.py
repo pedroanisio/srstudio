@@ -58,6 +58,19 @@ def test_a_new_reel_asks_for_cues_that_stop_at_a_sentence_end(monkeypatch, tmp_p
     assert drawn == cues
 
 
+@pytest.mark.parametrize(("asks", "cues"), [(False, ["Who", "Me"]), (True, ["Who?", "Me"])])
+def test_a_new_reel_asks_for_question_marks_on_its_questions(monkeypatch, tmp_path, asks, cues):
+    drawn = []
+    monkeypatch.setattr(stick_reel.stick, "words", lambda cv, group, lines, **kw: drawn.extend(c.text for c in lines))
+    monkeypatch.setattr(stick_reel.fonts, "text_width", lambda font, text, size: 10.0 * len(text))
+    (tmp_path / "font.ttf").write_bytes(b"font")
+    cv = SimpleNamespace(comp=None, group=lambda parent, name: name)
+    ep = SimpleNamespace(cv=cv, root=tmp_path, spec=SimpleNamespace(font="font.ttf"))
+    words = [{"text": "Who?", "start": 0.0, "end": 0.4}, {"text": "Me.", "start": 1.2, "end": 1.5}]
+    stick_reel.words(ep, [SimpleNamespace(start=0.0, end=2.5, words=words)], sentences=True, asks=asks)
+    assert drawn == cues
+
+
 HELD = Take("01", "noor", "open", "Step one.", 0.0, 3.0, words=({"text": "Step", "start": 1.05, "end": 1.4},))
 PLAIN = Take("02", "dev", "open", "Easy.", 3.0, 1.0)
 EFFECT = Take("03", "sfx", "open", "", 4.0, 1.0)
