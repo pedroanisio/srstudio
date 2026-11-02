@@ -25,6 +25,9 @@ from shapely import contains_xy
 from shapely.geometry import MultiPoint, Polygon
 from shapely.geometry import Point as ShapelyPoint
 
+from srstudio import sketch as sketch_mod
+from srstudio.scripting import at as scripting_at
+
 ROOT = Path(__file__).resolve().parent.parent
 FOLDER = ROOT / "examples" / "clay_sofa"
 
@@ -246,14 +249,14 @@ def test_a_mirrored_figure_turns_about_the_seat_line(kit, rigs):
 def resting_frame(**change) -> dict:
     row = dict(eyes="narrow", gaze="ahead", blink=False, mouth="flat", pose_mouth="flat", pose_arms="desk", lift=0.0,
                tilt=0.0, lean=0.0, breath=0.0, turn=0.0, roll=0.0, nod=0.0, idle_roll=0.0, idle_y=0.0, face_x=0.0,
-               arms=[])  # fmt: skip
+               arms=[], holds="")  # fmt: skip
     row.update(change)
     return row
 
 
 def record(**change) -> dict:
     data = dict(
-        schema="clay-sofa.performance/1.1.0",
+        schema="clay-sofa.performance/1.2.0",
         fps=24,
         frames=2,
         shots=[dict(name="two", start=0.0, end=4.6)],
@@ -279,7 +282,8 @@ def test_a_written_performance_reads_back_the_same(kit, tmp_path):
 @pytest.mark.parametrize(
     "data, match",
     [
-        (record(schema="clay-sofa.performance/1.0.0"), "schema"),
+        (record(schema="clay-sofa.performance/1.1.0"), "schema"),
+        (record(cast={"mae": [resting_frame(holds="cup")] * 2, "bruno": [resting_frame()] * 2}), "holds"),
         (record(fps=30), "fps"),
         (record(extra=1), "fields"),
         ({k: v for k, v in record().items() if k != "shots"}, "fields"),
@@ -438,10 +442,15 @@ def test_the_k_pass_is_flat_white_figures_on_black(kit):
 
 def test_a_shot_shows_the_frames_whose_time_falls_in_it(kit):
     study = kit["study"]
-    assert study.frames_of(0.0, 4.6) == (0, 110)
-    assert study.frames_of(4.6, 6.65) == (111, 159)
-    assert study.frames_of(6.65, 7.95) == (160, 190)
-    assert [study.take_of(n) for n in (0, 110, 111, 159, 160, 190)] == ["two", "two", "mae", "mae", "bruno", "bruno"]
+    assert study.frames_of(0.0, 4.6, 191) == (0, 110)
+    assert study.frames_of(4.6, 6.65, 191) == (111, 159)
+    assert study.frames_of(6.65, 7.95, 191) == (160, 190)
+    shots = [dict(name="two", start=0.0, end=4.6), dict(name="mae", start=4.6, end=6.65),
+             dict(name="bruno", start=6.65, end=7.95)]  # fmt: skip
+    performance = kit["pf"].Performance.parse(record(frames=191, shots=shots, cast={
+        who: [resting_frame()] * 191 for who in ("mae", "bruno")}))  # fmt: skip
+    taken = [performance.shot(n) for n in (0, 110, 111, 159, 160, 190)]
+    assert taken == ["two", "two", "mae", "mae", "bruno", "bruno"]
 
 
 def test_the_compare_counts_only_an_underside_turned_to_the_camera(kit):
@@ -468,7 +477,7 @@ def test_the_study_writes_nothing_others_can_read(kit, tmp_path):
         os.umask(mask)
     assert stat.S_IMODE((tmp_path / "sub").stat().st_mode) == 0o700
     assert stat.S_IMODE((tmp_path / "sub" / "f.png").stat().st_mode) == 0o600
-    assert json.loads(json.dumps(asdict(resting_performance(kit))))["schema"].endswith("1.1.0")
+    assert json.loads(json.dumps(asdict(resting_performance(kit))))["schema"].endswith("1.2.0")
 
 
 def test_the_heads_pictures_are_refused_without_the_face_they_show(kit, rigs):
@@ -1114,3 +1123,168 @@ def test_a_pat_is_his_arm_toward_her_paw_through_the_shot_and_nothing_outside_it
     assert len(before) == len(up) == 1 and before[0].root == up[0].root
     assert up[0].degrees == pytest.approx(before[0].degrees + reel.PAT_RISE)
     assert before[0].root[0] < 165.0  # his arm on her side: the left chain's
+
+
+# --- a reel of its own: the pipeline reads the staging of the reel it is bound to -------------------------------------
+
+
+@pytest.fixture()
+def grown(kit):
+    """The pipeline bound to grown-on-me for one test, and back to it-autoplayed after it."""
+    sys.path.insert(0, str(ROOT / "episodes"))
+    try:
+        import grown_on_me_data
+    finally:
+        sys.path.remove(str(ROOT / "episodes"))
+    before = kit["study"].reel
+    kit["study"].bind(grown_on_me_data)
+    yield grown_on_me_data
+    kit["study"].bind(before)
+
+
+def _placed(sk, takes: float = 0.5):
+    """The sketch placed as its recording would place it: each line said at its scripted beat, ``takes`` long."""
+    starts = {b.line: b.start for b in sk.beats if b.line is not None}
+    return sketch_mod.place(sk, [[starts[k]] for k in range(len(sk.lines))], [starts[k] + takes for k in starts])
+
+
+def test_grown_on_mes_last_click_comes_straight_off_fine_and_every_caption_holds(grown):
+    beats = _placed(grown.SKETCH)
+    fine = next(b for b in beats if b.line == len(grown.LINES) - 1)
+    click = grown.clicks(beats)["off"]
+    assert fine.start + 0.5 < click <= fine.start + 0.5 + sketch_mod.BLANK_GAP + 1e-6  # off the word, not later
+    shown = [b for k, b in enumerate(beats) if k == 0 or beats[k - 1].caption != b.caption]
+    for a, b in zip(shown, shown[1:], strict=False):
+        if a.caption:
+            assert b.start - a.start >= grown.SKETCH.caption_min - 1e-6, a.caption
+    assert grown.SKETCH.end == pytest.approx(scripting_at(grown.SKETCH.beats, "off") + grown.DARK)
+
+
+def test_grown_on_mes_acts_name_expressions_the_rigs_have(grown):
+    from srstudio import toon
+
+    for acts in (grown.ACTS, grown.VARIANT_ACTS):
+        for who, row in acts.items():
+            for act in row:
+                assert act.eyes in toon.EYES and act.mouth in toon.MOUTHS and act.arms in toon.ARMS, (who, act)
+
+
+def test_grown_on_mes_room_drops_dark_on_the_last_click(grown):
+    for sk in (grown.SKETCH, grown.VARIANT):
+        beats = _placed(sk)
+        click = grown.clicks(beats)["off"]
+        keys = grown.blackout(beats)
+        assert keys[0] == (0.0, 0.0) and keys[-1] == (click, grown.BLACKOUT)
+        assert all(v == 0.0 for t, v in keys if t < click)
+    assert 0.5 <= grown.BLACKOUT < 1.0  # dark, and the two of them still there in it
+
+
+def test_grown_on_mes_variant_ends_on_the_held_line_then_the_click(grown):
+    beats = _placed(grown.VARIANT)
+    assert beats[-1].event == "off" and beats[-1].caption == ""
+    assert len(grown.VARIANT.lines) == len(grown.LINES) - 1
+    assert grown.VARIANT.end == pytest.approx(scripting_at(grown.VARIANT.beats, "off") + grown.DARK)
+
+
+def test_the_pipeline_takes_the_bound_reels_shot_names_and_places(kit, grown):
+    pf, study = kit["pf"], kit["study"]
+    assert study.reel is grown and study.study.reel is grown
+    assert pf.shot_names(grown) == {grown.TWO: "two", grown.MAE_C: "mae", grown.BRUNO_C: "bruno", grown.MENU: "menu"}
+    assert study.study.RIGS["mae"][1] == grown.MAE_AT and study.study.RIGS["bruno"][2] == grown.BRUNO_CLOSE
+
+
+def test_binding_back_restores_the_reel_the_study_was_made_on(kit):
+    study = kit["study"]
+    assert study.reel.SLUG == "it-autoplayed" and study.study.reel.SLUG == "it-autoplayed"
+
+
+def test_a_menu_shot_is_in_the_record_and_no_frame_of_it_is_rendered(kit):
+    shots = [dict(name="two", start=0.0, end=0.1), dict(name="menu", start=0.1, end=0.2),
+             dict(name="mae", start=0.2, end=0.25)]  # fmt: skip
+    data = record(frames=6, shots=shots, cast={who: [resting_frame()] * 6 for who in ("mae", "bruno")})
+    performance = kit["pf"].Performance.parse(data)
+    assert [performance.shot(n) for n in range(6)] == ["two", "two", "two", "menu", "menu", "mae"]
+    assert performance.rendered() == [0, 1, 2, 5]
+
+
+def test_a_reels_own_keys_move_the_clay_and_its_hold_puts_the_remote_in_her_paw(kit, grown):
+    pf = kit["pf"]
+    beats = grown.SKETCH.beats
+    px = 2.0
+    blast = at_event(beats, "blast")
+    for who in ("mae", "bruno"):
+        lift, _, _, arms, _ = pf.gesture(grown, beats, who, blast + 0.2, "two", px)
+        assert lift == pytest.approx(-grown.BLAST_LIFT / px) and arms == ()  # both jerk, on every camera
+        assert pf.gesture(grown, beats, who, blast + 0.2, "mae", px)[0] == pytest.approx(lift)
+    _, tilt, _, _, _ = pf.gesture(grown, beats, "bruno", blast + 0.2, "two", px)
+    assert tilt == pytest.approx(grown.BLAST_TILT)
+    slow = at_event(beats, "slow")
+    assert pf.gesture(grown, beats, "mae", slow - 0.1, "mae", px)[2] == pytest.approx(0.0)
+    assert pf.gesture(grown, beats, "mae", slow + 1.3, "mae", px)[2] == pytest.approx(grown.TURN_TO)
+    assert pf.gesture(grown, beats, "mae", 1.0, "two", px)[4] == "remote"
+    assert pf.gesture(grown, beats, "mae", grown.clicks(beats)["gone"], "mae", px)[4] == "remote-up"
+    assert pf.gesture(grown, beats, "bruno", 1.0, "two", px)[4] == ""
+
+
+def test_a_reel_without_keys_keeps_it_autoplayeds_gasp_and_hands(kit):
+    pf, reel = kit["pf"], kit["reel"]
+    beats = reel.SKETCH.beats
+    lift, tilt, face, arms, holds = pf.gesture(reel, beats, "bruno", reel.GASP_SNAPS, "two", 2.0)
+    assert (lift, tilt) == pf.body_motion(reel, beats, "bruno", reel.GASP_SNAPS, "two", 2.0)
+    assert face == 0.0 and holds == ""
+    sting = at_event(beats, "sting")
+    assert len(pf.gesture(reel, beats, "bruno", sting + reel.WOW_LATE + 0.2, "two", 2.0)[3]) == 2
+
+
+def at_event(beats, kind):
+    from srstudio.scripting import at
+
+    return at(beats, kind)
+
+
+def test_the_held_remote_is_a_clay_part_in_the_paw_of_her_outer_arm(kit, rigs):
+    cr, cf = kit["cr"], kit["cf"]
+    rig, fig = rigs["mae"], cf.figure(rigs["mae"])
+    rest = parts_by_id(cr.local_parts("mae", rig, fig, frame_of(kit)))
+    held = parts_by_id(cr.local_parts("mae", rig, fig, frame_of(kit, holds="remote")))
+    up = parts_by_id(cr.local_parts("mae", rig, fig, frame_of(kit, holds="remote-up")))
+    assert "mae-remote" not in rest and "mae-remote" in held and "mae-remote" in up
+    side = cr.HOLD_SIDE
+    paw = points(held[f"mae-paw-{side}"]).mean(0)
+    remote = points(held["mae-remote"])
+    lo, hi = remote.min(0), remote.max(0)
+    assert lo[0] < paw[0] < hi[0] and lo[1] < paw[1] < hi[1]  # it passes through her paw
+    assert points(up[f"mae-paw-{side}"]).mean(0)[1] < paw[1] - 20.0  # raised to click
+    other = "left" if side == "right" else "right"
+    assert np.allclose(points(held[f"mae-paw-{other}"]), points(rest[f"mae-paw-{other}"]))
+    names = {m.material for m in held["mae-remote"].meshes}
+    assert names == {"mae-remote", "mae-remote-key"}
+    assert {m.id for m in cr.materials("mae", rig, held["mae-remote"].meshes)} == names
+
+
+def test_a_held_remote_and_a_gesture_on_the_same_arm_are_refused(kit, rigs):
+    cr, cf = kit["cr"], kit["cf"]
+    rig, fig = rigs["mae"], cf.figure(rigs["mae"])
+    chain = next(c for c in fig.arms if c.side == cr.HOLD_SIDE)
+    root = [float(chain.shoulder[0]), float(chain.shoulder[1])]
+    arm = dict(root=root, degrees=90.0, length=60.0, width=20.0)
+    with pytest.raises(cf.FigureError, match="two hands"):
+        cr.local_parts("mae", rig, fig, frame_of(kit, holds="remote", arms=[arm]))
+
+
+def test_the_remote_has_its_own_id_colour(kit):
+    ci = kit["ci"]
+    assert "remote" in ci.PARTS
+    assert any(ci.id_colour("mae", "remote"))
+
+
+def test_the_clay_staging_takes_out_the_flat_remote_and_keeps_the_tv(kit, grown):
+    study = kit["study"]
+    stood = study.stand_ins(grown)
+    try:
+        assert grown.toon_everyday.remote is not kit["study"].real_everyday.remote
+        assert grown.toon_everyday.tv_browse is kit["study"].real_everyday.tv_browse
+        assert grown.toon_pair.figure is study._nothing and grown.toon_bed.swung_arm is study._no_arm
+    finally:
+        stood.restore()
+    assert grown.toon_everyday is kit["study"].real_everyday

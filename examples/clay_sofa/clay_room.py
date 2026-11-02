@@ -308,6 +308,17 @@ TILE = 300.0  # reference pixels to one tile of the clay's thumb marks on the ba
 GASP_TILT = -5.0  # it_autoplayed_data.GASP_TILT: the tilt the reel keys on the gasp alone, at its fullest
 FLINCH = (0.0, -42.0, -18.0)  # reference pixels the paws come up toward the chest at the gasp's fullest
 RAISED_FORWARD = 24.0  # reference pixels in front of the shoulder a raised paw is held
+HOLD_SIDE = "right"  # the arm a figure holds a thing in: the drawing's right, Mae's outer side once she is mirrored
+HOLDS = {  # where the holding paw goes from its rest on the lap, reference pixels (x, y down, z toward the back)
+    "remote": (4.0, -34.0, -20.0),  # lifted off the thigh, the remote upright in it
+    "remote-up": (10.0, -92.0, -46.0),  # raised and forward, pointed at the TV to click
+}
+REMOTE_SIZE, REMOTE_ROUND = (30.0, 92.0, 14.0), 9.0  # across, tall and deep, reference pixels; its corners' radius
+REMOTE_RISE = 0.3  # the share of its height the remote stands above the paw's middle
+REMOTE_TILT = -12.0  # degrees it leans, its top toward the figure's middle
+REMOTE_KEYS = ((-7.0, -18.0), (7.0, -18.0), (-7.0, -4.0), (7.0, -4.0), (-7.0, 10.0), (7.0, 10.0))  # about its middle
+REMOTE_KEY_SIZE = (8.0, 7.0, 3.0)
+REMOTE_BODY, REMOTE_KEY = "#2b2f3a", "#8d94a6"  # toon_everyday's remote: its body and its keys
 
 
 @dataclass(frozen=True)
@@ -330,6 +341,10 @@ def arm_targets(fig: cf.Figure, frame: Frame) -> dict[str, np.ndarray]:
     for side in out:
         out[side] = out[side] + share * np.array(FLINCH)
     taken: set[str] = set()
+    if frame.holds:
+        chain = next(c for c in fig.arms if c.side == HOLD_SIDE)
+        out[HOLD_SIDE] = chain.rest + np.array(HOLDS[frame.holds])
+        taken.add(HOLD_SIDE)
     for arm in frame.arms:
         side = "left" if arm.root[0] < SEAT_X else "right"
         if side in taken:
@@ -340,6 +355,32 @@ def arm_targets(fig: cf.Figure, frame: Frame) -> dict[str, np.ndarray]:
         tip = (arm.root[0] + arm.length * math.cos(turn), arm.root[1] + arm.length * math.sin(turn))
         out[side] = np.array((tip[0], tip[1], chain.shoulder[2] - RAISED_FORWARD))
     return out
+
+
+def _box(material: str, size, radius: float, at, turn: float) -> clay.Mesh:
+    """A rounded box of ``size`` reference pixels (across, tall, deep) with its middle at ``at``, turned ``turn``
+    degrees on the drawing's plane: :func:`slab` read in reference pixels, whose y runs down as the engine's does."""
+    mesh = slab(material, tuple(v / 100.0 for v in size), radius / 100.0, (0.0, 0.0, 0.0))
+    m = _turn(turn, (0.0, 0.0))
+    spin = np.eye(3)
+    spin[:2, :2] = m[:2, :2]
+    points = mesh.vertices @ spin.T + np.asarray(at, float)
+    return clay.Mesh(material, points, mesh.normals @ spin.T, mesh.triangles)
+
+
+def remote(who: str, paw: np.ndarray) -> tuple[clay.Mesh, ...]:
+    """The remote in a paw whose middle is ``paw`` (reference pixels): upright through the mitten, most of it above,
+    its keys on the face toward the lens."""
+    w, h, d = REMOTE_SIZE
+    middle = np.asarray(paw, float) + (0.0, -REMOTE_RISE * h, 0.0)
+    body = _box(f"{who}-remote", REMOTE_SIZE, REMOTE_ROUND, middle, REMOTE_TILT)
+    turn = _turn(REMOTE_TILT, (0.0, 0.0))
+    keys = []
+    for kx, ky in REMOTE_KEYS:
+        x, y = turn[:2, :2] @ (kx, ky)
+        at = middle + (x, y, -d / 2.0 - REMOTE_KEY_SIZE[2] / 2.0 + 1.0)
+        keys.append(_box(f"{who}-remote-key", REMOTE_KEY_SIZE, 2.0, at, REMOTE_TILT))
+    return (body, *keys)
 
 
 def local_parts(who: str, rig, fig: cf.Figure, frame: Frame) -> tuple[Part, ...]:
@@ -379,6 +420,12 @@ def local_parts(who: str, rig, fig: cf.Figure, frame: Frame) -> tuple[Part, ...]
                 )
             hand = Side.LEFT if chain.side == "left" else Side.RIGHT
             parts.append(Part(f"{who}-{name}-{chain.side}", tuple(moved), hand if name == "paw" else None, chain.side))
+    if frame.holds:
+        held = []
+        for mesh in remote(who, targets[HOLD_SIDE]):
+            points, normals = _apply(mesh.vertices, mesh.normals, body_m)
+            held.append(clay.Mesh(mesh.material, points, _unit_rows(normals), mesh.triangles, points[:, :2] / TILE))
+        parts.append(Part(f"{who}-remote", tuple(held), None, HOLD_SIDE))
     return tuple(parts)
 
 
@@ -443,6 +490,10 @@ def materials(who: str, rig, meshes) -> tuple[Material, ...]:
             out[name] = _clay(name, fig.arms[0].pad)
         elif part == "toe":
             out[name] = _clay(name, cf.INK)
+        elif part == "remote":
+            out[name] = _clay(name, REMOTE_BODY)
+        elif part == "remote-key":
+            out[name] = _clay(name, REMOTE_KEY)
         elif part.startswith("ear"):
             out[name] = _clay(name, rig.look.coat, *_textures(rig, part))
         elif part.startswith("face-"):

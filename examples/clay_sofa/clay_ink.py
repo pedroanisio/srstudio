@@ -21,7 +21,7 @@ import numpy as np
 from scipy import ndimage
 
 PLATES = Path(__file__).resolve().parent.parent / "paintover_proof" / "lounge_plates.py"
-PARTS = ("skin", "ear0", "ear1", "arm-left", "arm-right", "paw-left", "paw-right")  # a pad is drawn as its paw
+PARTS = ("skin", "ear0", "ear1", "arm-left", "arm-right", "paw-left", "paw-right", "remote")  # a pad is its paw
 WHO = ("mae", "bruno")
 
 
@@ -69,7 +69,7 @@ def id_colour(who: str, part: str) -> np.ndarray:
         raise InkError(f"no figure {who!r}")
     if part not in PARTS:
         raise InkError(f"no part {part!r} on the clay")
-    k = PARTS.index(part) + 1  # 1..7: three bits on red, green and a half step
+    k = PARTS.index(part) + 1  # 1..8: three steps on red and on green, never both off
     red, green = (k % 3) / 2.0, (k // 3) / 2.0
     return np.array((red, green, 1.0 if who == "bruno" else 0.0))
 
