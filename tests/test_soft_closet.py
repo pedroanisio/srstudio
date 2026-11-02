@@ -130,3 +130,19 @@ def test_a_closet_refuses_what_it_cannot_draw(options):
     arguments = dict(start=2.0, end=5.0) | options
     with pytest.raises(SoftClosetError):
         soft_closet.closet(cv, cv.comp, **arguments)
+
+
+@pytest.mark.parametrize('local', [False, True])
+@pytest.mark.parametrize('spans', [((1, 5), (2, 3)), ((2, 3), (1, 5)), ((1, 3), (2, 5)), ((1, 3), (3, 5))])
+def test_shut_spans_and_open_door_are_complements_even_when_spans_overlap(local, spans):
+    cv = canvas()
+    cv.local_time = local
+    soft_closet.doors(cv, cv.comp, [Door(150, 340, 640, spans)], end=8)
+    nodes = groups(cv)
+    closed = keyed(nodes['soft-door-shut-0'], 'opacity')
+    opened = keyed(nodes['soft-door-open-0'], 'opacity')
+    assert closed == [(0, 0), (1, 1), (5, 0)]
+    assert opened == [(0, 1), (1, 0), (5, 1), (8, 0)]
+    for name in ('soft-door-shut-0', 'soft-door-open-0'):
+        a = next(nodes[name].iter('animate'))
+        assert a.get('timeBase', 'composition') == ('local' if local else 'composition')

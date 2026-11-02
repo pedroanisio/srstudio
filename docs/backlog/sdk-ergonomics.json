@@ -1013,6 +1013,30 @@
   ],
   "findings": [
     {
+      "id": "SDK-P1-17",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Keep open doors complementary to overlapping shut intervals",
+      "problem": "The closet computed open gaps using each shut interval end, allowing a nested interval to move the end backward. A door could then display both its closed leaf and open leaf.",
+      "resolution": "Advance the complement cursor to the maximum end seen so far. Nested, unordered, overlapping and touching shut intervals retain their union on both Canvas clock modes. Clarify that an empty shut schedule keeps the default door closed.",
+      "verification": [
+        "tests/test_soft_closet.py:test_shut_spans_and_open_door_are_complements_even_when_spans_overlap",
+        "tests/test_canvas_and_registry.py"
+      ],
+      "acceptance": [
+        "Open and closed opacity tracks are complementary for nested and overlapping intervals",
+        "Ordinary and touching intervals retain their behavior on composition and local clocks"
+      ],
+      "verification_summary": {
+        "red": 4,
+        "passed": 65,
+        "new_cases": 8,
+        "skipped": 0,
+        "branch_inclusive_module_coverage_percent": 96.37305699481865,
+        "retained_artifacts": "../generated/sdk-soft-door-spans/v1/"
+      }
+    },
+    {
       "id": "SDK-P1-15",
       "priority": "P1",
       "status": "complete",

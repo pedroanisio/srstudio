@@ -57,7 +57,7 @@ def _open_spans(door: Door, end: float) -> list[tuple[float, float]]:
     for a, b in sorted(door.shut):
         if a > at:
             out.append((at, a))
-        at = b
+        at = max(at, b)
     if at < end:
         out.append((at, end))
     return out
@@ -98,8 +98,9 @@ def doors(
     between: Callable[[object], object] | None = None,
     id: str = "soft-door",
 ):
-    """Each door in ``rows``, open from the first frame to ``end`` except through its ``shut`` spans. ``between`` draws
-    in front of the dark and behind the doors."""
+    """Each door in ``rows`` is shut through the union of its ``shut`` spans and open in the gaps up to ``end``.
+    Empty ``shut`` spans keep a door closed through ``end``. ``between`` draws in front of the dark and behind
+    the doors."""
     if not rows:
         raise SoftClosetError("doors need at least one door")
     if between is not None and not callable(between):
