@@ -1,4 +1,4 @@
-"""Dance-style targets (ADR 0196): ranges derived from a reference's measures, a strict ``srstudio.dance-style/1.0.0``
+"""Dance-style targets (ADR 0200): ranges derived from a reference's measures, a strict ``srstudio.dance-style/1.0.0``
 record, and the check that lists, ranked, what one of our dances misses."""
 
 import json

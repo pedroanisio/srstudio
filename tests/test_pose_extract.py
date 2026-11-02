@@ -1,4 +1,4 @@
-"""The pose extraction tool (ADR 0196), without the estimator: it keeps one dancer by place and by the colours of
+"""The pose extraction tool (ADR 0200), without the estimator: it keeps one dancer by place and by the colours of
 their clothes, writes a lost frame rather than a neighbour, and writes only a record srstudio's reader accepts, outside
 the repository, directory 700 and file 600. Running the estimator itself needs its own interpreter and a video of real
 people, so no test runs it."""

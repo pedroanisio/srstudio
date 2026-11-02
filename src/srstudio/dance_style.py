@@ -1,5 +1,5 @@
 """A dance style as targets: ranges derived from a reference dancer's measures, and the check that lists what one of
-our dances misses (ADR 0196).
+our dances misses (ADR 0200).
 
 :func:`derive` turns a :class:`dance_study.StyleReading` of a reference into a :class:`DanceStyle`. Each channel's
 targets are ranges, never single numbers: the middle half of the reference's windows (25th to 75th percentile),
