@@ -24,11 +24,11 @@
   "catalog_observation": {
     "parts": 726,
     "characters": 74,
-    "entries_with_explicit_part_contract": 307,
+    "entries_with_explicit_part_contract": 329,
     "all_default_characters_have_explicit_contracts": true,
     "noncharacter_parts": 652,
-    "noncharacter_parts_with_explicit_contracts": 233,
-    "source": "Fresh-process registry observation on 2026-11-01 after 33 Toon house/homeware declarations. Drawing baselines were captured from edcdeac2. See review_verification.toon_domestic_contracts.",
+    "noncharacter_parts_with_explicit_contracts": 255,
+    "source": "Fresh-process registry observation on 2026-11-01 after 22 Toon everyday/insert/study/laptop declarations. Drawing baselines were captured from 8ae98f8f. See review_verification.toon_detail_contracts.",
     "by_kind": {
       "character": {
         "registered": 74,
@@ -36,7 +36,7 @@
       },
       "prop": {
         "registered": 456,
-        "explicit_contracts": 182
+        "explicit_contracts": 202
       },
       "location": {
         "registered": 113,
@@ -44,12 +44,55 @@
       },
       "graphic": {
         "registered": 83,
-        "explicit_contracts": 18
+        "explicit_contracts": 20
       }
     },
     "qualification": "Fresh-process registry.entries() observation after the latest implemented contract batch. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates."
   },
   "review_verification": {
+    "toon_detail_contracts": {
+      "baseline_source_commit": "8ae98f8f",
+      "interpolation_regressions_red": {
+        "failed": 4
+      },
+      "initial_contract_tests_red": {
+        "failed": 28
+      },
+      "documentation_recipe_red": {
+        "failed": 1
+      },
+      "final_engine_enabled_tests": {
+        "passed": 638,
+        "skipped": 0
+      },
+      "branch_inclusive_coverage_percent": {
+        "toon_detail_contracts": 100,
+        "toon_everyday": 99,
+        "toon_inserts": 100,
+        "toon_laptop": 97,
+        "toon_study": 99,
+        "contracts": 87,
+        "registry": 92,
+        "total": 96
+      },
+      "coverage_scope": "New detail metadata, four drawing modules, contracts.py and registry.py; unchanged 80% gate. Not a full-library suite run.",
+      "drawing_baseline_cases": 22,
+      "footprint_baseline_cases": 5,
+      "unchanged_executable_definitions": 62,
+      "changed_executable_definitions": [
+        "toon_study._band",
+        "toon_study.highlighter",
+        "toon_study.open_book"
+      ],
+      "mypy_source_files": 292,
+      "guide_engine_evaluation_times": [
+        1.1375,
+        1.275,
+        1.4125
+      ],
+      "retained_artifacts": "../generated/sdk-toon-detail-contracts/v1/",
+      "qualification": "Original static drawing cases and footprint returns are unchanged. Sweeps and marker paths now interpolate; a separate engine test samples interior values. The executable guide keeps the marker on the highlight edge at three independently evaluated times. No encoded-video or perceptual-rating claim; full catalog expansion remains open."
+    },
     "toon_domestic_contracts": {
       "baseline_source_commit": "edcdeac2",
       "behavior_regressions_red": {
@@ -631,6 +674,32 @@
   ],
   "findings": [
     {
+      "id": "SDK-P1-08",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Interpolate study highlights and marker paths between cues",
+      "problem": "Book row and note sweeps, and the highlighter path, inherited Canvas.keys held interpolation. Their geometry jumped at the final key instead of progressing between authored times.",
+      "resolution": "The three animations now explicitly use linear interpolation on composition time. The agent guide uses row_span to convert reference book geometry into frame-pixel marker positions and synchronizes the marker with the highlight edge.",
+      "evidence": [
+        "src/srstudio/toon_study.py:_band",
+        "src/srstudio/toon_study.py:open_book",
+        "src/srstudio/toon_study.py:highlighter"
+      ],
+      "verification": [
+        "tests/test_toon_study.py:test_book_sweeps_interpolate_across_the_row_instead_of_holding_until_the_end",
+        "tests/test_toon_study.py:test_marker_path_interpolates_between_authored_frame_positions",
+        "tests/test_toon_study.py:test_engine_samples_a_sweep_and_marker_between_their_keys",
+        "tests/test_noncharacter_discovery_recipes.py:test_study_discovery_recipe_maps_reference_book_geometry_to_frame_marker_keys",
+        "docs/authoring-discovery.md"
+      ],
+      "acceptance": [
+        "Row and note highlights interpolate from 2% to full width over the sweep duration",
+        "Marker x interpolates between authored frame positions",
+        "Actual engine samples at interior times agree with linear progress",
+        "Static drawing baselines remain unchanged"
+      ]
+    },
+    {
       "id": "SDK-P1-06",
       "priority": "P1",
       "status": "complete",
@@ -761,13 +830,17 @@
           "srstudio.toon_flat",
           "srstudio.toon_odds",
           "srstudio.toon_house",
-          "srstudio.toon_homeware"
+          "srstudio.toon_homeware",
+          "srstudio.toon_everyday",
+          "srstudio.toon_inserts",
+          "srstudio.toon_study",
+          "srstudio.toon_laptop"
         ],
         "additional_parts": ["toon-headset"],
-        "new_contracts": 180,
-        "current_explicit_noncharacter_contracts": 233,
+        "new_contracts": 202,
+        "current_explicit_noncharacter_contracts": 255,
         "current_registered_noncharacters": 652,
-        "remaining_undeclared": 419,
+        "remaining_undeclared": 397,
         "evidence": [
           "tests/test_counter_store_contracts.py",
           "tests/data/counter-store-contract-baseline.json",
@@ -784,9 +857,12 @@
           "src/srstudio/_toon_domestic_contracts.py",
           "tests/test_toon_domestic_contracts.py",
           "tests/data/toon-domestic-contract-baseline.json",
+          "src/srstudio/_toon_detail_contracts.py",
+          "tests/test_toon_detail_contracts.py",
+          "tests/data/toon-detail-contract-baseline.json",
           "docs/authoring-discovery.md"
         ],
-        "qualification": "The full catalog expansion remains open. These families declare actual units, clocks, local slots, return records and capability limits. Captured baseline drawings remain unchanged; corrected domestic cue behavior is recorded separately in SDK-P1-06 and SDK-P1-07. Other families still require source review and executable semantic evidence."
+        "qualification": "The full catalog expansion remains open. These families declare actual units, clocks, local slots, return records and capability limits. Captured baseline drawings remain unchanged; corrected cue and interpolation behavior is recorded separately in SDK-P1-06, SDK-P1-07 and SDK-P1-08. Other families still require source review and executable semantic evidence."
       },
       "evidence": [
         "src/srstudio/registry.py:contract_coverage",

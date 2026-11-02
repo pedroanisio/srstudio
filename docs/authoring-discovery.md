@@ -273,6 +273,50 @@ towel(cv, holder, at=(185, 500), start=0, end=3)
 ```
 <!-- toon-domestic-discovery:end -->
 
+The 22 parts in `toon_everyday`, `toon_inserts`, `toon_study` and `toon_laptop`
+also publish contracts. Inspect the return before using it:
+
+| Parts | Return |
+| --- | --- |
+| Phone, speaker, receipt, take-a-number dispenser, clipboard | `(left, top, right, bottom)` footprint in Toon reference pixels |
+| TV menu, remote, open laptop | Created scene `Group` |
+| Other registered parts in these four modules | `None` |
+
+Footprint checks use the fixed Toon frame, caption band and signature box; they
+do not account for an external parent transform. Text measurement callbacks take
+`(text, font_size)` and return frame-pixel widths. Phone `Screen.at` and clipboard
+`Field.at` are composition times, while the props' `at` arguments are positions.
+Laptop notes use `u`/`v` fractions of a bilinear screen quad.
+
+Books use reference positions, but the highlighter, study page and quiz sheet use
+frame pixels. `row_span` and `note_span` convert book geometry into frame positions
+for the marker. The following example keeps the marker on the advancing highlight
+edge using the same composition clock and linear interpolation:
+
+<!-- toon-study-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry
+from srstudio.toon_study import HIGHLIGHT, SWEEP, row_span
+
+book = registry.get("prop", "toon-open-book")
+marker = registry.get("prop", "toon-highlighter")
+marker_info = marker.describe()["contract"]
+assert marker_info["arguments"]["properties"]["at"]["x-space"] == "frame"
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="24", duration=3)
+cv = Canvas(scene, font_asset=None)
+left, right, y = row_span(0, at=(300, 801))
+tip = left + 0.02 * (right - left)
+book_result = book(cv, cv.comp, at=(300, 801), sweep=(0, HIGHLIGHT, 1), id="book")
+marker_result = marker(
+    cv, cv.comp, at=(tip, y), paw="#c49a6c",
+    path=((1, tip), (1 + SWEEP, right)), id="marker",
+)
+```
+<!-- toon-study-discovery:end -->
+
 `srstudio.contract_coverage(style=None, kind=None)` returns the same versioned coverage report. Per-kind counts
 separate explicit declarations, complete argument shapes, units, clocks and anchors; `undeclared_parts` names
 the gaps. A count of declarations does not certify complete semantics. Discovery never invokes a builder.

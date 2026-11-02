@@ -58,6 +58,19 @@ def test_domestic_discovery_recipe_uses_a_returned_group_and_explicit_point_shap
     assert len(ns['point_schema']['prefixItems']) == 2
 
 
+def test_study_discovery_recipe_maps_reference_book_geometry_to_frame_marker_keys():
+    ns = recipe('toon-study-discovery')
+    assert ns['scene'].check(schema=True) == []
+    assert ns['marker_info']['arguments']['properties']['at']['x-space'] == 'frame'
+    assert ns['book_result'] is ns['marker_result'] is None
+    group = next(n for n in ns['scene'].iter('group') if n.id == 'marker')
+    assert group.x == pytest.approx(ns['left'] + 0.02 * (ns['right'] - ns['left']))
+    assert group.y == ns['y']
+    animations = list(ns['scene'].iter('animate'))
+    assert len(animations) == 2
+    assert all(a.defaultInterpolation == 'linear' and a.timeBase is None for a in animations)
+
+
 def test_held_prop_recipe_publishes_a_schema_valid_scene_and_no_contact_shadow():
     ns = recipe('held-prop-discovery')
     assert ns['scene'].check(schema=True) == []
