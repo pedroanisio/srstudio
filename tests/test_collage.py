@@ -40,6 +40,7 @@ def test_the_style_is_registered_with_its_parts_and_font():
         "collage",
         "collage_article",
         "collage_everyday",
+        "collage_forecast",
         "collage_odds",
         "collage_photo",
         "collage_sets",
