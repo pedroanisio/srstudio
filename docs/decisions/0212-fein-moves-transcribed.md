@@ -51,9 +51,10 @@ that is not a name, a joint list in another order, a 2D pose, or a record over i
 
 - a `dancepose.motion` record (format version 1), the estimator's output: per frame, per tracked person, the 15
   joints and 13 auxiliary landmarks in metres from the hips with the torso's yaw. It lives outside the repository.
-- a `srstudio.dance-windows/1.0.0` list under `tools/data/`, the source named by title and digest, and per move a
-  name, a track, a start and an end in seconds (a quarter second to eight seconds), and how often and by how many
-  dancers the move was seen. This list is the only footage-derived input the repository holds, and it holds no pose.
+- a `srstudio.dance-windows/1.0.0` list under `tools/data/`: the source named by its title, its YouTube id and the
+  digest of the file read, with its picture rate, frame count, tempo and the estimator that read it (`extractor`);
+  a sentence on how the windows were selected; and per move a name, a track, a start and an end in seconds (a
+  quarter second to eight seconds), and how often and by how many dancers the move was seen. This list is the only footage-derived input the repository holds, and it holds no pose.
 
 For a window the tool samples the track at sixteen times, taking a frame up to three frames away when the tracker
 skipped one and refusing the window when the track is gone; keeps the study's thirteen points (hips, knees, ankles,
