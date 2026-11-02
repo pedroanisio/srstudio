@@ -13,17 +13,14 @@ framing inside a paper border.
 from __future__ import annotations
 
 from collections.abc import Collection, Mapping
-from typing import TYPE_CHECKING
 
 from . import checks, collage, collage_sets
+from ._collage_place import Place
 from .canvas import Canvas
 from .collage import INK, _cut, _paper, draw_shapes, figure_shapes
 from .errors import SrstudioError
 from .native import NativeError
 from .registry import register
-
-if TYPE_CHECKING:  # the group shot's module imports the sketch build, which imports the package
-    from .collage_group import Place
 
 __all__ = ["PhotoError", "SOFA_TOP", "PHOTO_CROP", "flash", "print_photo", "sofa", "timer", "viewfinder"]
 

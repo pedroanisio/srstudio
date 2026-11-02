@@ -58,6 +58,29 @@
     }
   },
   "review_verification": {
+    "collage_place_record": {
+      "baseline_source_commit": "a179dbc3e014cb839d1719c9d326de04bf2f4659",
+      "red": 1,
+      "initial_green": 1,
+      "new_tests": 2,
+      "selected_regressions": {
+        "passed": 109,
+        "skipped": 0
+      },
+      "branch_inclusive_coverage_percent": 95.36423841059603,
+      "branch_coverage_percent": 94.5945945945946,
+      "coverage_scope": [
+        "src/srstudio/_collage_place.py",
+        "src/srstudio/collage_group.py",
+        "src/srstudio/collage_photo.py"
+      ],
+      "unchanged_photo_drawing_sha256": "8313c7111b22b3a400be41b92b23d3508ef78c68a6503433226cc98ab085234f",
+      "ruff": "passed",
+      "format": "passed",
+      "mypy_source_files": 332,
+      "retained_artifacts": "../generated/sdk-collage-place-record/v1/",
+      "qualification": "Place moved to a dependency-light owner and remains re-exported from collage_group with its original module identity. Cold photo imports resolve the actual runtime record; pickle and projection behavior are preserved. No new contract counts are claimed."
+    },
     "collage_everyday_contracts": {
       "baseline_source_commit": "906fd314c6c44ae061fd2869773736e53a67238c",
       "missing_contract_and_guide_regressions_red": 50,
