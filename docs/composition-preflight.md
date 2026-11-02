@@ -12,6 +12,12 @@ contacts, supported passes and conservative work bounds. It returns immutable
 records and a reproducible digest without invoking drawing builders, reading a
 render cache or creating files.
 
+Set `ScenePlan.background="#efe8df"` for an opaque native project clear color.
+The default `None` retains transparency and existing scene identities. The
+background stays outside world lighting and does not change raw plate work.
+Malformed colors fail before publication; vector sources cannot override this
+scene-owned setting. See [ADR 0210](decisions/0210-native-composition-background.md).
+
 `prepare_vector` verifies actual vector XML against a binding. `compile_scene`
 combines verified payloads into a self-contained scene, and `emit_scene` publishes
 that scene atomically. Public preparation and compilation run in workers with

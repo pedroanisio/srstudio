@@ -215,6 +215,7 @@ class ScenePlan(_Record):
     budget: RenderBudget
     contacts: tuple[ContactSpec, ...] = ()
     schema: Literal['srstudio.scene-plan/1.0.0'] = SCHEMA
+    background: str | None = None  # Opaque #RRGGBB project clear color; None retains transparency.
 
 
 @dataclass(frozen=True)

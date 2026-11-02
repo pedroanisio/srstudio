@@ -112,6 +112,7 @@ def compile_timeline(request: dict) -> c.CompiledScene:
             'fps': f'{spec.fps.numerator}/{spec.fps.denominator}',
             'duration': _number(spec.duration),
             'seed': str(spec.seed),
+            **({'background': spec.background} if spec.background is not None else {}),
         },
     )
     has_text = any(asset.fonts for asset in vectors.values())
