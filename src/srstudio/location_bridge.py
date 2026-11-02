@@ -38,7 +38,7 @@ from srstudio.errors import SrstudioError
 SCHEMA_VERSION = "1.1.0"  # 1.1.0 adds the optional blocking section (ADR 0184)
 SCHEMA_WITHOUT_BLOCKING = "1.0.0"  # what the exporter writes for a record with no blocking, which 1.0.0 readers read
 REQUEST_VERSION = "1.0.0"  # a blocking request, the file tools/location_export.py --blocking reads
-SRLOCATIONS_COMMIT = "4ae2278214de6e704d8dcbab8f293b6a47438483"  # srlocations main, 2026-11-02: ADR 0179's pin
+SRLOCATIONS_COMMIT = "be0aabced115e4e885adba380c72f2f63f80959c"  # srlocations main, 2026-11-02: ADR 0179's pin
 GATE_MM = (36.0, 24.0)  # srlocations' film gate at the pin (compiler.Projection.SENSOR)
 MAX_BYTES = 4_000_000  # a record of every shot and mark of a set is tens of kilobytes
 MAX_FRAME_PX = 16_384

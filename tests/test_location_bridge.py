@@ -34,6 +34,12 @@ def first_mark(data: dict, shot: str = "down-the-aisle", mark: str = "aisle") ->
 # --- the record as recorded ---------------------------------------------------------------------------------------
 
 
+def test_the_pin_is_the_srlocations_commit_with_the_reworked_bridge_and_studio():
+    """be0aabc holds starship-bridge 2.0.0 and news-studio 1.1.0, reworked to arc4d3's rulings and the News palette;
+    their 1.0.0, the park and the airliner are as 4ae2278 had them."""
+    assert lb.SRLOCATIONS_COMMIT == "be0aabced115e4e885adba380c72f2f63f80959c"
+
+
 def test_the_fixture_is_a_record_of_the_pinned_srlocations():
     record = lb.load(FIXTURE)
     assert record.schema_version == lb.SCHEMA_WITHOUT_BLOCKING == "1.0.0"  # no blocking: what 1.0.0 readers read
