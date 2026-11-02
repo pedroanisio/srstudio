@@ -30,12 +30,22 @@ RAISE = 40.0  # degrees below its target an arm swings up from
 
 @dataclass(frozen=True)
 class Act:
-    """What one character does through one beat: the Toon vocabulary a beat holds for its lead."""
+    """What one character does through one beat: the Toon vocabulary a beat holds for its lead. An expression the
+    rigs do not have is refused here, where a reel's script names it, not later inside a shot's drawing."""
 
     eyes: str
     mouth: str
     arms: str
     wear: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        for word, value, allowed in (("eyes", self.eyes, toon.EYES), ("mouth", self.mouth, toon.MOUTHS)):
+            if value not in allowed:
+                raise ToonDataError(f"an act's {word} {value!r} is not one of {allowed}")
+        if self.arms not in toon.ARMS:
+            raise ToonDataError(f"an act's arms {self.arms!r} is not one of {toon.ARMS}")
+        if not isinstance(self.wear, tuple) or any(w not in toon.WEAR for w in self.wear):
+            raise ToonDataError(f"an act's wear {self.wear!r} is not a tuple of {toon.WEAR}")
 
 
 def poses_of(beats: Sequence[sketch.Beat], acts: Sequence[Act], start: float, end: float) -> list[dict[str, Any]]:
