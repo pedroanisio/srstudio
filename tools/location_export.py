@@ -376,15 +376,14 @@ def at_limits(values: Mapping[str, float], ranges: Mapping[str, Any], moves: Col
     return hits
 
 
-def block(location: Any, request: Any, shot_names: Sequence[str], width: int, height: int, bridge: ModuleType) -> dict:
-    """The record's blocking section: every figure of ``request`` posed on its mark, then measured."""
-    from srlocations.collision import GAP, Body, deepest
-    from srlocations.compiler import Projection
-    from srlocations.geometry import Transform, Vec3
+def pose(location: Any, request: Any, bridge: ModuleType) -> dict[str, Any]:
+    """Every figure of ``request`` (a ``location_bridge.BlockingRequest``) stood or sat on its mark of ``location``,
+    then turned to look and reach as it asks, by mark. Refuses (``ExportError``) a mark the location lacks, a pose that
+    does not sit or stand as asked, a sitter with no seat in reach and a reach out of range; a limb that passes through
+    the set is not refused here. Public, so that a proof or another exporter poses exactly what a record measures."""
+    from srlocations.geometry import Vec3
     from srlocations.registry import CatalogError
-    from srlocations.stock.mannequin import JOINTS, MOVES, PARAMETERS, Pose
 
-    framed = dict(location.shots)
     points = {name: Vec3(*at) for name, at in request.points.items()}
     figures = {}
     for item in request.figures:
@@ -418,6 +417,19 @@ def block(location: Any, request: Any, shot_names: Sequence[str], width: int, he
                 figure.reach_to(reach.joint, points[reach.to], bridge.REACH_TOLERANCE_M, pole)
             except ValueError as error:
                 raise ExportError(f"the body on {item.mark!r} cannot reach {reach.to!r}: {error}") from None
+    return figures
+
+
+def block(location: Any, request: Any, shot_names: Sequence[str], width: int, height: int, bridge: ModuleType) -> dict:
+    """The record's blocking section: every figure of ``request`` posed on its mark (:func:`pose`), then measured."""
+    from srlocations.collision import GAP, Body, deepest
+    from srlocations.compiler import Projection
+    from srlocations.geometry import Transform, Vec3
+    from srlocations.stock.mannequin import JOINTS, MOVES, PARAMETERS, Pose
+
+    framed = dict(location.shots)
+    points = {name: Vec3(*at) for name, at in request.points.items()}
+    figures = pose(location, request, bridge)
     if dict(location.shots) != framed:
         raise ExportError("standing bodies on the marks moved a shot that follows a figure; record it without them")
     contact, standing = location.contact, location._set()

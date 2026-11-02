@@ -392,3 +392,87 @@ def test_a_record_without_blocking_is_written_as_the_schema_without_it(tmp_path)
     blocked = json.loads((ROOT / "tests" / "data" / "location-bridge" / "park-blocking-1080x1920.json").read_text())
     assert blocked["schema_version"] == lb.SCHEMA_VERSION and "blocking" in blocked
     export.write(blocked, tmp_path / "blocked.json", lb)
+
+
+class _Figure:
+    """Stands in for srlocations' mannequin: it records what pose() asks of it."""
+
+    def __init__(self, sits: bool, reachable: bool = True):
+        self.sits, self.reachable, self.calls = sits, reachable, []
+
+    def look_at(self, point):
+        self.calls.append(("look_at", tuple(point)))
+
+    def reach_to(self, joint, point, tolerance, pole):
+        if not self.reachable:
+            raise ValueError("out of range")
+        self.calls.append(("reach_to", joint, tuple(point), tolerance, pole))
+
+
+class _Location:
+    """Stands in for an srlocations Location, with the request's marks and a seat on the bench."""
+
+    name = "park"
+    marks = ("bench", "walker")
+
+    def __init__(self, reachable: bool = True, sits_on_walker: bool = False, seats: bool = True):
+        self.reachable, self.sits_on_walker, self.seats, self.stood = reachable, sits_on_walker, seats, []
+
+    def stand(self, mark, pose, adjust, **body):
+        self.stood.append((mark, pose, adjust, body))
+        return (_Figure(sits=mark == "bench" or self.sits_on_walker, reachable=self.reachable),)
+
+    def seat_of(self, figure):
+        return "seat" if self.seats else None
+
+
+@pytest.fixture
+def fake_srlocations(monkeypatch):
+    """pose() imports srlocations' Vec3 and CatalogError; srstudio's interpreter has no srlocations."""
+    geometry = types.ModuleType("srlocations.geometry")
+    geometry.Vec3 = lambda *at: tuple(at)
+    registry = types.ModuleType("srlocations.registry")
+    registry.CatalogError = type("CatalogError", (Exception,), {})
+    package = types.ModuleType("srlocations")
+    for name, module in (
+        ("srlocations", package),
+        ("srlocations.geometry", geometry),
+        ("srlocations.registry", registry),
+    ):
+        monkeypatch.setitem(sys.modules, name, module)
+
+
+PARK_REQUEST = ROOT / "tests" / "data" / "location-bridge" / "park-blocking.request.json"
+
+
+def test_pose_stands_each_figure_then_looks_and_reaches_as_the_request_asks(fake_srlocations):
+    request = lb.parse_request(PARK_REQUEST.read_text())
+    location = _Location()
+    figures = export.pose(location, request, lb)
+    assert [mark for mark, *_ in location.stood] == ["bench", "walker"]
+    assert figures["bench"].calls == [("reach_to", "right_hand", (1.83, 0.67, 3.95), lb.REACH_TOLERANCE_M, None)]
+    assert figures["walker"].calls == [
+        ("look_at", (1.56, 1.3, 3.52)),
+        ("reach_to", "right_hand", (-1.786, 1.55, 7.378), lb.REACH_TOLERANCE_M, None),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("location", "reason"),
+    [
+        (_Location(reachable=False), "cannot reach 'in-the-backrest': out of range"),
+        (_Location(sits_on_walker=True), "sits; the request asks to stand"),
+        (_Location(seats=False), "no seat of park is within reach of mark 'bench'"),
+    ],
+)
+def test_pose_refuses_what_srlocations_cannot_do_as_asked(fake_srlocations, location, reason):
+    with pytest.raises(export.ExportError, match=reason):
+        export.pose(location, lb.parse_request(PARK_REQUEST.read_text()), lb)
+
+
+def test_pose_refuses_a_mark_the_location_lacks(fake_srlocations):
+    request = lb.parse_request(PARK_REQUEST.read_text())
+    location = _Location()
+    location.marks = ("walker",)
+    with pytest.raises(export.ExportError, match="poses a figure on 'bench'; the location has walker"):
+        export.pose(location, request, lb)
