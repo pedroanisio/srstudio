@@ -104,8 +104,9 @@ print(result.work)
 
 This world input is a component of the combined-proof migration. The original
 `drawing_proof` still builds its retained candidate through the legacy path;
-the figure, spatial hand, protected information and complete acceptance matrix
-have not yet moved into this world timeline. No existing drawing or approval
+the spatial hand, protected information and complete acceptance matrix
+have not yet moved into this world timeline. The combined candidate below adds
+the native figure. No existing drawing or approval
 changes. Run `pytest tests/test_drawing_world.py` with `SRSTUDIO_ENGINE` set to
 exercise numeric registration, transformed parents, tire contact, receiver
 failures and real-render cold/warm equivalence.
@@ -119,6 +120,35 @@ These are component measurements, not full-size raster registration or approval
 of the complete animated proof.
 
 ### Combined candidate
+
+[`drawing_figure.figure_scene`](../examples/drawing_figure.py) extends the shared
+world inputs with the actual 977-shape native figure. One explicit ink group
+preserves its drawing, gradients, opacity and animation. Two painter windows
+retain the same performance clock across the declared depth cut at three
+seconds; the camera cut at four seconds also keeps that clock. World placement
+uses the shared perspective camera and an authored centimeter scale. The figure
+remains frontal, and requesting an unsupported profile is refused.
+
+The default plan samples the world at 12 fps on a 24 fps output; repeated values
+in the held opening merge into 66 intervals. The car still
+requires only 28 raw jobs for its fourteen distinct views. Unchanged floor
+intervals coalesce after native geometry reuse, keeping the complete vector
+output within the existing eight-MiB cap. Use `figure_scene()` in the build
+snippet above to compile these combined picture layers.
+
+This candidate declares a ground-level root; it does not yet constrain each
+sole with the body solver. The three-second depth change remains a cut, and
+the rig retains its authored ink colors. Hand, protected information, body
+support, rig form lighting and the complete animated acceptance measurements
+remain open. The retained legacy `drawing_proof` and the 30-second showcase are
+unchanged.
+
+The [combined-component verification](../../generated/sdk-world-figure/v2/verification.json)
+records six exact 1080×1920 pixel comparisons with the unchanged native figure,
+including both sides of the camera cut. A separate 216×384 mixed build reuses
+eight verified cached car renders with zero new engine invocations; its opening
+pixels at 0 and 0.25 seconds match exactly. These checks establish native drawing
+and clock preservation, not complete body support or raster-contact acceptance.
 
 The production composition compiler requires approved part versions. An explicit
 [candidate-review workflow](composition-preflight.md#review-a-new-candidate-drawing)

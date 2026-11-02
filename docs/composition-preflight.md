@@ -315,6 +315,14 @@ Already-fitting timelines retain their existing XML representation and digest.
 No authoring flag or larger output limit is needed. See
 [ADR 0206](decisions/0206-compact-native-vector-timelines.md).
 
+If native reuse still exceeds the allowance, the compiler can merge adjacent
+vector intervals whose source clock, coordinate space, resolved parent pose,
+camera and form fields are identical. Native animation continues within the
+merged interval. Visibility gaps and changed geometry, light fields or camera
+retain their boundaries. Raster preparation stays unchanged. The earlier
+layouts remain byte-identical when they already fit; this additional fallback
+retains the same limits. See [ADR 0208](decisions/0208-coalesced-vector-timeline-spans.md).
+
 The timeline assembly worker receives closed JSON with a 32 MiB transport cap;
 existing static composition workers retain their 16 MiB cap. Source buffers,
 combined vector/image inputs and complete bundle files each have an 8 MiB cap.
@@ -938,10 +946,19 @@ are never deserialized.
 ## Author vector form lighting
 
 Attach `FormSurface` records to a vector binding to use the scene's `LightRig`.
-Each source shape needs exactly one field: `diffuse` selects an authored palette
+Each source shape needs exactly one owner: `diffuse` selects an authored palette
 color, while `ink` preserves the original fill and stroke, including existing
-`brush.crescent` shapes. A field names the source shape ID before placement
-namespacing. Native information belongs in a separate screen information layer.
+`brush.crescent` shapes. A field names the source ID before placement namespacing.
+Native information belongs in a separate screen information layer.
+
+A native ink field may name a nonempty group: `c.FormSurface("figure", mode="ink")`
+preserves all shapes below that source group, including their original opacity,
+transforms and animation clocks. Nested fields and shape overrides inside that
+group are refused; ownership must be exclusive. Unknown targets, empty groups
+and unclaimed shapes fail before publication. Diffuse fields and spatial paths
+still name individual shapes. This avoids one record per preserved shape without
+changing the 256-field limit or inferring lighting intent. See
+[ADR 0207](decisions/0207-explicit-native-ink-groups.md).
 
 ```python
 from srstudio import composition as c

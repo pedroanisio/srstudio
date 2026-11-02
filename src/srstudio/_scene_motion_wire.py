@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ._scene_motion_compact import Layout
 
 from . import _composition_plate_wire as pw
 from . import _composition_proxy_runtime as proxy
@@ -111,7 +115,7 @@ def references(timeline: m.SceneTimeline) -> tuple[Reference, ...]:
     return tuple(dict.fromkeys((span.scene, r.layer, r.frame) for span in timeline.spans for r in span.rasters))
 
 
-def expansion(timeline: m.SceneTimeline, vectors: dict[str, c.PreparedVector]) -> frozenset[str]:
+def expansion(timeline: m.SceneTimeline, vectors: dict[str, c.PreparedVector]) -> Layout | None:
     from ._scene_motion_compact import select
 
     return select(timeline, vectors, pw.MAX_BYTES)

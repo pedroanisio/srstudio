@@ -43,7 +43,7 @@ def compile_timeline(request: dict) -> c.CompiledScene:
         vectors[name] = prepare_vector(bindings[name], xml, fonts=fonts)
     if vectors.keys() != bindings.keys():
         raise wire.fail(None, 'exactly the required vector sources')
-    shared = tw.expansion(timeline, vectors)
+    layout = tw.expansion(timeline, vectors)
     images = {}
     for value in request['images']:
         item = wire.fields(value, {'digest', 'png'})
@@ -124,11 +124,11 @@ def compile_timeline(request: dict) -> c.CompiledScene:
             ET.SubElement(shelf, 'image', image_metadata[digest])
     paints = ET.SubElement(root, 'paints')
     content = ET.SubElement(root, 'composition')
-    if shared:
+    if layout is not None:
         from ._scene_motion_compact import assemble
 
-        assemble(timeline, vectors, placements, shared, content, shelf, paints)
-    for index, span in enumerate(() if shared else timeline.spans):
+        assemble(timeline, vectors, placements, layout, content, shelf, paints)
+    for index, span in enumerate(() if layout is not None else timeline.spans):
         if not span.layers:
             continue
         plan = timeline.samples[span.scene]

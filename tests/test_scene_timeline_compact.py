@@ -278,7 +278,7 @@ def test_compact_worker_keeps_fonts_rasters_and_independent_native_clocks(tmp_pa
     with pytest.raises(c.CompositionError) as failure:
         select(timeline, vectors, 1)
     allowance = failure.value.to_dict()['actual']
-    assert select(timeline, vectors, allowance) == frozenset(('figure', 'later', 'info'))
+    assert select(timeline, vectors, allowance).shared == frozenset(('figure', 'later', 'info'))
     monkeypatch.setattr(tw, 'expansion', lambda t, v: select(t, v, allowance))
     compiled = dispatch(wire.dumps(requests[-1], maximum=tw.MAX_WIRE_BYTES))
     root = ET.fromstring(wire.xml_decode(compiled['xml']))
@@ -297,7 +297,7 @@ def test_compact_worker_keeps_fonts_rasters_and_independent_native_clocks(tmp_pa
         assert layer.get('asset') in ids
 
 
-def test_lit_and_projected_forms_keep_each_span_while_native_ink_is_reused(tmp_path, monkeypatch):
+def test_lit_and_projected_forms_keep_changing_values_while_native_ink_is_reused(tmp_path, monkeypatch):
     from srstudio import _composition_wire as wire
     from srstudio import _scene_motion_wire as tw
     from srstudio._composition_vector import prepare_vector
@@ -341,7 +341,7 @@ def test_lit_and_projected_forms_keep_each_span_while_native_ink_is_reused(tmp_p
     with pytest.raises(c.CompositionError) as failure:
         select(timeline, vectors, 1)
     allowance = failure.value.to_dict()['actual']
-    assert select(timeline, vectors, allowance) == frozenset(('ink',))
+    assert select(timeline, vectors, allowance).shared == frozenset(('ink',))
     monkeypatch.setattr(tw, 'expansion', lambda t, v: select(t, v, allowance))
     raw = {
         'schema': wire.SCHEMA,
@@ -358,7 +358,12 @@ def test_lit_and_projected_forms_keep_each_span_while_native_ink_is_reused(tmp_p
     for index, _span in enumerate(timeline.spans):
         for layer, field in ((1, 'fill'), (2, 'path')):
             expected = original.find('composition')[index][layer].find('shape')
-            actual = compact.find(f'.//group[@id="c{layer}_s{index}"]/shape')
+            window = next(
+                g
+                for g in compact.findall(f'.//group[@id="c{layer}_layer"]/group')
+                if float(g.get('start')) <= _span.start < float(g.get('end'))
+            )
+            actual = window.find('.//shape')
             assert actual.get(field) == expected.get(field)
             (colors if field == 'fill' else paths).add(actual.get(field))
     assert len(colors) == 2 and len(paths) == 2
@@ -409,4 +414,4 @@ def test_compaction_does_not_spend_more_space_to_reuse_a_tiny_two_span_layer(fig
     )
     timeline = m.plan_scene(spec, (binding, small), motion, purpose='candidate-review')
     vectors = {'figure': prepare_vector(binding, xml), 'small': prepare_vector(small, source.xml)}
-    assert select(timeline, vectors, 8 * 1024**2) == frozenset(('figure',))
+    assert select(timeline, vectors, 8 * 1024**2).shared == frozenset(('figure',))

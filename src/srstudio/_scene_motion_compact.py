@@ -4,17 +4,54 @@ from __future__ import annotations
 
 import xml.etree.ElementTree as ET
 from collections import Counter
+from dataclasses import dataclass, replace
 
 from . import _composition_text as text_assets
 from . import composition as c
 from . import scene_motion as m
 from ._composition_emit import _number, _placement
-from ._composition_forms import apply
+from ._composition_forms import apply, resolved
 from ._composition_paths import expansion_bytes
 from ._composition_preflight import _pose
 
 
-def select(timeline: m.SceneTimeline, vectors: dict[str, c.PreparedVector], maximum: int) -> frozenset[str]:
+@dataclass(frozen=True)
+class Layout:
+    shared: frozenset[str]
+    runs: tuple[tuple[str, tuple[tuple[int, m.SceneSpan], ...]], ...] = ()
+
+
+def coalesce(timeline: m.SceneTimeline, base: c.LayerSpec) -> tuple[tuple[int, m.SceneSpan], ...]:
+    """Join adjacent vector windows only when their complete emitted state is equal.
+
+    The unchanged source clock stays inside each window. Native animation is
+    never sampled or frozen here; only placement and authored form values are.
+    """
+    result: list[tuple[int, m.SceneSpan]] = []
+    previous: object = None
+    for index, span in enumerate(timeline.spans):
+        if base.id not in span.layers:
+            continue
+        plan = timeline.samples[span.scene]
+        layers = {layer.id: layer for layer in plan.spec.layers}
+        layer = layers[base.id]
+        signature = (
+            layer.temporal,
+            layer.space,
+            _pose(layer, layers, {}, set()),
+            plan.spec.camera,
+            resolved(plan, layer, span.start, scene_clock=True),
+        )
+        if result and result[-1][1].end == span.start and signature == previous:
+            first, held = result[-1]
+            result[-1] = (first, replace(held, end=span.end))
+        else:
+            result.append((index, span))
+        previous = signature
+    return tuple(result)
+
+
+def select(timeline: m.SceneTimeline, vectors: dict[str, c.PreparedVector], maximum: int) -> Layout | None:
     """Keep existing small output byte-for-byte; otherwise prove a compact layout fits."""
     layers = {layer.id: layer for layer in timeline.base.spec.layers}
     counts = Counter(name for span in timeline.spans for name in span.layers)
@@ -30,7 +67,7 @@ def select(timeline: m.SceneTimeline, vectors: dict[str, c.PreparedVector], maxi
         return value <= maximum and timeline.cost.memory_bytes + 8 * value <= timeline.base.spec.budget.max_memory_bytes
 
     if fits(bound):
-        return frozenset()
+        return None
     shared = frozenset(
         name
         for name, count in counts.items()
@@ -40,18 +77,34 @@ def select(timeline: m.SceneTimeline, vectors: dict[str, c.PreparedVector], maxi
         and all(surface.mode == 'ink' and surface.path is None for surface in vectors[layers[name].asset].binding.forms)
     )
     if shared:
-        compact = (
-            4096
-            + 256 * len(layers)
-            + sum(weights[layers[name].asset] for name in shared)
-            + sum(
-                256 + sum(2048 if name in shared else weights.get(layers[name].asset, 2048) for name in span.layers)
-                for span in timeline.spans
+
+        def compact_count(counts: Counter[str]) -> int:
+            return (
+                4096
+                + 256 * (len(layers) + len(timeline.spans))
+                + sum(weights[layers[name].asset] for name in shared)
+                + sum(
+                    count * (2048 if name in shared else weights.get(layers[name].asset, 2048))
+                    for name, count in counts.items()
+                )
             )
+
+        bound = compact_count(counts)
+        if fits(bound):
+            return Layout(shared)
+        # Keep earlier output identities when either existing layout fits.
+        # Otherwise omit repeated vector copies introduced solely by another
+        # layer's animation. Raster preparation and references stay unchanged.
+        runs = tuple(
+            (name, coalesce(timeline, layers[name]))
+            for name in counts
+            if name not in shared and layers[name].asset in vectors
         )
-        if fits(compact):
-            return shared
-        bound = compact
+        reduced = counts.copy()
+        reduced.update({name: len(spans) - counts[name] for name, spans in runs})
+        bound = compact_count(reduced)
+        if fits(bound):
+            return Layout(shared, runs)
     raise c._fail('budget.expansion', bound, 'bounded timeline XML and working storage', 'composition.budget')
 
 
@@ -92,13 +145,14 @@ def assemble(
     timeline: m.SceneTimeline,
     vectors: dict[str, c.PreparedVector],
     placements: dict[tuple[int, str, int | None], dict],
-    shared: frozenset[str],
+    layout: Layout,
     content: ET.Element,
     shelf: ET.Element | None,
     paints: ET.Element,
 ) -> None:
     # Motion cannot reorder layers: each span is a subsequence of this painter
     # order. Transpose the layout so one layer owns its complete interval.
+    shared, runs = layout.shared, dict(layout.runs)
     resolved: dict[int, tuple[dict[str, c.LayerSpec], dict]] = {}
 
     def at(index: int) -> tuple[dict[str, c.LayerSpec], dict]:
@@ -111,7 +165,7 @@ def assemble(
         return resolved[index]
 
     for number, base in enumerate(timeline.base.spec.layers):
-        spans = [(i, span) for i, span in enumerate(timeline.spans) if base.id in span.layers]
+        spans = runs.get(base.id, tuple((i, span) for i, span in enumerate(timeline.spans) if base.id in span.layers))
         if not spans:
             continue
         prefix = f'c{number}'

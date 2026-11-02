@@ -301,7 +301,13 @@ class FormPath(_Record):
 
 @dataclass(frozen=True)
 class FormSurface(_Record):
-    """A named shape's lighting field; ink explicitly retains the authored fill/stroke."""
+    """A named shape's lighting field; ink explicitly retains authored fill/stroke.
+
+    Native ink may instead name a nonempty group, owning every descendant shape.
+    Groups retain their original opacity, transforms and clocks. Ownership must
+    be exclusive: nested fields and shape overrides within an ink group fail.
+    Diffuse lighting and spatial paths always name individual shapes.
+    """
 
     node: str
     palette: tuple[str, ...] = ()
