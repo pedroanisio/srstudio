@@ -34,7 +34,8 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from . import _character_contracts as cc
 from . import _toon_contracts as tc
-from . import brush, checks
+from . import anatomy_ledger, brush, checks
+from .anatomy import Side
 from .brush import Point, Shape
 from .canvas import Canvas
 from .registry import register
@@ -709,6 +710,18 @@ def _arms(
     return under, over
 
 
+def pose_hands(
+    cv: Canvas, look: Look, node: str, arms: str, omit_arms: frozenset[str] = frozenset(), tracks: Sequence[str] = ()
+) -> None:
+    """Record the hands the body drawing ``node`` draws in the pose ``arms``: one per arm :func:`_arms` draws, and one
+    per limb track drawn into it (``tracks``, their sides), so the count of a character's hands sees each (ADR 0174).
+    A look's own gesture draws both its arms whatever is omitted, as :func:`_arms` does."""
+    gesture = isinstance(look.drawing, Posing) and look.drawing.gesture(arms) is not None
+    drawn = [side for side in ("left", "right") if gesture or side not in omit_arms]
+    sides = {"left": Side.LEFT, "right": Side.RIGHT}
+    anatomy_ledger.pose_hands(cv, look.name, node, [sides[side] for side in [*drawn, *tracks]])
+
+
 def _brow(look: Look, centre: Point, kind: str, inner: float) -> Layer:
     """An eyebrow over one eye: raised for surprise, flat and low when tired, angled down toward the nose in anger,
     up toward it in pain."""
@@ -1239,6 +1252,7 @@ def figure(
     for pose, start, end in runs(poses, duration - enter):
         start, end = round(start + enter, 6), round(end + enter, 6)
         g = cv.group(parent, cv.uid("g"), start=start, end=end)
+        pose_hands(cv, look, g.id, pose.arms, sides, [facing.slot(t.motion.arm.side) for t in limbs] if limbs else ())
 
         behind = _limb_layer(cv, g, pose.arms) if limbs else None
         under, mouth_layers, over = figure_layers(

@@ -63,8 +63,9 @@ Counted on what is already built:
 ## Limits
 
 - `arm-third` sees only `Limb`s. A third hand against a character's own pose arms is not seen, because Collage pose hands
-  and Cutout's `reach` record no owner. Toon props return no node, so they carry no limb id either.
-- One pair of arms is declared and is enforced at those limbs. Nothing counts arms in a drawn pose.
+  and Cutout's `reach` record no owner. Toon props return no node, so they carry no limb id either. Lifted for Toon and
+  Collage poses and Toon swung arms by [ADR 0174](0174-a-figure-draws-one-pair-of-hands.md): `hand-count`.
+- One pair of arms is declared and is enforced at those limbs. Nothing counts arms in a drawn pose. ADR 0174 counts them.
 - `on_arm` is a declaration, as `side=` is: a caller who names the wrong character is not caught.
 - A pilot is not built by `srstudio build`, so neither frame rule runs on it, and `episodes/publish_pilots.py` reads no
   record. `hand-no-arm` still refuses in `Episode.finish`.

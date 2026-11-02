@@ -244,6 +244,8 @@ A hand is drawn through the shared `srstudio.anatomy` contract: the right is the
 
 A body is declared too: `anatomy_parts.BODIES` says whether a character has legs, stops at the waist, or is a thing that is whole as drawn. A hand exists only on an arm, so a prop that draws one runs in `anatomy_ledger.on_arm`. `srstudio build` then reads the frames for a bust ending in the open and two hands on one arm, and first delivery reads them either way. See [ADR 0148](docs/decisions/0148-anatomy-is-a-build-error.md).
 
+A figure draws one pair of hands. Toon and Collage poses record the hands they draw, and a swung Toon arm runs in `anatomy_ledger.on_arm`, so the frame rule `hand-count` counts each figure's hands across its pose groups, limb tracks and swung arms, whatever a sofa or the frame's edge covers. Raised arms over a pose whose own paws still rest are four hands. See [ADR 0174](docs/decisions/0174-a-figure-draws-one-pair-of-hands.md).
+
 A burned caption does not run across a sentence end: a window that drops the stop, or keeps it and breaks off inside the next sentence, is a build error (`srstudio.text_rules`, the check `caption-grammar`). A window of whole sentences with their stops passes, and what is published stays as named rows of `assets/text_published.json` (ADR 0149).
 
 A text is timed as a viewer sees it: `text_rules` reads the frames the engine evaluates and times the words from the first frame they are legible to the last, across layers and cuts, against the 0.8333 s reading minimum, along with each page of a burned caption track. The check is `text-timing`, run by `srstudio build` when it has an engine and at first delivery (ADR 0150).

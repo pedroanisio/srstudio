@@ -176,7 +176,7 @@ class Canvas:
         self._frozen = 0  # inside Canvas.frozen(): every key holds its value at 0 s
         self._frozen_hidden: set[Any] = set()
         self.anatomy: dict[tuple[str, str], str] = {}  # (rule, part): what a build drew against the anatomy rules
-        self.limbs: dict[str, Any] = {}  # node id: whose hand it is (srstudio.anatomy_ledger.Limb)
+        self.limbs: dict[tuple[str, Any], Any] = {}  # (node id, side): whose hand it is (srstudio.anatomy_ledger.Limb)
 
     @property
     def assets(self):

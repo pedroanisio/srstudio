@@ -126,7 +126,8 @@ def test_an_arm_needs_a_character_and_a_side():
 def test_every_loose_hand_draws_through_the_rule(part):
     import inspect
 
-    assert f'loose_hand(cv, "{part}")' in inspect.getsource(registry.get("prop", part).builder)
+    source = inspect.getsource(registry.get("prop", part).builder)
+    assert f'loose_hand(cv, "{part}")' in source or f'loose_hand(cv, "{part}", ' in source  # with its hand's node
 
 
 def _keyword(call: ast.Call, name: str) -> ast.expr | None:

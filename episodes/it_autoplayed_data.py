@@ -17,6 +17,7 @@ from dataclasses import replace
 from math import ceil
 
 from srstudio import (
+    anatomy_ledger,
     foley,
     look,
     scripting,
@@ -30,6 +31,7 @@ from srstudio import (
     toon_voices,
     toon_world,
 )
+from srstudio.anatomy import Side
 from srstudio.scripting import at
 from srstudio.sketch import Line, Sketch
 from srstudio.toon import fy
@@ -238,24 +240,28 @@ def _two(shot) -> None:
     sting, hand, pause, menu = (at(beats, k) for k in ("sting", "hand", "pause", "menu"))
     mae = toon_pair.figure(shot, shot.back, "rabbit", MAE_AT, ACTS["rabbit"], scale=PAIR_SCALE, mirror=True)
     if app.start <= sting < app.end:  # behind him, so a raised arm grows out of him
-        for root, target in WOW_HANDS:
+        for (root, target), side in zip(WOW_HANDS, (Side.LEFT, Side.RIGHT), strict=True):
             degrees, length = toon_pair.aim(root, target)
             swing = [(sting + WOW_LATE, degrees + 40.0), (sting + WOW_LATE + 0.14, degrees)]
-            toon_bed.swung_arm(cv, shot.back, root, BEAR_COAT, swing, sting + WOW_LATE, sting + WOW_DOWN, length=length,
-                               width=toon_bed.ARM_WIDTH * PAIR_SCALE)  # fmt: skip
+            with anatomy_ledger.on_arm("bear", side):
+                toon_bed.swung_arm(cv, shot.back, root, BEAR_COAT, swing, sting + WOW_LATE, sting + WOW_DOWN,
+                                   length=length, width=toon_bed.ARM_WIDTH * PAIR_SCALE)  # fmt: skip
     bruno = toon_pair.figure(shot, shot.back, "bear", BRUNO_AT, ACTS["bear"], scale=PAIR_SCALE)
     if app.start <= 0.0 < app.end:
         _gasps(cv, bruno, BRUNO_AT)
     if app.start <= sting < app.end:
         _lifted(cv, mae, MAE_AT, sting, JUMP, 0.1, 0.24)
     if hand <= app.start < menu:
-        toon_bed.swung_arm(cv, shot.back, FROM_MAE, RABBIT_COAT, [(app.start, 15.0)], app.start, app.end, length=66.0,
-                           width=34.0)  # fmt: skip
-        toon_bed.swung_arm(cv, shot.back, FROM_BRUNO, BEAR_COAT, [(app.start + 0.2, 150.0), (app.start + 0.5, 176.0)],
-                           app.start, app.end, length=50.0, width=34.0)  # fmt: skip
+        with anatomy_ledger.on_arm("rabbit", Side.RIGHT):
+            toon_bed.swung_arm(cv, shot.back, FROM_MAE, RABBIT_COAT, [(app.start, 15.0)], app.start, app.end,
+                               length=66.0, width=34.0)  # fmt: skip
+        with anatomy_ledger.on_arm("bear", Side.LEFT):
+            toon_bed.swung_arm(cv, shot.back, FROM_BRUNO, BEAR_COAT, [(app.start + 0.2, 150.0),
+                               (app.start + 0.5, 176.0)], app.start, app.end, length=50.0, width=34.0)  # fmt: skip
     if pause <= app.start:
-        toon_bed.swung_arm(cv, shot.back, REMOTE_ROOT, RABBIT_COAT, [(app.start, -38.0)], app.start, app.end,
-                           length=60.0, width=30.0)  # fmt: skip
+        with anatomy_ledger.on_arm("rabbit", Side.LEFT):
+            toon_bed.swung_arm(cv, shot.back, REMOTE_ROOT, RABBIT_COAT, [(app.start, -38.0)], app.start, app.end,
+                               length=60.0, width=30.0)  # fmt: skip
         toon_everyday.remote(cv, shot.back, REMOTE_HAND, scale=0.42, tilt=14.0, id=cv.uid("remote"))
     toon_world.sofa(cv, shot.front, "rug")
 
@@ -274,10 +280,12 @@ def pat_swing(pat: float) -> list[tuple[float, float]]:
 
 def _pat(cv, parent, pat: float, start: float, end: float) -> tuple:
     """Her paw along the sofa's front, in from the frame's edge, and his arm patting it, in front of the sofa."""
-    her = toon_bed.swung_arm(cv, parent, HER_PAW_ROOT, RABBIT_COAT, [(start, 2.0)], start, end, length=HER_PAW_LEN,
-                             width=46.0)  # fmt: skip
+    with anatomy_ledger.on_arm("rabbit", Side.LEFT):
+        her = toon_bed.swung_arm(cv, parent, HER_PAW_ROOT, RABBIT_COAT, [(start, 2.0)], start, end,
+                                 length=HER_PAW_LEN, width=46.0)  # fmt: skip
     _, length = toon_pair.aim(PAT_ROOT, PAT_PAW)
-    him = toon_bed.swung_arm(cv, parent, PAT_ROOT, BEAR_COAT, pat_swing(pat), start, end, length=length, width=52.0)
+    with anatomy_ledger.on_arm("bear", Side.LEFT):
+        him = toon_bed.swung_arm(cv, parent, PAT_ROOT, BEAR_COAT, pat_swing(pat), start, end, length=length, width=52.0)
     return her, him
 
 

@@ -271,8 +271,9 @@ HAND_PROPS: Final = MappingProxyType(
     }
 )
 
-# Hand parts that draw a hand and no arm. A character has to be holding it, so a build says whose with
-# anatomy_ledger.on_arm, or the hand is refused. True: only when the call passes ``hand``.
+# Hand parts that draw a hand and no arm, and the swung arm, which draws an arm and its hand but no body. A character
+# has to be holding it, so a build says whose with anatomy_ledger.on_arm, or the hand is refused. True: only when the
+# call passes ``hand``.
 LOOSE_HANDS: Final = MappingProxyType(
     {
         "crayon-cv": False,
@@ -281,6 +282,7 @@ LOOSE_HANDS: Final = MappingProxyType(
         "toon-highlighter": False,
         "toon-lasagna": False,
         "toon-phone": True,
+        "toon-swung-arm": False,
         "toon-watering-can": False,
     }
 )
@@ -293,6 +295,8 @@ LOOSE_CALLS: Final = MappingProxyType(
         ("toon_house", "watering_can"): "toon-watering-can",
         ("toon_odds", "folded_sheet"): "toon-folded-sheet",
         ("toon_study", "highlighter"): "toon-highlighter",
+        ("toon_bed", "swung_arm"): "toon-swung-arm",  # an arm whose hand is counted with its character's (ADR 0174)
+        ("toon_pair", "reach"): "toon-swung-arm",
     }
 )
 

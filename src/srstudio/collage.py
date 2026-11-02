@@ -27,8 +27,8 @@ from dataclasses import dataclass
 from typing import Any
 
 from . import _character_contracts as cc
-from . import anatomy, checks
-from .anatomy import Facing, Fingers
+from . import anatomy, anatomy_ledger, checks
+from .anatomy import Facing, Fingers, Side
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -788,6 +788,14 @@ def _arms(look: Look, arms: str) -> tuple[list[Shape], list[Shape]]:
     return under, over
 
 
+def hand_sides(look: Look, arms: str) -> tuple[Side, ...]:
+    """The sides of the frame the pose ``arms`` draws a hand on, as :func:`_arms` draws them: ``free`` leaves the
+    screen-left arm to the scene, ``free-right`` the screen-right one, and a toilet has none (ADR 0174)."""
+    if look.toilet:
+        return ()
+    return {"free": (Side.RIGHT,), "free-right": (Side.LEFT,)}.get(arms, (Side.LEFT, Side.RIGHT))
+
+
 def _head(look: Look) -> list[Shape]:
     """Ears, the head with its shaded jaw and a lit brow, a nose and cheeks."""
     cx, cy = face(look)
@@ -1208,6 +1216,7 @@ def figure(
     for pose, start, end in runs(poses, duration - enter):
         start, end = round(start + enter, 6), round(end + enter, 6)
         g = cv.group(parent, cv.uid("g"), start=start, end=end)
+        anatomy_ledger.pose_hands(cv, look.name, g.id, hand_sides(look, pose.arms))
         cv.apply(g, cv.effect("collage-figure-shadow", "drop-shadow", **FIGURE_SHADOW))
         if not still:
             _breathe(cv, g, start, end)

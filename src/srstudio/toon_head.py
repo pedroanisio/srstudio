@@ -62,6 +62,7 @@ from .toon_cast import (
     _place,
     _teeth,
     _whiskers,
+    pose_hands,
 )
 from .toon_torso import depth_in
 
@@ -431,6 +432,7 @@ def _draw_figure(
             _draw(cv, g, _place((_teeth(look) if bare else []) + worn + list(stickers), arms))
 
             body = cv.group(trunk, cv.uid("g"), start=start, end=end)
+            pose_hands(cv, look, body.id, arms)
             _draw(cv, body, _place(list(rig.trunk()), arms))
             if arms == "type":
 

@@ -16,7 +16,7 @@ import re
 from collections.abc import Sequence
 
 from . import _toon_care_contracts as tc
-from . import checks, signature
+from . import anatomy_ledger, checks, signature
 from .canvas import Canvas
 from .registry import register
 from .toon import FINE_W, INK_W, ToonDataError, fh, fx, fy
@@ -279,7 +279,9 @@ def swung_arm(
     width: float = ARM_WIDTH,
 ) -> object:
     """An arm from ``shoulder`` (reference pixels) in ``coat``, on screen from ``start`` to ``end``, at the angles of
-    ``swing``: ``(project second, degrees)``, 0 pointing right, turning clockwise. Returns its group."""
+    ``swing``: ``(project second, degrees)``, 0 pointing right, turning clockwise. Returns its group. It ends in a hand,
+    so it is drawn in ``anatomy_ledger.on_arm`` naming whose arm it is, which records the hand there; otherwise the
+    build is refused as a hand on no character's arm (ADR 0174)."""
     if not swing or not all(checks.number(t) and checks.number(deg) for t, deg in swing):
         raise ToonDataError(f"an arm's swing is (second, degrees) rows, got {swing!r}")
     if not (checks.number(start) and checks.number(end) and 0 <= start < end):
@@ -292,6 +294,7 @@ def swung_arm(
         parent, cv.uid("g"), start=start, end=end, anchorX=0.0, anchorY=0.0, x=fx(shoulder[0]), y=fy(shoulder[1])
     )
     cv.keys(g, "rotation", list(swing), hold=False, kind="cubic-out", local=False)
+    anatomy_ledger.loose_hand(cv, "toon-swung-arm", g.id)  # whose arm it is, from anatomy_ledger.on_arm (ADR 0174)
     long, half = fh(length), fh(width) / 2
     knuckle = long - half * 0.3
     edge = (

@@ -15,7 +15,19 @@ from __future__ import annotations
 from dataclasses import replace
 from functools import partial
 
-from srstudio import foley, scripting, signature, sketch, toon, toon_bed, toon_everyday, toon_house, toon_pair
+from srstudio import (
+    anatomy_ledger,
+    foley,
+    scripting,
+    signature,
+    sketch,
+    toon,
+    toon_bed,
+    toon_everyday,
+    toon_house,
+    toon_pair,
+)
+from srstudio.anatomy import Side
 from srstudio.scripting import at, times
 from srstudio.sketch import Line, Sketch, Speaker
 from srstudio.toon import fh, fx, fy
@@ -243,19 +255,22 @@ def _night(shot) -> None:
     _mae_track(cv, rabbit, beats)
     flop, grab, hit, bury = at(beats, "flop"), at(beats, "grab"), at(beats, "hit"), at(beats, "bury")
     a1, a2, a3 = alarm(beats, 1), alarm(beats, 2), alarm(beats, 3)
-    toon_bed.swung_arm(cv, shot.back, (268.0, 778.0), BEAR_COAT, [(flop, 250.0), (flop + 0.22, 203.0)], flop, grab,
-                       length=150.0)  # fmt: skip
+    with anatomy_ledger.on_arm("bear", Side.LEFT):
+        toon_bed.swung_arm(cv, shot.back, (268.0, 778.0), BEAR_COAT, [(flop, 250.0), (flop + 0.22, 203.0)], flop,
+                           grab, length=150.0)  # fmt: skip
     toon_bed.double_quilt(cv, shot.front, signed=False)
     px, py = toon_bed.PHONE_SPOT
     stood = cv.group(shot.front, cv.uid("g"), start=app.start, end=grab)  # in her hand from here on, never on the stand
     cv.rect(
         stood, fx(px - 18), fy(py - 70), fh(36), fh(70), toon_everyday.PHONE_BODY, cv.ink, toon.FINE_W, radius=fh(5)
     )
-    toon_bed.swung_arm(cv, shot.front, (372.0, 760.0), RABBIT_COAT, [(hit - 0.2, -14.0), (hit, 24.0)], hit - 0.2,
-                       hit + 0.3, length=150.0, width=54.0)  # fmt: skip
+    with anatomy_ledger.on_arm("rabbit", Side.RIGHT):
+        toon_bed.swung_arm(cv, shot.front, (372.0, 760.0), RABBIT_COAT, [(hit - 0.2, -14.0), (hit, 24.0)], hit - 0.2,
+                           hit + 0.3, length=150.0, width=54.0)  # fmt: skip
     held_from, held_to = grab, buried(beats)
-    toon_bed.swung_arm(cv, shot.front, (204.0, 776.0), RABBIT_COAT, [(grab, -12.0)], held_from, held_to, length=72.0,
-                       width=44.0)  # fmt: skip
+    with anatomy_ledger.on_arm("rabbit", Side.RIGHT):
+        toon_bed.swung_arm(cv, shot.front, (204.0, 776.0), RABBIT_COAT, [(grab, -12.0)], held_from, held_to,
+                           length=72.0, width=44.0)  # fmt: skip
     shade = cv.group(shot.front, cv.uid("g"))
     cv.rect(shade, 0, 0, cv.width, cv.height, DARK[0], opacity=DARK[1])
     _lit_phone(cv, shot.front, toon_bed.PHONE_SPOT, ((max(0.05, a1 - 0.3), hit), (a2 - 0.3, grab)))
@@ -301,9 +316,10 @@ def _morning(shot) -> None:
     toon_bed.double_bed(cv, shot.back, day=True)
     _ledge(cv, shot.back)
     day, turn = at(beats, "day"), at(beats, "turn")
-    for shoulder, up in (((322.0, 768.0), -118.0), ((378.0, 768.0), -62.0)):
+    for shoulder, up, side in (((322.0, 768.0), -118.0, Side.LEFT), ((378.0, 768.0), -62.0, Side.RIGHT)):
         keys = [(day, 90.0), (day + 0.8, up), (turn - 0.45, up), (turn, 90.0)]
-        toon_bed.swung_arm(cv, shot.back, shoulder, BEAR_COAT, keys, day, turn + 0.05, length=290.0)
+        with anatomy_ledger.on_arm("bear", side):
+            toon_bed.swung_arm(cv, shot.back, shoulder, BEAR_COAT, keys, day, turn + 0.05, length=290.0)
     bear = toon_pair.figure(shot, shot.back, "bear", BRUNO_AT, ACTS["bear"], scale=SCALE)
     cv.keys(bear, "rotation", [(turn, 0.0), (turn + 0.4, -7.0)], hold=False, kind="sine-in-out", local=False)
     rabbit = toon_pair.figure(shot, shot.back, "rabbit", MAE_AT, ACTS["rabbit"], scale=SCALE, moving=False)

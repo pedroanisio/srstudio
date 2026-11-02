@@ -17,7 +17,8 @@ from __future__ import annotations
 
 from dataclasses import astuple, replace
 
-from srstudio import camera, foley, scripting, sketch, toon_house, toon_laptop, toon_pair, toon_sets
+from srstudio import anatomy_ledger, camera, foley, scripting, sketch, toon_house, toon_laptop, toon_pair, toon_sets
+from srstudio.anatomy import Side
 from srstudio.scripting import at, times
 from srstudio.sketch import Line, Sketch, Speaker
 from srstudio.toon import fh
@@ -204,7 +205,8 @@ def _arm(shot, parent, at, target, start, end, scale, away) -> None:
     g = cv.group(parent, cv.uid("g"))
     for prop, by in zip(("x", "y"), away, strict=True):
         cv.keys(g, prop, [(end - ARM_GONE, 0.0), (end, by)], hold=False, kind="sine-in-out", local=False)
-    toon_pair.reach(cv, g, at, target, RABBIT_COAT, start, end, scale=scale)
+    with anatomy_ledger.on_arm("rabbit", Side.LEFT):  # her arm on the side reach roots it, the frame's left of her
+        toon_pair.reach(cv, g, at, target, RABBIT_COAT, start, end, scale=scale)
 
 
 def _medium(shot) -> None:

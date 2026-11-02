@@ -15,6 +15,7 @@ from __future__ import annotations
 import math
 
 from srstudio import (
+    anatomy_ledger,
     foley,
     look,
     scripting,
@@ -29,6 +30,7 @@ from srstudio import (
     toon_voices,
     toon_world,
 )
+from srstudio.anatomy import Side
 from srstudio.scripting import at
 from srstudio.sketch import Line, Sketch
 from srstudio.toon import fh, fx, fy
@@ -61,6 +63,7 @@ TINTS = toon_voices.tinted(MIA, DANA)
 TWO, MIA_C, DANA_C = "hamster", "goat", "sloth"  # never seen: the names of the shots the dress draws whole
 BARE = (TWO, MIA_C, DANA_C)
 RABBIT_COAT, DOG_COAT = "#efe8ee", "#f0a35c"
+WHOSE = {RABBIT_COAT: "rabbit", DOG_COAT: "dog"}  # whose arm a swung arm in that coat is
 MIA_AT, DANA_AT, PAIR_SCALE = (84.0, 850.0), (258.0, 850.0), 0.66
 MIA_CLOSE, DANA_CLOSE = (165.0, 880.0), (235.0, 880.0)
 SEAT_Y = 794.0  # the cushion's top, where a phone lies
@@ -238,8 +241,10 @@ def _room(shot) -> None:
     toon_world.sofa_back(cv, shot.back)
 
 
-def _arm(shot, parent, shoulder, coat, swing, start, end, length, width):
-    return toon_bed.swung_arm(shot.cv, parent, shoulder, coat, swing, start, end, length=length, width=width)
+def _arm(shot, parent, shoulder, coat, swing, start, end, length, width, side):
+    """An arm in the coat of the character whose arm it is, on the frame's ``side`` of that character."""
+    with anatomy_ledger.on_arm(WHOSE[coat], side):
+        return toon_bed.swung_arm(shot.cv, parent, shoulder, coat, swing, start, end, length=length, width=width)
 
 
 def _sampled(a: float, b: float, t0: float, t1: float, n: int = 5) -> list[tuple[float, float]]:
@@ -257,7 +262,7 @@ def _two(shot) -> None:
         swing = _sampled(-58.0, -84.0, away, away + 0.28)
         up = _held_phone(cv, shot.back, _tip(high, -58.0, 220.0), 0.34, app.start, app.end, measure, tag="up")
         _carried(cv, up, high, 220.0, swing, (0.0, 14.0))
-        _arm(shot, shot.back, high, DOG_COAT, swing, app.start, app.end, 220.0, 34.0)
+        _arm(shot, shot.back, high, DOG_COAT, swing, app.start, app.end, 220.0, 34.0, Side.RIGHT)
     toon_pair.figure(shot, shot.back, "rabbit", MIA_AT, ACTS["rabbit"], scale=PAIR_SCALE, mirror=True)
     dog = toon_pair.figure(shot, shot.back, "dog", DANA_AT, ACTS["dog"], scale=PAIR_SCALE)
     if app.start <= shake < app.end:  # she shakes her head, tender
@@ -266,20 +271,20 @@ def _two(shot) -> None:
                 local=False)  # fmt: skip
     if app.start < take:  # the shove, the phone on the cushion, the mug in her hand
         _arm(shot, shot.back, mia_arm, RABBIT_COAT, [(slide, 66.0), (slide + 0.32, 16.0), (slide + 0.9, 16.0),
-             (slide + 1.25, 96.0)], app.start, slide + 1.25, 106.0, 40.0)  # fmt: skip
+             (slide + 1.25, 96.0)], app.start, slide + 1.25, 106.0, 40.0, Side.RIGHT)  # fmt: skip
         tip = _tip(dana_right, -30.0, 24.0)
         _mug(cv, shot.back, (tip[0] + 12.0, tip[1] + 10.0), 0.5, app.start, app.end)
-        _arm(shot, shot.back, dana_right, DOG_COAT, [(app.start, -30.0)], app.start, app.end, 24.0, 30.0)
+        _arm(shot, shot.back, dana_right, DOG_COAT, [(app.start, -30.0)], app.start, app.end, 24.0, 30.0, Side.RIGHT)
     elif app.start < away:  # she has it, low, and reads
         tip = _tip(dana_left, 172.0, 46.0)
         _held_phone(cv, shot.back, (tip[0], tip[1] + 14.0), 0.28, app.start, app.end, measure, tag="low")
-        _arm(shot, shot.back, dana_left, DOG_COAT, [(app.start, 172.0)], app.start, app.end, 46.0, 32.0)
+        _arm(shot, shot.back, dana_left, DOG_COAT, [(app.start, 172.0)], app.start, app.end, 46.0, 32.0, Side.LEFT)
     elif app.start < down:  # Mia reaches for it
         _arm(shot, shot.back, mia_arm, RABBIT_COAT, [(away + 0.25, 72.0), (away + 0.6, -30.0)], app.start, app.end,
-             96.0, 40.0)  # fmt: skip
+             96.0, 40.0, Side.RIGHT)  # fmt: skip
     else:  # her hand on Mia's, over the phone
-        _arm(shot, shot.back, mia_arm, RABBIT_COAT, [(app.start, 15.0)], app.start, app.end, 66.0, 34.0)
-        _arm(shot, shot.back, dana_left, DOG_COAT, [(app.start, 176.0)], app.start, app.end, 50.0, 34.0)
+        _arm(shot, shot.back, mia_arm, RABBIT_COAT, [(app.start, 15.0)], app.start, app.end, 66.0, 34.0, Side.RIGHT)
+        _arm(shot, shot.back, dana_left, DOG_COAT, [(app.start, 176.0)], app.start, app.end, 50.0, 34.0, Side.LEFT)
     toon_world.sofa(cv, shot.front, "rug")
     if app.start < take:
         _flat_phone(cv, shot.front, 252.0, SEAT_Y, app.start, app.end, lit=True, slide=122.0,
@@ -315,22 +320,24 @@ def _dana(shot) -> None:
         lowers = _sampled(-66.0, -35.0, mug, set_down)
         m = _mug(cv, shot.back, MUG_SPOT, 0.72, app.start, set_down)
         _carried(cv, m, right, MUG_REACH, lowers, (16.0, 11.0))  # the mug stands clear of the paw that holds it
-        _arm(shot, shot.back, right, DOG_COAT, [*lowers, (set_down + 0.35, 74.0)], app.start, app.end, MUG_REACH, 46.0)
+        _arm(shot, shot.back, right, DOG_COAT, [*lowers, (set_down + 0.35, 74.0)], app.start, app.end, MUG_REACH,
+             46.0, Side.RIGHT)  # fmt: skip
         up = _held_phone(cv, shot.back, hold_at, 0.42, take + TAKE_REACH, app.end, measure, tag="take")
         _carried(cv, up, left, held, lifted, (0.0, 16.0))
-        _arm(shot, shot.back, left, DOG_COAT, [(take, 96.0), *lifted], take, app.end, held, 44.0)
+        _arm(shot, shot.back, left, DOG_COAT, [(take, 96.0), *lifted], take, app.end, held, 44.0, Side.LEFT)
     elif app.start < down:
         _held_phone(cv, shot.back, hold_at, 0.42, app.start, app.end, measure, tag="read")
-        _arm(shot, shot.back, left, DOG_COAT, [(app.start, HOLD_DEG)], app.start, app.end, held, 44.0)
+        _arm(shot, shot.back, left, DOG_COAT, [(app.start, HOLD_DEG)], app.start, app.end, held, 44.0, Side.LEFT)
     else:
         if app.start <= down:
             carried = _held_phone(cv, shot.back, hold_at, 0.42, app.start, land, measure, tag="down")
             _carried(cv, carried, left, held, [(down, HOLD_DEG), (land, LOW_DEG)], (0.0, 16.0))
-            _arm(shot, shot.back, left, DOG_COAT, [(down, HOLD_DEG), (land, LOW_DEG)], app.start, land, held, 44.0)
+            _arm(shot, shot.back, left, DOG_COAT, [(down, HOLD_DEG), (land, LOW_DEG)], app.start, land, held, 44.0,
+                 Side.LEFT)  # fmt: skip
         _arm(shot, shot.back, (-60.0, 790.0), RABBIT_COAT, [(down + 0.45, -30.0), (down + HAND_TAKEN - 0.2, -6.0)],
-             max(app.start, down + 0.45), app.end, 110.0, 44.0)  # fmt: skip
+             max(app.start, down + 0.45), app.end, 110.0, 44.0, Side.LEFT)  # fmt: skip
         _arm(shot, shot.back, left, DOG_COAT, [(land, 130.0), (down + HAND_TAKEN, 172.0)], max(app.start, land),
-             app.end, reach, 44.0)  # fmt: skip
+             app.end, reach, 44.0, Side.LEFT)  # fmt: skip
     toon_world.sofa(cv, shot.front, "rug")
     if app.start < take:
         _flat_phone(cv, shot.front, LYING, SEAT_Y + 8, app.start, take + TAKE_REACH, lit=True)

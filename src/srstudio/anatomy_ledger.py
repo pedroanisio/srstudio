@@ -28,6 +28,7 @@ if TYPE_CHECKING:
 __all__ = [
     "ARM_THIRD",
     "BUST_OPEN",
+    "HAND_COUNT",
     "HAND_NO_ARM",
     "HAND_NO_SIDE",
     "HAND_UNPAIRED",
@@ -46,6 +47,7 @@ __all__ = [
     "loose_hand",
     "note_part",
     "notes",
+    "pose_hands",
     "on_arm",
     "parse_exemptions",
     "read",
@@ -61,8 +63,9 @@ HAND_NO_SIDE = "hand-no-side"  # a hand that does not say which arm it is on
 HAND_NO_ARM = "hand-no-arm"  # a hand part that no character's arm holds (ADR 0148)
 ARM_THIRD = "arm-third"  # two hands on one arm of one character on one frame (ADR 0148)
 BUST_OPEN = "bust-open"  # a figure drawn to the waist ending in the open, where it would need legs (ADR 0148)
+HAND_COUNT = "hand-count"  # one character drawing more hands at once than its pair, across its layers (ADR 0174)
 
-RULES = frozenset({HAND_UNPAIRED, HAND_NO_SIDE, HAND_NO_ARM, ARM_THIRD, BUST_OPEN})
+RULES = frozenset({HAND_UNPAIRED, HAND_NO_SIDE, HAND_NO_ARM, ARM_THIRD, BUST_OPEN, HAND_COUNT})
 RECORD = "anatomy.json"
 SCHEMA = "1.0.0"
 EXEMPTIONS = "anatomy_published.json"
@@ -162,15 +165,28 @@ def on_arm(owner: str, side: Side) -> Iterator[None]:
         _holding.reset(token)
 
 
-def loose_hand(cv: Canvas, part: str) -> None:
-    """Note on ``cv`` that ``part`` drew a hand with no arm, unless the caller said whose it is (:func:`on_arm`)."""
-    if _holding.get() is None:
+def loose_hand(cv: Canvas, part: str, node: str | None = None) -> None:
+    """Note on ``cv`` that ``part`` drew a hand with no arm, unless the caller said whose it is (:func:`on_arm`). A
+    part that gives the ``node`` its hand is drawn in records it there as that arm's, so the hand is counted with the
+    character's others (ADR 0174)."""
+    holding = _holding.get()
+    if holding is None:
         cv.note_anatomy(HAND_NO_ARM, part, "a hand exists only on an arm: draw it in anatomy_ledger.on_arm")
+    elif node is not None:
+        limb(cv, holding[0], holding[1].value, node)
 
 
 def limb(cv: Canvas, owner: str, side: int, node: str) -> None:
     """Record on ``cv`` that node ``node`` is the hand of ``owner``'s arm on ``side``."""
-    cv.limbs[node] = Limb(owner, Side.of(side), node)
+    hand = Limb(owner, Side.of(side), node)
+    cv.limbs[(node, hand.side)] = hand
+
+
+def pose_hands(cv: Canvas, owner: str, node: str, sides: Iterable[Side]) -> None:
+    """Record on ``cv`` that the body drawing ``node`` of ``owner`` draws a hand on each of ``sides``: one per arm its
+    pose draws, whatever covers them, so the count of a character's hands sees them (ADR 0174)."""
+    for side in sides:
+        limb(cv, owner, side.value, node)
 
 
 def notes(cv: Canvas) -> list[Note]:
