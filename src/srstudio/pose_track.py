@@ -8,6 +8,12 @@ writes one JSON record, ``srstudio.pose-track/1.0.0``; this module reads that re
     track.frames[30].world[pose_track.LANDMARKS.index("left_knee")]   # metres from the hips' centre
     track.frames[30].image[0][3]                                      # the nose's visibility, 0..1
 
+A screen recording repeats pictures: a 30 fps capture of a video played at a lower rate, or stalled, writes the same
+picture again. A repeated picture is no new observation of the dancer; read as one it is a moment of zero speed and
+then a double step, which fakes acceleration spikes and moves the fastest moment. From ``1.1.0`` each frame says
+whether its picture repeats the last distinct one (``repeat``); a repeated frame carries its clock and no landmarks,
+and the study counts it as not seen (ADR 0204). A ``1.0.0`` record reads as before, every frame its own picture.
+
 The record is refused with a typed error when it is not one strict JSON object of this schema (an unknown or missing
 field, a wrong type, a number that is not finite, a repeated key), when its schema major is another, and when its
 numbers contradict each other: frames out of order or off the source's clock, a found frame without landmarks or a
@@ -56,7 +62,7 @@ __all__ = [
 ]
 
 SCHEMA = "srstudio.pose-track"
-SCHEMA_VERSION = "1.0.0"
+SCHEMA_VERSION = "1.1.0"  # 1.1.0: each frame says whether its picture repeats the last (ADR 0204)
 MAX_BYTES = 64_000_000  # a found frame is about 2.5 KB of JSON: twenty minutes at 30 fps is under 50 MB
 MAX_FRAMES = 36_000  # twenty minutes at 30 fps
 MAX_FPS = 240.0
@@ -174,7 +180,8 @@ class PoseFrame:
     one has ``image`` and ``world`` landmarks in :data:`LANDMARKS` order, the dancer's ``box`` (x0, y0, x1, y1, shares
     of the frame), and the tracker's ``position`` and ``appearance`` costs for the match: the jump from the last place
     in body sizes, and how far the clothes' colours are from the dancer's, 0 the same, 1 nothing alike, or None when
-    the clothes were not seen well enough to compare and the dancer was kept by place alone."""
+    the clothes were not seen well enough to compare and the dancer was kept by place alone. A ``repeat`` frame's
+    picture is the last distinct one again: it has no landmarks, as no new picture was seen."""
 
     index: int
     time_s: float
@@ -183,6 +190,7 @@ class PoseFrame:
     box: tuple[float, float, float, float] | None
     position: float | None
     appearance: float | None
+    repeat: bool = False
 
     @property
     def found(self) -> bool:
@@ -207,6 +215,11 @@ class PoseTrack:
     def found(self) -> int:
         """How many frames hold the dancer."""
         return sum(frame.found for frame in self.frames)
+
+    @property
+    def repeats(self) -> int:
+        """How many frames repeat the last distinct picture."""
+        return sum(frame.repeat for frame in self.frames)
 
 
 # --- reading -------------------------------------------------------------------------------------------------------
@@ -239,6 +252,7 @@ def parse(text: str | bytes) -> PoseTrack:
 
 TOP_KEYS = ("schema", "tool", "estimator", "source", "subject", "axes", "landmarks", "start_frame", "frames")
 FRAME_KEYS = ("index", "t_s", "image", "world", "box", "position", "appearance")
+REPEAT_KEY = "repeat"  # from 1.1.0
 
 
 def from_data(data: object) -> PoseTrack:
@@ -258,7 +272,10 @@ def from_data(data: object) -> PoseTrack:
     raw = _list(top["frames"], "frames", min(MAX_FRAMES, source.frames - start))
     if not raw:
         raise RecordValueError("a track holds at least one frame", path="frames")
-    frames = tuple(_frame(item, f"frames[{i}]", start + i, source.fps) for i, item in enumerate(raw))
+    minor = int(version.split(".")[1])
+    frames = tuple(_frame(item, f"frames[{i}]", start + i, source.fps, minor) for i, item in enumerate(raw))
+    if frames[0].repeat:
+        raise RecordValueError("a track's first frame has no picture before it to repeat", path="frames[0].repeat")
     subject = _subject(top["subject"], start, start + len(frames))
     if subject.first_frame is not None and not frames[subject.first_frame - start].found:
         raise RecordValueError("the subject's first frame holds no dancer", path="subject.first_frame")
@@ -323,8 +340,11 @@ def _subject(value: object, start: int, end: int) -> Subject:
     return Subject(pick, point, None if first is None else _int(first, "subject.first_frame", start, end - 1))
 
 
-def _frame(value: object, path: str, index: int, fps: float) -> PoseFrame:
-    fields = _fields(value, path, FRAME_KEYS)
+def _frame(value: object, path: str, index: int, fps: float, minor: int) -> PoseFrame:
+    fields = _fields(value, path, FRAME_KEYS + ((REPEAT_KEY,) if minor >= 1 else ()))
+    repeat = fields.get(REPEAT_KEY, False)
+    if not isinstance(repeat, bool):
+        raise RecordFormatError(f"{path}.repeat is true or false, not {repeat!r}", path=f"{path}.repeat")
     got = _int(fields["index"], f"{path}.index", 0, 1 << 31)
     if got != index:
         raise RecordValueError(f"frames run in order from start_frame: {path} is frame {index}, not {got}", path=path)
@@ -333,7 +353,9 @@ def _frame(value: object, path: str, index: int, fps: float) -> PoseFrame:
         raise RecordValueError(f"{path} at {t} s is off the clock: frame {index} is at {index / fps:.4f} s", path=path)
     rest = [fields[k] for k in FRAME_KEYS[2:6]]
     if all(v is None for v in rest) and fields["appearance"] is None:
-        return PoseFrame(index, t, None, None, None, None, None)
+        return PoseFrame(index, t, None, None, None, None, None, repeat)
+    if repeat:
+        raise RecordValueError(f"{path} repeats the last picture, so it holds no landmarks", path=f"{path}.repeat")
     if any(v is None for v in rest):
         raise RecordValueError(f"{path} holds all of {FRAME_KEYS[2:6]} or none of them", path=path)
     appearance = fields["appearance"]

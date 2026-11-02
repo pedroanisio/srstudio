@@ -60,11 +60,23 @@ def image(rows: list[list[float]], seen: float = 0.95) -> list[list[float]]:
     return [[round(0.5 + x / 2.5, 5), round(0.45 + y / 2.5, 5), round(z, 5), seen, seen] for x, y, z in rows]
 
 
-def record(frames: int = 40, fps: float = 30.0, *, lost: tuple[int, ...] = (), bob: float = 0.0, hz: float = 2.0):
-    """A record of ``frames`` frames from frame 0, the dancer lost in ``lost``."""
+def record(
+    frames: int = 40,
+    fps: float = 30.0,
+    *,
+    lost: tuple[int, ...] = (),
+    bob: float = 0.0,
+    hz: float = 2.0,
+    repeat: tuple[int, ...] | None = None,
+):
+    """A record of ``frames`` frames from frame 0, the dancer lost in ``lost``. With ``repeat`` it is a ``1.1.0``
+    record whose frames in ``repeat`` repeat the last distinct picture; without, a ``1.0.0`` one."""
     out = []
     for i in range(frames):
         t = i / fps
+        if repeat is not None and i in repeat:
+            out.append({k: None for k in pose_track.FRAME_KEYS} | {"index": i, "t_s": round(t, 6), "repeat": True})
+            continue
         if i in lost:
             out.append({k: None for k in pose_track.FRAME_KEYS} | {"index": i, "t_s": round(t, 6)})
             continue
@@ -80,9 +92,12 @@ def record(frames: int = 40, fps: float = 30.0, *, lost: tuple[int, ...] = (), b
                 "appearance": 0.1,
             }
         )
-    first = next((i for i in range(frames) if i not in lost), None)
+    if repeat is not None:
+        for frame in out:
+            frame.setdefault("repeat", False)
+    first = next((i for i in range(frames) if i not in lost and i not in (repeat or ())), None)
     return {
-        "schema": "srstudio.pose-track/1.0.0",
+        "schema": "srstudio.pose-track/1.0.0" if repeat is None else "srstudio.pose-track/1.1.0",
         "tool": "tests/support/pose_records.py",
         "estimator": {
             "name": "synthetic",

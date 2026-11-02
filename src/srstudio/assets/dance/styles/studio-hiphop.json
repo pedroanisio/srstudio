@@ -1,5 +1,5 @@
 {
- "schema": "srstudio.dance-style/1.0.0",
+ "schema": "srstudio.dance-style/1.1.0",
  "name": "studio-hiphop",
  "description": "The lead dancer of a hip-hop class recording the operator supplied on 2026-11-02: about 50 seconds, a handheld camera following her at the centre of the group, a song at about 122.7 beats a minute. Style statistics only; no frame or routine.",
  "generated_by": {
@@ -14,13 +14,14 @@
   "model_sha256": "64437af838a65d18e5ba7a0d39b465540069bc8aae8308de3e318aad31fcbc7b",
   "seconds": 50.233,
   "frames": 1507,
-  "used": 1197,
+  "used": 773,
   "rejected": {
-   "lost": 214,
+   "lost": 144,
    "low_confidence": 0,
    "implausible": 25,
-   "jump": 71,
-   "arm": 187
+   "jump": 25,
+   "arm": 123,
+   "repeat": 540
   },
   "bpm": 122.65,
   "beats_per_bar": 4,
@@ -32,34 +33,38 @@
    "unit": "head_radii",
    "trust": "fair",
    "why": "the hips' height over the lower ankle: depth errors on the feet and the camera's tilt shorten it",
-   "noise": 0.1324,
+   "noise": 0.15332,
    "level": [
-    6.2571,
-    7.5664
+    6.2994,
+    7.5965
    ],
    "peak_to_peak": [
-    0.734,
-    1.5602
+    0.113,
+    0.7819
    ],
    "range": [
-    1.0483,
-    2.227
+    0.8921,
+    2.2231
    ],
    "cycles_per_beat": [
-    0.4982,
-    0.6291
+    0.324,
+    1.0092
    ],
-   "snap_ratio": [
-    0.3916,
-    1.0816
-   ],
+   "snap_ratio": null,
    "hit_offset": null,
+   "peak_speed_phase": null,
+   "attack": null,
+   "release": null,
+   "peak_acceleration": null,
+   "velocity": null,
+   "profile_distance": null,
    "evidence": {
-    "frames": 757,
-    "windows": 13,
-    "read": 6,
+    "frames": 508,
+    "windows": 14,
+    "read": 5,
     "still": 0,
-    "locked": 0
+    "locked": 1,
+    "timed": 1
    }
   },
   {
@@ -67,34 +72,38 @@
    "unit": "rad",
    "trust": "fair",
    "why": "a 3D angle at the knee: depth on a bent leg is the estimator's guess",
-   "noise": 0.06901,
+   "noise": 0.07649,
    "level": [
-    0.4618,
-    1.0899
+    0.4424,
+    1.0783
    ],
    "peak_to_peak": [
-    0.3704,
-    0.8986
+    0.1399,
+    0.4907
    ],
    "range": [
-    0.5962,
-    1.0027
+    0.5267,
+    0.9371
    ],
    "cycles_per_beat": [
-    0.5567,
-    1.1617
+    0.5548,
+    1.3071
    ],
-   "snap_ratio": [
-    0.2255,
-    1.7226
-   ],
+   "snap_ratio": null,
    "hit_offset": null,
+   "peak_speed_phase": null,
+   "attack": null,
+   "release": null,
+   "peak_acceleration": null,
+   "velocity": null,
+   "profile_distance": null,
    "evidence": {
-    "frames": 725,
+    "frames": 480,
     "windows": 13,
-    "read": 7,
+    "read": 8,
     "still": 0,
-    "locked": 0
+    "locked": 0,
+    "timed": 1
    }
   },
   {
@@ -102,34 +111,41 @@
    "unit": "rad",
    "trust": "poor",
    "why": "front-back lean against the camera's vertical, which tilts with it",
-   "noise": 0.05049,
+   "noise": 0.06286,
    "level": [
-    -0.1987,
-    0.2032
+    -0.219,
+    0.2328
    ],
    "peak_to_peak": [
-    0.1565,
-    0.5052
+    0.0,
+    0.3128
    ],
    "range": [
-    0.2552,
-    0.5706
+    0.2299,
+    0.5798
    ],
    "cycles_per_beat": [
-    0.3331,
-    0.6924
+    0.5022,
+    1.1229
    ],
-   "snap_ratio": [
-    0.4245,
-    2.5495
+   "snap_ratio": null,
+   "hit_offset": [
+    -0.1577,
+    0.1444
    ],
-   "hit_offset": null,
+   "peak_speed_phase": null,
+   "attack": null,
+   "release": null,
+   "peak_acceleration": null,
+   "velocity": null,
+   "profile_distance": null,
    "evidence": {
-    "frames": 1197,
-    "windows": 37,
-    "read": 23,
+    "frames": 773,
+    "windows": 35,
+    "read": 19,
     "still": 0,
-    "locked": 1
+    "locked": 4,
+    "timed": 0
    }
   },
   {
@@ -137,37 +153,41 @@
    "unit": "rad",
    "trust": "poor",
    "why": "side lean against the camera's vertical, which rolls with it",
-   "noise": 0.02828,
+   "noise": 0.03136,
    "level": [
-    -0.1405,
-    0.1113
+    -0.1519,
+    0.1203
    ],
    "peak_to_peak": [
-    0.1282,
-    0.3303
+    0.0206,
+    0.1854
    ],
    "range": [
-    0.1764,
-    0.4235
+    0.2054,
+    0.4632
    ],
    "cycles_per_beat": [
-    0.4349,
-    0.9986
+    0.4265,
+    1.1241
    ],
-   "snap_ratio": [
-    0.2576,
-    1.8301
-   ],
+   "snap_ratio": null,
    "hit_offset": [
-    0.129,
-    0.3233
+    -0.3629,
+    0.1743
    ],
+   "peak_speed_phase": null,
+   "attack": null,
+   "release": null,
+   "peak_acceleration": null,
+   "velocity": null,
+   "profile_distance": null,
    "evidence": {
-    "frames": 1197,
-    "windows": 37,
-    "read": 18,
+    "frames": 773,
+    "windows": 35,
+    "read": 17,
     "still": 0,
-    "locked": 5
+    "locked": 5,
+    "timed": 0
    }
   },
   {
@@ -175,34 +195,41 @@
    "unit": "rad",
    "trust": "fair",
    "why": "shoulders turned on the hips: needs depth, but no camera angle",
-   "noise": 0.03571,
+   "noise": 0.02617,
    "level": [
-    0.232,
-    0.5864
+    0.2617,
+    0.57
    ],
    "peak_to_peak": [
-    0.1921,
-    0.7359
+    0.0955,
+    0.3763
    ],
    "range": [
-    0.2909,
-    0.7331
+    0.3187,
+    0.6485
    ],
    "cycles_per_beat": [
-    0.4191,
-    0.7858
+    0.4238,
+    0.7384
    ],
-   "snap_ratio": [
-    0.2831,
-    0.8874
+   "snap_ratio": null,
+   "hit_offset": [
+    -0.2594,
+    0.2168
    ],
-   "hit_offset": null,
+   "peak_speed_phase": null,
+   "attack": null,
+   "release": null,
+   "peak_acceleration": null,
+   "velocity": null,
+   "profile_distance": null,
    "evidence": {
-    "frames": 1197,
-    "windows": 37,
-    "read": 16,
+    "frames": 773,
+    "windows": 35,
+    "read": 13,
     "still": 0,
-    "locked": 2
+    "locked": 4,
+    "timed": 0
    }
   },
   {
@@ -210,34 +237,38 @@
    "unit": "rad",
    "trust": "good",
    "why": "shoulder line against the hip line, both in the picture's plane",
-   "noise": 0.03185,
+   "noise": 0.038,
    "level": [
-    0.0366,
-    0.3522
+    0.0142,
+    0.3532
    ],
    "peak_to_peak": [
-    0.2494,
-    0.4924
+    0.1185,
+    0.3573
    ],
    "range": [
-    0.3369,
-    0.6136
+    0.3232,
+    0.6343
    ],
    "cycles_per_beat": [
-    0.3219,
-    0.6872
+    0.3304,
+    0.7806
    ],
-   "snap_ratio": [
-    0.5392,
-    1.2749
-   ],
+   "snap_ratio": null,
    "hit_offset": null,
+   "peak_speed_phase": null,
+   "attack": null,
+   "release": null,
+   "peak_acceleration": null,
+   "velocity": null,
+   "profile_distance": null,
    "evidence": {
-    "frames": 1197,
-    "windows": 37,
-    "read": 24,
+    "frames": 773,
+    "windows": 35,
+    "read": 22,
     "still": 0,
-    "locked": 3
+    "locked": 3,
+    "timed": 3
    }
   },
   {
@@ -245,34 +276,53 @@
    "unit": "head_radii",
    "trust": "good",
    "why": "the head's height over the shoulders' middle",
-   "noise": 0.04339,
+   "noise": 0.04516,
    "level": [
-    0.8072,
-    1.2468
+    0.8094,
+    1.254
    ],
    "peak_to_peak": [
-    0.3113,
-    0.6668
+    0.0912,
+    0.4375
    ],
    "range": [
-    0.4674,
-    0.7623
+    0.4194,
+    0.7495
    ],
    "cycles_per_beat": [
-    0.2943,
-    0.7436
+    0.3309,
+    0.828
    ],
    "snap_ratio": [
-    0.7026,
-    2.4293
+    1.2868,
+    2.5502
    ],
    "hit_offset": null,
+   "peak_speed_phase": [
+    0.8228,
+    0.8939
+   ],
+   "attack": [
+    0.3215,
+    0.7263
+   ],
+   "release": [
+    1.2146,
+    1.8739
+   ],
+   "peak_acceleration": [
+    4.5662,
+    145.5524
+   ],
+   "velocity": null,
+   "profile_distance": null,
    "evidence": {
-    "frames": 1197,
-    "windows": 37,
-    "read": 11,
+    "frames": 773,
+    "windows": 35,
+    "read": 12,
     "still": 0,
-    "locked": 0
+    "locked": 1,
+    "timed": 4
    }
   },
   {
@@ -280,34 +330,38 @@
    "unit": "head_radii",
    "trust": "good",
    "why": "the head along the shoulder line",
-   "noise": 0.08256,
+   "noise": 0.08068,
    "level": [
-    -0.29,
-    0.5361
+    -0.2934,
+    0.521
    ],
    "peak_to_peak": [
-    0.4692,
-    1.4861
+    0.2423,
+    0.8426
    ],
    "range": [
-    0.9244,
-    1.505
+    0.839,
+    1.4999
    ],
    "cycles_per_beat": [
-    0.2586,
-    0.5388
+    0.2665,
+    0.6105
    ],
-   "snap_ratio": [
-    0.673,
-    1.7616
-   ],
+   "snap_ratio": null,
    "hit_offset": null,
+   "peak_speed_phase": null,
+   "attack": null,
+   "release": null,
+   "peak_acceleration": null,
+   "velocity": null,
+   "profile_distance": null,
    "evidence": {
-    "frames": 1197,
-    "windows": 37,
-    "read": 16,
+    "frames": 773,
+    "windows": 35,
+    "read": 14,
     "still": 0,
-    "locked": 2
+    "locked": 1,
+    "timed": 2
    }
   },
   {
@@ -315,28 +369,35 @@
    "unit": "head_radii",
    "trust": "good",
    "why": "the wrists' height over the shoulders' middle; a hidden wrist leaves its frame out",
-   "noise": 0.13435,
+   "noise": 0.10931,
    "level": [
-    -3.0119,
-    0.2972
+    -2.7584,
+    0.1607
    ],
    "peak_to_peak": [
-    2.8629,
-    3.4003
+    1.0776,
+    1.515
    ],
    "range": [
-    4.3348,
-    7.1145
+    4.1684,
+    7.0306
    ],
    "cycles_per_beat": null,
    "snap_ratio": null,
    "hit_offset": null,
+   "peak_speed_phase": null,
+   "attack": null,
+   "release": null,
+   "peak_acceleration": null,
+   "velocity": null,
+   "profile_distance": null,
    "evidence": {
-    "frames": 657,
+    "frames": 432,
     "windows": 6,
     "read": 1,
     "still": 0,
-    "locked": 0
+    "locked": 0,
+    "timed": 0
    }
   },
   {
@@ -344,22 +405,29 @@
    "unit": "ratio",
    "trust": "fair",
    "why": "shoulder to wrist over the arm's length: depth on a pointing arm",
-   "noise": 0.0148,
+   "noise": 0.01295,
    "level": [
-    0.7233,
-    0.9854
+    0.7185,
+    0.9803
    ],
    "peak_to_peak": null,
    "range": null,
    "cycles_per_beat": null,
    "snap_ratio": null,
    "hit_offset": null,
+   "peak_speed_phase": null,
+   "attack": null,
+   "release": null,
+   "peak_acceleration": null,
+   "velocity": null,
+   "profile_distance": null,
    "evidence": {
-    "frames": 579,
-    "windows": 0,
-    "read": 0,
+    "frames": 381,
+    "windows": 2,
+    "read": 2,
     "still": 0,
-    "locked": 0
+    "locked": 0,
+    "timed": 0
    }
   },
   {
@@ -369,20 +437,27 @@
    "why": "the wrists' path around the hips each beat, a quarter beat at a time; noise lengthens it",
    "noise": null,
    "level": [
-    2.6706,
-    4.6717
+    4.2566,
+    6.9137
    ],
    "peak_to_peak": null,
    "range": null,
    "cycles_per_beat": null,
    "snap_ratio": null,
    "hit_offset": null,
+   "peak_speed_phase": null,
+   "attack": null,
+   "release": null,
+   "peak_acceleration": null,
+   "velocity": null,
+   "profile_distance": null,
    "evidence": {
-    "frames": 657,
+    "frames": 432,
     "windows": 0,
     "read": 0,
     "still": 0,
-    "locked": 0
+    "locked": 0,
+    "timed": 0
    }
   },
   {
@@ -392,20 +467,27 @@
    "why": "the ankles' path around the hips each beat, a quarter beat at a time: steps and kicks",
    "noise": null,
    "level": [
-    1.882,
-    3.382
+    2.1474,
+    3.9481
    ],
    "peak_to_peak": null,
    "range": null,
    "cycles_per_beat": null,
    "snap_ratio": null,
    "hit_offset": null,
+   "peak_speed_phase": null,
+   "attack": null,
+   "release": null,
+   "peak_acceleration": null,
+   "velocity": null,
+   "profile_distance": null,
    "evidence": {
-    "frames": 757,
+    "frames": 508,
     "windows": 0,
     "read": 0,
     "still": 0,
-    "locked": 0
+    "locked": 0,
+    "timed": 0
    }
   },
   {
@@ -413,22 +495,29 @@
    "unit": "head_radii",
    "trust": "fair",
    "why": "the ankles' distance across the floor",
-   "noise": 0.23552,
+   "noise": 0.14546,
    "level": [
-    3.0574,
-    7.1961
+    3.2233,
+    6.9541
    ],
    "peak_to_peak": null,
    "range": null,
    "cycles_per_beat": null,
    "snap_ratio": null,
    "hit_offset": null,
+   "peak_speed_phase": null,
+   "attack": null,
+   "release": null,
+   "peak_acceleration": null,
+   "velocity": null,
+   "profile_distance": null,
    "evidence": {
-    "frames": 757,
+    "frames": 508,
     "windows": 0,
     "read": 0,
     "still": 0,
-    "locked": 0
+    "locked": 0,
+    "timed": 0
    }
   }
  ],
@@ -437,36 +526,36 @@
    "lead": "hips",
    "follow": "chest",
    "beats": [
-    -0.035,
-    0.0354
+    -0.0375,
+    0.0364
    ],
    "evidence": {
-    "windows": 13,
-    "read": 13
+    "windows": 14,
+    "read": 14
    }
   },
   {
    "lead": "chest",
    "follow": "head",
    "beats": [
-    -0.0352,
-    0.0336
+    -0.0364,
+    0.0341
    ],
    "evidence": {
-    "windows": 13,
-    "read": 13
+    "windows": 14,
+    "read": 14
    }
   },
   {
    "lead": "hips",
    "follow": "head",
    "beats": [
-    -0.0353,
-    0.0344
+    -0.0364,
+    0.0351
    ],
    "evidence": {
-    "windows": 13,
-    "read": 13
+    "windows": 14,
+    "read": 14
    }
   },
   {
@@ -474,8 +563,8 @@
    "follow": "hands",
    "beats": null,
    "evidence": {
-    "windows": 0,
-    "read": 0
+    "windows": 2,
+    "read": 2
    }
   }
  ],

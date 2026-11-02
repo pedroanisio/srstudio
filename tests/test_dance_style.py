@@ -1,4 +1,4 @@
-"""Dance-style targets (ADR 0203): ranges derived from a reference's measures, a strict ``srstudio.dance-style/1.0.0``
+"""Dance-style targets (ADR 0203): ranges derived from a reference's measures, a strict ``srstudio.dance-style/1.1.0``
 record, and the check that lists, ranked, what one of our dances misses."""
 
 import json
@@ -20,7 +20,7 @@ REFERENCE = dance_style.Reference(
     seconds=8.0,
     frames=120,
     used=120,
-    rejected={"lost": 0, "low_confidence": 0, "implausible": 0, "jump": 0, "arm": 0},
+    rejected={"lost": 0, "low_confidence": 0, "implausible": 0, "jump": 0, "arm": 0, "repeat": 0},
     bpm=120.0,
     beats_per_bar=4,
     offset_s=0.0,
@@ -44,7 +44,7 @@ def test_a_style_is_ranges_and_round_trips_its_record(bounce_style):
     knees = next(c for c in bounce_style.channels if c.name == "knees.bend")
     low, high = knees.cycles_per_beat
     assert low < 2.0 < high and knees.peak_to_peak[0] <= knees.peak_to_peak[1]
-    assert knees.evidence == {"frames": 120, "windows": 5, "read": 5, "still": 0, "locked": 5}
+    assert knees.evidence == {"frames": 120, "windows": 5, "read": 5, "still": 0, "locked": 5, "timed": 5}
     assert dance_style.parse_style(dance_style.dump_style(bounce_style)) == bounce_style
     assert [c.name for c in bounce_style.channels] == list(ds.CHANNEL)
     assert "root.travel" in bounce_style.unmeasured
