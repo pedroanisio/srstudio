@@ -61,11 +61,13 @@ never applied elsewhere. See [the skeleton guide](authoring-skeleton.md) for pro
 python tools/dance_views.py generated/character-proofs/<name>/views.mp4 --moves bob,arm-pump --bars-each 2
 ```
 
-Every dance gets a three-plane review before its look is judged: one row per character preset and one column per
+Every dance gets a three-plane review before its look is judged: one row per character and one column per
 orthographic view, `front` (x, y), `left` (z, y, seen from the character's left side, facing screen right) and `top`
 (x, z, front down the screen, a tick on the head where it faces), on a track `music.render` synthesises at the same
-tempo. It draws bones only, so it shows what the skeleton does with a move before any style draws it. Leave out
-`--moves` for every preset.
+tempo. `--views` adds `three-quarter`, from a front corner and a little above. It draws bones only, so it shows what
+the skeleton does with a move before any style draws it. Leave out `--moves` for every preset. A character is a preset
+name or the path of a skeleton profile record, and `@seated` after it dances from a seat (`--characters stick@seated`
+with `--moves seat-groove`).
 
 ## Dance arm gestures
 
@@ -185,6 +187,71 @@ On a recorded track, `choreograph.choreograph_track(path, groove, support="feet"
 `srstudio choreograph song.wav --support feet --seed 7 > routine.json` reads the grid as `srstudio beat` does and
 prints the routine. Pass a `choreograph.Palette` to draw from other moves or faces, and `library=` when it names moves
 outside the presets. A routine for a cartoon clap still needs `intensity=2.0` set on that entry by hand.
+
+## Dance a counted phrase on the floor
+
+A class routine is counted, not looped: `dance.Phrase` holds key poses on the counts of its eights, legs included,
+each struck on the count (`hit`) or eased (`smooth`, `linear`), with the feet that carry the body, travel and turns on
+the floor in hip heights, and a face ([ADR 0194](decisions/0194-dance-phrases-on-the-floor.md)). The shipped phrases
+are `groove-step`, `kick-ball-change`, `plie-roll` and `turn-travel`, one eight each at 122.65 BPM.
+`srstudio.dance_floor` puts a phrase or a routine on a floor: planted feet stay where they landed while the body
+travels and turns, the hips move the weight over the feet that carry it, and every frame is checked for balance.
+
+<!-- dance-phrase:start -->
+```python
+from srstudio import dance, dance_floor, skeleton
+from srstudio.music import Groove
+
+groove = Groove(122.65)
+phrase = dance.phrases()["kick-ball-change"]
+kick = next(k for k in phrase.keys if k.ease == "hit" and len(k.contacts) == 1)
+print(dance.count_of(kick.beat), sorted(kick.contacts))  # 1:3 ['left_foot']: the right kicks on three
+
+cartoon = skeleton.preset("cartoon")
+run = dance_floor.perform(phrase, cartoon, groove, strict=True, fps=10)  # refuses a dance off balance
+pose = run.pose(groove.offset + kick.beat * groove.beat)  # the kick, the standing foot held flat
+assert run.slip(10).ball_m < 0.002 and run.balance(10) == ()
+
+spots = dance_floor.formation("wedge", 2, 0.8)
+pair = dance_floor.ensemble(
+    phrase,
+    [dance_floor.Dancer(cartoon, spots[0]), dance_floor.Dancer(skeleton.preset("stick"), spots[1], delay_beats=1.0)],
+    groove,
+    seed=7,
+)
+print([round(p.delay_s / groove.beat, 2) for p in pair])  # the second dancer one beat behind, give or take
+```
+<!-- dance-phrase:end -->
+
+A phrase file is `srstudio.dance-phrases/1.0.0`; a floor channel a key leaves out stays where the key before left it:
+
+```json
+{
+  "schema": "srstudio.dance-phrases/1.0.0",
+  "phrases": [
+    {
+      "name": "side-step",
+      "eights": 1,
+      "keys": [
+        {"count": "1:1", "contacts": ["left_foot", "right_foot"]},
+        {"count": "1:1e", "contacts": ["left_foot", "right_foot"]},
+        {"count": "1:1&", "contacts": ["left_foot"], "floor": {"right": 0.06},
+         "pose": {"right_upper_leg.front_back": -0.35, "right_lower_leg.stretch": -0.7}},
+        {"count": "1:2", "contacts": ["left_foot", "right_foot"], "ease": "hit", "floor": {"right": 0.12, "up": -0.06}}
+      ]
+    }
+  ]
+}
+```
+
+Write a step as three keys: land on both feet on the count, keep both down on the next sixteenth while the weight
+moves, lift on the one after. The balance pass moves the weight on keys, so a foot that lifts the moment the other
+lands leaves the body over nothing and is reported. A phrase sits in a `dance.Entry` like a move, a whole number of
+times, and `choreograph(..., library={**dance.moves(), **dance.phrases()})` draws one only for a song phrase it fills.
+A style that has its own `DanceFrame`s calls `dance_floor.plant(profile, frames)` for the same feet and weight, and
+`dance_floor.ground(profile, pose)` lays one pose's feet flat. Review phrases with
+`python tools/dance_views.py out.mp4 --phrases groove-step,turn-travel --bpm 122.65 --views front,top,three-quarter`,
+and add `--ensemble --canon 0.5` for every character in one row.
 
 ## Check a groove
 

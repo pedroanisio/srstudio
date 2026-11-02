@@ -515,3 +515,13 @@ def test_the_class_phrases_hold_only_faces_a_style_knows():
     faces = {k.expression for p in dance.phrases().values() for k in p.keys if k.expression is not None}
     assert faces and faces <= set(ch.EXPRESSIONS)
 
+
+def test_the_guides_phrase_parses_and_dances():
+    from pathlib import Path
+
+    guide = (Path(__file__).resolve().parents[1] / "docs" / "authoring-dance.md").read_text()
+    blocks = guide.split("```json\n")[1:]
+    documents = [block.split("```")[0] for block in blocks if PHRASES_SCHEMA in block.split("```")[0]]
+    assert len(documents) == 1
+    found = parse_phrases(documents[0])["side-step"]
+    assert found.keys[-1].floor == Floor(right=0.12, up=-0.06) and found.planted(0.6) == LEFT
