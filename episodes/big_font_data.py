@@ -270,7 +270,14 @@ def dress(shot) -> None:
 def overlay(layer: Overlay) -> object:
     """The opening line, up from the first frame until the first line ends."""
     return opener.draw(
-        layer.cv, layer.parent, TEXT, layer.first_line_end, measure=layer.measure, top=OPENER_TOP, names=NAMES
+        layer.cv,
+        layer.parent,
+        TEXT,
+        layer.first_line_end,
+        measure=layer.measure,
+        top=OPENER_TOP,
+        names=NAMES,
+        caption_top=UNDER_OPENER,
     )
 
 
@@ -308,4 +315,5 @@ STAGING = Staging(
     sentence_rows=True,
     overlay=overlay,
     caption_tops={FIRST: UNDER_OPENER},
+    clear_bug=True,
 )

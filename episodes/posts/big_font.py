@@ -32,8 +32,10 @@ RELEASE = Release(
         send_line="Tell your brother I can read that.",
     ),
     style="Collage",
+    video="big-font-v2",  # the keeper: the first master ran a caption under the bug at 16.20 s
     parts={
         "collage-arm": 1,
+        "collage-big-type": 1,
         "collage-bubble": 1,
         "collage-dining-room": 1,
         "collage-food": 1,
