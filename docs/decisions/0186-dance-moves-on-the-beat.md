@@ -88,7 +88,7 @@ in code, `SEAT_GROOVE_BOB` and `SEAT_GROOVE_SWAY`:
 | Sway about 0.2 head radius peak to peak | 0.17..0.23 |
 | The drop lands on the beat, the snap with the drop | each within 0.02 s of the beat |
 | The head does not rotate within a beat | no `head` or `neck` channel moves |
-| A raised arm rides the body with no lag | no arm channel of its own, so no lag to have |
+| A raised arm rides the body with no lag | the arm chain's lag is 0; only the shoulders move, in phase with the bob |
 
 The reel's strokes sum to 0.45 s of a 0.465 s beat, so the sway's stroke tolerance is wider by that gap. Tests also
 show that wrong moves miss: an even bob, half time, too big, off the beat. A cycle that is a whole number of pictures
@@ -97,7 +97,7 @@ lands every sample on the same few places, and a stroke cannot be read finer tha
 
 The raised arm's tip moving 0.32 head radius against the head's 0.50 is not a test here. It is a position on a bone
 chain, so it needs the skeleton's forward kinematics. Until then `seat-groove` carries the bob on the root, and an arm
-riding it moves with the root in full.
+below the shoulder riding it moves with the root in full.
 
 ### Song structure
 
