@@ -16,6 +16,7 @@ from . import composition as c
 from . import plates
 from . import scene_motion as m
 from ._composition_forms import resolved as form_lighting
+from ._composition_paths import expansion_bytes as path_expansion
 from ._composition_preflight import _digest, _graph, _pose_key
 from ._composition_review import check_source
 
@@ -278,7 +279,10 @@ def plan_scene(
             time, times[index + 1], indices[fingerprint], tuple(layer.id for layer in active), tuple(selected)
         )
         form_state = tuple(
-            (layer.id, tuple(field.color for field in form_lighting(sample, layer, time, scene_clock=True)))
+            (
+                layer.id,
+                tuple((field.color, field.vertices) for field in form_lighting(sample, layer, time, scene_clock=True)),
+            )
             for layer in active
             if assets[layer.asset].forms
         )
@@ -307,7 +311,11 @@ def plan_scene(
         invocations,
         sample_work,
         max((job.bounces for job in render_jobs.values()), default=0),
-        base.cost.memory_bytes + 256 * max(0, nodes - base.cost.nodes) + retained_pixels + 8 * metadata_bytes,
+        base.cost.memory_bytes
+        + 256 * max(0, nodes - base.cost.nodes)
+        + retained_pixels
+        + 8 * metadata_bytes
+        + 8 * sum(path_expansion(layer_assets[name]) for span in spans for name in span.layers),
         contact_samples,
     )
     _limit(spec, 'max_nodes', cost.nodes)

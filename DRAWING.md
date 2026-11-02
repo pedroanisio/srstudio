@@ -51,6 +51,14 @@ resetting the performance clock. [Registration tests](tests/test_composition_spa
 and [camera-track tests](tests/test_spatial_camera_tracks.py) cover projection,
 exact cut selection, and refusal before drawing.
 
+Explicit `FormPath` geometry now lets authored vector polygons and polylines use
+that same projection under oblique cameras. Spatial vertices, source keys and
+complete parent transforms remain part of the verified asset contract; ordinary
+planar artwork retains its frontal-view refusal. Screen-space stroke widths and
+near-plane refusal are explicit. [Spatial path tests](tests/test_composition_spatial_paths.py)
+cover numeric registration, geometry-only timeline changes and rendered masks;
+this does not yet complete the combined rig, occlusion or shadow proof.
+
 Depth ordering is explicit. Fixed, nonintersecting planes may use declared back-to-front order. A hand wrapping a mug, or a figure walking behind a car and then in front of it, requires depth/part masks or explicitly split passes sampled at the same time. Alpha alone cannot resolve internal occlusion. `srstudio.proxy` gets a part-id pass from the plates API by rendering flat emissive part colours, and `layers` cuts it into back, front and under plates so people draw between them. A depth or normal pass must still be proven available on the chosen backend.
 
 A contact names the actor anchor, prop/surface anchor, their world transforms, and the time interval in which they agree. A shadow names both caster and receiver. A receiver must provide a plane/mesh proxy or an authored shadow mask bound to its pose; a flat RGBA plate supplies neither world normals nor a receiver by itself. Self-shadows use the same rule. Unknown receivers, intersecting layers without an occlusion strategy, and camera views outside a rig's envelope fail preflight before scene mutation or rendering. A deliberately flat style may declare shadows off; a requested unsupported shadow is never silently omitted.
@@ -60,6 +68,8 @@ A contact names the actor anchor, prop/surface anchor, their world transforms, a
 The [effect shader](https://github.com/pedroanisio/scene-render/blob/af179e456d29f5bbc82c86187cccd620cf0e3124/crates/sr-gpu/src/effects.wgsl) posterizes encoded RGB channels, maps luminance through a gradient, and constructs outlines from alpha morphology. This can stylize a silhouette, but does not separate illumination from material color or find interior creases. A multicolored car must retain distinct paint, glass, tires, and markings under light changes.
 
 The default is the material-aware ramp in `srstudio.proxy`: a light pass cut into tone bands per part, with interior ink where part families meet on the part-id pass. Palette, band thresholds, line width units (screen pixels or world units), color space, premultiplied alpha handling, and effect order are versioned style settings. A silhouette-only result is acceptable only for a style that explicitly wants it. No recipe is adopted solely because its XML validates.
+
+A moving 3D world is inked from an id pass in the same document: `srstudio.ink_pass` copies a 3D group into flat, unlit, double-sided id colours under the vendored, pinned `ink.fs`, and `srstudio.line_stability` measures popped ink, width chatter and ink swing between frames ([ADR 0160](docs/decisions/0160-ink-on-moving-3d.md)). A camera move is approved on a rendered clip watched at playback speed, with those measures beside it, not on stills. Line width on a slow push chatters by about a pixel with the engine's 3D antialias on, measured but not visible at playback.
 
 Animation obeys these contracts:
 

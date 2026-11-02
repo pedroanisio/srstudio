@@ -57,7 +57,7 @@ CAR_SPEED, JET_SPEED = (
     9.0,
     36.0,
 )  # metres a second at speed 1.0 in :func:`base.speed`; at 9 a wheel turns 14 degrees a frame, under half a spoke gap
-MODEL_VERSION = 2  # bump when wire_mesh changes what a model is: the cache is keyed by it
+MODEL_VERSION = 3  # bump when wire_mesh changes what a model is: the cache is keyed by it
 LANE = 350.0
 ROAD_HALF = 700.0
 SHADER = Path(__file__).with_name("paint.glsl")

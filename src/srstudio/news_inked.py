@@ -1543,10 +1543,14 @@ RIGS: Mapping[str, AnchorRig] = MappingProxyType(
 )
 
 
-def mouths_shown(seconds: float, number: int) -> Track:
-    """The mouths a specimen of version ``number`` draws: from version 4, whose mouths are its change, every one."""
+def mouths_shown(seconds: float, number: int, starts: Sequence[float] = ()) -> Track:
+    """The mouths a specimen of version ``number`` draws: from version 4, whose mouths are its change, every one.
+    Each beat in ``starts`` that no mouth opens on shuts first, so the specimen states its own timeline instead of
+    leaning on how ``mouth_track`` opens a reel's beat: the digest holds the drawing, not the lip-sync policy."""
     states = news_kit.EXPRESSIONS if number >= 4 else ("closed", "open")
-    return tuple((seconds * n / len(states), state) for n, state in enumerate(states))
+    track = [(seconds * n / len(states), state) for n, state in enumerate(states)]
+    on = {at for at, _ in track}
+    return tuple(sorted([*track, *((at, "closed") for at in starts if at not in on)]))
 
 
 def rig_specimen(cv: Canvas, who: str, seconds: float, number: int = 2) -> None:
@@ -1561,7 +1565,16 @@ def rig_specimen(cv: Canvas, who: str, seconds: float, number: int = 2) -> None:
     slide = head_motion.limit(rig.style, "face_x")
     plan = replace(toon_head.reach(rig), face_x=Channel(((0.0, -slide), (seconds, slide))))
     _perform(
-        cv, cv.comp, who, 540.0, acts, 0.0, seconds, mouths_shown(seconds, number), motion=(rig, plan), number=number
+        cv,
+        cv.comp,
+        who,
+        540.0,
+        acts,
+        0.0,
+        seconds,
+        mouths_shown(seconds, number, [at for at, _ in acts]),
+        motion=(rig, plan),
+        number=number,
     )
 
 

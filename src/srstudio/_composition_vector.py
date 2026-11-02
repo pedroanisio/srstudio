@@ -272,7 +272,11 @@ def prepare_vector(binding: c.AssetBinding, xml: bytes, *, fonts: tuple[c.Vector
         box = _envelope(content, texts)
         if box is None:
             raise _fail('composition', None, 'at least one bounded drawing')
-        measured = c.Bounds((box.x0, box.y0, 0), (box.x1, box.y1, 0))
+        from . import _composition_paths as paths
+
+        measured = (
+            paths.bounds(binding) if paths.spatial(binding) else c.Bounds((box.x0, box.y0, 0), (box.x1, box.y1, 0))
+        )
         if any(a > b + 1e-9 for a, b in zip(binding.bounds.minimum, measured.minimum, strict=True)) or any(
             a < b - 1e-9 for a, b in zip(binding.bounds.maximum, measured.maximum, strict=True)
         ):
