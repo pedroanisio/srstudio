@@ -85,11 +85,29 @@ def dispatch(raw: bytes) -> dict:
         plate_asset = prepare_plate(plan, request['layer'], plate_wire.source_decode(request['source']))
         return {'schema': SCHEMA, 'status': 'ok', 'prepared': plate_wire.prepared_encode(plate_asset)}
     if operation == 'prepare':
-        wire.fields(request, {'schema', 'operation', 'binding', 'xml'} | ({'fonts'} if 'fonts' in request else set()))
+        wire.fields(
+            request,
+            {'schema', 'operation', 'binding', 'xml'}
+            | ({'fonts'} if 'fonts' in request else set())
+            | ({'shadow_nodes'} if 'shadow_nodes' in request else set()),
+        )
         binding = wire.record(c.AssetBinding, request['binding'])
         asset = prepare_vector(
             binding, wire.xml_decode(request['xml']), fonts=wire.fonts_decode(request.get('fonts', []))
         )
+        if 'shadow_nodes' in request:
+            import xml.etree.ElementTree as ET
+
+            from srstudio._composition_shadows import verify_payload
+
+            roles = request['shadow_nodes']
+            if (
+                type(roles) is not list
+                or len(roles) > 2 * c.MAX_LAYERS
+                or any(type(role) is not list for role in roles)
+            ):
+                raise wire.fail(None, 'bounded shadow node roles')
+            verify_payload(ET.fromstring(asset.xml), tuple(tuple(role) for role in roles))
         return {'schema': SCHEMA, 'status': 'ok', 'prepared': wire.prepared_metadata(asset)}
     if operation != 'compile':
         raise wire.fail(operation, 'prepare, prepare-plate, validate-png, compile or compile-bundle')

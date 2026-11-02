@@ -72,7 +72,12 @@ def _call_worker(request: dict, budget: c.RenderBudget, *, command: tuple[str, .
 
 
 def prepare_vector(
-    binding: c.AssetBinding, xml: bytes, *, fonts: tuple[c.VectorFont, ...] = (), budget: c.RenderBudget | None = None
+    binding: c.AssetBinding,
+    xml: bytes,
+    *,
+    fonts: tuple[c.VectorFont, ...] = (),
+    budget: c.RenderBudget | None = None,
+    shadow_nodes: tuple[tuple[str, str], ...] = (),
 ) -> c.PreparedVector:
     if type(binding) is not c.AssetBinding:
         raise c._fail('binding', None, 'AssetBinding')
@@ -90,6 +95,7 @@ def prepare_vector(
             'binding': asdict(binding),
             'xml': wire.xml_encode(xml),
             'fonts': wire.fonts_encode(fonts),
+            **({'shadow_nodes': shadow_nodes} if shadow_nodes else {}),
         },
         budget,
     )

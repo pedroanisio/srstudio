@@ -63,6 +63,12 @@ Depth ordering is explicit. Fixed, nonintersecting planes may use declared back-
 
 A contact names the actor anchor, prop/surface anchor, their world transforms, and the time interval in which they agree. A shadow names both caster and receiver. A receiver must provide a plane/mesh proxy or an authored shadow mask bound to its pose; a flat RGBA plate supplies neither world normals nor a receiver by itself. Self-shadows use the same rule. Unknown receivers, intersecting layers without an occlusion strategy, and camera views outside a rig's envelope fail preflight before scene mutation or rendering. A deliberately flat style may declare shadows off; a requested unsupported shadow is never silently omitted.
 
+`composition.ShadowMask` now binds an authored convex mask to a named spatial receiver surface, caster anchor
+and directional light. Preflight checks containment, projected anchor registration, painter order, complete
+layer intervals and uniqueness; bounded source preparation refuses invisible or independently timed masks.
+This [authored-mask contract](docs/composition-preflight.md#bind-an-authored-shadow-mask) does not calculate a
+physical caster silhouette or penumbra. The combined candidate still needs to adopt it and pass the full pixel gates.
+
 ## Style conversion and temporal continuity
 
 The [effect shader](https://github.com/pedroanisio/scene-render/blob/af179e456d29f5bbc82c86187cccd620cf0e3124/crates/sr-gpu/src/effects.wgsl) posterizes encoded RGB channels, maps luminance through a gradient, and constructs outlines from alpha morphology. This can stylize a silhouette, but does not separate illumination from material color or find interior creases. A multicolored car must retain distinct paint, glass, tires, and markings under light changes.
