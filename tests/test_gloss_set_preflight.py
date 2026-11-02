@@ -61,3 +61,15 @@ def test_gloss_text_builders_require_a_bound_font_before_drawing(local, name, op
         getattr(sets, name)(cv, cv.comp, **options, end=4, font=font())
     assert cv.scene.to_bytes() == before
     assert cv.uid('probe') == control.uid('probe')
+
+
+@pytest.mark.parametrize('local', [False, True])
+@pytest.mark.parametrize('serving', [((0, '3'), (0, '4')), ((False, '3'),)])
+def test_waiting_room_checks_the_first_cue_and_its_order_before_drawing(local, serving):
+    cv, control = canvas(), canvas()
+    cv.local_time = local
+    before = cv.scene.to_bytes()
+    with pytest.raises(GlossError, match='NOW SERVING'):
+        sets.waiting(cv, cv.comp, end=4, serving=serving)
+    assert cv.scene.to_bytes() == before
+    assert cv.uid('probe') == control.uid('probe')

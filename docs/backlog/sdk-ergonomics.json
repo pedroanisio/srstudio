@@ -1271,6 +1271,30 @@
   ],
   "findings": [
     {
+      "id": "SDK-P1-26",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Validate the complete waiting-room display timeline",
+      "problem": "The initial serving cue was excluded from numeric and ordering validation. A boolean False passed as time zero, and a second cue at zero was silently accepted.",
+      "resolution": "Run the existing rising-time validator over the complete serving sequence before drawing, retaining the requirement that its first time is zero.",
+      "verification": [
+        "tests/test_gloss_set_preflight.py:test_waiting_room_checks_the_first_cue_and_its_order_before_drawing"
+      ],
+      "acceptance": [
+        "Duplicate initial cues and a boolean first cue fail with GlossError before scene or ID mutation",
+        "Valid display timelines retain their behavior with both Canvas clocks"
+      ],
+      "verification_summary": {
+        "red": 4,
+        "new_cases": 4,
+        "passed": 365,
+        "skipped": 0,
+        "branch_inclusive_module_coverage_percent": 99.69040247678019,
+        "module_branch_coverage_percent": 99.25373134328358,
+        "retained_artifacts": "../generated/sdk-gloss-serving-preflight/v1/"
+      }
+    },
+    {
       "id": "SDK-P1-25",
       "priority": "P1",
       "status": "complete",

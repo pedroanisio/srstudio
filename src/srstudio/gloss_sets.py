@@ -417,7 +417,7 @@ def waiting(cv: Canvas, parent, *, end: float, serving: Sequence[tuple[float, st
     _check_end(end)
     if not serving:
         raise GlossError("the NOW SERVING display needs at least one number")
-    _rising([t for t, _ in serving[1:]], end, "a NOW SERVING change")
+    _rising([t for t, _ in serving], end, "a NOW SERVING change")
     if serving[0][0] != 0:
         raise GlossError("the NOW SERVING display shows its first number from the start of the shot")
     for _, number in serving:
