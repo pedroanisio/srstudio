@@ -1,4 +1,4 @@
-"""The dance-study runner (ADR 0196) on synthetic records: it measures a style from a pose track, checks our standing
+"""The dance-study runner (ADR 0203) on synthetic records: it measures a style from a pose track, checks our standing
 presets against it with the misses they share ranked, refuses to write anything but a style record inside the
 repository, writes its private outputs 700/600, and draws the skeleton and the page without the footage."""
 

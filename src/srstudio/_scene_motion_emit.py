@@ -96,6 +96,9 @@ def compile_timeline(request: dict) -> c.CompiledScene:
     if placements.keys() != required or image_metadata.keys() != images.keys():
         raise wire.fail(None, 'exactly the referenced raster placements and images')
     roots = {name: ET.fromstring(asset.xml) for name, asset in vectors.items()}
+    from ._composition_shadows import verify_roots
+
+    verify_roots(timeline.base, roots)
     version = max(
         (root.attrib['version'] for root in roots.values()), default='1.1', key=lambda s: tuple(map(int, s.split('.')))
     )
@@ -158,7 +161,7 @@ def compile_timeline(request: dict) -> c.CompiledScene:
                 'group',
                 {
                     'id': prefix,
-                    **_placement(layer, plan.spec, poses),
+                    **_placement(layer, plan.spec, poses, asset.binding),
                     'start': _number(temporal.start),
                     'end': _number(temporal.end),
                     'timeOffset': _number((temporal.start - temporal.source_start) / temporal.rate),

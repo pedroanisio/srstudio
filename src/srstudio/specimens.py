@@ -262,7 +262,7 @@ def _anchor(entry: registry.Entry) -> Canvas:
         news_kit.perform(cv, cv.comp, who, 540.0, acts, 0.0, HOLD)
         return cv
     number = int(entry.name.split("@")[1])
-    mouths = news_inked.mouths_shown(HOLD, number) if number >= 4 else ()
+    mouths = news_inked.mouths_shown(HOLD, number, [at for at, _ in acts]) if number >= 4 else ()
     news_inked.perform(cv, cv.comp, who, 540.0, acts, 0.0, HOLD, mouths, number=number)
     return cv
 

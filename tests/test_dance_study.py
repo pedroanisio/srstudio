@@ -1,4 +1,4 @@
-"""The dance study's measures (ADR 0196): a reference's pose record and one of our dances become the same body track
+"""The dance study's measures (ADR 0203): a reference's pose record and one of our dances become the same body track
 and are measured by the same code. A record is untrusted: refused frames are counted by reason and never filled."""
 
 import math

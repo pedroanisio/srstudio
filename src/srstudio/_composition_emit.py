@@ -26,7 +26,13 @@ def _number(value: float) -> str:
     return format(value, '.17g')
 
 
-def _placement(layer: c.LayerSpec, spec: c.ScenePlan, poses: dict) -> dict[str, str]:
+def _placement(
+    layer: c.LayerSpec, spec: c.ScenePlan, poses: dict, binding: c.AssetBinding | None = None
+) -> dict[str, str]:
+    from ._composition_paths import spatial
+
+    if binding is not None and spatial(binding):
+        return {}
     frame, scale = poses[layer.id]
     x_axis = frame.rotation.rotate(Vec3(1, 0, 0))
     if layer.space == 'screen':
@@ -51,8 +57,13 @@ def _placement(layer: c.LayerSpec, spec: c.ScenePlan, poses: dict) -> dict[str, 
 
 def check_expansion(plan: c.ValidatedScenePlan, sizes: dict[str, int]) -> None:
     """Account for namespaced copies before launching a worker or allocating trees."""
+    from ._composition_paths import expansion_bytes
+
     bindings = {binding.id: binding for binding in plan.bindings}
-    output_bound = 2048 + sum(sizes[layer.asset] + 64 * bindings[layer.asset].nodes for layer in plan.spec.layers)
+    output_bound = 2048 + sum(
+        sizes[layer.asset] + 64 * bindings[layer.asset].nodes + expansion_bytes(bindings[layer.asset])
+        for layer in plan.spec.layers
+    )
     memory_bound = plan.cost.memory_bytes + 8 * output_bound
     if output_bound > MAX_XML_BYTES or memory_bound > plan.spec.budget.max_memory_bytes:
         raise c._fail(
@@ -111,9 +122,12 @@ def assemble(
 ) -> c.CompiledScene:
     """Shared layer assembly after worker-owned source verification."""
     from ._composition_forms import apply, static
+    from ._composition_shadows import verify_roots
 
     static(plan)
+    verify_roots(plan, roots)
     spec = plan.spec
+    bindings = {binding.id: binding for binding in plan.bindings}
     budget = spec.budget
     version = max(
         (root.attrib['version'] for root in roots.values()), default='1.1', key=lambda s: tuple(map(int, s.split('.')))
@@ -215,7 +229,7 @@ def assemble(
             'group',
             {
                 'id': f'l{index}',
-                **_placement(layer, spec, poses),
+                **_placement(layer, spec, poses, bindings[layer.asset]),
                 'start': _number(temporal.start),
                 'end': _number(temporal.end),
                 # Engine group clock: origin + (t - origin - offset) * scale.

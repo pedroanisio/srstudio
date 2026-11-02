@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0.0",
+  "source": "srlocations/shaders",
+  "commit": "8dfe7a19d111763f321e72a8dafb1015ada0617a",
+  "sha256": {
+    "cel.fs": "7a4aa1e1f8fe3dbb9b083973585fdf7edb32c0143802309afa76a5ebea394529",
+    "clean.fs": "edce8cb9104a183cbbd9e3ba4b99e8d57f64667bae9799fde329d5e7d3fa18cd",
+    "ink.fs": "dd818a88e8539a499ea99efb2aaf946dc1665dd1add65ec805b0c3d1c306ff38"
+  }
+}

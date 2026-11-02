@@ -265,7 +265,7 @@ reads to about one picture when the channel carries noise of five percent of its
 
 ## Learn a style from a reference video
 
-The dance study ([ADR 0196](decisions/0196-dance-style-from-reference-video.md)) measures how a real dancer moves and
+The dance study ([ADR 0203](decisions/0203-dance-style-from-reference-video.md)) measures how a real dancer moves and
 holds our dances to it. It copies no routine: only style statistics on the beat grid reach the repository, as a
 `srstudio.dance-style/1.0.0` record of ranges. The footage, its frames and its per-frame landmarks stay under the
 workspace's `generated/` (`$WS/generated`, `$WS` the workspace that holds this checkout) on the machine that made

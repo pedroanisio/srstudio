@@ -1,4 +1,4 @@
-"""A pose estimator's reading of one dancer in a video, read as untrusted data (ADR 0196).
+"""A pose estimator's reading of one dancer in a video, read as untrusted data (ADR 0203).
 
 A pose estimator is a model, so what it writes is wrong some of the time: it loses the dancer, jumps to a neighbour,
 guesses an occluded wrist, or folds a leg. ``tools/pose_extract.py`` runs the estimator in its own interpreter and

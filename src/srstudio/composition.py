@@ -132,6 +132,24 @@ class TemporalPolicy(_Record):
 
 
 @dataclass(frozen=True)
+class ShadowMask(_Record):
+    """An authored planar mask, not a computed caster silhouette or physical shadow.
+
+    The mask is a child of its receiver, between receiver and caster in painter order.
+    Its anchor must match the directional-light projection of the named caster anchor.
+    Static convex spatial polygons provide the receiver and mask geometry.
+    """
+
+    caster: str
+    receiver: str
+    receiver_surface: str
+    caster_anchor: str
+    mask_anchor: str
+    light: str
+    tolerance: float = field(default=1e-5, metadata={'minimum': 0, 'maximum': 0.01})
+
+
+@dataclass(frozen=True)
 class LayerSpec(_Record):
     id: str
     asset: str
@@ -147,6 +165,7 @@ class LayerSpec(_Record):
     surface_coordinates: Literal['local', 'screen'] = 'local'
     effects: tuple[str, ...] = ()
     shadow_receiver: str | None = None
+    shadow_mask: ShadowMask | None = None
 
 
 @dataclass(frozen=True)
@@ -259,6 +278,28 @@ class FormKey(_Record):
 
 
 @dataclass(frozen=True)
+class PathKey(_Record):
+    """A spatial path's vertices on the complete source clock, with fixed topology."""
+
+    time: float = field(metadata={'minimum': 0, 'maximum': 600})
+    points: tuple[tuple[float, float, float], ...]
+    interpolation: Literal['hold', 'linear'] = 'hold'
+
+
+@dataclass(frozen=True)
+class FormPath(_Record):
+    """Explicit asset-space polyline/polygon geometry; stroke widths remain output pixels.
+
+    This replaces the named shape's path at emission. It does not reconstruct unseen geometry from a 2D outline.
+    Curves, visibility and overlapping surfaces must be authored by the rig; no hidden-surface solver is implied.
+    """
+
+    points: tuple[tuple[float, float, float], ...]
+    keys: tuple[PathKey, ...] = ()
+    closed: Literal[True, False] = True
+
+
+@dataclass(frozen=True)
 class FormSurface(_Record):
     """A named shape's lighting field; ink explicitly retains the authored fill/stroke."""
 
@@ -270,6 +311,7 @@ class FormSurface(_Record):
     mode: Literal['diffuse', 'ink'] = 'diffuse'
     albedo: str = '#ffffff'
     exposure: float = field(default=1, metadata={'minimum': 0, 'maximum': 1000000})
+    path: FormPath | None = None
 
 
 @dataclass(frozen=True)
@@ -281,6 +323,7 @@ class FormLight:
     normal: tuple[float, float, float]
     irradiance: tuple[float, float, float]
     color: str | None
+    vertices: tuple[tuple[float, float, float], ...] = ()
 
 
 @dataclass(frozen=True)

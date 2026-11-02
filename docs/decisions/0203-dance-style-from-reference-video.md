@@ -2,7 +2,7 @@
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 ---
 
-# ADR 0196: Our dances learn a style from a reference video, as numbers only
+# ADR 0203: Our dances learn a style from a reference video, as numbers only
 
 - Status: proposed (2026-11-02)
 - Back to the [library README](../../README.md)

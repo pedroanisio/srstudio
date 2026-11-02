@@ -126,6 +126,69 @@ def smooth_mesh(quads: Sequence[Sequence[Sequence[float]]], material: str, outwa
     return Mesh(material, pts.reshape(-1, 3), normals.reshape(-1, 3), triangles.reshape(-1, 3))
 
 
+def _solids(quads: Sequence[Sequence[Sequence[float]]], otherwise):
+    """Where each quad faces: out of its own solid when it belongs to a closed one, whatever shape that solid is, so a
+    seat is wound as a seat and not by where it sits in the car. A quad of an open sheet asks ``otherwise``.
+
+    Winding spreads from face to face across shared edges, which needs no idea of the shape, and a piece's signed
+    volume then says which way round all of it is.
+    """
+    pts = np.asarray([[to_scene(p) for p in quad] for quad in quads], float).reshape(-1, 4, 3)
+    _, ids = np.unique(np.round(pts.reshape(-1, 3), 3), axis=0, return_inverse=True)
+    rounds = [_round(corners) for corners in ids.ravel().reshape(-1, 4).tolist()]
+    raw = np.cross(pts[:, 2] - pts[:, 0], pts[:, 3] - pts[:, 1])
+    edges: dict[tuple[int, int], list[tuple[int, int]]] = defaultdict(list)
+    for face, walk in enumerate(rounds):
+        for a, b in walk:
+            edges[min(a, b), max(a, b)].append((face, 1 if a < b else -1))
+    facing: dict[tuple[float, float, float], np.ndarray] = {}
+    turned = np.zeros(len(pts), int)
+    for seed in range(len(pts)):
+        if turned[seed]:
+            continue
+        turned[seed] = 1
+        stack, piece, closed = [seed], [seed], True
+        while stack:
+            face = stack.pop()
+            for a, b in rounds[face]:
+                users = edges[min(a, b), max(a, b)]
+                closed &= len(users) == 2
+                way = 1 if a < b else -1
+                for other, other_way in users:
+                    if not turned[other]:
+                        turned[other] = -turned[face] * way * other_way
+                        stack.append(other)
+                        piece.append(other)
+        if closed:
+            sign = 1 if _volume(pts[piece], turned[piece]) >= 0 else -1
+            for face in piece:
+                facing[_where(pts[face].mean(axis=0))] = raw[face] * turned[face] * sign
+
+    def outward(centre: np.ndarray) -> np.ndarray:
+        found = facing.get(_where(centre))
+        return otherwise(centre) if found is None else found
+
+    return outward
+
+
+def _round(corners: list[int]) -> list[tuple[int, int]]:
+    """The edges of a face in order round, without those a fan's repeated corner leaves empty."""
+    return [(a, b) for a, b in zip(corners, corners[1:] + corners[:1], strict=True) if a != b]
+
+
+def _volume(faces: np.ndarray, turned: np.ndarray) -> float:
+    """The signed volume of a closed piece of quads, each wound by its ``turned`` sign."""
+    middle = faces.reshape(-1, 3).mean(axis=0)
+    p, q, r, s = (faces[:, k] - middle for k in range(4))
+    sides = np.einsum("ij,ij->i", np.cross(p, q), r) + np.einsum("ij,ij->i", np.cross(p, r), s)
+    return float((sides * turned).sum())
+
+
+def _where(point: np.ndarray) -> tuple[float, float, float]:
+    x, y, z = np.round(point, 3).tolist()
+    return (x, y, z)
+
+
 def _spine(car: Car):
     """Where a point of the body faces away from: the middle line of the car, from just inside its nose to its tail."""
     xs = [p[0] for quad in car.masks for p in quad]
@@ -209,7 +272,7 @@ def car_model(seed: str | int, *, crease: float = CREASE) -> CarModel:
         by_kind[KIND_MATERIAL["leather" if "seat" in name or "bench" in name else "trim"]].extend(quads)
     out = _spine(car)
     parts = [
-        Part(f"body-{material}", material, smooth_mesh(quads, material, out, crease=crease))
+        Part(f"body-{material}", material, smooth_mesh(quads, material, _solids(quads, out), crease=crease))
         for material, quads in sorted(by_kind.items())
     ]
     wheels: dict[str, tuple[tuple[float, float, float], float, float]] = {}
@@ -284,7 +347,9 @@ def jet_model(seed: str | int, *, model: str | None = None, crease: float = CREA
         if name == "Canopy glass" or not quads:
             continue
         material = JET_MATERIAL[_kind(name)]
-        parts.append(Part(name, material, smooth_mesh(quads, material, _jet_outward(quads), crease=crease)))
+        parts.append(
+            Part(name, material, smooth_mesh(quads, material, _solids(quads, _jet_outward(quads)), crease=crease))
+        )
     anchors = {name: to_scene(point) for name, point in jet.anchors.items()}
     return JetModel(tuple(parts), anchors, jet.length * SCENE_UNITS, jet.wingspan * SCENE_UNITS)
 

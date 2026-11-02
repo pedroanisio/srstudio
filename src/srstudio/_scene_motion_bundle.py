@@ -47,8 +47,10 @@ def _vectors(timeline: m.SceneTimeline, assets: Vectors) -> dict[str, c.Prepared
     if sources.keys() != bindings.keys():
         raise wire.fail(None, 'exactly the required vector sources')
     result = {}
+    from ._composition_shadows import prepare_vector as shadow_prepare
+
     for name, asset in sources.items():
-        verified = c.prepare_vector(bindings[name], asset.xml, fonts=asset.fonts, budget=timeline.base.spec.budget)
+        verified = shadow_prepare(timeline.base, bindings[name], asset)
         if type(asset) is c.PreparedVector and asset != verified:
             raise wire.fail(None, 'unchanged prepared vector evidence')
         result[name] = verified

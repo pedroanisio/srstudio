@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Measure a reference dancer's style, check our dances against it, and build the local proof page (ADR 0196).
+"""Measure a reference dancer's style, check our dances against it, and build the local proof page (ADR 0203).
 
     python tools/dance_study.py measure TRACK.json --audio VIDEO --name NAME --description TEXT --out STYLE.json
     python tools/dance_study.py check STYLE.json --out FINDINGS.json [--bars 8] [--fps 30] [--audio VIDEO]
