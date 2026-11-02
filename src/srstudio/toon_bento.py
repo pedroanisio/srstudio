@@ -472,7 +472,8 @@ def _blazer_layers() -> tuple[Layer, ...]:
     return tuple(out)
 
 
-def _leg(x: float) -> list[Layer]:
+def _leg(x: float, place: Place = _same) -> list[Layer]:
+    """One trouser leg and foot; ``place`` deforms drawing points before they reach reference pixels."""
     trouser: Path = ((x, 700.0), (x - 9.0, 776.0, x + 1.0, 844.0), (x + 79.0, 844.0), (x + 69.0, 700.0))
     foot: Path = (
         (x + 3.0, 814.0),
@@ -481,9 +482,9 @@ def _leg(x: float) -> list[Layer]:
         (x + 101.0, 862.0, x + 80.0, 841.0),
         (x + 67.0, 820.0),
     )
-    out: list[Layer] = [(_shape(trouser), "#101F49"), *_furred(foot, PAW_LINE)]
-    out += [_line(((x + dx, 858.0), (x + dx, 875.0)), "#9F6D48", 3.0) for dx in (25.0, 46.0, 66.0)]
-    out.append(_line(((x + 7.0, 822.0), (x + 45.0, 831.0, x + 72.0, 822.0)), "#3654A0", 4.0))
+    out: list[Layer] = [(_shape(trouser, place), "#101F49"), *_furred(foot, PAW_LINE, place)]
+    out += [_line(((x + dx, 858.0), (x + dx, 875.0)), "#9F6D48", 3.0, place) for dx in (25.0, 46.0, 66.0)]
+    out.append(_line(((x + 7.0, 822.0), (x + 45.0, 831.0, x + 72.0, 822.0)), "#3654A0", 4.0, place))
     return out
 
 

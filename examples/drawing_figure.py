@@ -68,15 +68,21 @@ def figure_source(
     return binding, source
 
 
-def _transform(frame: Sample) -> c.Transform:
-    # The authored asset is a frontal billboard. Align its native plane with
-    # the shared camera, then place the declared root in canonical world units.
+def billboard(frame: Sample) -> tuple[Quaternion, tuple[float, float, float]]:
+    """The frontal billboard rotation facing the shared camera, with its x/y/z Euler degrees."""
     p, target = frame.view.position, frame.view.target
     normal = Vec3(p[0] - target[0], p[1] - target[1], target[2] - p[2]).unit()
     yaw, pitch = math.atan2(normal.x, normal.z), -math.asin(normal.y)
     rotation = Quaternion.axis_angle(Vec3(0, 1, 0), yaw) * Quaternion.axis_angle(Vec3(1, 0, 0), pitch)
+    return rotation, (math.degrees(pitch), math.degrees(yaw), 0)
+
+
+def _transform(frame: Sample) -> c.Transform:
+    # The authored asset is a frontal billboard. Align its native plane with
+    # the shared camera, then place the declared root in canonical world units.
+    rotation, euler = billboard(frame)
     origin = world_root(frame.time) - rotation.rotate(Vec3(*ROOT) * SCALE)
-    return c.Transform((origin.x, origin.y, origin.z), (math.degrees(pitch), math.degrees(yaw), 0), SCALE)
+    return c.Transform((origin.x, origin.y, origin.z), euler, SCALE)
 
 
 def figure_scene(*, fps: int = 12, size: tuple[int, int] = SIZE, events: tuple[float, ...] = ()) -> WorldStudy:

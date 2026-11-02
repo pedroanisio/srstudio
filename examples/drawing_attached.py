@@ -3,6 +3,8 @@
 The native face/head clock is retained. One shared arm pose supplies the left
 arm; the right sleeve, hand and cup use the spatial rig. Cup poses outside the
 attachment interval remain fixed in world space, not relative to the carrier.
+The figure stands on drawing_support's world-anchored soles: the native trunk
+omits its legs, which are drawn once by the support layer.
 """
 
 from __future__ import annotations
@@ -13,13 +15,15 @@ from functools import cache
 
 import numpy as np
 from examples.acting_continuity import carry_motion
-from examples.drawing_figure import _transform, figure_source
+from examples.drawing_figure import figure_source
 from examples.drawing_hand import hand_mesh, hand_recipe, hand_scene
-from examples.drawing_proof import DURATION, HAND_ORIGIN, SIZE, figure_performance, sample
+from examples.drawing_proof import DURATION, HAND_ORIGIN, SIZE, figure_performance, sample, schedule
+from examples.drawing_support import legs_source, support_transform
 from examples.drawing_world import WorldStudy
 
 from srstudio import clay
 from srstudio import composition as c
+from srstudio import toon_bento as bento
 from srstudio import scene_motion as m
 from srstudio.acting import PerformancePlan
 from srstudio.character_clips import ToonClip
@@ -34,11 +38,14 @@ _REFLECT = np.array((1, 1, -1))
 
 @cache
 def attached_performance() -> PerformancePlan:
-    """Keep the authored face/head performance and explicitly delegate the right arm."""
+    """Keep the authored face/head performance, delegate the right arm and the legs."""
     original = figure_performance()
     assert isinstance(original.clip, ToonClip)
     clip = replace(
-        original.clip, poses=tuple(replace(pose, arms='desk') for pose in original.clip.poses), external_arms=('right',)
+        original.clip,
+        rig=replace(original.clip.rig, trunk=bento._blazer_layers),
+        poses=tuple(replace(pose, arms='desk') for pose in original.clip.poses),
+        external_arms=('right',),
     )
     return replace(original, clip=clip, gestures=tuple((time, 'desk') for time, _ in original.gestures))
 
@@ -57,7 +64,7 @@ def shoulder_frame(time: float) -> Frame:
     delta = shoulder - pivot
     lean = Quaternion.axis_angle(Vec3(0, 0, 1), math.radians(head.lean))
     native = pivot + lean.rotate(Vec3(delta.x, delta.y * stretch, delta.z))
-    transform = _transform(sample(time))
+    transform = support_transform(sample(time))
     rotation = Quaternion()
     for axis, angle in zip((Vec3(1, 0, 0), Vec3(0, 1, 0), Vec3(0, 0, 1)), transform.rotation, strict=True):
         rotation = Quaternion.axis_angle(axis, math.radians(angle)) * rotation
@@ -111,24 +118,40 @@ def attached_scene(*, fps: int = 12, size: tuple[int, int] = SIZE) -> WorldStudy
         candidate=c.CandidateSource('toon', c.raster_sequence_digest(sequence)),
     )
     figure, native = figure_source(performance=attached_performance(), candidate='candidate.hybrid-attached-figure')
+    events = (attachment.attach, attachment.release)
+    legs, drawn = legs_source(fps=fps, events=events)
+    keys = tuple(
+        m.TransformKey(frame.time, support_transform(frame), 'hold')
+        for frame in schedule(fps=fps, size=size, events=events)
+    )
     floor, shadow, back, car, front, _ = timeline.base.spec.layers
+    back, front = replace(back, transform=keys[0].value), replace(front, transform=keys[0].value)
+    legs_back = c.LayerSpec('legs-back', 'legs', 1, c.TemporalPolicy(0, 3, state='legs'), transform=keys[0].value)
+    legs_front = c.LayerSpec(
+        'legs-front', 'legs', 1, c.TemporalPolicy(3, DURATION, 3, continuity='cut', state='legs'), transform=keys[0].value
+    )
     layers = (
         floor,
         shadow,
+        legs_back,
         back,
         c.LayerSpec('hand-back', 'hand', 1, c.TemporalPolicy(0, 3, state='attached-hand')),
         car,
+        legs_front,
         front,
         c.LayerSpec('hand-front', 'hand', 1, c.TemporalPolicy(3, DURATION, 3, continuity='cut', state='attached-hand')),
     )
     bindings = tuple(figure if b.id == 'figure' else hand if b.id == 'hand' else b for b in timeline.base.bindings)
+    supported = {layer: m.TransformTrack(layer, keys) for layer in ('legs-back', 'figure-back', 'legs-front', 'figure-front')}
+    tracks = tuple(supported.pop(track.layer, track) for track in timeline.motion.transforms)
+    motion = replace(timeline.motion, transforms=(*tracks, *supported.values()))
     return WorldStudy(
         m.plan_scene(
             replace(timeline.base.spec, layers=layers),
-            bindings,
-            timeline.motion,
+            (*bindings, legs),
+            motion,
             rasters=tuple(sequence if s.id == 'hand' else s for s in timeline.rasters),
             purpose=timeline.base.purpose,
         ),
-        tuple(native if s.id == 'figure' else s for s in original.vectors),
+        (*(native if s.id == 'figure' else s for s in original.vectors), drawn),
     )
