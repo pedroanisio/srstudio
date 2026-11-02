@@ -102,6 +102,9 @@ def test_the_page_is_portuguese_standalone_and_names_what_it_cannot_measure(styl
     assert text.startswith("<!doctype html>") and 'lang="pt-BR"' in text
     assert "não publique" in text and "skeleton.mp4" in text and "views.mp4" in text
     assert "root.travel" in text and "<script" not in text and "http" not in text
+    # The words name the colours the skeleton is drawn in (BGR): the right side blue, the left orange.
+    assert "Azul é o lado direito dela, laranja o esquerdo" in text
+    assert tool.RIGHT[0] > tool.RIGHT[2] and tool.LEFT[2] > tool.LEFT[0]
     for name in tool.LABELS:
         assert name in text
     bare = tool.page(style, findings, footage=None, views=None, closest="bounce")

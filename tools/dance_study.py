@@ -54,6 +54,7 @@ BONES_2D = (
     ("left_ankle", "left_foot_index"),
     ("right_ankle", "right_foot_index"),
 )
+# BGR, as OpenCV draws: the dancer's left orange, her right blue.
 LEFT, RIGHT, MID, FAINT = (60, 170, 255), (255, 170, 60), (235, 235, 235), (90, 90, 90)
 SEEN = 0.5
 
@@ -370,7 +371,7 @@ esqueleto quadro a quadro.</p>
 
 <h2>1. A gravação e o esqueleto extraído</h2>
 <p>À esquerda, a gravação. À direita, o esqueleto da dançarina do centro, como o estimador de pose
-({e(ref.estimator)} {e(ref.estimator_version)}) o leu. Laranja é o lado direito dela, azul o esquerdo,
+({e(ref.estimator)} {e(ref.estimator_version)}) o leu. Azul é o lado direito dela, laranja o esquerdo,
 cinza o que ele viu com pouca confiança; “perdido” é um quadro em que a dançarina não foi encontrada
 com segurança.</p>
 {video}
