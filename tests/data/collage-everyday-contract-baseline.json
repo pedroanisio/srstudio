@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0.0",
+  "generated_by": {
+    "model": "GPT-6",
+    "tool": "OpenAI Codex"
+  },
+  "source_commit": "906fd314c6c44ae061fd2869773736e53a67238c",
+  "scene_sha256": {
+    "collage-food": "5737a40b88256de6ff3ee301d83db623fb7e0891c184aa486cb7e9b13b58a576",
+    "collage-lasagna": "39eba179169778085ca34329966634ccbe008227e461e4d657c0b7182948d608",
+    "collage-flip-card": "70cced785f819fdde9d0819c2319fc839e2b4da188bc2d6b8a3dc3f7bc4c1fb3",
+    "collage-magnifying-glass": "87354ec68da186ad14d6c6bc742e33397f031a4372add66bcece6c847e25d1e1",
+    "collage-router": "69feb0662f86a60bf8603722a480ff103a1807e93ddb16782b3ceac16cea5ad7",
+    "collage-phone": "995337a600150f7b04a49c8ed51838001ef0a82951a6bbef6a8b891bb348f48b",
+    "collage-battery-insert": "aad7a93da21c638c1b0a53c42db5d2ff67f03a51df2c7bc114ac7b3d5eb9c766",
+    "collage-bubble": "1acbc549ded2f628afd59c09ea25c4b45cb05cb072071115c48eb28155df3378",
+    "collage-thumb": "1aa98f35ab50942a83da2ed0897a6afbff1aa4de41c3a6ad26b0fdcb2e0c4ba0",
+    "collage-alarm-clock": "b2125d85de3e1648e5f035ad2ba78a2dc602126b27b9821b574403191a82110e",
+    "collage-cereal-box": "4296137d34e6e8151f8d9228148c7066a8c1124bb503c1936230f02c0debfea7",
+    "collage-duvet": "0a1b8fa86b36782b74f284a9ebe8bf95567e492eac9c0c8ad5bd0c621e6af0ad",
+    "collage-tablecloth": "8fd4258f0bc28d9c3930e52087dfc70f80f02c237bed984e01c07ab4b049d15b",
+    "collage-salt-shaker": "e1b75db684f1285395058d4fbbed60f9857832cc6cc55eed284c97ed1390cecb",
+    "collage-chip-bag": "71b6aa49207d500f5fccb87dd5eddc921c4d8b6ade0246ed6ae789c64c207015",
+    "collage-chip": "d2a3334e0224df3f905910f58f7c98ab4d0fd1681bd72ead689007a4b9cb90a9",
+    "collage-certificate": "2db7f899e95b48b60a4e59f88101e73d87d9df06b1598dee90809831d92e69ae",
+    "collage-snapshot": "6d466b9a87bac468d7745d899e4ee38f86d01c7a5071983b93bf18d1a47afe07",
+    "collage-gust": "49e7a5fd63e03b50b9dd7e75a2dc8f731b4564a564e96d78e557d08a8f0d3290",
+    "collage-bill": "38f2d39986b3b89d513a02ed957941a6d0d24e41a6a3f2f86ad232de60436a11",
+    "collage-confetti": "12956b8fe16e1ac37dc0ecc12a34bcdb1436d9cd3dc410a59ed31a88b691226c",
+    "collage-arm": "bc71963fb8c4b2cfe249579d08a98da1f1748202323f10bb43f5968312109974"
+  }
+}

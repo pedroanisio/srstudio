@@ -24,6 +24,20 @@ def keys(group, prop: str) -> list[tuple[float, float]]:
     return [(float(k.get("time")), float(k.get("value"))) for k in animate]
 
 
+@pytest.mark.parametrize('local', [False, True])
+@pytest.mark.parametrize('spans', [((1, 5), (2, 3)), ((2, 3), (1, 5)), ((1, 3), (2, 5)), ((1, 3), (3, 5))])
+def test_washer_door_states_are_complementary_for_overlapping_open_intervals(local, spans):
+    cv = canvas()
+    cv.local_time = local
+    soft_odds.washer(cv, cv.comp, 540, 1500, end=8, open_at=spans)
+    nodes = groups(cv)
+    assert keys(nodes['soft-washer-door-open'], 'opacity') == [(0, 0), (1, 1), (5, 0)]
+    assert keys(nodes['soft-washer-door'], 'opacity') == [(0, 1), (1, 0), (5, 1), (8, 0)]
+    for name in ('soft-washer-door', 'soft-washer-door-open'):
+        a = next(nodes[name].iter('animate'))
+        assert a.get('timeBase', 'composition') == ('local' if local else 'composition')
+
+
 def test_the_module_is_a_part_of_the_soft_style():
     assert "soft_odds" in SOFT.parts
     entries = {e.name: e for e in registry.entries()}

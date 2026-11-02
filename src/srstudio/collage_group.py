@@ -17,37 +17,17 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from . import checks, collage, sketch
+from ._collage_place import FRAME_H, Place
 from .canvas import Canvas
 from .collage_sketch import solo
 from .errors import SrstudioError
 
 __all__ = ["FRAME_H", "GroupError", "Lineup", "Place", "pair", "place_of"]
 
-FRAME_H = 1920.0  # the Collage frame's height: a scaled bust keeps its cut-off bottom on its place's base
-
 
 class GroupError(SrstudioError, ValueError):
     """A lineup that places no one, someone outside the cast, at an impossible size, or a speaker it has no place
     for."""
-
-
-@dataclass(frozen=True)
-class Place:
-    """Where one character stands in the group: its centre line at ``x``, the bottom of its bust on ``base`` (frame
-    pixels; the frame's bottom is :data:`FRAME_H`), drawn at ``scale`` of its single-shot size."""
-
-    x: float
-    base: float
-    scale: float
-
-    def transform(self) -> tuple[float, float]:
-        """The offset of the character's group: its single-shot drawing moved and scaled into this place."""
-        return self.x - collage.CX * self.scale, self.base - FRAME_H * self.scale
-
-    def seen(self, point: collage.Point) -> collage.Point:
-        """Where ``point`` of the single-shot drawing lands on screen in this place."""
-        x, y = self.transform()
-        return x + point[0] * self.scale, y + point[1] * self.scale
 
 
 @dataclass(frozen=True)

@@ -24,6 +24,7 @@ import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 
+from . import _blob_drawing_contracts as bdc
 from . import _character_contracts as cc
 from . import checks, signature
 from .canvas import Canvas
@@ -1479,7 +1480,12 @@ def _leg(cv: Canvas, g, x: float, top: float, bottom: float, w: float = 34, side
     _poly(cv, g, [(x, top), (x + w, top), (x + w, bottom), (x, bottom)], WOOD_FRONT)
 
 
-@register("prop", "soft-desk", summary="A wooden desk in a 3/4 view from above: top, front and side faces, square legs")
+@register(
+    "prop",
+    "soft-desk",
+    summary="A wooden desk in a 3/4 view from above: top, front and side faces, square legs",
+    contract=bdc.contract('soft-desk'),
+)
 def desk(cv: Canvas, parent, id: str = "soft-desk"):
     g = cv.group(parent, id)
     _leg(cv, g, 296, 1010, 1268, w=30, side=12)  # back right, behind the top
@@ -1493,7 +1499,12 @@ def desk(cv: Canvas, parent, id: str = "soft-desk"):
     return g
 
 
-@register("prop", "soft-chair", summary="A low wooden chair in a 3/4 view, facing left, slatted backrest on the right")
+@register(
+    "prop",
+    "soft-chair",
+    summary="A low wooden chair in a 3/4 view, facing left, slatted backrest on the right",
+    contract=bdc.contract('soft-chair'),
+)
 def chair(cv: Canvas, parent, id: str = "soft-chair"):
     g = cv.group(parent, id)
     _leg(cv, g, 842, 1285, 1420, w=20, side=8)  # back left
@@ -1522,7 +1533,12 @@ def keyboard() -> list[Point]:
     return [(x + px * k, y + py * k) for px, py in _DECK]
 
 
-@register("prop", "soft-laptop", summary="An open laptop on the soft desk: keyboard deck and the back of the lid")
+@register(
+    "prop",
+    "soft-laptop",
+    summary="An open laptop on the soft desk: keyboard deck and the back of the lid",
+    contract=bdc.contract('soft-laptop', keyboard=keyboard),
+)
 def laptop(cv: Canvas, parent, id: str = "soft-laptop"):
     x, y, k = LAPTOP
     g = cv.group(parent, id, x=x, y=y, scaleX=k, scaleY=k)
@@ -1544,6 +1560,7 @@ def laptop(cv: Canvas, parent, id: str = "soft-laptop"):
     "location",
     "soft-office",
     summary="The warm office in a 3/4 view: desk with laptop on the left, chair on the right, the signature cactus",
+    contract=bdc.contract('soft-office', keyboard=keyboard),
 )
 def office(cv: Canvas, parent, *, shots: Sequence[tuple[float, float]] | None = None, id: str = "soft-office"):
     g = cv.group(parent, id)
@@ -1600,6 +1617,7 @@ def sofa_seat() -> list[Point]:
     "soft-sofa",
     summary="A two-seat fabric sofa in a 3/4 view, facing left: backrest on the right, an arm at each end; "
     "on_sofa draws who sits on it before the near arm",
+    contract=bdc.contract('soft-sofa', sofa_seat=sofa_seat),
 )
 def sofa(cv: Canvas, parent, *, on_sofa: Callable[[object], object] | None = None, id: str = "soft-sofa"):
     g = cv.group(parent, id)
@@ -1687,6 +1705,7 @@ def _side_table(cv: Canvas, g, x: float, floor: float) -> Point:
     "soft-home",
     summary="The warm living room in the office's 3/4 view: a fabric sofa facing left on a rug, a floor lamp "
     "behind it, a side table with the signature cactus; on_sofa seats a character between the seat and the near arm",
+    contract=bdc.contract('soft-home', sofa_seat=sofa_seat),
 )
 def home(
     cv: Canvas,
@@ -1946,6 +1965,7 @@ def _meeting_table(cv: Canvas, g) -> None:
     "soft-swivel-chair",
     summary="An upholstered swivel chair facing left on a five-spoke chrome base; seated poses fit it like the "
     "office chair",
+    contract=bdc.contract('soft-swivel-chair', swivel_seat=swivel_seat),
 )
 def swivel_chair(cv: Canvas, parent, id: str = "soft-swivel-chair"):
     g = cv.group(parent, id)
@@ -2058,6 +2078,15 @@ def _clock(cv: Canvas, g) -> None:
     summary="A polished meeting room in the office's 3/4 view: sage walls, a plank floor and baseboards, a walnut "
     "table that takes the laptop, an upholstered swivel chair at the office chair's seat, a wall screen with a slide "
     "and a webcam, a wall clock, a side window whose light falls on the floor, and the signature cactus",
+    contract=bdc.contract(
+        'soft-meeting-room',
+        meeting_screen=meeting_screen,
+        meeting_table_top=meeting_table_top,
+        swivel_seat=swivel_seat,
+        keyboard=keyboard,
+        room_point=room_point,
+        wall_quad=wall_quad,
+    ),
 )
 def meeting_room(
     cv: Canvas,
@@ -2190,6 +2219,7 @@ def _counter(cv: Canvas, g) -> None:
     summary="A drip coffee machine on the break-room counter: tower, hood with a lit button, a glass carafe half "
     "full, and a mug steaming beside it",
     examples=('from srstudio import get\nmachine = get("prop", "soft-coffee-machine")(ep.cv, ep.comp)',),
+    contract=bdc.contract('soft-coffee-machine'),
 )
 def coffee_machine(cv: Canvas, parent, id: str = "soft-coffee-machine"):
     g = cv.group(parent, id)
@@ -2254,6 +2284,7 @@ FRIDGE_BOX = (330.0, 500.0, 6.0, 150.0, 620.0)  # along, out, up: its top clears
     "soft-fridge",
     summary="A rounded pastel fridge against the break-room wall: freezer and fridge doors, chrome handles, magnets "
     "and a sticky note",
+    contract=bdc.contract('soft-fridge'),
 )
 def fridge(cv: Canvas, parent, id: str = "soft-fridge"):
     g = cv.group(parent, id)
@@ -2290,6 +2321,7 @@ def fridge(cv: Canvas, parent, id: str = "soft-fridge"):
     "soft-stool",
     summary="A cushioned stool on a chrome stem with a foot ring, its seat at the office chair's height, so "
     "seated poses (lounge) fit it",
+    contract=bdc.contract('soft-stool'),
 )
 def stool(cv: Canvas, parent, id: str = "soft-stool"):
     g = cv.group(parent, id)
@@ -2340,6 +2372,7 @@ def _pendant(cv: Canvas, g, light, x: float, y: float, floor_y: float) -> None:
     "stone counter with a tiled splashback, a coffee machine and a steaming mug, wall cabinets, a window with a herb "
     "pot, a pastel fridge, a pendant lamp and its light, a stool at the office chair's seat height, and the "
     "signature cactus",
+    contract=bdc.contract('soft-break-room', room_point=room_point, wall_quad=wall_quad, floor_quad=floor_quad),
 )
 def break_room(cv: Canvas, parent, *, shots: Sequence[tuple[float, float]] | None = None, id: str = "soft-break-room"):
     g = cv.group(parent, id)

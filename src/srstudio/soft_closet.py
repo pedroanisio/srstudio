@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from typing import NamedTuple
 
+from . import _soft_scene_contracts as dc
 from . import blob, checks
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -57,7 +58,7 @@ def _open_spans(door: Door, end: float) -> list[tuple[float, float]]:
     for a, b in sorted(door.shut):
         if a > at:
             out.append((at, a))
-        at = b
+        at = max(at, b)
     if at < end:
         out.append((at, end))
     return out
@@ -86,6 +87,7 @@ def _swung(cv: Canvas, g, door: Door) -> None:
 @register(
     "prop",
     "soft-door",
+    contract=dc.contract('soft-door'),
     style="soft",
     summary="Plain paneled doors on the office's back wall, opening on a dark closet that can hide someone",
 )
@@ -98,8 +100,9 @@ def doors(
     between: Callable[[object], object] | None = None,
     id: str = "soft-door",
 ):
-    """Each door in ``rows``, open from the first frame to ``end`` except through its ``shut`` spans. ``between`` draws
-    in front of the dark and behind the doors."""
+    """Each door in ``rows`` is shut through the union of its ``shut`` spans and open in the gaps up to ``end``.
+    Empty ``shut`` spans keep a door closed through ``end``. ``between`` draws in front of the dark and behind
+    the doors."""
     if not rows:
         raise SoftClosetError("doors need at least one door")
     if between is not None and not callable(between):
@@ -134,7 +137,13 @@ def doors(
     return g
 
 
-@register("prop", "soft-mop", style="soft", summary="A string mop standing on its head, that can tip over, slowly")
+@register(
+    "prop",
+    "soft-mop",
+    contract=dc.contract('soft-mop'),
+    style="soft",
+    summary="A string mop standing on its head, that can tip over, slowly",
+)
 def mop(
     cv: Canvas,
     parent,
@@ -173,6 +182,7 @@ def mop(
 @register(
     "prop",
     "soft-closet",
+    contract=dc.contract('soft-closet'),
     style="soft",
     summary="The inside of a shut closet: the frame nearly black, with one line of light down the crack of the door",
 )

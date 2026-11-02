@@ -24,11 +24,11 @@
   "catalog_observation": {
     "parts": 734,
     "characters": 75,
-    "entries_with_explicit_part_contract": 540,
+    "entries_with_explicit_part_contract": 692,
     "all_default_characters_have_explicit_contracts": true,
     "noncharacter_parts": 659,
-    "noncharacter_parts_with_explicit_contracts": 465,
-    "source": "Fresh-process registry observation on 2026-11-02 after 27 News kit declarations. Drawing baselines were captured from 28724308. See review_verification.news_contracts.",
+    "noncharacter_parts_with_explicit_contracts": 617,
+    "source": "Fresh-process registry observation on 2026-11-02 after 33 Collage room, photo, clinic and interface contracts and three existing room helper operations. Baselines were captured from 6c0d45ee after the separately recorded preflight repairs. See review_verification.collage_context_contracts.",
     "by_kind": {
       "character": {
         "registered": 75,
@@ -36,15 +36,15 @@
       },
       "prop": {
         "registered": 461,
-        "explicit_contracts": 327
+        "explicit_contracts": 440
       },
       "location": {
         "registered": 115,
-        "explicit_contracts": 70
+        "explicit_contracts": 101
       },
       "graphic": {
         "registered": 83,
-        "explicit_contracts": 68
+        "explicit_contracts": 76
       }
     },
     "qualification": "Fresh-process registry.entries() observation after the latest implemented contract batch. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates.",
@@ -58,6 +58,236 @@
     }
   },
   "review_verification": {
+    "collage_context_contracts": {
+      "baseline_source_commit": "6c0d45eee4c408ac53b5906ac224a992f85e51ce",
+      "missing_contract_and_guide_regressions_red": 69,
+      "initial_green": 1,
+      "selected_regressions": {
+        "passed": 2378,
+        "skipped": 0
+      },
+      "new_tests": 70,
+      "new_explicit_contracts": 33,
+      "existing_helpers_exposed_as_operations": 3,
+      "unchanged_drawing_baselines": 33,
+      "unchanged_implementation_definitions": 62,
+      "implementation_comparison_scope": "Top-level functions/classes compared by AST after removing registration decorators; bodies and docstrings are unchanged.",
+      "new_real_engine_evaluation_cases": 2,
+      "branch_inclusive_coverage_percent": 96.16423554835224,
+      "branch_coverage_percent": 92.13973799126637,
+      "coverage_scope": [
+        "src/srstudio/_collage_context_contracts.py",
+        "src/srstudio/collage_article.py",
+        "src/srstudio/collage_forecast.py",
+        "src/srstudio/collage_odds.py",
+        "src/srstudio/collage_photo.py",
+        "src/srstudio/collage_sets.py",
+        "src/srstudio/contracts.py",
+        "src/srstudio/registry.py"
+      ],
+      "ruff": "passed",
+      "format": "passed",
+      "mypy_source_files": 333,
+      "retained_artifacts": "../generated/sdk-collage-context-contracts/v1/",
+      "qualification": "Discovery for 13 rooms and 20 photo, clinic and illustrated interface props, with three actual room helpers, typed placement records, crop and return ownership, composition versus canvas clocks, and random-access flash evaluation. Preflight repairs were committed before these drawing baselines. The remaining catalog and broader animation review findings stay open."
+    },
+    "collage_place_record": {
+      "baseline_source_commit": "a179dbc3e014cb839d1719c9d326de04bf2f4659",
+      "red": 1,
+      "initial_green": 1,
+      "new_tests": 2,
+      "selected_regressions": {
+        "passed": 109,
+        "skipped": 0
+      },
+      "branch_inclusive_coverage_percent": 95.36423841059603,
+      "branch_coverage_percent": 94.5945945945946,
+      "coverage_scope": [
+        "src/srstudio/_collage_place.py",
+        "src/srstudio/collage_group.py",
+        "src/srstudio/collage_photo.py"
+      ],
+      "unchanged_photo_drawing_sha256": "8313c7111b22b3a400be41b92b23d3508ef78c68a6503433226cc98ab085234f",
+      "ruff": "passed",
+      "format": "passed",
+      "mypy_source_files": 332,
+      "retained_artifacts": "../generated/sdk-collage-place-record/v1/",
+      "qualification": "Place moved to a dependency-light owner and remains re-exported from collage_group with its original module identity. Cold photo imports resolve the actual runtime record; pickle and projection behavior are preserved. No new contract counts are claimed."
+    },
+    "collage_everyday_contracts": {
+      "baseline_source_commit": "906fd314c6c44ae061fd2869773736e53a67238c",
+      "missing_contract_and_guide_regressions_red": 50,
+      "initial_green": 1,
+      "selected_regressions": {
+        "passed": 2270,
+        "skipped": 0
+      },
+      "new_tests": 51,
+      "new_explicit_contracts": 22,
+      "existing_helpers_exposed_as_operations": 5,
+      "unchanged_drawing_baselines": 22,
+      "unchanged_implementation_definitions": 48,
+      "implementation_comparison_scope": "Top-level functions/classes compared by AST after removing registration decorators and docstrings. Module and two builder clock docstrings were corrected; arm registration moved below its helpers and still binds the instrumented callable. Usage and drawing-event tests pass.",
+      "new_real_engine_evaluation_cases": 2,
+      "branch_inclusive_coverage_percent": 94.60458240946046,
+      "branch_coverage_percent": 89.47368421052632,
+      "coverage_scope": [
+        "src/srstudio/_collage_everyday_contracts.py",
+        "src/srstudio/collage_everyday.py",
+        "src/srstudio/contracts.py",
+        "src/srstudio/registry.py"
+      ],
+      "ruff": "passed",
+      "format": "passed",
+      "mypy_source_files": 331,
+      "retained_artifacts": "../generated/sdk-collage-everyday-contracts/v1/",
+      "qualification": "Everyday drawing discovery and sampled reach ownership. Flip-card failure atomicity was repaired separately before these baselines. The remaining catalog, animated composition, authored emotion blends, DRAWING adoption evidence and whole-body performance remain open."
+    },
+    "collage_thing_contracts": {
+      "baseline_source_commit": "cee7ddc57f517ff226061aa2997b8fa631ff0af5",
+      "missing_contract_and_guide_regressions_red": 45,
+      "initial_green": 1,
+      "test_setup_correction": "The fixed-layout rope assertion initially assumed an SVG command separator not present in Canvas output; corrected against the actual path M960 972 L-140 1032.",
+      "selected_regressions": {
+        "passed": 2140,
+        "skipped": 0
+      },
+      "new_tests": 46,
+      "new_explicit_contracts": 16,
+      "unchanged_drawing_baselines": 16,
+      "unchanged_builder_definitions": 23,
+      "paper_and_twitch_engine_evaluation_cases": 4,
+      "branch_inclusive_coverage_percent": 93.55450236966824,
+      "branch_coverage_percent": 87.68115942028986,
+      "coverage_scope": [
+        "src/srstudio/_collage_thing_contracts.py",
+        "src/srstudio/collage_things.py",
+        "src/srstudio/contracts.py",
+        "src/srstudio/registry.py"
+      ],
+      "ruff": "passed",
+      "format": "passed",
+      "mypy_source_files": 330,
+      "retained_artifacts": "../generated/sdk-collage-thing-contracts/v1/",
+      "qualification": "Collage table and corner discovery. Correctness repairs were committed separately before these baselines. The remaining catalog, animated composition, authored emotion blends, DRAWING adoption evidence and whole-body performance remain open."
+    },
+    "ink_drawing_contracts": {
+      "baseline_source_commit": "42b4ea53f5ca9d65d1a6de414bed988a4a30f86e",
+      "missing_contract_and_guide_regressions_red": 66,
+      "initial_test_setup_correction": "The first red run also exposed an incorrect assumption that a timed group resets descendant local clocks. The engine test now uses a real nonzero sequence shot. The kerb ownership assertion was corrected to inspect the shared ground group.",
+      "selected_regressions": {
+        "passed": 1564,
+        "skipped": 0
+      },
+      "new_tests": 69,
+      "new_explicit_contracts": 19,
+      "typed_forwarding_targets": 4,
+      "unchanged_drawing_baselines": 19,
+      "unchanged_builder_definitions": 78,
+      "real_engine_evaluation_cases": 2,
+      "branch_inclusive_coverage_percent": 96.75411293908404,
+      "coverage_scope": [
+        "src/srstudio/_ink_drawing_contracts.py",
+        "src/srstudio/contracts.py",
+        "src/srstudio/ink.py",
+        "src/srstudio/ink_captcha.py",
+        "src/srstudio/ink_doorbell.py",
+        "src/srstudio/ink_meter.py",
+        "src/srstudio/ink_phone.py",
+        "src/srstudio/ink_vacuum.py",
+        "src/srstudio/registry.py"
+      ],
+      "ruff": "passed",
+      "format": "passed",
+      "mypy_source_files": 329,
+      "retained_artifacts": "../generated/sdk-ink-drawing-contracts/v1/",
+      "qualification": "Ink drawing discovery and executable ownership/clock evidence. App overflow was repaired separately before these baselines. Full catalog coverage, animated composition, authored emotion blends, DRAWING adoption evidence and whole-body performance remain open."
+    },
+    "blob_drawing_contracts": {
+      "baseline_source_commit": "1234c5f88387d0ca3b7362eb96108f19c9a65bc5",
+      "missing_contract_and_guide_regressions_red": 41,
+      "selected_regressions": {
+        "passed": 1839,
+        "skipped": 0
+      },
+      "new_tests": 47,
+      "new_explicit_contracts": 12,
+      "existing_helpers_exposed_as_operations": 8,
+      "unchanged_drawing_baselines": 12,
+      "unchanged_builder_definitions": 97,
+      "real_engine_evaluation_cases": 4,
+      "branch_inclusive_coverage_percent": 96.34536317953403,
+      "coverage_scope": [
+        "src/srstudio/_blob_drawing_contracts.py",
+        "src/srstudio/_soft_scene_contracts.py",
+        "src/srstudio/blob.py",
+        "src/srstudio/contracts.py",
+        "src/srstudio/registry.py"
+      ],
+      "ruff": "passed",
+      "format": "passed",
+      "mypy_source_files": 328,
+      "retained_artifacts": "../generated/sdk-blob-drawing-contracts/v1/",
+      "qualification": "Blob fixed-layout room and furniture discovery, including existing projected geometry helpers. Full catalog coverage, animated composition, authored emotion blends, DRAWING adoption evidence and whole-body performance remain open."
+    },
+    "soft_prop_contracts": {
+      "baseline_source_commit": "e8a2e0d6a570b935c324215f2d60090fd7122973",
+      "missing_contract_and_guide_regressions_red": 111,
+      "selected_regressions": {
+        "passed": 1792,
+        "skipped": 0
+      },
+      "new_tests": 114,
+      "new_explicit_contracts": 32,
+      "unchanged_drawing_baselines": 32,
+      "unchanged_builder_definitions": 51,
+      "real_engine_evaluation_cases": 2,
+      "branch_inclusive_coverage_percent": 96.21254946297343,
+      "coverage_scope": [
+        "src/srstudio/_soft_prop_contracts.py",
+        "src/srstudio/_soft_scene_contracts.py",
+        "src/srstudio/contracts.py",
+        "src/srstudio/registry.py",
+        "src/srstudio/soft_odds.py",
+        "src/srstudio/soft_props.py"
+      ],
+      "ruff": "passed",
+      "format": "passed",
+      "mypy_source_files": 327,
+      "retained_artifacts": "../generated/sdk-soft-prop-contracts/v1/",
+      "qualification": "Soft prop and odds discovery. Baselines follow the separate washer union repair. Full catalog coverage, animated composition, authored emotion blends, DRAWING adoption evidence and whole-body performance remain open."
+    },
+    "soft_scene_contracts": {
+      "baseline_source_commit": "a5e9609e670a643be1c84d3761e124ed7aa3dfa3",
+      "missing_contract_and_guide_regressions_red": 76,
+      "named_tuple_regressions_red": 2,
+      "selected_regressions": {
+        "passed": 1670,
+        "skipped": 0
+      },
+      "new_soft_contract_tests": 79,
+      "new_named_tuple_tests": 2,
+      "new_explicit_contracts": 18,
+      "unchanged_drawing_baselines": 18,
+      "unchanged_builder_definitions": 55,
+      "real_engine_evaluation_cases": 2,
+      "branch_inclusive_coverage_percent": 95.89275527666857,
+      "coverage_scope": [
+        "src/srstudio/_soft_scene_contracts.py",
+        "src/srstudio/contracts.py",
+        "src/srstudio/registry.py",
+        "src/srstudio/soft_bedtime.py",
+        "src/srstudio/soft_closet.py",
+        "src/srstudio/soft_front.py",
+        "src/srstudio/soft_inbox.py",
+        "src/srstudio/soft_sets.py"
+      ],
+      "ruff": "passed",
+      "format": "passed",
+      "mypy_source_files": 326,
+      "retained_artifacts": "../generated/sdk-soft-scene-contracts/v1/",
+      "qualification": "Soft scene and insert discovery, including bounded NamedTuple record inspection. Five original backlog findings remain open; this is not complete catalog coverage, whole-body, emotion-blend or complete DRAWING composition proof."
+    },
     "soft_room_timing": {
       "baseline_source_commit": "a05b0f17",
       "behavior_regressions_red": 52,
@@ -1013,6 +1243,207 @@
   ],
   "findings": [
     {
+      "id": "SDK-P1-24",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Validate doctor-scale drop cues before drawing",
+      "problem": "An invalid bar_at raised CollageOddsError only after creating the scale and bar geometry.",
+      "resolution": "Move the existing drop-cue check ahead of scene mutation, preserving the accepted inputs and animation.",
+      "verification": [
+        "tests/test_collage_odds.py:test_scale_rejects_its_drop_cue_before_creating_any_geometry"
+      ],
+      "acceptance": [
+        "Invalid drop cues leave the scene unchanged under either Canvas clock",
+        "Existing geometry refusals remain atomic"
+      ],
+      "verification_summary": {
+        "red": 8,
+        "new_cases": 13,
+        "passed": 241,
+        "skipped": 0,
+        "branch_inclusive_module_coverage_percent": 95.83333333333333,
+        "module_branch_coverage_percent": 86.84210526315789,
+        "retained_artifacts": "../generated/sdk-collage-scale-preflight/v1/"
+      }
+    },
+    {
+      "id": "SDK-P1-23",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Preflight forecast threads and synchronize their visibility with motion",
+      "problem": "Thread message fitting and invalid clock values failed after drawing. A short phone could clip the header. With local Canvas time, visibility cues for the forecast map/thread diverged from project-timed slide keys.",
+      "resolution": "Validate clock/message times and precompute all message boxes before drawing, rejecting header overflow. Render those same boxes and explicitly put all forecast visibility gates on project time.",
+      "verification": [
+        "tests/test_collage_forecast.py"
+      ],
+      "acceptance": [
+        "Overflowing headers and first/later messages leave scenes unchanged",
+        "Invalid cue times raise ForecastError before drawing",
+        "Renderer evaluation in nonzero sequence shots agrees for visibility and cubic-out slide on both Canvas settings",
+        "Fitting default-clock thread drawings remain byte-identical"
+      ],
+      "verification_summary": {
+        "red": 20,
+        "initial_green": 3,
+        "new_cases": 23,
+        "passed": 368,
+        "skipped": 0,
+        "branch_inclusive_module_coverage_percent": 99.10714285714286,
+        "module_branch_coverage_percent": 98.33333333333333,
+        "retained_artifacts": "../generated/sdk-collage-forecast-preflight/v1/"
+      }
+    },
+    {
+      "id": "SDK-P1-22",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Preflight every flip-card side before drawing",
+      "problem": "A rejected side left an empty or partly drawn card behind, including font assets from earlier sides. Invalid timestamps reached Canvas after scene mutation, and a side starting at the visibility sentinel silently disappeared.",
+      "resolution": "Validate finite nonnegative increasing times below FOREVER and fit-check all side copy before creating any nodes. Failures raise EverydayError. Valid cards remain byte-identical on both Canvas settings.",
+      "verification": [
+        "tests/test_collage_everyday.py:test_flip_card_checks_all_copy_before_mutating_the_scene",
+        "tests/test_collage_everyday.py:test_flip_card_rejects_unusable_side_times_with_its_own_error_before_drawing"
+      ],
+      "acceptance": [
+        "Invalid first or later side copy leaves the scene unchanged",
+        "Invalid timestamps fail at the builder boundary before mutation",
+        "Valid cards retain their drawing and clock behavior"
+      ],
+      "verification_summary": {
+        "red": 12,
+        "passed": 339,
+        "new_cases": 12,
+        "skipped": 0,
+        "branch_inclusive_module_coverage_percent": 98.24281150159744,
+        "module_branch_coverage_percent": 95.5223880597015,
+        "retained_artifacts": "../generated/sdk-collage-card-preflight/v1/"
+      }
+    },
+    {
+      "id": "SDK-P1-21",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Keep Collage paper turns and face changes on one clock",
+      "problem": "With Canvas.local_time enabled in a later sequence shot, resume and flip_card scaled on project time while swapping faces on local time. The completed turn could still show its front.",
+      "resolution": "Add a keyword-only local override to Canvas.gate, matching Canvas.keys, and explicitly use project time for both paper builders. Existing default-clock drawings remain byte-identical.",
+      "verification": [
+        "tests/test_collage_paper_clocks.py"
+      ],
+      "acceptance": [
+        "Visibility overrides preserve Canvas.local_time and merge interval unions",
+        "Paper scale and faces all use project time for either Canvas default",
+        "Random-access engine evaluation shows the blank back after the midpoint in a nonzero sequence shot"
+      ],
+      "verification_summary": {
+        "red": 9,
+        "initial_green": 3,
+        "passed": 216,
+        "new_cases": 12,
+        "skipped": 0,
+        "branch_inclusive_coverage_percent": 88.05744520030234,
+        "branch_coverage_percent": 80.82191780821918,
+        "unchanged_default_clock_drawings": 2,
+        "retained_artifacts": "../generated/sdk-collage-paper-clocks/v1/"
+      }
+    },
+    {
+      "id": "SDK-P1-20",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Keep overlapping Collage eye twitches closed for their full duration",
+      "problem": "Each twitch appended an independent reopening key. A second cue inside the first closure reopened early when Canvas sorted those keys.",
+      "resolution": "Merge overlapping and touching closures at the existing six-decimal key precision, preserving project-clock behavior and separated cues.",
+      "verification": [
+        "tests/test_collage_things.py:test_overlapping_twitches_keep_the_eye_shut_until_the_last_cue_ends",
+        "tests/test_collage_things.py:test_twitch_overlap_evaluates_on_project_clock_in_a_later_shot"
+      ],
+      "acceptance": [
+        "Overlapping, touching and chained cues remain closed until the last cue ends",
+        "Real-engine random-access evaluation agrees in nonzero sequence shots for both Canvas clock settings"
+      ],
+      "verification_summary": {
+        "red": 8,
+        "passed": 92,
+        "new_cases": 8,
+        "skipped": 0,
+        "branch_inclusive_module_coverage_percent": 94.86404833836858,
+        "module_branch_coverage_percent": 83.33333333333333,
+        "retained_artifacts": "../generated/sdk-collage-twitch/v1/"
+      }
+    },
+    {
+      "id": "SDK-P1-19",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Reject Ink app forms that overflow their phone glass",
+      "problem": "The row-count check accepted six rows and combinations of rows, progress and stars that extended below the glass.",
+      "resolution": "Compute content height during preflight, require room for the minimum top margin, and reuse that measurement in rendering. Fitting forms retain their existing layout.",
+      "verification": [
+        "tests/test_ink_meter.py:test_app_refuses_content_that_overflows_the_phone_before_drawing",
+        "tests/test_ink_meter.py:test_app_keeps_largest_fitting_forms_inside_the_glass"
+      ],
+      "acceptance": [
+        "Overfull forms fail before scene mutation on both Canvas clocks",
+        "Five rows alone, four with either progress or stars, and three with both still fit"
+      ],
+      "verification_summary": {
+        "red": 8,
+        "passed": 94,
+        "new_cases": 12,
+        "skipped": 0,
+        "branch_inclusive_module_coverage_percent": 100.0,
+        "retained_artifacts": "../generated/sdk-ink-app-layout/v1/"
+      }
+    },
+    {
+      "id": "SDK-P1-18",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Keep washer door drawings complementary for nested open intervals",
+      "problem": "A nested open interval moved the closed-gap cursor backward, showing both door drawings while the wider interval was still open.",
+      "resolution": "Advance the complement cursor to the maximum close time seen so far, preserving the union of nested, unordered, overlapping and touching spans.",
+      "verification": [
+        "tests/test_soft_odds.py:test_washer_door_states_are_complementary_for_overlapping_open_intervals",
+        "tests/test_canvas_and_registry.py"
+      ],
+      "acceptance": [
+        "Open and closed drawings remain complementary across overlapping intervals",
+        "Both Canvas clock modes retain identical interval semantics"
+      ],
+      "verification_summary": {
+        "red": 4,
+        "passed": 79,
+        "new_cases": 8,
+        "skipped": 0,
+        "branch_inclusive_module_coverage_percent": 99.43181818181819,
+        "retained_artifacts": "../generated/sdk-soft-washer-spans/v1/"
+      }
+    },
+    {
+      "id": "SDK-P1-17",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Keep open doors complementary to overlapping shut intervals",
+      "problem": "The closet computed open gaps using each shut interval end, allowing a nested interval to move the end backward. A door could then display both its closed leaf and open leaf.",
+      "resolution": "Advance the complement cursor to the maximum end seen so far. Nested, unordered, overlapping and touching shut intervals retain their union on both Canvas clock modes. Clarify that an empty shut schedule keeps the default door closed.",
+      "verification": [
+        "tests/test_soft_closet.py:test_shut_spans_and_open_door_are_complements_even_when_spans_overlap",
+        "tests/test_canvas_and_registry.py"
+      ],
+      "acceptance": [
+        "Open and closed opacity tracks are complementary for nested and overlapping intervals",
+        "Ordinary and touching intervals retain their behavior on composition and local clocks"
+      ],
+      "verification_summary": {
+        "red": 4,
+        "passed": 65,
+        "new_cases": 8,
+        "skipped": 0,
+        "branch_inclusive_module_coverage_percent": 96.37305699481865,
+        "retained_artifacts": "../generated/sdk-soft-door-spans/v1/"
+      }
+    },
+    {
       "id": "SDK-P1-15",
       "priority": "P1",
       "status": "complete",
@@ -1390,15 +1821,36 @@
           "srstudio.mind_kit",
           "srstudio.map_kit",
           "srstudio.news_kit",
-          "srstudio.news_inked"
+          "srstudio.news_inked",
+          "srstudio.soft_sets",
+          "srstudio.soft_front",
+          "srstudio.soft_bedtime",
+          "srstudio.soft_closet",
+          "srstudio.soft_inbox",
+          "srstudio.soft_props",
+          "srstudio.soft_odds",
+          "srstudio.blob",
+          "srstudio.ink",
+          "srstudio.ink_phone",
+          "srstudio.ink_meter",
+          "srstudio.ink_doorbell",
+          "srstudio.ink_vacuum",
+          "srstudio.ink_captcha",
+          "srstudio.collage_things",
+          "srstudio.collage_everyday",
+          "srstudio.collage_sets",
+          "srstudio.collage_odds",
+          "srstudio.collage_photo",
+          "srstudio.collage_article",
+          "srstudio.collage_forecast"
         ],
         "additional_parts": [
           "toon-headset"
         ],
-        "new_contracts": 412,
-        "current_explicit_noncharacter_contracts": 465,
+        "new_contracts": 564,
+        "current_explicit_noncharacter_contracts": 617,
         "current_registered_noncharacters": 659,
-        "remaining_undeclared": 194,
+        "remaining_undeclared": 42,
         "evidence": [
           "tests/test_counter_store_contracts.py",
           "tests/data/counter-store-contract-baseline.json",
@@ -1451,9 +1903,39 @@
           "src/srstudio/_news_contracts.py",
           "tests/test_news_contracts.py",
           "tests/support/news_contracts.py",
-          "tests/data/news-contract-baseline.json"
+          "tests/data/news-contract-baseline.json",
+          "src/srstudio/_soft_scene_contracts.py",
+          "tests/test_soft_room_contracts.py",
+          "tests/support/soft_room_contracts.py",
+          "tests/data/soft-room-contract-baseline.json",
+          "src/srstudio/contracts.py",
+          "tests/test_catalog_contracts.py",
+          "src/srstudio/_soft_prop_contracts.py",
+          "tests/test_soft_prop_contracts.py",
+          "tests/support/soft_prop_contracts.py",
+          "tests/data/soft-prop-contract-baseline.json",
+          "src/srstudio/_blob_drawing_contracts.py",
+          "tests/test_blob_drawing_contracts.py",
+          "tests/support/blob_drawing_contracts.py",
+          "tests/data/blob-drawing-contract-baseline.json",
+          "src/srstudio/_ink_drawing_contracts.py",
+          "tests/test_ink_drawing_contracts.py",
+          "tests/support/ink_drawing_contracts.py",
+          "tests/data/ink-drawing-contract-baseline.json",
+          "src/srstudio/_collage_thing_contracts.py",
+          "tests/test_collage_thing_contracts.py",
+          "tests/support/collage_thing_contracts.py",
+          "tests/data/collage-thing-contract-baseline.json",
+          "src/srstudio/_collage_everyday_contracts.py",
+          "tests/test_collage_everyday_contracts.py",
+          "tests/support/collage_everyday_contracts.py",
+          "tests/data/collage-everyday-contract-baseline.json",
+          "src/srstudio/_collage_context_contracts.py",
+          "tests/test_collage_context_contracts.py",
+          "tests/support/collage_context_contracts.py",
+          "tests/data/collage-context-contract-baseline.json"
         ],
-        "qualification": "The full catalog expansion remains open. All 109 non-character builders in Stick-prefixed modules and all 158 in Toon-prefixed modules now declare authored contracts, alongside the completed Cutout families. These module counts do not include other families sharing their style names. Drawing baselines remain unchanged; specific correctness repairs are recorded separately as P1 findings. Host, Mind and Map kits now declare all 31 non-character builders. Both News kit versions now declare their 27 non-character builders. The 194 remaining non-character entries still require source review and executable semantic evidence."
+        "qualification": "The full catalog expansion remains open. All 109 non-character builders in Stick-prefixed modules and all 158 in Toon-prefixed modules now declare authored contracts, alongside the completed Cutout families. These module counts do not include other families sharing their style names. Drawing baselines remain unchanged; specific correctness repairs are recorded separately as P1 findings. Host, Mind and Map kits now declare all 31 non-character builders. Both News kit versions now declare their 27 non-character builders. The five Soft scene, bedtime, closet and inbox modules add 18 declared builders. The Soft prop and odds modules add 32 declared builders, with effect limits, held versus linear motion, callback ownership and expression-clock qualifications. Blob now declares all 12 non-character builders and exposes eight existing layout helpers without inventing spatial attachments. All 19 Ink non-character builders now declare clocks, actual return scope, timed records and typed delegation targets while retaining explicitly open variadic envelopes. The Collage table and corner module adds 16 contracts with actual drawing origins, copy, fork/card limits, return ownership and project-clock animation. Everyday Collage adds 22 contracts and five real reach/sampling helper operations, with phone-screen ownership, mixed clock qualifications and explicit limits of sampled sleeve motion. Collage rooms, photos, clinic props and illustrated interfaces add 33 contracts and three actual room layout helpers, with sharp signature ownership, typed Place records, crop semantics and verified clocks. The 42 remaining non-character entries still require source review and executable semantic evidence."
       },
       "evidence": [
         "src/srstudio/registry.py:contract_coverage",

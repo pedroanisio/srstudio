@@ -12,6 +12,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from . import camera, checks
+from ._collage_thing_contracts import contract
 from .canvas import Canvas
 from .collage import INK, LOOKS, _blob, _cut, _eye_centres, _paper, _smooth, draw_shapes
 from .errors import SrstudioError
@@ -85,7 +86,12 @@ def _handset_shapes(cv: Canvas, g, length: float) -> None:
                                   PHONE_BODY, n=12, amount=0.02)])  # fmt: skip
 
 
-@register("prop", "collage-handset", summary="A desk phone's handset on its own, for a hand or an ear")
+@register(
+    "prop",
+    "collage-handset",
+    summary="A desk phone's handset on its own, for a hand or an ear",
+    contract=contract('collage-handset'),
+)
 def handset(cv: Canvas, parent, x: float, y: float, length: float = 340.0, tilt: float = 0.0) -> object:
     """A handset ``length`` long centred on ``x, y``, turned ``tilt`` degrees; returns the group."""
     _size(length, "a handset's length")
@@ -94,7 +100,12 @@ def handset(cv: Canvas, parent, x: float, y: float, length: float = 340.0, tilt:
     return g
 
 
-@register("prop", "collage-desk-phone", summary="A paper desk phone: keypad, a lit display, the handset on its cradle")
+@register(
+    "prop",
+    "collage-desk-phone",
+    summary="A paper desk phone: keypad, a lit display, the handset on its cradle",
+    contract=contract('collage-desk-phone'),
+)
 def desk_phone(
     cv: Canvas,
     parent,
@@ -132,7 +143,12 @@ def desk_phone(
 
 
 # -- paper ------------------------------------------------------------------------------------------------------------
-@register("prop", "collage-resume", summary="A CV on one sheet of paper, turning over to show a blank back")
+@register(
+    "prop",
+    "collage-resume",
+    summary="A CV on one sheet of paper, turning over to show a blank back",
+    contract=contract('collage-resume'),
+)
 def resume(
     cv: Canvas, parent, x: float, y: float, w: float = 300.0, *, tilt: float = 0.0, turn: float | None = None
 ) -> object:
@@ -159,16 +175,18 @@ def resume(
     if turn is None:
         return g
     mid = round(turn + TURN / 2, 6)
-    cv.gate(front, [(0.0, mid)])
+    cv.gate(front, [(0.0, mid)], local=False)
     back = cv.group(g, cv.uid("g"))
-    cv.gate(back, [(mid, FOREVER)])
+    cv.gate(back, [(mid, FOREVER)], local=False)
     _sheet(cv, back, f"resume-back-{w}", _box(-w / 2, -h / 2, w, h), "#fffaf0")
     cv.keys(g, "scaleX", [(turn, 1.0), (mid, camera.EDGE_ON), (round(turn + TURN, 6), 1.0)], hold=False, local=False)
     return g
 
 
 # -- a table ----------------------------------------------------------------------------------------------------------
-@register("prop", "collage-fork", summary="A paper fork, standing on its handle's end")
+@register(
+    "prop", "collage-fork", summary="A paper fork, standing on its handle's end", contract=contract('collage-fork')
+)
 def fork(cv: Canvas, parent, x: float, y: float, length: float = 300.0, tilt: float = 0.0) -> object:
     """A fork ``length`` long with its handle's end on ``x, y`` and its tines up, turned ``tilt`` degrees about that
     end; returns the group."""
@@ -192,7 +210,12 @@ def _fork_shapes(cv: Canvas, g, length: float) -> None:
         cv.line(g, tine, head - length * 0.09, tine, -length, STEEL, max(6.0, length * 0.026))
 
 
-@register("prop", "collage-gravy-boat", summary="A gravy boat with forks taped round it, pointing like microphones")
+@register(
+    "prop",
+    "collage-gravy-boat",
+    summary="A gravy boat with forks taped round it, pointing like microphones",
+    contract=contract('collage-gravy-boat'),
+)
 def gravy_boat(
     cv: Canvas, parent, x: float, y: float, size: float = 360.0, *, forks: int = 3, tilt: float = 0.0
 ) -> object:
@@ -220,7 +243,9 @@ def gravy_boat(
     return g
 
 
-@register("prop", "collage-tiny-cup", summary="A very small cup on a very small saucer")
+@register(
+    "prop", "collage-tiny-cup", summary="A very small cup on a very small saucer", contract=contract('collage-tiny-cup')
+)
 def tiny_cup(cv: Canvas, parent, x: float, y: float, size: float = 110.0) -> object:
     """An espresso cup ``size`` wide with its saucer's centre on ``x, y``; returns the group."""
     _size(size, "a cup's width")
@@ -233,7 +258,12 @@ def tiny_cup(cv: Canvas, parent, x: float, y: float, size: float = 110.0) -> obj
     return g
 
 
-@register("prop", "collage-wine-glass", summary="A paper wine glass with a little red left in it")
+@register(
+    "prop",
+    "collage-wine-glass",
+    summary="A paper wine glass with a little red left in it",
+    contract=contract('collage-wine-glass'),
+)
 def wine_glass(cv: Canvas, parent, x: float, y: float, height: float = 300.0) -> object:
     """A wine glass ``height`` tall standing on ``x, y``; returns the group."""
     _size(height, "a glass's height")
@@ -257,7 +287,12 @@ def wine_glass(cv: Canvas, parent, x: float, y: float, height: float = 300.0) ->
 
 
 # -- paying -----------------------------------------------------------------------------------------------------------
-@register("prop", "collage-bank-card", summary="A bank card with a stripe, a chip and a name in capitals")
+@register(
+    "prop",
+    "collage-bank-card",
+    summary="A bank card with a stripe, a chip and a name in capitals",
+    contract=contract('collage-bank-card'),
+)
 def bank_card(
     cv: Canvas,
     parent,
@@ -282,7 +317,12 @@ def bank_card(
     return g
 
 
-@register("prop", "collage-receipt", summary="A till receipt, whole or torn across its foot")
+@register(
+    "prop",
+    "collage-receipt",
+    summary="A till receipt, whole or torn across its foot",
+    contract=contract('collage-receipt'),
+)
 def receipt(
     cv: Canvas, parent, x: float, y: float, w: float = 260.0, h: float = 420.0, *, torn: bool = False, tilt: float = 0.0
 ) -> object:
@@ -299,7 +339,12 @@ def receipt(
     return g
 
 
-@register("prop", "collage-wallet", summary="An open wallet: its card slots, one of them empty")
+@register(
+    "prop",
+    "collage-wallet",
+    summary="An open wallet: its card slots, one of them empty",
+    contract=contract('collage-wallet'),
+)
 def wallet(
     cv: Canvas, parent, x: float, y: float, w: float = 640.0, *, cards: Sequence[str] = ("#e63946", "#2a9d8f")
 ) -> object:
@@ -320,7 +365,12 @@ def wallet(
     return g
 
 
-@register("prop", "collage-counter", summary="The front of a restaurant's counter, with a slab along its top")
+@register(
+    "prop",
+    "collage-counter",
+    summary="The front of a restaurant's counter, with a slab along its top",
+    contract=contract('collage-counter'),
+)
 def counter(
     cv: Canvas, parent, top: float = 1500.0, colour: str = "#7a4a2b", slab: str = "#e9edc9", seam: str = "#5f3a21"
 ) -> object:
@@ -334,7 +384,7 @@ def counter(
     return g
 
 
-@register("prop", "collage-till", summary="A paper till with a lit readout")
+@register("prop", "collage-till", summary="A paper till with a lit readout", contract=contract('collage-till'))
 def till(cv: Canvas, parent, x: float, y: float, w: float = 320.0, text: str = "", *, size: float = 0.0) -> object:
     """A till ``w`` wide standing with its foot's centre on ``x, y``, its readout saying ``text`` at ``size``; returns
     the group."""
@@ -355,7 +405,9 @@ def till(cv: Canvas, parent, x: float, y: float, w: float = 320.0, text: str = "
 
 
 # -- a corner ---------------------------------------------------------------------------------------------------------
-@register("prop", "collage-stool", summary="A corner stool: a round seat on three legs")
+@register(
+    "prop", "collage-stool", summary="A corner stool: a round seat on three legs", contract=contract('collage-stool')
+)
 def stool(cv: Canvas, parent, x: float, y: float, w: float = 300.0) -> object:
     """A stool ``w`` wide, its seat's top centre on ``x, y``; returns the group."""
     _size(w, "a stool's width")
@@ -367,7 +419,12 @@ def stool(cv: Canvas, parent, x: float, y: float, w: float = 300.0) -> object:
     return g
 
 
-@register("prop", "collage-towel", summary="A striped towel with a fringe, for a shoulder or a corner")
+@register(
+    "prop",
+    "collage-towel",
+    summary="A striped towel with a fringe, for a shoulder or a corner",
+    contract=contract('collage-towel'),
+)
 def towel(cv: Canvas, parent, x: float, y: float, w: float = 260.0, h: float = 460.0, *, tilt: float = 0.0) -> object:
     """A towel ``w`` by ``h`` hanging from its top centre on ``x, y``, turned ``tilt`` degrees about it; returns the
     group, which a caller keys to swing."""
@@ -383,7 +440,12 @@ def towel(cv: Canvas, parent, x: float, y: float, w: float = 260.0, h: float = 4
     return g
 
 
-@register("prop", "collage-ring-corner", summary="A boxing ring's padded corner post and its three ropes")
+@register(
+    "prop",
+    "collage-ring-corner",
+    summary="A boxing ring's padded corner post and its three ropes",
+    contract=contract('collage-ring-corner'),
+)
 def ring_corner(
     cv: Canvas, parent, x: float = 960.0, y: float = 900.0, h: float = 720.0, *, reach: float = 1100.0
 ) -> object:
@@ -403,10 +465,16 @@ def ring_corner(
 
 
 # -- one eye ----------------------------------------------------------------------------------------------------------
-@register("prop", "collage-eye-twitch", summary="One eyelid of a Collage character, twitching over a held smile")
+@register(
+    "prop",
+    "collage-eye-twitch",
+    summary="One eyelid of a Collage character, twitching over a held smile",
+    contract=contract('collage-eye-twitch', cast=tuple(LOOKS)),
+)
 def twitch(cv: Canvas, parent, who: str, times: Sequence[float], *, side: int = 1) -> object:
     """``who``'s eye on ``side`` (-1 its left on screen, 1 its right) shut for :data:`TWITCH` at each project second
-    of ``times``, in that figure's coordinates, over a held face; returns the group."""
+    of ``times``, in that figure's coordinates, over a held face; returns the group. Overlapping or touching
+    closures keep the eye shut until the last cue ends."""
     if who not in LOOKS:
         raise ThingError(f"{who!r} is not in the Collage cast")
     if side not in (-1, 1):
@@ -421,6 +489,10 @@ def twitch(cv: Canvas, parent, who: str, times: Sequence[float], *, side: int = 
     cv.line(g, ex - 44, ey + 8, ex + 44, ey + 8, INK, 7)
     states: list[tuple[float, float]] = [(0.0, 0.0)]
     for t in seconds:
-        states += [(round(t, 6), 1.0), (round(t + TWITCH, 6), 0.0)]
+        start, end = round(t, 6), round(t + TWITCH, 6)
+        if len(states) > 1 and start <= states[-1][0]:
+            states[-1] = (end, 0.0)
+        else:
+            states += [(start, 1.0), (end, 0.0)]
     cv.keys(g, "opacity", states, local=False)
     return g

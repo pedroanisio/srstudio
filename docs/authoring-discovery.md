@@ -868,3 +868,434 @@ these graphics in sequence shots. The studio's `end` parameter is accepted
 for compatibility but changes neither its sweep times nor its visibility;
 use the caller-owned parent to limit the shot. Corridor targets are panel
 pixels, and the dots have no skeletal, balance or collision constraints.
+
+## Soft rooms, bedtime props and phone inserts
+
+The 18 non-character builders in `soft_sets`, `soft_front`, `soft_bedtime`,
+`soft_closet` and `soft_inbox` declare their coordinates, callbacks, clocks
+and return ownership. Each returns a drawing group. Placed props expose an
+origin in that group's unscaled drawing pixels; `x` and `y` place the origin
+in the supplied parent's pixels. Room builders return the complete set,
+including foreground elements that remain outside the room's framing.
+
+Discovery represents typed `NamedTuple` records such as `Shot`, `Light`,
+`Dim`, `BookSlide`, `Door` and `Count` as named properties with their actual
+scalar defaults. Untyped fields remain unknown, and recursive records stay
+bounded. These schemas describe inputs; construct the public Python records
+when calling the SDK. Inspection does not construct them or draw a scene.
+
+<!-- soft-scene-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, WARM, registry, soft_bedtime, soft_sets
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1920, fps='30', duration=6)
+cv = Canvas(scene, WARM, font_asset=None)
+
+book_contract = registry.get('prop', 'soft-picture-book').describe()['contract']
+slide = book_contract['arguments']['properties']['slide']['anyOf'][0]['properties']
+assert slide['time']['x-timebase'] == 'canvas'
+assert slide['seconds']['x-role'] == 'duration'
+assert slide['dx']['x-space'] == 'parent'
+
+# held receives the framed room after the duvet; its return value is ignored.
+def held(parent):
+    return soft_bedtime.picture_book(
+        cv, parent, x=540, y=1400, scale=0.8,
+        slide=soft_bedtime.BookSlide(time=1, seconds=0.5, dx=120, dy=50, turn=30),
+    )
+
+room = soft_sets.bedroom(
+    cv, cv.comp,
+    shots=(soft_sets.Shot(0), soft_sets.Shot(2, 1.4, 300, 900)),
+    lights=(soft_sets.Light(0, 'day'), soft_sets.Light(3, 'lamp', 100, 1200)),
+    held=held,
+)
+assert room.id == 'soft-bedroom'
+```
+<!-- soft-scene-discovery:end -->
+
+The book's slide adds parent-pixel displacements regardless of its own
+scale. A mail list's scroll moves its child page in unscaled drawing pixels,
+so the insert's scale multiplies the visible travel. The quilt's `to` is an
+absolute parent y coordinate. The wall clock's `time` and inbox counts are
+display content, not an advancing clock or fetched data. Inbox text requires
+a bound font; the unlettered bedtime props do not.
+
+Animation keys and opacity gates follow `Canvas.local_time`. Room `Shot`
+records hold framings; light and dimming pools belong to the set root outside
+the framed room. A bedside lamp only changes its own drawing—coordinate a
+room's `Light` records separately to darken the surroundings. These pools
+and the closet slit are authored overlays, not shared world lights.
+
+Door records use the Soft room projection: `a0` and `a1` run along its back
+wall, and `up` is height above its floor. The `between` callback receives a
+group in projected frame coordinates, after the dark openings and before
+the door leaves. Nonempty shut intervals form a union; open drawings appear
+in the gaps up to `end`. Empty shut intervals keep the default door closed.
+The handshake insert and tipping mop draw their own motion; neither creates
+biomechanical constraints or a world-space contact anchor.
+
+## Soft props, appliances and effects
+
+The 32 registered builders in `soft_props` and `soft_odds` declare their
+drawing origins, units, timed records and callback ownership. Each returns
+a group. Most place a local drawing at parent-pixel `x`/`y` and scale its
+geometry and child motion together. The bench, parcel stack and time card
+instead bake parent coordinates into their geometry. The glare lamp scales
+its body while keeping `reach` as an independent parent-pixel radius.
+
+Inspect schedule vocabularies before constructing them. Washer `loads` take
+`brick`, `ball`, `coins` or `shovel`; smoke and grill flame rows start at zero
+and use levels 0..3. `BadgeState` and `TimeState` separate literal display
+copy from their visibility spans. Their text needs a bound font. The phone's
+`screen` and beach call's `guest` receive an existing group once; their return
+values are ignored and their drawings are not clipped to the suggested box.
+
+<!-- soft-prop-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry, soft_odds
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1920, fps='30', duration=6)
+cv = Canvas(scene, font_asset=None)
+cv.local_time = True
+
+washer = registry.get('prop', 'soft-washer').describe()['contract']
+load = washer['arguments']['properties']['loads']['items']['prefixItems']
+assert load[0]['x-timebase'] == 'canvas'
+assert 'brick' in load[1]['enum']
+
+machine = soft_odds.washer(
+    cv, cv.comp, x=540, y=1600, scale=1.2, end=6, stop=4,
+    open_at=((1, 5), (2, 3)), loads=((1, 'brick'),),
+)
+# Hide the complete machine at the end; its own end limits selected effects.
+cv.gate(machine, ((0, 6),))
+assert machine.id == 'soft-washer'
+```
+<!-- soft-prop-discovery:end -->
+
+Overlapping washer door intervals form a union: the nested interval above
+does not close the door early. The drum rotates linearly until `stop`, then
+holds; loads ride in its group. `end` limits door and load visibility, while
+the machine body remains. TV and fridge `off` times extinguish their picture
+or indicator, and the grill's `end` limits flame and char overlays. Use a
+caller-owned gate when the entire object must disappear.
+
+Motion styles are explicit. Tongs snap between held angles, rumble lines
+shake in held steps, smoke loops interpolate linearly, and dust specks fall
+once and hold their final positions. A cake turn squeezes its flat drawing
+and swaps the lettering at the narrowest point. Its candle and the beach's
+sea and palm use renderer expressions; `Canvas.local_time` selects keyframe
+clocks without rewriting those expressions. These illustrations provide no
+grip, collision, fluid, lighting or biomechanical solver. The hush finger
+draws an extra forearm and finger, so authors must coordinate it with the rig.
+
+## Blob furniture, room layouts and placement helpers
+
+Blob's 12 registered furniture and room builders use the Soft fixed
+1080x1920 layout. Their returned groups contain already-positioned artwork.
+Transform a shared parent to move the room and its occupants together.
+The laptop is an exception within that layout: its root already translates
+and scales laptop-local geometry. `blob.keyboard()` returns the deck corners
+after that built-in transform; applying it again misplaces the hands.
+
+Discovery now includes the existing placement helpers as operations:
+`keyboard`, `sofa_seat`, `swivel_seat`, `meeting_table_top`, `meeting_screen`,
+`room_point`, `wall_quad` and `floor_quad`, on the parts that use them. These
+return reference geometry without drawing. They can guide placement and
+framing, but they do not create world anchors, collisions or solved contacts.
+
+`shots` on these four room builders means visibility intervals, unlike the
+`Shot` framing records used by `soft_sets`. `None` leaves a room visible;
+an empty sequence hides it. The opacity gates follow `Canvas.local_time`.
+The home forwards `on_sofa` to the sofa group, between its seat and near arm,
+so the near arm supplies the foreground occlusion. The callback still owns
+the actor's placement and scale.
+
+<!-- blob-drawing-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, blob, registry
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1920, fps='30', duration=6)
+cv = Canvas(scene, font_asset=None)
+contract = registry.get('location', 'soft-meeting-room').describe()['contract']
+assert contract['arguments']['properties']['on_screen']['x-space'] == 'screen-local'
+assert contract['operations']['meeting_screen']['returns']['x-role'] == 'screen-frame'
+
+_, width, height, _ = blob.meeting_screen()
+
+def screen(parent):
+    # The room supplies translation, wall skew and a rectangular mask.
+    cv.rect(parent, 0, 0, width, height, '#336699')
+    cv.ellipse(parent, width / 2 - 30, height / 2 - 30, 60, 60, '#FFFFFF')
+
+room = blob.meeting_room(
+    cv, cv.comp, shots=((1, 3), (4, 6)), on_screen=screen, chair=False,
+)
+assert room.id == 'soft-meeting-room'
+```
+<!-- blob-drawing-discovery:end -->
+
+The meeting screen slot overlays its default slide in a separate masked
+group. Draw its contents in the flat local rectangle; the room applies the
+wall skew once. The other furniture, window light patches, clock, coffee
+steam and pendant glaze are static drawings. The home's `lamp_talk` toggles
+a drawn shade and halo in ordered spans, without changing shared lighting.
+
+## Ink shots and illustrated interfaces
+
+The 19 non-character builders in the Ink family declare their coordinates,
+clocks, returns and interface records. Ink uses a fixed square 1080x1080
+layout. Event times are authored from the beginning of a take, but builders
+emit them on the clock selected by `Canvas.local_time`. Set it to `True`
+for sequence shots. Changing `Take.start` alone does not offset animations,
+and a timed group is not a substitute for a sequence shot's clock.
+
+Return ownership varies. `ink-desk` draws into its parent and returns
+`None`; the desk, wide and router-wide shot builders return that parent.
+The router, phone, kerb, doorstep and vacuum shot builders return only the
+featured object, leaving surrounding scenery outside it. The doorbell view
+returns its lens overlay while the human remains a sibling. Use a dedicated
+parent when moving or hiding an entire shot.
+
+<!-- ink-drawing-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, ink, registry
+from srstudio.timeline import Take
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1080, fps='24', duration=6)
+cv = Canvas(scene, font_asset=None, local_time=True)
+sequence = cv.comp.add_sequence(id='shots')
+sequence.add_group(id='lead', end=2)
+shot = sequence.add_group(id='router-shot', end=4)
+whole = cv.group(shot, 'whole-shot')
+take = Take('02', 'router', 'router', '', start=2, duration=4)
+
+contract = registry.get('location', 'ink-router-shot').describe()['contract']
+assert contract['arguments']['properties']['hand_at']['x-timebase'] == 'canvas'
+assert contract['returns']['x-role'] == 'drawing-group'
+
+router = ink.router_shot(
+    cv, whole, take, power='down', hand_action='press', hand_at=1,
+)
+cv.gate(whole, ((0, 4),))
+assert router is not whole
+```
+<!-- ink-drawing-discovery:end -->
+
+The phone, kerb, doorstep and vacuum wrappers forward keyword options.
+Their discovery operations expose the actual `phone`, `meter`, `doorbell`
+or `vacuum` function and its typed inputs. The wrapper's variadic envelope
+remains explicitly open; use its documented subset of those inputs. In
+particular, the wide kerb supplies meter `zoom` and `framed` itself.
+
+`Bubble`, `AppRow` and map `Room` records distinguish display copy, event
+times and drawing coordinates. Chat status waits for the last outgoing
+bubble to appear; typing dots occupy an incoming reply's slot when possible.
+App forms reject overflow before drawing: five rows fit alone, four with a
+progress bar or stars, and three with both. Progress fills linearly; stars,
+ticks, tags and captcha picks use held states. These are illustrated
+interfaces, with no messaging, payment, navigation or verification service.
+Text-bearing builders require a bound font asset.
+
+Motion conventions matter across cuts. The kerb's negative `tow` time
+continues the lift or departure from before the take; `view` maps the
+pavement anchor to its new position and scale. The hand uses cubic easing
+and parent-pixel displacements independent of its drawing scale. The vacuum
+instead multiplies its travel by scale. None creates a physical grip or
+contact constraint, and the floor map's fixed route does not adapt to custom
+room geometry.
+
+## Collage table and corner props
+
+The 16 builders in `collage_things` declare their return ownership, drawing
+origins, sizes, copy and animation clocks. Most return a group translated
+to `x/y` in the parent. That origin may be a center, foot, handle end or
+top: inspect the constraints before aligning a prop with a hand or surface.
+The stool's origin is a seat reference, not a fitted contact point.
+`collage-counter`, `collage-ring-corner` and `collage-eye-twitch` instead bake
+coordinates into their drawings and return an untranslated group. The
+counter uses the fixed 1080x1920 layout.
+
+<!-- collage-thing-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, collage_things, registry
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1920, fps='24', duration=6)
+cv = Canvas(scene, font_asset=None, local_time=True)
+sequence = cv.comp.add_sequence(id='shots')
+sequence.add_group(id='lead', end=2)
+shot = sequence.add_group(id='paper-shot', end=4)
+
+contract = registry.get('prop', 'collage-resume').describe()['contract']
+assert contract['arguments']['properties']['turn']['x-timebase'] == 'composition'
+assert contract['returns']['x-anchors']['origin'] == [0, 0]
+paper = collage_things.resume(cv, shot, 540, 900, w=500, turn=3)
+# The sheet turns one second into this shot: turn uses project seconds.
+# Its heading is drawn in paths, so this example needs no font asset.
+cv.gate(paper, ((0, 4),), local=True)
+assert cv.local_time is True
+```
+<!-- collage-thing-discovery:end -->
+
+The resume's scale and face change share project time. Its 0.3-second turn
+is a linear squeeze to a thin sliver and back, with the blank back revealed
+at the midpoint. Eye-twitch cues also use project time: each closes the eye
+for 0.09 seconds, and overlapping or touching cues keep it closed until the
+last cue ends. The eyelid overlays a held face in that figure's coordinates;
+it does not track a moving head. Parent it with the figure to share placement.
+
+Other props are static. Use caller-owned animation to move them; `torn`
+selects a receipt silhouette and `off_hook` omits a handset. Draw a separate
+`collage-handset` for a receiver held elsewhere. The gravy boat accepts zero
+through five forks; the wallet accepts at most two card colors and retains
+an empty third slot. None supplies a physical grip or contact solver.
+
+Readout copy is literal. A nonempty desk-phone display or till readout needs
+an explicit positive lettering `size` and a bound font; discovery separates
+that size from prop dimensions. Text is not automatically fitted. Bank-card
+names likewise need a font, while the resume and receipt use drawn paths.
+
+## Everyday Collage props and sampled reaches
+
+The 22 `collage_everyday` builders declare their placement, sizes, copy,
+clocks and return ownership. Food, chips, thumbs, the shaker, magnifying
+glass and lasagna scale reference drawings; their size arguments are not
+exact silhouette bounds. Other props use literal dimensions. A cereal box,
+certificate or snapshot takes its top-left as placement input but returns
+a group centered on the drawing for rotation.
+
+The phone and battery insert return only the inner screen group, with its
+origin 26 pixels inside the frame. Adding screen content does not clip it,
+and moving that return leaves the frame behind. Keep a caller-owned parent
+when moving the whole phone. The bubble, clock, bag and bill display literal
+copy; most do not fit-check it. The flip card checks all side copy and times
+before drawing, using estimated glyph widths rather than font measurement.
+
+Clocks differ by builder. Flip-card turns and sampled reaches use project
+seconds regardless of `Canvas.local_time`. Router light/unplug cues and
+battery level/death cues use the Canvas clock. Gust and confetti have project
+keyframes plus lifetime groups on the containing timeline: place them in a
+project-aligned parent. They do not convert cue times for a later sequence
+shot. Confetti is seeded and deterministic; its reversal is a linear change
+of direction, not a gravity simulation.
+
+`collage-arm` also exposes the actual `shoulder`, `reach`, `eased`, `frames`
+and `chew` helpers as discovery operations. These are available directly
+from `collage_everyday`; discovery does not create a second calling API.
+
+<!-- collage-everyday-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, collage_everyday as paper, registry
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1920, fps='24', duration=3)
+cv = Canvas(scene, font_asset=None)
+whole_arm = cv.group(cv.comp, 'whole-arm')
+operations = registry.get('prop', 'collage-arm').describe()['contract']['operations']
+assert operations['reach']['arguments']['properties']['hand']['x-role'] == 'sampled-hand-position'
+
+shoulder = paper.shoulder('deb', side=1)
+times = paper.frames((0, 2), step=1 / 24)
+def hand_at(t):
+    return paper.eased(((0, 400), (2, 700)), t, 'sine-in-out'), 900
+
+holder = paper.reach(cv, whole_arm, 'deb', shoulder, hand_at, times, side=1)
+paper.chip(cv, holder, 0, 0, size=80)
+assert holder is not whole_arm
+```
+<!-- collage-everyday-discovery:end -->
+
+`shoulder()` is a reference in the fixed single-figure layout. Transform it
+with the figure when using another placement. `reach()` calls the position
+callback once per supplied time and returns an unmirrored hand holder, so a
+child prop shares hand translation without inheriting the hand artwork's
+mirror. Its sleeve pivot is a sibling; move or gate the common parent to
+affect the whole arm. Supply `side=-1` or `side=1` explicitly. Omitting it
+retains legacy artwork but records an anatomy fault for a drawn hand.
+
+This reach has one rotating, stretching sleeve segment. It does not solve
+an elbow, grip or body constraint. Sleeve angle, length and hand translation
+interpolate independently, so their meeting is authored at sample times;
+choose sufficiently dense samples and inspect the result. `frames()` takes
+a finite positive time step, while `eased()` samples ordered scalar keys
+with its two supported easings. `chew()` replaces viseme keys inside a span
+on a 0.12-second grid and preserves keys outside it.
+
+
+## Collage rooms, photographs and illustrated interfaces
+
+The 33 builders in `collage_sets`, `collage_odds`, `collage_photo`,
+`collage_article` and `collage_forecast` declare placement, clocks and return
+ownership. The 13 rooms use fixed 1080×1920 furniture layouts. Each returns
+one whole group with a softened, slightly overscanned backdrop and a sharp
+signature shelf. Their lights, clocks and newsroom globe are static drawings.
+Add actors separately. Room contracts expose the actual `signature_box`,
+`marks_box` and `zoom_pivot` helpers; the last computes a pivot that preserves
+12-pixel signature margins under a uniform zoom, without emitting a camera.
+
+<!-- collage-context-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, collage_photo, registry
+from srstudio.collage_group import Place
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1920, fps='24', duration=4)
+cv = Canvas(scene, font_asset=None)
+room = registry.get('location', 'collage-living-room')
+operations = {op.name: op.builder for op in room.contract.operations}
+pivot = operations['zoom_pivot']('living-room', (540, 1100), 1.4)
+assert len(pivot) == 2
+
+photo = collage_photo.print_photo(
+    cv, cv.comp,
+    places={'gary': Place(540, 1800, 0.6)},
+    poses={'gary': ('wide', 'grin', 'shrug')},
+    x=90, y=600, width=900, blur=('gary',),
+)
+record = registry.get('prop', 'collage-photo-print').describe()['contract']
+assert record['arguments']['properties']['places']['additionalProperties'][
+    'x-python-type'
+] == 'srstudio.collage_group.Place'
+assert photo is not cv.comp
+```
+<!-- collage-context-discovery:end -->
+
+A photo print composes a static room, posed figures and a foreground sofa
+inside a crop mask, then adds its border and gloss. `Place` supplies each
+figure's fixed-layout position and positive scale. Pose keys must match place
+keys. Blur names select actors; their blur radius compensates for figure
+scale before the entire photo is scaled. The returned group is the whole
+print, positioned and rotated at its top-left. Its `width` describes the
+image, excluding the border. This is a drawing assembled from poses, not a
+capture of another scene's current animation.
+
+Cake cuts, doctor-scale drops, weather-map slides and message-thread cues
+use composition seconds even when `Canvas.local_time` is enabled. Sensor-tap
+water, timer digits, viewfinder countdowns and flash fades use the Canvas
+clock. A timer's first digit is visible before its start cue; viewfinder
+brackets remain after its countdown. Eye-chart lifetime groups and gates
+require a project-aligned parent with `local_time=False`. These are authored
+visibility and transform changes, without a physical simulation.
+
+Article and thread builders return a wrapper containing the whole phone.
+Their contents are illustrations: body-copy bars, a landscape placeholder,
+and message bubbles. They do not fetch articles or send messages. Article
+headlines and thread messages preflight estimated text fit; this is not a
+promise to fit every field, including sender and contact copy. Read their
+constraints before choosing dimensions. Chart bars, the TV and call buttons
+are likewise static drawings. Glass and jug geometry keeps parent-space
+coordinates even though their root transform scales around an authored base;
+do not treat that base as a new local origin.

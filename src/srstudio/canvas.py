@@ -532,9 +532,12 @@ class Canvas:
         if self._frozen:
             raise CanvasError(f"a frozen drawing cannot hold {what} still")
 
-    def gate(self, node, spans: Spans):
-        """Visible in the union of finite, non-negative ``spans``; overlaps and touching spans merge."""
-        return self.keys(node, "opacity", _visibility_keys(spans))
+    def gate(self, node, spans: Spans, *, local: bool | None = None):
+        """Visible in the union of finite, non-negative ``spans``; overlaps and touching spans merge.
+
+        ``local`` selects the animation clock as in :meth:`keys`, defaulting to ``Canvas.local_time``.
+        """
+        return self.keys(node, "opacity", _visibility_keys(spans), local=local)
 
     def pop_in(
         self,

@@ -11,6 +11,7 @@ import math
 from collections.abc import Sequence
 
 from . import blob, checks
+from ._soft_prop_contracts import contract
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -110,6 +111,7 @@ def _tong_arm(cv: Canvas, g) -> None:
     "prop",
     "soft-tongs",
     summary="Long kitchen tongs held by the hinge: two metal arms with scalloped tips that snap shut on cue",
+    contract=contract('soft-tongs'),
 )
 def tongs(
     cv: Canvas,
@@ -149,6 +151,7 @@ def tongs(
     "soft-grill",
     summary="A kettle grill on three legs with a side shelf and burgers on the grate: the burgers char and the flames "
     "climb on cue",
+    contract=contract('soft-grill'),
 )
 def grill(
     cv: Canvas,
@@ -222,7 +225,10 @@ def grill(
 
 
 @register(
-    "prop", "soft-smoke", summary="Grey puffs rising and fading from a point, from a thread to a thick column, on cue"
+    "prop",
+    "soft-smoke",
+    summary="Grey puffs rising and fading from a point, from a thread to a thick column, on cue",
+    contract=contract('soft-smoke'),
 )
 def smoke(
     cv: Canvas,
@@ -270,6 +276,7 @@ def smoke(
     "prop",
     "soft-pizza-box",
     summary="A flat cardboard pizza box seen from a little above, with a red stamp on the lid and vents on its edge",
+    contract=contract('soft-pizza-box'),
 )
 def pizza_box(cv: Canvas, parent, x: float, y: float, *, scale: float = 1, id: str = "soft-pizza-box"):
     """A pizza box 340 px wide at ``scale`` 1, centred on (``x``, ``y``)."""
@@ -286,7 +293,12 @@ def pizza_box(cv: Canvas, parent, x: float, y: float, *, scale: float = 1, id: s
     return g
 
 
-@register("prop", "soft-bottle", summary="A squeeze bottle with a nozzle and a blank label, red unless asked otherwise")
+@register(
+    "prop",
+    "soft-bottle",
+    summary="A squeeze bottle with a nozzle and a blank label, red unless asked otherwise",
+    contract=contract('soft-bottle'),
+)
 def bottle(
     cv: Canvas, parent, x: float, y: float, *, scale: float = 1, color: str = "#D9534F", id: str = "soft-bottle"
 ):
@@ -312,6 +324,7 @@ def bottle(
     "soft-washer",
     summary="A front-loading washing machine with a round glass door, a drum that turns on cue and a light that dies; "
     "what has been put in rides round in the drum",
+    contract=contract('soft-washer'),
 )
 def washer(
     cv: Canvas,
@@ -385,7 +398,7 @@ def _closed(open_at: Sequence[tuple[float, float]], end: float) -> list[tuple[fl
     for start, close in sorted(open_at):
         if start > at:
             out.append((at, start))
-        at = close
+        at = max(at, close)
     return [*out, (at, end)] if at < end else out
 
 
@@ -415,7 +428,12 @@ LOAD_SHAPES = {"brick": _load_brick, "ball": _load_ball, "coins": _load_coins, "
 LOADS = tuple(LOAD_SHAPES)
 
 
-@register("prop", "soft-brick", summary="A red house brick with two rows of holes on its face")
+@register(
+    "prop",
+    "soft-brick",
+    summary="A red house brick with two rows of holes on its face",
+    contract=contract('soft-brick'),
+)
 def brick(
     cv: Canvas, parent, x: float = 0, y: float = 0, *, scale: float = 1, angle: float = 0, id: str = "soft-brick"
 ):
@@ -429,7 +447,12 @@ def brick(
     return g
 
 
-@register("prop", "soft-bowling-ball", summary="A dark purple bowling ball with its three finger holes and a shine")
+@register(
+    "prop",
+    "soft-bowling-ball",
+    summary="A dark purple bowling ball with its three finger holes and a shine",
+    contract=contract('soft-bowling-ball'),
+)
 def bowling_ball(cv: Canvas, parent, x: float = 0, y: float = 0, *, scale: float = 1, id: str = "soft-bowling-ball"):
     """A ball 190 px across at ``scale`` 1, centred on (``x``, ``y``)."""
     _place("a ball", x, y, scale)
@@ -441,7 +464,12 @@ def bowling_ball(cv: Canvas, parent, x: float = 0, y: float = 0, *, scale: float
     return g
 
 
-@register("prop", "soft-coin-bag", summary="A burlap sack tied at the neck with a dollar sign on it")
+@register(
+    "prop",
+    "soft-coin-bag",
+    summary="A burlap sack tied at the neck with a dollar sign on it",
+    contract=contract('soft-coin-bag'),
+)
 def coin_bag(cv: Canvas, parent, x: float = 0, y: float = 0, *, scale: float = 1, id: str = "soft-coin-bag"):
     """A sack 190 x 220 px at ``scale`` 1, centred on (``x``, ``y``)."""
     _place("a sack", x, y, scale)
@@ -454,7 +482,10 @@ def coin_bag(cv: Canvas, parent, x: float = 0, y: float = 0, *, scale: float = 1
 
 
 @register(
-    "prop", "soft-tv", summary="A flat television on a low stand: its picture changes color until it goes dark on cue"
+    "prop",
+    "soft-tv",
+    summary="A flat television on a low stand: its picture changes color until it goes dark on cue",
+    contract=contract('soft-tv'),
 )
 def tv(
     cv: Canvas,
@@ -494,6 +525,7 @@ def tv(
     "prop",
     "soft-home-fridge",
     summary="A front-on two-door kitchen fridge that stands anywhere, with a small green light that dies on cue",
+    contract=contract('soft-home-fridge'),
 )
 def home_fridge(
     cv: Canvas,
@@ -525,7 +557,12 @@ def home_fridge(
     return g
 
 
-@register("prop", "soft-dust", summary="Specks of dust that fall from overhead on cue and thin out")
+@register(
+    "prop",
+    "soft-dust",
+    summary="Specks of dust that fall from overhead on cue and thin out",
+    contract=contract('soft-dust'),
+)
 def dust(
     cv: Canvas,
     parent,
@@ -558,6 +595,7 @@ def dust(
     "graphic",
     "soft-dimmer",
     summary="A veil over the whole frame that deepens step by step: a room whose lights go out one at a time",
+    contract=contract('soft-dimmer'),
 )
 def dimmer(
     cv: Canvas,
@@ -579,7 +617,12 @@ def dimmer(
     return g
 
 
-@register("prop", "soft-notice", summary="A framed notice on a wall, a few big words: the rule of the room")
+@register(
+    "prop",
+    "soft-notice",
+    summary="A framed notice on a wall, a few big words: the rule of the room",
+    contract=contract('soft-notice'),
+)
 def notice(
     cv: Canvas,
     parent,
@@ -608,7 +651,12 @@ def notice(
     return g
 
 
-@register("prop", "soft-book", summary="A closed hardback with a band on its cover, held up or lying in a pile")
+@register(
+    "prop",
+    "soft-book",
+    summary="A closed hardback with a band on its cover, held up or lying in a pile",
+    contract=contract('soft-book'),
+)
 def book(
     cv: Canvas,
     parent,
@@ -630,7 +678,12 @@ def book(
     return g
 
 
-@register("prop", "soft-yogurt", summary="A small plastic yogurt pot with a foil lid and a strawberry on its label")
+@register(
+    "prop",
+    "soft-yogurt",
+    summary="A small plastic yogurt pot with a foil lid and a strawberry on its label",
+    contract=contract('soft-yogurt'),
+)
 def yogurt(cv: Canvas, parent, x: float = 0, y: float = 0, *, scale: float = 1, id: str = "soft-yogurt"):
     """A pot 130 px wide and 150 high at ``scale`` 1, its base on (``x``, ``y``)."""
     _place("a yogurt", x, y, scale)
@@ -642,7 +695,12 @@ def yogurt(cv: Canvas, parent, x: float = 0, y: float = 0, *, scale: float = 1, 
     return g
 
 
-@register("prop", "soft-rumble", summary="Three curved lines either side of a belly, shaking while it talks")
+@register(
+    "prop",
+    "soft-rumble",
+    summary="Three curved lines either side of a belly, shaking while it talks",
+    contract=contract('soft-rumble'),
+)
 def rumble(
     cv: Canvas,
     parent,
@@ -686,6 +744,7 @@ def rumble(
     "prop",
     "soft-hush-finger",
     summary="A forearm that curls in from a raised hand and one short finger across the lips",
+    contract=contract('soft-hush-finger'),
 )
 def hush_finger(
     cv: Canvas,

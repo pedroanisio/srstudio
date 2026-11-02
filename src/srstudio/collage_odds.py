@@ -9,6 +9,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from . import checks, collage_sets
+from ._collage_context_contracts import contract
 from .canvas import Canvas
 from .collage import INK
 from .errors import SrstudioError
@@ -49,7 +50,13 @@ def _rising(cues: Sequence[float], what: str) -> tuple[float, ...]:
     return times
 
 
-@register("prop", "collage-cake-slice", summary="A slice of cake on a plate that halves on every cue", style="collage")
+@register(
+    "prop",
+    "collage-cake-slice",
+    summary="A slice of cake on a plate that halves on every cue",
+    style="collage",
+    contract=contract('collage-cake-slice'),
+)
 def cake_slice(cv: Canvas, parent, x: float, y: float, cuts: Sequence[float] = (), size: float = 300.0):
     """A plate centred on ``x, y`` with a slice of ``size`` on it, half as big after every second of ``cuts``."""
     times = _rising(cuts, "a slice's cuts")
@@ -67,7 +74,13 @@ def cake_slice(cv: Canvas, parent, x: float, y: float, cuts: Sequence[float] = (
     return g
 
 
-@register("prop", "collage-eye-chart", summary="An eye chart whose rows snap sharp one at a time", style="collage")
+@register(
+    "prop",
+    "collage-eye-chart",
+    summary="An eye chart whose rows snap sharp one at a time",
+    style="collage",
+    contract=contract('collage-eye-chart'),
+)
 def eye_chart(
     cv: Canvas,
     parent,
@@ -99,7 +112,13 @@ def eye_chart(
     return g
 
 
-@register("prop", "collage-lens-frame", summary="A clinic lens frame held in front of a face", style="collage")
+@register(
+    "prop",
+    "collage-lens-frame",
+    summary="A clinic lens frame held in front of a face",
+    style="collage",
+    contract=contract('collage-lens-frame'),
+)
 def lens_frame(cv: Canvas, parent, x: float, y: float, spread: float = 150.0):
     """Two lenses in a steel frame centred on ``x, y``, ``spread`` apart, with a dial between them."""
     if not (checks.number(spread) and spread > 0):
@@ -113,7 +132,13 @@ def lens_frame(cv: Canvas, parent, x: float, y: float, spread: float = 150.0):
     return g
 
 
-@register("prop", "collage-sensor-tap", summary="A chrome sensor tap over a basin, running on cue", style="collage")
+@register(
+    "prop",
+    "collage-sensor-tap",
+    summary="A chrome sensor tap over a basin, running on cue",
+    style="collage",
+    contract=contract('collage-sensor-tap'),
+)
 def sensor_tap(cv: Canvas, parent, x: float, y: float, runs: Sequence[tuple[float, float]] = ()):
     """A basin with its rim at ``y``, a tap at ``x``, water falling through each ``(start, end)`` of ``runs``."""
     if not all(checks.number(a) and checks.number(b) and 0 <= a < b for a, b in runs):
@@ -130,7 +155,13 @@ def sensor_tap(cv: Canvas, parent, x: float, y: float, runs: Sequence[tuple[floa
     return g
 
 
-@register("prop", "collage-spinach", summary="A wide leaf of spinach to stick across someone's teeth", style="collage")
+@register(
+    "prop",
+    "collage-spinach",
+    summary="A wide leaf of spinach to stick across someone's teeth",
+    style="collage",
+    contract=contract('collage-spinach'),
+)
 def spinach(cv: Canvas, parent, x: float, y: float, width: float = 110.0):
     """A dark leaf ``width`` wide, centred on ``x, y``."""
     if not (checks.number(width) and width > 0):
@@ -141,7 +172,13 @@ def spinach(cv: Canvas, parent, x: float, y: float, width: float = 110.0):
     return g
 
 
-@register("prop", "collage-full-glass", summary="A wine glass, as full as you like", style="collage")
+@register(
+    "prop",
+    "collage-full-glass",
+    summary="A wine glass, as full as you like",
+    style="collage",
+    contract=contract('collage-full-glass'),
+)
 def wine_glass(cv: Canvas, parent, x: float, y: float, full: float = 0.5, colour: str = WINE, scale: float = 1.0):
     """A glass whose foot stands on ``x, y``, its bowl ``full`` of ``colour``."""
     if not (checks.number(full) and 0 <= full <= 1 and checks.number(scale) and scale > 0):
@@ -157,7 +194,13 @@ def wine_glass(cv: Canvas, parent, x: float, y: float, full: float = 0.5, colour
     return g
 
 
-@register("prop", "collage-water-jug", summary="A glass water jug with ice in it", style="collage")
+@register(
+    "prop",
+    "collage-water-jug",
+    summary="A glass water jug with ice in it",
+    style="collage",
+    contract=contract('collage-water-jug'),
+)
 def water_jug(cv: Canvas, parent, x: float, y: float, scale: float = 1.0):
     """A jug whose base stands on ``x, y``."""
     if not (checks.number(scale) and scale > 0):
@@ -172,7 +215,11 @@ def water_jug(cv: Canvas, parent, x: float, y: float, scale: float = 1.0):
 
 
 @register(
-    "prop", "collage-doctor-scale", summary="A clinic scale with a height bar that lowers on cue", style="collage"
+    "prop",
+    "collage-doctor-scale",
+    summary="A clinic scale with a height bar that lowers on cue",
+    style="collage",
+    contract=contract('collage-doctor-scale'),
 )
 def doctor_scale(
     cv: Canvas,
@@ -190,14 +237,14 @@ def doctor_scale(
         raise CollageOddsError(f"a height bar stands above the floor, got {bar_to!r} over {base!r}")
     if not (checks.number(bar_from) and 620.0 <= bar_from < base):
         raise CollageOddsError(f"a height bar waits on the post, got {bar_from!r}")
+    if bar_at is not None and not (checks.number(bar_at) and 0 <= bar_at < end):
+        raise CollageOddsError(f"a bar drops at a time before {end}, got {bar_at!r}")
     g = cv.group(parent, cv.uid("g"))
     cv.rect(g, x - 18, 640, 36, base - 640, STEEL, INK, EDGE, radius=6.0)
     cv.rect(g, x - 220, base - 40, 440, 60, "#3b4148", INK, EDGE, radius=14.0)
     bar = cv.group(g, cv.uid("g"))
     cv.rect(bar, x - 18, bar_from, 220, 22, STEEL, INK, EDGE, radius=6.0)
     if bar_at is not None:
-        if not (checks.number(bar_at) and 0 <= bar_at < end):
-            raise CollageOddsError(f"a bar drops at a time before {end}, got {bar_at!r}")
         cv.keys(
             bar, "y", [(bar_at, 0.0), (bar_at + 0.35, bar_to - bar_from)], hold=False, kind="cubic-out", local=False
         )

@@ -16,6 +16,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from . import _character_contracts as cc
+from . import _ink_drawing_contracts as ic
 from . import look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -157,6 +158,7 @@ def vacuum(
     "ink-vacuum-shot",
     summary="The robot vacuum on the floor by the wall's baseboard, normal or close",
     style="ink",
+    contract=ic.contract('ink-vacuum-shot', vacuum=vacuum),
 )
 def vacuum_shot(cv: Canvas, parent, take: Take, *, close: bool = False, **vacuum_kw):
     """The floor and the baseboard, the vacuum on them; ``vacuum_kw`` (``state``, ``display``) go to
@@ -204,6 +206,7 @@ def _check_rooms(rooms: Sequence[Room]) -> list[Room]:
     summary="The vacuum's map of the home: rooms in outline with their names, the route traced dot by dot, one "
     "room renamed at its moment",
     style="ink",
+    contract=ic.contract('ink-floor-map'),
 )
 def floor_map(
     cv: Canvas,

@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0.0",
+  "generated_by": {
+    "model": "GPT-6",
+    "tool": "OpenAI Codex"
+  },
+  "source_commit": "6c0d45eee4c408ac53b5906ac224a992f85e51ce",
+  "scene_sha256": {
+    "collage-boardroom": "ce235efe38b808d0617c228a6ed752a121487f72a82c0390d27457086be1f9eb",
+    "collage-meeting-room": "e02c8a09b9d5697158d3eeaf0182ad178c5f9be70575d442696f12b0741eae4b",
+    "collage-classroom": "241c5bd3b03f53b5639be0b08655b7fe5637d74dda8a73d968253b37f8a3f2ae",
+    "collage-living-room": "62e2fb551c1905d799c1fa8af2d8945829ca3211467e54d5165fa0b8024cba58",
+    "collage-cafe": "b264f81450ac0f8c05aeb05bc94eaa83589ed9a1808bb7228161dac3f975e9e5",
+    "collage-newsroom": "db4d234a83d59019195fda24ee226996ed6904332c3799d681104cd6e25955c8",
+    "collage-therapy": "656ab2ca7a095a08b434cfbc4d7ad3ce1cb368546ced3bbccba3686ad873cf9b",
+    "collage-stage": "a4978e5d724c96b979382293023b0b6c54c614545a0481430c3b28804ec4f1ff",
+    "collage-bathroom": "0ce3c7a0ea121c8586621a464b06723045d1b055000575b322872f230d535a02",
+    "collage-bedroom": "1bebd3f9672215c398c4953b012b04b1b822afece43ab61e88f08026f54788cb",
+    "collage-supermarket": "1da490f169250abf528f343be7470a1c804770b4cc6e51309ca9437481a5cb14",
+    "collage-dining-room": "2ae6a2eb1ea7ae3beadd58959347ae8f608de6b275c380cee599ada711a14d1c",
+    "collage-bus-stop": "e16ee2d1ce3b62ea8ef1bce91d0037cb4450504c02213b0b6174305536f6630e",
+    "collage-article": "52a47b655a68079d02474abf31bca92bd74c26ee3b5fad14a283cdd6866ce94b",
+    "collage-weather-map": "51d6ff66e99a1468895dc1508c6cf479b31a6c264d567538a11af36383e2bb6f",
+    "collage-thread": "4a4ba946056d21bccde14e2c5c5a965dc98fbd40610e7d5caa721e71b37d9288",
+    "collage-sign": "c27873145419c7fa8e9ddfea13e54b26f4f82a74eae075a345917ad4ef2fada8",
+    "collage-chart": "57b3089c14992d31247a67afaefc156d03b4834c7715131ff2511c5fc959a16c",
+    "collage-tv": "9926271e99fa17de6ce57c38ba2a4e8905a35fdaf1339fbffb6da8bd6867cdae",
+    "collage-call-buttons": "567c3f1a459361fbd6532e3535302d69b88a247e57fd2e250e733dcf2456b68a",
+    "collage-cake-slice": "fa1c84cc696f4a1856d35f228907505488a812a0c27e54bd90ba9ba01561e46c",
+    "collage-eye-chart": "138e2d5d8958904cee49f45df0aa59315999256e21ac17bd7a351de47989a047",
+    "collage-lens-frame": "7178c210ee70d6137c93671f954d8943790e447a6eaf58e8e0a84a9e725f3dcb",
+    "collage-sensor-tap": "3616422b095ab2e5c3ad9445589242cecb52ebe1e90a5af753c711126ccfb73c",
+    "collage-spinach": "98055d086cff833692a8bc541927e38f77f7de591cf58c9d7ba412cd336dc3bf",
+    "collage-full-glass": "2232b332c07ae0b35e8520e138b9976da118e7b4b5106993a375b501766acec0",
+    "collage-water-jug": "bd8cc4966d4e89adb9a5f2afb48f1a366ad1ccc17652cadd0c9b7e0318a20174",
+    "collage-doctor-scale": "f258cef03024189dbcbf9ac777e3156ac11f866ac591376f181c2dd7c9a69d1d",
+    "collage-phone-timer": "31a23c9c75509fed65382811e1bfd710070d671956feda5d98180386ab5f0fab",
+    "collage-viewfinder": "9aac3f58a74466f748bf17c8b512ef1686015cc28d655cf6a6c3b48a44f0a113",
+    "collage-sofa": "d6ad6e833c121d9a789a0ab33ec04f745345e6765971d6a68f5799b62f70a1d8",
+    "collage-flash": "212ef9fa96e519849c23757e70844ff8f4ff9071a8c09c884fca56b1db86140f",
+    "collage-photo-print": "8377171f25cf21cc517c9bf753600c3abf6e109f00517f0f734d306e5862638d"
+  }
+}

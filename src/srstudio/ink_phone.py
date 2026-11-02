@@ -13,6 +13,7 @@ import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from . import _ink_drawing_contracts as ic
 from . import checks, look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -113,6 +114,7 @@ def _validate(contact, bubbles, status, typing) -> None:
     summary="A held phone with a chat: the contact, my and their bubbles arriving in turn, a delivery status that "
     "changes and the typing dots",
     style="ink",
+    contract=ic.contract('ink-phone'),
 )
 def phone(
     cv: Canvas,
@@ -195,7 +197,11 @@ def phone(
 
 
 @register(
-    "location", "ink-phone-shot", summary="The phone held over the desk line, the cactus in the corner", style="ink"
+    "location",
+    "ink-phone-shot",
+    summary="The phone held over the desk line, the cactus in the corner",
+    style="ink",
+    contract=ic.contract('ink-phone-shot', phone=phone),
 )
 def phone_shot(cv: Canvas, parent, contact: str, bubbles: Sequence[Bubble], **chat):
     """The shot of the screen: the desk line and the signature cactus behind :func:`phone` (``chat`` is its

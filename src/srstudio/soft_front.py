@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 
+from . import _soft_scene_contracts as dc
 from . import checks, look, signature
 from .blob import FABRIC_FRONT, FABRIC_LINE, FABRIC_SIDE, FABRIC_TOP, RUG, RUG_LINE
 from .canvas import Canvas
@@ -73,6 +74,7 @@ def _wall(cv: Canvas, room, id: str) -> None:
 @register(
     "location",
     "soft-front-room",
+    contract=dc.contract('soft-front-room'),
     summary="A living room straight on, empty but for its rug: a far window, an opening to a hall where a sofa can be "
     "wedged, and the pale print of a sofa on the rug",
 )
@@ -142,7 +144,12 @@ def shelf(cv: Canvas, parent, *, id: str):
     return front
 
 
-@register("prop", "soft-mug", summary="A plain white mug of coffee, for a hand; no lettering, no brand")
+@register(
+    "prop",
+    "soft-mug",
+    contract=dc.contract('soft-mug'),
+    summary="A plain white mug of coffee, for a hand; no lettering, no brand",
+)
 def mug(cv: Canvas, parent, x: float = 0, y: float = 0, *, scale: float = 1, empty: bool = False, id: str = "soft-mug"):
     """A mug 120 x 120 px at ``scale`` 1, centred on (``x``, ``y``). ``empty`` shows its pale inside, not the coffee."""
     if not (checks.number(x) and checks.number(y) and checks.number(scale) and scale > 0):
@@ -158,6 +165,7 @@ def mug(cv: Canvas, parent, x: float = 0, y: float = 0, *, scale: float = 1, emp
 @register(
     "graphic",
     "soft-star-card",
+    contract=dc.contract('soft-star-card'),
     summary="A white card with a row of five empty stars and no words, that dips under a jab as a star fills",
 )
 def star_card(

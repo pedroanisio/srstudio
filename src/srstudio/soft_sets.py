@@ -12,6 +12,7 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from typing import NamedTuple
 
+from . import _soft_scene_contracts as dc
 from . import checks, look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -195,6 +196,7 @@ def planter(cv: Canvas, parent) -> None:
 @register(
     "location",
     "soft-park",
+    contract=dc.contract('soft-park'),
     summary="A park drawn straight on for a close shot: sky, a town out of focus, a lawn and a path, a tree that grows "
     "from a staked sapling to a crown wider than the frame, a town that rises behind it, and the signature cactus in a "
     "planter at the frame's corner",
@@ -244,6 +246,7 @@ def park(
 @register(
     "location",
     "soft-bedroom",
+    contract=dc.contract('soft-bedroom'),
     summary="A bed seen from its foot: headboard, pillows and a duvet; a phone can be the only light in the room",
 )
 def bedroom(
@@ -294,6 +297,7 @@ def bedroom(
 @register(
     "location",
     "soft-playroom",
+    contract=dc.contract('soft-playroom'),
     summary="A child's room straight on: a window of sky, a door, a rug and a toy crate in the foreground",
 )
 def playroom(

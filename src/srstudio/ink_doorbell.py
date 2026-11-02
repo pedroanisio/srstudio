@@ -15,6 +15,7 @@ import math
 from collections.abc import Sequence
 
 from . import _character_contracts as cc
+from . import _ink_drawing_contracts as ic
 from . import checks, look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -124,6 +125,7 @@ def doorbell(
     summary="The front door from outside: siding, the numbered door with its knob, the mat, and the doorbell "
     "beside it, normal or close",
     style="ink",
+    contract=ic.contract('ink-doorstep', doorbell=doorbell),
 )
 def doorstep(cv: Canvas, parent, take: Take, *, close: bool = False, number: str = "14", **bell_kw):
     """The wall, the door and its number, the doorbell on the wall beside it; ``bell_kw`` (``mark``, ``speaker``)
@@ -180,6 +182,7 @@ def _check_tags(tags: Sequence[tuple[float, str]], take: Take) -> None:
     summary="What the doorbell's camera sees: the human close up through a round lens, REC blinking, a clock strip "
     "and a face box whose tag changes over the take",
     style="ink",
+    contract=ic.contract('ink-doorbell-view'),
 )
 def doorbell_view(
     cv: Canvas, parent, take: Take, *, tags: Sequence[tuple[float, str]], clock: str = "", shades: bool = False

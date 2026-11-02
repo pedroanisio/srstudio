@@ -14,6 +14,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from . import checks, ink_meter
+from ._collage_context_contracts import contract
 from .canvas import Canvas
 from .collage import INK, _cut, _paper, _poly, draw_shapes
 from .collage_everyday import BEZEL, CARD_GLYPH, CARD_LEADING, _letter, bubble, phone
@@ -71,11 +72,16 @@ def _rows(text: str, per_line: int) -> list[str]:
 
 def _gated(cv: Canvas, parent, a: float, b: float):
     g = cv.group(parent, cv.uid("g"))
-    cv.gate(g, [(a, b)])
+    cv.gate(g, [(a, b)], local=False)
     return g
 
 
-@register("prop", "collage-weather-map", summary="A paper weather map of invented land: a lettered arrow, a clock card")
+@register(
+    "prop",
+    "collage-weather-map",
+    summary="A paper weather map of invented land: a lettered arrow, a clock card",
+    contract=contract('collage-weather-map'),
+)
 def weather_map(
     cv: Canvas,
     parent,
@@ -153,12 +159,16 @@ def _check_thread(w: float, h: float, contact: str, clock, call: str, messages: 
         raise ForecastError("a thread needs a contact")
     _capitals(contact)
     _capitals(call)
-    if not clock or any(b[0] <= a[0] for a, b in zip(clock, clock[1:], strict=False)):
+    if (
+        not clock
+        or any(not checks.number(at) or not 0 <= at < FOREVER for at, _ in clock)
+        or any(b[0] <= a[0] for a, b in zip(clock, clock[1:], strict=False))
+    ):
         raise ForecastError(f"a thread needs a clock, its times rising, got {clock!r}")
     for text in (t for _, t in clock):
         _capitals(text)
     for m in messages:
-        if not (m.text.strip() and checks.number(m.at) and m.at >= 0):
+        if not (m.text.strip() and checks.number(m.at) and 0 <= m.at < FOREVER):
             raise ForecastError(f"a message needs words and a time from 0, got {m!r}")
         _capitals(m.text)
     if any(b.at < a.at for a, b in zip(messages, messages[1:], strict=False)):
@@ -169,7 +179,41 @@ def _check_thread(w: float, h: float, contact: str, clock, call: str, messages: 
     return k
 
 
-@register("prop", "collage-thread", summary="A phone open on an invented thread: a clock, a contact, bubbles, no app")
+def _message_layout(
+    w: float, h: float, k: float, call: str, messages: Sequence[Message]
+) -> list[tuple[float, float, float, float]]:
+    """Preflight the header and every bubble, returning the exact boxes the drawing will use."""
+    page_w, page_h = w - 2 * BEZEL, h - 2 * BEZEL
+    top = BAR_H * k
+    top += CONTACT_H * k
+    if call:
+        top += CALL_H * k
+    if top > page_h:
+        raise ForecastError(f"a thread header does not fit a page {page_w} by {page_h}")
+    top += GAP * k
+    size = MESSAGE_SIZE * k
+    wide = page_w - 2 * PAD * k
+    per_line = int((wide * 0.84 - 2 * BUBBLE_INSET) / (size * CARD_GLYPH))
+    boxes = []
+    for m in messages:
+        rows = _rows(m.text, per_line)
+        tall = len(rows) * size * CARD_LEADING + 2 * MESSAGE_PAD * k
+        longest = max(len(r) for r in rows)
+        if longest > per_line or top + tall > page_h:
+            raise ForecastError(f"{m.text!r} does not fit a page {page_w} by {page_h}")
+        across = longest * size * CARD_GLYPH + 2 * BUBBLE_INSET + size
+        left = page_w - PAD * k - across if m.mine else PAD * k
+        boxes.append((left, top, across, tall))
+        top += tall + GAP * k
+    return boxes
+
+
+@register(
+    "prop",
+    "collage-thread",
+    summary="A phone open on an invented thread: a clock, a contact, bubbles, no app",
+    contract=contract('collage-thread'),
+)
 def thread(
     cv: Canvas,
     parent,
@@ -186,9 +230,11 @@ def thread(
 ) -> object:
     """A phone ``w`` by ``h`` with its top-left at ``x, y``, turned ``tilt`` degrees about its centre, open on a thread
     with ``contact``. ``clock`` is ``(at, text)`` rows for the top bar, ``call`` a strip naming who is on a live call,
-    and each message lands at its time. Returns the group."""
+    and each message lands at its project time. All cue times, the header and message boxes are checked before
+    drawing. Returns the group."""
     k = _check_thread(w, h, contact, clock, call, messages)
-    page_w, page_h = w - 2 * BEZEL, h - 2 * BEZEL
+    boxes = _message_layout(w, h, k, call, messages)
+    page_w = w - 2 * BEZEL
     g = cv.group(parent, cv.uid("g"))
     page = phone(cv, g, x, y, w, h, screen=SCREEN, tilt=tilt)
     cv.rect(page, 0, 0, page_w, BAR_H * k, BAR, radius=14)
@@ -201,21 +247,9 @@ def thread(
     if call:
         cv.rect(page, 0, top, page_w, CALL_H * k, CALL)
         _letter(cv, page, "thread", call, 0, top, page_w, CALL_H * k, CALL_SIZE * k, color=INK)
-        top += CALL_H * k
-    top += GAP * k
     size = MESSAGE_SIZE * k
-    wide = page_w - 2 * PAD * k
-    per_line = int((wide * 0.84 - 2 * BUBBLE_INSET) / (size * CARD_GLYPH))
-    for m in messages:
-        rows = _rows(m.text, per_line)
-        tall = len(rows) * size * CARD_LEADING + 2 * MESSAGE_PAD * k
-        longest = max(len(r) for r in rows)
-        if longest > per_line or top + tall > page_h:
-            raise ForecastError(f"{m.text!r} does not fit a page {page_w} by {page_h}")
-        across = longest * size * CARD_GLYPH + 2 * BUBBLE_INSET + size
-        left = page_w - PAD * k - across if m.mine else PAD * k
+    for m, (left, top, across, tall) in zip(messages, boxes, strict=True):
         shown = _gated(cv, page, m.at, FOREVER)
         cv.keys(shown, "y", [(m.at, RISE * k), (m.at + SLIDE, 0.0)], kind="cubic-out", local=False)
         bubble(cv, shown, m.text, left, top, across, tall, size=size, mine=m.mine)
-        top += tall + GAP * k
     return g

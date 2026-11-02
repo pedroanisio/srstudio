@@ -14,6 +14,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
 from . import checks
+from ._soft_prop_contracts import contract
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -93,6 +94,7 @@ def _check(states: Sequence[BadgeState], box: tuple[float, float, float, float])
     "graphic",
     "soft-status-badge",
     summary="A white pill with a coloured dot and a label that changes state on cue (a call, a calendar invite)",
+    contract=contract('soft-status-badge'),
 )
 def status_badge(
     cv: Canvas,
@@ -123,6 +125,7 @@ def status_badge(
     "graphic",
     "soft-beach-call",
     summary="A video call from the beach: sky, sun, sea, sand and a palm, a slot for the caller and a name tag",
+    contract=contract('soft-beach-call'),
 )
 def beach_call(
     cv: Canvas,
@@ -186,6 +189,7 @@ def _icing(text: str) -> None:
     "soft-cake",
     summary="A frosted round cake on a plate with one candle and iced lettering on the front; it can turn half "
     "round on cue to show different lettering on the back",
+    contract=contract('soft-cake'),
 )
 def cake(
     cv: Canvas,
@@ -274,6 +278,7 @@ def cake(
     "prop",
     "soft-bench",
     summary="A park bench seen straight on: green slats, a seat and two iron ends, wide enough for two at a close shot",
+    contract=contract('soft-bench'),
 )
 def bench(cv: Canvas, parent, x: float = 540, seat: float = 1500, *, width: float = 980, id: str = "soft-bench"):
     """The bench, centred on ``x`` with its seat's front edge at ``seat``: ``width`` px wide, its back rising 300 px."""
@@ -294,7 +299,12 @@ def bench(cv: Canvas, parent, x: float = 540, seat: float = 1500, *, width: floa
     return g
 
 
-@register("prop", "soft-briefcase", summary="A leather briefcase with a handle and two brass clasps, carried by it")
+@register(
+    "prop",
+    "soft-briefcase",
+    summary="A leather briefcase with a handle and two brass clasps, carried by it",
+    contract=contract('soft-briefcase'),
+)
 def briefcase(cv: Canvas, parent, x: float, y: float, *, scale: float = 1, id: str = "soft-briefcase"):
     """A case 220 px wide at ``scale`` 1, its handle at (``x``, ``y``), hanging below it."""
     if not (checks.number(x) and checks.number(y) and checks.number(scale) and scale > 0):
@@ -310,7 +320,12 @@ def briefcase(cv: Canvas, parent, x: float, y: float, *, scale: float = 1, id: s
     return g
 
 
-@register("prop", "soft-necktie", summary="A striped necktie, its knot where it is placed, for a blob that means it")
+@register(
+    "prop",
+    "soft-necktie",
+    summary="A striped necktie, its knot where it is placed, for a blob that means it",
+    contract=contract('soft-necktie'),
+)
 def necktie(cv: Canvas, parent, x: float, y: float, *, scale: float = 1, id: str = "soft-necktie"):
     """A tie 200 px long at ``scale`` 1, the middle of its knot at (``x``, ``y``)."""
     if not (checks.number(x) and checks.number(y) and checks.number(scale) and scale > 0):
@@ -323,7 +338,12 @@ def necktie(cv: Canvas, parent, x: float, y: float, *, scale: float = 1, id: str
     return g
 
 
-@register("prop", "soft-shovel", summary="A garden shovel with a D grip, its blade rusty until asked otherwise")
+@register(
+    "prop",
+    "soft-shovel",
+    summary="A garden shovel with a D grip, its blade rusty until asked otherwise",
+    contract=contract('soft-shovel'),
+)
 def shovel(
     cv: Canvas,
     parent,
@@ -357,7 +377,12 @@ def shovel(
     return g
 
 
-@register("prop", "soft-hive", summary="A painted wooden beehive on legs: two boxes, a flat roof and an entrance slot")
+@register(
+    "prop",
+    "soft-hive",
+    summary="A painted wooden beehive on legs: two boxes, a flat roof and an entrance slot",
+    contract=contract('soft-hive'),
+)
 def hive(cv: Canvas, parent, x: float, y: float, *, scale: float = 1, id: str = "soft-hive"):
     """A hive 260 px wide and 340 px tall at ``scale`` 1, standing with its feet at (``x``, ``y``)."""
     if not (checks.number(x) and checks.number(y) and checks.number(scale) and scale > 0):
@@ -375,7 +400,12 @@ def hive(cv: Canvas, parent, x: float, y: float, *, scale: float = 1, id: str = 
     return g
 
 
-@register("prop", "soft-cane", summary="A walking cane with a crook handle and a rubber foot, leaning as placed")
+@register(
+    "prop",
+    "soft-cane",
+    summary="A walking cane with a crook handle and a rubber foot, leaning as placed",
+    contract=contract('soft-cane'),
+)
 def cane(
     cv: Canvas,
     parent,
@@ -404,6 +434,7 @@ def cane(
     "soft-phone",
     summary="A phone held up: from behind a dark back with a lens, or from the front a lit screen with a slot for what "
     "it shows; two thumbs grip it when asked",
+    contract=contract('soft-phone'),
 )
 def phone(
     cv: Canvas,
@@ -490,6 +521,7 @@ GLARE = (
     "prop",
     "soft-glare-lamp",
     summary="A small desk lamp on a round base whose bulb throws a white glare many times its own size",
+    contract=contract('soft-glare-lamp'),
 )
 def glare_lamp(
     cv: Canvas, parent, x: float, y: float, *, scale: float = 1, reach: float = 620, id: str = "soft-glare-lamp"
@@ -520,6 +552,7 @@ STACK_LEAN = (-14.0, 9.0, -5.0, 16.0, -9.0, 3.0, 12.0)  # px each row sits off t
     "prop",
     "soft-parcels",
     summary="Cardboard parcels stacked by hand, row on row, taped and labelled: as high as the room if asked",
+    contract=contract('soft-parcels'),
 )
 def parcels(
     cv: Canvas,
@@ -555,7 +588,10 @@ def parcels(
 
 
 @register(
-    "prop", "soft-whisk", summary="A tiny kitchen whisk, a handle and a cage of wire loops, for holding to the light"
+    "prop",
+    "soft-whisk",
+    summary="A tiny kitchen whisk, a handle and a cage of wire loops, for holding to the light",
+    contract=contract('soft-whisk'),
 )
 def whisk(cv: Canvas, parent, x: float, y: float, *, scale: float = 1, id: str = "soft-whisk"):
     """The whisk, about 150 px tall at ``scale`` 1, with the end of its handle on (``x``, ``y``), the wires up."""
@@ -586,6 +622,7 @@ MAX_TIME = 8  # characters a time card holds at its size
     "graphic",
     "soft-time-card",
     summary="A white card with a dark outline and one big reading that changes on the cut: a year, the time of night",
+    contract=contract('soft-time-card'),
 )
 def time_card(
     cv: Canvas,

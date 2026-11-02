@@ -13,6 +13,7 @@ from __future__ import annotations
 import math
 
 from . import _character_contracts as cc
+from . import _ink_drawing_contracts as ic
 from . import checks, signature
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -102,7 +103,7 @@ def caption(
 
 
 # -- props ----------------------------------------------------------------------------------------
-@register("prop", "ink-laptop", summary="An open laptop in three ink strokes")
+@register("prop", "ink-laptop", summary="An open laptop in three ink strokes", contract=ic.contract('ink-laptop'))
 def laptop(cv: Canvas, parent, x, y, scale=1):
     g = group(cv, parent, x=x, y=y, scaleX=scale, scaleY=scale)
     path(cv, g, "M 24 0 L 318 6 L 295 196 L 3 190 Z", cv.white)
@@ -112,7 +113,7 @@ def laptop(cv: Canvas, parent, x, y, scale=1):
     return g
 
 
-@register("prop", "ink-desk", summary="The wide desk slab with its shaded end")
+@register("prop", "ink-desk", summary="The wide desk slab with its shaded end", contract=ic.contract('ink-desk'))
 def desk(cv: Canvas, parent):
     path(cv, parent, "M 100 787 L 955 787 L 955 1040 L 100 1040 Z", cv.white, sw=2.4)
     path(cv, parent, "M 100 787 L 78 774 L 78 1024 L 100 1040 Z", cv.shade, sw=2)
@@ -281,7 +282,12 @@ def _model_plate(cv: Canvas, printer_group):
 
 
 # -- shots (locations of this family) ------------------------------------------------------------------
-@register("location", "ink-desk-shot", summary="The doodle at the laptop on a single desk line")
+@register(
+    "location",
+    "ink-desk-shot",
+    summary="The doodle at the laptop on a single desk line",
+    contract=ic.contract('ink-desk-shot'),
+)
 def desk_shot(cv: Canvas, parent, take: Take, *, scale=0.92):
     human(cv, parent, take, 67, 390, scale)
     laptop(cv, parent, 458, 784, 1)
@@ -290,12 +296,17 @@ def desk_shot(cv: Canvas, parent, take: Take, *, scale=0.92):
     return parent
 
 
-@register("location", "ink-closeup", summary="The doodle filling the square frame")
+@register("location", "ink-closeup", summary="The doodle filling the square frame", contract=ic.contract('ink-closeup'))
 def closeup(cv: Canvas, parent, take: Take, *, zoom=1.46, gesture=False):
     return human(cv, parent, take, 185, 360, zoom, gesture=gesture)
 
 
-@register("location", "ink-printer-shot", summary="The printer alone, normal or close")
+@register(
+    "location",
+    "ink-printer-shot",
+    summary="The printer alone, normal or close",
+    contract=ic.contract('ink-printer-shot'),
+)
 def printer_shot(cv: Canvas, parent, take: Take, *, close=False, fps: int = 24):
     sc = 1.42 if close else 1.19
     pg = printer(cv, parent, take, 174 if sc < 1.3 else 105, 386 if sc < 1.3 else 333, sc, fps=fps)
@@ -303,7 +314,9 @@ def printer_shot(cv: Canvas, parent, take: Take, *, close=False, fps: int = 24):
     return pg
 
 
-@register("location", "ink-wide", summary="Doodle, laptop and printer on the wide desk")
+@register(
+    "location", "ink-wide", summary="Doodle, laptop and printer on the wide desk", contract=ic.contract('ink-wide')
+)
 def wide_shot(cv: Canvas, parent, take: Take, *, fps: int = 24):
     human(cv, parent, take, 166, 451, 0.50)
     laptop(cv, parent, 364, 672, 0.48)
@@ -430,6 +443,7 @@ def router(
     "prop",
     "ink-hand",
     summary="A hand from the frame edge, index finger out: reaches for, presses or leaves the router button",
+    contract=ic.contract('ink-hand'),
 )
 def hand(cv: Canvas, parent, x, y, scale=1, *, action: str = "reach", at: float = 0.4):
     """The finger tip is the group's origin, so place it on the button; ``at`` is when the action lands."""
@@ -471,6 +485,7 @@ def _shelf(cv: Canvas, parent, x0, x1, y, depth=18, bracket=90):
     "location",
     "ink-router-shot",
     summary="The router on its wall shelf, normal or close; a hand may reach for the button",
+    contract=ic.contract('ink-router-shot'),
 )
 def router_shot(
     cv: Canvas,
@@ -495,7 +510,12 @@ def router_shot(
     return rg
 
 
-@register("location", "ink-router-wide", summary="Doodle and laptop at the wide desk, the router on a shelf above")
+@register(
+    "location",
+    "ink-router-wide",
+    summary="Doodle and laptop at the wide desk, the router on a shelf above",
+    contract=ic.contract('ink-router-wide'),
+)
 def router_wide(cv: Canvas, parent, take: Take):
     human(cv, parent, take, 166, 451, 0.50)
     laptop(cv, parent, 364, 672, 0.48)
