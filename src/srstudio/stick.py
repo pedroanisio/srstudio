@@ -1129,6 +1129,17 @@ def _spans(keys: Sequence[RigKey], end: float) -> list[tuple[RigKey, float, floa
     return [(k, k.start, keys[i + 1].start if i + 1 < len(keys) else end) for i, k in enumerate(keys)]
 
 
+def _face_runs(spans: list[tuple[RigKey, float, float]]) -> list[tuple[RigKey, float, float]]:
+    """``spans`` with each run of neighbouring keys that share a face merged into one span, led by its first key."""
+    held: list[tuple[RigKey, float, float]] = []
+    for k, a, b in spans:  # one pass over the keys
+        if held and held[-1][0].face == k.face:
+            held[-1] = (held[-1][0], held[-1][1], b)
+        else:
+            held.append((k, a, b))
+    return held
+
+
 def _under_head(pose: RigPose) -> Point:
     """The point inside the head's rim, :data:`NECK_SINK` pixels in, on the way to the neck."""
     hx, hy = pose.head
@@ -1369,6 +1380,13 @@ _RIG_KEY_FIELDS = (('start', cc.seconds('canvas', 'start')), ('face', cc.P(field
             ('keys', cc.P(items=cc.P(fields=_RIG_KEY_FIELDS))),
             ('end', cc.seconds('canvas', 'end')),
             ('blinks', cc.P(items=cc.seconds('canvas'))),
+            (
+                'held_faces',
+                cc.P(
+                    description='Draw one face per run of neighbouring keys with an equal face, so a body keyed '
+                    'every picture keeps its face and blinks; off draws one face per key.'
+                ),
+            ),
             ('phones', cc.P(description='Character timestamps relative to the shot start; start/end use seconds.')),
             (
                 'poses',
@@ -1406,6 +1424,7 @@ def rig(
     flip: bool = False,
     mouth: PhonemeStyle = INK_MOUTH,
     limbs: tuple[LimbTrack, ...] = (),
+    held_faces: bool = False,
 ):
     """The Stick style's drawn figure: ink limbs posed per key, a round head dressed by ``look``, eyes, brows and a
     phoneme mouth speaking ``phones`` (character timings relative to the shot) under the ``mouth`` model
@@ -1415,7 +1434,11 @@ def rig(
     to face left (a point at x lands at ``at[0] - scale * x``).
 
     Keys hold (12 fps cartoon timing, no tweening); :func:`check_keys` refuses a performance it cannot draw and
-    :func:`check_look` a look."""
+    :func:`check_look` a look. ``held_faces`` draws one face for each run of neighbouring keys with an equal face,
+    so a body keyed every picture (a dance) holds its face and blinks inside it; off, every key draws its
+    own face, as published figures were drawn."""
+    if not isinstance(held_faces, bool):
+        raise StickDataError(f"held_faces must be True or False, got {held_faces!r}")
     check_keys(keys, end, poses)
     check_look(look)
     if not (_is_number(scale) and scale > 0):
@@ -1453,7 +1476,8 @@ def rig(
         cv.keys(head, "x", [(a, poses[k.pose].head[0]) for k, a, _ in spans])
         cv.keys(head, "y", [(a, poses[k.pose].head[1]) for k, a, _ in spans])
     _head(cv, head, look)
-    for k, a, b in spans:
+    faces = _face_runs(spans) if held_faces else spans
+    for k, a, b in faces:
         f = k.face
         face = _group(cv, head, x=f.look[0] * 14, y=f.look[1] * 8)  # the features turn with the look
         eyes = _features(cv, face, f, look)
@@ -1463,12 +1487,12 @@ def rig(
                     kind="linear")  # fmt: skip
         _gate(cv, face, a, b, end)
     lips = _group(cv, head, x=0, y=44)
-    if len(keys) > 1:
-        cv.keys(lips, "x", [(a, k.face.look[0] * 14) for k, a, _ in spans])
-        cv.keys(lips, "y", [(a, 44 + k.face.look[1] * 8) for k, a, _ in spans])
+    if len(faces) > 1:
+        cv.keys(lips, "x", [(a, k.face.look[0] * 14) for k, a, _ in faces])
+        cv.keys(lips, "y", [(a, 44 + k.face.look[1] * 8) for k, a, _ in faces])
     else:
         lips.x, lips.y = keys[0].face.look[0] * 14, 44 + keys[0].face.look[1] * 8
-    _mouth(cv, lips, spans, phones, end, mood, mouth)
+    _mouth(cv, lips, faces, phones, end, mood, mouth)
     if limbs:
         front = _group(cv, g)
         draw_tracks(cv, LayerTargets(behind, limb_body, front), limbs, id=cv.uid("limbs"), facing=facing)
