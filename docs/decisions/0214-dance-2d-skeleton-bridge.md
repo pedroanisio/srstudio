@@ -115,6 +115,13 @@ A pose without toes draws the legacy 46 px forward and 4 px down, byte for byte.
 
 The test names carry these thresholds: 4% of the leg, ±8 frames, two to one, the 7-frame median, 6 cm, 1.2 s.
 
+## Tests
+
+- **Red first:** the local floor for contacts. `test_a_dancer_who_steps_toward_the_camera_is_planted_on_both_floors_within_6_cm_of_the_local_floor`
+  failed against one floor for the take: the first plant fell at frame 91 of 180. It passed once the floor was local.
+- **Written after the code:** the `foot_headings` tests (`tests/test_pose_lift_feet.py`) and the `pose_clean` tests
+  (`tests/test_pose_clean.py`). Both functions existed before their tests.
+
 ## Consequences
 
 - Any 2D track of these fifteen joints can drive a drawn figure without new code. Its limbs follow the dancer, at the
