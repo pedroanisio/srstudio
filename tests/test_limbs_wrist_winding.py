@@ -54,3 +54,17 @@ def test_large_finite_winding_reference_does_not_overflow_candidate_selection():
     _, hand, control = motion._pose(0, base.arm.wrist, reference, base.arm.elbow, Quaternion(), True)
     assert -40 <= control.forearm_twist <= 40
     assert hand.normal.distance(base.arm.frame.rotation.rotate(Vec3(0, 0, 1))) < 1e-8
+
+
+def test_rotation_on_the_principal_branch_keeps_its_decomposition_bit_for_bit():
+    # No turn is needed here, so recovery must return the principal angles themselves: rewriting -0.0 as 0.0
+    # describes the same rotation but changes every saved and hashed sample that carries it.
+    motion = Motion(ArmProfile(), HUMAN)
+    base = motion.sample(0)
+    rotation = Quaternion.axis_angle(Vec3(0, 1, 0), 0.3)
+    x, y, z = (rotation.rotate(v) for v in (Vec3(1, 0, 0), Vec3(0, 1, 0), Vec3(0, 0, 1)))
+    principal = (math.atan2(z.x, z.z), math.asin(-z.y), math.atan2(x.y, y.y))
+    _, _, restored = motion._pose(0, base.arm.wrist, HandControl(), base.arm.elbow, rotation, True)
+    actual = (restored.forearm_twist, restored.wrist_flex, restored.wrist_deviation)
+    assert actual == principal
+    assert [math.copysign(1, a) for a in actual] == [math.copysign(1, p) for p in principal]

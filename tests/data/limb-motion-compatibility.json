@@ -1,56 +1,56 @@
 {
   "schema_version": "1.0.0",
   "generated_by": {
-    "model": "GPT-6",
-    "tool": "OpenAI Codex"
+    "model": "Claude Opus 5.5",
+    "tool": "Claude Code"
   },
-  "source_commit": "83917174",
+  "source_commit": "bf3724f3",
   "numeric_rounding_decimal_places": 12,
   "numeric": {
-    "left-rest": "d60ec151ca97b8567b2845f952c5241dfc71352b56bb721d376a8bdd383f0b6f",
-    "left-crossed": "36125e293fb3d26034eddb65578bf0b9ab9845e07ba8ed58e4110d6b172e4a24",
-    "left-reach": "aeb7e49b98a91cb036e4034ec6784c4c6c24ab233f2665bb31c321713d3bf65c",
-    "left-point": "2e7eb072e229d4aa7afb8fc41a5622bfa01e281fd295aae10f174f4ea0cc2e76",
-    "left-present": "d4a8020365dcf8f9f3ebcdec6cb0778612737539c94a6a33ed774a475cb6d8ed",
-    "left-shrug": "1fcf2af863d4d77a8ba064d766f5f0814d6c4d810eb5ea9bffbe70ff14a61423",
-    "left-wave": "62696b60e616974ad0170ec49061cdb5740251fac3336cc0bfc54303385c33d2",
-    "left-facepalm": "0b5c0d95c81dd835a4bb41ae3eaac26505f1d21f3d4fb57c609fc7f53af67252",
-    "left-pinch": "91d52e95fbeeed426d1683d24510a837917ad8b21702887b065a9c7f3bfe718f",
-    "left-grasp": "b78e915577409723ce2c180dba576e53299358b9d42548863374175a84364bb6",
-    "left-release": "4cce3ae703490990fdf6d9369255e47885a4732dbf20fb9c9769b3f41f5502d2",
-    "left-press": "0a713ed442bc8cbdd330fbb9ec3e1679e17877be3c8178299abd42044fd782ff",
-    "left-type": "c65400d96ca8f9f73f3e5185526e13157672e3e7d331e9df03eb22e463c5c8f6",
-    "right-rest": "cbc26ece75eeed4a487602c88aafe6c04221d786746242b69153f5662f3d3ab2",
-    "right-crossed": "b2aa5880b0aaa3488d5f8d94c002d0d923081b9a5993aec8d8426cb0d20981f6",
-    "right-reach": "46e984d82e4b3abdd8c71e0c34eb404ee12db2ea6c350be40bd9e3ef002f7099",
-    "right-point": "e547f9fb2072b675ec1ccf7e403110051071330c782d5693d68d6309f3e21f97",
-    "right-present": "85bca22ff080d9fa06303865341952848fbd387b9b73d5c0c4d4a172c3df79f1",
-    "right-shrug": "aebb02060d6a686c3a91046ab4333f01f9fbc13e3da2569238c0daee435dfd4e",
-    "right-wave": "72aa022c1f15947022485dff127ddbee4d40ad8e194f29830bbdc820de368f8e",
-    "right-facepalm": "42b19a36ea8a83dc0c407914c576f8b2d52277587be1a26a4e885a7890400b40",
-    "right-pinch": "486f2cad47633689db1b09a1e5dc16bc27ecc7fe6dca803cbd590471aea101e6",
-    "right-grasp": "6e81b6da77cd8d33a9b54d8895bd89f4a8c8fd426cf3d2238a8d988ee0d2fcfd",
-    "right-release": "82fa925a0de76d35d34abad2a730ef5e9033c9548cd513d1d8e2fa45f2e0e91a",
-    "right-press": "fa8528bff69b3604475d34d64dd025d201e527f70ec2a78a8967cda9b4a77129",
-    "right-type": "9da7ce0e4a6384f5f14fde9b8e918f45ed9953cd6e10191ffda9495b59d20086",
-    "anatomy-human": "8cf70207a7181b9d1c098201ee5d9b73999d17e06bf4054208b07f9f2d2a6cb9",
+    "left-rest": "ca594612cda75b8283e47b0ad9f211d7ba8f9e414c164a8db713136831edb12b",
+    "left-crossed": "6b14175ed7e1433a3208cfe697922a02f00e2f40ae5cf127fda6f583c38fed6a",
+    "left-reach": "d0fb93d26d097502272052bedfaf7479c192df8285cd2486802e3e35e3afb341",
+    "left-point": "9b6626e2235dc6b3f1d84995a89bae17af6a6eb285c9f187b96f98b83959e304",
+    "left-present": "50dae7fca58c8865882c6d6b66281f6e12583b278fdb1922f96f9fecec06e614",
+    "left-shrug": "9784e3eb3bb5244d3c7a061b94a346b20e52dd850fe0e646b9e7d3bfffd99f6e",
+    "left-wave": "bafab55cf6f819bb56fe6cd4d7e3d7b6fd041ab1159cb3838a2e0a93bbb8b680",
+    "left-facepalm": "e469530c56012e368187a51090d4ffe1c39d9dd439792cc75887ef5e3b3d88b7",
+    "left-pinch": "cfcfd6a76fb6d68f66bef2402ce3067371738bd99d2d8bb2ef7f6794a9d44405",
+    "left-grasp": "9e5bdfc0b04e19686a8527511c01355fc769499b3c71e9ced23648d99f5e2233",
+    "left-release": "aace48f56aa388049b94b0928f6a6ffdc6d9957a58c8e2916dde8a6cd32cd29d",
+    "left-press": "629f2c3a29f32450221c5586b95f5f630748e74ebbc47f96a50a2eb0d91ba77c",
+    "left-type": "881e927d4fdbf569e32467248140b04d3d88c10d3e5b9463293899b91155e205",
+    "right-rest": "a292a9b82f778c4375f41d23a6f3b2b6d33028e0fdd195ee0b4f8fb25c679867",
+    "right-crossed": "a9ddc8b97b907546876f28ff3088f0fcb93e50dcbff46ccc451975cd67270709",
+    "right-reach": "8ae20e720f4afca16c458fa8ad57db83f5ccbb2cc74ff63e819be7e7d1709a07",
+    "right-point": "9f3014e877ea5e4e85752df12cdb66c7c2e56cc62111bc7ac9a0f78ece95425c",
+    "right-present": "bdf250e0fb7c3080090b1c9673c645abb30541e509f81e67cc3281cdbe09f394",
+    "right-shrug": "5433cf255809be31f33fb56a3eff7be6863e05f5221d2d35e95d461f354bb065",
+    "right-wave": "e6b57ac8169a5c4b2dcbf82ad7be4dc91082c21366687e306eaa1f6adde4f603",
+    "right-facepalm": "21b19626c86dc34cf575fa84d114833f51b13f1fcfdaa9dd6108cdf3dff7809d",
+    "right-pinch": "745d2b3fdaeac5713b41c3c74f77c99132d7f0114874f149381b9b0890d61400",
+    "right-grasp": "e71d75a343bce013706f7bedac39a38bdee8c6364d95db637b6c773338e27218",
+    "right-release": "822459db4cf9baaf821cf8d43d343e9fdc7c2f596763841c08e6836009c5ecb1",
+    "right-press": "bcd8af3f0945d55a7162f8faa9af72fca341df46e4379f53e68baf8f1e30f897",
+    "right-type": "929ff16d6e8b69657411530016d082a34bd1707590e60aca39dd40f99147f24a",
+    "anatomy-human": "7cf57653ad634b9c3792f5812744346c8fb7c7dbd991858ffdb302e9f5f95fe6",
     "anatomy-three-finger": "7f858a6aecc677aac0130d07ec7f8c95b239ef514d802f5175c6fa6a255a3b98",
     "anatomy-mitten": "8fe90aa69eddb1c7054778764724085c42bc0f8ba03ae8e3ef0ecd83131643bc",
     "anatomy-paw": "eb149f44c743c73deb5d4983909588d7566b69841f8b4b47deda291c7a434ee8",
     "anatomy-gripper": "cc325eb07d0d72f37d559c612de039b5feeebf9e629796a1fa091925ab421005",
-    "expressive": "15c15c4e23efe14f50d6dbb8aae5309db1e5672fb8d7d2342a06e308d89e1bd5",
-    "continuous-root": "941df6255fb54bbd6ae47d6e16f8f82d8484832bb7833e3b83349daca859154e",
-    "joined": "351f37caa2f42b303cb34eac89d3fedefc323f2c1b4d3f94ac2ae885cb6dff48",
-    "moving-contact": "0e5e77c6ab2f6761f2664d62a05f0bfd6419316655ed9c972b983f3f95558abd",
-    "attachment": "e20235b38914c97aeb0082c0019066b8482313c8c8e9f562eece472747950859",
-    "finger-contact": "1f40b3075285f405fd53d059801339564f4a57eea3ee0795d0e89e23532f8506",
-    "pole": "d42ea57a67e64e7e9b78c4cdb9e7a5c269577d2287223b684313e571788c40e0",
-    "planar-left": "0bdea62a7b28304e058f7212b9f18ffc82cc330153a5024d6754ec45acd7fb79",
-    "planar-right": "5a3f362bc7c8aff2ccb5e19cb0b3e1e250f66b9b5bc71c2ad223ef9c8abfd333"
+    "expressive": "b4fdb887465dae7ef2e1befaaf31f76a8095cfc8a4ba6e9be6110492aac0fcb3",
+    "continuous-root": "3e9df122e1336052a7b2c3327b8d415fdb1760bf623c54e25e26e1d961b56e29",
+    "joined": "5c564c19355f7db02ca87018b49a0579ddc3d6056b8a69ffb2096f3afad5a96c",
+    "moving-contact": "4ce626e575978435ec63ba979fb66269897e96b14aced10a39f913c65c779070",
+    "attachment": "5f15097e874a2ba83afb0f0234ea541e747765553132db38c090acc4e6b0ab94",
+    "finger-contact": "23d5b792f619c1eb41aed97506a003c7bf95d8903b9a4c88ec94616aecb40ce9",
+    "pole": "f0ed84c7507be17d2de00187a8f5fd45c1927828c685257247bd2c10ece9c562",
+    "planar-left": "2598943653123b75e1c762270048e647f73e6ed8bdd05e5a362b874544d08c6f",
+    "planar-right": "5f1c45a253b83582bcee2bbd0906fa6b2b839d3f7488548e428e3538d2af09a3"
   },
   "emitted": {
     "right-point/baked": {
-      "sha256": "e3d41e6b9e6a7deee593b9901887c466c7cd16d284904d8d4282a0ac7de2201b",
+      "sha256": "c83b80c333caf198e27232b11cc898631188928c981897fedccf54b9ddb76099",
       "frames": 24,
       "report": {
         "samples": 24,
@@ -123,7 +123,7 @@
       "message": "native limb compilation requires a planar arm, orthographic camera and a common untransformed drawing parent without artist contour corrections"
     },
     "joined/baked": {
-      "sha256": "f327b22377c73c4e6f2e8b817efa7889e848b31ed5eb9eccf8412801153dc5aa",
+      "sha256": "f2675c8b89885357f44a23b56c5eee3f6c0b229d190170cf58f8feca5c8d0ddb",
       "frames": 24,
       "report": {
         "samples": 24,
@@ -196,7 +196,7 @@
       "message": "native limb compilation requires a planar arm, orthographic camera and a common untransformed drawing parent without artist contour corrections"
     },
     "continuous-root/baked": {
-      "sha256": "68733e33043f69a6638b8857d3e6795eabff41538e889be6d6d7a17f869cc4f4",
+      "sha256": "f8efe0bff22207f31c097627fbc2248dfd59424180bf2eab8f9415512768a242",
       "frames": 24,
       "report": {
         "samples": 24,
@@ -269,7 +269,7 @@
       "message": "native limb compilation requires a planar arm, orthographic camera and a common untransformed drawing parent without artist contour corrections"
     },
     "moving-contact/baked": {
-      "sha256": "6ce2115654ec2e7232ee66d06f864925e7de1161fac8d6d67fdbfe0b12eb178e",
+      "sha256": "50fc1e70d60f358ba994647bd895d613746ef2146bf6095be74d23cd8d47e67d",
       "frames": 24,
       "report": {
         "samples": 24,
@@ -342,7 +342,7 @@
       "message": "native limb compilation requires a planar arm, orthographic camera and a common untransformed drawing parent without artist contour corrections"
     },
     "finger-contact/baked": {
-      "sha256": "a7d9989f534c9026b5d10bf72acc6be8ac6586b01811a03a1da8ade45c929e38",
+      "sha256": "4779cf7d0f3278ca62443a72217c1c197b8bc14bca004e9a612ba20d50d5d20d",
       "frames": 24,
       "report": {
         "samples": 24,
@@ -353,7 +353,7 @@
         "bounds": [
           -23.128564539325,
           -13.240315467204,
-          132.685523395896,
+          131.589536904067,
           201.785271704015
         ],
         "hidden_parts": 0,
@@ -415,7 +415,7 @@
       "message": "native limb compilation requires a planar arm, orthographic camera and a common untransformed drawing parent without artist contour corrections"
     },
     "pole/baked": {
-      "sha256": "279155120633ddb2dc313b4649c6be2f32a4cf20639a7255d6ef4ad2230d0137",
+      "sha256": "e56d556191c257ea3e0e8bf7ee6e67f6fbd5ae17710bf7aa427335b35d466f3b",
       "frames": 24,
       "report": {
         "samples": 24,
@@ -488,7 +488,7 @@
       "message": "native limb compilation requires a planar arm, orthographic camera and a common untransformed drawing parent without artist contour corrections"
     },
     "planar-left/baked": {
-      "sha256": "ae05418fb593fba9e1e876846e30eb101eb067bec91bd1a43e163a8a13936f6f",
+      "sha256": "b30aee240e047846d57f8fa91684fb48922ba964557b6b1e7234d1cc8ac296c7",
       "frames": 24,
       "report": {
         "samples": 24,
@@ -557,7 +557,7 @@
       }
     },
     "planar-left/native": {
-      "sha256": "8804318999861a8d58a4979cc83d03916c40cbc332f1b04658b2a9ae2ffc3946",
+      "sha256": "fb55b6aadbe449d451b13cd7a85694c4c8e4cc5de3f8f79c0a4597889442eef6",
       "frames": 24,
       "report": {
         "samples": 24,
@@ -626,7 +626,7 @@
       }
     },
     "planar-right/baked": {
-      "sha256": "b2a216fc4da2036cc92b8482bc37f5cff6b10234df615c14c445a4d80737328e",
+      "sha256": "481b6eab41db545455a6ddeb55cc96dc48e7bb35b24585d464761caca1a04c3b",
       "frames": 24,
       "report": {
         "samples": 24,
@@ -695,7 +695,7 @@
       }
     },
     "planar-right/native": {
-      "sha256": "5b4a6f5c36f5768d2a9d0b37c0824711aecc53cf82f9a7ea235f927c1c83649e",
+      "sha256": "250582512ce035ed589d4cf6dee24b4fb3b30beb2810a8e59a5a7566b2b8091c",
       "frames": 24,
       "report": {
         "samples": 24,
@@ -799,11 +799,11 @@
     },
     "Sample": {
       "signature": "(time: 'float', arm: 'ArmPose', hand: 'HandPose', control: 'HandControl', action: 'str', phase: 'str', contacts: 'tuple[Diagnostic, ...]' = ()) -> None",
-      "pickle4": "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"
+      "pickle4": "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"
     },
     "Motion": {
       "signature": "(arm: 'ArmProfile', hand: 'HandProfile', actions: 'tuple[Action, ...]' = (), contacts: 'tuple[Contact, ...]' = (), attachments: 'tuple[Attachment, ...]' = (), root: 'TransformTrack' = TransformTrack(keys=(TransformKey(time=0, frame=Frame(origin=Vec3(x=0.0, y=0.0, z=0.0), rotation=Quaternion(w=1.0, x=0.0, y=0.0, z=0.0)), velocity=None, angular_velocity=None),), interpolation='smooth'), reach_policy: 'str' = 'strict', joins: 'tuple[ActionJoin, ...]' = ()) -> None",
-      "pickle4": "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"
+      "pickle4": "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"
     }
   }
 }

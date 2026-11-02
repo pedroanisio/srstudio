@@ -1,6 +1,8 @@
 """Numeric, emitted and serialization compatibility across limb-motion boundaries.
 
-The fixture is captured before extraction. Normal tests only read it; hashes of
+The fixture was captured before extraction (83917174) and recaptured with capture()
+at bf3724f3, after HUMAN's thumb gained a third segment in b38b6f11: only the cases
+drawn with HUMAN changed, each in its thumb. Normal tests only read it; hashes of
 numeric records round at twelve decimal places, while scene XML is byte exact.
 """
 
@@ -168,8 +170,8 @@ def capture():
     motions = cases()
     return {
         'schema_version': '1.0.0',
-        'generated_by': {'model': 'GPT-6', 'tool': 'OpenAI Codex'},
-        'source_commit': '83917174',
+        'generated_by': {'model': 'Claude Opus 5.5', 'tool': 'Claude Code'},
+        'source_commit': 'bf3724f3',
         'numeric_rounding_decimal_places': 12,
         'numeric': {name: numeric_hash(m) for name, m in motions.items()},
         'emitted': {
