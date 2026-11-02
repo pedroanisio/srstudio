@@ -214,7 +214,11 @@ def test_engine_parent_transform_and_camera_project_once(tmp_path, scene_render,
         'depth',
     ],
 )
-def test_payload_semantics_refuse_features_without_a_complete_bound(change):
+@pytest.mark.parametrize('boundary', ['public', 'worker'])
+def test_payload_semantics_refuse_features_without_a_complete_bound(change, boundary):
+    from srstudio import _composition_vector
+
+    prepare = c.prepare_vector if boundary == 'public' else _composition_vector.prepare_vector
     _, binding, xml = paper(animated=True)
     root = ET.fromstring(xml)
     animation = root.find('.//animate')
@@ -257,7 +261,7 @@ def test_payload_semantics_refuse_features_without_a_complete_bound(change):
     xml = ET.tostring(root)
     binding = replace(binding, nodes=1000, memory_bytes=len(xml) * 16)
     with pytest.raises(c.CompositionError):
-        c.prepare_vector(binding, xml)
+        prepare(binding, xml)
 
 
 def test_repeated_sources_check_expansion_budget_before_copying(monkeypatch):

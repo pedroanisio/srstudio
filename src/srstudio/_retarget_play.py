@@ -1,4 +1,4 @@
-"""A clip played between its frames with its velocity and acceleration continuous (ADR 0199).
+"""A clip played between its frames with its velocity and acceleration continuous (ADR 0204).
 
 A clip holds its motion at its frames only. Turning each joint straight from one frame's turn to the next (a slerp)
 keeps the motion's places but not its timing: speed is constant between frames and steps at each one, so acceleration

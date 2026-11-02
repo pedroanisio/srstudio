@@ -6,7 +6,7 @@ unknown or missing field, no wrong type (a boolean is not a number, a float is n
 at most ``MAX_MOVES`` moves and ``MAX_PHRASES`` phrases. The typed model then checks what the schema cannot say
 (ADR 0186).
 
-Moves 1.1 adds two things, read under one minor: the ``curve`` waveform (ADR 0199), whose pattern carries ``curve``,
+Moves 1.1 adds two things, read under one minor: the ``curve`` waveform (ADR 0204), whose pattern carries ``curve``,
 its cycle's samples, and no ``snap`` while every other pattern carries ``snap`` and no ``curve``; and a move's
 ``follow`` list, joints that follow another channel late through a spring (ADR 0201). A 1.0 document reads as it
 always did, and a ``curve`` or a ``follow`` in one is an unknown field, since neither existed in 1.0.

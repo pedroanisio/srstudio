@@ -1,4 +1,4 @@
-"""A pose estimator's reading of one dancer in a video, read as untrusted data (ADR 0200).
+"""A pose estimator's reading of one dancer in a video, read as untrusted data (ADR 0203).
 
 A pose estimator is a model, so what it writes is wrong some of the time: it loses the dancer, jumps to a neighbour,
 guesses an occluded wrist, or folds a leg. ``tools/pose_extract.py`` runs the estimator in its own interpreter and
@@ -12,7 +12,7 @@ A screen recording repeats pictures: a 30 fps capture of a video played at a low
 picture again. A repeated picture is no new observation of the dancer; read as one it is a moment of zero speed and
 then a double step, which fakes acceleration spikes and moves the fastest moment. From ``1.1.0`` each frame says
 whether its picture repeats the last distinct one (``repeat``); a repeated frame carries its clock and no landmarks,
-and the study counts it as not seen (ADR 0199). A ``1.0.0`` record reads as before, every frame its own picture.
+and the study counts it as not seen (ADR 0204). A ``1.0.0`` record reads as before, every frame its own picture.
 
 The record is refused with a typed error when it is not one strict JSON object of this schema (an unknown or missing
 field, a wrong type, a number that is not finite, a repeated key), when its schema major is another, and when its
@@ -62,7 +62,7 @@ __all__ = [
 ]
 
 SCHEMA = "srstudio.pose-track"
-SCHEMA_VERSION = "1.1.0"  # 1.1.0: each frame says whether its picture repeats the last (ADR 0199)
+SCHEMA_VERSION = "1.1.0"  # 1.1.0: each frame says whether its picture repeats the last (ADR 0204)
 MAX_BYTES = 64_000_000  # a found frame is about 2.5 KB of JSON: twenty minutes at 30 fps is under 50 MB
 MAX_FRAMES = 36_000  # twenty minutes at 30 fps
 MAX_FPS = 240.0

@@ -24,8 +24,8 @@ import numpy as np
 from examples.acting_continuity import carry_motion, cup_mesh
 from sr_core.scene import Scene
 
-from srstudio import Canvas, clay, parts, plates, proxy
-from srstudio.acting import BENTO, ActingBeat, ActingScore, HeadTarget, PerformancePlan, compile_performance
+from srstudio import Canvas, clay, plates, proxy
+from srstudio.acting import ActingBeat, ActingScore, HeadTarget, PerformancePlan, bento_blends, compile_performance
 from srstudio.character_clips import Placement
 from srstudio.digest import sha256
 from srstudio.fonts import inspect_ttf
@@ -154,19 +154,23 @@ def _environment(cv: Canvas, parent, frames: tuple[Sample, ...], fps: int) -> No
 
 
 def figure_performance() -> PerformancePlan:
-    """Authored holds and head transitions; procedural idle would break the initial hold."""
+    """Authored face/head transitions retain their source clock through the camera cut."""
     return compile_performance(
-        BENTO,
+        bento_blends(),
         ActingScore(
             DURATION,
             (
                 ActingBeat(0, emotion='neutral', breath=0, transition=0),
-                ActingBeat(2, head=HeadTarget(nod=2, lean=0.3), breath=0.3, transition=0.7),
-                ActingBeat(3.2, emotion='happy', transition=0),
-                ActingBeat(4.5, head=HeadTarget(nod=0, lean=-0.3), breath=0, transition=0.7),
+                ActingBeat(
+                    2, emotion='concerned', head=HeadTarget(nod=2, lean=0.3), breath=0.3, transition=0.7, blend=True
+                ),
+                ActingBeat(
+                    3.6, emotion='deadpan', head=HeadTarget(nod=0, lean=-0.3), breath=0, transition=1, blend=True
+                ),
             ),
             seed=17,
             idle=False,
+            sample_rate=24,
         ),
     )
 
@@ -313,7 +317,7 @@ def build(
         path = output / 'scene.xml'
         path.write_bytes(scene.to_bytes())
         report = {
-            'schema': 'srstudio.drawing-candidate/1.0.0',
+            'schema': 'srstudio.drawing-candidate/1.1.0',
             'generated_by': {'tool': 'OpenAI Codex', 'model': 'GPT-6'},
             'status': 'candidate; no adoption approval',
             'source': {
@@ -327,7 +331,7 @@ def build(
                 ).hexdigest(),
                 'font_sha256': sha256(assets / 'font.ttf'),
                 'continuity_example_sha256': sha256(Path(__file__).with_name('acting_continuity.py')),
-                'bento_part': asdict(parts.pin('toon-bento', 1)),
+                'candidate_figure_rig': figure_performance().rig.describe(),
                 'candidate_car_recipe': 'drawing-proof-car/1.0.0; unapproved',
                 'machine': platform.machine(),
                 'platform': platform.platform(),
@@ -340,7 +344,8 @@ def build(
                 'held_camera': [[0, 0.5], [1.5, 4], [4, 6]],
                 'camera_cut': 4,
                 'car_turn': [0.5, 1.5],
-                'expression_replacement': 3.2,
+                'expression_blends': [[2, 2.7], [3.6, 4.6]],
+                'face_fps': 24,
                 'figure_depth_replacement': 3,
                 'sampling': 'held; 12 fps is animation on twos',
             },
@@ -362,8 +367,8 @@ def build(
             'validation': {'schema': True, 'findings': errors},
             'remaining_gates': [
                 'Full-size and temporal rendered review, strict encode, measured pixel gates and peak memory',
-                'Continuous authored expression blending and whole-body locomotion; '
-                'current expression/depth changes are cuts',
+                'Rendered expression/pose continuity measurements and whole-body locomotion; '
+                'the depth-pass change remains a cut',
                 'Approved information-layer equivalence and compatibility fingerprints',
                 'Shared drawn shading and validated caster/receiver shadows; current shadow is an authored ground mask',
                 'Shared scene-compiler candidate-asset contract; this study uses explicit legacy proxy views',

@@ -53,7 +53,7 @@ def test_the_map_rises_everywhere_and_runs_both_ways():
 
 def test_uneven_beats_keep_each_stretchs_mean_rate_and_the_edge_rates_to_the_clips_ends():
     """Each beat lands on its beat and each stretch keeps its mean rate; inside a stretch the rate eases from one
-    beat's to the next (ADR 0199), so a stretch's middle sits near, not on, the straight line's middle."""
+    beat's to the next (ADR 0204), so a stretch's middle sits near, not on, the straight line's middle."""
     song = Groove(129, offset=0.5)
     beats = rt.beat_map(WALK, [0.1, 0.6, 1.0, 1.9], song, start=song.at(2))
     s = [song.at(2, k) for k in range(4)]
@@ -144,7 +144,7 @@ SPLINE_FROM_SLERP = 0.005  # radians; measured 0.0016 at the left hip of the wal
 
 
 def test_between_frames_the_performance_plays_each_control_and_the_root_on_a_smooth_curve():
-    """Between frames each control and the hips' place follow a cubic spline through the frames (ADR 0199): at a
+    """Between frames each control and the hips' place follow a cubic spline through the frames (ADR 0204): at a
     frame, the frame; across it, speed and acceleration continue; halfway, within a few thousandths of a radian of
     the straight turn (the slerp) between the two frames."""
     played = walk_on_song(REAL, False)
@@ -199,7 +199,7 @@ def test_frames_sample_the_song_at_a_picture_rate_with_one_report():
 
 def test_between_frames_a_joint_loses_only_what_its_frames_lose():
     """Controls are played between frames, not turns, so nothing between frames passes what a joint's axes can hold;
-    the report carries only what the frames themselves could not (ADR 0199). A slerp of two knee turns used to leave a
+    the report carries only what the frames themselves could not (ADR 0204). A slerp of two knee turns used to leave a
     two-control knee by up to 0.004 radians between frames."""
     report = walk_on_song(REAL, False).frames(60).report
     frames = rt.retarget(WALK, REAL, lock_feet=False).report

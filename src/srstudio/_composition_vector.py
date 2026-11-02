@@ -9,6 +9,7 @@ import xml.etree.ElementTree as ET
 
 from sr_core.scene import Scene, read
 
+from . import _composition_curves as curves
 from . import _composition_text as text_assets
 from . import composition as c
 from . import layout
@@ -65,7 +66,7 @@ _ALLOWED = {
         'dashOffset',
     },
     'animate': {'property', 'defaultInterpolation', 'timeBase', 'extrapolateBefore', 'extrapolateAfter'},
-    'key': {'time', 'value', 'interpolation'},
+    'key': {'time', 'value', 'interpolation'} | curves.KEY_ATTRIBUTES,
 }
 _MONOTONE = {'linear', 'hold'} | {
     f'{kind}-{direction}'
@@ -121,16 +122,16 @@ def _animation(node: ET.Element, binding: c.AssetBinding) -> None:
     if any(node.get(name, 'hold') != 'hold' for name in ('extrapolateBefore', 'extrapolateAfter')):
         raise _fail('animate', None, 'held endpoint extrapolation')
     default = node.get('defaultInterpolation', 'linear')
-    if default not in _MONOTONE:
-        raise _fail('animate.defaultInterpolation', default, 'a supported non-overshooting interpolation')
+    if default not in _MONOTONE | curves.CURVES:
+        raise _fail('animate.defaultInterpolation', default, 'a supported bounded interpolation')
     previous = -1.0
     for key in node:
         time = _number(key.get('time', ''), 'key.time')
         if not previous < time <= binding.duration or time < 0:
             raise _fail('key.time', time, 'ordered, unique keys within the source duration')
         previous = time
-        if key.get('interpolation', default) not in _MONOTONE:
-            raise _fail('key.interpolation', key.get('interpolation'), 'a supported non-overshooting interpolation')
+        if key.get('interpolation', default) not in _MONOTONE | curves.CURVES:
+            raise _fail('key.interpolation', key.get('interpolation'), 'a supported bounded interpolation')
         value = key.get('value', '')
         if prop == 'visible':
             if value not in ('true', 'false', '0', '1'):
@@ -139,13 +140,22 @@ def _animation(node: ET.Element, binding: c.AssetBinding) -> None:
             number = _number(value, 'key.value')
             if prop == 'opacity' and not 0 <= number <= 1:
                 raise _fail('key.value', number, 'opacity in [0, 1]')
+    curves.validate(node)
+    if prop == 'opacity' and curves.advanced(node):
+        low, high = curves.bounds(node)
+        if low < -1e-9 or high > 1 + 1e-9:
+            raise _fail('animate.opacity', (low, high), 'the complete curve envelope inside [0, 1]')
 
 
 def _range(node: ET.Element, prop: str, default: float = 0) -> tuple[float, float]:
     values = [_number(node.get(prop, str(default)), prop)]
     for animation in node.findall('animate'):
         if animation.get('property') == prop:
-            values.extend(_number(k.attrib['value'], prop) for k in animation)
+            values.extend(
+                curves.bounds(animation)
+                if curves.advanced(animation)
+                else (_number(k.attrib['value'], prop) for k in animation)
+            )
     return min(values), max(values)
 
 

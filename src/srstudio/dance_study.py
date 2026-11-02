@@ -1,4 +1,4 @@
-"""How a body dances, measured the same way on a real dancer and on ours, so the two can be compared (ADR 0200).
+"""How a body dances, measured the same way on a real dancer and on ours, so the two can be compared (ADR 0203).
 
 A reference video is read by a pose estimator (``tools/pose_extract.py``) into a ``srstudio.pose-track`` record;
 :func:`reference_body` turns the record into a :class:`BodyTrack`. One of our dances, any sequence of
@@ -17,7 +17,7 @@ dancer was lost, when a hip or a shoulder is seen with too little confidence, wh
 far from its own length in the rest of the clip, and when a point jumps further in one frame than a body can move. An
 arm whose bone is far from its length is left out of that frame, which is counted under ``arm``, and a point seen with
 too little confidence is left out of the channels that use it in that frame. A frame whose picture repeats the last
-distinct one is no observation and is not seen either (ADR 0199): read as one, it is a moment of zero speed and then a
+distinct one is no observation and is not seen either (ADR 0204): read as one, it is a moment of zero speed and then a
 double step. The jump check spans the repeats, by the real time between the two distinct pictures. Nothing is filled
 in: each channel is measured on the runs of frames where it is seen, at their real times.
 
@@ -160,7 +160,7 @@ def _xyz(v: sk.Vec3) -> np.ndarray:
 class BodyTrack:
     """``points`` (frames x 13 x 3) in head radii from the hips' middle, skeleton axes; ``seen`` (frames x 13) which
     are usable; ``start`` the first frame's second; ``rejected`` how many frames were refused, by reason; ``repeated``
-    (frames) which frames repeated the last distinct picture and so were no observation (ADR 0199), none if left empty.
+    (frames) which frames repeated the last distinct picture and so were no observation (ADR 0204), none if left empty.
     A repeated frame is never seen, and it is no lost dancer either: windows and paths are read across it."""
 
     fps: int
@@ -577,7 +577,7 @@ class ChannelReading:
     cycles a beat,
     ``hit_offset`` in beats; ``range`` the 5th to 95th percentile span of each window.
 
-    The gesture's timing (ADR 0199): ``overtones`` each read window's curve holds; ``timed`` the read windows whose
+    The gesture's timing (ADR 0204): ``overtones`` each read window's curve holds; ``timed`` the read windows whose
     curve holds more than a sine (two overtones or more), and across them ``peak_speed_phase`` (read round the cycle),
     ``attack`` and ``release`` in beats, ``peak_acceleration`` in amplitudes per beat squared; ``velocity`` and
     ``shape`` the mean of their one-cycle profiles from the hit, and ``profile_spread`` each one's distance from the

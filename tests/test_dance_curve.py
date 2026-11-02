@@ -1,6 +1,6 @@
 """A gesture's own timing: the ``curve`` waveform holds one cycle's motion as samples, read strictly, and plays them
 back through a periodic cubic spline whose velocity and acceleration are continuous everywhere, the loop's seam
-included (ADR 0199)."""
+included (ADR 0204)."""
 
 import copy
 import json

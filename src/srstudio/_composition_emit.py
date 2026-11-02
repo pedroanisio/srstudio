@@ -122,8 +122,10 @@ def assemble(
 ) -> c.CompiledScene:
     """Shared layer assembly after worker-owned source verification."""
     from ._composition_forms import apply, static
+    from ._composition_shadows import verify_roots
 
     static(plan)
+    verify_roots(plan, roots)
     spec = plan.spec
     bindings = {binding.id: binding for binding in plan.bindings}
     budget = spec.budget

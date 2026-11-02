@@ -1,12 +1,12 @@
 """A dance style as targets: ranges derived from a reference dancer's measures, and the check that lists what one of
-our dances misses (ADR 0200).
+our dances misses (ADR 0203).
 
 :func:`derive` turns a :class:`dance_study.StyleReading` of a reference into a :class:`DanceStyle`. Each channel's
 targets are ranges, never single numbers: the middle half of the reference's windows (25th to 75th percentile),
 widened by the estimate's own noise, and left out (None) where the reference gave too little evidence. The record is
 ``srstudio.dance-style/1.1.0``, strict JSON, and holds only these numbers: no frame, landmark or time of the reference.
 
-1.1 adds a gesture's timing (ADR 0199): per channel, ranges for the place of its fastest moment, its attack and release
+1.1 adds a gesture's timing (ADR 0204): per channel, ranges for the place of its fastest moment, its attack and release
 in beats and its peak acceleration, and the mean velocity profile of one cycle with how far a dance's may lie from it.
 They stand only on windows whose curve holds more than a sine, the profile only where those windows agree on it, and
 the frames that repeated a picture are counted as refused (``repeat``). A 1.0 record reads as before, with no timing.

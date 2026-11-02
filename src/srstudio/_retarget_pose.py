@@ -104,7 +104,7 @@ class RetargetReport:
 class Tally:
     """Collects clamps, breaches, residuals and dropped turns over many samples, then reports or refuses once. With
     ``hold_values`` False it records what it would hold but returns each value as it is: how a clip is read before its
-    frames are played (ADR 0199)."""
+    frames are played (ADR 0204)."""
 
     clamp: bool
     hold_values: bool = True

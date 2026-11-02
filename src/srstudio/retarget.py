@@ -14,7 +14,7 @@ proportions, and moves the clip's beats onto a song's:
 
 A performance plays each control and the hips' place between frames through a cubic spline with its velocity and
 acceleration continuous, and its beat map eases its rate between beats, so a gesture keeps its timing and acceleration
-on the song's clock (ADR 0199); ``to_pose`` at a time, a single moment, slerps between the frames either side.
+on the song's clock (ADR 0204); ``to_pose`` at a time, a single moment, slerps between the frames either side.
 
 Values are absolute turns from the T-stance, the skeleton's zero, so a profile's ``rest`` is not added. A control the
 clip turns past the profile's limits is refused with every such value listed, unless ``clamp=True`` holds it at the
@@ -309,7 +309,7 @@ def perform(
 ) -> Performance:
     """``clip`` on ``profile`` on the song clock of ``beats``: every frame is read once here, and refused here if a
     control passes its limits without ``clamp``; each later sample plays every control between the frames either side on
-    its spline (ADR 0199)."""
+    its spline (ADR 0204)."""
     clip, profile = check_clip(clip), check_profile(profile)
     if not isinstance(beats, BeatMap):
         raise RetargetInputError("expected a BeatMap from beat_map", path="beats", actual=type(beats).__name__)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Follow one dancer through a video with a pose estimator and write the reading as one record srstudio reads
-(ADR 0200).
+(ADR 0203).
 
 The estimator is MediaPipe's Pose Landmarker (Apache-2.0, 33 BlazePose landmarks in the image and in metres). It runs
 in its own interpreter, so srstudio gains no dependency; build it once, as docs/authoring-dance.md says:
@@ -85,7 +85,7 @@ SETTLE = 15  # the dancer's colours are the mean of their first matches with clo
 LEARN_LIMIT = 0.25
 # A picture repeats the last distinct one when, over 8 x 8 blocks of its grey levels, no block differs by more than
 # REPEAT_HIGH summed levels and at most REPEAT_SHARE of the blocks differ by more than REPEAT_LOW: ffmpeg's mpdecimate
-# test at hi=64*4, lo=64*2, frac=0.33. A screen recording of a video writes such repeats (ADR 0199).
+# test at hi=64*4, lo=64*2, frac=0.33. A screen recording of a video writes such repeats (ADR 0204).
 REPEAT_BLOCK = 8
 REPEAT_HIGH = 64 * 4
 REPEAT_LOW = 64 * 2

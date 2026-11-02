@@ -1,4 +1,4 @@
-"""A gesture's timing and acceleration survive every stage from a move to a drawn picture (ADR 0199).
+"""A gesture's timing and acceleration survive every stage from a move to a drawn picture (ADR 0204).
 
 One gesture, a whip on the right upper arm (a slow lift and a quick strike back onto the hit), is followed through
 ``dance.sample`` -> ``dance_pose`` -> the skeleton's world -> a recorded clip of it retargeted and played on a song's
@@ -164,7 +164,7 @@ def test_the_recorded_clip_holds_the_gesture_at_its_frames():
 
 def test_a_clip_played_at_its_own_tempo_keeps_the_gestures_timing_and_acceleration():
     """Fifteen frames a beat hold the whip; what plays between them must not bend it. Straight lines between frames
-    turn the strike's smooth acceleration into a spike at every frame: read 2.7 times too high before ADR 0199."""
+    turn the strike's smooth acceleration into a spike at every frame: read 2.7 times too high before ADR 0204."""
     _, values = performed(CLIP_GROOVE, CLIP_GROOVE)
     assert_kept(measure(values, CLIP_GROOVE), source())
 
@@ -188,7 +188,7 @@ def test_a_take_on_uneven_beats_plays_the_gesture_evenly_on_the_song():
 
 def test_on_uneven_beats_the_gesture_never_changes_speed_at_a_beat():
     """A straight warp changes rate at each beat, so the arm's speed steps there: by up to 7% of its top speed before
-    ADR 0199."""
+    ADR 0204."""
     played, values = performed(JITTER, Groove(129))
     fastest = max(abs(b - a) for a, b in zip(values, values[1:], strict=False)) * FPS
     step = 1e-5

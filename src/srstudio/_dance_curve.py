@@ -1,4 +1,4 @@
-"""One cycle of a gesture as samples, played back with its velocity and acceleration continuous (ADR 0199).
+"""One cycle of a gesture as samples, played back with its velocity and acceleration continuous (ADR 0204).
 
 A :class:`Curve` holds ``n`` samples of one cycle at ``u = k / n``, counted from the hit: the first is the hit, ``+1``,
 the lowest is the far extreme, ``-1``. Between samples it is a periodic cubic spline, the one cubic interpolant whose

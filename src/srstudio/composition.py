@@ -132,6 +132,24 @@ class TemporalPolicy(_Record):
 
 
 @dataclass(frozen=True)
+class ShadowMask(_Record):
+    """An authored planar mask, not a computed caster silhouette or physical shadow.
+
+    The mask is a child of its receiver, between receiver and caster in painter order.
+    Its anchor must match the directional-light projection of the named caster anchor.
+    Static convex spatial polygons provide the receiver and mask geometry.
+    """
+
+    caster: str
+    receiver: str
+    receiver_surface: str
+    caster_anchor: str
+    mask_anchor: str
+    light: str
+    tolerance: float = field(default=1e-5, metadata={'minimum': 0, 'maximum': 0.01})
+
+
+@dataclass(frozen=True)
 class LayerSpec(_Record):
     id: str
     asset: str
@@ -147,6 +165,7 @@ class LayerSpec(_Record):
     surface_coordinates: Literal['local', 'screen'] = 'local'
     effects: tuple[str, ...] = ()
     shadow_receiver: str | None = None
+    shadow_mask: ShadowMask | None = None
 
 
 @dataclass(frozen=True)

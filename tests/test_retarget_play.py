@@ -1,4 +1,4 @@
-"""A clip played between its frames: each control on a natural cubic spline through its frames (ADR 0199)."""
+"""A clip played between its frames: each control on a natural cubic spline through its frames (ADR 0204)."""
 
 import math
 from pathlib import Path

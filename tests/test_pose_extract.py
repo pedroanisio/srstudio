@@ -1,4 +1,4 @@
-"""The pose extraction tool (ADR 0200), without the estimator: it keeps one dancer by place and by the colours of
+"""The pose extraction tool (ADR 0203), without the estimator: it keeps one dancer by place and by the colours of
 their clothes, writes a lost frame rather than a neighbour, and writes only a record srstudio's reader accepts, outside
 the repository, directory 700 and file 600. Running the estimator itself needs its own interpreter and a video of real
 people, so no test runs it."""
@@ -287,7 +287,7 @@ def test_estimator_poses_become_candidates_in_pixels_of_the_whole_frame():
     assert crop[0].crop and crop[0].image[0, :2].tolist() == [200, 75] and crop[0].world[0].tolist() == [0.1, -0.2, 0.3]
 
 
-# --- repeated pictures (ADR 0199) -------------------------------------------------------------------------------------
+# --- repeated pictures (ADR 0204) -------------------------------------------------------------------------------------
 
 
 def grey(seed: int = 0) -> np.ndarray:

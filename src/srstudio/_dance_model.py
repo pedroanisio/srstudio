@@ -148,7 +148,7 @@ def wave(kind: str, snap: float, u: float, curve: Curve | None = None) -> float:
     ``sine`` leaves the hit slowly, over ``1 - snap`` of the cycle, and strikes back onto it in ``snap``; both strokes
     are half cosines, so the motion eases at either extreme. ``hold`` rests at each extreme and moves between them in
     strokes of ``snap`` each, landing on the hit at ``u = 0`` and on the far extreme at ``u = 1/2``. ``curve`` plays a
-    gesture's own cycle, ``curve``, and ignores ``snap`` (ADR 0199)."""
+    gesture's own cycle, ``curve``, and ignores ``snap`` (ADR 0204)."""
     _shape(kind, snap)
     if kind == "curve":
         if not isinstance(curve, Curve):
@@ -263,7 +263,7 @@ class Pattern:
     ``cycles`` count per ``beat`` or per ``bar``; the hit lands ``phase`` beats after the grid's beat; ``swing`` is
     where the off-beat eighth lands in the beat (0.5 straight, 2/3 a triplet swing). Amplitudes and biases are head
     radii on the root and radians on a joint, so a move scales to any character. A ``curve`` waveform carries the
-    gesture's own cycle in ``curve``, samples from the hit (ADR 0199); no other waveform takes samples."""
+    gesture's own cycle in ``curve``, samples from the hit (ADR 0204); no other waveform takes samples."""
 
     target: str
     amplitude: float

@@ -1,4 +1,4 @@
-"""A study reads each channel's gesture timing across its windows (ADR 0199): the place of the fastest moment, the
+"""A study reads each channel's gesture timing across its windows (ADR 0204): the place of the fastest moment, the
 attack and release in beats, the peak acceleration, and the mean one-cycle profile, from the windows whose curve holds
 more than a sine. A window read as a sine has the sine's timing whatever the dancer did, so it counts for none."""
 

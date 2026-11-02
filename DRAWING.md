@@ -63,6 +63,12 @@ Depth ordering is explicit. Fixed, nonintersecting planes may use declared back-
 
 A contact names the actor anchor, prop/surface anchor, their world transforms, and the time interval in which they agree. A shadow names both caster and receiver. A receiver must provide a plane/mesh proxy or an authored shadow mask bound to its pose; a flat RGBA plate supplies neither world normals nor a receiver by itself. Self-shadows use the same rule. Unknown receivers, intersecting layers without an occlusion strategy, and camera views outside a rig's envelope fail preflight before scene mutation or rendering. A deliberately flat style may declare shadows off; a requested unsupported shadow is never silently omitted.
 
+`composition.ShadowMask` now binds an authored convex mask to a named spatial receiver surface, caster anchor
+and directional light. Preflight checks containment, projected anchor registration, painter order, complete
+layer intervals and uniqueness; bounded source preparation refuses invisible or independently timed masks.
+This [authored-mask contract](docs/composition-preflight.md#bind-an-authored-shadow-mask) does not calculate a
+physical caster silhouette or penumbra. The combined candidate still needs to adopt it and pass the full pixel gates.
+
 ## Style conversion and temporal continuity
 
 The [effect shader](https://github.com/pedroanisio/scene-render/blob/af179e456d29f5bbc82c86187cccd620cf0e3124/crates/sr-gpu/src/effects.wgsl) posterizes encoded RGB channels, maps luminance through a gradient, and constructs outlines from alpha morphology. This can stylize a silhouette, but does not separate illumination from material color or find interior creases. A multicolored car must retain distinct paint, glass, tires, and markings under light changes.
@@ -181,9 +187,10 @@ The table gives each type its default. Only the rigid-object layer is built, and
 The first full proof is a short Toon clip containing a multicolored car turning under a moving camera, a rigged hand holding a prop, a figure crossing behind/in front of the car, a textured background, and protected information. It includes a held pose, a continuous pose/expression transition, a cut, changed key/fill/rim lighting, and a warm-cache rebuild. Test frontal, three-quarter, and profile views only for assets that explicitly support them; an unsupported view must demonstrate the refusal path.
 
 The [hybrid drawing candidate](docs/drawing-proof.md) supplies a runnable combined
-fixture and strict encode/pixel-review commands. Its explicit expression/depth
-cuts, frontal character, authored shadow mask, and candidate information layer
-do not yet satisfy the complete matrix below. It does not change style approval.
+fixture and strict encode/pixel-review commands. Authored face deformations now
+continue through the camera cut. Its depth replacement, frontal character,
+unbound shadow mark, and candidate information layer do not yet satisfy the
+complete matrix below. It does not change style approval.
 
 The thresholds below are acceptance targets, not reported measurements, except where ADR 0091 records one. That proof records its results and any approved style-specific replacement thresholds.
 

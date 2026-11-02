@@ -15,11 +15,17 @@ same performance clock through that cut. Bento appears behind the car, passes
 its left end, and appears in front. Ground texture stays in authored world
 coordinates; information stays in screen coordinates above the picture.
 
-The default source sampling is 12 fps, held on a 24 fps output: animation on
-twos. The character remains a frontal billboard. Its expression replacement at
-3.2 seconds and depth-pass replacement at three seconds are explicit cuts.
-These are not evidence of continuous expression blending or whole-body walking.
-The ground shadow is an authored planar mask, not a simulated receiver shadow.
+World and hand samples default to 12 fps, held on a 24 fps output. The opt-in
+Bento face deforms at 24 fps: neutral becomes concerned over 2–2.7 seconds,
+then concerned becomes deadpan over 3.6–4.6 seconds. The second transition
+continues through the camera cut on its original clock. Head pose changes share
+those intervals; no opacity crossfade substitutes for authored face geometry.
+
+The character remains a frontal billboard. Its depth-pass replacement at three
+seconds is still an explicit cut, not whole-body walking. Intermediate faces
+carry their candidate rig identity and no drawing approval. The ground shadow
+remains an unbound authored mark; adopting the new receiver-mask contract is
+part of the migration to the shared compiler.
 
 ## Build and measure
 
@@ -28,17 +34,17 @@ dependencies installed. DejaVu Sans Bold and the pinned renderer must be
 available. Each output directory must be new; the shared cache may already exist.
 
 ```sh
-python -m examples.drawing_proof ../generated/drawing-hybrid-candidate/v1/cold \
+python -m examples.drawing_proof ../generated/drawing-hybrid-candidate/v2/cold \
   --engine ../generated/bin/scene-render \
-  --cache ../generated/drawing-hybrid-candidate/v1/cache
+  --cache ../generated/drawing-hybrid-candidate/v2/cache
 
-python -m examples.drawing_proof ../generated/drawing-hybrid-candidate/v1/warm \
+python -m examples.drawing_proof ../generated/drawing-hybrid-candidate/v2/warm \
   --engine ../generated/bin/scene-render \
-  --cache ../generated/drawing-hybrid-candidate/v1/cache --warm-only
+  --cache ../generated/drawing-hybrid-candidate/v2/cache --warm-only
 
 python -m examples.drawing_proof_review \
-  ../generated/drawing-hybrid-candidate/v1/warm/scene.xml \
-  ../generated/drawing-hybrid-candidate/v1/review \
+  ../generated/drawing-hybrid-candidate/v2/warm/scene.xml \
+  ../generated/drawing-hybrid-candidate/v2/review \
   --engine ../generated/bin/scene-render
 ```
 
@@ -50,7 +56,7 @@ limit. The shared GPU lock serializes engine work. Waiting for that lock is
 separate from renderer execution time.
 
 The build report records actual work, input hashes, the installed schema hash,
-font bytes, the pinned Bento part, quality settings, and Linux process memory
+font bytes, the candidate figure rig, quality settings, and Linux process memory
 high-water marks. These memory measurements do not include GPU memory and do not
 measure simultaneous aggregate RSS. Candidate car/recipe identities carry no
 approval. No part table or approved drawing is changed.
@@ -76,8 +82,8 @@ compare against `proxy.View.project` and exercise near-plane refusal.
 
 The following acceptance work remains: measured raster landmark/contact and
 occlusion masks across the complete clip; palette and line-width approval;
-continuous pose/expression and whole-body support; shared drawn shading and
-caster/receiver contracts; equivalence to the approved information layer;
+rendered pose/expression continuity and whole-body support; shared drawn shading
+and adoption of the caster/receiver contract; equivalence to the approved information layer;
 compatibility fingerprints; and complete temporal visual review. The JSON
 reports distinguish measured facts from those remaining requirements. Operator
 approval belongs after the completed proof, as required by DRAWING.md.
@@ -88,7 +94,19 @@ Run the fixture and measurement tests with:
 pytest tests/test_drawing_proof_example.py tests/test_drawing_proof_review.py
 ```
 
-## Recorded candidate
+## Recorded continuous-face candidate
+
+The [version 2 review](../../generated/drawing-hybrid-candidate/v2/index.html)
+contains the current strict 1080×1920 encode: 144 frames at 24 fps over six seconds.
+Its [verification](../../generated/drawing-hybrid-candidate/v2/verification.json)
+records the nine sampled renders, exact repeated-frame and protected-information
+comparisons, 23 example/review tests, and the separately passed real-engine
+face cut-versus-uncut regression. Coverage of the two example modules is 61 of
+72 branches (84.72%). The build reused the existing 14 car views with zero
+renderer invocations; this is not a new cold-render benchmark. The full drawing
+acceptance matrix remains open.
+
+## Recorded first candidate
 
 The [retained review](../../generated/drawing-hybrid-candidate/v1/index.html)
 contains the six-second, 144-frame strict encode and sampled full-size PNGs.
@@ -97,7 +115,9 @@ records 28 cold raw-car invocations, 14 views, zero-invocation warm builds,
 identical rebuilt scene/image bytes, and passing repeated-frame and information
 pixel checks. Rendering used engine 0.8.0 on llvmpipe's software Vulkan adapter.
 The source and artifact hashes distinguish the final candidate from earlier
-failed and superseded iterations retained alongside it.
+failed and superseded iterations retained alongside it. That retained version
+still contains the earlier expression replacement; it is not evidence for the
+current continuous-face candidate.
 
 The targeted validation passed 63 tests and 32 subtests, with 93.06% branch
 coverage across the two new example modules. Full-size frame inspection caught

@@ -1,4 +1,4 @@
-"""A screen recording repeats pictures; a repeated picture is no observation (ADR 0199).
+"""A screen recording repeats pictures; a repeated picture is no observation (ADR 0204).
 
 Read as an observation, a repeat is a moment of zero speed and then a double step: it fakes acceleration and moves the
 fastest moment. Marked as a repeat in the track (``srstudio.pose-track/1.1.0``), it is left out, and the gesture is

@@ -80,6 +80,23 @@ def test_initial_authored_figure_hold_has_no_hidden_idle_but_later_pose_moves():
     assert plan.sample(2.5).head != plan.sample(0).head
 
 
+def test_candidate_face_deforms_continuously_on_the_same_clock_through_the_camera_cut():
+    plan = example().figure_performance()
+    assert plan.rig.describe()['capabilities']['expression_blend']
+    assert plan.clip.face_blends.fps == 24
+    first = plan.sample(2.35).face_blend
+    assert (first.source.eyes, first.target.eyes) == ('neutral', 'concerned')
+    assert first.weight == pytest.approx(0.5)
+    before, at, after = (plan.sample(time) for time in (3.99, 4, 4.01))
+    assert all(state.face_blend is not None for state in (before, at, after))
+    assert at.face_blend.source.eyes == 'concerned' and at.face_blend.target.eyes == 'deadpan'
+    assert before.face_blend.weight < at.face_blend.weight < after.face_blend.weight
+    assert plan.window(4, 6).sample(0) == at
+    assert plan.sample(4.6).expression.eyes == 'deadpan'
+    assert plan.sample(4.6).face_blend is None
+    assert plan.rig.head_rig.drawn_as is None
+
+
 def test_depth_replacement_retains_the_authored_root_margin():
     study = example()
     for frame in study.schedule():
@@ -137,6 +154,12 @@ def test_candidate_scene_structure_and_report_do_not_claim_approval(tmp_path, mo
     path = study.build(tmp_path / 'candidate', engine=Path(sys.executable), fps=2, size=(216, 384))
     report = json.loads(path.with_name('report.json').read_text())
     assert report['status'] == 'candidate; no adoption approval'
+    assert report['schema'] == 'srstudio.drawing-candidate/1.1.0'
+    assert report['schedule']['expression_blends'] == [[2, 2.7], [3.6, 4.6]]
+    assert report['schedule']['face_fps'] == 24
+    assert 'expression_replacement' not in report['schedule']
+    assert report['source']['candidate_figure_rig']['capabilities']['expression_blend']
+    assert 'bento_part' not in report['source']
     assert report['remaining_gates']
     assert report['interaction']['max_contact_error'] < 1e-6
     root = ET.fromstring(path.read_bytes())
@@ -146,6 +169,7 @@ def test_candidate_scene_structure_and_report_do_not_claim_approval(tmp_path, mo
         if node.get('strokeWidth') == '0' and node.get('stroke') not in (None, '#00000000')
     ]
     assert root.find('composition')[-1].get('id') == 'information'
+    assert any('face-blend-eyes' in node.get('id', '') for node in root.iter('group'))
     assert len(list(root.iter('image'))) == report['render']['unique_views']
     assert report['validation'] == {'schema': True, 'findings': []}
     assert len(report['source']['schema_sha256']) == 64

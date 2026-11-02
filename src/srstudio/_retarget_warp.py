@@ -7,7 +7,7 @@ out to the clip's ends, and stops at the song's start and at ``end``. Both clock
 runs both ways. A stretch outside ``MIN_RATE``..``MAX_RATE`` clip seconds per song second is refused: past it a
 recorded take reads as slow motion or fast-forward rather than as dancing to the song.
 
-Between beats the rate eases from one stretch's to the next rather than stepping at the beat (ADR 0199): a step in
+Between beats the rate eases from one stretch's to the next rather than stepping at the beat (ADR 0204): a step in
 rate is a step in the speed of every gesture in flight, and a spike in its acceleration. Over a stretch of mean rate
 ``R`` the rate is ``R + a * phi(tau) + b * phi(1 - tau)``, ``tau`` the share of the stretch played, with
 ``phi(tau) = 1 - 18 tau^2 + 32 tau^3 - 15 tau^4``: ``phi`` is 1 at the stretch's start and 0 at its end, flat at both,

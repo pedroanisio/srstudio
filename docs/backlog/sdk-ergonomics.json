@@ -74,6 +74,19 @@
       "renderer": "engine 0.8.0; llvmpipe LLVM 19.1.7, Vulkan CPU adapter",
       "qualification": "A measured candidate, not the complete DRAWING proof or style approval. The initial cold raw-car pass predates vector/reporting refinements; its 14 PNGs exactly match the final candidate. Final source hashes are sealed separately. Selected full-size frames were inspected; full temporal visual review, complete pixel/continuity gates, shared drawn shading/receivers, approved information equivalence, whole-body support and authored emotion blends remain open. This was a targeted test selection, not a full-suite run."
     },
+    "hybrid_continuous_faces": {
+      "artifact": "../generated/drawing-hybrid-candidate/v2/verification.json",
+      "candidate": "../generated/drawing-hybrid-candidate/v2/candidate/scene.xml",
+      "review": "../generated/drawing-hybrid-candidate/v2/review/review.json",
+      "example_review_tests_passed": 23,
+      "real_engine_face_cut_regression_passed": 1,
+      "example_branch_coverage_percent": 84.72222222222223,
+      "strict_encode": {"passed": true, "width": 1080, "height": 1920, "fps": 24, "frames": 144},
+      "unique_car_views": 14,
+      "warm_invocations": 0,
+      "repeated_frame_and_information_pixels_identical": true,
+      "qualification": "Authored face blends are integrated into the actual hybrid candidate and retain their source clock across the camera cut. Reuses the unchanged version-1 car cache; no new cold timing claim. Full rendered continuity, body support, shared compiler/form/receiver integration and the complete DRAWING acceptance matrix remain open."
+    },
     "spatial_camera_tracks": {
       "implementation_commit": "7014396ba3834a9edccfe3b30e70a267bd6bf872",
       "targeted_tests_passed": 532,
@@ -2497,13 +2510,15 @@
           "Explicit host-selected candidate-review plans accept independently named unapproved assets with exact vector, plate, proxy or complete-sequence content pins; bounded preparation verifies content, timeline workers preserve policy, and compiled XML retains review provenance without changing production approval checks",
           "Native text and immutable pinned font/license resources survive static and timeline bundles with exact source identity, bounded clipped envelopes, scoped references, atomic publication and 320x240 native caption pixel equivalence at four offset/rate-adjusted times per static/timeline backend",
           "Authored per-shape vector form fields share world lights, parent transforms and source clocks; explicit ink preserves authored shapes, content pins include palettes/fields, and bounded timeline sampling retains light and pose cuts",
-          "Explicit spatial FormPath vertices retain parent transforms, shared camera projection, source clocks and screen-space strokes; geometry participates in source pins and timeline span identity, with bounded projected XML expansion and near-plane refusal"
+          "Explicit spatial FormPath vertices retain parent transforms, shared camera projection, source clocks and screen-space strokes; geometry participates in source pins and timeline span identity, with bounded projected XML expansion and near-plane refusal",
+          "Authored convex shadow masks name their caster, receiver surface, anchors and directional light; preflight proves plane containment, forward anchor projection, unique painter ordering and source-clock coverage, while bounded preparation refuses invisible or independently timed payloads before raster work",
+          "Native spring, Catmull-Rom and default TCB vector channels retain source XML under conservative continuous envelopes and bounded carry chains; the actual hybrid figure has exact original-versus-compiled 1080x1920 pixels around a compiler cut inside its face transition"
         ],
         "remaining": [
           "Cross-backend rendering evidence for the complete DRAWING.md contract",
-          "Migrate the combined hybrid proof onto the implemented candidate-review compiler workflow"
+          "Migrate the combined hybrid proof onto the implemented candidate-review compiler workflow; the actual figure with the candidate camera schedule currently requests 40858140 expansion bytes across 14 spans, exceeding the unchanged eight-MiB output cap"
         ],
-        "verification": ["tests/test_composition_preflight.py", "tests/test_composition_emission.py", "tests/test_composition_runtime.py", "tests/test_bounded_process.py", "tests/test_composition_example.py", "tests/test_composition_plate_view.py", "tests/test_composition_plates.py", "tests/test_composition_bundles.py", "tests/test_composition_textures.py", "tests/test_composition_prints.py", "tests/test_bundle_primitives.py", "tests/test_plate_runtime_limits.py", "tests/test_plate_render_sessions.py", "docs/composition-preflight.md", "docs/authoring-benchmark.md", "docs/decisions/0144-bounded-composition-prints.md", "tests/test_composition_proxy.py", "docs/decisions/0145-bounded-composition-proxies.md", "tests/test_composition_sequences.py", "docs/decisions/0146-bounded-raster-timelines.md", "tests/test_scene_motion.py", "docs/decisions/0175-explicit-scene-motion-sampling.md", "tests/test_scene_timeline.py", "docs/decisions/0176-bounded-scene-timeline-planning.md", "tests/test_scene_timeline_emission.py", "tests/test_scene_timeline_protocol.py", "docs/decisions/0177-bounded-scene-timeline-emission.md", "tests/test_composition_candidates.py", "docs/decisions/0182-explicit-candidate-composition.md", "tests/test_composition_text.py", "docs/decisions/0183-native-composition-text.md", "tests/test_composition_forms.py", "docs/decisions/0196-authored-vector-form-lighting.md", "tests/test_composition_spatial_paths.py", "docs/decisions/0198-authored-spatial-vector-paths.md"]
+        "verification": ["tests/test_composition_preflight.py", "tests/test_composition_emission.py", "tests/test_composition_runtime.py", "tests/test_bounded_process.py", "tests/test_composition_example.py", "tests/test_composition_plate_view.py", "tests/test_composition_plates.py", "tests/test_composition_bundles.py", "tests/test_composition_textures.py", "tests/test_composition_prints.py", "tests/test_bundle_primitives.py", "tests/test_plate_runtime_limits.py", "tests/test_plate_render_sessions.py", "docs/composition-preflight.md", "docs/authoring-benchmark.md", "docs/decisions/0144-bounded-composition-prints.md", "tests/test_composition_proxy.py", "docs/decisions/0145-bounded-composition-proxies.md", "tests/test_composition_sequences.py", "docs/decisions/0146-bounded-raster-timelines.md", "tests/test_scene_motion.py", "docs/decisions/0175-explicit-scene-motion-sampling.md", "tests/test_scene_timeline.py", "docs/decisions/0176-bounded-scene-timeline-planning.md", "tests/test_scene_timeline_emission.py", "tests/test_scene_timeline_protocol.py", "docs/decisions/0177-bounded-scene-timeline-emission.md", "tests/test_composition_candidates.py", "docs/decisions/0182-explicit-candidate-composition.md", "tests/test_composition_text.py", "docs/decisions/0183-native-composition-text.md", "tests/test_composition_forms.py", "docs/decisions/0196-authored-vector-form-lighting.md", "tests/test_composition_spatial_paths.py", "docs/decisions/0198-authored-spatial-vector-paths.md", "tests/test_composition_shadows.py", "docs/decisions/0199-explicit-authored-shadow-masks.md", "tests/test_composition_curves.py", "docs/decisions/0200-bounded-native-vector-curves.md"]
       },
       "evidence": [
         "DRAWING.md#agent-facing-composition-contract"
@@ -2786,12 +2801,13 @@
           "Original six-second hybrid candidate with a multicolor turning car, moving camera, explicit camera/light cut, spatial hand/cup contact, frontal Bento behind/in front, world-coordinate ground texture and protected screen information",
           "Bounded cold render work and zero-invocation warm rebuilding, explicit candidate identities, source/font/schema hashes, and scoped process memory measurements",
           "Executable strict-encode and repeated-frame/information-pixel review commands; missing or changed pixel evidence and failed engine calls cannot produce a passing review report",
-          "TDD regressions for shared projection, initial held pose, reserved hand/cup bounds, fill-only path diagnostics and validation before plate work"
+          "TDD regressions for shared projection, initial held pose, reserved hand/cup bounds, fill-only path diagnostics and validation before plate work",
+          "Candidate version 2 integrates authored neutral/concerned/deadpan face deformations at 24 fps; the second transition retains its original clock through the camera cut. The full-size 144-frame strict encode, held/repeated-frame checks and protected information pixel checks pass without borrowing drawing approval"
         ],
         "remaining": [
           "Complete raster registration/contact, occlusion, palette and continuous-join measurements across the clip",
-          "Integrate the separately implemented authored face blends and world-anchored biped support into the hybrid candidate; it still declares expression and depth replacements as cuts",
-          "Integrate authored shared-light form fields with the actual rig poses, calibrate across backends, and implement caster/receiver contracts; the candidate still uses an authored ground shadow mask",
+          "Integrate world-anchored biped support into the hybrid candidate and measure rendered face/pose continuity; its depth replacement remains a cut",
+          "Integrate authored shared-light form fields with the actual rig poses, calibrate across backends, and adopt the implemented caster/receiver mask contract; the candidate still uses an unbound authored ground mark",
           "Approved information-layer equivalence, compatibility fingerprints and complete temporal visual review",
           "Operator approval of the completed proof before style adoption"
         ],

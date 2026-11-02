@@ -1,4 +1,4 @@
-"""A style holds a gesture's timing (ADR 0199): ``srstudio.dance-style/1.1.0`` adds, per channel, ranges for the
+"""A style holds a gesture's timing (ADR 0204): ``srstudio.dance-style/1.1.0`` adds, per channel, ranges for the
 place of the fastest moment, the attack and release in beats and the peak acceleration, and the mean velocity profile
 with how far a dance's may lie from it, each only where enough windows read more than a sine. A 1.0 record still
 reads, with no timing."""

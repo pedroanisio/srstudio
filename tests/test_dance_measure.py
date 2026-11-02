@@ -240,7 +240,7 @@ def test_a_target_is_checked_when_built(changes):
         DanceTarget(**(base | changes))
 
 
-# --- samples not seen (ADR 0200) --------------------------------------------------------------------------------------
+# --- samples not seen (ADR 0203) --------------------------------------------------------------------------------------
 
 
 def test_a_series_with_samples_missing_reads_as_the_whole_one():

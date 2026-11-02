@@ -1,6 +1,6 @@
 """A gesture's timing and acceleration read back from a sampled channel: where in the cycle it is fastest, how long its
 stroke onto the hit (the attack) and back off it (the release) take, its peak acceleration per beat squared in
-amplitudes, and its velocity profile, which two gestures compare by distance (ADR 0199)."""
+amplitudes, and its velocity profile, which two gestures compare by distance (ADR 0204)."""
 
 import math
 

@@ -5,7 +5,7 @@ fall at different places in the cycle, so the fit recovers its shape finer than 
 whole number of pictures they do not, and the reading says so in ``resolution``. The two seat-groove targets are the car
 dance a reel was measured to hold, and :meth:`DanceTarget.misses` is the acceptance test (ADR 0186).
 
-The fitted curve's derivatives are exact, so the reading also carries the gesture's own timing (ADR 0199): where in the
+The fitted curve's derivatives are exact, so the reading also carries the gesture's own timing (ADR 0204): where in the
 cycle it is fastest, its attack (10% to 90% of the way from the far extreme onto the hit) and release (back off it), its
 peak acceleration per beat squared in amplitudes (half the peak to peak), and its velocity profile, normalized to its
 fastest moment and read at :data:`PROFILE_POINTS` places from the hit, which :func:`profile_distance` compares.
@@ -78,7 +78,7 @@ class DanceReading:
     offset; ``hit_offset`` its distance from the nearest beat, in beats, negative before it; ``resolution`` the widest
     gap, in seconds, the samples leave in the cycle, which no reading of its strokes can beat.
 
-    The gesture's timing (ADR 0199), counted from the hit: ``peak_speed_phase`` the share of the cycle after the hit at
+    The gesture's timing (ADR 0204), counted from the hit: ``peak_speed_phase`` the share of the cycle after the hit at
     which it moves fastest; ``attack`` the seconds from 10% to 90% of the way onto the hit, ``release`` off it;
     ``peak_acceleration`` the largest acceleration in amplitudes (half the peak to peak) per beat squared; ``velocity``
     the speed toward the hit side, over its largest, at :data:`PROFILE_POINTS` places from the hit; ``shape`` the
@@ -154,7 +154,7 @@ class DanceTarget:
     (``min``, ``max``, or ``either`` when a dance may be mirrored); ``rebound``, when given, the (low, high) range of
     its follow-through.
 
-    A gesture's timing, when given (ADR 0199): ``attack`` and ``release`` in seconds, held to ``time_tolerance``;
+    A gesture's timing, when given (ADR 0204): ``attack`` and ``release`` in seconds, held to ``time_tolerance``;
     ``peak_speed_phase`` held to ``phase_tolerance`` of the cycle, either way round; ``peak_acceleration`` a range in
     amplitudes per beat squared; and ``velocity`` a profile the reading's must lie within ``profile_tolerance`` of."""
 
@@ -448,7 +448,7 @@ def measure_dance(
     noise. A flat series, or one under two cycles, raises
     :class:`DanceMeasureError`: a series that does not hold a groove reads as no groove, never as a poor one.
 
-    With ``missing``, a NaN is a sample not seen, as a pose estimator leaves when it loses a dancer (ADR 0200). Nothing
+    With ``missing``, a NaN is a sample not seen, as a pose estimator leaves when it loses a dancer (ADR 0203). Nothing
     is filled in: the cycle is found on the series with the gaps at its mean, then fitted, and its shape read, on the
     samples present alone, and ``resolution`` counts the gaps they leave in the cycle."""
     if not isinstance(groove, Groove):

@@ -1,4 +1,4 @@
-"""The pose-track reader (ADR 0200): a pose estimator's record is untrusted until it parses strictly and its numbers
+"""The pose-track reader (ADR 0203): a pose estimator's record is untrusted until it parses strictly and its numbers
 agree with each other. Every refusal is a typed error at a path."""
 
 import json
@@ -139,7 +139,7 @@ def test_a_record_starting_mid_video_keeps_its_clock():
     assert track.frames[0].index == 100 and math.isclose(track.frames[0].time_s, 100 / 30)
 
 
-# --- 1.1.0: a repeated picture is no new observation (ADR 0199) ------------------------------------------------------
+# --- 1.1.0: a repeated picture is no new observation (ADR 0204) ------------------------------------------------------
 
 
 def test_a_1_1_record_says_which_frames_repeat_the_last_picture():
