@@ -816,19 +816,26 @@ def _anatomy_frames(project: Path) -> int:
     """The rules that read the frames, on what was just built: rule 2 of the anatomy rules and the timing of a text.
     Measuring takes the engine, so a build with no engine says it did not measure, and the first delivery still does
     (ADR 0148, ADR 0150). 1 for a fault."""
-    scenes = sorted(project.glob("*.scene.xml"))
+    scenes = _picture_scenes(project)
     if not scenes:
         return 0
-    slug = scenes[0].name.removesuffix(".scene.xml")
     try:
         engine = find_engine()
     except LayoutError as exc:
         print(f"srstudio build: the frames were not measured: {exc}", file=sys.stderr)
         return 0
+    faults = [fault for scene in scenes for fault in _measured(project, scene, engine)]
+    return 1 if faults else 0
+
+
+def _measured(project: Path, scene: Path, engine: Path) -> list[object]:
+    """What the frames of ``scene`` show against the frame rules, each printed; a rule the engine cannot read says so
+    and leaves the other to answer."""
+    slug = scene.name.removesuffix(".scene.xml")
     faults: list[object] = []
     for rule, read in (
-        ("anatomy", lambda: anatomy_gate.after_build(project, slug, scenes[0], engine)),
-        ("text", lambda: text_rules.after_build(slug, scenes[0], engine)),
+        ("anatomy", lambda: anatomy_gate.after_build(project, slug, scene, engine)),
+        ("text", lambda: text_rules.after_build(slug, scene, engine)),
     ):
         try:
             faults += read()
@@ -836,7 +843,16 @@ def _anatomy_frames(project: Path) -> int:
             print(f"srstudio build: the {rule} frames were not measured: {exc}", file=sys.stderr)
     for fault in faults:
         print(f"{slug}: {fault}", file=sys.stderr)
-    return 1 if faults else 0
+    return faults
+
+
+def _picture_scenes(project: Path) -> list[Path]:
+    """The scenes of ``project`` that draw a picture: the one named after the project when there is one, else every
+    scene but a narrated reel's sound (``<slug>.audio.scene.xml``), which has no frames to measure."""
+    named = project / f"{project.name}.scene.xml"
+    if named.is_file():
+        return [named]
+    return sorted(p for p in project.glob("*.scene.xml") if not p.name.endswith(".audio.scene.xml"))
 
 
 def _anatomy(args: argparse.Namespace) -> int:

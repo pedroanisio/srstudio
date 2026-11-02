@@ -411,6 +411,19 @@ def test_the_build_command_fails_on_a_short_text(tmp_path, monkeypatch, capsys):
     assert TEXT_SHORT in capsys.readouterr().err
 
 
+def test_the_build_command_measures_the_picture_not_the_sound_beside_it(tmp_path, monkeypatch):
+    project = tmp_path / "a-b"
+    project.mkdir()
+    picture = _scene(project)
+    (project / "a-b.audio.scene.xml").write_text("<scene/>", encoding="utf-8")
+    seen: list[tuple[str, Path]] = []
+    monkeypatch.setattr(cli, "find_engine", lambda: Path("engine"))
+    monkeypatch.setattr(cli.anatomy_gate, "after_build", lambda _p, reel, scene, _e: seen.append((reel, scene)) or [])
+    monkeypatch.setattr(cli.text_rules, "after_build", lambda reel, scene, _e: seen.append((reel, scene)) or [])
+    assert cli._anatomy_frames(project) == 0
+    assert seen == [("a-b", picture), ("a-b", picture)]
+
+
 def test_the_build_command_says_when_it_measured_nothing(tmp_path, monkeypatch, capsys):
     _scene(tmp_path)
 
