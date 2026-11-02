@@ -208,7 +208,8 @@ def prepare(reel, shot, who: str) -> Prepared:
     own = [speech for by, speech in said if by == who]
     heard = [speech for by, speech in said if by != who]
     plan = head_motion.plan(rig.style, own, shot.end, heard=heard).during(app.start, app.end)
-    plan = replace(plan, **{name: _bake_spring(getattr(plan, name)) for name in CHANNELS})
+    baked: dict[str, Any] = {name: _bake_spring(getattr(plan, name)) for name in CHANNELS}
+    plan = replace(plan, **baked)
     mouths = tuple(sketch.drawer_extras(who, None, shot.mouths).get("mouths", ()))
     spans = [(p, round(s + app.start, 6), round(e + app.start, 6)) for p, s, e in toon.runs(poses, app.end - app.start)]
     return Prepared(rig, spans, plan, mouths)

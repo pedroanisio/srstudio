@@ -41,8 +41,10 @@ import sofa_room_study as study  # noqa: E402
 
 import it_autoplayed_data as reel  # noqa: E402
 from instagram_posts import PINS, POSTS  # noqa: E402
-from srstudio import look, show, toon, toon_bed, toon_pair, toon_redrawn, toon_world  # noqa: E402
+from srstudio import clay, look, show, toon, toon_bed, toon_pair, toon_redrawn, toon_world  # noqa: E402
+from srstudio.plates import Material  # noqa: E402
 from srstudio.styles import TOON  # noqa: E402
+from srstudio.thumbnail import ShowCover  # noqa: E402
 from srstudio.toon_sketch import Staging, build  # noqa: E402
 
 os.umask(0o077)  # generated outputs are private: folders 700, files 600
@@ -105,7 +107,8 @@ def seats(room: study.Room, performance: pf.Performance) -> dict[str, cr.Seat]:
 
 
 def figures_at(performance: pf.Performance, frame: int, places: dict[str, cr.Seat]):
-    meshes, materials = [], []
+    meshes: list[clay.Mesh] = []
+    materials: list[Material] = []
     for who in ("mae", "bruno"):
         rig = RIGS[who]
         posed = cr.posed(who, rig, cf.figure(rig), performance.at(who, frame), places[who], COATS[who])
@@ -215,9 +218,10 @@ def staging_of(root: Path, push: bool) -> tuple[Staging, str]:
     room = study.Room.load(root / "plates" / "room.json")
     sets = ClaySets(room, push, root)
     reel._room = sets.backdrop
-    reel.toon_world = SimpleNamespace(sofa=sets.sofa)
-    reel.toon_pair = SimpleNamespace(figure=_nothing, aim=toon_pair.aim)  # the cards out: the clay is in the plates
-    reel.toon_bed = SimpleNamespace(swung_arm=_no_arm, ARM_WIDTH=toon_bed.ARM_WIDTH)
+    # the reel's modules stood in for by just what its staging calls of them
+    reel.toon_world = SimpleNamespace(sofa=sets.sofa)  # type: ignore[assignment]
+    reel.toon_pair = SimpleNamespace(figure=_nothing, aim=toon_pair.aim)  # type: ignore[assignment]  # the cards out
+    reel.toon_bed = SimpleNamespace(swung_arm=_no_arm, ARM_WIDTH=toon_bed.ARM_WIDTH)  # type: ignore[assignment]
     name = "clay-push" if push else "clay-room"
     staging = Staging(
         sketch=replace(reel.SKETCH, slug=SLUG, title="Clay Sofa"),
@@ -244,8 +248,13 @@ def scene(root: Path, push: bool) -> Path:
     reel.validate(reel.SKETCH)
     staging, name = staging_of(root, push)
     ep = build(root, staging, {"--voice"})
+    if ep is None:
+        raise cr.RenderError(f"the staging of {name} built no episode")
+    cover = POSTS[reel.SLUG].thumbnail
+    if not isinstance(cover, ShowCover):
+        raise cr.RenderError(f"{reel.SLUG} carries no show cover to stamp its number from")
     out = root / f"{name}.scene.xml"
-    with show.stamping(POSTS[reel.SLUG].thumbnail.number):
+    with show.stamping(cover.number):
         ep.finish(out, root / "qa" / f"{name}-validation.json")
     return out
 

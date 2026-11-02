@@ -99,7 +99,7 @@ def paint(layers: Sequence[Layer], box: Box, ground: str, ink: str, white: str, 
             raise FigureError(f"a layer's colour is ink, white or #rrggbb, got {colour!r}")
         points = (flatten(shape) - (box.x0, box.y0)) * per * over
         pen.polygon([tuple(p) for p in points.tolist()], fill=fill)
-    return np.asarray(picture.resize((width, height), Image.LANCZOS), dtype=np.uint8).copy()
+    return np.asarray(picture.resize((width, height), Image.Resampling.LANCZOS), dtype=np.uint8).copy()
 
 
 def lifts(layers: Sequence[Layer]) -> list[tuple[Sequence[float], float]]:
@@ -457,7 +457,7 @@ def _blobs(layers: Sequence[Layer], colours: set[str], height: float, soften: fl
         field = np.maximum(
             field, ndimage.gaussian_filter(np.sqrt(ndimage.distance_transform_edt(inside) / per), soften)
         )
-    field = field / field.max() * height
+    field = field / float(np.max(field)) * height
 
     def bump(x: np.ndarray, y: np.ndarray) -> np.ndarray:
         return ndimage.map_coordinates(field, [(y - box.y0) * per - 0.5, (x - box.x0) * per - 0.5], order=1, cval=0.0)

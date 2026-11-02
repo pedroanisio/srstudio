@@ -93,17 +93,20 @@ def slab(material: str, size, radius: float, at) -> clay.Mesh:
     w, h, d = size
     cx, cy, cz = at
     r = min(radius, w / 2 * 0.99, h / 2 * 0.99)
-    ring = []
+    ring: list[tuple[float, float, float]] = []
     for qx, qy, start in ((1, 1, 0), (-1, 1, 90), (-1, -1, 180), (1, -1, 270)):
         ox, oy = cx + qx * (w / 2 - r), cy + qy * (h / 2 - r)
-        for a in np.linspace(start, start + 90, 7):
-            ring.append((ox + r * math.cos(math.radians(a)), oy + r * math.sin(math.radians(a)), a))
+        for degrees in np.linspace(start, start + 90, 7):
+            turn = math.radians(degrees)
+            ring.append((ox + r * math.cos(turn), oy + r * math.sin(turn), float(degrees)))
     n = len(ring)
-    verts, norms, tris = [], [], []
+    verts: list[tuple[float, float, float]] = []
+    norms: list[tuple[float, float, float]] = []
+    tris: list[tuple[int, int, int]] = []
     for z in (cz - d / 2, cz + d / 2):  # the sides, smooth round the corners
-        for x, y, a in ring:
+        for x, y, angle in ring:
             verts.append(engine((x, y, z)))
-            norms.append((math.cos(math.radians(a)), -math.sin(math.radians(a)), 0.0))
+            norms.append((math.cos(math.radians(angle)), -math.sin(math.radians(angle)), 0.0))
     for i in range(n):
         j = (i + 1) % n
         tris += [(i, j, n + j), (i, n + j, n + i)]
@@ -359,6 +362,8 @@ def _textures(rig, key: str, face: cf.Face | None = None):
     if key.startswith("limb"):
         index, arms = key[4:].split("-")
         return cf.limb_textures(rig, arms, int(index))
+    if face is None:
+        raise RenderError(f"the head's pictures need the face it shows ({key})")
     return cf.head_textures(rig, fig, face)
 
 

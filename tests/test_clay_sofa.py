@@ -441,3 +441,9 @@ def test_the_study_writes_nothing_others_can_read(kit, tmp_path):
     assert stat.S_IMODE((tmp_path / "sub").stat().st_mode) == 0o700
     assert stat.S_IMODE((tmp_path / "sub" / "f.png").stat().st_mode) == 0o600
     assert json.loads(json.dumps(asdict(resting_performance(kit))))["schema"].endswith("1.1.0")
+
+
+def test_the_heads_pictures_are_refused_without_the_face_they_show(kit, rigs):
+    cr = kit["cr"]
+    with pytest.raises(cr.RenderError, match="face it shows"):
+        cr._textures(rigs["mae"], "head")
