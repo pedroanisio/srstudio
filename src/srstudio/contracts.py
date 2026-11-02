@@ -214,8 +214,16 @@ class PartContract:
             _fail('operations: duplicate names')
 
 
+def _named_tuple(obj: Any) -> bool:
+    return inspect.isclass(obj) and issubclass(obj, tuple) and isinstance(getattr(obj, '_fields', None), tuple)
+
+
 def _hints(obj: Any) -> dict[str, Any]:
-    target = obj.__init__ if inspect.isclass(obj) and not (is_dataclass(obj) or is_typeddict(obj)) else obj
+    target = (
+        obj.__init__
+        if inspect.isclass(obj) and not (is_dataclass(obj) or is_typeddict(obj) or _named_tuple(obj))
+        else obj
+    )
     result = {}
     owners = tuple(reversed(target.__mro__)) if inspect.isclass(target) else (target,)
     for owner in owners:
@@ -286,6 +294,23 @@ class _Shapes:
                 'type': 'object',
                 'properties': {name: self.shape(value, (*seen, annotation)) for name, value in hints.items()},
                 'required': [name for name in hints if name in annotation.__required_keys__],
+                'additionalProperties': False,
+                'x-python-type': _name(annotation),
+            }
+        if _named_tuple(annotation):
+            hints = _hints(annotation)
+            properties, required = {}, []
+            defaults = annotation._field_defaults
+            for name in annotation._fields:
+                properties[name] = self.shape(hints.get(name, Any), (*seen, annotation))
+                if name not in defaults:
+                    required.append(name)
+                elif _scalar(defaults[name]):
+                    properties[name]['default'] = defaults[name]
+            return {
+                'type': 'object',
+                'properties': properties,
+                'required': required,
                 'additionalProperties': False,
                 'x-python-type': _name(annotation),
             }

@@ -24,11 +24,11 @@
   "catalog_observation": {
     "parts": 734,
     "characters": 75,
-    "entries_with_explicit_part_contract": 540,
+    "entries_with_explicit_part_contract": 558,
     "all_default_characters_have_explicit_contracts": true,
     "noncharacter_parts": 659,
-    "noncharacter_parts_with_explicit_contracts": 465,
-    "source": "Fresh-process registry observation on 2026-11-02 after 27 News kit declarations. Drawing baselines were captured from 28724308. See review_verification.news_contracts.",
+    "noncharacter_parts_with_explicit_contracts": 483,
+    "source": "Fresh-process registry observation on 2026-11-02 after 18 Soft scene and insert declarations. Drawing baselines were captured from a5e9609e, after the separately recorded room/door repairs. See review_verification.soft_scene_contracts.",
     "by_kind": {
       "character": {
         "registered": 75,
@@ -36,15 +36,15 @@
       },
       "prop": {
         "registered": 461,
-        "explicit_contracts": 327
+        "explicit_contracts": 340
       },
       "location": {
         "registered": 115,
-        "explicit_contracts": 70
+        "explicit_contracts": 74
       },
       "graphic": {
         "registered": 83,
-        "explicit_contracts": 68
+        "explicit_contracts": 69
       }
     },
     "qualification": "Fresh-process registry.entries() observation after the latest implemented contract batch. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates.",
@@ -58,6 +58,37 @@
     }
   },
   "review_verification": {
+    "soft_scene_contracts": {
+      "baseline_source_commit": "a5e9609e670a643be1c84d3761e124ed7aa3dfa3",
+      "missing_contract_and_guide_regressions_red": 76,
+      "named_tuple_regressions_red": 2,
+      "selected_regressions": {
+        "passed": 1670,
+        "skipped": 0
+      },
+      "new_soft_contract_tests": 79,
+      "new_named_tuple_tests": 2,
+      "new_explicit_contracts": 18,
+      "unchanged_drawing_baselines": 18,
+      "unchanged_builder_definitions": 55,
+      "real_engine_evaluation_cases": 2,
+      "branch_inclusive_coverage_percent": 95.89275527666857,
+      "coverage_scope": [
+        "src/srstudio/_soft_scene_contracts.py",
+        "src/srstudio/contracts.py",
+        "src/srstudio/registry.py",
+        "src/srstudio/soft_bedtime.py",
+        "src/srstudio/soft_closet.py",
+        "src/srstudio/soft_front.py",
+        "src/srstudio/soft_inbox.py",
+        "src/srstudio/soft_sets.py"
+      ],
+      "ruff": "passed",
+      "format": "passed",
+      "mypy_source_files": 326,
+      "retained_artifacts": "../generated/sdk-soft-scene-contracts/v1/",
+      "qualification": "Soft scene and insert discovery, including bounded NamedTuple record inspection. Five original backlog findings remain open; this is not complete catalog coverage, whole-body, emotion-blend or complete DRAWING composition proof."
+    },
     "soft_room_timing": {
       "baseline_source_commit": "a05b0f17",
       "behavior_regressions_red": 52,
@@ -1414,15 +1445,20 @@
           "srstudio.mind_kit",
           "srstudio.map_kit",
           "srstudio.news_kit",
-          "srstudio.news_inked"
+          "srstudio.news_inked",
+          "srstudio.soft_sets",
+          "srstudio.soft_front",
+          "srstudio.soft_bedtime",
+          "srstudio.soft_closet",
+          "srstudio.soft_inbox"
         ],
         "additional_parts": [
           "toon-headset"
         ],
-        "new_contracts": 412,
-        "current_explicit_noncharacter_contracts": 465,
+        "new_contracts": 430,
+        "current_explicit_noncharacter_contracts": 483,
         "current_registered_noncharacters": 659,
-        "remaining_undeclared": 194,
+        "remaining_undeclared": 176,
         "evidence": [
           "tests/test_counter_store_contracts.py",
           "tests/data/counter-store-contract-baseline.json",
@@ -1475,9 +1511,15 @@
           "src/srstudio/_news_contracts.py",
           "tests/test_news_contracts.py",
           "tests/support/news_contracts.py",
-          "tests/data/news-contract-baseline.json"
+          "tests/data/news-contract-baseline.json",
+          "src/srstudio/_soft_scene_contracts.py",
+          "tests/test_soft_room_contracts.py",
+          "tests/support/soft_room_contracts.py",
+          "tests/data/soft-room-contract-baseline.json",
+          "src/srstudio/contracts.py",
+          "tests/test_catalog_contracts.py"
         ],
-        "qualification": "The full catalog expansion remains open. All 109 non-character builders in Stick-prefixed modules and all 158 in Toon-prefixed modules now declare authored contracts, alongside the completed Cutout families. These module counts do not include other families sharing their style names. Drawing baselines remain unchanged; specific correctness repairs are recorded separately as P1 findings. Host, Mind and Map kits now declare all 31 non-character builders. Both News kit versions now declare their 27 non-character builders. The 194 remaining non-character entries still require source review and executable semantic evidence."
+        "qualification": "The full catalog expansion remains open. All 109 non-character builders in Stick-prefixed modules and all 158 in Toon-prefixed modules now declare authored contracts, alongside the completed Cutout families. These module counts do not include other families sharing their style names. Drawing baselines remain unchanged; specific correctness repairs are recorded separately as P1 findings. Host, Mind and Map kits now declare all 31 non-character builders. Both News kit versions now declare their 27 non-character builders. The five Soft scene, bedtime, closet and inbox modules add 18 declared builders. The 176 remaining non-character entries still require source review and executable semantic evidence."
       },
       "evidence": [
         "src/srstudio/registry.py:contract_coverage",

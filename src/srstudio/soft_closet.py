@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from typing import NamedTuple
 
+from . import _soft_scene_contracts as dc
 from . import blob, checks
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -86,6 +87,7 @@ def _swung(cv: Canvas, g, door: Door) -> None:
 @register(
     "prop",
     "soft-door",
+    contract=dc.contract('soft-door'),
     style="soft",
     summary="Plain paneled doors on the office's back wall, opening on a dark closet that can hide someone",
 )
@@ -135,7 +137,13 @@ def doors(
     return g
 
 
-@register("prop", "soft-mop", style="soft", summary="A string mop standing on its head, that can tip over, slowly")
+@register(
+    "prop",
+    "soft-mop",
+    contract=dc.contract('soft-mop'),
+    style="soft",
+    summary="A string mop standing on its head, that can tip over, slowly",
+)
 def mop(
     cv: Canvas,
     parent,
@@ -174,6 +182,7 @@ def mop(
 @register(
     "prop",
     "soft-closet",
+    contract=dc.contract('soft-closet'),
     style="soft",
     summary="The inside of a shut closet: the frame nearly black, with one line of light down the crack of the door",
 )

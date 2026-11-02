@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import NamedTuple
 
+from . import _soft_scene_contracts as dc
 from . import checks
 from .canvas import Canvas
 from .registry import register
@@ -43,7 +44,12 @@ def _place(what: str, x: float, y: float, scale: float) -> None:
         raise SoftPropError(f"{what}'s scale must be a positive number, got {scale!r}")
 
 
-@register("prop", "soft-mail-screen", summary="A phone's glass: one envelope and a red badge whose count ticks up")
+@register(
+    "prop",
+    "soft-mail-screen",
+    contract=dc.contract('soft-mail-screen'),
+    summary="A phone's glass: one envelope and a red badge whose count ticks up",
+)
 def mail_screen(
     cv: Canvas,
     parent,
@@ -80,7 +86,12 @@ def mail_screen(
     return g
 
 
-@register("prop", "soft-mail-list", summary="A phone's glass: a plain list of subjects that stops on the marked one")
+@register(
+    "prop",
+    "soft-mail-list",
+    contract=dc.contract('soft-mail-list'),
+    summary="A phone's glass: a plain list of subjects that stops on the marked one",
+)
 def mail_list(
     cv: Canvas,
     parent,
@@ -121,7 +132,12 @@ def mail_list(
     return g
 
 
-@register("prop", "soft-call-screen", summary="A phone's glass ringing: a caller over a red and a green round button")
+@register(
+    "prop",
+    "soft-call-screen",
+    contract=dc.contract('soft-call-screen'),
+    summary="A phone's glass ringing: a caller over a red and a green round button",
+)
 def call_screen(
     cv: Canvas,
     parent,

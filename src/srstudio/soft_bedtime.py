@@ -9,6 +9,7 @@ from __future__ import annotations
 import re
 from typing import NamedTuple
 
+from . import _soft_scene_contracts as dc
 from . import checks
 from .blob import BO_FILL
 from .canvas import Canvas
@@ -65,7 +66,12 @@ def clock_hands(time: str) -> tuple[float, float]:
     return hours * 30.0 + minutes * 0.5, minutes * 6.0
 
 
-@register("prop", "soft-wall-clock", summary="A round wall clock with no numbers, reading the time it is given")
+@register(
+    "prop",
+    "soft-wall-clock",
+    contract=dc.contract('soft-wall-clock'),
+    summary="A round wall clock with no numbers, reading the time it is given",
+)
 def wall_clock(
     cv: Canvas, parent, x=540, y=600, *, time: str = "8:30", scale: float = 1.0, id: str = "soft-wall-clock"
 ):
@@ -83,7 +89,12 @@ def wall_clock(
     return g
 
 
-@register("prop", "soft-picture-book", summary="A picture book held open, its cover to us, that can slide away")
+@register(
+    "prop",
+    "soft-picture-book",
+    contract=dc.contract('soft-picture-book'),
+    summary="A picture book held open, its cover to us, that can slide away",
+)
 def picture_book(
     cv: Canvas,
     parent,
@@ -119,7 +130,12 @@ def picture_book(
     return g
 
 
-@register("prop", "soft-bedside-lamp", summary="A small bedside lamp, lit until it clicks off")
+@register(
+    "prop",
+    "soft-bedside-lamp",
+    contract=dc.contract('soft-bedside-lamp'),
+    summary="A small bedside lamp, lit until it clicks off",
+)
 def bedside_lamp(
     cv: Canvas,
     parent,
@@ -150,7 +166,12 @@ def bedside_lamp(
     return g
 
 
-@register("prop", "soft-open-briefcase", summary="A briefcase open on a quilt, a contract inside, that can shut")
+@register(
+    "prop",
+    "soft-open-briefcase",
+    contract=dc.contract('soft-open-briefcase'),
+    summary="A briefcase open on a quilt, a contract inside, that can shut",
+)
 def open_briefcase(
     cv: Canvas, parent, x=600, y=1640, *, shut: float = LATER, scale: float = 1.0, id: str = "soft-open-briefcase"
 ):
@@ -187,7 +208,12 @@ def _arm(cv: Canvas, g, x1, y1, x2, y2, fill: str, width: float, *, grip_x: floa
     cv.ellipse(g, grip_x - radius, y2 - radius, 2 * radius, 2 * radius, fill, ink, 6)
 
 
-@register("prop", "soft-handshake", summary="A close shot of a deal: a small hand and a big one, shaking on it")
+@register(
+    "prop",
+    "soft-handshake",
+    contract=dc.contract('soft-handshake'),
+    summary="A close shot of a deal: a small hand and a big one, shaking on it",
+)
 def handshake(cv: Canvas, parent, start: float = 1.0, end: float = 2.0, *, pumps: int = 2, id: str = "soft-handshake"):
     """The whole frame from ``start`` to ``end``: a quilt, Bo's arm from the right, Pip's from the left, shaking."""
     _check_time(start, "a handshake's start")
@@ -215,7 +241,12 @@ def handshake(cv: Canvas, parent, start: float = 1.0, end: float = 2.0, *, pumps
     return g
 
 
-@register("prop", "soft-quilt-pull", summary="The top of a quilt, drawn up over whoever is asleep under it")
+@register(
+    "prop",
+    "soft-quilt-pull",
+    contract=dc.contract('soft-quilt-pull'),
+    summary="The top of a quilt, drawn up over whoever is asleep under it",
+)
 def quilt_pull(
     cv: Canvas,
     parent,

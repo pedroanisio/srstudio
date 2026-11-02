@@ -868,3 +868,71 @@ these graphics in sequence shots. The studio's `end` parameter is accepted
 for compatibility but changes neither its sweep times nor its visibility;
 use the caller-owned parent to limit the shot. Corridor targets are panel
 pixels, and the dots have no skeletal, balance or collision constraints.
+
+## Soft rooms, bedtime props and phone inserts
+
+The 18 non-character builders in `soft_sets`, `soft_front`, `soft_bedtime`,
+`soft_closet` and `soft_inbox` declare their coordinates, callbacks, clocks
+and return ownership. Each returns a drawing group. Placed props expose an
+origin in that group's unscaled drawing pixels; `x` and `y` place the origin
+in the supplied parent's pixels. Room builders return the complete set,
+including foreground elements that remain outside the room's framing.
+
+Discovery represents typed `NamedTuple` records such as `Shot`, `Light`,
+`Dim`, `BookSlide`, `Door` and `Count` as named properties with their actual
+scalar defaults. Untyped fields remain unknown, and recursive records stay
+bounded. These schemas describe inputs; construct the public Python records
+when calling the SDK. Inspection does not construct them or draw a scene.
+
+<!-- soft-scene-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, WARM, registry, soft_bedtime, soft_sets
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1920, fps='30', duration=6)
+cv = Canvas(scene, WARM, font_asset=None)
+
+book_contract = registry.get('prop', 'soft-picture-book').describe()['contract']
+slide = book_contract['arguments']['properties']['slide']['anyOf'][0]['properties']
+assert slide['time']['x-timebase'] == 'canvas'
+assert slide['seconds']['x-role'] == 'duration'
+assert slide['dx']['x-space'] == 'parent'
+
+# held receives the framed room after the duvet; its return value is ignored.
+def held(parent):
+    return soft_bedtime.picture_book(
+        cv, parent, x=540, y=1400, scale=0.8,
+        slide=soft_bedtime.BookSlide(time=1, seconds=0.5, dx=120, dy=50, turn=30),
+    )
+
+room = soft_sets.bedroom(
+    cv, cv.comp,
+    shots=(soft_sets.Shot(0), soft_sets.Shot(2, 1.4, 300, 900)),
+    lights=(soft_sets.Light(0, 'day'), soft_sets.Light(3, 'lamp', 100, 1200)),
+    held=held,
+)
+assert room.id == 'soft-bedroom'
+```
+<!-- soft-scene-discovery:end -->
+
+The book's slide adds parent-pixel displacements regardless of its own
+scale. A mail list's scroll moves its child page in unscaled drawing pixels,
+so the insert's scale multiplies the visible travel. The quilt's `to` is an
+absolute parent y coordinate. The wall clock's `time` and inbox counts are
+display content, not an advancing clock or fetched data. Inbox text requires
+a bound font; the unlettered bedtime props do not.
+
+Animation keys and opacity gates follow `Canvas.local_time`. Room `Shot`
+records hold framings; light and dimming pools belong to the set root outside
+the framed room. A bedside lamp only changes its own drawing—coordinate a
+room's `Light` records separately to darken the surroundings. These pools
+and the closet slit are authored overlays, not shared world lights.
+
+Door records use the Soft room projection: `a0` and `a1` run along its back
+wall, and `up` is height above its floor. The `between` callback receives a
+group in projected frame coordinates, after the dark openings and before
+the door leaves. Nonempty shut intervals form a union; open drawings appear
+in the gaps up to `end`. Empty shut intervals keep the default door closed.
+The handshake insert and tipping mop draw their own motion; neither creates
+biomechanical constraints or a world-space contact anchor.

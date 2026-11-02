@@ -278,3 +278,69 @@ def test_invalid_operation_metadata_is_rejected_with_a_typed_error():
 
     with pytest.raises(ContractError):
         Operation(1, lambda: None)
+
+
+def test_named_tuple_records_expose_named_fields_defaults_and_semantics_without_construction(monkeypatch):
+    from typing import NamedTuple
+
+    from srstudio.contracts import ParameterContract, PartContract, describe_callable
+
+    class Frame(NamedTuple):
+        time: Annotated[float, ParameterContract(unit='seconds', timebase='canvas')]
+        scale: float = 1.0
+        label: str = 'wide'
+
+    monkeypatch.setattr(Frame, '__new__', lambda *a, **kw: pytest.fail('inspection constructed a record'))
+
+    def builder(shots: Sequence[Frame]) -> Frame:
+        pytest.fail('inspection called the builder')
+
+    contract = describe_callable(
+        builder,
+        PartContract(
+            parameters=(
+                (
+                    'shots',
+                    ParameterContract(items=ParameterContract(fields=(('scale', ParameterContract(unit='ratio')),))),
+                ),
+            )
+        ),
+    )
+    record = contract['arguments']['properties']['shots']['items']
+    assert record['type'] == 'object' and record['required'] == ['time']
+    assert record['additionalProperties'] is False
+    assert record['properties']['time']['x-timebase'] == 'canvas'
+    assert record['properties']['scale'] == {'type': 'number', 'default': 1.0, 'x-unit': 'ratio'}
+    assert record['properties']['label']['default'] == 'wide'
+    assert contract['returns']['properties']['time']['x-unit'] == 'seconds'
+    assert contract['shape_complete'] is True
+
+
+def test_untyped_named_tuple_fields_stay_unknown_and_recursive_records_are_bounded(monkeypatch):
+    from collections import namedtuple
+    from typing import NamedTuple
+
+    from srstudio.contracts import describe_callable
+
+    Untyped = namedtuple('Untyped', 'time value', defaults=[None])
+
+    def raw(record: Untyped):
+        pass
+
+    shape = describe_callable(raw)['arguments']['properties']['record']
+    assert shape['required'] == ['time'] and shape['properties']['time']['x-status'] == 'unknown'
+    assert shape['properties']['value']['default'] is None
+
+    class RecursiveFrame(NamedTuple):
+        child: 'RecursiveFrame | None' = None
+
+    monkeypatch.setitem(globals(), 'RecursiveFrame', RecursiveFrame)
+
+    def recursive(record: RecursiveFrame):
+        pass
+
+    contract = describe_callable(recursive)
+    assert contract['shape_complete'] is False
+    assert len(json.dumps(contract)) < 10000
+    child = contract['arguments']['properties']['record']['properties']['child']
+    assert child['anyOf'][0]['x-reason'] == 'recursive-or-budget-limit'
