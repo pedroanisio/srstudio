@@ -11,15 +11,17 @@ import numpy as np
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import PEACH, Canvas, toon_head
+from srstudio import PEACH, Canvas, brush, toon_head, toon_torso
 from srstudio import dance as dn
 from srstudio import skeleton as sk
 from srstudio import toon_dance as td
 from srstudio.errors import SrstudioError
 from srstudio.head_motion import HeadPlan, limit
 from srstudio.music import Groove
-from srstudio.toon import Pose, ToonDataError
+from srstudio.toon import ARMS, Pose, ToonDataError
+from srstudio.toon_cast import CENTRE, SHOULDERS, _arms
 from srstudio.toon_redrawn import DOG_RIG
+from srstudio.toon_torso import depth_in
 from support.authoring_docs import fences
 
 GROOVE = Groove(129)
@@ -34,6 +36,21 @@ RAISED = FIT.hold(
         "left_lower_arm.stretch": -0.3,
     }
 )
+
+PUMP = FIT.hold(  # the pumping arm lifted to the side and unbent, so the pump rises from shoulder height
+    {
+        "right_upper_arm.down_up": -0.6,
+        "right_upper_arm.front_back": 0.0,
+        "right_upper_arm.twist_in_out": 0.0,
+        "right_lower_arm.stretch": 0.0,
+    }
+)
+
+
+def pump(bars: int = 2) -> td.ToonDance:
+    """The arm pump on the dog's right arm, held up off the desk as a desk rest needs."""
+    routine = dn.Routine(bars, (dn.Entry(0, bars, dn.moves()["arm-pump"], hold=PUMP),))
+    return td.perform(FIT, routine, GROOVE, 0.0, 4 * bars * BEAT)
 
 
 def routine() -> dn.Routine:
@@ -69,10 +86,11 @@ def test_the_dog_is_fitted_to_its_drawing():
     world = sk.world(FIT.profile, FIT.base)
     assert FIT.screen(world["hips"].origin) == pytest.approx(FIT.seat)
     assert FIT.screen(world["head"].origin) == pytest.approx(DOG_RIG.neck, abs=0.5)  # the rig's neck pivot
-    assert FIT.screen(world["right_upper_arm"].origin) == pytest.approx((62, 712), abs=1)  # the drawn shoulders
-    assert FIT.screen(world["left_upper_arm"].origin) == pytest.approx((308, 712), abs=1)
-    assert FIT.screen(world["right_hand"].origin) == pytest.approx((124, 792), abs=1)  # resting at the desk paws
-    assert FIT.screen(world["left_hand"].origin) == pytest.approx((246, 792), abs=1)
+    for side in ("left", "right"):  # elbows and wrists on the approved desk arm: the character's left is screen-right
+        desk = FIT.desk(side)
+        assert FIT.screen(world[f"{side}_lower_arm"].origin) == pytest.approx(desk.elbow, abs=td.FIT_TOLERANCE)
+        assert FIT.screen(world[f"{side}_hand"].origin) == pytest.approx(desk.wrist, abs=td.FIT_TOLERANCE)
+    assert FIT.desk("left").wrist == pytest.approx((246, 792)) and FIT.desk("right").wrist == pytest.approx((124, 792))
     assert FIT.radius == pytest.approx(128) and not FIT.legs and FIT.part == "toon-dog@2"
 
 
@@ -81,8 +99,6 @@ def test_a_fit_that_misses_the_drawing_is_refused():
         replace(FIT, scale=380.0)
     with pytest.raises(td.ToonFitError, match="scale"):
         replace(FIT, scale=0)
-    with pytest.raises(td.ToonFitError, match="arm width"):
-        replace(FIT, arm_width=-1.0)
     with pytest.raises(td.ToonFitError, match="faces"):
         replace(FIT, faces=(("grin", td.Face("wide", "grin")), ("grin", td.Face("half", "grin"))))
     with pytest.raises(td.ToonFitError, match="rest face"):
@@ -90,6 +106,14 @@ def test_a_fit_that_misses_the_drawing_is_refused():
     armless = sk.SkeletonProfile("armless", FIT.profile.proportions, hands=("none", "mitten"), omit=("left_upper_arm",))
     with pytest.raises(td.ToonFitError, match="both arms"):
         replace(FIT, profile=armless)
+    rest = dict(FIT.profile.rest) | {"left_lower_arm.stretch": -0.5}
+    with pytest.raises(td.ToonFitError, match="desk arm"):
+        replace(FIT, profile=replace(FIT.profile, rest=tuple(rest.items())))
+    wide = replace(FIT.profile.proportions, lengths=(*FIT.profile.proportions.lengths[:2], ("clavicle", 0.4)))
+    with pytest.raises(td.ToonFitError, match="inside"):
+        replace(FIT, profile=replace(FIT.profile, proportions=wide))
+    with pytest.raises(td.ToonFitError, match="torso"):
+        replace(FIT, rig=replace(DOG_RIG, look=replace(DOG_RIG.look, drawing=None)))  # no torso to draw arms from
 
 
 @pytest.mark.parametrize(
@@ -179,43 +203,215 @@ def test_an_unknown_expression_is_refused_before_dancing():
         FIT.face("sulk")
 
 
-# --- the arms ----------------------------------------------------------------------------------------------------
+# --- the arms: the approved v2 arm, posed on the skeleton --------------------------------------------------------
+#
+# The approved still is toon-dog@2 with its desk arms, drawn by the critter's own torso (toon_cast._arms through
+# Critter.limb). Every threshold below is measured on that art at test time, never typed in.
+
+SIDES = ("left", "right")  # anatomical: the character's left is screen-right
+
+
+def polygon(shape, steps: int = 8) -> list[tuple[float, float]]:
+    """A brush shape (a start point, then cubic segments) as a polygon."""
+    points = [(shape[0], shape[1])]
+    for i in range(2, len(shape), 6):
+        (x0, y0), (x1, y1, x2, y2, x3, y3) = points[-1], shape[i : i + 6]
+        for k in range(1, steps + 1):
+            t = k / steps
+            a, b, c, d = (1 - t) ** 3, 3 * (1 - t) ** 2 * t, 3 * (1 - t) * t**2, t**3
+            points.append((a * x0 + b * x1 + c * x2 + d * x3, a * y0 + b * y1 + c * y2 + d * y3))
+    return points
+
+
+def mask(layers, shift=(0.0, 0.0), zoom: int = 4) -> np.ndarray:
+    """Where ``layers`` draw anything, at ``zoom`` pixels to the reference pixel, over the arms' region."""
+    from PIL import Image, ImageDraw
+
+    picture = Image.new("1", (380 * zoom, 260 * zoom), 0)
+    pen = ImageDraw.Draw(picture)
+    for shape, _ in layers:
+        pen.polygon([((x + shift[0]) * zoom, (y + shift[1] - 620) * zoom) for x, y in polygon(shape)], fill=1)
+    return np.asarray(picture, dtype=bool)
+
+
+def iou(a: np.ndarray, b: np.ndarray) -> float:
+    return float((a & b).sum()) / float((a | b).sum())
+
+
+def approved_arms() -> list:
+    """The approved still's desk arms, as the v2 drawing draws them."""
+    under, over = _arms(DOG_RIG.look, "desk", 0)
+    assert over == []
+    return under
+
+
+def width(shape, a, b) -> float:
+    """The width of a stroke ``shape`` across the middle of the segment ``a``-``b``, along its normal."""
+    mx, my = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
+    length = math.dist(a, b)
+    nx, ny = -(b[1] - a[1]) / length, (b[0] - a[0]) / length
+    hits = []
+    edge = polygon(shape)
+    for (x0, y0), (x1, y1) in zip(edge, [*edge[1:], edge[0]], strict=True):
+        dx, dy = x1 - x0, y1 - y0
+        den = nx * dy - ny * dx
+        if abs(den) < 1e-12:
+            continue
+        t = ((x0 - mx) * dy - (y0 - my) * dx) / den  # along the normal
+        u = ((x0 - mx) * ny - (y0 - my) * nx) / den  # along the edge
+        if 0 <= u <= 1:
+            hits.append(t)
+    return min(t for t in hits if t > 0) - max(t for t in hits if t < 0)
+
+
+def test_the_shoulders_sit_inside_the_drawn_body():
+    torso = DOG_RIG.look.drawing.torso
+    # Every approved arm leaves the body at one root per side, whatever its pose: that root's depth is the bar.
+    roots = [torso.arm_path([shoulder, (CENTRE, 800.0)])[0] for shoulder in SHOULDERS]
+    deepest = min(depth_in(torso.contour, root)[0] for root in roots)
+    assert deepest > 0
+    world = sk.world(FIT.profile, FIT.base)
+    for side in SIDES:
+        ball = FIT.screen(world[f"{side}_upper_arm"].origin)
+        assert depth_in(torso.contour, ball)[0] >= deepest, (side, ball)
+        assert depth_in(torso.contour, FIT.arm(FIT.base, side).root)[0] >= deepest - 1e-9
+
+
+def test_at_rest_the_arms_are_the_approved_still():
+    approved = mask(approved_arms())
+    # What one reference pixel of drift (the fit's own tolerance) costs the approved art against itself: the bar.
+    bar = min(iou(approved, mask(approved_arms(), shift)) for shift in ((1, 0), (0, 1), (0.7, 0.7)))
+    rest = [layer for side in SIDES for layer in FIT.arm_layers(FIT.arm(FIT.base, side))]
+    assert 0.8 < bar < 1.0
+    assert iou(approved, mask(rest)) >= bar
+    for side in SIDES:
+        arm, desk = FIT.arm(FIT.base, side), FIT.desk(side)
+        for got, want in zip(
+            (arm.root, arm.elbow, arm.wrist, arm.paw), (desk.root, desk.elbow, desk.wrist, desk.paw), strict=True
+        ):
+            assert got == pytest.approx(want, abs=td.FIT_TOLERANCE)
+
+
+def approved_bones(monkeypatch) -> tuple[float, list[tuple[float, float]]]:
+    """Every bone the approved drawing draws in a two-bone arm, in every arm pose it has: the shortest one's drawn
+    length, and the coat's width across the middle of the upper arm and of the forearm, (least, most) in head radii."""
+    seen: list[tuple[list, list]] = []
+    drawn = toon_torso.Torso.drawn
+
+    def spy(self, path, *args, **kwargs):
+        out = drawn(self, path, *args, **kwargs)
+        seen.append((list(path), out[0]))
+        return out
+
+    monkeypatch.setattr(toon_torso.Torso, "drawn", spy)
+    for pose in ARMS:
+        for frame in (0, 1):
+            _arms(DOG_RIG.look, pose, frame)
+    monkeypatch.undo()
+    bones: list[list[float]] = [[], []]
+    shortest = math.inf
+    for path, layers in seen:
+        if len(path) != 3:  # an arm bent twice (typing, crossed) has no single upper arm and forearm
+            continue
+        for bone, (a, b) in enumerate(zip(path, path[1:], strict=False)):
+            shortest = min(shortest, math.dist(a, b))
+            bones[bone].append(width(layers[1][0], a, b) / FIT.radius)
+    return shortest, [(min(bone), max(bone)) for bone in bones]
+
+
+def test_the_arm_is_as_thick_as_the_approved_arm(raised, monkeypatch):
+    # The bar is the approved drawing itself: across all its two-bone arm poses, its upper arm measures between the
+    # least and the most of these widths, and its forearm the same. A bone drawn shorter than any the approved drawing
+    # draws (foreshortened, pointing at the camera) has no approved width to hold it to: its middle lies in the bend.
+    shortest, (upper, forearm) = approved_bones(monkeypatch)
+    assert upper[1] < forearm[0]  # the approved arm widens from the body to the paw
+    measured = 0
+    for performance in (raised, pump()):
+        for side in SIDES:
+            for arm in performance.arms(side):
+                coat = FIT.arm_layers(arm)[1][0]
+                for (low, high), (a, b) in zip(
+                    (upper, forearm), ((arm.root, arm.elbow), (arm.elbow, arm.wrist)), strict=True
+                ):
+                    if math.dist(a, b) < shortest:
+                        continue
+                    measured += 1
+                    assert low <= width(coat, a, b) / FIT.radius <= high, (side, arm)
+    assert measured > 1000
+    # The old arm, one even tube 29 px wide, is outside both: no taper from the body to the paw.
+    assert not upper[0] <= 29 / FIT.radius <= upper[1]
+
+
+def test_no_joint_caps_are_drawn(raised):
+    shapes = [colour for _, colour in FIT.arm_layers(FIT.desk("left"))]
+    assert shapes == [colour for _, colour in approved_arms()[: len(shapes)]]  # the approved arm's own layers
+    for side in SIDES:
+        for arm in raised.arms(side):
+            assert [colour for _, colour in FIT.arm_layers(arm)] == shapes  # no ball at a joint, no fingers
+    scene, cv = canvas(16 * BEAT)
+    td.draw(cv, cv.comp, raised)
+    root = ET.fromstring(scene.to_bytes())
+    arms = [e for e in root.iter() if (e.get("id") or "").startswith("arm-")]
+    assert arms and all(sum(1 for c in e if not c.tag.endswith("animate")) == len(shapes) for e in arms)
+
+
+def test_the_drawn_paw_keeps_the_skeletons_speed_and_acceleration():
+    pumping = pump()
+    beat = [i for i, p in enumerate(pumping.pictures) if 5 * BEAT <= p.time < 6 * BEAT]
+    side = "right"
+    _, carried = FIT.carried(side)
+    on_skeleton, drawn = [], []
+    arms = pumping.arms(side)
+    for i in beat:
+        hand = sk.world(FIT.profile, pumping.pictures[i].pose)[f"{side}_hand"]
+        on_skeleton.append(FIT.screen(hand.origin + hand.rotation.rotate(carried)))
+        coat = FIT.arm_layers(arms[i])[4][0]  # the paw's fill, a symmetric oval round the paw
+        x0, y0, x1, y1 = brush.bounds(coat)
+        drawn.append(((x0 + x1) / 2, (y0 + y1) / 2))
+    a, b = np.asarray(on_skeleton), np.asarray(drawn)
+    speed = np.gradient(a, 1 / 25, axis=0)
+    assert np.linalg.norm(speed, axis=1).max() > 100  # the pump moves: reference pixels a second
+    # A drawn coordinate is rounded to 0.01 px: that rounding, differenced, is all the drawing may add.
+    q = 0.005
+    assert np.abs(np.gradient(b, 1 / 25, axis=0) - speed).max() <= 2 * q * 25
+    accel = np.gradient(speed, 1 / 25, axis=0)
+    assert np.abs(np.gradient(np.gradient(b, 1 / 25, axis=0), 1 / 25, axis=0) - accel).max() <= 4 * q * 25**2
+
+
+def test_every_picture_draws_its_own_arm_on_its_own_frame(raised):
+    scene, cv = canvas(16 * BEAT)
+    td.draw(cv, cv.comp, raised)
+    root = ET.fromstring(scene.to_bytes())
+    arms = raised.arms("left")
+    starts = sorted(float(e.get("start")) for e in root.iter() if (e.get("id") or "").startswith("arm-left-"))
+    changes = [round(p.time, 6) for i, (p, a) in enumerate(zip(raised.pictures, arms, strict=True))
+               if i == 0 or a != arms[i - 1]]  # fmt: skip
+    assert starts == pytest.approx(changes, abs=1e-6)  # a new drawing exactly where the skeleton moved, never held
 
 
 def test_a_raised_arm_rides_the_body_with_no_lag(raised):
-    tracks = raised.tracks()
-    left = next(t for t in tracks if t.motion.arm.side == "left")
+    arms = raised.arms("left")
     span = [i for i, p in enumerate(raised.pictures) if p.time >= 12 * BEAT]  # bars 3..4: the arm is up
-    wrists = [left.motion.sample(i / 25).arm.wrist for i in span]
-    shoulders = [left.motion.sample(i / 25).arm.shoulder for i in span]
-    assert all(w.y < s.y for w, s in zip(wrists, shoulders, strict=True))  # above the shoulder: raised
-    drawn = []
-    for i, w in zip(span, wrists, strict=True):
-        p = raised.pictures[i]
-        x, y = FIT.screen(w)
-        drawn.append((p.time, y + p.shift[1]))
-    hand = [-(y - drawn[0][1]) / FIT.radius for _, y in drawn]
+    assert all(arms[i].raised and arms[i].wrist[1] < arms[i].root[1] for i in span)
+    drawn = [arms[i].paw[1] + raised.pictures[i].shift[1] for i in span]
+    hand = [-(y - drawn[0]) / FIT.radius for y in drawn]
     head = [raised.series("bob")[i] for i in span]
     start = raised.pictures[span[0]].time
     on_hand = dn.measure_dance(hand, 25, GROOVE, start=start, hit="min")
     on_head = dn.measure_dance(head, 25, GROOVE, start=start, hit="min")
-    assert abs(on_hand.hit_beats - on_head.hit_beats) * BEAT <= 0.02  # the hand drops with the head
+    assert abs(on_hand.hit_beats - on_head.hit_beats) * BEAT <= 0.02  # the paw drops with the head
     assert on_hand.cycles_per_beat == pytest.approx(1, abs=0.02)
+    assert not any(a.raised for a in raised.arms("right"))
 
 
-def test_the_tracks_play_the_skeleton_exactly_from_the_first_picture(raised):
-    for track in raised.tracks():
-        side = track.motion.arm.side
+def test_the_arms_play_the_skeleton_exactly_from_the_first_picture(raised):
+    for side in SIDES:
+        arms = raised.arms(side)
+        assert len(arms) == len(raised.pictures)
         for i in (0, 1, len(raised.pictures) - 1):
-            sample = track.motion.sample(i / 25)
-            arm = sk.to_arm_pose(FIT.profile, raised.pictures[i].pose, side)
-            assert sample.arm.wrist == arm.wrist and sample.time == i / 25
-        assert track.options.offset == 0.0 and track.options.fps == 25
-        assert track.motion.sample(1e6).arm == track.motion.sample((len(raised.pictures) - 1) / 25).arm
-    left = next(t for t in raised.tracks() if t.motion.arm.side == "left")
-    assert left.occlusion and all(o.layer == "front" for o in left.occlusion)  # the raised hand draws over the head
-    right = next(t for t in raised.tracks() if t.motion.arm.side == "right")
-    assert right.occlusion == ()
+            world = sk.world(FIT.profile, raised.pictures[i].pose)
+            assert arms[i].elbow == FIT.screen(world[f"{side}_lower_arm"].origin)
+            assert arms[i].wrist == FIT.screen(world[f"{side}_hand"].origin)
 
 
 def test_the_body_undone_keeps_the_hips_at_the_seat(raised):
@@ -281,7 +477,7 @@ def test_a_dance_needs_a_fit():
 
 
 def test_a_dance_drops_what_the_dog_has_no_joint_for():
-    pumping = td.perform(FIT, dn.moves()["arm-pump"], GROOVE, 0.0, 4 * BEAT)
+    pumping = pump(1)
     assert "right_index_proximal.stretched" in pumping.dropped  # a mitten has no index finger
 
 
@@ -297,8 +493,9 @@ def test_the_dance_draws_as_one_figure_with_its_arms_replaced(raised):
     animated = {a.get("property") for a in node if a.tag.endswith("animate")}
     assert {"x", "y"} <= animated and "rotation" not in animated  # seat-groove shifts; nothing leans
     ids = [e.get("id") or "" for e in root.iter()]
-    assert any(i.endswith("-left-front") for i in ids)  # the raised left hand drawn in front
-    assert sum(1 for i in ids if "-frame-" in i) >= len(raised.pictures)  # one drawing per picture per arm layer
+    assert any(i.startswith("arm-left-") and i.endswith("-front") for i in ids)  # the raised left paw over the head
+    assert not any(i.startswith("arm-right-") and i.endswith("-front") for i in ids)
+    assert sum(1 for i in ids if i.startswith("arm-")) >= len(raised.pictures)  # the arms move on every picture
 
 
 def test_a_still_body_animates_nothing():
@@ -310,22 +507,28 @@ def test_a_still_body_animates_nothing():
     assert not [a for a in node if a.tag.endswith("animate")]
 
 
-def test_a_figure_with_tracks_holds_the_desk_arms(raised):
+def test_a_figure_with_its_own_arms_holds_the_desk_arms():
     scene, cv = canvas(16 * BEAT)
     with pytest.raises(ToonDataError, match="desk poses only"):
         toon_head.figure(
-            cv, cv.comp, DOG_RIG, (Pose(0.0, "wide", "flat", "crossed"),), 16 * BEAT, HeadPlan(), limbs=raised.tracks()
+            cv,
+            cv.comp,
+            DOG_RIG,
+            (Pose(0.0, "wide", "flat", "crossed"),),
+            16 * BEAT,
+            HeadPlan(),
+            arms=lambda body, front: None,
         )
 
 
-def test_a_figure_with_tracks_records_one_hand_per_arm(raised):
+def test_a_figure_with_its_own_arms_records_one_hand_per_arm(raised):
     from srstudio import anatomy_ledger
 
     scene, cv = canvas(16 * BEAT)
     td.draw(cv, cv.comp, raised)
     runs = len(raised.poses())
     hands = [limb for limb in cv.limbs.values() if limb.owner == DOG_RIG.look.name]
-    assert len(hands) == 2 * runs  # the two tracks' hands in every pose run, no drawn arm's hand beside them
+    assert len(hands) == 2 * runs  # the dance's two paws in every pose run, no desk arm's paw beside them
     assert anatomy_ledger.notes(cv) == []
 
 

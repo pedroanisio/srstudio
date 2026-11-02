@@ -12,9 +12,11 @@ the head rig it is drawn with, and a table naming the faces a routine's ``expres
   ``nod`` and ``face_x`` (where the face's front point went), each inside the rig's envelope or refused with
   :class:`HeadReachError`; a move with no neck or head channel leaves them still, so the head moves within a beat
   only through the body;
-* the arms and hands: the pose with the body transform undone goes through the skeleton's limbs bridges, exactly,
-  one solved pose per picture, into a :class:`srstudio.limbs.integration.LimbTrack` per arm that replaces the drawn
-  arm on its side. The tracks are drawn inside the body's groups, so a raised arm rides the body with no lag.
+* the arms: the approved drawing's own arm (its torso's tapered coat stroke and single ink line, its round paw) is
+  posed on the pose with the body transform undone, one drawing per picture with nothing smoothed or held: its root
+  stays inside the body where the drawn arm leaves it, carried by the shoulder, and its elbow, wrist and paw are where
+  the skeleton puts them. The arms are drawn inside the body's groups, so a raised arm rides the body with no lag; at
+  rest they are the approved still's desk arms (:class:`ToonArm`).
 
 Faces are held: an entry's expression is looked up in the fit's table (an unknown name is refused with
 :class:`ExpressionError`) and the face switches where the routine's entries switch. :func:`draw` puts the
@@ -33,7 +35,7 @@ from typing import Any
 
 import numpy as np
 
-from . import checks
+from . import brush, checks
 from . import dance as dn
 from . import skeleton as sk
 from .canvas import Canvas
@@ -41,15 +43,12 @@ from .dance_pose import dance_pose
 from .errors import SrstudioError
 from .head_motion import Channel, HeadPlan, limit
 from .limbs import Frame, Quaternion, Vec3
-from .limbs.adapters import Appearance
-from .limbs.compile import BakeOptions, Occlusion
-from .limbs.integration import LimbTrack
-from .limbs.motion import Motion, Sample
-from .limbs.projection import Camera
 from .music import Groove
 from .toon import EYES, MOUTHS, WEAR, Pose, fh, fx, fy
-from .toon_cast import PIVOT, Point
+from .toon_cast import DESK, PIVOT, SHOULDERS, Layer, Point, _draw
+from .toon_critters import Critter
 from .toon_head import HeadRig, figure
+from .toon_torso import PAW, TAPER, Torso, depth_in
 
 __all__ = [
     "DOG_FIT",
@@ -59,6 +58,7 @@ __all__ = [
     "Face",
     "HeadReachError",
     "SupportError",
+    "ToonArm",
     "ToonDance",
     "ToonDanceError",
     "ToonFit",
@@ -73,6 +73,8 @@ FPS = 25  # distinct pictures a second: the measured reel's rate
 HEAD_CHANNELS = ("turn", "nod", "face_x")  # the head rig's channels a dance drives
 FIT_TOLERANCE = 1.0  # reference pixels a fitted joint may sit from the drawing's own point
 _QUIET = 1e-6  # a channel value smaller than this is rounding, not motion
+SIDES = ("left", "right")  # anatomical: a Toon character faces the viewer, so its left arm is on screen-right
+_SCREEN = {"right": 0, "left": 1}  # each side's index in the drawing's screen-left, screen-right pairs
 
 
 class ToonDanceError(SrstudioError, ValueError):
@@ -113,11 +115,58 @@ class Face:
 
 
 @dataclass(frozen=True)
+class ToonArm:
+    """One arm as the Toon drawing draws it, in reference pixels in the body's own frame: the ``root`` where it leaves
+    the body, the ``elbow``, the ``wrist`` and the ``paw``'s centre; ``raised`` when the wrist is above the shoulder,
+    so the arm is drawn in front of the head. ``side`` is anatomical."""
+
+    side: str
+    root: Point
+    elbow: Point
+    wrist: Point
+    paw: Point
+    raised: bool = False
+
+    @property
+    def path(self) -> tuple[Point, Point, Point]:
+        return (self.root, self.elbow, self.wrist)
+
+
+_STEPS = 8  # samples a segment of an arm's spline, as brush.stroke draws it
+
+
+def _elbow_share(path: Sequence[Point]) -> float:
+    """How far along an arm's drawn spline its elbow is, 0..1: the share :func:`srstudio.brush.stroke` tapers by."""
+    line = brush.spline(path, False, _STEPS)
+    lengths = [math.dist(a, b) for a, b in zip(line, line[1:], strict=False)]
+    total = sum(lengths)
+    if total <= 0:
+        raise ToonDanceError("an arm's root, elbow and wrist are all in one place", path="arm", actual=tuple(path))
+    return min(1.0 - 1e-6, max(1e-6, sum(lengths[:_STEPS]) / total))
+
+
+@dataclass(frozen=True)
+class _Along:
+    """The approved arm's taper laid on a posed arm bone by bone: a point on the upper arm or the forearm is as wide
+    as the same place on that bone of the arm at rest, however the two bones' drawn lengths have changed."""
+
+    base: brush.Pressure
+    elbow: float  # the posed arm's elbow share
+    rest: float  # the rest arm's
+
+    def at(self, s: float) -> float:
+        if s <= self.elbow:
+            return self.base.at(s * self.rest / self.elbow)
+        return self.base.at(self.rest + (s - self.elbow) * (1.0 - self.rest) / (1.0 - self.elbow))
+
+
+@dataclass(frozen=True)
 class ToonFit:
     """One Toon character fitted for dancing: its drawn ``part`` and head ``rig``, its skeleton ``profile`` with the
-    hips at ``seat`` (reference pixels) and ``scale`` reference pixels to the metre, the faces a routine may name, the
-    limbs' look and the arm's drawn width in metres. The fit is checked against the drawing: the head joint must sit
-    on the rig's neck pivot, and the character must have both arms and hands."""
+    hips at ``seat`` (reference pixels) and ``scale`` reference pixels to the metre, and the faces a routine may name.
+    The fit is checked against the drawing: the head joint must sit on the rig's neck pivot, the character must have
+    both arms and hands, its arms must be drawn by a torso (:class:`srstudio.toon_torso.Torso`), each shoulder joint
+    must lie inside that torso's outline, and at rest each elbow and wrist must land on the approved desk arm."""
 
     part: str
     rig: HeadRig
@@ -125,24 +174,27 @@ class ToonFit:
     scale: float
     rest_face: Face
     faces: tuple[tuple[str, Face], ...]
-    appearance: Appearance
-    arm_width: float
     seat: Point = PIVOT
 
     def __post_init__(self) -> None:
         if not (checks.number(self.scale) and self.scale > 0):
             raise ToonFitError(f"{self.part}: scale {self.scale!r} is positive", path="scale", actual=self.scale)
-        if not (checks.number(self.arm_width) and 0 < self.arm_width):
-            raise ToonFitError(f"{self.part}: arm width {self.arm_width!r} is positive", path="arm_width")
         names = [name for name, _ in self.faces]
         if len(set(names)) != len(names) or not all(isinstance(face, Face) for _, face in self.faces):
             raise ToonFitError(f"{self.part}: faces name each Face once", path="faces", actual=names)
         if not isinstance(self.rest_face, Face):
             raise ToonFitError(f"{self.part}: the rest face is a Face", path="rest_face")
-        missing = [j for side in ("left", "right") for j in (f"{side}_upper_arm", f"{side}_hand") if not self.has(j)]
+        if not isinstance(self.rig.look.drawing, Critter):
+            raise ToonFitError(
+                f"{self.part}: a dancing Toon's arms are drawn by its torso; this rig's drawing has none",
+                path="rig",
+                actual=type(self.rig.look.drawing).__name__,
+            )
+        missing = [j for side in SIDES for j in (f"{side}_upper_arm", f"{side}_hand") if not self.has(j)]
         if missing:
             raise ToonFitError(f"{self.part}: a dancing Toon needs both arms and hands", path="profile", actual=missing)
-        neck = self.screen(sk.world(self.profile, self.base)["head"].origin)
+        world = sk.world(self.profile, self.base)
+        neck = self.screen(world["head"].origin)
         if math.dist(neck, self.rig.neck) > FIT_TOLERANCE:
             raise ToonFitError(
                 f"{self.part}: the head joint lands at {neck}, not on the rig's neck {self.rig.neck}",
@@ -150,6 +202,90 @@ class ToonFit:
                 actual=neck,
                 expected=self.rig.neck,
             )
+        for side in SIDES:
+            ball = self.screen(world[f"{side}_upper_arm"].origin)
+            if depth_in(self.torso.contour, ball)[0] <= 0:
+                raise ToonFitError(
+                    f"{self.part}: the {side} shoulder joint lands at {ball}, not inside the drawn body",
+                    path="profile",
+                    actual=ball,
+                )
+            desk = self.desk(side)
+            for joint, want in ((f"{side}_lower_arm", desk.elbow), (f"{side}_hand", desk.wrist)):
+                got = self.screen(world[joint].origin)
+                if math.dist(got, want) > FIT_TOLERANCE:
+                    raise ToonFitError(
+                        f"{self.part}: at rest {joint} lands at {got}, not on the desk arm's {want}",
+                        path="profile",
+                        actual=got,
+                        expected=want,
+                    )
+
+    @property
+    def drawing(self) -> Critter:
+        """The character's own drawing, which draws its arms and paws."""
+        drawing = self.rig.look.drawing
+        assert isinstance(drawing, Critter)  # checked on construction
+        return drawing
+
+    @property
+    def torso(self) -> Torso:
+        """The body the arms are drawn inside."""
+        return self.drawing.torso
+
+    def desk(self, side: str) -> ToonArm:
+        """The approved still's desk arm on anatomical ``side``, where the drawing puts it: root, elbow, wrist, paw."""
+        k = _SCREEN[_side(side)]
+        elbow, wrist, paw = DESK[k]
+        root, bend, end = self.torso.arm_path([SHOULDERS[k], elbow, wrist])
+        return ToonArm(side, root, bend, end, self.torso.keep(paw, self.torso.arm * PAW))
+
+    @cached_property
+    def _carried(self) -> dict[str, tuple[Vec3, Vec3]]:
+        out = {}
+        world = sk.world(self.profile, self.base)
+        for side in SIDES:
+            desk = self.desk(side)
+            local = []
+            for joint, point in ((f"{side}_shoulder", desk.root), (f"{side}_hand", desk.paw)):
+                frame = world[joint]
+                at = Vec3(
+                    (self.seat[0] - point[0]) / self.scale, (point[1] - self.seat[1]) / self.scale, frame.origin.z
+                )
+                local.append(frame.rotation.inverse().rotate(at - frame.origin))
+            out[side] = (local[0], local[1])
+        return out
+
+    def carried(self, side: str) -> tuple[Vec3, Vec3]:
+        """Where the drawn arm's root sits on the shoulder (the clavicle's frame) and the paw's centre on the hand (the
+        hand's frame), in metres: placed at rest on the desk arm's root and paw, then carried by those bones."""
+        return self._carried[_side(side)]
+
+    def arm(self, pose: sk.SkeletonPose, side: str) -> ToonArm:
+        """The arm on anatomical ``side`` in ``pose``: the root and the paw carried by the shoulder and the hand, the
+        elbow and the wrist the skeleton's own joints, all projected; raised when the wrist is above the shoulder."""
+        root, paw = self.carried(side)
+        world = sk.world(self.profile, pose)
+        shoulder, hand = world[f"{side}_shoulder"], world[f"{side}_hand"]
+        wrist = self.screen(hand.origin)
+        return ToonArm(
+            side,
+            self.screen(shoulder.origin + shoulder.rotation.rotate(root)),
+            self.screen(world[f"{side}_lower_arm"].origin),
+            wrist,
+            self.screen(hand.origin + hand.rotation.rotate(paw)),
+            wrist[1] < self.screen(world[f"{side}_upper_arm"].origin)[1],
+        )
+
+    def arm_layers(self, arm: ToonArm) -> list[Layer]:
+        """``arm`` drawn as the approved drawing draws its arms: the torso's tapered coat stroke over one ink line and
+        the shade under the forearm, then the character's own paw."""
+        if not isinstance(arm, ToonArm):
+            raise ToonDanceError("an arm to draw is a ToonArm", path="arm", actual=type(arm).__name__)
+        look = self.rig.look
+        taper = _Along(TAPER, _elbow_share(arm.path), _elbow_share(self.desk(arm.side).path))
+        layers, at, way = self.torso.drawn(arm.path, arm.paw, look.coat, self.drawing.shade, taper)
+        return layers + self.drawing.paw(look, at, way, True)
 
     def has(self, joint: str) -> bool:
         return self.profile.has(joint)
@@ -218,18 +354,6 @@ class ToonPicture:
 
 
 @dataclass(frozen=True)
-class _Played(Motion):
-    """An arm that plays poses solved elsewhere, one per picture, exactly from the first picture on."""
-
-    played: tuple[Sample, ...] = ()
-    fps: int = FPS
-
-    def _sample(self, time: float) -> Sample:
-        index = min(len(self.played) - 1, max(0, round(time * self.fps)))
-        return replace(self.played[index], time=time)
-
-
-@dataclass(frozen=True)
 class ToonDance:
     """A performance read for drawing: one :class:`ToonPicture` per picture from ``start`` to ``end``, the canonical
     controls the character has no joint for (``dropped``), and how many head values were held at the envelope."""
@@ -267,7 +391,7 @@ class ToonDance:
 
     def poses(self) -> tuple[Pose, ...]:
         """The held faces, one :class:`srstudio.toon.Pose` per change, seconds from ``start``; the arms are the
-        tracks', so every pose holds the desk arms they replace."""
+        dance's own, so every pose holds the desk arms they replace."""
         out: list[Pose] = []
         current: Face | None = None
         for p in self.pictures:
@@ -288,43 +412,20 @@ class ToonDance:
             channels[name] = Channel(_changes(values), curve="hold")
         return HeadPlan(turn=channels["turn"], nod=channels["nod"], face_x=channels["face_x"])
 
-    def tracks(self) -> tuple[LimbTrack, ...]:
-        """One limb track per arm, playing the solved pose of every picture. A hand above its shoulder draws in
-        front of the head; otherwise it draws over the trunk, where the drawn arms were."""
-        fit, profile = self.fit, self.fit.profile
-        camera = Camera(origin=fit.seat, scale=fit.scale)
-        duration = self.end - self.start
-        options = BakeOptions(fps=self.fps, duration=duration, offset=self.start)
-        out = []
-        for side in ("left", "right"):
-            arm = replace(sk.arm_profile(profile, fit.base, side), width=fit.arm_width)
-            hand = sk.hand_profile(profile, side)
-            played = tuple(
-                Sample(
-                    i / self.fps,
-                    sk.to_arm_pose(profile, p.pose, side),
-                    sk.to_hand_pose(profile, p.pose, side),
-                    sk.wrist_control(profile, p.pose, side),
-                    "dance",
-                    "hold",
-                )
-                for i, p in enumerate(self.pictures)
-            )
-            raised = [s.arm.wrist.y < s.arm.shoulder.y for s in played]
-            occlusion = tuple(Occlusion("*", a, b, "front") for a, b in _spans(raised, self.fps, duration))
-            motion = _Played(arm, hand, played=played, fps=self.fps)
-            out.append(
-                LimbTrack(
-                    motion,
-                    style="toon",
-                    camera=camera,
-                    appearance=fit.appearance,
-                    options=options,
-                    backend="baked",
-                    occlusion=occlusion,
-                )
-            )
-        return tuple(out)
+    @cached_property
+    def _arms(self) -> dict[str, tuple[ToonArm, ...]]:
+        return {side: tuple(self.fit.arm(p.pose, side) for p in self.pictures) for side in SIDES}
+
+    def arms(self, side: str) -> tuple[ToonArm, ...]:
+        """The arm on anatomical ``side`` in every picture, from the pose with the body transform undone: one per
+        picture, exactly the skeleton's, so a gesture keeps its timing and its speed."""
+        return self._arms[_side(side)]
+
+
+def _side(side: str) -> str:
+    if side not in SIDES:
+        raise ToonDanceError(f"side {side!r} is left or right", path="side", actual=side, expected=SIDES)
+    return side
 
 
 def _changes(values: Sequence[tuple[float, float]]) -> tuple[tuple[float, float], ...]:
@@ -335,19 +436,6 @@ def _changes(values: Sequence[tuple[float, float]]) -> tuple[tuple[float, float]
         if not out or out[-1][1] != v:
             out.append((round(t, 6), v))
     return tuple(out)
-
-
-def _spans(flags: Sequence[bool], fps: int, duration: float) -> list[tuple[float, float]]:
-    """The picture spans (local seconds) where ``flags`` hold, as half-open intervals."""
-    out: list[tuple[float, float]] = []
-    begin: int | None = None
-    for i, flag in enumerate([*flags, False]):
-        if flag and begin is None:
-            begin = i
-        elif not flag and begin is not None:
-            out.append((begin / fps, min(duration, i / fps)))
-            begin = None
-    return out
 
 
 def _angle(a: Point, b: Point) -> float:
@@ -476,7 +564,8 @@ def perform(
 
 def draw(cv: Canvas, parent: Any, performance: ToonDance) -> Any:
     """Draw ``performance`` into ``parent``: the body's held transform about the seat, and inside it the figure of
-    :func:`srstudio.toon_head.figure` with the held faces, the head plan and the limb tracks. Returns the body group."""
+    :func:`srstudio.toon_head.figure` with the held faces, the head plan and the dance's arms. Returns the body
+    group."""
     fit = performance.fit
     x, y = fx(fit.seat[0]), fy(fit.seat[1])
     body = cv.group(parent, cv.uid("dance"), x=x, y=y, anchorX=x, anchorY=y)
@@ -496,9 +585,35 @@ def draw(cv: Canvas, parent: Any, performance: ToonDance) -> Any:
         performance.end,
         performance.plan(),
         enter=performance.start,
-        limbs=performance.tracks(),
+        arms=lambda over, front: _draw_arms(cv, performance, over, front),
     )
     return body
+
+
+def _scene_time(time: float) -> float:
+    """A picture's time floored to the scene's six decimals, so an engine sampling that exact time sees it."""
+    return math.floor(time * 1e6 + 1e-9) / 1e6
+
+
+def _draw_arms(cv: Canvas, performance: ToonDance, over: Any, front: Any) -> None:
+    """Both arms, one drawing per picture shown from that picture to the next, over the trunk or, raised, in front
+    of the head. Only a picture whose arm is exactly the one before it extends that drawing, so nothing is held that
+    the skeleton moved."""
+    fit, pictures = performance.fit, performance.pictures
+    for side in SIDES:
+        arms = performance.arms(side)
+        starts = [i for i in range(len(arms)) if i == 0 or arms[i] != arms[i - 1]]
+        for i, j in zip(starts, [*starts[1:], len(arms)], strict=True):
+            arm = arms[i]
+            end = pictures[j].time if j < len(pictures) else performance.end
+            layer = "front" if arm.raised else "body"
+            group = cv.group(
+                front if arm.raised else over,
+                f"arm-{side}-{i:06d}-{layer}",
+                start=_scene_time(pictures[i].time),
+                end=_scene_time(end),
+            )
+            _draw(cv, group, fit.arm_layers(arm))
 
 
 def silhouette_series(
@@ -528,15 +643,24 @@ def silhouette_series(
 
 
 def _dog_fit() -> ToonFit:
-    from .toon_cast import DOG as OLD_DOG
     from .toon_redrawn import DOG_RIG
 
     scale = 400.0  # reference pixels to the metre: the drawing's head is 128 px round, 0.32 m
-    arm = {"down_up": -1.842, "front_back": -0.632, "twist_in_out": -1.34}  # reaching to the paws on the desk
-    rest = {"left_shoulder.down_up": -0.1, "right_shoulder.down_up": -0.1}
-    for side in ("left", "right"):
-        rest |= {f"{side}_upper_arm.{dof}": value for dof, value in arm.items()}
-        rest[f"{side}_lower_arm.stretch"] = -0.526
+    # The arms at rest reach from the shoulder joints, inside the body, to the approved desk arm's elbows and wrists,
+    # the forearms forward onto the desk. Solved once on the drawing (the two sides differ: its head and shoulders are
+    # drawn a little unevenly) and checked by ToonFit against it.
+    rest = {
+        "left_shoulder.down_up": -0.1,
+        "left_upper_arm.down_up": -0.9422,
+        "left_upper_arm.front_back": -0.422,
+        "left_upper_arm.twist_in_out": -0.925,
+        "left_lower_arm.stretch": -1.4454,
+        "right_shoulder.down_up": -0.1,
+        "right_upper_arm.down_up": -0.981,
+        "right_upper_arm.front_back": -0.2098,
+        "right_upper_arm.twist_in_out": -0.866,
+        "right_lower_arm.stretch": -1.6028,
+    }
     profile = sk.SkeletonProfile(
         "toon-dog",
         sk.Proportions(
@@ -545,9 +669,9 @@ def _dog_fit() -> ToonFit:
             lengths=(
                 ("torso", 74 / scale),  # seat to the upper chest: the shoulders' line at 712
                 ("neck", 38 / scale),  # up to the rig's neck pivot at 700
-                ("clavicle", 159 / scale),  # out to the drawn shoulders at x 62 and 308
-                ("upper_arm", 74.5 / scale),
-                ("forearm", 58.5 / scale),
+                ("clavicle", 100 / scale),  # the shoulder joints 24-26 px inside the drawn body, under its shoulders
+                ("upper_arm", 56 / scale),  # down to the drawn elbow, leaning a little forward
+                ("forearm", 56 / scale),  # as long again, reaching forward to the paws on the desk
             ),
         ),
         hands=("mitten", "mitten"),
@@ -567,8 +691,6 @@ def _dog_fit() -> ToonFit:
             ("focus", Face("narrow", "flat")),
             ("shout", Face("shock", "open")),
         ),
-        appearance=Appearance(skin=OLD_DOG.coat, sleeve=OLD_DOG.coat, outline="#0b0a0d", line_width=4.0),
-        arm_width=29 / scale,  # the drawn arm's width (the torso's arm)
     )
 
 

@@ -43,13 +43,15 @@ assert dance.SEAT_GROOVE_SWAY.misses(performance.measure("sway")) == ()
 scene = Scene(version="auto")
 scene.add_project(width=1080, height=1920, fps="25", duration=end, background=PEACH.background)
 cv = Canvas(scene, PEACH, width=1080, height=1920, font_asset=None)
-toon_dance.draw(cv, cv.comp, performance)  # body, held faces and limb-track arms on the character's head rig
+toon_dance.draw(cv, cv.comp, performance)  # body, held faces and the drawing's own arms on its head rig
 ```
 
 `perform` reads every picture three ways. The hips and spine become one transform of the whole figure about its seat.
 What the neck and head do beyond that becomes the rig's `turn`, `nod` and `face_x`, inside its envelope or refused with
-`HeadReachError`; pass `clamp=True` to clamp and count in `performance.clamped`. The arms go through the skeleton's
-limbs bridges into limb tracks that replace the drawn arms, so a raised arm rides the body on the same picture.
+`HeadReachError`; pass `clamp=True` to clamp and count in `performance.clamped`. The arms are the approved drawing's
+own arms posed on the skeleton's bones: the torso's tapered coat stroke over one ink line, rooted inside the body, the
+taper laid bone by bone, and the character's own paw. Each picture draws its arm where the skeleton has it, nothing
+smoothed or held, so a raised arm rides the body on the same picture and each gesture keeps its timing.
 
 An entry's `expression` names a face in the fit's table (`fit.faces`) and is held for the entry; an unknown name raises
 `ExpressionError` before anything is sampled. A dance that needs feet raises `SupportError` on a seated character.

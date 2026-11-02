@@ -42,8 +42,13 @@ RAISED = FIT.hold(  # the left arm up and out beside the head (screen-right, cle
         "left_lower_arm.stretch": -0.3,
     }
 )
-PUMPED = FIT.hold(  # the arm-pump's arm lifted to the side, so the pump rises from shoulder height
-    {"left_upper_arm.down_up": -0.6, "left_upper_arm.front_back": 0.0, "left_upper_arm.twist_in_out": 0.0}
+PUMPED = FIT.hold(  # the arm-pump's arm lifted to the side and unbent, so the pump rises from shoulder height
+    {
+        "left_upper_arm.down_up": -0.6,
+        "left_upper_arm.front_back": 0.0,
+        "left_upper_arm.twist_in_out": 0.0,
+        "left_lower_arm.stretch": 0.0,
+    }
 )
 
 
@@ -271,7 +276,8 @@ pump for two bars each. Proposed: nothing merges until you approve the look.</p>
 beat.</li>
 <li>The sway: a short snap sideways that lands with the drop, then a slow return.</li>
 <li>Bars 5 to 8: the raised left arm rides the body with no lag; the paw drawn over the side of the head.</li>
-<li>The arms: drawn limbs replace the drawn desk arms all through, so the paws lift off the desk with the bob.</li>
+<li>The arms: the approved drawing's own arms posed on the skeleton all through, so the paws lift off the desk with
+the bob.</li>
 <li>Faces held per phrase: grin, eyes closed on the nod, smirk on the shimmy, shout on the pump.</li>
 <li>The shoulder shimmy is a forward-back motion: seen from the front it reads mostly through the shoulders' small
 lift and the face sliding sideways.</li>
