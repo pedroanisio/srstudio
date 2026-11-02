@@ -42,6 +42,14 @@ RAISED = (("left_upper_arm.down_up", 2.0), ("left_lower_arm.stretch", 0.8))  # t
 STANDING = ("bob", "sway", "arm-pump", "step-touch")
 MEASURED_BARS = 2  # engine frames read back from the car shot's start
 BLINK_EVERY = 3.1
+# The standing figure stands on the study's floor in front of the desk, between its near leg (x 606..631, down to the
+# frame's foot) and the frame's right edge: at the cast's size the routine spans 151 px left of its hips' x and 279
+# right (arm-pump's near hand), 430 px of the 449 between them. A step further back, at 0.95, leaves 20 px each side.
+ROOM_FEET = (795.0, 1810.0)
+ROOM_SCALE = 0.95
+FRAME_WIDTH = 1080
+DESK_LEGS = stick.LEGS[2:]  # stick.room's desk legs (x, y, height), 25 px wide; the chair's are the first two
+HALVES = {"noor": (0, 0, 540, 1920), "dev": (540, 0, 1080, 1920)}  # each friend's head is read in its own half
 
 NOOR = dance.Routine(
     CAR_BARS,
@@ -133,7 +141,8 @@ def build(root: Path) -> tuple[Path, dict]:
     room = cv.group(ep.comp, "shot-room")
     cv.gate(room, [(car_end, end)])
     stick.room(cv, room)
-    sd.draw(cv, room, solo, end=end, prefix="solo", blinks=blinks(car_end, end))
+    at = (ROOM_FEET[0] - ROOM_SCALE * sd.SEAT[0], ROOM_FEET[1] - ROOM_SCALE * sd.FLOOR)
+    sd.draw(cv, room, solo, end=end, at=at, scale=ROOM_SCALE, prefix="solo", blinks=blinks(car_end, end))
 
     scene = ep.finish(root / f"{SLUG}.scene.xml", root / "qa" / "sdk-validation.json")
     numbers = {
@@ -144,9 +153,34 @@ def build(root: Path) -> tuple[Path, dict]:
         ),
         "solo": {name: _solo(solo, i, name) for i, name in enumerate(STANDING)},
         "solo_reach_px": solo.reach,
+        "room_clearance": clearance(solo, at),
         "pictures": {"car": len(noor.poses), "room": len(solo.poses)},
     }
     return scene, numbers
+
+
+def clearance(performance: sd.StickDance, at: tuple[float, float]) -> dict:
+    """Where the standing figure is drawn against the study's desk: its leftmost and rightmost strokes (the head's edge
+    included) against the near desk leg's right edge and the frame's, and its feet against the floor line of the desk
+    legs behind it."""
+    s = ROOM_SCALE
+    xs, feet = [], []
+    for p in performance.poses:
+        points = (p.neck, p.hip, *p.knees, *p.feet, *p.elbows, *p.hands)
+        xs.append(min(min(x for x, _ in points), p.head[0] - stick.HEAD_R))
+        xs.append(max(max(x for x, _ in points), p.head[0] + stick.HEAD_R))
+        feet.extend(y for _, y in p.feet)
+    near = max(DESK_LEGS, key=lambda leg: leg[1] + leg[2])
+    behind = max(y + h for x, y, h in DESK_LEGS if (x, y, h) != near)
+    return {
+        "left_px": round(at[0] + s * min(xs), 1),
+        "right_px": round(at[0] + s * max(xs), 1),
+        "frame_right_px": FRAME_WIDTH,
+        "near_leg_right_px": near[0] + 25,
+        "feet_y_px": [round(at[1] + s * min(feet), 1), round(at[1] + s * max(feet), 1)],
+        "desk_legs_floor_px": behind,
+        "floor_px": ROOM_FEET[1],
+    }
 
 
 def _at(bar: int) -> int:
@@ -194,8 +228,8 @@ def _readings(performance: sd.StickDance, first: int, last: int) -> dict:
 
 
 def rendered(scene: Path, engine: str, bars: int) -> dict:
-    """The heads' centre read from the engine's own frames over the car shot's first ``bars``: both friends dance in
-    step, so their heads' shared centre bobs and sways as one."""
+    """Each friend's head read from the engine's own frames over the car shot's first ``bars``, in its own half of the
+    frame, and both heads pooled: the pooled centre moves with how many pixels of each head read as skin."""
     count = _at(bars)
     with tempfile.TemporaryDirectory(dir=scene.parent) as folder:
         with gpu.held():
@@ -207,10 +241,15 @@ def rendered(scene: Path, engine: str, bars: int) -> dict:
             )
         if done.returncode != 0:
             raise SystemExit(f"the engine did not render the frames: {done.stderr[-400:]}")
-        centres = sd.head_centroids(sorted(Path(folder).glob("f*.png")))
-    up = [-y / stick.HEAD_R for _, y in centres]
-    right = [x / stick.HEAD_R for x, _ in centres]
-    return {"frames": count, "bob": _reading(up), "sway": _reading(right)}
+        paths = sorted(Path(folder).glob("f*.png"))
+        heads = {who: sd.head_centroids(paths, box=box) for who, box in HALVES.items()}
+        heads["pooled"] = sd.head_centroids(paths)
+    out: dict = {"frames": count}
+    for who, centres in heads.items():
+        up = [-y / stick.HEAD_R for _, y in centres]
+        right = [x / stick.HEAD_R for x, _ in centres]
+        out[who] = {"bob": _reading(up), "sway": _reading(right)}
+    return out
 
 
 def page(out: Path, clip: str, views: str | None, numbers: dict) -> Path:
@@ -251,10 +290,15 @@ def page(out: Path, clip: str, views: str | None, numbers: dict) -> Path:
             row("Driver hip sway (drawn)", car["dev"]["sway"], sway),
             row("Passenger head bob (drawn)", car["noor"]["bob"], bob),
             row("Passenger hip sway (drawn)", car["noor"]["sway"], sway),
-            row(f"Heads bob, engine frames ({ren['frames']})", ren["bob"], bob),
-            row(f"Heads sway, engine frames ({ren['frames']})", ren["sway"], sway),
+            row(f"Driver head bob, engine frames ({ren['frames']})", ren["dev"]["bob"], bob),
+            row(f"Driver head sway, engine frames ({ren['frames']})", ren["dev"]["sway"], sway),
+            row(f"Passenger head bob, engine frames ({ren['frames']})", ren["noor"]["bob"], bob),
+            row(f"Passenger head sway, engine frames ({ren['frames']})", ren["noor"]["sway"], sway),
         ]
     )
+    pooled = ren["pooled"]["sway"]["hit_offset_s"] * 1000
+    alone = max(abs(ren[who]["sway"]["hit_offset_s"]) for who in HALVES) * 1000
+    room = car["room_clearance"]
     hand = car["noor_raised_hand"]
     solo = "".join(
         f"<li>{html.escape(name)}, {r['channel']}: {r['cycles_per_beat']:.3f} cycles a beat, "
@@ -283,6 +327,14 @@ def page(out: Path, clip: str, views: str | None, numbers: dict) -> Path:
         "hand_offset": f"{hand['hit_offset_s'] * 1000:+.0f}",
         "solo": solo,
         "reach": f"{car['solo_reach_px']:.1f}",
+        "pooled": f"{pooled:+.0f}",
+        "alone": f"{alone:.0f}",
+        "room_left": f"{room['left_px']:.0f}",
+        "room_right": f"{room['right_px']:.0f}",
+        "near_leg": f"{room['near_leg_right_px']}",
+        "feet_low": f"{room['feet_y_px'][0]:.0f}",
+        "feet_floor": f"{room['feet_y_px'][1]:.0f}",
+        "desk_floor": f"{room['desk_legs_floor_px']}",
         "marks": json.dumps([{"start": round(t, 3), "label": label} for t, label in marks]),
     }
     text = string.Template((HERE / "proof_page.html").read_text()).substitute(fields)

@@ -52,6 +52,22 @@ def test_the_study_s_drawn_groove_meets_the_reference_targets(built):
     assert record["numbers"]["pictures"] == {"car": 373, "room": 373}
 
 
+def test_the_raised_hand_moves_no_more_than_the_head(built):
+    _, record = built
+    hand, head = record["numbers"]["noor_raised_hand"], record["numbers"]["noor"]["bob"]
+    assert hand["cycles_per_beat"] == pytest.approx(1.0, abs=0.02)
+    assert hand["peak_to_peak"] <= head["peak_to_peak"] + 0.01
+
+
+def test_the_standing_figure_stands_on_the_floor_clear_of_the_desk(built):
+    _, record = built
+    room = record["numbers"]["room_clearance"]
+    assert room["left_px"] > room["near_leg_right_px"] + 15  # every stroke, the head's edge too, right of the near leg
+    assert room["right_px"] < room["frame_right_px"] - 15  # and inside the frame: both arms stay in the picture
+    assert room["feet_y_px"][1] == pytest.approx(room["floor_px"], abs=0.5)  # planted feet on the floor line
+    assert room["feet_y_px"][0] > room["desk_legs_floor_px"]  # even a lifted foot is in front of the desk's feet
+
+
 def test_the_study_is_never_a_release():
     text = SCRIPT.read_text()
     assert "InstagramPost" not in text and "register" not in text and "post" not in text.split('"""', 2)[2]
@@ -83,8 +99,19 @@ def test_the_page_is_rewritten_from_the_numbers_with_the_three_plane_views(tmp_p
         "noor_raised_hand": reading,
         "solo": {"bob": {"channel": "head up", **reading}, "sway": {"channel": "hips right", "error": "flat"}},
         "solo_reach_px": 0.0,
+        "room_clearance": {
+            "left_px": 650.0,
+            "right_px": 1060.0,
+            "frame_right_px": 1080,
+            "near_leg_right_px": 631,
+            "feet_y_px": [1790.0, 1830.0],
+            "desk_legs_floor_px": 1602,
+            "floor_px": 1830.0,
+        },
     }
-    numbers["rendered"] = {"frames": 93, "bob": reading, "sway": reading}
+    late = {**reading, "hit_offset_s": 0.0286}
+    head = {"bob": reading, "sway": reading}
+    numbers["rendered"] = {"frames": 93, "noor": head, "dev": head, "pooled": {"bob": reading, "sway": late}}
     (tmp_path / "numbers.json").write_text(json.dumps(numbers))
     env = {**os.environ, "PYTHONPATH": str(ROOT / "src")}
     done = subprocess.run(
@@ -97,3 +124,8 @@ def test_the_page_is_rewritten_from_the_numbers_with_the_three_plane_views(tmp_p
     page = (tmp_path / "index.html").read_text()
     assert 'src="./dance-stick-study.mp4"' in page and 'src="./views.mp4"' in page
     assert "Rows are characters" in page and "not read (flat)" in page
+    assert "Read pooled, the two heads' shared centre lands its sway extreme +29 ms" in page
+    assert (
+        "each head alone lands within 1 ms" in page
+        and "between x 650 and 1060, right of the near desk leg's edge at 631" in page
+    )
