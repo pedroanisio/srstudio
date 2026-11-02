@@ -90,6 +90,14 @@ def test_a_talking_beat_takes_the_visemes_and_any_other_holds_its_expression():
     assert (1.5, "open") not in rows and (1.0, "chew") in rows
 
 
+def test_a_talking_beat_opens_on_the_sound_already_due_when_it_starts():
+    """The beat lands on the heard word and the take's first viseme leads it: the mouth is open from the cut, as the
+    News desk's mouth_track was fixed to be."""
+    acts = ((0.0, Pose(mouth="chew")), (1.0, Pose()))
+    rows = host_kit.mouth_track(acts, [(0.95, "open"), (1.2, "teeth"), (1.5, "closed")], 2.0)
+    assert rows == [(0.0, "chew"), (1.0, "open"), (1.2, "teeth"), (1.5, "closed")]
+
+
 def test_a_silent_master_still_opens_and_shuts_the_mouth():
     states = {state for _, state in host_kit.mouth_track(((0.0, Pose()),), (), 2.0)}
     assert states == {"open", "closed"}

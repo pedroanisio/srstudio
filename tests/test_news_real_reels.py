@@ -24,6 +24,7 @@ PILOTS = ROOT / "episodes" / "pilots"
 if str(PILOTS) not in sys.path:
     sys.path.insert(0, str(PILOTS))
 
+import different_reasons_data  # noqa: E402
 import give_it_twelve_data  # noqa: E402
 import news_story  # noqa: E402
 import safe_from_you_data  # noqa: E402
@@ -31,11 +32,19 @@ import seabird_jet_lag_data  # noqa: E402
 import space_haiku_data  # noqa: E402
 import they_voted_no_data  # noqa: E402
 
-REELS = (seabird_jet_lag_data, space_haiku_data, safe_from_you_data, they_voted_no_data, give_it_twelve_data)
+REELS = (
+    seabird_jet_lag_data,
+    space_haiku_data,
+    safe_from_you_data,
+    they_voted_no_data,
+    give_it_twelve_data,
+    different_reasons_data,
+)
 TAGGED = (
     safe_from_you_data,
     they_voted_no_data,
     give_it_twelve_data,
+    different_reasons_data,
 )  # reels older than the rule keep the picture they were approved with
 RUNS_LONG = {they_voted_no_data: 34.0}  # the reviewer kept every line: 79 words, and the master runs 30.4 s
 PHONES = (  # what fills the frame
@@ -290,7 +299,9 @@ def test_a_lower_third_never_names_the_other_anchor_for_as_long_as_it_stays(pilo
                 assert beat.who == names[kicker], f"{kicker} over {beat.who} at {beat.start}"
 
 
-@pytest.mark.parametrize("pilot", [safe_from_you_data, they_voted_no_data, give_it_twelve_data], ids=lambda m: m.SLUG)
+@pytest.mark.parametrize(
+    "pilot", [safe_from_you_data, they_voted_no_data, give_it_twelve_data, different_reasons_data], ids=lambda m: m.SLUG
+)
 def test_a_lower_third_stays_long_enough_to_be_read_after_it_slides_in(pilot):
     sk = pilot.SKETCH
     spans = pilot.STORY.spans(sk.beats, sk.end, pilot_inserts(pilot))
@@ -420,6 +431,7 @@ def test_notes_name_the_new_fact_about_gus_for_the_cast_bible():
         "safe_from_you_audio",
         "they_voted_no_audio",
         "give_it_twelve_audio",
+        "different_reasons_audio",
     ],
 )
 def test_the_recording_carries_the_banner(module):
