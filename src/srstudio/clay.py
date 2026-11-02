@@ -255,7 +255,10 @@ class Model:
             tangent = centres[min(row + 1, rows - 1)] - centres[max(row - 1, 0)]
             verts.append(centres[end])
             normals.append(_unit(tangent, "a tube") * (-1.0 if row == 0 else 1.0))
-            tris += [(hub, row * sides + i, row * sides + (i + 1) % sides) for i in range(sides)]
+            cap = [(hub, row * sides + i, row * sides + (i + 1) % sides) for i in range(sides)]
+            # The starting cap faces against the path tangent. Its normal and
+            # triangle winding must agree, including after OBJ axis conversion.
+            tris += [(a, c, b) for a, b, c in cap] if row == 0 else cap
         self._add(material, np.array(verts), np.array(normals), tris)
 
     def rod(self, material: str, a: Point, b: Point, r: float) -> None:
