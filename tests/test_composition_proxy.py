@@ -8,22 +8,10 @@ import pytest
 
 from srstudio import clay, proxy
 from srstudio import composition as c
-from support.composition import plate_plan
+from support.composition import PROXY_TONES, plate_plan, proxy_source
 
-TONES = ('#102030', '#506070', '#90A0B0', '#D0E0F0')
-
-
-def source(*, under=False, oversample=2):
-    model = clay.Model()
-    model.box('body', (0, 0, 0), (0.2, 0.2, 0.2))
-    model.box('seat', (0.15, 0, 0.15), (0.1, 0.1, 0.1))
-    recipe = proxy.Recipe(
-        {'body': TONES, 'seat': TONES},
-        behind=frozenset({'body'}),
-        under=frozenset({'seat'}) if under else frozenset(),
-        oversample=oversample,
-    )
-    return c.proxy_source('host', tuple(model.meshes()), recipe, basis='clay', lighting='scene')
+TONES = PROXY_TONES
+source = proxy_source
 
 
 def plan_for(item, *, passes=('rgba',)):

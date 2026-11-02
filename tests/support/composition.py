@@ -6,7 +6,7 @@ from dataclasses import replace
 import numpy as np
 from sr_core.scene import Scene
 
-from srstudio import Canvas, clay, parts, plates
+from srstudio import Canvas, clay, parts, plates, proxy
 from srstudio import composition as c
 
 
@@ -139,3 +139,20 @@ Path(sys.argv[sys.argv.index('--output') + 1]).write_bytes(Path({str(fixture)!r}
     )
     engine.chmod(0o700)
     return engine
+
+
+PROXY_TONES = ('#102030', '#506070', '#90A0B0', '#D0E0F0')
+
+
+def proxy_source(*, under=False, oversample=2):
+    """A two-box clay model as a proxy source: the body behind, the seat under when ``under``."""
+    model = clay.Model()
+    model.box('body', (0, 0, 0), (0.2, 0.2, 0.2))
+    model.box('seat', (0.15, 0, 0.15), (0.1, 0.1, 0.1))
+    recipe = proxy.Recipe(
+        {'body': PROXY_TONES, 'seat': PROXY_TONES},
+        behind=frozenset({'body'}),
+        under=frozenset({'seat'}) if under else frozenset(),
+        oversample=oversample,
+    )
+    return c.proxy_source('host', tuple(model.meshes()), recipe, basis='clay', lighting='scene')

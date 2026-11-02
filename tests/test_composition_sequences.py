@@ -5,8 +5,7 @@ from dataclasses import replace
 import pytest
 
 from srstudio import composition as c
-from support.composition import plate_plan, plate_source, renderer
-from test_composition_proxy import source as proxy_source
+from support.composition import plate_plan, plate_source, proxy_source, renderer
 
 
 def sequence(backend='plates'):
