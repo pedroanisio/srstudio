@@ -3,7 +3,8 @@ gag is shown on, the exit door (painted on, or nested), the queue ticket, the ho
 buttons each reel (ADR 0030).
 
 Every location fills the 1080 × 1920 frame, draws both signature marks (ADR 0001) and takes its events on the
-shot's clock: the Waiting Room's display shows ``serving`` numbers, a door opens at each second of ``opens``.
+Canvas clock: composition time by default, shot-local time with ``Canvas.local_time=True``. The Waiting Room's
+display shows ``serving`` numbers, and a door opens at each second of ``opens``.
 Lettering that belongs to the scenery (a display's label, a sign, a room name) is drawn in strokes
 (:func:`srstudio.gloss.letters`) and numbers as seven-segment shapes, so the sets need no font and a camera move
 never carries a text layer out of the safe area. Words on the board, the hook and the notice are text, measured
@@ -18,6 +19,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from . import camera, checks, gloss, look, signature
+from ._gloss_set_contracts import contract
 from .canvas import Canvas
 from .gloss import GlossError, Talk
 from .registry import register
@@ -65,7 +67,7 @@ Spans = Sequence[tuple[float, float]]
 
 @dataclass(frozen=True)
 class Card:
-    """What the board shows from ``start`` (seconds on the shot's clock) until the next card: a small ``label``
+    """What the board shows from ``start`` (seconds on the Canvas clock) until the next card: a small ``label``
     over a title and an optional body, and, on a scored card, the ``points`` won or lost in a badge. The tone
     follows the points (gain ok, loss alert) unless one is named. A ``carried`` card is the one the shot before
     ended on: it is on from the cut (``start`` 0) and does not pop again."""
@@ -281,6 +283,7 @@ def _bunting(cv: Canvas, g, y: float, sag: float, end: float) -> None:
     summary="The Plaza: a glossy pink checkerboard to a hazy horizon under a periwinkle-to-peach sky dome with "
     "its seams just showing, toy monuments on the skyline, bunting, floating blocks and twinkles; optionally a "
     "YOU ARE HERE sign pointing every way",
+    contract=contract('gloss-plaza'),
 )
 def plaza(cv: Canvas, parent, *, end: float, sign: bool = False) -> None:
     """The Plaza for ``end`` seconds; with ``sign`` a YOU ARE HERE signpost stands on the left."""
@@ -359,6 +362,7 @@ def _dome(cx: float, base: float, w: float, h: float) -> str:
     summary="The Activity Room: cold bevelled white panels under a glowing strip light, a dark observation window "
     "with someone's eye glowing in it, a big seven-segment room number, and a lit pink target pad on a glossy "
     "grey checker floor",
+    contract=contract('gloss-activity'),
 )
 def activity(cv: Canvas, parent, *, end: float, number: str = "07") -> None:
     """The Activity Room for ``end`` seconds; ``number`` (digits) is stencilled on the wall."""
@@ -411,6 +415,7 @@ def activity(cv: Canvas, parent, *, end: float, number: str = "07") -> None:
     summary="The Waiting Room: a mint wall over a lit wainscot, a glowing NOW SERVING display whose seven-segment "
     "number changes on cue, a clock with no hands, a YOUR WAIT MATTERS poster, a row of glossy moulded chairs, a "
     "ticket dispenser and a plastic plant",
+    contract=contract('gloss-waiting'),
 )
 def waiting(cv: Canvas, parent, *, end: float, serving: Sequence[tuple[float, str]] = ((0, "3"),)) -> None:
     """The Waiting Room for ``end`` seconds; the display shows each ``(second, number)`` of ``serving`` in turn."""
@@ -512,6 +517,7 @@ def _card_layout(c: Card, font: bytes, x: float, w: float, most: float) -> _Card
     "gloss-board",
     summary="The Joy Points board: a glossy cream panel that switches cards on the shot's clock, a small label over "
     "a toned title and wrapped body, and on a scored card a big +/− points badge that pops",
+    contract=contract('gloss-board', wrap=wrap),
 )
 def board(
     cv: Canvas,
@@ -608,6 +614,7 @@ def _leaf(cv: Canvas, g, x: float, y: float, w: float, h: float, colour: str, pa
     "gloss-door",
     summary="The exit door under a red EXIT sign: painted on a freestanding board (it never opens), or real, "
     "swinging open on a smaller door inside, and that on a smaller one, until the last opens on a ticket dispenser",
+    contract=contract('gloss-door'),
 )
 def door(
     cv: Canvas,
@@ -687,6 +694,7 @@ def door(
     "prop",
     "gloss-ticket",
     summary="A queue ticket: a cream paper slip with torn edges and its number in plum seven-segment digits",
+    contract=contract('gloss-ticket'),
 )
 def ticket(cv: Canvas, parent, *, at: tuple[float, float], end: float, number: str, scale: float = 1.0):
     """A ticket centred on ``at`` showing ``number`` (digits), 300 wide at scale 1."""
@@ -709,6 +717,7 @@ def ticket(cv: Canvas, parent, *, at: tuple[float, float], end: float, number: s
     "graphic",
     "gloss-hook",
     summary="The hook: a small Sunny in the top-left corner asking the reel's question on a cream card beside it",
+    contract=contract('gloss-hook', wrap=wrap),
 )
 def hook(cv: Canvas, parent, text: str, *, end: float, font: bytes, talk: Talk = ()):
     """The question at the top of the safe area beside a small, speaking Sunny, from 0 to ``end``."""
@@ -730,6 +739,7 @@ def hook(cv: Canvas, parent, text: str, *, end: float, font: bytes, talk: Talk =
     "gloss-notice",
     summary="The Plaza Notice that buttons every reel: a cream notice card on the pink checkerboard, Sunny reading "
     "it from the corner, the title in plum and the footnote typed out",
+    contract=contract('gloss-notice', wrap=wrap),
 )
 def notice(cv: Canvas, parent, title: str, body: str, *, end: float, font: bytes, talk: Talk = (), settle: float = 0.0):
     """A full-frame Plaza Notice: ``title``, then ``body`` typed out over the first seconds; Sunny speaks

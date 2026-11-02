@@ -1343,3 +1343,55 @@ room plant helpers enter absolute frames, so an outer `Model.at` does not move
 all room geometry together. The fridge, clock hands, mug coffee and phone
 readout are held shapes or printed copy. No grip, support, liquid or appliance
 behavior is supplied by these builders.
+
+
+## Gloss rooms, cards and graphics
+
+Gloss's eight scenery builders declare Canvas clocks and their actual return
+ownership. The three rooms append scenery and return `None`; wrap a room in a
+caller-owned group when moving or gating it. A board returns one group per
+card. Door, ticket, hook and notice return their whole drawing group. Room,
+board and graphic coordinates use the fixed 1080×1920 layout; door and ticket
+geometry has a local origin at the requested placement.
+
+<!-- gloss-set-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, gloss_sets, registry
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1920, fps='24', duration=4)
+cv = Canvas(scene, font_asset=None, local_time=True)
+room_parent = cv.group(cv.comp, 'waiting-room')
+room = registry.get('location', 'gloss-waiting')
+assert room.describe()['contract']['returns']['type'] == 'null'
+assert room.builder(cv, room_parent, end=4, serving=((0, '3'), (2, '4'))) is None
+cv.gate(room_parent, ((0, 4),))
+door = gloss_sets.door(cv, room_parent, at=(540, 1200), end=4, opens=(1, 2))
+assert door is not room_parent
+card = registry.get('prop', 'gloss-board').describe()['contract']
+assert card['arguments']['properties']['cards']['items']['properties']['start'][
+    'x-timebase'
+] == 'canvas'
+```
+<!-- gloss-set-discovery:end -->
+
+Keys and visibility gates follow `Canvas.local_time`. Use local time for cues
+relative to a later sequence shot. `end` bounds cues but does not universally
+clip the returned drawing: gate the containing group when it should vanish.
+Door leaves use cubic-out horizontal foreshortening over 0.35 seconds. Card
+and badge pops use linear overshoot keys. A first card with `carried=True`
+starts at zero, skips the pops and retains its words at a cut.
+
+Board, hook and notice contracts expose the actual `gloss_sets.wrap` helper.
+Supply font bytes matching the bound Canvas font. Every board title/body and
+its height are preflighted before emission, including later cards. Headings
+and numeric badges have no separate width-fit check. Room displays and tickets
+use seven-segment paths without fonts; ticket numerals are not fitted for
+arbitrarily long strings.
+
+The notice grades its backdrop separately, leaving its card crisp. Its body
+uses the native `typewriter` text preset, whose start and duration are stated
+in the contract; this is distinct from the Canvas key tracks controlling its
+word gate and Sunny's motion. The notice adds a signature code but no cactus.
+The graphic returns the whole composition, without a separate host handle.
