@@ -65,6 +65,8 @@ from . import (  # noqa: F401  (registers builders)
     saga_reel,
     saga_sets,
     signature,
+    smallprint_kit,
+    smallprint_props,
     soft_bedtime,
     soft_closet,
     soft_front,

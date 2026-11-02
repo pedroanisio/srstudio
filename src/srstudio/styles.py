@@ -371,6 +371,8 @@ TOON = Style(
         "news_kit",
         "pedro",
         "rafa",
+        "smallprint_kit",
+        "smallprint_props",
         "toon",
         "toon_bed",
         "toon_bento",
