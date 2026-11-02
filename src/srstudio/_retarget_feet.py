@@ -199,9 +199,12 @@ def reach(
     target: Vec3,
     tally: Tally,
     time_s: float,
+    *,
+    turn: Quaternion | None = None,
 ) -> dict[str, float]:
-    """``values`` with one leg solved so its foot joint reaches ``target`` and the foot keeps its turn in the world.
-    The knee's twist is kept; a target out of reach leaves the leg straight toward it, short by the miss."""
+    """``values`` with one leg solved so its foot joint reaches ``target`` and the foot keeps its turn in the world,
+    or takes ``turn`` (a world turn) when one is given, as a foot laid flat on the floor does. The knee's twist is
+    kept; a target out of reach leaves the leg straight toward it, short by the miss."""
     upper, lower, foot = (sk.joint(f"{side}_{part}") for part in LEG)
     frames = sk.world(profile, sk.pose(profile, values, root=root))
     hip = frames[upper.name].origin
@@ -223,7 +226,8 @@ def reach(
     swung = _arc(reached, span, upper_world.rotate(stretch.axis)) * upper_world
     held = _read(profile, upper, frames["hips"].rotation.inverse() * swung, out, tally, time_s)
     shank = frames["hips"].rotation * held * knee
-    _read(profile, foot, shank.inverse() * frames[foot.name].rotation, out, tally, time_s)
+    kept = frames[foot.name].rotation if turn is None else turn
+    _read(profile, foot, shank.inverse() * kept, out, tally, time_s)
     return out
 
 

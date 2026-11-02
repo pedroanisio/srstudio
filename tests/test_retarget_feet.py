@@ -146,6 +146,16 @@ def test_a_target_out_of_reach_straightens_the_leg_toward_it_and_reports_the_mis
     assert sk.angle_of(frames["right_foot"].rotation.inverse() * sk.world(TOON, pose)["right_foot"].rotation) < 1e-7
 
 
+def test_a_foot_can_be_given_the_turn_it_keeps_in_the_world():
+    pose = rt.to_pose(WALK, TOON, index=15).pose
+    ankle = sk.world(TOON, pose)["right_foot"].origin
+    flat = Quaternion.axis_angle(Vec3(0.0, 1.0, 0.0), 0.2)  # flat on the floor, toes turned a little to the right
+    values = reach(TOON, pose.as_dict(), pose.root, "right", ankle, Tally(False), 0.0, turn=flat)
+    frames = sk.world(TOON, sk.pose(TOON, values, root=pose.root))
+    assert frames["right_foot"].origin.distance(ankle) < 1e-9
+    assert sk.angle_of(frames["right_foot"].rotation.inverse() * flat) < 1e-7
+
+
 def test_a_target_at_the_hip_leaves_the_leg_as_it_was():
     pose = rt.to_pose(WALK, TOON, index=15).pose
     hip = sk.world(TOON, pose)["right_upper_leg"].origin
