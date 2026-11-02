@@ -204,15 +204,17 @@ def prepare_vector(binding: c.AssetBinding, xml: bytes, *, fonts: tuple[c.Vector
             _binding(binding, parts.get(binding.part).style)
         else:
             _binding(binding, binding.candidate.style, purpose='candidate-review')
-        font_bytes = text_assets.validate(fonts)
-        if type(xml) is not bytes or 8 * (len(xml) + font_bytes) > binding.memory_bytes:
+        from . import _composition_forms as forms
+
+        resource_bytes = text_assets.validate(fonts) + forms.size(binding.forms)
+        if type(xml) is not bytes or 8 * (len(xml) + resource_bytes) > binding.memory_bytes:
             raise _fail(
                 'memory_bytes',
                 binding.memory_bytes,
-                'memory for XML, fonts and licenses with eightfold working allowance',
+                'memory for XML, fonts, licenses and form fields with eightfold working allowance',
             )
         root = _tree(binding, xml)
-        digest = c.vector_source_digest(c.VectorSource(binding.id, xml, fonts))
+        digest = c.vector_source_digest(c.VectorSource(binding.id, xml, fonts), forms=binding.forms)
         check_source(binding, digest)
         if root.tag != 'scene':
             raise _fail('scene', root.tag, 'a scene document')
@@ -265,6 +267,7 @@ def prepare_vector(binding: c.AssetBinding, xml: bytes, *, fonts: tuple[c.Vector
             raise _fail('scene', None, 'a project and composition')
         if binding.duration is not None and _number(project.get('duration', '0'), 'duration') < binding.duration:
             raise _fail('duration', binding.duration, 'a duration within the source project')
+        forms.verify(root, binding)
         texts = text_assets.verify(root, fonts)
         box = _envelope(content, texts)
         if box is None:

@@ -12,6 +12,7 @@ from . import _composition_wire as wire
 from . import composition as c
 from ._bounded_process import BoundedProcessError, ProcessLimits, run
 from ._composition_emit import check_expansion
+from ._composition_forms import size as form_bytes
 from ._composition_preflight import _graph, _id
 from ._composition_vector import MAX_XML_BYTES
 
@@ -94,7 +95,7 @@ def prepare_vector(
     )
     wire.fields(response, {'schema', 'status', 'prepared'})
     asset = wire.prepared(binding, xml, response['prepared'], fonts=fonts)
-    if asset.digest != c.vector_source_digest(c.VectorSource(binding.id, xml, fonts)):
+    if asset.digest != c.vector_source_digest(c.VectorSource(binding.id, xml, fonts), forms=binding.forms):
         raise wire.fail(asset.digest, 'the exact source content hash')
     return asset
 
@@ -104,6 +105,9 @@ def compile_scene(plan: c.ValidatedScenePlan, assets: tuple[c.PreparedVector | c
         raise c._fail('plan/assets', None, 'a validated plan and immutable bounded source tuple')
     if c.preflight(plan.spec, plan.bindings, purpose=plan.purpose) != plan:
         raise c._fail('plan', plan.digest, 'the current reproducible preflight result', 'composition.version')
+    from ._composition_forms import static
+
+    static(plan)
     bindings = {b.id: b for b in plan.bindings}
     sources = []
     sizes = {}
@@ -128,7 +132,7 @@ def compile_scene(plan: c.ValidatedScenePlan, assets: tuple[c.PreparedVector | c
             raise c._fail('assets.id', name, 'one source for each used binding', 'composition.reference')
         seen.add(name)
         encoded = wire.xml_encode(asset.xml)
-        total += len(asset.xml)
+        total += len(asset.xml) + form_bytes(bindings[name].forms)
         if total > MAX_XML_BYTES:
             raise c._fail('assets.xml', total, 'at most eight MiB of total source XML', 'composition.budget')
         sources.append({'id': name, 'xml': encoded, 'prepared': metadata})

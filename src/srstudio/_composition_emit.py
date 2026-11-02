@@ -15,6 +15,7 @@ from sr_core.scene import Scene, read
 
 from . import _composition_text as text_assets
 from . import composition as c
+from ._composition_forms import size as form_bytes
 from ._composition_preflight import _camera, _pose
 from ._composition_vector import MAX_XML_BYTES, prepare_vector
 from ._outputs import _check_directory, pinned_directories
@@ -87,6 +88,8 @@ def compile_scene(plan: c.ValidatedScenePlan, assets: tuple[c.PreparedVector, ..
     actual = {a.binding.id: a for a in assets}
     if len(actual) != len(assets) or set(actual) != {b.id for b in plan.bindings}:
         raise c._fail('assets', tuple(actual), 'exactly one prepared payload per used binding', 'composition.reference')
+    if sum(len(asset.xml) + form_bytes(asset.binding.forms) for asset in assets) > MAX_XML_BYTES:
+        raise c._fail('assets', None, 'at most eight MiB of combined source buffers', 'composition.budget')
     # Each placement owns a namespaced copy. Account for serialization and
     # parser working storage before allocating any expanded trees. The extra
     # per-node allowance covers scoped IDs, references and wrapper attributes.
@@ -107,6 +110,9 @@ def assemble(
     plan: c.ValidatedScenePlan, roots: dict[str, ET.Element], rasters: dict[str, dict], checkpoint: Callable[[], None]
 ) -> c.CompiledScene:
     """Shared layer assembly after worker-owned source verification."""
+    from ._composition_forms import apply, static
+
+    static(plan)
     spec = plan.spec
     budget = spec.budget
     version = max(
@@ -195,6 +201,7 @@ def assemble(
         # Source IDs and references are scoped per placement, including repeated
         # uses of an asset. Parent transforms are already flattened into poses.
         source = ET.fromstring(ET.tostring(roots[layer.asset]))
+        apply(source, plan, layer, layer.temporal.source_start)
         text_assets.scope(source, f'l{index}')
         source_assets = source.find('assets')
         if source_assets is not None and len(source_assets):
