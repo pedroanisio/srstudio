@@ -754,3 +754,62 @@ font asset IDs independently of `Canvas.font_asset`. The salon uses both;
 the terrace and notebook use only `display`. Builders do not load those fonts.
 Orbit sets and props add neither signature marks nor the shared print finish.
 Discovery metadata does not change their catalog approval status.
+
+## Presentation kits and map assets
+
+The 31 non-character builders in `host_kit`, `mind_kit` and `map_kit` declare
+their clocks and return types. Their coordinates are frame pixels, except
+map longitude/latitude in degrees and projection zoom in levels. Their
+`measure(text, size)` callbacks return text advance in frame pixels at the
+requested font size; use the actual bound font rather than character counts.
+
+Host `punch` mutates an existing group, and its optional `push` is
+`(duration, target_scale)`. Host `captions` takes an episode context and returns
+`(background_bands_group, native_caption_track)`. Its words are timed tuples,
+and its layout uses the episode safe area. Unpack the pair when controlling
+caption visibility. This differs from the Mind and Map caption builders,
+which return one group of text boxes.
+
+Map views return a `MapAsset`, separate from the layer displaying it.
+`parallel` adds routes to that asset; `population` adds geographic layers.
+Neither returns a scene group. A pin or daylight marker uses the engine's
+projection to follow that asset. A ring is fixed in frame coordinates and
+does not follow the map. These are geographic bindings, not world-space
+contacts or collision geometry.
+
+<!-- presentation-discovery:start -->
+```python
+from sr_core.scene import MapAsset, Scene
+from srstudio import Canvas, map_kit, registry
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1920, fps='30', duration=4)
+cv = Canvas(scene, font_asset=None)
+view_builder = registry.get('graphic', 'map-flat')
+assert view_builder.describe()['contract']['returns']['x-role'] == 'map-asset'
+view = view_builder(cv, cv.comp, lon=0, lat=0, zoom=0, start=0, end=4)
+assert isinstance(view, MapAsset)
+
+# Place uses name, latitude, longitude. The unlabelled route needs no font.
+place = map_kit.Place('Rome', 41.89193, 12.51133)
+result = map_kit.parallel(cv, cv.comp, view, place, 0, 4, drawn=0.5)
+assert result is None and len(list(view.iter('route'))) == 2
+
+# runs means total elapsed hours across the interval, not hours per second.
+clock = map_kit.clock(cv, cv.comp, 200, 400, 80, hour=9, start=0, end=4, runs=2)
+assert clock.x == 200 and clock.y == 400
+```
+<!-- presentation-discovery:end -->
+
+Before rendering a map project, use `map_kit.install(project_root)` to publish
+the referenced GeoJSON files. Builders declare hashes and credits but do not
+copy files into the project. Population dots come from the shipped dataset;
+the builder does not fetch current figures.
+
+Most kit animations explicitly use the composition clock even when the
+canvas uses local time. Host `punch`, Mind `stamp` and Mind `zipper` follow
+`Canvas.local_time` instead. Visibility attributes remain on the parent
+timeline in both cases. Keep those clocks aligned when nesting shots;
+inspect nested move, dive, sweep and reveal metadata before reusing a plan.
+Mind spotlight and lens are drawn overlays, with absolute x tracks; they
+do not calculate lighting or magnification.
