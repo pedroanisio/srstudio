@@ -1,0 +1,90 @@
+{
+  "schema_version": "1.0.0",
+  "generated_by": {
+    "model": "GPT-6",
+    "tool": "OpenAI Codex"
+  },
+  "source_commit": "9c40c172f227f44d6dcae2b8190e2ad2923d4fd1",
+  "mesh_sha256": {
+    "rafa-mug": {
+      "coffee": "af911c3a982f12183018cfe9d3815308254e7556a025f668638e74260acdcf3c",
+      "glaze": "9351bf5ab3294d772fcc786a0076396c45c2915d747126bef8dc6fc264617524",
+      "mug-label": "fdaf2af9e03c1f08017c4abedc65b108e1dbc4ab90ba1a21c3cb1c82ce5d31c1"
+    },
+    "rafa-phone": {
+      "black": "67e49bd7b585e63cce37b64318ba5f49ee2078bdf038dca46edc321a31189a17",
+      "case": "1adf7ac8632b7b5b72bde225a6e33081221725fd037f09918e868d1814d1074e",
+      "phone-screen": "a13332652bd3c7668102ec90f5431140ce6f18129e2c760e6568d6cd4b72e79f",
+      "red": "f54b973290811e23a686b55994b11cafecba0da199db222d7ff33b2082357e51"
+    },
+    "rafa-bills": {
+      "bill-label": "bdfa564c3d486fd1393f5d905dc0a9157f0e2bf921a5eadaa0ec8dc147575dc6",
+      "cream": "cc828f63d6e7fb3ed1d65b20687d8e1f10945a9b5cba7e5271d7728b4075c660",
+      "glaze": "00629ae98dee29090038e6ce7b6ca88571428f47caae322a9d52e865c8445c3b",
+      "gold": "f3b1eb38fba7ebb2a734982d7a4fd53560268a04af7c67fcf62eb8303783ef71",
+      "paper": "3957032182e89b8e76c9dcfbbc30176bbe2ea4f662ba9441332f494ced66fd1f",
+      "rust": "9380a33d71d2810dfbfffc6c18669937a0842927023321e3b8f09cfeaa658e80"
+    },
+    "rafa-lunchbox": {
+      "lunch-label": "c4777c23a071cc72696f2a92ebc50f1205f17f4fc87eb49299c2e2a9e5456de1",
+      "mint": "525d7c5e20d64450a3142e3fb39337ca338c7c5ddcf450f78fdefe4b25d0c788",
+      "navy": "3f5e62a05595d040d7a0d8cd3ced3b91c7e8f0dcdf6b86c3fadbf512c80de4e6"
+    },
+    "rafa-tote": {
+      "cream": "b053852dabe16783c646a342d5bbaea0046548e7e967fc36887d3f01a37f4bc6",
+      "leaf": "033d483e1f41411db9bac49d4f3ee8eff2fe1c8361efd39bc05828ec685a8c0a",
+      "leaflight": "4e473308eec677b9f13e6423f0b88e472e8c3a6f74a430cc53357d4b75cb7ba7",
+      "oaklight": "cbf6fb37e5f1643c02edcef0e4db7925cb087d47863714fbc7e837b68c4d2651",
+      "paper": "2e0b44750b534f0a63e601a4c09f470182a8b647c3473f2e1fb3a6abb30e0aea",
+      "receipt": "c84a40d28599553daace4a98569d82fd31ca7040c9dcba5d8f776dce9913d2a2",
+      "tote-label": "d5d9c20ed9771454c6e6b18067a897d902a49629eb5a345f770aea7142b5be80"
+    },
+    "rafa-kitchen": {
+      "black": "7d0f76d09878c9dcbe1a0e3b93c2d44e980dc0b602cfc7d157d340af04606ba6",
+      "blue": "3d7b1c4c39f070cdd4b944ddf83e634f991293d6755ca58b2e88a095e919f330",
+      "cream": "6b25d071f010ebfb7ffb11ca071e3c8e3fb109cf2dbcf5ac12522a4854ceb5ea",
+      "glaze": "18b607e14962836f0b5b0c1c8550e34f1d453dbb3c5fa74ac99d86c0bff6d2a2",
+      "gold": "57f410a469425faf15a0539fad3cb74fdb485d8f281f2925e881e85c93f21259",
+      "home-print": "13bdcb46c94c4f86cfeb8f184a6c12320d626d975c6d4e13fa333ad48e0895a3",
+      "ink": "52a34507813ab6058a69e80ca79f6e0cf5fceba9f9783b3cd0658c85f274ef1c",
+      "leaf": "167a8d6315e6348ef1033dfa475a7aaaa66f8a0f0e22038f0c52754327209269",
+      "leaflight": "6b4ee82a74936a64a2c5b56e51ceb590e4ef2ead8f9acd9d851fb25843675449",
+      "mint": "d49810debf7b8bd7e4983a1725cfd39ce69623e6919cef3ce7f7385c2f5e02a4",
+      "navy": "ea82a9dda35d4a13cf3c259c2ee8e2b4c146a020758a8cd7fa5bbc78375fda37",
+      "oak": "2c1bace1fd7b41861c901e549a4553aa894e402e7ea57786231dbac091d5a481",
+      "oakdark": "887942e008667ccfd58c08544bc4567e88ba6072ce51ad5d239fe05b747af27f",
+      "oaklight": "9c06734a692f8cd154764480347723ccf094da08b1c6bee449b46eadb8cdbf9f",
+      "pink": "6cc4d8519045ecc8cbecd346ec5a5813e6c691bdbd7e9a8d027a2d3ab68e9b81",
+      "sage": "8b05be79c09fad208abd1540f6786c978843c5e24e4ed40d15f1c25b369bf49e",
+      "sky": "12077001569bd334a257d40ae71e4689325c45e3505eff3862c0a45c266ecfaa",
+      "steel": "d67c0e417efa629891557f0c29daa0d601513d91d6a46a6ac131adc4fa602878",
+      "tealdark": "55d5d8535a244458f72b933aca613dabfb0feddd70501000f13cbd00405e7137",
+      "teallight": "0d22f0e0d9054dca5c5c6578822dbca48ae52925e48d1e0136b18c9bca6838d7",
+      "terra": "b943283eb0bd9ba601ff45efd69fd517407a9993785cc609ba412184e4ba7326",
+      "tile": "ce025e60e5facf5474255f9bf48f5b799ace3743f8a919475cd06726606da650",
+      "wall": "3ebb6982eb0ebf3276de5727570692a7f9c0a6113683d03803cd7758618d08c4"
+    },
+    "rafa-breakroom": {
+      "black": "6f83a9d095ac798380f2e5347c5777f4a991cd3a1ad420d4fb290a59faddb0b3",
+      "blue": "931a529836c8a695138b6c8c817c81ebba66088443ea59cee58c3c84e016c2cd",
+      "cream": "6924a9cf805f6eeb6077c022e6fb5b2f264c6f7c4efc8b80ad012d9adbc5fc79",
+      "glow": "857ded9f40b6347dc749dedfa04e92dd89827a2d3dcdd5e4660237670d57a591",
+      "ink": "7386f02ced8c30cf3f0699e712dffe5aad9fbc2b1c0c15067577ee61b1fee31f",
+      "leaf": "22bc6dbca390a7cdc94578429ccb073f7a80e886df8c40904904fe86e8af1a78",
+      "leaflight": "5ce98629a7394cb850c497f42558c2dd46082f983078e10da652dd9d94a7e75c",
+      "mint": "4e9f1a69ff33c087c4fa8235154a9a0bc132f3eb797529e5f92e66b53885bd93",
+      "mustard": "b1e0a317ee4fb9974c7260afa4c96a2572d3286ceb54e0b4fc67ff295691cfbf",
+      "navy": "e079cc69da6d7e3e8775e5b9f13b9f0ebdfa6923d7e6d9be5a5dc7a26dcd119b",
+      "oak": "ddc034708e46f49088e57cf094aeaed56be42505b01ec06633e0c7c672a72f17",
+      "oakdark": "6fc524e25d405db18789015855a6f6c738a05b2e47659b0bfecf053d15ca85e8",
+      "office": "8929123ab36825983cc57f098c922428164ad12add436def200d3a2ec92c69fe",
+      "office-poster": "d8dddaf1c74d48af966623768cef04901af483055b086051189d1d6d863e758d",
+      "officelight": "e1ff2e8a674a263431d587edc3d64c93a0dff88600f67bdcd8a9d88f929fc2c3",
+      "pink": "a81e6d8856e0ff239d5793cd2ad7b766acbdf4445e7e90230e45137a0a7dd0d3",
+      "red": "ad5426a451860bea4cd6e5c5828fa42ad7242912e08adc69a2deb9437b473ec4",
+      "screen": "7eb2288075e125e16ad971b6d6ca11b2e2773935cdbd0f9e8a3da70222aa7f26",
+      "steel": "b41870ee1ea0225a5884bb21fca14ce5049abb6dc7c00dca12f4a7f3685e6739",
+      "terra": "bbd104870ef9361f6023ef159c1fa3b14e0c10843a8609d3444f648cd1e5799c"
+    }
+  }
+}

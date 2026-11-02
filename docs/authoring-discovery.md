@@ -1299,3 +1299,47 @@ constraints before choosing dimensions. Chart bars, the TV and call buttons
 are likewise static drawings. Glass and jug geometry keeps parent-space
 coordinates even though their root transform scales around an authored base;
 do not treat that base as a new local origin.
+
+
+## Rafa models and surface preparation
+
+Rafa's five props and two rooms take a mutable `clay.Model`, append static
+triangles and return `None`. Their coordinates use Rafa's centimetre-like
+model units, with y down and z away from the lens. They do not return a
+Canvas group, render a plate or author motion. Material meshes are obtained
+from `model.meshes()`; place those meshes through the plate API when composing
+a scene. Body geometry, faces, recurring props and room foreground dressing
+are separate calls.
+
+Each contract exposes the existing `rafa.finished(mesh)` helper. It preserves
+geometry and adds planar UVs for the authored surface normal map when needed.
+Printed surfaces retain their UVs. Material names resolve through
+`rafa.MATERIALS` or `rafa.materials()`; the latter also prepares painted head
+skin. In-world lettering is a `rafa.PRINTS` recipe referenced by its material,
+so rendering still requires the plate pipeline's font resources.
+
+<!-- rafa-model-discovery:start -->
+```python
+from srstudio import clay, rafa, registry
+
+part = registry.get('prop', 'rafa-mug')
+contract = part.describe()['contract']
+assert contract['returns']['type'] == 'null'
+assert contract['capabilities']['animation'] is False
+model = clay.Model()
+with model.at(20, -240, -180):
+    assert part.builder(model) is None
+finish = next(op.builder for op in part.contract.operations if op.name == 'finished')
+meshes = tuple(finish(mesh) for mesh in model.meshes())
+materials = {mesh.material: rafa.MATERIALS[mesh.material] for mesh in meshes}
+assert materials['mug-label'].print is rafa.PRINTS['mug-label']
+assert all(mesh.uvs is not None for mesh in meshes if materials[mesh.material].normal_map)
+```
+<!-- rafa-model-discovery:end -->
+
+A prop's geometry follows its active `Model.at` frame. Build rooms in the
+identity frame and transform their completed meshes for whole-room placement:
+room plant helpers enter absolute frames, so an outer `Model.at` does not move
+all room geometry together. The fridge, clock hands, mug coffee and phone
+readout are held shapes or printed copy. No grip, support, liquid or appliance
+behavior is supplied by these builders.
