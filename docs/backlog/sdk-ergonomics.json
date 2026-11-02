@@ -54,6 +54,25 @@
     }
   },
   "review_verification": {
+    "proxy_numeric": {
+      "baseline_source_commit": "d10c2022",
+      "initial_numeric_and_recipe_regressions_red": 19,
+      "additional_transition_overflow_regressions_red": 3,
+      "authoring_example_red": 1,
+      "final_tests": {
+        "passed": 126,
+        "subtests_passed": 29,
+        "skipped": 0
+      },
+      "branch_inclusive_coverage_percent": {
+        "on_beat": 100,
+        "proxy": 97,
+        "vehicle": 95
+      },
+      "coverage_scope": "proxy.py, vehicle.py and on_beat.py; 97% total with the unchanged 80% gate. Not a full-repository suite run.",
+      "baseline_outputs_unchanged": 12,
+      "limits": "Static pixel-domain conversion and existing renderer registration/cache checks. Composition proxy payloads, moving-camera proof and style adoption remain separate open work."
+    },
     "toon_social_contracts": {
       "baseline_source_commit": "b3e72f0a",
       "wheel_validation_regressions_red": {
@@ -812,6 +831,34 @@
         "Converted radius remains positive and derived keys finite",
         "Engine samples confirm proportional travel and rotation at three scales",
         "Captured default drawing baseline remains unchanged"
+      ]
+    },
+    {
+      "id": "SDK-P1-12",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Keep proxy palette conversion finite and deterministic",
+      "problem": "Zero-width tone transitions divide by zero, a one-cell grain grid normalizes by zero variance, and tiny positive transitions can overflow before saturation. Very large finite recipe inputs can create infinite transition intervals. Invalid grain seeds, empty quiet families and non-Ink values are accepted at construction; None seeds use fresh entropy and other settings fail only after rendering.",
+      "resolution": "Clamp light values to transition intervals before division, define collapsed intervals as upper-inclusive steps and use zero wander for zero-variance grain. Recipe construction rejects unrepresentable intervals, nondeterministic or invalid seeds, empty families, invalid ink records and boolean oversampling with explicit repair diagnostics. Existing soft-band, seeded-grain and split-layer outputs retain captured byte identities.",
+      "evidence": [
+        "src/srstudio/proxy.py:Recipe",
+        "src/srstudio/proxy.py:_smooth",
+        "src/srstudio/proxy.py:composite"
+      ],
+      "verification": [
+        "tests/test_proxy_numeric_contract.py",
+        "tests/data/proxy-numeric-baseline.json",
+        "tests/test_proxy.py",
+        "tests/test_vehicle.py",
+        "tests/test_car_vibe_study.py",
+        "docs/authoring-parts.md#rigid-proxies-and-deterministic-tone-conversion"
+      ],
+      "acceptance": [
+        "Hard bands and tiny views produce finite RGBA without floating-point exceptions",
+        "Invalid or unrepresentable settings fail during recipe construction with repair fields",
+        "Valid seeded conversion is independent of sampling order",
+        "Captured ordinary soft-band and layer outputs remain byte-identical",
+        "Existing engine registration, layering and warm-cache checks pass"
       ]
     },
     {
