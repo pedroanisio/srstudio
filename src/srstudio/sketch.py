@@ -890,10 +890,12 @@ def record(
     return Recorded(items, beats, end, [(p.start, p.end) for p in placed], voices, heard)
 
 
-def place_again(sketch: Sketch, root: Path) -> list[Beat]:
+def place_again(sketch: Sketch, root: Path, *, mouth: soundtrack.PhonemeStyle | None = None) -> list[Beat]:
     """The beats moved once more onto the recording already under ``root``, for a change of cues that needs no voice:
     the lines' timed letters come from ``voiced/speech.json``, nothing is asked or written but the placed beats and
     what follows from them (``voiced/beats.json``, ``script.json``, ``poses.json``). The audio stays as it was.
+    With ``mouth``, the viseme tracks are read again from those letters with it and ``voiced/mouths.json`` rewritten,
+    so a fix to the lip reading reaches a recorded reel without a take paid for twice.
     :class:`SketchError` when the recording is of other lines, or ends before the beats do."""
     check(sketch)
     root = Path(root)
@@ -904,7 +906,15 @@ def place_again(sketch: Sketch, root: Path) -> list[Beat]:
     beats = place(sketch, word_starts, [t.at + t.kept for t in takes])
     if beats[-1].start + sketch.tail > end + 1e-6:
         raise SketchError(f"the beats run past the recording's {end} s: record again")
-    write_voiced(root, beats, end, sketch.lines)
+    mouths: Mouths | None = None
+    if mouth is not None:
+        lip_synced = sketch.cast.lip_synced
+        mouths = {s.character: [] for s in sketch.speakers if s.character is not None and s.character in lip_synced}
+        for take in takes:
+            if take.who is not None and take.who in mouths:
+                states = visemes(take.alignment, take.at, 0.0, take.kept, style=mouth)
+                extend_track(mouths[take.who], states, take.id)
+    write_voiced(root, beats, end, sketch.lines, mouths)
     return beats
 
 
