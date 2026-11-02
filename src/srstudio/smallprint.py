@@ -1,0 +1,814 @@
+"""Small Print as a format: a question people type, Rafa trying it on his worktop, the finding stamped on a moving
+diagram, and a button that answers the opening another way and cuts back to the first frame (ADR 0195).
+
+A :class:`Show` holds the script as :class:`Beat`, the seconds each take measured and the post. Each beat says what is
+on his worktop (a prop of :mod:`srstudio.smallprint_props` and its state, and the states it moves through), his mood,
+the framing, whether he is crying and which :data:`PANELS` diagram, if any, takes the frame. :meth:`Show.validate`
+keeps the format: the question in typed words and ending on a question mark, a stamp with a named source on every
+finding, the last beat the first one's picture so the reel loops, and the length at :data:`PACE` inside
+:data:`SHORTEST`..:data:`LONGEST`. :func:`run` builds an episode on it, Rafa's plates staged by :func:`stage`.
+
+ARCHITECTURAL REQUIREMENT: LLMs will always produce some form of error.
+Absence of output verification is a design defect, not a runtime bug.
+All LLM output must be treated as untrusted and validated explicitly.
+"""
+
+from __future__ import annotations
+
+import math
+import os
+import re
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
+from functools import cached_property, lru_cache, partial
+from pathlib import Path
+from typing import Any
+
+from . import (
+    camera,
+    host_kit,
+    look,
+    music,
+    native,
+    plates,
+    rafa,
+    rafa_host,
+    rafa_reel,
+    rafa_show,
+    scripting,
+    sketch,
+    smallprint_props,
+    toon,
+)
+from . import foley as synth
+from .fonts import text_width
+from .head_motion import HeadPlan
+from .layout import VERTICAL
+from .rafa_reel import Renders, cut
+from .sketch import Line, Sketch
+from .smallprint_kit import (
+    ACTIVE,
+    CARD_Y,
+    COPPER,
+    INK,
+    LEFT,
+    PAPER,
+    RIGHT,
+    RULED,
+    SHADE,
+    STAMP,
+    Measure,
+    ScriptError,
+    Stamp,
+    card,
+    label,
+    stamp,
+)
+from .social import InstagramPost
+from .toon_sketch import Staging, build, recorder
+
+__all__ = [
+    "CAPTION_LOOK",
+    "FRAMINGS",
+    "LONGEST",
+    "PACE",
+    "PANELS",
+    "SHORTEST",
+    "Beat",
+    "ScriptError",
+    "Show",
+    "Stamp",
+    "audio_main",
+    "card",
+    "run",
+    "shared_sounds",
+    "stage",
+    "stamp",
+    "states",
+    "tear_spans",
+]
+
+HOST = "rafa"
+SPEAKER = rafa_show.SPEAKER  # Will, the voice the operator chose for Rafa (2026-10-31)
+SEED = 52026
+NARRATION = "Voiced with the ElevenLabs premade voice Will; synthesised foley and music."
+NOTE = "ElevenLabs premade voice Will at its natural pace; no reference-voice cloning."
+
+GRADE: dict[str, dict[str, Any]] = {
+    "vignette": dict(amount=0.12, radius=1.1, softness=0.85, color=INK),
+    "film-grain": dict(amount=0.005, size=1.0, seed=2181),
+}
+CAPTION_LOOK = native.CaptionLook(
+    size=64.0, color=PAPER, active=ACTIVE, stroke=INK, stroke_width=6.0, line_height=1.14, max_chars=23
+)
+CAPTION_PAD = 30.0
+FRAMINGS = ("medium", "close", "tight")
+GAP = 0.2  # seconds of air between two lines that have no hold
+TAIL = 0.6  # seconds the reel runs on after the last line, on the first frame's picture
+PACE = 2.7  # spoken words a second, the estimate a length is checked at until a take measures it
+SHORTEST, LONGEST = 20.0, 30.0
+QUESTION_BY = 2.0  # seconds: the question is on screen by then (it is from the first frame)
+ROOM_GAIN, BED_GAIN = -30.0, -27.0
+PLACEHOLDER = ("side", "flat", "desk")  # a pose for the sketch's check: this man is drawn from his beats
+TOP, BOTTOM = 220.0, 1240.0  # frame rows a panel draws inside: the safe area, clear of the caption band
+
+
+@dataclass(frozen=True)
+class Beat:
+    """One line of the script: its ``id``, the words, his ``mood``, the worktop ``prop`` and its ``state`` when the
+    line starts (empty: as the beat before left them), the ``steps`` it moves through after that (seconds into the
+    line, state), the ``framing``, the seconds he holds after it, a ``panel`` that takes the frame, the ``stamp`` on it,
+    whether he is crying, and the line's ``gain`` in dB."""
+
+    id: str
+    line: str
+    mood: str
+    prop: str = ""
+    state: str = ""
+    steps: tuple[tuple[float, str], ...] = ()
+    framing: str = "medium"
+    hold: float = 0.0
+    panel: str = ""
+    stamp: Stamp | None = None
+    tears: bool = False
+    gain: float = 0.0
+
+
+@dataclass(frozen=True)
+class Show:
+    """One episode: the ``question`` as people type it, the script in ``beats``, ``kept`` the seconds each take
+    measured."""
+
+    slug: str
+    number: int
+    title: str
+    question: str
+    description: str
+    accessibility: str
+    beats: tuple[Beat, ...]
+    kept: tuple[float, ...]
+    post: InstagramPost
+    push: tuple[float, float] = (2.0, 1.05)  # (seconds, scale) of the opening move
+    room: str = "rafa-kitchen"
+    bleed: bool = True
+
+    @property
+    def output(self) -> str:
+        return f"renders/pilots/{self.slug}.mp4"
+
+    @property
+    def names(self) -> tuple[str, ...]:
+        return tuple(beat.id for beat in self.beats)
+
+    @property
+    def lines(self) -> tuple[Line, ...]:
+        return tuple(Line(HOST, beat.line, gain=beat.gain) for beat in self.beats)
+
+    def spoken_words(self) -> int:
+        return sum(len(beat.line.split()) for beat in self.beats)
+
+    def estimated_seconds(self) -> float:
+        """The script's length at :data:`PACE`, with its holds and the tail: an estimate until a take measures it."""
+        return self.spoken_words() / PACE + sum(beat.hold or GAP for beat in self.beats) + TAIL
+
+    def starts(self) -> tuple[float, ...]:
+        """Where each line starts: where the one before ends, plus its hold, or :data:`GAP` when it has none."""
+        rows, at = [], 0.0
+        for beat, kept in zip(self.beats, self.kept, strict=True):
+            rows.append(round(at, 3))
+            at += kept + (beat.hold or GAP)
+        return tuple(rows)
+
+    @cached_property
+    def sketch(self) -> Sketch:
+        """The script for the recording, timed from the takes."""
+        script = scripting.Script(self.lines)
+        beats = tuple(script.say(at, HOST, i, *PLACEHOLDER) for i, at in enumerate(self.starts()))
+        end = round(self.starts()[-1] + self.kept[-1] + TAIL, 3)
+        return Sketch(self.slug, self.title, (SPEAKER,), self.lines, beats, end, cast=rafa_host.CAST)
+
+    def said(self, speech: Sequence[tuple[float, float]]) -> dict[str, tuple[float, float]]:
+        """When each line was said, by the name of its beat."""
+        return dict(zip(self.names, speech, strict=True))
+
+    def beat(self, name: str, beats: Sequence[Any] | None = None) -> Any:
+        """The beat called ``name``, from the sketch's or a recording's ``beats``."""
+        return (self.sketch.beats if beats is None else beats)[self.names.index(name)]
+
+    def acts(self) -> tuple[tuple[str, str, str, str], ...]:
+        """Each beat's picture of him: (framing, prop, state, mood), a beat with no prop carrying the last one's
+        worktop on in the state its steps left it."""
+        rows, prop, state = [], "", ""
+        for beat in self.beats:
+            prop, state = (beat.prop, beat.state) if beat.prop else (prop, state)
+            rows.append((beat.framing, prop, state, beat.mood))
+            state = beat.steps[-1][1] if beat.steps else state
+        return tuple(rows)
+
+    def validate(self) -> None:
+        """Every beat is one the show can stage and the script keeps the format, or :class:`ScriptError`."""
+        if not self.beats or len(self.kept) != len(self.beats):
+            raise ScriptError(f"{len(self.kept)} measured takes for {len(self.beats)} beats")
+        host_kit.check_copy(self.question)
+        if not self.question.endswith("?") or len(self.question.split()) > 14:
+            raise ScriptError(
+                f"the question is what people type, fourteen words at most, a '?' last: {self.question!r}"
+            )
+        if not self.beats[0].prop or not self.beats[0].state:
+            raise ScriptError("the first beat puts a prop on his worktop, in a state")
+        for beat in self.beats:
+            self._check(beat)
+        if self.acts()[-1] != self.acts()[0] or self.beats[-1].tears != self.beats[0].tears:
+            raise ScriptError("the last beat is the first one's picture, so the reel cuts back to its first frame")
+        if self.beats[0].panel or self.beats[-1].panel:
+            raise ScriptError("the reel opens and closes on him, with the question over him")
+        if not any(beat.stamp for beat in self.beats):
+            raise ScriptError("a finding is stamped, with its source")
+        for i, (beat, kept) in enumerate(zip(self.beats, self.kept, strict=True)):
+            if beat.steps and beat.steps[-1][0] >= kept + (beat.hold or GAP) and i + 1 < len(self.beats):
+                raise ScriptError(f"{beat.id}: a step lands after its beat, at {beat.steps[-1][0]} s")
+        timed = self.starts()[-1] + self.kept[-1] + TAIL
+        if not SHORTEST <= timed <= LONGEST:
+            raise ScriptError(f"the takes come to {timed:.1f} s; the show runs {SHORTEST} to {LONGEST} s")
+        length = self.estimated_seconds()
+        if not SHORTEST <= length <= LONGEST:
+            raise ScriptError(
+                f"the show runs {SHORTEST} to {LONGEST} s, this comes to {length:.1f} s at {PACE} words a second"
+            )
+
+    def _check(self, beat: Beat) -> None:
+        host_kit.check_copy(beat.line)
+        if beat.mood not in rafa.MOODS:
+            raise ScriptError(f"{beat.id}: Rafa's moods are {tuple(rafa.MOODS)}, got {beat.mood!r}")
+        if beat.framing not in FRAMINGS:
+            raise ScriptError(f"{beat.id}: a framing is one of {FRAMINGS}, got {beat.framing!r}")
+        if beat.hold < 0.0:
+            raise ScriptError(f"{beat.id}: a hold is not negative, got {beat.hold!r}")
+        for sentence in captioned(beat.line):
+            if len(native.wrap(sentence, CAPTION_LOOK.max_chars, CAPTION_LOOK.max_words)) > CAPTION_LOOK.max_lines:
+                rows = CAPTION_LOOK.max_lines
+                raise ScriptError(f"{beat.id}: {sentence!r} is more than the caption band's {rows} rows")
+        if beat.prop and beat.prop not in smallprint_props.STATES:
+            raise ScriptError(f"{beat.id}: the worktop props are {tuple(smallprint_props.STATES)}, got {beat.prop!r}")
+        prop = beat.prop or next(a[1] for b, a in zip(self.beats, self.acts(), strict=True) if b is beat)
+        for state in (beat.state, *(s for _, s in beat.steps)):
+            if state and state not in smallprint_props.STATES[prop]:
+                raise ScriptError(f"{beat.id}: {prop}'s states are {smallprint_props.STATES[prop]}, got {state!r}")
+        offsets = [at for at, _ in beat.steps]
+        if offsets != sorted(offsets) or any(at < 0.0 for at in offsets):
+            raise ScriptError(f"{beat.id}: steps go forward from the line's start, got {offsets}")
+        if beat.panel and beat.panel not in PANELS:
+            raise ScriptError(f"{beat.id}: the panels are {tuple(PANELS)}, got {beat.panel!r}")
+        if beat.stamp is not None:
+            if not beat.panel:
+                raise ScriptError(f"{beat.id}: a stamp lands on a panel")
+            for text in (beat.stamp.text, beat.stamp.source):
+                host_kit.check_copy(text)
+            if not beat.stamp.source.strip() or len(beat.stamp.text) > 30:
+                raise ScriptError(f"{beat.id}: a stamp is 30 characters at most and names its source, got {beat.stamp}")
+
+    def validate_sketch(self, sk: Sketch | None = None) -> None:
+        """The sketch is consistent, parallel to the script, and every word on screen passes the copy check."""
+        sk = self.sketch if sk is None else sk
+        self.validate()
+        sketch.check(sk)
+        if len(sk.beats) != len(self.beats) or [q.text for q in sk.lines] != [b.line for b in self.beats]:
+            raise ScriptError(f"{len(sk.beats)} beats for the script's {len(self.beats)}")
+        for text in (self.post.title, self.post.description):
+            host_kit.check_copy(text)
+
+    def spans(self, beats: Sequence[Any], end: float) -> list[tuple[float, float]]:
+        """Each beat's frames: from the cut before its line to the cut before the next, the first from 0 s."""
+        starts = [0.0, *(cut(b.start) for b in beats[1:])]
+        return list(zip(starts, [*starts[1:], end], strict=True))
+
+    def panel_runs(self, beats: Sequence[Any], end: float) -> list[tuple[str, float, float, list[tuple[Beat, float]]]]:
+        """Each panel's run of beats: its name, the first frame and the last, and its beats with their starts."""
+        rows: list[tuple[str, float, float, list[tuple[Beat, float]]]] = []
+        for beat, (first, last), sb in zip(self.beats, self.spans(beats, end), beats, strict=True):
+            if not beat.panel:
+                continue
+            if rows and rows[-1][0] == beat.panel and math.isclose(rows[-1][2], first):
+                name, began, _, held = rows[-1]
+                rows[-1] = (name, began, last, [*held, (beat, sb.start)])
+            else:
+                rows.append((beat.panel, first, last, [(beat, sb.start)]))
+        return rows
+
+    def overlay(self, cv, parent, beats, end, measure) -> None:
+        """Over the picture: each panel and its stamps, the question card on the first beat and the last, the marks."""
+        for name, first, last, held in self.panel_runs(beats, end):
+            g = cv.group(parent, cv.uid(f"smallprint-panel-{name}"), start=first, end=last)
+            PANELS[name](cv, g, first, last, measure)
+            for i, (beat, said) in enumerate(held):
+                if beat.stamp is not None:
+                    until = held[i + 1][1] if i + 1 < len(held) else last
+                    stamp(
+                        cv,
+                        g,
+                        beat.stamp,
+                        max(first, cut(said) + 0.35),
+                        cut(until) if i + 1 < len(held) else last,
+                        measure,
+                    )
+        spans = self.spans(beats, end)
+        card(cv, parent, self.question, 0.0, spans[0][1], measure)
+        card(cv, parent, self.question, spans[-1][0], end, measure, id="smallprint-card-again")
+        host_kit.sign(cv, parent)
+
+
+def captioned(line: str) -> list[str]:
+    """The cues a line becomes: the line whole when it fits the caption band's rows, or else its sentences packed into
+    the fewest cues that fit, as :func:`srstudio.host_kit.caption_cues` cuts it."""
+    if len(native.wrap(line, CAPTION_LOOK.max_chars, CAPTION_LOOK.max_words)) <= CAPTION_LOOK.max_lines:
+        return [line]
+    sentences = [part.split() for part in re.split(r"(?<=[.!?])\s+", line) if part.strip()]
+    return [" ".join(cue) for cue in host_kit.packed(sentences)]
+
+
+# -- the worktop on the clock -----------------------------------------------------------------------------------------
+def states(show: Show, beats: Sequence[Any], end: float) -> dict[tuple[str, str], list[tuple[float, float]]]:
+    """When each worktop plate is up: every beat's state from its cut, each step from the frame it lands on, to the
+    next change. The spans tile 0..``end`` with no frame missing."""
+    changes: list[tuple[float, tuple[str, str]]] = []
+    rows = zip(show.beats, show.acts(), beats, show.spans(beats, end), strict=True)
+    for beat, (_, prop, state, _), sb, (first, last) in rows:
+        changes.append((first, (prop, state)))
+        for at, step in beat.steps:
+            when = cut(sb.start + at)
+            if first < when < last:
+                changes.append((when, (prop, step)))
+    out: dict[tuple[str, str], list[tuple[float, float]]] = {}
+    for (at, key), (until, _) in zip(changes, [*changes[1:], (end, ("", ""))], strict=True):
+        if until > at:
+            out.setdefault(key, []).append((at, until))
+    return out
+
+
+def tear_spans(show: Show, beats: Sequence[Any], end: float) -> list[tuple[float, float]]:
+    """The frames he is crying on."""
+    return [span for beat, span in zip(show.beats, show.spans(beats, end), strict=True) if beat.tears]
+
+
+def _changes(show: Show, beats: Sequence[Any], end: float, field: int) -> list[tuple[float, str]]:
+    rows: list[tuple[float, str]] = []
+    for act, (first, _) in zip(show.acts(), show.spans(beats, end), strict=True):
+        if not rows or rows[-1][1] != act[field]:
+            rows.append((first, act[field]))
+    return rows
+
+
+def tears_patch(made: rafa_host.Sheet, pose: tuple[float, float], renders: Renders) -> plates.Patch:
+    """His tears at ``pose``: what the tear plate adds to his pose plate, inside his head's box."""
+    over = renders.plate(smallprint_props.tear_plate(*pose))
+    picture = plates.patch(made.bodies[pose], over, renders.cache, within=rafa_host.HEAD_BOX)
+    if picture is None:
+        raise ScriptError(f"the tears changed nothing on his plate at {pose}")
+    return picture
+
+
+def stage(show: Show, plan_of: Callable[[float], HeadPlan], renders: Renders, root: Path) -> Callable[[Any], None]:
+    """The dress of a reel: the room, him, his tears where he cries, and the worktop plate of every state, in one
+    group that pushes in over the first seconds and cuts back on the first change of framing."""
+
+    def dress(shot: Any) -> None:
+        cv, end = shot.cv, shot.end
+        plan = plan_of(end)
+        rows = rafa_host.faces(
+            end, mouths=shot.mouths.get(HOST, ()), plan=plan, moods=_changes(show, shot.beats, end, 3)
+        )
+        made = rafa_host.sheet(rows, engine=renders.engine, cache=renders.cache, fonts=renders.fonts)
+        world = cv.group(shot.back, "rafa-world")
+        rafa_host.backdrop(cv, world, renders.plate(rafa_host.room(show.room)), root)
+        man = rafa_host.perform(cv, world, rows, made, root, plan=plan)
+        crying = tear_spans(show, shot.beats, end)
+        keys = [
+            (f.turn, f.nod) if any(a <= i / rafa_host.FPS < b for a, b in crying) else None for i, f in enumerate(rows)
+        ]
+        shelf = rafa_host._Shelf(cv, Path(root))
+        for pose, spans in rafa_host._runs(keys).items():
+            if pose is not None:
+                rafa_host._gated(cv, man, shelf, tears_patch(made, pose, renders), spans)  # type: ignore[arg-type]
+        for (prop, state), spans in states(show, shot.beats, end).items():
+            g = cv.group(world, cv.uid("smallprint-worktop"), opacity=0.0)
+            cv.gate(g, spans)
+            plate = smallprint_props.worktop(prop, state, show.room)
+            rafa_host.front(cv, g, rafa_host.worktop(renders.plate(plate), renders.cache), root)
+        over, to = show.push
+        camera.anchor(world, 540.0, host_kit.PIVOT_Y, place=True)
+        acts = show.acts()
+        settle = next(
+            (first for act, (first, _) in zip(acts, show.spans(shot.beats, end), strict=True) if act[0] != acts[0][0]),
+            end,
+        )
+        settle = max(settle, 2.0 / rafa_host.FPS)
+        frame = 1.0 / rafa_host.FPS
+        keys2 = sorted({(0.0, 1.0), (min(over, settle - frame), to), (settle - frame, to), (settle, 1.0)})
+        for axis in ("scaleX", "scaleY"):
+            cv.keys(world, axis, keys2, hold=False, local=False)
+
+    return dress
+
+
+def framing(show: Show) -> Callable[[Any, Any], None]:
+    """A ``Staging.camera``: a hold key on every change of framing, about his face."""
+
+    def move(shot: Any, group: Any) -> None:
+        rows = _changes(show, shot.beats, shot.end, 0)
+        camera.anchor(group, 540.0, host_kit.PIVOT_Y, place=True)
+        camera.zoom_holds(shot.cv, group, [(at, rafa_reel.FRAMES[name]) for at, name in rows])
+
+    return move
+
+
+def finish(cv, node) -> None:
+    """The channel's grade over a shot: a little ink at the corners and paper grain; it blurs nothing."""
+    look.grade(cv, node, "smallprint", GRADE)
+
+
+# -- the graphics -----------------------------------------------------------------------------------------------------
+def pivot(cv, parent, name: str, x: float, y: float, **attrs: Any):
+    """A group that scales and turns about ``(x, y)`` and stays where it is drawn: the engine puts a group's anchor at
+    its ``x, y``, so an anchor alone would move everything in it by minus the anchor."""
+    return cv.group(parent, cv.uid(name), x=x, y=y, anchorX=x, anchorY=y, **attrs)
+
+
+def sheet(cv, parent) -> None:
+    """A page of fine print, the whole frame: paper, ruled lines, a margin."""
+    cv.rect(parent, 0, 0, rafa_host.WIDTH, rafa_host.HEIGHT, PAPER)
+    for k in range(int(rafa_host.HEIGHT // 64) + 1):
+        cv.line(parent, 0, 40 + k * 64, rafa_host.WIDTH, 40 + k * 64, "#9AA6BF55", 2.0)
+    cv.line(parent, 64, 0, 64, rafa_host.HEIGHT, "#A82E2266", 3.0)
+
+
+def _tower(cv, parent, cx: float, foot: float, scale: float, fill: str = SHADE) -> float:
+    """A stepped tower outline standing on ``foot``; returns its spire's top."""
+    y = foot
+    for wide, tall in ((300, 260), (240, 220), (180, 190), (120, 150), (76, 100)):
+        w, h = wide * scale, tall * scale
+        cv.rect(parent, cx - w / 2, y - h, w, h, fill, stroke=INK, sw=5.0, radius=4.0)
+        for k in (-1, 0, 1):
+            cv.line(parent, cx + k * w / 4, y - h + 14 * scale, cx + k * w / 4, y - 14 * scale, RULED, 3.0)
+        y -= h
+    cv.line(parent, cx, y, cx, y - 110 * scale, INK, 6.0)
+    return y - 110 * scale
+
+
+def penny_fall(cv, g, first: float, last: float, measure: Measure) -> None:
+    """The penny tumbling down past a tower, faster and then no faster, a speed bar that climbs and stops at its
+    line, over and over while the panel is up."""
+    sheet(cv, g)
+    _tower(cv, g, 330.0, 940.0, 0.68)  # its spire under the safe area's top
+    fall, drop = 2.2, (300.0, 900.0)
+    coin = pivot(cv, g, "sp-coin", 560.0, 0.0)
+    cv.ellipse(coin, 530, -30, 60, 60, COPPER, stroke=INK, sw=4.0)
+    cv.ellipse(coin, 546, -14, 28, 28, "#00000000", stroke="#7A3E1E", sw=3.0)
+    ys, flips = [], []
+    t = first
+    while t < last:
+        for k in range(23):
+            u = k / 22
+            p = u * u * 2 if u < 0.25 else 0.125 + (u - 0.25) * (1 - 0.125) / 0.75  # it speeds up, then it doesn't
+            ys.append((t + u * fall, drop[0] + (drop[1] - drop[0]) * p))
+        ys.append((t + fall + 0.01, drop[0]))
+        for k in range(12):
+            flips.append((t + k * fall / 12, 1.0 if k % 2 == 0 else 0.2))
+        t += fall + 0.2
+    cv.keys(coin, "y", ys, hold=False, local=False)
+    cv.keys(coin, "scaleX", flips, hold=False, kind="sine-in-out", local=False)
+    meter_x, meter_top, meter_foot = 760.0, 360.0, 900.0
+    cv.rect(g, meter_x, meter_top, 90, meter_foot - meter_top, PAPER, stroke=INK, sw=5.0, radius=12.0)
+    level = meter_foot - (meter_foot - meter_top) * 0.62
+    cv.line(g, meter_x - 20, level, meter_x + 110, level, STAMP, 5.0)
+    label(cv, g, "25 mph", meter_x - 170, level - 25, 150, 50, 38.0, STAMP, "end")
+    label(cv, g, "speed", meter_x - 30, meter_foot + 8, 160, 44, 32.0, INK, "center")
+    bar = pivot(cv, g, "sp-bar", meter_x, meter_foot - 8)
+    cv.rect(bar, meter_x + 12, level, 66, meter_foot - 8 - level, COPPER, radius=8.0)
+    rises, t = [], first
+    while t < last:
+        rises += [(t, 0.02), (t + fall * 0.25, 1.0), (t + fall, 1.0), (t + fall + 0.01, 0.02)]
+        t += fall + 0.2
+    cv.keys(bar, "scaleY", rises, hold=False, local=False)
+
+
+def lightning(cv, g, first: float, last: float, measure: Measure) -> None:
+    """The tower under a cloud, a bolt finding its spire twice, and the year's strikes ticked off in fives."""
+    sheet(cv, g)
+    spire = _tower(cv, g, 330.0, 940.0, 0.55)
+    cloud = cv.group(g, cv.uid("sp-cloud"))
+    for puff in ((150, 150, 260, 100), (290, 130, 240, 120), (420, 155, 220, 90)):
+        cv.ellipse(cloud, *puff, "#C9CFDB", stroke=INK, sw=4.0)
+    cv.keys(cloud, "x", [(first, -30.0), (last, 30.0)], hold=False, local=False)
+    base, reach = 250.0, spire - 250.0  # from under the cloud down to the spire's tip
+    zag = ((330, 0.0), (304, 0.4), (346, 0.4), (316, 0.78), (338, 0.78), (330, 1.0))
+    bolt = "M" + " L".join(f"{x} {base + reach * f:.0f}" for x, f in zag)
+    for k, at in enumerate((first + 0.5, first + 2.0)):
+        b = cv.group(g, cv.uid("sp-bolt"), opacity=0.0)
+        cv.path(b, bolt, fill="#00000000", stroke="#F2C230", sw=14.0)
+        cv.path(b, bolt, fill="#00000000", stroke=INK, sw=4.0)
+        cv.keys(b, "opacity", [(at, 0.0), (at + 0.06, 1.0), (at + 0.5, 1.0), (at + 0.9, 0.0)], hold=False, local=False)
+        del k
+    span = max(last - first - 0.6, 1.0)
+    for n in range(23):
+        group, item = divmod(n, 5)
+        x, y = 600.0 + group * 70.0 if group < 3 else 600.0 + (group - 3) * 70.0, 420.0 if group < 3 else 640.0
+        tick = cv.group(g, cv.uid("sp-tick"), opacity=0.0)
+        if item < 4:
+            cv.line(tick, x + item * 13, y, x + item * 13, y + 110, INK, 6.0)
+        else:
+            cv.line(tick, x - 8, y + 90, x + 54, y + 20, STAMP, 6.0)
+        at = first + 0.3 + span * n / 23
+        cv.keys(tick, "opacity", [(at, 0.0), (at + 0.08, 1.0)], hold=False, local=False)
+
+
+def fold_layers(cv, g, first: float, last: float, measure: Measure) -> None:
+    """A stack of layers doubling a fold at a time beside a ledger that keeps every count, so no count flashes past
+    before it can be read; then, when the page stays up long enough, the paper each fold needs, every sheet four times
+    the one before."""
+    sheet(cv, g)
+    counts = (1, 2, 4, 8, 16, 32, 64, 128)
+    foot, left, tall, overshoot = 900.0, 470.0, 78.0, 1.06
+    wide = (RIGHT - left) / overshoot  # as wide as it can be at the top of its pop
+    step = min(0.45, max((last - first - 1.0) / 8, 0.2))
+    turn = max(first + 8 * step + 1.0, (first + last) / 2)
+    paper = last - turn >= 1.2  # room for the second picture
+    until = turn if paper else last
+    stack = pivot(cv, g, "sp-stack", 300.0, foot, end=until)
+    for k in range(32):
+        cv.rect(stack, 200, foot - (k + 1) * 18.0, 200, 16.0, PAPER if k % 2 else "#FFFFFF", stroke=INK, sw=2.0)
+    cv.keys(stack, "scaleY", [(first + i * step, (i + 1) / 8) for i in range(8)], hold=True, local=False)
+    rows = ["1 layer", *(f"fold {i}: {n} layers" for i, n in enumerate(counts[1:], 1))]
+    size = min(46.0, *(46.0 * wide / measure(row, 46.0) for row in rows))
+    for i, row in enumerate(rows):
+        top = foot - tall * (i + 1)
+        line = pivot(cv, g, "sp-count", left, top + tall / 2, start=first + i * step, end=until)
+        label(cv, line, row, left, top, wide, tall, size, STAMP if i == len(rows) - 1 else INK, "start")
+        cv.pop_in(line, first + i * step, from_=0.8, over=overshoot)
+    if paper:
+        _quadrupling(cv, g, turn, last, foot, measure)
+
+
+def _quadrupling(cv, g, first: float, last: float, foot: float, measure: Measure) -> None:
+    """Five sheets from one corner, each twice as wide and twice as tall as the one before: four times the paper. All
+    five are down by three fifths of the page's time, so the whole picture holds before the cut."""
+    heading = "each sheet: 4x the last"
+    size = min(64.0, 64.0 * (RIGHT - LEFT) / measure(heading, 64.0))
+    label(cv, cv.group(g, cv.uid("sp-four"), start=first), heading, LEFT, CARD_Y, RIGHT - LEFT, 80, size, INK, "center")
+    sides = [35.0 * 2**k for k in range(5)]  # the biggest, 560 px, stands clear of the heading
+    step = min(0.35, 0.6 * (last - first) / len(sides))
+    x0 = 500.0 - sides[-1] / 2
+    for k, side in reversed(list(enumerate(sides))):  # the biggest underneath
+        piece = pivot(cv, g, "sp-sheet", x0, foot, start=first + k * step)
+        cv.rect(piece, x0, foot - side, side, side, "#FFFFFF" if k % 2 else PAPER, stroke=INK, sw=3.0)
+        cv.pop_in(piece, first + k * step, from_=0.85, over=1.0)
+
+
+def long_strip(cv, g, first: float, last: float, measure: Measure) -> None:
+    """A strip of tissue as long as a road, running across the page and never ending, with a fold mark every so
+    often, and how long it was."""
+    sheet(cv, g)
+    belt = cv.group(g, cv.uid("sp-strip"))
+    for k in range(14):
+        x = k * 180.0
+        cv.rect(belt, x, 560, 182, 150, "#FFFFFF", stroke=INK, sw=3.0)
+        cv.line(belt, x + 90, 560, x + 90, 710, RULED, 3.0)
+    cv.keys(belt, "x", [(first, 0.0), (last, -720.0 * (last - first) / 4.0)], hold=False, local=False)
+    label(cv, g, "Britney Gallivan, 2002", LEFT, 250, RIGHT - LEFT, 70, 48.0, INK, "center")
+    label(cv, g, "4,000 ft", LEFT, 340, RIGHT - LEFT, 150, 130.0, INK, "center")
+    label(cv, g, "of tissue paper, 1.2 km", LEFT, 480, RIGHT - LEFT, 60, 40.0, INK, "center")
+
+
+def onion_gas(cv, g, first: float, last: float, measure: Measure) -> None:
+    """An onion's cut face, its cells breaking one after another, the gas rising off them in wisps to an eye, and a
+    tear running out of it."""
+    sheet(cv, g)
+    cx, cy = 320.0, 820.0
+    for r, colour in ((230, "#E9D9AE"), (190, "#F3E8C8"), (150, "#E9D9AE"), (110, "#F3E8C8"), (70, "#E9D9AE")):
+        cv.ellipse(g, cx - r, cy - r * 0.8, 2 * r, 1.6 * r, colour, stroke=INK, sw=4.0)
+    span = max(last - first, 1.0)
+    for k in range(9):
+        a = k * 2 * math.pi / 9
+        x, y = cx + 150 * math.cos(a), cy + 110 * math.sin(a)
+        cell = pivot(cv, g, "sp-cell", x, y)
+        cv.ellipse(cell, x - 22, y - 22, 44, 44, "#FFFFFF", stroke=INK, sw=3.0)
+        at = first + 0.3 + (span - 1.0) * k / 9
+        cv.keys(cell, "scaleX", [(at, 1.0), (at + 0.15, 0.0)], hold=False, local=False)
+        cv.keys(cell, "scaleY", [(at, 1.0), (at + 0.15, 0.0)], hold=False, local=False)
+    for k in range(4):
+        wisp = cv.group(g, cv.uid("sp-wisp"), opacity=0.0)
+        x0 = 300.0 + k * 50
+        cv.path(
+            wisp,
+            f"M{x0} 640 C{x0 + 60} 560 {x0 - 40} 500 {x0 + 30} 430 S{x0 + 120} 340 {x0 + 220} 330",
+            fill="#00000000",
+            stroke="#8FA88A",
+            sw=8.0,
+        )
+        rows, t = [], first + 0.2 + k * 0.35
+        while t < last:
+            rows += [(t, 0.0), (t + 0.3, 0.85), (t + 1.1, 0.0)]
+            t += 1.4
+        cv.keys(wisp, "opacity", rows, hold=False, local=False)
+        cv.keys(wisp, "y", [(first, 30.0), (last, -40.0)], hold=False, local=False)
+    ex, ey = 700.0, 360.0
+    cv.path(
+        g,
+        f"M{ex - 130} {ey} Q{ex} {ey - 110} {ex + 130} {ey} Q{ex} {ey + 110} {ex - 130} {ey} Z",
+        fill="#FFFFFF",
+        stroke=INK,
+        sw=6.0,
+    )
+    cv.ellipse(g, ex - 42, ey - 42, 84, 84, "#6B4A2E", stroke=INK, sw=4.0)
+    cv.ellipse(g, ex - 18, ey - 18, 36, 36, INK)
+    drop = cv.group(g, cv.uid("sp-drop"))
+    cv.path(
+        drop,
+        f"M{ex + 60} {ey + 70} Q{ex + 40} {ey + 110} {ex + 60} {ey + 120} Q{ex + 80} {ey + 110} {ex + 60} {ey + 70} Z",
+        fill="#9FD3EA",
+        stroke=INK,
+        sw=3.0,
+    )
+    rows, t = [], first + 0.6
+    while t < last:
+        rows += [(t, 0.0), (t + 1.0, 160.0), (t + 1.01, 0.0)]
+        t += 1.3
+    cv.keys(drop, "y", rows or [(first, 0.0)], hold=False, local=False)
+
+
+def onion_fix(cv, g, first: float, last: float, measure: Measure) -> None:
+    """What the sources back: a cold onion, its thermometer falling, and a blunt knife spraying droplets above a sharp
+    one throwing fewer, slower ones."""
+    sheet(cv, g)
+    label(cv, g, "cold", 110, 300, 300, 70, 56.0, INK, "center")
+    cv.ellipse(g, 140, 420, 240, 220, "#C08442", stroke=INK, sw=5.0)
+    cv.path(g, "M260 420 L250 380 L275 380 Z", fill="#C08442", stroke=INK, sw=4.0)
+    for k in range(5):
+        flake = cv.group(g, cv.uid("sp-flake"))
+        x = 120 + k * 60
+        cv.line(flake, x, 690, x, 730, RULED, 5.0)
+        cv.line(flake, x - 18, 710, x + 18, 710, RULED, 5.0)
+        cv.keys(flake, "y", [(first, -60.0 - k * 20), (last, 40.0)], hold=False, local=False)
+    tube = 430.0
+    cv.rect(g, tube, 380, 40, 300, PAPER, stroke=INK, sw=4.0, radius=20.0)
+    mercury = pivot(cv, g, "sp-mercury", tube + 20, 680.0)
+    cv.rect(mercury, tube + 8, 400, 24, 280, STAMP, radius=12.0)
+    cv.keys(mercury, "scaleY", [(first, 1.0), (first + 1.6, 0.3)], hold=False, kind="cubic-out", local=False)
+    _knife(cv, g, "blunt", 300.0, 7, first, last)
+    _knife(cv, g, "sharp", 600.0, 2, first, last)
+
+
+def _knife(cv, g, edge: str, top: float, drops: int, first: float, last: float) -> None:
+    """A knife rocking through a cut, labelled ``edge``, throwing ``drops`` droplets on every stroke while the panel is
+    up: the blunt one sprays more of them, and faster, than the sharp one (Wu et al., 2025)."""
+    label(cv, g, edge, 560, top, 360, 70, 56.0, INK, "center")
+    y = top + 110.0
+    knife = pivot(cv, g, "sp-knife", 740.0, y + 20.0)
+    blade = f"M600 {y} L880 {y} L880 {y + 40} L640 {y + 60} Z"
+    if edge == "blunt":
+        blade = f"M610 {y} L880 {y} L880 {y + 40} L650 {y + 56} Q600 {y + 50} 610 {y} Z"
+    cv.path(knife, blade, fill="#D9DEE6", stroke=INK, sw=4.0 if edge == "sharp" else 7.0)
+    cv.rect(knife, 880, y - 8, 40, 56, INK, radius=10.0)
+    stroke = 0.9
+    strokes = int((last - first) / stroke)
+    cv.keys(
+        knife,
+        "rotation",
+        [(first + k * stroke / 2, 6.0 if k % 2 else -4.0) for k in range(2 * strokes + 1)],
+        hold=False,
+        kind="sine-in-out",
+        local=False,
+    )
+    fall = 0.45 if edge == "blunt" else 0.7
+    for k in range(drops):
+        dot = cv.group(g, cv.uid("sp-droplet"), opacity=0.0)
+        cv.ellipse(dot, 630 + k * (230 / max(drops - 1, 1)), y + 70, 24, 24, "#6FB7DA", stroke=INK, sw=3.0)
+        starts = [first + c * stroke + 0.05 * k for c in range(strokes)]
+        cv.keys(
+            dot,
+            "opacity",
+            [key for at in starts for key in ((at, 0.0), (at + 0.06, 1.0), (at + fall * 0.7, 1.0), (at + fall, 0.0))],
+            hold=False,
+            local=False,
+        )
+        cv.keys(dot, "y", [key for at in starts for key in ((at, 0.0), (at + fall, 90.0))], hold=False, local=False)
+
+
+PANELS: dict[str, Callable[..., None]] = {
+    "penny-fall": penny_fall,
+    "lightning": lightning,
+    "fold-layers": fold_layers,
+    "long-strip": long_strip,
+    "onion-gas": onion_gas,
+    "onion-fix": onion_fix,
+}
+
+
+# -- the captions, the sounds, the episode --------------------------------------------------------------------------
+def captions(ep: Any, lines: Sequence[toon.Line], measure: Measure, words: Sequence[Any] = ()):
+    """The engine's karaoke track on an ink band, in the safe area, under his chin in every framing. Returns the
+    bands' group and the track, both of which the cover leaves out."""
+    cues = host_kit.caption_cues(lines, words)
+    region = ep.spec.safe_area.region(ep.spec.width, ep.spec.height)
+    top = region.y1 - CAPTION_LOOK.block
+    tall = CAPTION_LOOK.size * CAPTION_LOOK.line_height
+    bands = ep.cv.group(ep.comp, "smallprint-caption-bands")
+    for cue in cues:
+        rows = native.wrap(cue.text, CAPTION_LOOK.max_chars, CAPTION_LOOK.max_words)
+        wide = max(measure(row, CAPTION_LOOK.size) for row in rows) + 2.0 * CAPTION_PAD
+        g = ep.cv.group(bands, ep.cv.uid("g"), start=cue.start, end=cue.end)
+        x = round((region.x0 + region.x1 - wide) / 2.0, 2)
+        ep.cv.rect(g, x, top - 8.0, wide, len(rows) * tall + 2 * CAPTION_LOOK.stroke_width + 16.0, INK, radius=18.0)
+    return bands, ep.native_captions(cues, look=CAPTION_LOOK, id="smallprint-captions")
+
+
+def sounder(root: Path, end: float, seed: int) -> Callable[..., dict]:
+    """A maker of foley tracks for one episode: ``sound(id, gain, burst, times)``, one clip the length of the reel."""
+    audio = Path(root) / "audio"
+    audio.mkdir(parents=True, exist_ok=True)
+
+    def sound(id: str, gain: float, burst: synth.Burst, times: Sequence[float]) -> dict:
+        path = synth.write_bursts(audio / f"{id}.wav", list(times), end, burst, seed=seed)
+        return sketch.effect(id, 0.0, gain, root, path)
+
+    return sound
+
+
+def bed(path: Path, end: float, seed: int, bpm: float = 96.0) -> Path:
+    """A small bass-and-keys loop under the whole reel, so the sound never drops to nothing between lines."""
+    groove = music.Groove(bpm)
+    bars = int(end / groove.bar) + 2
+    samples = music.render(groove, [music.Section(0, bars, frozenset({"bass", "keys"}))], seed=seed, peak=0.6)
+    samples = list(samples[: round(end * synth.RATE)])
+    edge = round(0.05 * synth.RATE)
+    for k in range(min(edge, len(samples))):
+        samples[k] *= k / edge
+        samples[-k - 1] *= k / edge
+    return music.write_wav(path, samples, synth.RATE)
+
+
+def shared_sounds(show: Show, beats, end: float, root: Path, seed: int) -> list[dict]:
+    """What every episode has: the room, the bed, a page turning in under each panel and a thump under each stamp."""
+    sound = sounder(root, end, seed)
+    audio = Path(root) / "audio"
+    pages = [first for _, first, _, _ in show.panel_runs(beats, end)]
+    stamps = [max(cut(sb.start) + 0.35, 0.0) for b, sb in zip(show.beats, beats, strict=True) if b.stamp]
+    return [
+        sketch.effect("room", 0.0, ROOM_GAIN, root, synth.write_room(audio / "room.wav", end, seed=seed)),
+        sketch.effect("bed", 0.0, BED_GAIN, root, bed(audio / "bed.wav", end, seed), role="music"),
+        sound("page", -12.0, synth.SWISH, pages),
+        sound("stamp", -6.0, synth.THUD, stamps),
+    ]
+
+
+def audio_main(show: Show, doc: str | None, foley_of: Callable[..., list[dict]]) -> Callable[..., int]:
+    """The ``main`` of an episode's recording script: Will says every line, one take a line."""
+    return recorder(
+        show.sketch, SEED, NOTE, doc, mouth=rafa_show.MOUTH, validate=show.validate_sketch, foley_of=foley_of
+    )
+
+
+def run(show: Show, argv: Sequence[str], env: Mapping[str, str] = os.environ) -> None:
+    """``python3 <episode>.py PROJECT [--init | --voice]``: the episode's project files, or its master."""
+    show.validate_sketch()
+    root = Path(argv[1]).resolve()
+    voiced = "--voice" in argv
+    renders = Renders(
+        Path(env["SRSTUDIO_ENGINE"]),
+        Path(env.get("SRSTUDIO_PLATES", Path(env["SRSTUDIO_RENDERS"]).parent / "plates")),
+        Path(env["SRSTUDIO_FONTS"]),
+    )
+
+    @lru_cache(maxsize=1)
+    def plan_of(end: float) -> HeadPlan:
+        return host_kit.head_plan(root, end, voiced, cast=rafa_host.CAST, style=rafa_host.MOTION)
+
+    staging = Staging(
+        sketch=show.sketch,
+        seed=SEED,
+        description=show.description,
+        accessibility=show.accessibility,
+        narration=NARRATION,
+        tints={HOST: PAPER},
+        dress=stage(show, plan_of, renders, root),
+        versions={},
+        desk=lambda cv, parent: None,  # the worktop is on his plates
+        style=host_kit.HOST,
+        bare=rafa_host.CAST.characters,
+        captions=lambda *_: None,  # the engine's track, added to the built episode below
+        camera=framing(show),
+        finish=finish,
+        overlay=show.overlay,
+        safe_area=VERTICAL,
+        output=show.output,
+        crf="25",
+        bleed=show.bleed,
+    )
+    ep = build(root, staging, set(argv[2:]))
+    if ep is not None:  # None: --init wrote the project files
+        if ep.spec.font is None:
+            raise ScriptError("the show's style draws no text")
+        font = (root / ep.spec.font).read_bytes()
+        words = host_kit.spoken(root, rafa_host.CAST) if voiced else ()
+        lines = toon.load_script(root / ep.spec.dialogue)
+        ep.hide_on_cover(*captions(ep, lines, partial(text_width, font), words))
+        ep.finish()
