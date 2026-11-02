@@ -370,3 +370,17 @@ def test_a_number_the_speech_splits_at_its_separator_is_one_caption_word_on_its_
 def test_a_caption_word_the_speech_does_not_make_up_stops_the_build(text, said):
     with pytest.raises(host_kit.HostKitError, match="is not the next word said"):
         host_kit.caption_cues([toon.Line("a", text, 0.0, 1.0)], said)
+
+
+def test_a_long_line_breaks_into_the_fewest_cues_that_fit_so_a_short_sentence_never_stands_alone():
+    text = "What does hit that building? Lightning. About twenty-three times a year."
+    said = tuple((1.0 + 0.2 * k, 1.15 + 0.2 * k, word) for k, word in enumerate(text.split()))
+    cues = host_kit.caption_cues([toon.Line("a", text, 1.0, 4.0)], said)
+    assert [c.text for c in cues] == ["What does hit that building? Lightning.", "About twenty-three times a year."]
+    assert cues[1].start == pytest.approx(said[6][0])
+
+
+def test_packing_joins_a_sentence_to_the_cue_before_only_while_both_fit():
+    assert host_kit.packed([["Okay."], ["One", "penny."]]) == [["Okay.", "One", "penny."]]
+    long = "nobody ever wrote down a single word of any of this for anybody".split()
+    assert host_kit.packed([["Okay."], long, ["Done."]]) == [["Okay."], long, ["Done."]]

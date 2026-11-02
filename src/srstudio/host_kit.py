@@ -1198,17 +1198,35 @@ def caption_cues(lines: Sequence[toon.Line], words: Sequence[Word] = (), skip: S
     return cues
 
 
+def _fits(words: Sequence[str]) -> bool:
+    return len(native.wrap(" ".join(words), CAPTION_LOOK.max_chars, CAPTION_LOOK.max_words)) <= CAPTION_LOOK.max_lines
+
+
+def packed(sentences: Sequence[Sequence[str]]) -> list[list[str]]:
+    """``sentences``, each a list of words, as the fewest cues that fit the band's rows: a sentence joins the cue
+    before it while the two fit together, so a short one never stands alone. A sentence too long on its own stays one
+    cue, for the track to refuse."""
+    cues: list[list[str]] = []
+    for sentence in sentences:
+        if cues and _fits([*cues[-1], *sentence]):
+            cues[-1].extend(sentence)
+        else:
+            cues.append(list(sentence))
+    return cues
+
+
 def _sentences(said: Sequence[native.Word]) -> list[list[native.Word]]:
-    """``said`` whole when it fits the band's rows, or else cut after each word that ends a sentence."""
-    text = " ".join(w.text for w in said)
-    if len(native.wrap(text, CAPTION_LOOK.max_chars, CAPTION_LOOK.max_words)) <= CAPTION_LOOK.max_lines:
+    """``said`` whole when it fits the band's rows, or else cut after words that end a sentence, into the fewest cues
+    that fit (:func:`packed`)."""
+    if _fits([w.text for w in said]):
         return [list(said)]
-    parts: list[list[native.Word]] = [[]]
+    sentences: list[list[str]] = [[]]
     for k, word in enumerate(said):
-        parts[-1].append(word)
+        sentences[-1].append(word.text)
         if word.text.endswith((".", "!", "?")) and k + 1 < len(said):
-            parts.append([])
-    return parts
+            sentences.append([])
+    words = iter(said)
+    return [[next(words) for _ in cue] for cue in packed(sentences)]
 
 
 @register(
