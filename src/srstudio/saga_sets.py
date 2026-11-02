@@ -29,6 +29,7 @@ __all__ = [
     "Panel",
     "GRIP",
     "Jab",
+    "MAX_JAB_FRAMES",
     "BLAST_BOX",
     "BUG_X",
     "LEDGE_Y",
@@ -89,6 +90,7 @@ ENTRY_CASE = "#e2622e"  # the Handbook's casing
 HOLO_BOX = (90, 232, 820, FLOOR - saga.HEIGHT - 20 - 232)  # x, y, w, most height: it ends above a standing head
 STICK_PIVOT = (540, 1450)  # where the console's stick leaves its base
 STICK_BALL = (602, 1210)  # the centre of its red ball, at rest
+MAX_JAB_FRAMES = 20_000  # cap includes the terminal sample at the fixed 24 Hz sampling rate
 GRIP = 44  # px down the shaft from the ball to the middle of a hand on the stick
 BUG_X = 926  # the show bug's left edge: the hit's fire stays left of it at rest
 BLAST_BOX = (566, 236, 866, 536)  # the right-hand pane above the pilot's seat, where a hit's fireball blooms
@@ -110,6 +112,19 @@ class Jab:
     elbow: tuple[float, float]
     scale: float
 
+    def __post_init__(self) -> None:
+        checks.positive(self.at, SagaError, f"a jab needs a positive numeric cue, got {self.at!r}")
+        if not self.at - 0.16 < self.at < self.at + 0.06 < self.at + 0.3 < self.at + 0.56:
+            raise SagaError("a jab needs distinct representable phase times")
+        checks.positive(self.scale, SagaError, f"a jab needs a positive scale, got {self.scale!r}")
+        if not checks.number(52 * self.scale):
+            raise SagaError("a jab scale overflows its forearm width")
+        if not (isinstance(self.elbow, tuple) and len(self.elbow) == 2 and all(map(checks.number, self.elbow))):
+            raise SagaError(f"a jab elbow needs two finite coordinates, got {self.elbow!r}")
+        rest = math.dist(hand_at(self, 0), self.elbow)
+        if not math.isfinite(rest) or rest == 0:
+            raise SagaError("a jab needs a finite, nonzero resting forearm length")
+
 
 def _stick_degrees(jab: Jab, t: float) -> float:
     """The stick's lean at second ``t``: pulled back, shoved hard past upright, held, and let halfway back."""
@@ -127,6 +142,8 @@ def _stick_degrees(jab: Jab, t: float) -> float:
 
 def _turn(point: tuple[float, float], degrees: float) -> tuple[float, float]:
     """``point`` swung about the stick's pivot, clockwise on screen."""
+    if not checks.number(degrees):
+        raise SagaError(f"stick degrees must be finite and numeric, got {degrees!r}")
     a, (px, py) = math.radians(degrees), STICK_PIVOT
     dx, dy = point[0] - px, point[1] - py
     return px + dx * math.cos(a) - dy * math.sin(a), py + dx * math.sin(a) + dy * math.cos(a)
@@ -146,11 +163,19 @@ def stick_grip(degrees: float) -> tuple[float, float]:
 
 def hand_at(jab: Jab, t: float) -> tuple[float, float]:
     """The centre of the jabbing hand at second ``t``: always on the shaft."""
+    if not checks.number(t):
+        raise SagaError(f"a jab sample time must be finite and numeric, got {t!r}")
     return stick_grip(_stick_degrees(jab, t))
 
 
 def jab_frames(jab: Jab, end: float) -> list[tuple[float, float]]:
-    """(second, degrees) of the stick on every frame of a shot ``end`` seconds long."""
+    """(second, degrees) at 24 Hz, through the first sample at or after positive ``end``.
+
+    The terminal sample counts toward :data:`MAX_JAB_FRAMES`; oversized requests fail before allocation.
+    """
+    checks.positive(end, SagaError, f"a jab sampling duration must be positive, got {end!r}")
+    if end > (MAX_JAB_FRAMES - 1) / 24:
+        raise SagaError(f"a jab may sample at most {MAX_JAB_FRAMES} frames including its terminal sample")
     return [(round(i / 24, 4), round(_stick_degrees(jab, i / 24), 3)) for i in range(math.ceil(end * 24) + 1)]
 
 
@@ -234,7 +259,7 @@ def _named(cv: Canvas, name: str) -> str:
 
 
 def _check_hit(hit: float | None, end: float) -> None:
-    if hit is not None and not 0 <= hit < end:
+    if hit is not None and not (checks.number(hit) and 0 <= hit < end):
         raise SagaError(f"a hit falls inside its shot of {end} s, got {hit}")
 
 
@@ -326,9 +351,8 @@ def _ledge(cv: Canvas, g) -> None:
     cv.rect(shelf, 92, 0, 116, 14, "#3a4256", cv.ink, 4, radius=4)
 
 
-def _jabbing_arm(cv: Canvas, g, jab: Jab, end: float) -> None:
+def _jabbing_arm(cv: Canvas, g, jab: Jab, frames: Sequence[tuple[float, float]]) -> None:
     """The pilot's forearm over the console from ``jab.elbow`` to a hand that stays on the shaft on every frame."""
-    frames = jab_frames(jab, end)
     width, ink, radius = 52 * jab.scale, saga.INK_W * jab.scale, 26 * jab.scale
     ex, ey = jab.elbow
     grips = [stick_grip(d) for _, d in frames]
@@ -587,6 +611,7 @@ def cockpit_front(
     _check_hit(hit, end)
     if jab is not None and not 0 < jab.at < end:
         raise SagaError(f"a jab falls inside its shot of {end} s, got {jab.at}")
+    frames = jab_frames(jab, end) if jab is not None else ()
     g = cv.group(parent, cv.uid("g"))
     cv.path(g, "M-20 1060 L1100 1060 L1100 1920 L-20 1920 Z", "#2b3142", cv.ink, INK_W)
     cv.path(g, "M-20 1060 L1100 1060 L1060 1120 L20 1120 Z", "#3a4256", cv.ink, 4)
@@ -598,14 +623,14 @@ def cockpit_front(
     if jab is not None:
         stick = cv.group(g, _named(cv, "saga-stick"))
         camera.anchor(stick, *STICK_PIVOT, place=True)
-        cv.keys(stick, "rotation", jab_frames(jab, end), hold=False)
+        cv.keys(stick, "rotation", frames, hold=False)
     cv.line(stick, 540, 1450, 600, 1220, "#9aa3ad", 14)
     cv.ellipse(stick, 584, 1192, 36, 36, "#ff5a4f", cv.ink, 4)
     if ledge:
         _ledge(cv, g)
     _marks(cv, g, (150, 1250), (760, 1500), 0.5, "#fff4dc")
     if jab is not None:
-        _jabbing_arm(cv, g, jab, end)
+        _jabbing_arm(cv, g, jab, frames)
     if hit is not None:
         _sparks(cv, g, hit, end)
 

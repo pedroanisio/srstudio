@@ -1301,6 +1301,34 @@
   ],
   "findings": [
     {
+      "id": "SDK-P1-28",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Validate Saga impact cues and bound sampled jab geometry",
+      "problem": "Boolean impact cues reached key construction after drawing. Jab data admitted invalid scales and elbows, zero-length forearms and collapsed phase times, while sampling accepted invalid or unbounded durations. Pure contact helpers could emit nonfinite results or raise raw numeric errors.",
+      "resolution": "Validate hit numbers and frozen Jab geometry, including derived widths, forearm length and phase resolution. Contact helpers reject invalid numeric samples. jab_frames caps work at 20,000 samples including the terminal frame; the console preflights that track and shares it with the hand instead of sampling twice.",
+      "verification": [
+        "tests/test_saga_cue_preflight.py",
+        "tests/test_saga.py"
+      ],
+      "acceptance": [
+        "Invalid impact or jab inputs leave scene bytes and IDs unchanged",
+        "Sampling rejects invalid or over-budget durations before allocation and accepts the documented terminal boundary",
+        "Valid impact and jab geometry and timing are preserved"
+      ],
+      "verification_summary": {
+        "red": 47,
+        "initial_green": 8,
+        "new_cases": 55,
+        "passed": 536,
+        "skipped": 0,
+        "unchanged_valid_drawings": 10,
+        "branch_inclusive_module_coverage_percent": 96.144578313253,
+        "module_branch_coverage_percent": 96.80851063829788,
+        "retained_artifacts": "../generated/sdk-saga-cue-preflight/v1/"
+      }
+    },
+    {
       "id": "SDK-P1-27",
       "priority": "P1",
       "status": "complete",
