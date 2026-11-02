@@ -30,7 +30,7 @@ from typing import Any
 
 from . import _character_contracts as cc
 from . import _toon_contracts as tc
-from . import checks, signature
+from . import checks, show, signature
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -572,15 +572,24 @@ def captions(
     tints: Mapping[str, str] | None = None,
     *,
     band: float = CAPTION_TOP,
+    clear_bug: bool = False,
 ) -> None:
     """One pill per cue, centred, sized by ``measure(text)`` (the text's advance width at :data:`CAPTION_SIZE`);
     ``tints`` colours the pill of a cue by its speaker (white otherwise); ``band`` is the top of the pills in reference
-    pixels, for a reel whose corner bug would crowd them."""
+    pixels, for a reel whose corner bug would crowd them. With ``clear_bug`` a pill that comes within
+    :data:`srstudio.show.CLEAR` pixels of the show's bug is refused, since a Toon pill is one row: lower the band or
+    split the line. False keeps a published reel's pills."""
     cv.require_font("the Toon style letters its captions in its font")
     top, height = int(round(fy(band))), int(round(fh(CAPTION_H)))  # the text box takes whole pixels
     for line in lines:
-        g = cv.group(parent, cv.uid("g"), start=line.start, end=line.end)
         width = pill_width(measure, line.text)
+        left = round(cv.width / 2 - width / 2, 2)
+        if clear_bug and not show.clear_of_bug((left, top, left + width, top + height)):
+            raise ToonDataError(
+                f"the caption {line.text!r} at ({left}, {top}) to ({left + width}, {top + height}) comes within "
+                f"{show.CLEAR:g} px of the show bug {show.BUG_BOX}: lower the band or split the line"
+            )
+        g = cv.group(parent, cv.uid("g"), start=line.start, end=line.end)
         fill = (tints or {}).get(line.speaker, cv.white)
-        cv.rect(g, round(cv.width / 2 - width / 2, 2), top, width, height, fill, cv.clear, 0, radius=CAPTION_RADIUS)
+        cv.rect(g, left, top, width, height, fill, cv.clear, 0, radius=CAPTION_RADIUS)
         cv.text(g, cv.uid("caption"), line.text, 0, top, cv.width, height, CAPTION_SIZE, color=cv.ink, wrap="none")

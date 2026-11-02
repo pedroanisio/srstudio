@@ -297,6 +297,9 @@ class Staging:
     sounds: Callable[[Sequence[Beat], float], Sequence[Sound]] = lambda beats, end: ()
     # where the pill of a line goes, by its text, when a shot's picture fills the usual place; empty keeps them all
     caption_tops: Mapping[str, float] = field(default_factory=dict)
+    # a pill in the rows of the show's bug wraps narrow enough to keep show.CLEAR pixels off it; False keeps a
+    # published reel's rows
+    clear_bug: bool = False
     # draws what stays over every shot, under the captions and out of the camera's reach (see Overlay), as Toon's does:
     # a reel's opening line. What it returns, if anything, is hidden on the cover. None draws nothing and reads no take
     overlay: Callable[[Overlay], object | None] | None = None
@@ -521,6 +524,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         tints=staging.tints,
         sentences=staging.sentence_rows,
         tops=staging.caption_tops,
+        clear_bug=staging.clear_bug,
     )
     if voiced:
         ep.audio(narration=manifest, loudness=staging.loudness)

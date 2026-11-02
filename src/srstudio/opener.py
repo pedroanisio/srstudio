@@ -18,7 +18,7 @@ import math
 import re
 from collections.abc import Callable, Iterable
 
-from . import checks, layout, send_gate
+from . import checks, layout, send_gate, show
 from .canvas import Canvas
 from .errors import SrstudioError
 from .text_rules import MINIMUM
@@ -109,10 +109,13 @@ def draw(
     measure: Callable[[str, float], float],
     top: float,
     names: Iterable[str] = (),
+    caption_top: float | None = None,
 ):
     """``text`` on a dark pill from the first frame to ``end``, its top edge at ``top`` (frame pixels), its width
-    measured in the reel's font by ``measure``; the group that holds it. Refused unless :func:`check` passes and the
-    pill sits inside the vertical safe area, which keeps it clear of the show's bug as well."""
+    measured in the reel's font by ``measure``; the group that holds it. Refused unless :func:`check` passes, the
+    pill sits inside the vertical safe area, keeps :data:`srstudio.show.CLEAR` pixels off the show's bug, and, given
+    ``caption_top`` (the top of the first caption on screen with it), ends above that caption: the viewer's line is
+    the first thing read."""
     check(text, end, names=names)
     rows = text.split("\n")
     width = round(max(measure(row, SIZE) for row in rows) + PAD, 2)
@@ -121,6 +124,16 @@ def draw(
         raise OpenerError(
             f"the opening line {text!r} at ({left}, {y0}) to ({right}, {y1}) runs outside the safe area "
             f"{SAFE.as_tuple()}"
+        )
+    if not show.clear_of_bug((left, y0, right, y1)):
+        raise OpenerError(
+            f"the opening line {text!r} at ({left}, {y0}) to ({right}, {y1}) comes within {show.CLEAR:g} px of the "
+            f"show bug {show.BUG_BOX}: move it or break it onto two rows"
+        )
+    if caption_top is not None and not (checks.number(caption_top) and y1 <= caption_top):
+        raise OpenerError(
+            f"the opening line {text!r} ends at {y1}, under the caption that starts at {caption_top}: it sits above "
+            "the first caption, read first"
         )
     g = cv.group(parent, cv.uid("opener"), start=0.0, end=end)
     height = y1 - y0

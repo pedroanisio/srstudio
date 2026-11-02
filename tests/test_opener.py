@@ -98,6 +98,25 @@ def test_the_pill_stays_inside_the_safe_area_and_clear_of_the_bug():
         )
 
 
+def test_the_pill_keeps_the_clearance_off_the_bug():
+    cv = canvas()
+    wide = lambda line, size: 772.0  # noqa: E731  # a pill 836 px wide: inside the safe area, 6 px from the bug
+    left, top, right, bottom = opener.box(772.0 + opener.PAD, 260.0)
+    assert opener.SAFE.x0 <= left and right <= opener.SAFE.x1 and not show.clear_of_bug((left, top, right, bottom))
+    with pytest.raises(OpenerError, match="show bug"):
+        opener.draw(cv, cv.comp, "my mom texting about me", 3.0, measure=wide, top=260.0)
+    opener.draw(cv, cv.comp, "my mom texting about me", 3.0, measure=wide, top=show.BUG_BOX[3] + show.CLEAR)
+
+
+def test_the_pill_is_read_first_above_the_caption_it_shares_the_screen_with():
+    cv = canvas()
+    with pytest.raises(OpenerError, match="above the first caption"):
+        opener.draw(cv, cv.comp, "my mom", 2.0, measure=measure, top=460.0, caption_top=334.0)
+    g = opener.draw(cv, cv.comp, "my mom", 2.0, measure=measure, top=224.0, caption_top=334.0)
+    pill = next(n for n in tree(cv).iter("group") if n.get("id") == g.id).find(".//shape")
+    assert float(pill.get("y")) + float(pill.get("height")) <= 334.0
+
+
 def test_a_line_too_wide_for_one_row_is_broken_by_hand_onto_two():
     text = "my best friend who's\nalways on 2%"
     cv = canvas()

@@ -364,3 +364,28 @@ def test_a_recording_with_no_first_take_is_refused(tmp_path):
     sketch.write_speech(tmp_path, [], 3.0)
     with pytest.raises(sketch.SketchError):
         collage_sketch.first_line_end(tmp_path, staging().sketch, voiced=True)
+
+
+def test_a_staging_that_asks_its_captions_to_clear_the_bug_keeps_every_pill_off_it(pinned_fonts, tmp_path):
+    from srstudio import show
+
+    long = (sketch.Line("rosa", "Tell your brother I can read that."),)
+    beats, end = timed(long, ((2.4, "rosa", 0, "half", "smug", "hold"),), tail=1.0)
+    sk = make_sketch("clear-test", "Clear test", ("rosa",), long, beats, end)
+    base = Staging(sk, 7, "d", "a", "n", collage_sketch.TINTS, {"rosa": "living-room"})
+    assert base.clear_bug is False  # every published reel's rows stay as they were drawn
+
+    def pills(st: Staging) -> list[tuple[float, float, float, float]]:
+        root = ET.fromstring(built(tmp_path / str(st.clear_bug), st, pinned_fonts).scene.to_bytes(layout="pretty"))
+        rects = [
+            s for s in root.iter("shape") if s.get("shape") == "rect" and s.get("radius") == str(collage.CAPTION_RADIUS)
+        ]
+        return [
+            (float(r.get("x")), float(r.get("y")), float(r.get("x")) + float(r.get("width")),
+             float(r.get("y")) + float(r.get("height")))
+            for r in rects
+        ]  # fmt: skip
+
+    assert not all(show.clear_of_bug(box) for box in pills(base))
+    asked = pills(replace(base, clear_bug=True))
+    assert asked and all(show.clear_of_bug(box) for box in asked)
