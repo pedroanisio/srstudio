@@ -536,6 +536,7 @@ def mabel(
 def handbook(cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0, talk: Talk = (), end: float):
     """The Handbook, top-left corner at ``at``, 220 × 300 at scale 1; its screen follows ``talk``."""
     rig.check_place(scale, end, SagaError)
+    check_talk(talk)
     g = cv.group(parent, cv.uid("g"), x=at[0], y=at[1], scaleX=scale, scaleY=scale)
     cv.rect(g, 8, 10, 220, 300, cv.ink, radius=28, opacity=0.5)
     cv.rect(g, 0, 0, 220, 300, "#e2622e", cv.ink, INK_W, radius=28)

@@ -673,6 +673,28 @@ def compactor(
 
 
 # -- props ------------------------------------------------------------------------------------------------------------
+@dataclass(frozen=True)
+class _PanelLayout:
+    x: float
+    width: float
+    title: list[str]
+    body: list[str]
+    height: float
+
+
+def _panel_layout(p: Panel, font: bytes, x: float, w: float, most: float) -> _PanelLayout:
+    """Measure a complete panel before allocating scene nodes or IDs."""
+    tx = x + 40 + (FACE_W + 24 if p.face else 0)
+    tw = x + w - 32 - tx
+    title = wrap(font, p.title, 50, tw, 2)
+    room = int((most - 2 * HOLO_PAD - 58 * len(title) - 8) // 48)
+    body = wrap(font, p.body, 40, tw, max(1, room)) if p.body else []
+    h = max(HOLO_MIN if p.face else 0, 2 * HOLO_PAD + 58 * len(title) + (8 + 48 * len(body) if body else 0))
+    if h > most:
+        raise SagaError(f"panel {p.title!r} needs {h} px; the box gives {most}")
+    return _PanelLayout(tx, tw, title, body, h)
+
+
 @register(
     "prop",
     "saga-holo",
@@ -714,20 +736,17 @@ def holo(
             raise SagaError(f"panel {p.title!r}: tone {p.tone!r} is not one of {sorted(TONES)}")
         if p.face and p.face not in saga.CAST:
             raise SagaError(f"panel {p.title!r}: face {p.face!r} is not in the cast")
+    cv.require_font("a Saga hologram", SagaError)
+    layouts = [_panel_layout(p, font, x, w, most) for p in panels]
     out = []
     starts.append(end)
     for i, (p, (a, b)) in enumerate(zip(panels, zip(starts, starts[1:], strict=False), strict=True)):
         g = cv.group(parent, cv.uid("g"))
         cv.gate(g, [(a, b)])
         tone = TONES[p.tone]
-        tx = x + 40 + (FACE_W + 24 if p.face else 0)
-        tw = x + w - 32 - tx
-        title = wrap(font, p.title, 50, tw, 2)
-        room = int((most - 2 * HOLO_PAD - 58 * len(title) - 8) // 48)
-        body = wrap(font, p.body, 40, tw, max(1, room)) if p.body else []
-        h = max(HOLO_MIN if p.face else 0, 2 * HOLO_PAD + 58 * len(title) + (8 + 48 * len(body) if body else 0))
-        if h > most:
-            raise SagaError(f"panel {p.title!r} needs {h} px; the box gives {most}")
+        layout = layouts[i]
+        tx, tw = layout.x, layout.width
+        title, body, h = layout.title, layout.body, layout.height
         pop = cv.group(g, cv.uid("g"))
         camera.anchor(pop, x + w / 2, y + h / 2, place=True)
         if p.fade:  # judged at full opacity, the words are measured as read, never under a flicker or squashed
@@ -891,10 +910,12 @@ def fighter(cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0, 
 def hook(cv: Canvas, parent, text: str, *, end: float, font: bytes, talk: Talk = ()):
     """The question at the top of the safe area beside a small Handbook, from 0 to ``end``."""
     _check_end(end)
+    cv.require_font("a Saga hook", SagaError)
+    saga.check_talk(talk)
+    lines = wrap(font, text, 50, 660, 3)
     g = cv.group(parent, cv.uid("g"))
     cv.gate(g, [(0, end)])
     saga.handbook(cv, g, at=(SAFE[0] + 8, 236), scale=0.5, talk=talk, end=end)
-    lines = wrap(font, text, 50, 660, 3)
     cv.rect(g, 206, 226, SAFE[2] - 200, 30 + 58 * len(lines), "#070914", radius=18, opacity=0.72)
     _text(cv, g, "\n".join(lines), 222, 240, 680, 58 * len(lines), 50, "#f2b84b", "start")
     return g
@@ -913,6 +934,8 @@ def entry(
     gold, ``body`` typed out over the first seconds; the screen brightens while the narrator speaks. ``legible``
     leaves out the glass sheen laid over the words, so they keep their full contrast."""
     _check_end(end)
+    cv.require_font("a Saga entry", SagaError)
+    saga.check_talk(talk)
     t_lines, b_lines = wrap(font, title, 64, 700, 2), wrap(font, body, 50, 700, 8)
     screen_h = 40 + 50 + 76 * len(t_lines) + 24 + 60 * len(b_lines) + 50
     total = 50 + screen_h + 158

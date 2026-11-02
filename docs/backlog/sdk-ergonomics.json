@@ -1301,6 +1301,34 @@
   ],
   "findings": [
     {
+      "id": "SDK-P1-27",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Preflight Saga panel copy, font binding and narrated speech",
+      "problem": "Hologram and hook copy, missing bound fonts and invalid Handbook talk could fail after allocating scene nodes or IDs. Later hologram failures retained earlier panels, and entry speech did not enforce the shared viseme timeline contract.",
+      "resolution": "Measure all hologram layouts before emission; require bound fonts and validate speech before drawing; reuse the measured panel lines and heights. Handbook and entry now validate talk at their builder boundary.",
+      "verification": [
+        "tests/test_saga_set_preflight.py",
+        "tests/test_saga.py"
+      ],
+      "acceptance": [
+        "Invalid first or later panel copy and invalid delegated speech leave scene bytes and IDs unchanged",
+        "Missing bound fonts fail before emission",
+        "Valid scene geometry and timing are preserved"
+      ],
+      "verification_summary": {
+        "red": 30,
+        "initial_green": 4,
+        "new_cases": 34,
+        "passed": 481,
+        "skipped": 0,
+        "unchanged_valid_drawings": 14,
+        "branch_inclusive_coverage_percent": 96.97493517718237,
+        "branch_coverage_percent": 97.08333333333333,
+        "retained_artifacts": "../generated/sdk-saga-copy-preflight/v1/"
+      }
+    },
+    {
       "id": "SDK-P1-26",
       "priority": "P1",
       "status": "complete",
