@@ -13,6 +13,7 @@ from types import ModuleType, SimpleNamespace
 import pytest
 
 from srstudio import (
+    anatomy_ledger,
     collage,
     collage_everyday,
     cutout_handed,
@@ -142,13 +143,14 @@ def test_the_free_pose_leaves_the_screen_left_arm_to_the_scene() -> None:
 def test_an_upper_arm_has_no_hand_on_it(monkeypatch: pytest.MonkeyPatch) -> None:
     class Canvas:
         uid = staticmethod(lambda _: "g")
-        group = staticmethod(lambda parent, name: None)
+        group = staticmethod(lambda parent, name: SimpleNamespace(id=name))
+        limbs: dict[object, object] = {}
 
     counts: list[int] = []
     monkeypatch.setattr(collage_everyday, "draw_shapes", lambda cv, parent, shapes: counts.append(len(shapes)))
     points = (336.0, 1390.0), (262.0, 1590.0)
-    collage_everyday.arm(Canvas, None, "rosa", *points)  # type: ignore[arg-type]
-    collage_everyday.arm(Canvas, None, "rosa", *points, hand=False)  # type: ignore[arg-type]
+    collage_everyday.arm(Canvas, None, "rosa", *points, side=-1)  # type: ignore[arg-type]
+    collage_everyday.arm(Canvas, None, "rosa", *points, hand=False, side=-1)  # type: ignore[arg-type]
     assert 0 < counts[1] < counts[0]
 
 
@@ -385,13 +387,14 @@ class _Keyed:
 
     def __init__(self) -> None:
         self.keyed: dict[tuple[int, str], list[tuple[float, float]]] = {}
+        self.limbs: dict[object, anatomy_ledger.Limb] = {}
         self.ink = "#000000"
 
     def uid(self, prefix: str) -> str:
         return prefix
 
     def group(self, parent: object, id: str, **kw: object) -> SimpleNamespace:
-        return SimpleNamespace(**kw)
+        return SimpleNamespace(id=id, **kw)
 
     def keys(self, node: object, prop: str, values: list[tuple[float, float]], *a: object, **kw: object) -> None:
         self.keyed[(id(node), prop)] = values
@@ -399,12 +402,12 @@ class _Keyed:
 
 def test_reach_keeps_the_arm_on_the_shoulder_and_the_hand_on_its_path(monkeypatch: pytest.MonkeyPatch) -> None:
     drawn: list[object] = []
-    monkeypatch.setattr(collage_everyday, "arm", lambda *a, **kw: drawn.append(a[2:]) or SimpleNamespace())
+    monkeypatch.setattr(collage_everyday, "arm", lambda *a, **kw: drawn.append(a[2:]) or SimpleNamespace(id="held"))
     monkeypatch.setattr(collage_everyday, "draw_shapes", lambda *a: None)
     cv = _Keyed()
     frm = (100.0, 100.0)
     spots = {0.0: (100.0, 400.0), 1.0: (400.0, 100.0), 2.0: (-200.0, 100.0)}
-    hand = collage_everyday.reach(cv, object(), "brent", frm, spots.__getitem__, sorted(spots))
+    hand = collage_everyday.reach(cv, object(), "brent", frm, spots.__getitem__, sorted(spots), side=-1)
     assert drawn
     by_prop = {prop: values for (_, prop), values in cv.keyed.items()}
     assert [v for _, v in by_prop["rotation"]] == pytest.approx([0.0, -90.0, 90.0])
@@ -413,14 +416,15 @@ def test_reach_keeps_the_arm_on_the_shoulder_and_the_hand_on_its_path(monkeypatc
     lengths = {t: collage_everyday.REACH_DRAWN * v for t, v in by_prop["scaleY"]}
     short = 300.0 - collage_everyday.REACH_CUFF
     assert lengths == pytest.approx({0.0: short, 1.0: short, 2.0: short})
-    assert hand is not None
+    assert isinstance(hand, SimpleNamespace)
+    assert [(limb.owner, limb.id) for limb in cv.limbs.values()] == [("brent", hand.id)]
 
 
 def test_reach_refuses_a_hand_on_the_shoulder_and_no_times() -> None:
     with pytest.raises(collage_everyday.EverydayError):
-        collage_everyday.reach(_Keyed(), object(), "brent", (0.0, 0.0), lambda t: (0.0, 0.0), [0.0])
+        collage_everyday.reach(_Keyed(), object(), "brent", (0.0, 0.0), lambda t: (0.0, 0.0), [0.0], side=-1)
     with pytest.raises(collage_everyday.EverydayError):
-        collage_everyday.reach(_Keyed(), object(), "brent", (0.0, 0.0), lambda t: (1.0, 1.0), [])
+        collage_everyday.reach(_Keyed(), object(), "brent", (0.0, 0.0), lambda t: (1.0, 1.0), [], side=-1)
 
 
 def _shoulder_on_screen(place: Place, who: str, side: int) -> tuple[float, float]:
