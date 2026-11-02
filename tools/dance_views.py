@@ -18,7 +18,7 @@ import os
 import subprocess
 import sys
 import tempfile
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -76,18 +76,26 @@ def flat(view: str, point: sk.Vec3) -> tuple[float, float]:
     return point.x, point.z
 
 
-def plan(moves: Sequence[str] | None, bars_each: int) -> Plan:
-    """Each move with its start and end bar, in order; every preset when ``moves`` is None."""
-    names = list(dance.moves()) if moves is None else list(moves)
-    known = dance.moves()
+def plan(moves: Sequence[str] | None, bars_each: int, library: str = "moves") -> Plan:
+    """Each move with its start and end bar, in order; every move of ``library`` when ``moves`` is None."""
+    known = moves_of(library)
+    names = list(known) if moves is None else list(moves)
     for name in names:
         if name not in known:
-            raise ViewsError(f"unknown move {name!r}; the presets are {', '.join(known)}")
+            raise ViewsError(f"unknown move {name!r}; the {library} library holds {', '.join(known)}")
     if bars_each < 1:
         raise ViewsError(f"bars per move must be at least 1, not {bars_each}")
     if not names or len(names) * bars_each > MAX_BARS:
         raise ViewsError(f"{len(names)} moves of {bars_each} bars: between 1 and {MAX_BARS} bars in all")
     return tuple((name, i * bars_each, (i + 1) * bars_each) for i, name in enumerate(names))
+
+
+def moves_of(library: str) -> Mapping[str, dance.Move]:
+    """A shipped library's moves, or a refusal naming the libraries there are."""
+    try:
+        return dance.library(library)
+    except dance.DanceDataError as error:
+        raise ViewsError(str(error)) from None
 
 
 def at_bar(moves: Plan, bar: float) -> tuple[str, int]:
@@ -175,14 +183,14 @@ def _draw(
     draw.text((x0 + 12, y0 + 10), f"{profile.name} · {view}", fill=MUTED, font=font)
 
 
-def render_frame(sheet: Sheet, moves: Plan, groove: music.Groove, t: float) -> Image.Image:
+def render_frame(sheet: Sheet, moves: Plan, groove: music.Groove, t: float, library: str = "moves") -> Image.Image:
     """The sheet at song time ``t``."""
     image = Image.new("RGB", sheet.size, BG)
     draw = ImageDraw.Draw(image)
     small, big = ImageFont.load_default(size=20), ImageFont.load_default(size=30)
     name, start = at_bar(moves, t / groove.at(1))
     local = t - groove.at(start)
-    frame = dance.sample(dance.moves()[name], groove, local)
+    frame = dance.sample(moves_of(library)[name], groove, local)
     for row, character in enumerate(sheet.characters):
         profile = sk.preset(character)
         posed = dance_pose(profile, frame, clamp=True).pose
@@ -215,6 +223,7 @@ def write(
     bpm: float = 129.0,
     fps: int = 25,
     ffmpeg: str = "ffmpeg",
+    library: str = "moves",
 ) -> Path:
     """Render the views to ``out`` (H.264 with AAC, mode 600) and return it."""
     sheet = Sheet(tuple(characters), tuple(views))
@@ -222,7 +231,7 @@ def write(
         raise ViewsError(f"fps {fps} outside 1..{MAX_FPS}")
     if not BPM_RANGE[0] <= bpm <= BPM_RANGE[1]:
         raise ViewsError(f"bpm {bpm} outside {BPM_RANGE[0]:g}..{BPM_RANGE[1]:g}")
-    moves_plan = plan(moves, bars_each)
+    moves_plan = plan(moves, bars_each, library)
     groove = music.Groove(bpm)
     bars = moves_plan[-1][2]
     count = round(groove.at(bars) * fps)
@@ -264,7 +273,7 @@ def write(
             assert encoder.stdin is not None
             try:
                 for n in range(count):
-                    encoder.stdin.write(render_frame(sheet, moves_plan, groove, n / fps).tobytes())
+                    encoder.stdin.write(render_frame(sheet, moves_plan, groove, n / fps, library).tobytes())
                 encoder.stdin.close()
             except BrokenPipeError:  # the encoder stopped reading; its exit status says why
                 pass
@@ -277,12 +286,13 @@ def write(
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("out", type=Path)
-    parser.add_argument("--moves", help="comma-separated preset moves; all presets when left out")
+    parser.add_argument("--moves", help="comma-separated move names; the whole library when left out")
     parser.add_argument("--characters", default="realistic,cartoon,stick")
     parser.add_argument("--views", default=",".join(VIEWS))
     parser.add_argument("--bars-each", type=int, default=2)
     parser.add_argument("--bpm", type=float, default=129.0)
     parser.add_argument("--fps", type=int, default=25)
+    parser.add_argument("--library", default="moves", help="the shipped library the moves come from")
     args = parser.parse_args(argv)
     try:
         written = write(
@@ -293,6 +303,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             bars_each=args.bars_each,
             bpm=args.bpm,
             fps=args.fps,
+            library=args.library,
         )
     except ViewsError as error:
         print(f"dance_views: {error}", file=sys.stderr)

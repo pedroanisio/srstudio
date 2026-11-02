@@ -20,12 +20,14 @@ from typing import TypeVar
 from ._dance_model import Contact, DanceError, Entry, Move, Pattern, Routine
 
 __all__ = [
+    "LIBRARIES",
     "MOVES_SCHEMA",
     "ROUTINE_SCHEMA",
     "DanceDataError",
     "DanceSchemaError",
     "dump_routine",
     "load_moves",
+    "library",
     "load_routine",
     "moves",
     "parse_moves",
@@ -210,7 +212,20 @@ def load_moves(path: str | Path) -> Mapping[str, Move]:
 @cache
 def moves() -> Mapping[str, Move]:
     """The shipped presets, from ``assets/dance/moves.json``."""
-    return parse_moves(files("srstudio").joinpath("assets/dance/moves.json").read_bytes())
+    return library("moves")
+
+
+LIBRARY_NAME = re.compile(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*\Z")
+LIBRARIES = ("moves", "fein")
+
+
+@cache
+def library(name: str) -> Mapping[str, Move]:
+    """A shipped move library by name, from ``assets/dance/<name>.json``: ``moves`` (the presets) or ``fein`` (the
+    moves transcribed from the FE!N choreography, ADR 0212). An unknown name is refused before any file is read."""
+    if not isinstance(name, str) or not LIBRARY_NAME.match(name) or name not in LIBRARIES:
+        raise DanceDataError(f"library {name!r} is one of {LIBRARIES}", path="library", actual=name, expected=LIBRARIES)
+    return parse_moves(files("srstudio").joinpath(f"assets/dance/{name}.json").read_bytes())
 
 
 def _entry(value: object, path: str, library: Mapping[str, Move]) -> Entry:

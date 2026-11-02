@@ -1,0 +1,639 @@
+{
+ "schema": "srstudio.dance-windows/1.0.0",
+ "source": {
+  "title": "Travis Scott - FE!N Dance | Matt Steffanina & Josh Killacky Choreography",
+  "youtube_id": "fOGHfeRo7Iw",
+  "sha256": "343c03d7c42eb6d2af6d03b8d63c18c9ec71cd64af0e1dc79f1f73fb55ed433e",
+  "fps": 23.976023976023978,
+  "frames": 9801,
+  "bpm": 152.0,
+  "extractor": "dancepose 0.1.0 (MediaPipe Pose Landmarker, full model) on an H.264 transcode of the source"
+ },
+ "selection": "hold-to-hold segments of dancer-sized tracks, clustered by facing-corrected limb trajectories with complete linkage at the same-move distance measured between simultaneous dancers (p75); one window per cluster seen from at least two dancers, the first member whose track the estimator holds through the window with a steady torso, ordered by how often it was seen",
+ "windows": [
+  {
+   "name": "fein-01",
+   "track": "p18",
+   "start_s": 10.8,
+   "end_s": 11.3,
+   "seen": 14,
+   "dancers": 7
+  },
+  {
+   "name": "fein-02",
+   "track": "p52",
+   "start_s": 64.69,
+   "end_s": 65.11,
+   "seen": 11,
+   "dancers": 9
+  },
+  {
+   "name": "fein-03",
+   "track": "p24",
+   "start_s": 18.69,
+   "end_s": 19.1,
+   "seen": 10,
+   "dancers": 7
+  },
+  {
+   "name": "fein-04",
+   "track": "p23",
+   "start_s": 29.95,
+   "end_s": 30.82,
+   "seen": 9,
+   "dancers": 7
+  },
+  {
+   "name": "fein-05",
+   "track": "p18",
+   "start_s": 14.6,
+   "end_s": 15.31,
+   "seen": 8,
+   "dancers": 7
+  },
+  {
+   "name": "fein-06",
+   "track": "p52",
+   "start_s": 102.1,
+   "end_s": 102.89,
+   "seen": 8,
+   "dancers": 5
+  },
+  {
+   "name": "fein-07",
+   "track": "p14",
+   "start_s": 11.3,
+   "end_s": 11.8,
+   "seen": 7,
+   "dancers": 6
+  },
+  {
+   "name": "fein-08",
+   "track": "p23",
+   "start_s": 31.28,
+   "end_s": 31.82,
+   "seen": 7,
+   "dancers": 6
+  },
+  {
+   "name": "fein-09",
+   "track": "p23",
+   "start_s": 21.56,
+   "end_s": 22.27,
+   "seen": 6,
+   "dancers": 4
+  },
+  {
+   "name": "fein-10",
+   "track": "p23",
+   "start_s": 28.45,
+   "end_s": 29.11,
+   "seen": 6,
+   "dancers": 6
+  },
+  {
+   "name": "fein-11",
+   "track": "p68",
+   "start_s": 125.71,
+   "end_s": 126.17,
+   "seen": 5,
+   "dancers": 4
+  },
+  {
+   "name": "fein-12",
+   "track": "p23",
+   "start_s": 35.41,
+   "end_s": 36.12,
+   "seen": 5,
+   "dancers": 3
+  },
+  {
+   "name": "fein-13",
+   "track": "p73",
+   "start_s": 152.15,
+   "end_s": 152.57,
+   "seen": 5,
+   "dancers": 4
+  },
+  {
+   "name": "fein-14",
+   "track": "p67",
+   "start_s": 122.87,
+   "end_s": 123.71,
+   "seen": 5,
+   "dancers": 4
+  },
+  {
+   "name": "fein-15",
+   "track": "p67",
+   "start_s": 135.72,
+   "end_s": 136.14,
+   "seen": 5,
+   "dancers": 5
+  },
+  {
+   "name": "fein-16",
+   "track": "p67",
+   "start_s": 139.89,
+   "end_s": 140.39,
+   "seen": 5,
+   "dancers": 3
+  },
+  {
+   "name": "fein-17",
+   "track": "p73",
+   "start_s": 143.52,
+   "end_s": 144.14,
+   "seen": 5,
+   "dancers": 4
+  },
+  {
+   "name": "fein-18",
+   "track": "p88",
+   "start_s": 185.27,
+   "end_s": 185.89,
+   "seen": 5,
+   "dancers": 4
+  },
+  {
+   "name": "fein-19",
+   "track": "p110",
+   "start_s": 215.84,
+   "end_s": 216.51,
+   "seen": 4,
+   "dancers": 4
+  },
+  {
+   "name": "fein-20",
+   "track": "p14",
+   "start_s": 8.47,
+   "end_s": 9.34,
+   "seen": 4,
+   "dancers": 4
+  },
+  {
+   "name": "fein-21",
+   "track": "p23",
+   "start_s": 36.12,
+   "end_s": 37.08,
+   "seen": 4,
+   "dancers": 4
+  },
+  {
+   "name": "fein-22",
+   "track": "p24",
+   "start_s": 19.44,
+   "end_s": 19.85,
+   "seen": 4,
+   "dancers": 3
+  },
+  {
+   "name": "fein-23",
+   "track": "p41",
+   "start_s": 54.72,
+   "end_s": 55.22,
+   "seen": 4,
+   "dancers": 4
+  },
+  {
+   "name": "fein-24",
+   "track": "p52",
+   "start_s": 61.94,
+   "end_s": 62.6,
+   "seen": 4,
+   "dancers": 4
+  },
+  {
+   "name": "fein-25",
+   "track": "p52",
+   "start_s": 70.7,
+   "end_s": 71.28,
+   "seen": 4,
+   "dancers": 4
+  },
+  {
+   "name": "fein-26",
+   "track": "p52",
+   "start_s": 71.28,
+   "end_s": 71.99,
+   "seen": 4,
+   "dancers": 4
+  },
+  {
+   "name": "fein-27",
+   "track": "p52",
+   "start_s": 84.33,
+   "end_s": 85.04,
+   "seen": 4,
+   "dancers": 3
+  },
+  {
+   "name": "fein-28",
+   "track": "p67",
+   "start_s": 115.78,
+   "end_s": 116.49,
+   "seen": 4,
+   "dancers": 4
+  },
+  {
+   "name": "fein-29",
+   "track": "p67",
+   "start_s": 118.83,
+   "end_s": 119.24,
+   "seen": 4,
+   "dancers": 4
+  },
+  {
+   "name": "fein-30",
+   "track": "p14",
+   "start_s": 10.55,
+   "end_s": 11.3,
+   "seen": 3,
+   "dancers": 3
+  },
+  {
+   "name": "fein-31",
+   "track": "p67",
+   "start_s": 133.01,
+   "end_s": 133.84,
+   "seen": 3,
+   "dancers": 3
+  },
+  {
+   "name": "fein-32",
+   "track": "p23",
+   "start_s": 19.31,
+   "end_s": 19.89,
+   "seen": 3,
+   "dancers": 2
+  },
+  {
+   "name": "fein-33",
+   "track": "p52",
+   "start_s": 61.27,
+   "end_s": 61.94,
+   "seen": 3,
+   "dancers": 3
+  },
+  {
+   "name": "fein-34",
+   "track": "p52",
+   "start_s": 65.44,
+   "end_s": 66.57,
+   "seen": 3,
+   "dancers": 3
+  },
+  {
+   "name": "fein-35",
+   "track": "p118",
+   "start_s": 235.86,
+   "end_s": 236.36,
+   "seen": 3,
+   "dancers": 3
+  },
+  {
+   "name": "fein-36",
+   "track": "p52",
+   "start_s": 96.97,
+   "end_s": 97.56,
+   "seen": 3,
+   "dancers": 2
+  },
+  {
+   "name": "fein-37",
+   "track": "p67",
+   "start_s": 111.69,
+   "end_s": 112.28,
+   "seen": 3,
+   "dancers": 3
+  },
+  {
+   "name": "fein-38",
+   "track": "p67",
+   "start_s": 114.2,
+   "end_s": 115.45,
+   "seen": 3,
+   "dancers": 3
+  },
+  {
+   "name": "fein-39",
+   "track": "p67",
+   "start_s": 117.37,
+   "end_s": 117.95,
+   "seen": 3,
+   "dancers": 3
+  },
+  {
+   "name": "fein-40",
+   "track": "p68",
+   "start_s": 111.57,
+   "end_s": 112.03,
+   "seen": 3,
+   "dancers": 2
+  },
+  {
+   "name": "fein-41",
+   "track": "p108",
+   "start_s": 211.59,
+   "end_s": 212.59,
+   "seen": 3,
+   "dancers": 3
+  },
+  {
+   "name": "fein-42",
+   "track": "p70",
+   "start_s": 134.63,
+   "end_s": 135.18,
+   "seen": 3,
+   "dancers": 3
+  },
+  {
+   "name": "fein-43",
+   "track": "p73",
+   "start_s": 157.99,
+   "end_s": 158.49,
+   "seen": 3,
+   "dancers": 3
+  },
+  {
+   "name": "fein-44",
+   "track": "p88",
+   "start_s": 189.27,
+   "end_s": 190.06,
+   "seen": 3,
+   "dancers": 3
+  },
+  {
+   "name": "fein-45",
+   "track": "p101",
+   "start_s": 199.49,
+   "end_s": 200.16,
+   "seen": 3,
+   "dancers": 3
+  },
+  {
+   "name": "fein-46",
+   "track": "p110",
+   "start_s": 218.64,
+   "end_s": 219.68,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-47",
+   "track": "p23",
+   "start_s": 19.89,
+   "end_s": 21.56,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-48",
+   "track": "p23",
+   "start_s": 22.27,
+   "end_s": 22.86,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-49",
+   "track": "p23",
+   "start_s": 37.54,
+   "end_s": 38.2,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-50",
+   "track": "p52",
+   "start_s": 106.86,
+   "end_s": 107.9,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-51",
+   "track": "p24",
+   "start_s": 22.15,
+   "end_s": 22.73,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-52",
+   "track": "p24",
+   "start_s": 22.73,
+   "end_s": 23.27,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-53",
+   "track": "p67",
+   "start_s": 128.55,
+   "end_s": 129.5,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-54",
+   "track": "p41",
+   "start_s": 48.67,
+   "end_s": 49.22,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-55",
+   "track": "p41",
+   "start_s": 49.22,
+   "end_s": 50.13,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-56",
+   "track": "p41",
+   "start_s": 56.77,
+   "end_s": 57.52,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-57",
+   "track": "p52",
+   "start_s": 68.36,
+   "end_s": 70.32,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-58",
+   "track": "p52",
+   "start_s": 71.99,
+   "end_s": 72.45,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-59",
+   "track": "p52",
+   "start_s": 80.91,
+   "end_s": 83.12,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-60",
+   "track": "p52",
+   "start_s": 83.12,
+   "end_s": 84.33,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-61",
+   "track": "p52",
+   "start_s": 93.47,
+   "end_s": 95.51,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-62",
+   "track": "p52",
+   "start_s": 100.48,
+   "end_s": 101.23,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-63",
+   "track": "p67",
+   "start_s": 110.82,
+   "end_s": 111.69,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-64",
+   "track": "p67",
+   "start_s": 116.87,
+   "end_s": 117.37,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-65",
+   "track": "p67",
+   "start_s": 122.41,
+   "end_s": 122.87,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-66",
+   "track": "p160",
+   "start_s": 318.19,
+   "end_s": 320.49,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-67",
+   "track": "p68",
+   "start_s": 117.91,
+   "end_s": 118.7,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-68",
+   "track": "p70",
+   "start_s": 133.59,
+   "end_s": 134.63,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-69",
+   "track": "p73",
+   "start_s": 174.34,
+   "end_s": 174.97,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-70",
+   "track": "p88",
+   "start_s": 194.65,
+   "end_s": 195.28,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-71",
+   "track": "p88",
+   "start_s": 196.15,
+   "end_s": 196.57,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-72",
+   "track": "p101",
+   "start_s": 198.99,
+   "end_s": 199.49,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-73",
+   "track": "p101",
+   "start_s": 200.58,
+   "end_s": 201.78,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-74",
+   "track": "p131",
+   "start_s": 251.29,
+   "end_s": 251.83,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-75",
+   "track": "p131",
+   "start_s": 252.71,
+   "end_s": 253.34,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-76",
+   "track": "p150",
+   "start_s": 289.71,
+   "end_s": 290.25,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-77",
+   "track": "p160",
+   "start_s": 322.82,
+   "end_s": 323.78,
+   "seen": 2,
+   "dancers": 2
+  },
+  {
+   "name": "fein-78",
+   "track": "p180",
+   "start_s": 362.78,
+   "end_s": 363.49,
+   "seen": 2,
+   "dancers": 2
+  }
+ ]
+}

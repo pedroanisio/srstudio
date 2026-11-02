@@ -186,6 +186,39 @@ On a recorded track, `choreograph.choreograph_track(path, groove, support="feet"
 prints the routine. Pass a `choreograph.Palette` to draw from other moves or faces, and `library=` when it names moves
 outside the presets. A routine for a cartoon clap still needs `intensity=2.0` set on that entry by hand.
 
+## Compose from a transcribed choreography
+
+The `fein` library ([ADR 0212](decisions/0212-fein-moves-transcribed.md)) holds moves transcribed from one reference
+choreography by the operator's waiver: each a strike of two beats onto its hit and a slow return, fitted by least
+squares on the skeleton's forward kinematics to a dancer the estimator held through the move, bounded inside every
+preset's limits. A move's description says how often the move was seen, by how many dancers, and how far the fit
+stays from the measured body in head radii. `dance.library(name)` loads a shipped library by name and
+`choreograph.palette_of` splits it by how much its moves move, so a routine draws the quieter half on low parts and
+the louder half on high ones:
+
+<!-- dance-library:start -->
+```python
+from srstudio import choreograph, dance
+from srstudio.music import Groove
+
+fein = dance.library("fein")
+assert all(m.support == "feet" and m.loop_beats == 4 for m in fein.values())
+palette = choreograph.palette_of(fein)
+assert set(palette.low) | set(palette.high) == set(fein)
+song = dance.SongMap(
+    Groove(152), 4, (0.0,) * 32, (-6.0, 0.0), (dance.SongPart(0, 4, -6.0, "low"), dance.SongPart(4, 8, 0.0, "high"))
+)
+routine = choreograph.choreograph(song, support="feet", seed=3, palette=palette, library=fein)
+assert routine.entries[0].move.name in palette.low and routine.entries[1].move.name in palette.high
+```
+<!-- dance-library:end -->
+
+`srstudio choreograph song.wav --support feet --seed 3 --library fein` does the same on a recorded track, and
+`python tools/dance_views.py out.mp4 --library fein --moves fein-01,fein-02` reviews the moves in three views. The
+library is rebuilt only by `tools/dance_transcribe.py` from the estimator's record, which stays outside the
+repository: a window list under `tools/data/` names each move's track and seconds, and the tool refuses a record or a
+window it cannot read, a track it cannot find, and a fit that leaves any preset's limits.
+
 ## Check a groove
 
 `measure_dance(series, fps, groove)` reads `cycles_per_beat`, `rise`, `fall`, `snap_ratio`, `peak_to_peak`, the `hit`
