@@ -13,6 +13,7 @@ where one of its parts meets another (an arm over the belly, an ear over the hea
 from __future__ import annotations
 
 import ast
+import math
 from pathlib import Path
 from typing import NamedTuple
 
@@ -86,6 +87,15 @@ def _labels(ids: np.ndarray) -> np.ndarray:
         out[nearer], best[nearer] = n, distance[nearer]
     out[ids[..., 3] <= 0.5] = 0
     return out
+
+
+def paw_pixels(ids: np.ndarray, line: Line) -> np.ndarray:
+    """Where the ID pass shows a paw, or the forearm drawn in its colour, of either figure, grown by half of
+    ``line``'s heavy width so the paw's own line round it is taken in too."""
+    paws = [1 + w * len(PARTS) + PARTS.index(p) for w in range(len(WHO)) for p in ("paw-left", "paw-right")]
+    found = np.isin(_labels(ids), paws)
+    grow = math.ceil(line.heavy / 2.0)
+    return ndimage.binary_dilation(found, iterations=grow) if found.any() and grow > 0 else found
 
 
 def _edges(labels: np.ndarray) -> tuple[np.ndarray, np.ndarray]:

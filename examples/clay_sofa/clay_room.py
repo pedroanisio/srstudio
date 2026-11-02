@@ -440,6 +440,8 @@ def materials(who: str, rig, meshes) -> tuple[Material, ...]:
             out[name] = _clay(name, rig.look.coat)
         elif part == "pad":
             out[name] = _clay(name, fig.arms[0].pad)
+        elif part == "toe":
+            out[name] = _clay(name, cf.INK)
         elif part.startswith("ear"):
             out[name] = _clay(name, rig.look.coat, *_textures(rig, part))
         elif part.startswith("face-"):
@@ -560,13 +562,14 @@ def lights() -> tuple[Light, ...]:
 
 def id_materials(parts: Mapping[str, Sequence[Part]]) -> tuple[tuple[clay.Mesh, ...], tuple[Material, ...]]:
     """Every part of every figure in its own flat colour (:func:`clay_ink.id_colour`), lit by nothing but itself: what
-    the ink reads to tell where one part ends and another begins. A pad is drawn as its paw."""
+    the ink reads to tell where one part ends and another begins. A pad and an arm are drawn as their paw, so the line
+    runs round arm and paw as one shape and none rings the wrist."""
     meshes: list[clay.Mesh] = []
     mats: dict[str, Material] = {}
     for who, posed_parts in parts.items():
         for part in posed_parts:
             name = part.id[len(who) + 1 :]
-            name = "paw-" + name[4:] if name.startswith("pad-") else name
+            name = "paw-" + name[4:] if name.startswith(("pad-", "arm-")) else name
             material = f"id-{who}-{name}"
             if material not in mats:
                 r, g, b = (int(round(v * 255)) for v in clay_ink.id_colour(who, name))
@@ -645,10 +648,13 @@ def composite(back: np.ndarray, p: np.ndarray, k: np.ndarray, b: np.ndarray) -> 
 ARM_LINE = 14.0  # frame pixels past the stand-in's front face: the drawn arm's own line round it
 
 
-def drawn_arm(front: np.ndarray, lens: Camera) -> np.ndarray:
+def drawn_arm(front: np.ndarray, lens: Camera, ids: np.ndarray, paws: Sequence[np.ndarray]) -> np.ndarray:
     """The sofa's arm off the room's ``front`` plate, seen through ``lens``: the plate wherever the arm stand-in falls
     on the frame (its front face, and any side the lens sees above the cushion, which hides the rest), with its line,
-    and clear everywhere else, so the seat strip beside it and a base resting on the cushion stay out."""
+    and clear everywhere else, so the seat strip beside it and a base resting on the cushion stay out. A paw stays
+    clear too, with its own line: within each of ``paws`` (a paw's outline on the frame, pixels) wherever the frame's
+    ID pass ``ids`` shows a paw's colour (the pass draws the stand-in black, so a paw seen there is in front of it).
+    The forearm drawn in the paw's colour runs on under the flat's arm, as in the flat."""
     arm = sofa()[-1].vertices
     face = arm[arm[:, 2] < arm[:, 2].min() + 1e-6]
     lo, hi = arm.min(0), arm.max(0)
@@ -660,6 +666,12 @@ def drawn_arm(front: np.ndarray, lens: Camera) -> np.ndarray:
     ImageDraw.Draw(mask).polygon(list(shape.exterior.coords), fill=255)
     out = front.copy()
     out[..., 3] *= np.asarray(mask, dtype=np.float64) / 255.0
+    if paws:
+        outlines = Image.new("L", mask.size, 0)
+        for paw in paws:
+            hull = MultiPoint(np.asarray(paw, float)).convex_hull.buffer(math.ceil(clay_ink.ROOM_LINE.heavy / 2.0))
+            ImageDraw.Draw(outlines).polygon(list(hull.exterior.coords), fill=255)
+        out[(np.asarray(outlines) > 0) & clay_ink.paw_pixels(ids, clay_ink.ROOM_LINE), 3] = 0.0
     return out
 
 

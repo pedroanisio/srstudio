@@ -35,6 +35,7 @@ room's line round it. The measures run over every frame of each span, for each f
 from __future__ import annotations
 
 import json
+import math
 import os
 import sys
 from dataclasses import replace
@@ -206,25 +207,39 @@ def arm_chains(performance: pf.Performance) -> dict:
 
 def rest_arms() -> dict:
     """Each figure's arms at rest against the flat's: how long each shows from the front (from where it leaves the
-    body to the wrist) and the flat's own arm, the width at the wrist against the flat's, whether the elbow stays
-    inside the outline, and how much longer the clay's line is laid over the belly than the bones run (the bones keep
-    their length; only the roll over them bends)."""
+    body to the wrist) in how many pieces, and the flat's own arm; the width at the elbow against the flat's and the
+    wrist's over the elbow's (the forearm narrows); the paw seen from the front against the flat paw's box; how many
+    degrees below level the forearm runs from the elbow to the wrist; whether the elbow stays inside the outline; and
+    how much longer the clay's line is laid over the belly than the bones run (the bones keep their length; only the
+    roll over them bends)."""
     out = {}
     for who in ("mae", "bruno"):
         rig = cs.RIGS[who]
         fig = cf.figure(rig)
         flat = cf.flat_rest_arms(rig)
+        boxes = cf._paws(rig)
         outline = Polygon(fig.parts.body).buffer(0).union(Polygon(fig.parts.head).buffer(0))
         sides = {}
         for chain in fig.arms:
             joints = cf.reach(chain, chain.rest)
             laid, radii = cf.arm_line(chain, joints)
             bare, _ = cf.arm_line(replace(chain, lap=None, skin=None), joints)
+            made = cf.arm_meshes(chain, joints, f"{who}-arm", f"{who}-pad")
+            paw = made["paw"][0].vertices
+            (x0, y0), (x1, y1) = boxes[chain.side][0]
+            run = joints.wrist - joints.elbow
             sides[chain.side] = dict(
                 shown_ref_px=round(cf.arm_shown(fig, chain, joints), 2),
+                shown_pieces=len(cf.arm_pieces(fig, chain, joints)),
                 flat_ref_px=round(flat[chain.side].length, 2),
-                wrist_width_ref_px=round(2.0 * float(radii[-1]), 2),
+                elbow_width_ref_px=round(2.0 * float(radii[cf.ELBOW_AT]), 2),
                 flat_width_ref_px=flat[chain.side].width,
+                wrist_over_elbow=round(float(radii[-1] / radii[cf.ELBOW_AT]), 3),
+                paw_ref_px=[round(float(np.ptp(paw[:, 0])), 2), round(float(np.ptp(paw[:, 1])), 2)],
+                flat_paw_ref_px=[round(x1 - x0, 2), round(y1 - y0, 2)],
+                paw_depth_over_height=round(float(np.ptp(paw[:, 2]) / np.ptp(paw[:, 1])), 3),
+                toe_marks=len(cf.toe_columns(chain)),
+                forearm_fall_degrees=round(math.degrees(math.atan2(run[1], abs(run[0]))), 1),
                 elbow_inside=bool(outline.buffer(-chain.radii[0]).contains(Point(joints.elbow[0], joints.elbow[1]))),
                 laid_over_bare=round(_length(laid) / _length(bare), 4),
             )

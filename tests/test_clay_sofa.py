@@ -11,6 +11,7 @@ The engine runs only as a stand-in script here: the study renders its passes out
 """
 
 import json
+import math
 import os
 import stat
 import sys
@@ -19,8 +20,9 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from shapely import contains_xy
+from shapely.geometry import MultiPoint, Polygon
 from shapely.geometry import Point as ShapelyPoint
-from shapely.geometry import Polygon
 
 ROOT = Path(__file__).resolve().parent.parent
 FOLDER = ROOT / "examples" / "clay_sofa"
@@ -152,8 +154,13 @@ def test_the_paws_at_rest_lie_on_the_lap(kit, rigs):
             joints = cf.reach(chain, chain.rest)
             paw = joints.paw
             under = float(surface(np.array([paw[0]]), np.array([paw[1]]))[0])
-            # the paw's back pressed into the belly's front, no deeper than a third of the paw
-            assert under - 1e-6 <= paw[2] + chain.paw_size[2] <= under + chain.paw_size[2] * 0.34
+            # it rests on the lap: its middle in front of the belly, its back on the belly or on its own forearm's end
+            # (laid on the belly, which the paw covers), within a fifth of the paw's thickness
+            deep = cf.paw_depth(chain)
+            path, radii = cf.arm_line(chain, joints)
+            rest_on = min(under, float(path[-1, 2] - radii[-1]))
+            assert paw[2] < under
+            assert rest_on - 0.4 * deep <= paw[2] + deep, (paw[2] + deep, rest_on)
             assert Polygon(fig.parts.body).contains(ShapelyPoint(paw[0], paw[1]))  # on the lap, not beside it
 
 
@@ -716,9 +723,9 @@ def test_an_arm_shows_only_where_it_is_in_front_of_the_skin(kit, rigs):
 @pytest.mark.parametrize("who", ["mae", "bruno"])
 def test_the_resting_arm_folds_into_depth_and_shows_as_long_as_the_flats(kit, rigs, who):
     """The rigid bones (the Wow needs all their reach) fold at rest the way a seated arm does: the upper arm down
-    the side inside the body, the forearm coming forward onto the lap. Seen from the front the arm shows from where it
-    leaves the body to the wrist about as long as the flat draws it, the elbow inside the figure's outline, the arm as
-    wide at the wrist as the flat's."""
+    the side inside the body, the forearm running down and forward onto the thigh. Seen from the front the arm shows
+    from where it leaves the body to the wrist about as long as the flat draws it, the elbow inside the figure's
+    outline, the arm as wide at the elbow as the flat's."""
     cf = kit["cf"]
     rig = rigs[who]
     fig = cf.figure(rig)
@@ -727,10 +734,143 @@ def test_the_resting_arm_folds_into_depth_and_shows_as_long_as_the_flats(kit, ri
     for chain in fig.arms:
         assert (chain.upper, chain.fore) == (cf.UPPER, cf.FORE)
         joints = cf.reach(chain, chain.rest)
-        assert cf.arm_shown(fig, chain, joints) == pytest.approx(flat[chain.side].length, abs=4.0)
+        assert cf.arm_shown(fig, chain, joints) == pytest.approx(flat[chain.side].length, abs=1.0)
         elbow = ShapelyPoint(joints.elbow[0], joints.elbow[1])
         assert outline.buffer(-chain.radii[0]).contains(elbow)  # it does not poke out of the silhouette
-        assert 2.0 * chain.radii[1] == pytest.approx(flat[chain.side].width)
+        assert 2.0 * chain.radii[0] == pytest.approx(flat[chain.side].width)  # as wide at the elbow as the flat's arm
+
+
+def test_a_shoulder_depth_that_cannot_show_the_flats_length_is_refused(kit, rigs, monkeypatch):
+    """Each shoulder's depth is solved so its arm shows as long as the flat's; a depth range that holds no such depth
+    stops the figure with the arm named, never a figure with the nearest arm."""
+    cf = kit["cf"]
+    monkeypatch.setattr(cf, "SHOULDER_BACK", (-5.0, 5.0))  # so far back the arm shows too short throughout
+    with pytest.raises(cf.FigureError, match="left arm"):
+        cf.figure.__wrapped__(rigs["mae"])  # built afresh, past the cache
+
+
+WRIST_TAPER = (0.55, 0.8)  # the wrist's width over the elbow's: a forearm that narrows, never a roll of one width
+FALL = 30.0  # degrees below level, at the least, that a resting forearm runs on screen from the elbow to the wrist
+
+
+@pytest.mark.parametrize("who", ["mae", "bruno"])
+def test_the_forearm_narrows_from_the_elbow_to_the_wrist(kit, rigs, who):
+    """The upper arm keeps the elbow's width; from the elbow the forearm narrows all the way to the wrist."""
+    cf = kit["cf"]
+    fig = cf.figure(rigs[who])
+    for chain in fig.arms:
+        _, radii = cf.arm_line(chain, cf.reach(chain, chain.rest))
+        elbow, wrist = radii[cf.ELBOW_AT], radii[-1]
+        assert WRIST_TAPER[0] <= wrist / elbow <= WRIST_TAPER[1]
+        assert np.all(np.diff(radii[cf.ELBOW_AT :]) < 0.0)  # narrowing at every step, no roll of one width
+        assert np.allclose(radii[: cf.ELBOW_AT + 1], elbow)
+
+
+def _paw(cf, chain, joints, who="bruno"):
+    made = cf.arm_meshes(chain, joints, f"{who}-arm", f"{who}-pad")
+    return made, made["paw"][0].vertices
+
+
+@pytest.mark.parametrize("who", ["mae", "bruno"])
+def test_the_paw_is_a_flattened_mitten_as_wide_and_tall_as_the_flats(kit, rigs, who):
+    """Seen from the front the paw covers the flat paw's box: as wide, as tall, so as much wider than tall as the
+    flat's; it is flat front to back, not a ball; its pad sits on its front and three toe marks on its lower front."""
+    cf = kit["cf"]
+    rig = rigs[who]
+    fig = cf.figure(rig)
+    boxes = cf._paws(rig)
+    for chain in fig.arms:
+        joints = cf.reach(chain, chain.rest)
+        made, v = _paw(cf, chain, joints, who)
+        (x0, y0), (x1, y1) = boxes[chain.side][0]
+        width, height = np.ptp(v[:, 0]), np.ptp(v[:, 1])
+        assert width == pytest.approx(x1 - x0, abs=1.0)
+        assert height == pytest.approx(y1 - y0, abs=1.0)
+        assert width / height == pytest.approx((x1 - x0) / (y1 - y0), rel=0.05)
+        assert np.ptp(v[:, 2]) <= 0.65 * height  # flattened front to back: a mitten, not a ball
+        toes = [m for m in made["pad"] if m.material == f"{who}-toe"]
+        assert len(toes) == 1
+        t = toes[0].vertices
+        assert np.all(t[:, 1] > joints.paw[1])  # on the paw's lower half
+        assert np.ptp(t[:, 0]) >= 0.4 * width  # three marks spread across it
+        assert len({round(float(x)) for x in cf.toe_columns(chain)}) == 3
+
+
+@pytest.mark.parametrize("who", ["mae", "bruno"])
+def test_the_resting_paw_lies_down_and_forward_on_the_thigh(kit, rigs, who):
+    """At rest the forearm runs down from the elbow at the side and forward onto the thigh, never level across the
+    belly; the paw's toes point down and toward the lens."""
+    cf = kit["cf"]
+    fig = cf.figure(rigs[who])
+    for chain in fig.arms:
+        joints = cf.reach(chain, chain.rest)
+        run = joints.wrist - joints.elbow
+        fall = math.degrees(math.atan2(run[1], abs(run[0])))  # y is down
+        assert fall >= FALL, (chain.side, fall)
+        assert joints.wrist[2] < joints.elbow[2] - 20.0  # it comes forward
+        _, v = _paw(cf, chain, joints, who)
+        low, high = v[np.argmax(v[:, 1])], v[np.argmin(v[:, 1])]
+        assert low[2] < high[2]  # the toes nearer the lens than the paw's top
+
+
+@pytest.mark.parametrize("who", ["mae", "bruno"])
+def test_the_paw_covers_the_forearms_end_and_its_whole_front_shows(kit, rigs, who):
+    """As in the flat, the paw lies over its forearm's end: wherever the forearm's clay, as laid on the belly, runs
+    within the paw's outline, its front is behind the paw's middle, so the paw's face covers it and no end of a tube
+    shows on the pad. Every point of the paw that faces the lens lies in front of the skin, so the belly cuts no
+    crescent out of it. Held at rest and with the paw raised."""
+    cf = kit["cf"]
+    fig = cf.figure(rigs[who])
+    front = cf.front_of(fig.skin)
+    for chain in fig.arms:
+        for target in (chain.rest, chain.rest + np.array((0.0, -120.0, -40.0))):
+            joints = cf.reach(chain, target)
+            made, v = _paw(cf, chain, joints, who)
+            outline = MultiPoint(v[:, :2]).convex_hull
+            path, radii = cf.arm_line(chain, joints)
+            under = contains_xy(outline, path[:, 0], path[:, 1])
+            under[: cf.ELBOW_AT] = False
+            assert under.any(), chain.side  # the forearm runs in under the paw
+            assert np.all(path[under, 2] - radii[under] >= joints.paw[2]), chain.side
+        joints = cf.reach(chain, chain.rest)
+        made, v = _paw(cf, chain, joints, who)
+        facing = made["paw"][0].normals[:, 2] < 0.0
+        assert np.all(v[facing, 2] <= front(v[facing, 0], v[facing, 1]) + 1e-6), chain.side
+
+
+@pytest.mark.parametrize("who", ["mae", "bruno"])
+def test_the_resting_arm_shows_in_one_piece_and_its_shoulder_stays_under_the_skin(kit, rigs, who):
+    """From the front a resting arm shows once, from where it leaves the body to the wrist: no sliver of the upper arm
+    breaks the skin above it, and the shoulder's ball stays behind the skin's front."""
+    cf = kit["cf"]
+    fig = cf.figure(rigs[who])
+    front = cf.front_of(fig.skin)
+    for chain in fig.arms:
+        joints = cf.reach(chain, chain.rest)
+        assert len(cf.arm_pieces(fig, chain, joints)) == 1, chain.side
+        s = chain.shoulder
+        assert s[2] - chain.radii[0] >= float(front(np.array([s[0]]), np.array([s[1]]))[0])
+
+
+def test_the_ink_draws_one_outline_from_the_forearm_into_the_paw(kit, rigs):
+    """The ID pass gives an arm its paw's colour, so the room's line runs round arm and paw as one shape and no ring
+    is drawn where the forearm goes into the paw."""
+    cr = kit["cr"]
+    performance = resting_performance(kit)
+    seat = cr.Seat((0.0, 0.0, 300.0), 0.16, False)
+    parts = {
+        "bruno": cr.posed_parts(
+            "bruno", rigs["bruno"], kit["cf"].figure(rigs["bruno"]), performance.at("bruno", 0), seat
+        )
+    }
+    meshes, _ = cr.id_materials(parts)
+    by_part = {}
+    k = 0
+    for part in parts["bruno"]:
+        by_part[part.id] = {meshes[k + i].material for i in range(len(part.meshes))}
+        k += len(part.meshes)
+    for side in ("left", "right"):
+        assert by_part[f"bruno-arm-{side}"] == by_part[f"bruno-paw-{side}"] == by_part[f"bruno-pad-{side}"]
 
 
 def test_each_figure_sits_on_its_cards_column_and_its_base_on_the_cushion(kit, rigs):
@@ -762,7 +902,8 @@ def test_the_drawn_arm_lies_over_the_clay_and_the_seat_strip_does_not(kit):
     front = np.zeros((cr.HEIGHT, cr.WIDTH, 4))
     front[:, :, :3] = (0.3, 0.1, 0.4)
     front[:, :, 3] = 1.0  # the whole plate opaque: only the arm may come through
-    arm = cr.drawn_arm(front, lens)
+    none = np.zeros((cr.HEIGHT, cr.WIDTH, 4))  # an ID pass with no figure in it
+    arm = cr.drawn_arm(front, lens, none, [])
     assert arm[middle[1], middle[0], 3] == 1.0
     strip = (middle[1], middle[0] - 200)  # along the seat, left of the arm
     assert arm[strip[0], strip[1], 3] == 0.0
@@ -770,7 +911,7 @@ def test_the_drawn_arm_lies_over_the_clay_and_the_seat_strip_does_not(kit):
     out = cr.over(picture, arm)
     assert out[middle[1], middle[0], :3] == pytest.approx((0.3, 0.1, 0.4))
     assert out[strip[0], strip[1], :3] == pytest.approx((1.0, 1.0, 1.0))
-    empty = cr.drawn_arm(np.zeros_like(front), lens)
+    empty = cr.drawn_arm(np.zeros_like(front), lens, none, [])
     assert empty[..., 3].max() == 0.0  # a plate with no arm lays nothing
 
 
@@ -779,7 +920,7 @@ def test_the_drawn_arm_takes_in_its_inner_side_on_a_camera_that_sees_it(kit):
     cr = kit["cr"]
     lens = cr.camera_of((-0.6, 0.75, -1.2), (-0.2, 0.5, 0.2), TWO["lens"])
     front = np.ones((cr.HEIGHT, cr.WIDTH, 4))
-    arm = cr.drawn_arm(front, lens)
+    arm = cr.drawn_arm(front, lens, np.zeros_like(front), [])
     side = cr.project([cr.engine((-0.19, 0.5, 0.25))], lens)[0].astype(int)
     assert arm[side[1], side[0], 3] == 1.0
     cushion = cr.project([cr.engine((-0.35, cr.CUSHION_TOP, 0.25))], lens)[0].astype(int)
@@ -787,6 +928,30 @@ def test_the_drawn_arm_takes_in_its_inner_side_on_a_camera_that_sees_it(kit):
     # below the cushion's top the cushion hides the arm's inner side: a base resting by the arm is never cut there
     seat = cr.project([cr.engine((-0.23, cr.CUSHION_TOP + 0.005, 0.1))], lens)[0].astype(int)
     assert arm[seat[1], seat[0], 3] == 0.0
+
+
+def test_the_drawn_arm_never_covers_a_paw_the_id_pass_shows_in_front_of_it(kit):
+    """The ID pass draws the arm stand-in black, so a paw seen there, within the paw's own outline on the frame, is in
+    front of the sofa's arm: the drawn arm and its line leave it clear. The forearm in the paw's colour beyond that
+    outline, and Bruno's side, run under the flat's arm as in the flat, and it still covers them."""
+    cr, ci = kit["cr"], kit["ci"]
+    lens = cr.camera_of(TWO["eye"], TWO["look_at"], TWO["lens"])
+    near = cr.sofa()[-1].vertices
+    near = near[near[:, 2] < near[:, 2].min() + 1e-6]
+    x, y = cr.project(near, lens).mean(0).astype(int)
+    front = np.ones((cr.HEIGHT, cr.WIDTH, 4))
+    ids = np.zeros((cr.HEIGHT, cr.WIDTH, 4))
+    ids[..., 3] = 1.0
+    ids[y - 20 : y + 20, x - 40 : x, :3] = ci.id_colour("bruno", "paw-right")  # the paw
+    ids[y - 80 : y - 20, x - 40 : x, :3] = ci.id_colour("bruno", "paw-right")  # its forearm, above it
+    ids[y - 20 : y + 20, x : x + 40, :3] = ci.id_colour("bruno", "skin")
+    paw = np.array(((x - 40, y - 20), (x, y - 20), (x, y + 20), (x - 40, y + 20)), float)
+    arm = cr.drawn_arm(front, lens, ids, [paw])
+    assert np.all(arm[y - 18 : y + 18, x - 38 : x - 2, 3] == 0.0)  # the paw stays in front
+    line = math.ceil(ci.ROOM_LINE.heavy / 2.0)  # the paw keeps its own line, on his side of its edge too
+    assert np.all(arm[y - 18 : y + 18, x : x + line, 3] == 0.0)
+    assert np.all(arm[y - 18 : y + 18, x + line + 1 : x + 38, 3] == 1.0)  # his side goes under
+    assert np.all(arm[y - 78 : y - 20 - line - 1, x - 38 : x - 2, 3] == 1.0)  # so does the forearm
 
 
 def test_the_room_line_is_read_from_the_rooms_own_plates(kit):

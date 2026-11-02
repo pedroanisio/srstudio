@@ -154,7 +154,8 @@ def render(root: Path, push: bool, frames: range | None = None) -> dict:
         parts, materials = figures_at(performance, n, places)
         p, k, b, i = cr.passes(parts, materials, lens, cache, spent)
         picture, _ = cr.composite(cr.rgba(root / CLEAN / back), cr.rgba(p), cr.rgba(k), cr.rgba(b))
-        arm = cr.drawn_arm(cr.rgba(root / CLEAN / front), lens)
+        paws = [cr.project(m.vertices, lens) for who in parts for part in parts[who] if part.hand for m in part.meshes]
+        arm = cr.drawn_arm(cr.rgba(root / CLEAN / front), lens, cr.rgba(i), paws)
         cr.write(clay_root(root) / kind / f"{n:04d}.png", cr.over(picture, arm))
         inked = ci.ink(picture, cr.rgba(i), ci.ROOM_LINE)
         cr.write(clay_root(root) / f"{kind}-ink" / f"{n:04d}.png", cr.over(inked, arm))

@@ -14,9 +14,12 @@ and y down, with z away from the lens: the front of a part is at negative z.
 The arms are not drawn into the body. Each is a chain from its shoulder (two rigid bones and a paw) whose paw at rest
 lies on the lap where the pose's drawing lays it; a gesture sends the same paw somewhere else, so the arms that rest
 are the arms that move and the figure always has one pair of hands. At rest the arm folds into depth as a seated arm
-does: the shoulder inside the body's side, the upper arm down the side and the elbow by the hip, the forearm coming
-forward onto the lap, its clay laid on the belly. Seen from the front it shows about as long as the flat draws it,
-though the bones keep the reach the Wow needs.
+does: the shoulder inside the body's side, the upper arm down the side and the elbow by the hip, the forearm running
+down and forward onto the thigh, narrowing from the elbow to the wrist, its clay laid on the belly. Each shoulder's
+depth is solved so the arm shows from the front as long as the flat draws it, though the bones keep the reach the Wow
+needs. The paw is a flat mitten as wide and tall as the flat's paw, its pad on its face and three toe marks below,
+turned to lie along the belly; it lies over its forearm's end, as the flat's paw does, and the ID pass draws arm and
+paw in one colour, so the ink runs one outline from the forearm round the paw.
 
 The face is the rig's own: its layers (eyes for the pose and the gaze, the mouth or the viseme heard, the lids of a
 blink, the teeth) painted in the drawing's order onto a picture laid flat over the skin's front, and the same layers
@@ -591,17 +594,30 @@ BASE = 832.0  # the bust's lowest drawn row: the sofa room shows it whole, its b
 # --- the arms ---------------------------------------------------------------------------------------------------------
 
 UPPER, FORE = 92.0, 96.0  # reference pixels from the shoulder to the elbow and on to the wrist: the Wow's full reach
-TAPER_IN = 0.8  # the arm's radius at the shoulder, times its radius at the wrist (the flat's width there, halved)
+WRIST = 0.6  # the wrist's radius over the elbow's: the forearm narrows from the elbow (the flat arm's) to the wrist
+ELBOW_AT = 8  # the elbow's index on an arm's middle line (:func:`arm_line`): the upper arm before it, the forearm after
+PAW_TILT = 20.0  # degrees the paw turns about the level: its toes toward the lens, its top away
+PAW_FOLLOW = 10.0  # reference pixels either side of the paw's middle over which the belly's slope across is read
+PAW_FLAT = 0.5  # the paw's depth over its seen height: a mitten, flat front to back
+PAW_SINK = 0.3  # how far into the paw, over the paw's radius that way, the wrist goes
+TOES = (-0.45, 0.0, 0.45)  # the three toe marks across the paw's lower front, over its half width
 PRESS = 0.25  # the share of the laid forearm's radius pressed into the belly
+COVER = 1.0  # reference pixels the paw's middle stands in front of its forearm's end, which runs in under it
 SIDES = ("left", "right")  # in the drawing, before any mirror
-# A seated arm at rest: the upper arm hangs down the side inside the body, the forearm comes forward onto the lap, so
-# from the front it shows short although its bones are long. The shoulder is SHOULDER_IN in from the body's side and
-# SHOULDER_UP above the flat arm's top, SHOULDER_BACK behind the skin's middle plane (negative: in front of it); the
-# elbow bends toward POLE. Searched against the flat's rest arms: each shows within 2 px of the flat's length.
-SHOULDER_IN = 26.0
-SHOULDER_UP = 45.0
-SHOULDER_BACK = -10.0
-POLE = (0.5, 0.7, -0.1)  # out (x by the side), down, and a little forward: the elbow at the side, by the hip
+# A seated arm at rest: the upper arm hangs down the side inside the body, the forearm runs down and forward onto the
+# thigh, so from the front it shows short although its bones are long. Both shoulders sit on one row, SHOULDER_UP
+# above the flat arms' tops on average, each SHOULDER_IN in from the body's side on that row; the elbow bends toward
+# POLE. Each shoulder's depth is solved within SHOULDER_BACK (behind the skin's middle plane; negative: in front of
+# it) so its arm shows as long as its own flat arm: the flat draws its two arms unlike, so no one depth fits both. The
+# deeper the shoulder, the more of the upper arm the body hides, while the forearm's fall barely moves. Searched: over
+# that range each arm shows in one piece, its forearm falling at least 30 degrees.
+SHOULDER_IN = 22.0
+SHOULDER_UP = 82.0
+SHOULDER_BACK = (-35.0, -5.0)  # the nearest and the farthest the shoulder's depth is solved in
+FIT_TOLERANCE = 1.0  # reference pixels the solved arm may show off the flat's length: two SHOWN_STEPs
+SHOWN_STEP = 0.5  # reference pixels between the points an arm's shown length is measured at
+FIT_STEPS = 40  # bisections at the most: the solve ends whatever the arm shows
+POLE = (1.0, 1.0, 0.8)  # out (x by the side), down and back: the elbow at the side, by the hip
 ARM_SAMPLES = 25  # points along an arm's middle line, shoulder to wrist
 
 
@@ -611,11 +627,12 @@ class ArmChain:
     drawing lays it; every gesture is that same paw sent somewhere else (:func:`reach`)."""
 
     side: str
-    shoulder: np.ndarray  # (3,) reference pixels, its z behind the body's front by the arm's radius
+    shoulder: np.ndarray  # (3,) reference pixels, its depth solved so the arm shows the flat's length (_fitted)
     upper: float
     fore: float
-    radii: tuple[float, float]  # at the shoulder and at the wrist
-    paw_size: tuple[float, float, float]  # the paw's radii: along the forearm, across it, and deep
+    radii: tuple[float, float]  # at the elbow (the whole upper arm too) and at the wrist
+    paw_size: tuple[float, float, float]  # the paw's own radii, across, tall and deep, before its turn
+    paw_turn: np.ndarray  # (3, 3) the paw's turn (:func:`_turn`): tilted toes to the lens, its back along the belly
     pad: str  # the paw's pad colour, the drawing's own
     rest: np.ndarray  # (3,) the middle of the paw at rest
     pole: np.ndarray  # (3,) unit: the way the elbow bends
@@ -655,31 +672,142 @@ def _two_bones(start: np.ndarray, end: np.ndarray, a: float, b: float, pole: np.
 def reach(chain: ArmChain, target: np.ndarray) -> Joints:
     """``chain`` with its paw's middle sent to ``target`` (reference pixels), or as far toward it as the bones go."""
     target = np.asarray(target, float)
-    along = chain.paw_size[0] * 0.8
-    wrist_at = target - along * (target - chain.shoulder) / max(float(np.linalg.norm(target - chain.shoulder)), 1e-9)
-    for _ in range(6):  # the paw lies along the forearm, which turns with the elbow: settle both
+    forearm = (target - chain.shoulder) / max(float(np.linalg.norm(target - chain.shoulder)), 1e-9)
+    wrist_at = target - _into(chain, forearm)
+    for _ in range(6):  # the wrist goes into the paw the way the forearm comes, which turns with the elbow: settle both
         elbow, wrist = _two_bones(chain.shoulder, wrist_at, chain.upper, chain.fore, chain.pole)
         forearm = (wrist - elbow) / np.linalg.norm(wrist - elbow)
-        wrist_at = target - along * forearm
+        wrist_at = target - _into(chain, forearm)
     elbow, wrist = _two_bones(chain.shoulder, wrist_at, chain.upper, chain.fore, chain.pole)
     forearm = (wrist - elbow) / np.linalg.norm(wrist - elbow)
-    return Joints(chain.shoulder.copy(), elbow, wrist, wrist + along * forearm)
+    return Joints(chain.shoulder.copy(), elbow, wrist, wrist + _into(chain, forearm))
+
+
+def _into(chain: ArmChain, way: np.ndarray) -> np.ndarray:
+    """From the wrist to the paw's middle, for a forearm running ``way``: on the drawing's plane, :data:`PAW_SINK` of
+    the paw's seen radius that way, so the forearm runs in under the mitten; in depth, the paw's middle in front of
+    the wrist by the wrist's radius and :data:`COVER`, so the forearm's end lies behind the paw's middle and the paw
+    covers it, as the flat draws its arm going in behind the paw."""
+    flat = float(np.hypot(way[0], way[1]))
+    step = (way[0] / flat, way[1] / flat) if flat > 1e-9 else (0.0, 0.0)
+    along = _along(chain, way)
+    return np.array((along * step[0], along * step[1], -(chain.radii[1] + COVER)))
+
+
+def _along(chain: ArmChain, way: np.ndarray) -> float:
+    """How far past the wrist the paw's middle lies on the drawing's plane, along ``way``: :data:`PAW_SINK` of the
+    paw's seen radius that way."""
+    rx, ry, rz = _half(chain.paw_size, chain.paw_turn)
+    flat = np.hypot(way[0], way[1])
+    if flat < 1e-9:
+        return PAW_SINK * rz
+    dx, dy = way[0] / flat, way[1] / flat
+    return PAW_SINK / math.sqrt((dx / rx) ** 2 + (dy / ry) ** 2)
+
+
+def _tilt() -> np.ndarray:
+    """The paw's turn about the level, as a matrix: its bottom toward the lens (-z), its top away."""
+    t = math.radians(PAW_TILT)
+    return np.array(((1.0, 0.0, 0.0), (0.0, math.cos(t), math.sin(t)), (0.0, -math.sin(t), math.cos(t))))
+
+
+def _turn(slope: float) -> np.ndarray:
+    """The paw's turn as a matrix: tilted about the level (:func:`_tilt`), then turned about the upright so that its
+    back runs along a belly whose depth changes by ``slope`` per reference pixel across."""
+    a = math.atan(slope)
+    c, s = math.cos(a), math.sin(a)
+    return np.array(((c, 0.0, -s), (0.0, 1.0, 0.0), (s, 0.0, c))) @ _tilt()
+
+
+def _half(size: Sequence[float], turn: np.ndarray) -> np.ndarray:
+    """An ellipsoid of radii ``size`` turned by ``turn``: its half extent across, tall and deep."""
+    return np.sqrt(((turn * np.asarray(size, float)) ** 2).sum(axis=1))
+
+
+def _paw_size(turn: np.ndarray, across: float, tall: float, deep: float) -> tuple[float, float, float]:
+    """The radii of a paw ``deep`` through its own thickness that, turned by ``turn``, the lens sees ``across`` and
+    ``tall`` (half extents): the two squared radii solve two linear equations."""
+    m = turn**2
+    a = np.array(((m[0, 0], m[0, 1]), (m[1, 0], m[1, 1])))
+    b = np.array((across**2 - m[0, 2] * deep**2, tall**2 - m[1, 2] * deep**2))
+    squared = np.linalg.solve(a, b)
+    if np.any(squared <= 0.0):
+        raise FigureError(f"no paw {deep:.1f} deep shows {across:.1f} by {tall:.1f} turned so")
+    return float(math.sqrt(squared[0])), float(math.sqrt(squared[1])), deep
+
+
+def _clear(surface: Callable[[np.ndarray, np.ndarray], np.ndarray], x: float, y: float, size: Sequence[float],
+           turn: np.ndarray, wrist: float) -> float:  # fmt: skip
+    """The depth of a paw's middle at (``x``, ``y``) on the lap: as far back as it goes with every point of its side
+    that faces the lens in front of the skin, so the belly cuts nothing out of it, and its middle :data:`COVER` in
+    front of its forearm's end laid on the belly anywhere under it (a forearm ``wrist`` in radius there), so it lies
+    over that end as the flat's paw does."""
+    rows, cols = 49, 96
+    polar = np.linspace(0.0, math.pi, rows)[:, None]
+    around = np.linspace(0.0, math.tau, cols, endpoint=False)[None, :]
+    unit = np.stack(
+        (np.sin(polar) * np.cos(around), -np.cos(polar) * np.ones_like(around), np.sin(polar) * np.sin(around)), axis=2
+    ).reshape(-1, 3)
+    radii = np.asarray(size, float)
+    points = (unit * radii) @ turn.T
+    normals = (unit / radii) @ turn.T
+    facing = normals[:, 2] < 0.0
+    p = points[facing]
+    skin = surface(x + p[:, 0], y + p[:, 1])
+    laid = float(skin.min()) - (1.0 - PRESS) * wrist  # the laid forearm's middle where the belly comes nearest
+    return min(float((skin - p[:, 2]).min()), laid - wrist - COVER)
+
+
+def paw_depth(chain: ArmChain) -> float:
+    """How far the turned paw stands in front of and behind its middle."""
+    return float(_half(chain.paw_size, chain.paw_turn)[2])
+
+
+def toe_columns(chain: ArmChain) -> tuple[float, ...]:
+    """The toe marks' columns across the paw, from its middle (reference pixels)."""
+    return tuple(k * chain.paw_size[0] for k in TOES)
+
+
+def _ellipsoid(model: clay.Model, material: str, centre: np.ndarray, size: Sequence[float], turn: np.ndarray) -> None:
+    """An ellipsoid of radii ``size`` turned by ``turn`` about its middle, laid at ``centre``."""
+    rows, cols = 25, 48
+    polar = np.linspace(0.0, math.pi, rows)[:, None]
+    around = np.linspace(0.0, math.tau, cols, endpoint=False)[None, :]
+    unit = np.stack(
+        (np.sin(polar) * np.cos(around), -np.cos(polar) * np.ones_like(around), np.sin(polar) * np.sin(around)), axis=2
+    ).reshape(-1, 3)
+    radii = np.asarray(size, float)
+    normals = unit / radii
+    normals /= np.linalg.norm(normals, axis=1, keepdims=True)
+    tris = []
+    for i in range(rows - 1):
+        for j in range(cols):
+            a, b = i * cols + j, i * cols + (j + 1) % cols
+            tris += [(a, b, b + cols), (a, b + cols, a + cols)]
+    model.surface(material, (unit * radii) @ turn.T + centre, normals @ turn.T, tris)
 
 
 def arm_meshes(chain: ArmChain, joints: Joints, coat: str, pad: str) -> dict[str, tuple[clay.Mesh, ...]]:
-    """The clay of an arm at ``joints``: the arm a tapering roll from the shoulder through the elbow to the wrist, the
-    paw an egg along the forearm, its pad on its front. Keyed arm, paw and pad, materials ``coat`` and ``pad``."""
+    """The clay of an arm at ``joints``: the upper arm a roll as wide as the elbow, the forearm narrowing to the wrist,
+    which runs into the paw; the paw a flat mitten as wide and tall as the flat's paw, tilted toes toward the lens, its
+    pad on its front and three toe marks below it, in the reel's ink. Keyed arm, paw and pad (the pad's part holds the
+    toes, material ``coat`` with ``-arm`` turned to ``-toe``); materials ``coat`` and ``pad``."""
     path, radii = arm_line(chain, joints)
     arm = clay.Model()
     arm.ribbon(coat, path, radii.tolist(), sides=20)
     arm.ell(coat, tuple(joints.shoulder), (chain.radii[0],) * 3)
-    forearm = joints.wrist - joints.elbow
-    turn = math.degrees(math.atan2(forearm[1], forearm[0]))
     rx, ry, rz = chain.paw_size
+    turn = chain.paw_turn
     paw = clay.Model()
-    paw.ell(coat, tuple(joints.paw), (rx, ry, rz), rotation=turn)
+    _ellipsoid(paw, coat, joints.paw, (rx, ry, rz), turn)
     on = clay.Model()
-    on.ell(pad, tuple(joints.paw + (0.0, 0.0, -rz * 0.72)), (rx * 0.45, ry * 0.42, rz * 0.3), rotation=turn)
+    face = -rz * math.sqrt(max(0.0, 1.0 - 0.1**2)) * 0.8
+    _ellipsoid(on, pad, joints.paw + turn @ (0.0, -0.1 * ry, face), (rx * 0.42, ry * 0.36, rz * 0.3), turn)
+    toe = coat.rsplit("-", 1)[0] + "-toe"
+    for column in toe_columns(chain):
+        y = 0.58 * ry
+        depth = -rz * math.sqrt(max(0.0, 1.0 - (column / rx) ** 2 - 0.58**2)) * 0.9
+        _ellipsoid(on, toe, joints.paw + turn @ (column, y, depth), (rx * 0.06, ry * 0.2, rz * 0.22), turn)
     return {"arm": arm.meshes(), "paw": paw.meshes(), "pad": on.meshes()}
 
 
@@ -759,34 +887,38 @@ def flat_rest_arms(rig) -> dict[str, FlatArm]:
 
 
 def _chains(rig, surface, body: np.ndarray) -> tuple[ArmChain, ArmChain]:
-    """The two arms: each shoulder in from the body's side above where the flat's arm leaves it, the wrist as wide as
-    the flat's, the paw where the flat lays it on the lap."""
+    """The two arms: both shoulders on one row above where the flat's arms leave the body, each in from the body's
+    side; the elbow as wide as the flat's arm and the wrist narrower; the paw a mitten covering the flat paw's box,
+    laid where the flat lays it on the thigh."""
     flat = flat_rest_arms(rig)
     outline = Polygon(body)
+    level = sum(flat[k].path[0][1] for k in SIDES) / len(SIDES)  # one body, both shoulders on one row
     out: list[ArmChain] = []
     for side, (corners, pad) in zip(SIDES, (_paws(rig)[k] for k in SIDES), strict=True):
         arm = flat[side]
-        r1 = arm.width / 2.0
-        r0 = TAPER_IN * r1
-        top_x, top_y = arm.path[0]
-        sy = top_y - SHOULDER_UP
+        r0 = arm.width / 2.0
+        r1 = WRIST * r0
+        top_x = arm.path[0][0]
+        sy = level - SHOULDER_UP
         row = LineString([(top_x - 400.0, sy), (top_x + 400.0, sy)]).intersection(outline)
         if row.is_empty:
             raise FigureError(f"{rig.look.name}: no body at the {side} shoulder's row")
         edge = row.bounds[0] if side == "left" else row.bounds[2]
         sx = edge + SHOULDER_IN if side == "left" else edge - SHOULDER_IN
-        shoulder = np.array((sx, sy, SHOULDER_BACK))
+        shoulder = np.array((sx, sy, sum(SHOULDER_BACK) / 2.0))  # its depth solved by :func:`_fitted`
         if not outline.buffer(-r0).contains(ShapelyPoint(sx, sy)):
             raise FigureError(f"{rig.look.name}: the {side} shoulder at ({sx:.0f}, {sy:.0f}) is not inside the body")
         (x0, y0), (x1, y1) = corners
-        rx, ry = (x1 - x0) / 2.0, (y1 - y0) / 2.0
-        rz = min(rx, ry) * 0.8
+        across, tall = (x1 - x0) / 2.0, (y1 - y0) / 2.0
         px, py = (x0 + x1) / 2.0, (y0 + y1) / 2.0
-        rest = np.array((px, py, float(surface(np.array([px]), np.array([py]))[0]) - rz + PRESS * rz))
+        side_depths = surface(np.array((px - PAW_FOLLOW, px + PAW_FOLLOW)), np.array((py, py)))
+        turn = _turn(float(side_depths[1] - side_depths[0]) / (2.0 * PAW_FOLLOW))
+        size = _paw_size(turn, across, tall, PAW_FLAT * tall)  # the lens sees the flat paw's box
+        rest = np.array((px, py, _clear(surface, px, py, size, turn, r1)))
         pole = np.array((POLE[0] * (-1.0 if side == "left" else 1.0), POLE[1], POLE[2]))
         below = rectangle(-1e4, shoulder[1], 1e4, 1e4)  # below the shoulder: a raised arm is never laid
         lap = outline.intersection(below)
-        out.append(ArmChain(side, shoulder, UPPER, FORE, (r0, r1), (rx, ry, rz), pad, rest,
+        out.append(ArmChain(side, shoulder, UPPER, FORE, (r0, r1), size, turn, pad, rest,
                             pole / np.linalg.norm(pole), lap, surface))  # fmt: skip
     return out[0], out[1]
 
@@ -802,7 +934,8 @@ def arm_line(chain: ArmChain, joints: Joints) -> tuple[np.ndarray, np.ndarray]:
     for _ in range(3):  # round the elbow: each inner point toward its neighbours' middle
         path[1:-1] = 0.5 * path[1:-1] + 0.25 * (path[:-2] + path[2:])
     run = np.concatenate(([0.0], np.cumsum(np.linalg.norm(np.diff(path, axis=0), axis=1))))
-    radii = chain.radii[0] + (chain.radii[1] - chain.radii[0]) * run / run[-1]
+    share = np.clip((run - run[ELBOW_AT]) / max(run[-1] - run[ELBOW_AT], 1e-9), 0.0, 1.0)
+    radii = chain.radii[0] + (chain.radii[1] - chain.radii[0]) * share  # the upper arm the elbow's width throughout
     if chain.lap is not None and chain.skin is not None:
         fore = np.arange(len(path)) >= 8  # from the elbow on
         on = fore & contains_xy(chain.lap, path[:, 0], path[:, 1])
@@ -819,16 +952,76 @@ def arm_shown(fig: Figure, chain: ArmChain, joints: Joints) -> float:
     """How long ``chain`` at ``joints`` shows from the front, reference pixels: its middle line's length on the
     drawing's plane wherever the arm is seen, outside the figure's outline or with its near side in front of the
     skin's front. Every piece counts: an arm that shows twice, a stub at the shoulder and a forearm, shows both."""
+    return float(sum(arm_pieces(fig, chain, joints)))
+
+
+def arm_start(fig: Figure, chain: ArmChain, joints: Joints) -> np.ndarray:
+    """Where ``chain`` at ``joints`` first shows from the front, on its middle line (reference pixels, x and y)."""
+    line, shown = _shown(fig, chain, joints)
+    if not shown.any():
+        raise FigureError(f"the {chain.side} arm does not show at all")
+    return line[int(np.argmax(shown)), :2]
+
+
+def _shown(fig: Figure, chain: ArmChain, joints: Joints) -> tuple[np.ndarray, np.ndarray]:
+    """``chain``'s middle line, densely, and whether each of its points shows from the front."""
+    return _shown_on(_rim(fig.skin), front_of(fig.skin), chain, joints)
+
+
+def _rim(skin: Volume) -> Polygon:
+    return Polygon(skin.front[-SPOKES_SKIN:, :2]).buffer(0)  # the skin's rim: its last points, in order
+
+
+def _shown_on(rim: Polygon, depth: Callable[[np.ndarray, np.ndarray], np.ndarray], chain: ArmChain,
+              joints: Joints) -> tuple[np.ndarray, np.ndarray]:  # fmt: skip
     path, radii = arm_line(chain, joints)
-    dense = np.linspace(0.0, len(path) - 1.0, ARM_SAMPLES * 4)
+    run = float(np.linalg.norm(np.diff(path, axis=0), axis=1).sum())
+    dense = np.linspace(0.0, len(path) - 1.0, max(2, math.ceil(run / SHOWN_STEP) + 1))
     line = np.stack([np.interp(dense, np.arange(len(path)), path[:, k]) for k in range(3)], 1)
     size = np.interp(dense, np.arange(len(path)), radii)
-    outline = Polygon(fig.skin.front[-SPOKES_SKIN:, :2]).buffer(0)  # the rim: the last points, in order
-    depth = front_of(fig.skin)(line[:, 0], line[:, 1])
-    outside = ~contains_xy(outline, line[:, 0], line[:, 1])
-    shown = outside | (line[:, 2] - size < depth)
+    outside = ~contains_xy(rim, line[:, 0], line[:, 1])
+    return line, outside | (line[:, 2] - size < depth(line[:, 0], line[:, 1]))
+
+
+def arm_pieces(fig: Figure, chain: ArmChain, joints: Joints) -> list[float]:
+    """Each separate piece of ``chain`` at ``joints`` that shows from the front (:func:`arm_shown`), its length."""
+    return _pieces(*_shown(fig, chain, joints))
+
+
+def _pieces(line: np.ndarray, shown: np.ndarray) -> list[float]:
     step = np.linalg.norm(np.diff(line[:, :2], axis=0), axis=1)
-    return float(step[shown[1:] & shown[:-1]].sum())
+    both = shown[1:] & shown[:-1]
+    pieces: list[float] = []
+    for k, on in enumerate(both):
+        if on and (k == 0 or not both[k - 1]):
+            pieces.append(0.0)
+        if on:
+            pieces[-1] += float(step[k])
+    return [p for p in pieces if p > 0.0]
+
+
+def _fitted(name: str, chain: ArmChain, rim: Polygon, depth: Callable[[np.ndarray, np.ndarray], np.ndarray],
+            target: float) -> ArmChain:  # fmt: skip
+    """``chain`` with its shoulder's depth solved within SHOULDER_BACK so that at rest it shows ``target`` long from
+    the front, within FIT_TOLERANCE; the nearer the shoulder, the longer the arm shows. Bisected FIT_STEPS times at
+    the most; an arm the range cannot bring to ``target`` raises."""
+
+    def at(z: float) -> tuple[ArmChain, float]:
+        moved = replace(chain, shoulder=np.array((chain.shoulder[0], chain.shoulder[1], z)))
+        return moved, float(sum(_pieces(*_shown_on(rim, depth, moved, reach(moved, moved.rest)))))
+
+    near, far = SHOULDER_BACK
+    longest, shortest = at(near)[1], at(far)[1]
+    if not shortest <= target <= longest:
+        raise FigureError(f"{name}: the {chain.side} arm shows {shortest:.1f} to {longest:.1f} with its shoulder "
+                          f"{near:.0f} to {far:.0f} deep, never the flat's {target:.1f}")  # fmt: skip
+    for _ in range(FIT_STEPS):
+        middle = (near + far) / 2.0
+        moved, shown = at(middle)
+        if abs(shown - target) <= FIT_TOLERANCE:
+            return moved
+        near, far = (middle, far) if shown > target else (near, middle)
+    raise FigureError(f"{name}: the {chain.side} arm's shoulder depth reached no {target:.1f} in {FIT_STEPS} steps")
 
 
 @dataclass(frozen=True)
@@ -893,7 +1086,13 @@ def figure(rig) -> Figure:
     body = inflate(parts.body, *BODY_DEPTH, base=BASE)
     ears = tuple(inflate(ear, *EAR_DEPTH[name]) for ear in parts.ears)
     surface, weights = skin(parts.head, parts.body, BASE, bump)
-    arms = _chains(rig, front_of(surface), parts.body)
+    depth = front_of(surface)
+    flat, rim = flat_rest_arms(rig), _rim(surface)
+    left, right = _chains(rig, depth, parts.body)
+    arms = (
+        _fitted(name, left, rim, depth, flat["left"].length),
+        _fitted(name, right, rim, depth, flat["right"].length),
+    )
     xs = [surface.front[:, 0]]
     for chain in arms:
         for meshes in arm_meshes(chain, reach(chain, chain.rest), "coat", "pad").values():
