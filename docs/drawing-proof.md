@@ -225,6 +225,15 @@ needs world-anchored feet and steps, and the cup's world hold after release
 does not model physical support. Candidate geometry and palette still require
 the complete acceptance review.
 
+The [attached preview](../../generated/sdk-attached-hand/v4/index.html) uses
+216×384 output and a 2-fps world cadence. Its event-aware build completes four
+new raw renders and reuses 30 previously verified cache entries; the next build
+uses zero renderer invocations and produces identical bundle bytes. Eight
+strict final-quality frames include contact onset, the camera cut, release and
+an out-of-order repeat. Opening/repeated pixels, the opaque background and
+protected information regions match exactly. This is an incremental reduced
+preview, not a fresh full-size cold run or complete acceptance.
+
 ### Native information in the combined scene
 
 [`drawing_information.complete_scene`](../examples/drawing_information.py)
