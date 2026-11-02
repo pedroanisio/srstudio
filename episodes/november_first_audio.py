@@ -14,7 +14,9 @@ from ``ELEVENLABS_API_KEY`` and is never written; the script runs only with ``SR
 this script. There is no music bed; the effects are ``foley`` bursts written by the episode.
 
 The morning after Halloween, and Noor has decorated overnight. Dev objects three times, and even the speaker sides with
-her. The one hold is real: nobody speaks in it and no caption comes up, and the reel cuts a beat after "Who?".
+her. The speaker never speaks (canon rule ``systems-answer-in-notifications``): it answers in the beat after his
+request, its ring lit, with a chime, the sleigh bells and a chip on screen. The one hold is real: nobody speaks in it
+and no caption comes up, and the reel cuts a beat after "Who?".
 """
 
 from __future__ import annotations
@@ -31,31 +33,36 @@ OPENING_TEXT = "my partner on november 1st"
 OPENING = 0.45  # Dev is walking in and the lights have blinked on before his first word, inside the half second
 OPENER_TOP = 232.0  # frame pixels: over the window, under the lights, above both heads
 HOLD = 1.3  # after "What about Thanksgiving?": she stops and turns
+# The speaker's answer, in seconds after "Speaker, play something normal." ends: its ring lights and the insert is on
+# it; the chip comes up with the chime at CHIP_AT, the cut back to Dev comes at NAMED_AT while it is up, and it is down
+# before his next line. CHIP_SECONDS is past the reading time of its words (opener.seconds) and the 0.84 s minimum.
+CHIP_TEXT = ("Naughty list", "Added: Dev")  # the list as the notice's title, what was done as its body
+CHIP_AT, NAMED_AT, CHIP_SECONDS = 0.25, 0.95, 1.6
+BEAT = 2.0  # the hold after his request: the chip's beat, and the bells under it
+CHIP_BOX = (240.0, 330.0, 760.0, 470.0)  # frame pixels: in the safe area, above Dev's head on his shot and the speaker
 CUT_HOLD = 0.6  # after "Who?": a beat, long enough to read the one word, then the cut
 LIGHTS_ON = 0.16  # seconds in: as he comes through the door
 INSERT_END = 3  # "That was a Halloween": the insert hands over to Dev on this word's end
 PLAIN = VoiceSettings(stability=0.45, similarity_boost=0.75, style=0.35, speed=1.0)
-DEVICE = VoiceSettings(stability=0.8, similarity_boost=0.75, style=0.05, speed=1.0)  # flat, polite, sure of itself
 SCRIPT = takes.Script(
     title="November First — Stick",
     seed=3431,
     voices={
         "dev": Voice(role="dev", id="bIHbv24MWmeRgasZH58o", name="Will"),
         "noor": Voice(role="noor", id="cgSgspJ2msm6clMCkdW9", name="Jessica"),
-        "speaker": Voice(role="speaker", id="Xb7hH8MSUJpSbSDYk0k2", name="Alice"),
     },
-    settings={"dev": PLAIN, "noor": PLAIN, "speaker": DEVICE},
+    settings={"dev": PLAIN, "noor": PLAIN},
     takes=(
         takes.Take("01", "dev", "It's November 1st.", 0.2, shot="wide", mood="calm", speed=0.82),
         takes.Take("02", "noor", "I know. We're late.", 0.22, shot="noor", mood="calm"),
         takes.Take("03", "dev", "That was a Halloween pumpkin.", 0.22, shot="pumpkin", mood="calm"),
         takes.Take("04", "noor", "He asked to stay.", 0.28, shot="noor", mood="calm"),
-        takes.Take("05", "dev", "Speaker, play something normal.", 0.2, shot="dev", mood="calm"),
-        takes.Take("06", "speaker", "Adding Dev to the naughty list.", 0.2, shot="speaker", mood="calm"),
+        takes.Take("05", "dev", "Speaker, play something normal.", BEAT, shot="dev", mood="calm"),
+        # no 06: it was the speaker's voice, dropped; the ids stay as recorded
         takes.Take("07", "dev", "What about Thanksgiving?", HOLD, shot="stand", mood="calm"),
         takes.Take("08", "noor", "Who?", CUT_HOLD, shot="close", mood="calm"),
     ),
-    voice_note="ElevenLabs premade voices Will, Jessica and Alice; no reference-voice cloning. "
+    voice_note="ElevenLabs premade voices Will and Jessica; no reference-voice cloning. "
     "Sound effects synthesized in code.",
     shots=SHOTS,
     still=OPENING,
@@ -63,7 +70,7 @@ SCRIPT = takes.Script(
 
 F = stick.Face
 FLOOR = 1700.0  # where a standing pose's feet are
-DEV_X, DEV_FROM = 290.0, -170.0  # his middle at the end of the walk, and off the left of the frame
+DEV_X, DEV_FROM = 290.0, -230.0  # his middle at the end of the walk, and far enough off the left that his mug is too
 NOOR_X = 720.0
 TREE_X, TREE_SCALE = 920.0, 1.2
 TREE_FOOT = 1690.0
@@ -80,7 +87,6 @@ DEV_AT = (DEV_X - 540.0, 0.0)
 NOOR_LOOK = ws.NOOR
 DEV_LOOK = stick.Look()  # Dev at home: no tie
 AT_THE_TIP = (0.9, -0.35)
-DEV_FLAT = F("half", "flat", "flat", (0.9, 0.1))  # half awake
 DEV_SAYS = F("half", "raised", "flat", (0.9, 0.1))
 DEV_AT_PUMPKIN = F("open", "worried", "flat", (-0.8, 0.6))
 DEV_AT_SPEAKER = F("open", "flat", "flat", (0.8, 0.7))
@@ -125,7 +131,7 @@ POSES: dict[str, stick.RigPose] = {
 CAMERAS = {
     "wide": ((540.0, 960.0), 1.0, (540.0, 960.0)),
     "noor": ((728.0, 590.0), 1.6, (520.0, 640.0)),
-    "close": ((728.0, 590.0), 2.0, (470.0, 660.0)),
+    "close": ((728.0, 590.0), 2.3, (460.0, 660.0)),  # the worktop's end and the speaker just off the left edge
     "dev": ((290.0, 750.0), 1.7, (500.0, 700.0)),
     "pumpkin": ((160.0, 1060.0), 2.4, (390.0, 900.0)),
     "speaker": ((380.0, 1100.0), 2.4, (520.0, 1000.0)),

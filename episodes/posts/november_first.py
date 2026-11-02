@@ -11,12 +11,12 @@ RELEASE = Release(
         title="When does Christmas start in your house?",
         description=(
             "She decorated overnight. The pumpkin has been told. So has the speaker.\nA Stick sketch on Okayville, "
-            "voiced with ElevenLabs premade voices Will (Dev), Jessica (Noor) and Alice (the speaker); every "
-            "character is original, drawn in code."
+            "voiced with ElevenLabs premade voices Will (Dev) and Jessica (Noor); every character is original, drawn "
+            "in code."
         ),
         credit=(
-            "Voices: ElevenLabs premade voices Will, Jessica and Alice. Original characters, drawn in code. Sound "
-            "effects synthesized in code."
+            "Voices: ElevenLabs premade voices Will and Jessica. Original characters, drawn in code. Sound effects "
+            "synthesized in code."
         ),
         hashtags=("#christmas", "#couples", "#marriage", "#animatedshorts", "#okayville"),
         thumbnail=ShowCover("The morning after\nHalloween", 2.15, number=210),
@@ -28,11 +28,14 @@ RELEASE = Release(
         recurring=("dev", "noor"),
         test="sp-length",
         arm="short",
-        also=(("sp-speakers", "b"),),
+        # Excluded from sp-speakers: drawn arm b (about 3 speaking), but the speaker's voice was dropped under the canon
+        # rule systems-answer-in-notifications (it answers by a chip), which leaves 2 speaking voices. Neither arm is
+        # claimed: relabelling it arm a would put a reel the draw did not assign into that arm.
         send_to="your partner",
         send_line="Who?",
     ),
     style="Stick",
+    video="november-first-v2",  # the keeper: the first master had the speaker speak and lost "Who?"'s question mark
     parts={
         "show-bug": 1,
         "signature-cactus": 1,

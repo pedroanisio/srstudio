@@ -6,8 +6,9 @@
 
 In every couple one person starts Christmas the morning after Halloween, and the other one wakes up inside it. The set
 is ``stick_home.kitchen`` out of focus with ``stick_holiday`` over it: Noor on a step stool with the star, Dev behind
-the worktop with his mug, the pumpkin in its hat and the speaker in front of him. The effects are ``foley`` bursts, and
-the opening line is ``srstudio.opener``, the only overlay.
+the worktop with his mug, the pumpkin in its hat and the speaker in front of him. The speaker answers on screen,
+never in a voice: its ring lights, a chime, the sleigh bells and a chip. The effects are ``foley`` bursts, and the
+opening line is ``srstudio.opener``.
 """
 
 import os
@@ -17,10 +18,13 @@ from _common import project_root
 from instagram_posts import POSTS
 from november_first_audio import (
     CAMERAS,
+    CHIP_AT,
+    CHIP_BOX,
+    CHIP_SECONDS,
+    CHIP_TEXT,
     DEV_AT,
     DEV_AT_PUMPKIN,
     DEV_AT_SPEAKER,
-    DEV_FLAT,
     DEV_FROM,
     DEV_LOOK,
     DEV_NAMED,
@@ -32,6 +36,7 @@ from november_first_audio import (
     LIGHTS,
     LIGHTS_ON,
     MARKS,
+    NAMED_AT,
     NOOR_AT,
     NOOR_BUSY,
     NOOR_GENTLE,
@@ -150,6 +155,27 @@ def split(g, take, cut: float, first, second) -> None:
     second(b)
 
 
+def chip(parent, start: float) -> None:
+    """The speaker's answer on screen from ``start`` for :data:`CHIP_SECONDS`: a white notice with the speaker's coral
+    ring, the list as its title and what was done under it, over every shot and outside any camera."""
+    left, top, right, bottom = CHIP_BOX
+    w, h = right - left, bottom - top
+    cx, cy = (left + right) / 2, (top + bottom) / 2
+    g = cv.group(parent, cv.uid("speaker-chip"), x=cx, y=cy, anchorX=cx, anchorY=cy)
+    cv.gate(g, [(start, start + CHIP_SECONDS)])
+    cv.pop_in(g, start)
+    cv.rect(g, left + 6, top + 9, w, h, cv.ink, radius=28, opacity=0.18)
+    cv.rect(g, left, top, w, h, "#ffffff", cv.ink, 5, radius=28)
+    ring = 50.0
+    stick.oval(cv, g, left + 34, cy - ring / 2, ring, ring, stick_holiday.RING)
+    stick.oval(cv, g, left + 34 + ring * 0.25, cy - ring / 4, ring / 2, ring / 2, "#ffffff")
+    title, body = CHIP_TEXT
+    text_left = round(left + 34 + ring + 26)
+    room = round(right - text_left - 24)
+    look.text(cv, g, title, text_left, round(top + 14), room, 58, 46, cv.ink, weight=700, align="start")
+    look.text(cv, g, body, text_left, round(top + 72), room, 54, 40, stick_holiday.BODY, weight=700, align="start")
+
+
 def fiddling(end: float, face) -> list:
     """Noor at the tip of the tree, her star hand going to it twice, not looking round."""
     return [K(0, "reaching", face), K(round(end * 0.35, 3), "fiddle", face), K(round(end * 0.7, 3), "reaching", face)]
@@ -163,7 +189,6 @@ def shuffle(face) -> list:
 
 
 HOME = [K(0, "reaching", NOOR_BUSY)]
-THERE = [K(0, "holding", DEV_FLAT)]
 
 
 def stage(take) -> None:
@@ -174,22 +199,24 @@ def stage(take) -> None:
         scene(camera(g, "wide"), end, shuffle(DEV_SAYS), fiddling(end, NOOR_BUSY), take=take,
               lights_on=LIGHTS_ON, dev_from=DEV_FROM)  # fmt: skip
     elif take.id == "02":
-        scene(camera(g, "noor"), end, THERE, fiddling(end, NOOR_BUSY), take=take)
+        scene(camera(g, "noor"), end, None, fiddling(end, NOOR_BUSY), take=take)  # Dev is off the frame: no mug sliver
     elif take.id == "03":
         cut = take.words[INSERT_END]["end"]
         split(g, take, cut,
               lambda a: scene(camera(a, "pumpkin"), end, None, None, take=take),
               lambda b: scene(camera(b, "dev"), end, [K(0, "looks", DEV_AT_PUMPKIN)], HOME, take=take))  # fmt: skip
     elif take.id == "04":
-        scene(camera(g, "noor"), end, THERE, [K(0, "reaching", NOOR_GENTLE)], take=take)
+        scene(camera(g, "noor"), end, None, [K(0, "reaching", NOOR_GENTLE)], take=take)
     elif take.id == "05":
-        scene(camera(g, "dev"), end, [K(0, "looks", DEV_AT_SPEAKER)], HOME, take=take)
-    elif take.id == "06":
-        cut = take.words[4]["start"]  # "naughty": the speaker has said his name, and it comes off the insert onto him
-        split(g, take, cut,
-              lambda a: scene(camera(a, "speaker"), end, None, None, take=take, glow=((0.0, line),)),
-              lambda b: scene(camera(b, "dev"), end, [K(0, "looks", DEV_NAMED)], HOME, take=take,
-                              glow=((0.0, line),)))  # fmt: skip
+        # his request on him; then the insert on the speaker, its ring lit, as the chip comes up; then back on him,
+        # named, while it is still up
+        glow = ((line, line + CHIP_AT + CHIP_SECONDS),)
+        split(g, take, line,
+              lambda a: scene(camera(a, "dev"), end, [K(0, "looks", DEV_AT_SPEAKER)], HOME, take=take),
+              lambda b: split(b, take, line + NAMED_AT,
+                              lambda c: scene(camera(c, "speaker"), end, None, None, take=take, glow=glow),
+                              lambda d: scene(camera(d, "dev"), end, [K(0, "looks", DEV_NAMED)], HOME, take=take,
+                                              glow=glow)))  # fmt: skip
     elif take.id == "07":
         stops, turns = line + 0.3, line + 0.75
         her = [K(0, "reaching", NOOR_BUSY), K(line + 0.12, "fiddle", NOOR_BUSY), K(stops, "reaching", NOOR_STOPS),
@@ -202,31 +229,40 @@ def stage(take) -> None:
 
 
 def sound() -> list:
-    """His slippers on the way in, the lights, the sleigh bells under the speaker's line and stopped before his next
-    one, and the room under the hold."""
+    """His slippers on the way in, the lights, the speaker's chime and the sleigh bells under its chip, stopped before
+    his next line, and the room under the hold."""
     run = ROOT / "audio"
-    six, seven = said["06"], said["07"]
+    up = answered()
+    seven = said["07"]
     click = foley.Burst(0.03, 3600.0, attack=0.001, decay=0.3, tone_hz=2400.0, tone_end_hz=1800.0, tone=0.2)
     bell = foley.Burst(0.07, 9000.0, attack=0.001, decay=0.35, tone_hz=5200.0, tone_end_hz=5150.0, tone=0.55)
     hold_at = seven.start + seven.speech_duration
     steps = [i * STRIDE for i in range(int(WALK_END / STRIDE))]
     foley.write_bursts(run / "shuffle.wav", steps, t.duration, foley.SCRAPE, seed=5)
     foley.write_bursts(run / "lights.wav", [LIGHTS_ON, LIGHTS_ON + 0.16], t.duration, click)
-    foley.write_bursts(
-        run / "bells.wav", jingles(six.start, six.start + six.speech_duration), t.duration, bell, seed=13
-    )
+    chime = foley.Burst(0.45, 5000.0, attack=0.004, decay=0.3, tone_hz=1100.0, tone_end_hz=1650.0, tone=0.85)
+    foley.write_bursts(run / "chime.wav", [up], t.duration, chime)
+    foley.write_bursts(run / "bells.wav", jingles(up, up + CHIP_SECONDS), t.duration, bell, seed=13)
     room = foley.Burst(seven.end - hold_at, 140.0, attack=0.2, decay=0.8, tone_hz=60.0, tone_end_hz=60.0, tone=0.6)
     foley.write_bursts(run / "room.wav", [hold_at], t.duration, room)
     return [
         ("shuffle", "audio/shuffle.wav", {"role": "effects", "gain": -16}),
         ("lights", "audio/lights.wav", {"role": "effects", "gain": -9}),
+        ("chime", "audio/chime.wav", {"role": "effects", "gain": -14}),
         ("bells", "audio/bells.wav", {"role": "effects", "gain": -20}),
         ("room", "audio/room.wav", {"role": "ambience", "gain": -20}),
     ]
 
 
+def answered() -> float:
+    """When the speaker's chip comes up, on the episode clock: :data:`CHIP_AT` after his request ends."""
+    asked = said["05"]
+    return asked.start + asked.speech_duration + CHIP_AT
+
+
 for take in t.takes:
     stage(take)
+chip(cv.comp, answered())
 
 for shot, faces in (("wide", tuple(FACES.values())), ("noor", (FACES["noor"],)), ("close", (FACES["noor"],)),
                     ("dev", (FACES["dev"],))):  # fmt: skip
@@ -243,6 +279,6 @@ pill = opener.draw(
     top=OPENER_TOP,
     names=("dev", "noor"),
 )
-spoken = stick_reel.words(ep, t.takes, sentences=True, hold=True, join=True, least=stick_reel.WORD_MIN)
+spoken = stick_reel.words(ep, t.takes, sentences=True, hold=True, join=True, asks=True, least=stick_reel.WORD_MIN)
 ep.audio(take=stick_reel.placing({}), loudness="-14", extra=sound())
 stick_reel.close(ep, POSTS[SLUG], pill, spoken, first_word=True)

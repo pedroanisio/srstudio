@@ -1,11 +1,12 @@
-"""November First as data: the lines as decided, the real hold, framing that keeps faces and marks, the length arm."""
+"""November First as data: the lines as decided, the real hold, framing that keeps faces and marks, the length arm, the
+speaker's answer as a chip on screen and the opening line above every caption."""
 
 import sys
 from pathlib import Path
 
 import pytest
 
-from srstudio import opener, scripting, show, stick_holiday, stick_reel
+from srstudio import opener, scripting, show, stick, stick_holiday, stick_reel
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
 
@@ -27,7 +28,6 @@ LINES = [
     ("dev", "That was a Halloween pumpkin."),
     ("noor", "He asked to stay."),
     ("dev", "Speaker, play something normal."),
-    ("speaker", "Adding Dev to the naughty list."),
     ("dev", "What about Thanksgiving?"),
     ("noor", "Who?"),
 ]
@@ -37,10 +37,15 @@ def test_the_lines_are_the_script_s(data):
     assert [(t.actor, t.text) for t in data.SCRIPT.takes] == LINES
 
 
-def test_three_speak_in_the_batch_s_voices_and_there_is_no_bed(data):
+def test_two_speak_in_the_batch_s_voices_and_there_is_no_bed(data):
     voices = {r: v.name for r, v in data.SCRIPT.voices.items()}
-    assert voices == {"dev": "Will", "noor": "Jessica", "speaker": "Alice"}
+    assert voices == {"dev": "Will", "noor": "Jessica"}
     assert data.SCRIPT.bed is None
+
+
+def test_the_speaker_never_speaks(data):
+    """Canon rule systems-answer-in-notifications: a system answers by a notice or a chip, never in a voice."""
+    assert {t.actor for t in data.SCRIPT.takes} == {"dev", "noor"}
 
 
 def test_the_first_line_comes_by_half_a_second(data):
@@ -59,10 +64,14 @@ def test_the_first_line_is_paced_to_outlast_the_opening_line_s_reading_time(data
     assert spoken >= opener.seconds(data.OPENING_TEXT)
 
 
-def test_the_hold_comes_before_the_last_word_and_is_the_longest(data):
+def test_the_hold_comes_before_the_last_word_and_is_the_longest_silence(data):
+    """The one longer beat is the speaker's answer, and it is not silent: the chime, the chip and the sleigh bells."""
     takes = data.SCRIPT.takes
-    assert takes[6].hold == data.HOLD == pytest.approx(1.3)
-    assert max(t.hold for t in takes if t is not takes[6]) < data.HOLD
+    asked, thanksgiving = takes[4], takes[5]
+    assert thanksgiving.text == "What about Thanksgiving?"
+    assert thanksgiving.hold == data.HOLD == pytest.approx(1.3)
+    assert asked.hold == data.BEAT
+    assert max(t.hold for t in takes if t not in (asked, thanksgiving)) < data.HOLD
 
 
 def test_the_last_word_gets_a_beat_then_the_cut(data):
@@ -123,6 +132,44 @@ def test_the_heads_stay_under_the_opening_line(data):
         assert land(data, "wide", point)[1] - 130 > foot
 
 
+def test_the_chip_holds_long_enough_to_read_muted_inside_the_speaker_s_beat(data):
+    words = " ".join(data.CHIP_TEXT)
+    assert data.CHIP_SECONDS >= max(0.84, opener.seconds(words))
+    assert 0 < data.CHIP_AT < data.NAMED_AT < data.CHIP_AT + data.CHIP_SECONDS < data.BEAT
+    spoken = " ".join(t.text.lower() for t in data.SCRIPT.takes)
+    assert all(line.lower() not in spoken for line in data.CHIP_TEXT)
+
+
+def test_the_chip_is_in_the_safe_area_clear_of_the_bug_and_the_captions(data):
+    left, top, right, bottom = data.CHIP_BOX
+    safe = opener.SAFE
+    assert safe.x0 <= left < right <= safe.x1 and safe.y0 <= top < bottom <= safe.y1
+    bug = show.BUG_BOX
+    assert right < bug[0] or top > bug[3] or bottom < bug[1]
+    assert bottom < stick_reel.WORDS_Y
+
+
+@pytest.mark.parametrize("shot", ["speaker", "dev"])
+def test_the_chip_covers_no_face_mark_or_speaker_on_the_shots_it_shows_over(data, shot):
+    left, top, right, bottom = data.CHIP_BOX
+    for point in data.MARKS.values():
+        assert land(data, shot, point)[1] > bottom + 40
+    if shot == "dev":
+        x, y = land(data, shot, data.FACES["dev"])
+        assert y - stick_reel.HEAD_RADIUS * data.CAMERAS[shot][1] > bottom + 20
+    else:
+        speaker_top = data.TOP + 2.0 - 146 * data.SPEAKER_SCALE  # the lit ring's top
+        assert land(data, shot, (data.SPEAKER_X, speaker_top))[1] > bottom + 40
+
+
+def test_the_opening_line_sits_above_the_first_caption(data):
+    width = opener.PAD + 600  # wider than the line will be: the pill's top and height do not depend on its width
+    left, top, right, bottom = opener.box(width, data.OPENER_TOP)
+    assert opener.SAFE.y0 <= top and bottom < stick_reel.WORDS_Y
+    assert bottom + 2 * stick.WORD_STROKE < stick_reel.WORDS_Y
+    assert top > show.BUG_BOX[3] or right < show.BUG_BOX[0]
+
+
 def test_the_bells_stop_before_his_next_line(data):
     hits = data.jingles(7.0, 8.7)
     assert hits[0] == 7.0
@@ -135,3 +182,14 @@ def test_the_star_is_in_her_hand_above_the_tree_s_top(data):
     hand = data.STAR_HAND
     assert hand[0] == pytest.approx(tip[0], abs=60)
     assert hand[1] == pytest.approx(tip[1], abs=70)
+
+
+def test_nothing_of_dev_shows_at_the_left_edge_on_the_first_frame(data):
+    """His mug's handle reaches 54 px right of the mug's middle: at the first frame it is all off the frame."""
+    mug_x = 432.0 + (data.DEV_FROM - data.DEV_X)
+    assert mug_x + 54 + 10 < 0
+
+
+def test_the_close_shot_leaves_the_worktop_s_end_off_the_frame(data):
+    """No cut-off corner of the worktop or the speaker at the frame's edge under the last word."""
+    assert land(data, "close", (data.WORKTOP_X[1] + 3, data.TOP))[0] < -5
