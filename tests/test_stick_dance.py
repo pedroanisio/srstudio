@@ -99,7 +99,22 @@ def test_a_raised_arm_rides_the_body_with_no_lag():
     head_reading, hand_reading = (dance.measure_dance(s, 25, GROOVE) for s in (head, hand))
     assert hand_reading.cycles_per_beat == pytest.approx(1.0, abs=0.02)
     assert hand_reading.hit_offset == pytest.approx(head_reading.hit_offset, abs=0.02)
-    assert hand_reading.peak_to_peak > 0.8 * head_reading.peak_to_peak
+    # the arm held up does not take seat-groove's shrug: the hand moves as the head does, not 0.70 against its 0.38
+    assert hand_reading.peak_to_peak == pytest.approx(head_reading.peak_to_peak, abs=0.01)
+
+
+def test_the_shrug_fades_on_an_arm_held_past_horizontal_and_stays_on_an_arm_held_low():
+    frame = next(iter(dance.frames(MOVES["seat-groove"], GROOVE, 0.0, 0.04, 25)))
+    shrug = frame.joints["left_shoulder.down_up"]
+    assert shrug != 0
+    low = {"left_upper_arm.down_up": -1.1, "right_upper_arm.down_up": -1.1}
+    assert sd._carried(frame, low) is frame
+    half = {"left_upper_arm.down_up": sd.RAISED_FULL / 2, "right_upper_arm.down_up": -1.1}
+    faded = sd._carried(frame, half)
+    assert faded.joints["left_shoulder.down_up"] == pytest.approx(shrug / 2)
+    assert faded.joints["right_shoulder.down_up"] == frame.joints["right_shoulder.down_up"]
+    up = sd._carried(frame, {"left_upper_arm.down_up": 2.0})
+    assert up.joints["left_shoulder.down_up"] == 0.0 and up.root == frame.root
 
 
 def test_the_head_never_turns_within_a_beat_and_the_face_holds_for_the_phrase():

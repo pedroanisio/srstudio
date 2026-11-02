@@ -41,8 +41,10 @@ __all__ = [
     "EXPRESSIONS",
     "FLOOR",
     "PROFILE",
+    "RAISED_FULL",
     "SEAT",
     "SEATED",
+    "SHRUG_RAISED",
     "STANDING_BASE",
     "ExpressionError",
     "RenderedTrackError",
@@ -75,6 +77,12 @@ NOD = math.pi / 6  # a nod that puts them at the top or the bottom
 MAX_PIXELS = 4096 * 4096
 MAX_RENDERED = 100_000
 SKIN_TOLERANCE = 6  # per channel: the engine's own fill reads back within a step or two
+# A raised arm and the shrug. A dance's shoulder.* channels (seat-groove's shrug) turn the whole arm about the shoulder,
+# so on an arm held up the hand swings far more than the body bobs. Past horizontal (upper_arm.down_up 0) the shoulder
+# channels on that side fade, reaching SHRUG_RAISED of their value at RAISED_FULL, and the hand rides the body as the
+# reference reel's raised hand did.
+SHRUG_RAISED = 0.0
+RAISED_FULL = math.pi / 4
 
 
 PROFILE = sk.preset("stick")  # the Stick cast's bones at stick.HEAD_R pixels to its head radius
@@ -295,8 +303,9 @@ def perform(
     poses: list[RigPose] = []
     dropped: set[str] = set()
     short = 0.0
+    held = dict(start_pose.values)
     for frame in sampled:  # bounded by max_frames above
-        danced = dance_pose(profile, frame, base=start_pose, clamp=clamp)
+        danced = dance_pose(profile, _carried(frame, held), base=start_pose, clamp=clamp)
         dropped |= danced.dropped
         shown = sk.project(profile, danced.pose, camera)
         joints = sk.world(profile, danced.pose)
@@ -330,6 +339,19 @@ def perform(
     faces = _faces(source, groove, sampled, rest_face)
     switches = tuple((n, face) for n, face in enumerate(faces) if n == 0 or face != faces[n - 1])
     return StickDance(fps, float(start), tuple(poses), switches, frozenset(dropped), round(short, 6))
+
+
+def _carried(frame: DanceFrame, base: Mapping[str, float]) -> DanceFrame:
+    """``frame`` with each raised arm's shoulder channels faded by how far past horizontal the arm is held."""
+    joints = dict(frame.joints)
+    for side in _SIDES:
+        arm = base.get(f"{side}_upper_arm.down_up", 0.0) + frame.joints.get(f"{side}_upper_arm.down_up", 0.0)
+        raised = min(max(arm / RAISED_FULL, 0.0), 1.0)
+        keep = 1.0 - raised * (1.0 - SHRUG_RAISED)
+        for key in frame.joints:
+            if key.startswith(f"{side}_shoulder."):
+                joints[key] = frame.joints[key] * keep
+    return replace(frame, joints=joints) if joints != frame.joints else frame
 
 
 def _crown(profile: sk.SkeletonProfile) -> float:

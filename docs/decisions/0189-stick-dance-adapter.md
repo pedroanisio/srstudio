@@ -45,6 +45,13 @@ inside a beat.
   planted until it lifts; a seated figure keeps both. A two-bone reach in 3D solves the knee toward the danced knee,
   or forward when that knee lies on the line. A foot is never drawn through the floor. A planted foot stays on its mark
   even when the leg falls short, and `reach` records the largest shortfall in pixels.
+- **A raised arm does not take the shrug.** A dance's `shoulder.*` channels turn the whole arm about the shoulder. On
+  an arm held up, seat-groove's 0.05 rad shrug swung the hand 0.70 head radius against the head's 0.38, where the
+  reference reel's raised hand moved 0.32 against 0.50. The adapter fades a side's shoulder channels as that arm is
+  held past horizontal (`upper_arm.down_up` above 0), to `SHRUG_RAISED` (0) at `RAISED_FULL` (π/4), so the raised
+  hand rides the body and moves as the head does. A counter-shrug that would move it less was rejected: it swings the
+  hand sideways (0.33 head radius at half a shrug against), which the reference does not show. Neither `dance.py` nor
+  the move files change.
 - **Faces by phrase.** `EXPRESSIONS` maps a routine entry's `expression` to a `stick.Face` looking at the viewer. The
   face switches only on the picture where an entry opens. A held head turn or nod in the entry's `hold` turns the face's
   look, `turn / (π/4)` and `-nod / (π/6)`, each clamped to -1..1. A name outside the table raises `ExpressionError`
@@ -94,8 +101,7 @@ its extreme 5 ms after the beat.
 - A standing figure's arms hang from the single shoulder point the rig draws, while the skeleton's shoulders stay
   1.77 head radii apart. The arm gestures are tuned for those shoulders: on the cast's arms `clap` crosses the hands
   by 0.44 head radius at intensity 1 and meets at 0.75, and `point-up` clears the crown by 0.74 head radius.
-- seat-groove turns the shoulders with the drop. A raised arm turns with them, so the raised hand moves 0.70 head
-  radius against the head's 0.38, where the reference's moved 0.32 against 0.50. It rides the body in phase, with no
-  lag. Whether it reads right is for the operator's review of the proof clip.
+- A held raised arm keeps its height through a shrug, so a shoulder move (seat-groove, bounce, shoulder-roll,
+  shoulder-shimmy) under a raised arm moves only the arm that hangs.
 - The non-seat presets have no measured reference. Their numbers in the study are readings, not targets.
 - Nothing merges on a look until the operator approves the proof clip.

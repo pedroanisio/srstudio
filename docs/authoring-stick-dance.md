@@ -74,6 +74,9 @@ and perform from that time.
 | `clamp` | `True` | A value past a joint's limit is clamped instead of refused. |
 | `max_frames` | `MAX_KEYS - 1` | The bound on pictures, checked before any is sampled. |
 
+An arm held past horizontal does not take a dance's shrug: its side's `shoulder.*` channels fade to `SHRUG_RAISED` at
+`RAISED_FULL`, so a raised hand rides the body as the head does instead of swinging further.
+
 `EXPRESSIONS` names the faces a phrase can hold: `neutral`, `smile`, `grin`, `eyes-closed`, `smirk`, `cool` and
 `surprised`. Any other name raises `ExpressionError`. A held `head` or `neck` `turn_left_right` or `nod_down_up` in an
 entry's `hold` turns the face's look for that phrase.
