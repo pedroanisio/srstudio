@@ -4,9 +4,9 @@ The figures keep the drawing: each part's outline is the drawn outline, the face
 are one surface; each figure has one pair of arms, rigged from the shoulders, and every gesture moves those two arms;
 the anatomy rule counts their hands as it counts a drawn figure's (ADR 0174). The gasp and the jump lift the whole
 figure off the cushion and set it back, rigid. They sit on the room's cushion, as the room's cameras see it (checked
-against the room record's own projection), each on its card's column without passing through the other; Bruno lies over
-the drawn sofa arm as the flat lays him. The performance record of
-the reel is read strictly, and the passes are put together as the study says, plain and inked in the room's own line.
+against the room record's own projection), each on its card's column without passing through the other; the sofa's arm
+covers Bruno's right side as it covers his card. The performance record of the reel is read strictly, and the passes
+are put together as the study says, plain and inked in the room's own line.
 The engine runs only as a stand-in script here: the study renders its passes outside this suite.
 """
 
@@ -734,8 +734,8 @@ def test_the_resting_arm_folds_into_depth_and_shows_as_long_as_the_flats(kit, ri
 
 
 def test_each_figure_sits_on_its_cards_column_and_its_base_on_the_cushion(kit, rigs):
-    """Bruno on his card's column, over the drawn arm as the flat lays him (the arm is no stand-in in the passes);
-    each base on the cushion, behind its rounded front edge, so it presses into the seat and shadows it."""
+    """Each figure on its card's column, the sofa's arm in front of Bruno's right side as in the flat; each base on
+    the cushion, behind its rounded front edge, so it presses into the seat and shadows it."""
     study, cr, cf = kit["study"], kit["cr"], kit["cf"]
     performance = resting_performance(kit)
     room = type("R", (), {"takes": {"two": dict(TWO)}})()
@@ -748,7 +748,45 @@ def test_each_figure_sits_on_its_cards_column_and_its_base_on_the_cushion(kit, r
         v = np.concatenate([m.vertices for m in posed]) / 100.0
         base = v[:, 1] > -(cr.CUSHION_TOP - cr.SINK) - 0.005  # engine y is down: the lowest half centimetre
         assert v[base, 2].min() >= cr.CUSHION_FRONT + cr.CUSHION_EDGE
-    assert len(cr.sofa()) == 3  # the seat, the cushion and the back: the arm is the plate's alone
+
+
+def test_the_drawn_arm_lies_over_the_clay_and_the_seat_strip_does_not(kit):
+    """The flat's arm covers Bruno's right side: the front plate's arm, with its own line, goes over the finished
+    frame, plain or inked. The seat strip beside it stays out, so the shadows the bases lay on the cushion stay."""
+    cr = kit["cr"]
+    assert len(cr.sofa()) == 4  # the arm stands in the passes: it bounces on him and the frame's arm covers him
+    lens = cr.camera_of(TWO["eye"], TWO["look_at"], TWO["lens"])
+    near = cr.sofa()[-1].vertices
+    near = near[near[:, 2] < near[:, 2].min() + 1e-6]
+    middle = cr.project(near, lens).mean(0).astype(int)
+    front = np.zeros((cr.HEIGHT, cr.WIDTH, 4))
+    front[:, :, :3] = (0.3, 0.1, 0.4)
+    front[:, :, 3] = 1.0  # the whole plate opaque: only the arm may come through
+    arm = cr.drawn_arm(front, lens)
+    assert arm[middle[1], middle[0], 3] == 1.0
+    strip = (middle[1], middle[0] - 200)  # along the seat, left of the arm
+    assert arm[strip[0], strip[1], 3] == 0.0
+    picture = np.ones((cr.HEIGHT, cr.WIDTH, 4))
+    out = cr.over(picture, arm)
+    assert out[middle[1], middle[0], :3] == pytest.approx((0.3, 0.1, 0.4))
+    assert out[strip[0], strip[1], :3] == pytest.approx((1.0, 1.0, 1.0))
+    empty = cr.drawn_arm(np.zeros_like(front), lens)
+    assert empty[..., 3].max() == 0.0  # a plate with no arm lays nothing
+
+
+def test_the_drawn_arm_takes_in_its_inner_side_on_a_camera_that_sees_it(kit):
+    """A lens left of the arm sees its inner side, which covers Bruno as its front does; the cushion beside it stays."""
+    cr = kit["cr"]
+    lens = cr.camera_of((-0.6, 0.75, -1.2), (-0.2, 0.5, 0.2), TWO["lens"])
+    front = np.ones((cr.HEIGHT, cr.WIDTH, 4))
+    arm = cr.drawn_arm(front, lens)
+    side = cr.project([cr.engine((-0.19, 0.5, 0.25))], lens)[0].astype(int)
+    assert arm[side[1], side[0], 3] == 1.0
+    cushion = cr.project([cr.engine((-0.35, cr.CUSHION_TOP, 0.25))], lens)[0].astype(int)
+    assert arm[cushion[1], cushion[0], 3] == 0.0
+    # below the cushion's top the cushion hides the arm's inner side: a base resting by the arm is never cut there
+    seat = cr.project([cr.engine((-0.23, cr.CUSHION_TOP + 0.005, 0.1))], lens)[0].astype(int)
+    assert arm[seat[1], seat[0], 3] == 0.0
 
 
 def test_the_room_line_is_read_from_the_rooms_own_plates(kit):

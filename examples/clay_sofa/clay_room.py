@@ -12,7 +12,9 @@ stretch. Within it the skin turns with the body and the head by each point's sha
 arms with the body, their paws wherever the frame sends them. Every engine pass holds the GPU lock (ADR 0171).
 
 The room's back plate times P/B on the sofa is the plate with the figures' shadow on it; the figures from P over that,
-where K says they are seen, is the frame. The room's cel plates are never redrawn: they are srlocations' (pinned) and
+where K says they are seen, is the frame. The sofa's arm goes last, off the room's front plate with its own line,
+because the flat has it in front of Bruno's right side and the raster passes draw the figures over the stand-ins
+whatever stands nearer (:func:`drawn_arm`). The room's cel plates are never redrawn: they are srlocations' (pinned) and
 this study only reads them. Units: the room's metres (x right, y up, z away) as srlocations writes them, the engine's
 centimetres (x right, y down, z away) as scene-render reads them.
 """
@@ -36,8 +38,9 @@ import clay_figure as cf
 import clay_ink
 import numpy as np
 from performance import Frame
-from PIL import Image
+from PIL import Image, ImageDraw
 from scipy import ndimage
+from shapely.geometry import MultiPoint
 
 from srstudio import clay, gpu, plates
 from srstudio.anatomy import Side
@@ -137,13 +140,12 @@ SOFA = "#7a4a7e"  # _lounge_set.SOFA: the stand-ins bounce the sofa's own colour
 
 @cache
 def sofa() -> tuple[clay.Mesh, ...]:
-    """The back, the base and the cushion, at lounge_plates' sizes and places (its back() and seat()). The sofa's arm
-    has no stand-in: the flat lays Bruno over the drawn arm, and so does this study, so the arm takes no bounce or
-    shadow from him and covers none of him."""
+    """The back, the base, the cushion and the arm, at lounge_plates' sizes and places (its back() and seat())."""
     return (
         slab("stand-in", (2.6, 0.76, 0.3), 0.08, (-1.37, 0.597, 0.68)),
         slab("stand-in", (2.4, 0.205, 0.58), 0.016, (-1.4, 0.1475, 0.31)),
         slab("stand-in", (2.3, 0.127, 0.6), CUSHION_EDGE, (-1.28, 0.3105, 0.3)),
+        slab("stand-in", (0.19, 0.61, 0.5), 0.075, (-0.095, 0.345, 0.23)),
     )
 
 
@@ -638,6 +640,36 @@ def composite(back: np.ndarray, p: np.ndarray, k: np.ndarray, b: np.ndarray) -> 
     out[..., :3] = out[..., :3] * (1.0 - cover[..., None]) + p[..., :3] * cover[..., None]
     out[..., 3] = np.maximum(out[..., 3], cover)
     return out, dark
+
+
+ARM_LINE = 14.0  # frame pixels past the stand-in's front face: the drawn arm's own line round it
+
+
+def drawn_arm(front: np.ndarray, lens: Camera) -> np.ndarray:
+    """The sofa's arm off the room's ``front`` plate, seen through ``lens``: the plate wherever the arm stand-in falls
+    on the frame (its front face, and any side the lens sees above the cushion, which hides the rest), with its line,
+    and clear everywhere else, so the seat strip beside it and a base resting on the cushion stay out."""
+    arm = sofa()[-1].vertices
+    face = arm[arm[:, 2] < arm[:, 2].min() + 1e-6]
+    lo, hi = arm.min(0), arm.max(0)
+    cut = np.array([(x, -100.0 * CUSHION_TOP, z) for x in (lo[0], hi[0]) for z in (lo[2], hi[2])])  # engine y is down
+    above = np.concatenate((arm[arm[:, 1] <= -100.0 * CUSHION_TOP], cut))  # the stand-in cut at the cushion's top
+    hulls = [MultiPoint(project(points, lens)).convex_hull for points in (face, above)]
+    shape = hulls[0].union(hulls[1]).buffer(ARM_LINE)
+    mask = Image.new("L", (front.shape[1], front.shape[0]), 0)
+    ImageDraw.Draw(mask).polygon(list(shape.exterior.coords), fill=255)
+    out = front.copy()
+    out[..., 3] *= np.asarray(mask, dtype=np.float64) / 255.0
+    return out
+
+
+def over(picture: np.ndarray, top: np.ndarray) -> np.ndarray:
+    """``top`` laid over ``picture``."""
+    a = top[..., 3:]
+    out = picture.copy()
+    out[..., :3] = picture[..., :3] * (1.0 - a) + top[..., :3] * a
+    out[..., 3] = np.maximum(picture[..., 3], top[..., 3])
+    return out
 
 
 def write(path: Path, picture: np.ndarray) -> None:

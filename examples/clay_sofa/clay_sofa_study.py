@@ -12,12 +12,11 @@ under each card (lounge_plates.py and plate_fronts.py as of a0892384, the commit
 casts its own shadows, so its back plates come from there. Only the seat strips differ between the two sets. The
 reel's own staging draws every shot, its captions, its glow and the marks; this script takes the cards out and puts
 in their place, frame by frame, the room's back plate with the clay figures on it (:mod:`clay_room`). Both figures
-stay on the sofa for every camera, so a close-up shows the other one's edge. The front plate is not laid over the
-clay: a card needs the seat's edge to hide its base, the clay sits on the seat and the K pass already says where the
-sofa stands in front of it.
+stay on the sofa for every camera, so a close-up shows the other one's edge. The front plate's seat strip is not laid
+over the clay: a card needs the seat's edge to hide its base, the clay sits on the seat. Its arm is: the flat has the
+sofa's arm in front of Bruno's right side.
 
-Known differences from the flat, for the operator's eye: Bruno sits on his card's column, over the sofa's drawn arm as
-the flat lays him, so the sofa's arm takes no bounce or shadow from him (:data:`KNOWN_DIFFERENCES`).
+Known differences from the flat, for the operator's eye, are in :data:`KNOWN_DIFFERENCES`.
 
 A look study for the operator's decision on Mae and Bruno, never a release: it declares no post and no part, and stays
 out of episodes/ so nothing ships it.
@@ -85,7 +84,10 @@ def lens_of(room: study.Room, take: str, frame: int | None = None) -> cr.Camera:
     return cr.camera_of(eye, tuple(np.array(lounge.LOOK_AT) + ahead), lounge.LENS)
 
 
-KNOWN_DIFFERENCES = ("no sofa-arm bounce or shadow on Bruno's right side; he sits over the drawn arm as the flat does",)
+KNOWN_DIFFERENCES = (
+    "Bruno's right side runs unseen into the sofa arm's volume, as his flat card does; the arm covers him and takes "
+    "no shadow from him",
+)
 
 GAP = 0.006  # metres the clay keeps from the other figure: touching, not passing through
 
@@ -93,8 +95,8 @@ GAP = 0.006  # metres the clay keeps from the other figure: touching, not passin
 def seats(room: study.Room, performance: pf.Performance) -> dict[str, cr.Seat]:
     """Where each figure sits, on the column of its card's seat on the two-shot and as tall as the card there. Mae
     sits back against the sofa; the drawing lays Bruno over her, so he sits as far forward as it takes for none of him
-    to pass through her (at rest, on frame 0). Bruno's column runs over the sofa's drawn arm, and the flat lays him over
-    it: so does this study (the arm has no stand-in in the passes)."""
+    to pass through her (at rest, on frame 0). Bruno's column runs into the sofa's arm as his card does; the drawn arm
+    covers him as it covers the card."""
     two = lens_of(room, "two")
     per = toon.SCALE * reel.PAIR_SCALE
     back = cr.SOFA_BACK_FRONT - cr.BACK_CLEARANCE
@@ -143,15 +145,19 @@ def render(root: Path, push: bool, frames: range | None = None) -> dict:
     index = {}
     for n in frames if frames is not None else range(count):
         if push:
-            lens, back = lens_of(room, "two", n), lounge.push_plate(min(n, lounge.PUSH_FRAMES - 1), "back")
+            still = min(n, lounge.PUSH_FRAMES - 1)
+            lens = lens_of(room, "two", n)
+            back, front = lounge.push_plate(still, "back"), lounge.push_plate(still, "front")
         else:
             take = take_of(n)
-            lens, back = lens_of(room, take), lounge.plate(take, "back")
+            lens, back, front = lens_of(room, take), lounge.plate(take, "back"), lounge.plate(take, "front")
         parts, materials = figures_at(performance, n, places)
         p, k, b, i = cr.passes(parts, materials, lens, cache, spent)
         picture, _ = cr.composite(cr.rgba(root / CLEAN / back), cr.rgba(p), cr.rgba(k), cr.rgba(b))
-        cr.write(clay_root(root) / kind / f"{n:04d}.png", picture)
-        cr.write(clay_root(root) / f"{kind}-ink" / f"{n:04d}.png", ci.ink(picture, cr.rgba(i), ci.ROOM_LINE))
+        arm = cr.drawn_arm(cr.rgba(root / CLEAN / front), lens)
+        cr.write(clay_root(root) / kind / f"{n:04d}.png", cr.over(picture, arm))
+        inked = ci.ink(picture, cr.rgba(i), ci.ROOM_LINE)
+        cr.write(clay_root(root) / f"{kind}-ink" / f"{n:04d}.png", cr.over(inked, arm))
         counted = ca.count({OWNERS[who]: parts[who] for who in parts}, lens)
         if counted.notes:
             raise cr.RenderError(f"{kind} frame {n}: " + "; ".join(str(note) for note in counted.notes))
