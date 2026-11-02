@@ -108,6 +108,7 @@ TAIL = 0.6  # seconds the reel runs on after the last line, on the first frame's
 PACE = 2.7  # spoken words a second, the estimate a length is checked at until a take measures it
 SHORTEST, LONGEST = 20.0, 30.0
 QUESTION_BY = 2.0  # seconds: the question is on screen by then (it is from the first frame)
+OPENING, QUIET = 5.0, 1.0  # seconds: no hold longer than QUIET starts in the first OPENING
 ROOM_GAIN, BED_GAIN = -30.0, -27.0
 PLACEHOLDER = ("side", "flat", "desk")  # a pose for the sketch's check: this man is drawn from his beats
 TOP, BOTTOM = 220.0, 1240.0  # frame rows a panel draws inside: the safe area, clear of the caption band
@@ -227,6 +228,12 @@ class Show:
         for i, (beat, kept) in enumerate(zip(self.beats, self.kept, strict=True)):
             if beat.steps and beat.steps[-1][0] >= kept + (beat.hold or GAP) and i + 1 < len(self.beats):
                 raise ScriptError(f"{beat.id}: a step lands after its beat, at {beat.steps[-1][0]} s")
+        for beat, at, kept in zip(self.beats, self.starts(), self.kept, strict=True):
+            if at + kept < OPENING and beat.hold > QUIET:
+                raise ScriptError(
+                    f"{beat.id}: a {beat.hold} s hold at {at + kept:.1f} s; no quiet runs over {QUIET} s in the first"
+                    f" {OPENING:.0f} s, where a scroll decides"
+                )
         timed = self.starts()[-1] + self.kept[-1] + TAIL
         if not SHORTEST <= timed <= LONGEST:
             raise ScriptError(f"the takes come to {timed:.1f} s; the show runs {SHORTEST} to {LONGEST} s")

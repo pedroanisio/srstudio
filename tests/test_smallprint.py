@@ -107,6 +107,20 @@ def test_the_estimate_is_what_the_takes_need_not_the_words_alone():
         long.validate()
 
 
+@pytest.mark.parametrize(("i", "hold"), [(0, 1.2), (1, 1.5)])
+def test_a_hold_over_a_second_in_the_first_five_seconds_is_refused(i, hold):
+    """The opening is where a scroll decides: the brief allows no quiet over 1 s in the first 5 s."""
+    assert SHOW.starts()[i] + KEPT[i] < sp.OPENING
+    with pytest.raises(ScriptError, match=f"{BEATS[i].id}: a {hold} s hold at .* the first {sp.OPENING:.0f} s"):
+        with_beat(i, hold=hold).validate()
+
+
+def test_a_long_hold_after_the_opening_breathes():
+    i = 5
+    assert SHOW.starts()[i] + KEPT[i] > sp.OPENING
+    with_beat(i, hold=1.5).validate()
+
+
 def test_a_panel_on_the_first_or_last_beat_is_refused():
     with pytest.raises(ScriptError, match="opens and closes on him"):
         with_beat(7, panel="lightning").validate()
