@@ -58,6 +58,43 @@
     }
   },
   "review_verification": {
+    "scene_timeline_planning": {
+      "baseline_source_commit": "27773b526736840358103da0d4410c3a3fbac3a0",
+      "missing_planner_tests_red": 26,
+      "identity_parent_budget_regression_red": 1,
+      "retained_metadata_regression_red": 1,
+      "guide_regression_red": 1,
+      "long_held_clip_regressions_red": 2,
+      "new_tests": 44,
+      "composition_selection": {
+        "passed": 605,
+        "skipped": 0,
+        "qualification": "Collected 501 existing composition tests, 62 scene-motion tests and the initial 42 planner tests. The two final held-clip regressions are included in the focused selection."
+      },
+      "final_focused_selection": {
+        "passed": 184,
+        "skipped": 0,
+        "deselected": 1,
+        "qualification": "All 44 planner tests, 61 non-render sampler tests and 79 static preflight tests. The deselected sampler real-render case passed in the composition selection."
+      },
+      "documentation_navigation": {
+        "passed": 115,
+        "skipped": 0
+      },
+      "branch_inclusive_coverage_percent": 96.62698412698413,
+      "branch_coverage_percent": 94.57831325301204,
+      "coverage_scope": [
+        "src/srstudio/_composition_preflight.py",
+        "src/srstudio/_scene_motion_plan.py",
+        "src/srstudio/scene_motion.py"
+      ],
+      "prepared_render_identity_cases": 3,
+      "ruff": "passed",
+      "format": "passed",
+      "mypy_source_files": 339,
+      "retained_artifacts": "../generated/sdk-scene-timeline-planning/v1/",
+      "qualification": "Bounded read-only timeline planning with complete raster source snapshots, preserved source clocks, rational frame samples in changing segments, explicit held cuts, visible raw work, proxy ID reuse and retained metadata/image/node estimates. Source geometry still requires preparation; the base static manifest budgets still apply. Animated timeline preparation/emission/publication and complete DRAWING evidence remain open, alongside whole-body support and authored emotion blends."
+    },
     "scene_motion_sampling": {
       "baseline_source_commit": "827a75ecd010f203d138a398082aa6a7100991ea",
       "initial_missing_api_tests_red": 40,
@@ -2365,13 +2402,14 @@
           "Static printed labels retain immutable typed recipes, actual font bytes and explicit licenses; bounded workers compile closed scenes/fonts, cold bundles render labels under per-source and shared attempt/memory/deadline limits, verify PNGs and publish only complete plate artifacts",
           "Static proxies retain immutable recipe/geometry inputs with explicit scene-light ownership; proxy_jobs derives light/ID and optional under-only jobs, bounded preparation shares plate geometry validation, conversion verifies PNGs and preserves rgba/back/front/under semantics, and mixed bundles deduplicate raw renders while reprocessing palette/grain changes",
           "Immutable plate/proxy RasterSequence snapshots preserve original animated bindings and source clocks; raster_jobs derives unique bounded work, every frame is verified before cache access, only visible held intervals render, image tables deduplicate IPC payloads, and real-engine boundary/cut/random-access tests verify replacement timing",
-          "Strict immutable SceneMotion tracks sample shared cameras, world lights and parent transforms with explicit easing, held cuts, authored Euler winding, unchanged source clocks, static-view work revalidation and continuous-contact restrictions; whole-timeline emission remains open"
+          "Strict immutable SceneMotion tracks sample shared cameras, world lights and parent transforms with explicit easing, held cuts, authored Euler winding, unchanged source clocks, static-view work revalidation and continuous-contact restrictions; whole-timeline emission remains open",
+          "SceneTimeline plans bounded rational-frame, authored-key, layer-window and mapped source intervals; complete raster inputs bind visible raw jobs, shared camera/light/parent work and proxy ID reuse, conservative retained metadata/image/node estimates and contact-proof budgets; identity-parent work matches actual prepared renderer keys"
         ],
         "remaining": [
-          "Whole-timeline camera/light/parent scheduling, aggregate render budgets and animated bundle emission beyond the new typed static-sample API",
+          "Animated scene-timeline preparation, emission and atomic publication using the new aggregate plan, with complete runtime budget enforcement",
           "Cross-backend rendering evidence for the complete DRAWING.md contract"
         ],
-        "verification": ["tests/test_composition_preflight.py", "tests/test_composition_emission.py", "tests/test_composition_runtime.py", "tests/test_bounded_process.py", "tests/test_composition_example.py", "tests/test_composition_plate_view.py", "tests/test_composition_plates.py", "tests/test_composition_bundles.py", "tests/test_composition_textures.py", "tests/test_composition_prints.py", "tests/test_bundle_primitives.py", "tests/test_plate_runtime_limits.py", "tests/test_plate_render_sessions.py", "docs/composition-preflight.md", "docs/authoring-benchmark.md", "docs/decisions/0144-bounded-composition-prints.md", "tests/test_composition_proxy.py", "docs/decisions/0145-bounded-composition-proxies.md", "tests/test_composition_sequences.py", "docs/decisions/0146-bounded-raster-timelines.md", "tests/test_scene_motion.py", "docs/decisions/0175-explicit-scene-motion-sampling.md"]
+        "verification": ["tests/test_composition_preflight.py", "tests/test_composition_emission.py", "tests/test_composition_runtime.py", "tests/test_bounded_process.py", "tests/test_composition_example.py", "tests/test_composition_plate_view.py", "tests/test_composition_plates.py", "tests/test_composition_bundles.py", "tests/test_composition_textures.py", "tests/test_composition_prints.py", "tests/test_bundle_primitives.py", "tests/test_plate_runtime_limits.py", "tests/test_plate_render_sessions.py", "docs/composition-preflight.md", "docs/authoring-benchmark.md", "docs/decisions/0144-bounded-composition-prints.md", "tests/test_composition_proxy.py", "docs/decisions/0145-bounded-composition-proxies.md", "tests/test_composition_sequences.py", "docs/decisions/0146-bounded-raster-timelines.md", "tests/test_scene_motion.py", "docs/decisions/0175-explicit-scene-motion-sampling.md", "tests/test_scene_timeline.py", "docs/decisions/0176-bounded-scene-timeline-planning.md"]
       },
       "evidence": [
         "DRAWING.md#agent-facing-composition-contract"

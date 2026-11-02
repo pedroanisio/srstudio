@@ -24,8 +24,9 @@ image resources, including bounded printed labels. `prepare_proxy` adds static
 light/part-ID conversion under the same camera, lighting and worker budgets.
 `RasterSequence` adds baked geometry/appearance timelines under that shared
 static view. `srstudio.scene_motion` now samples typed camera, light and parent
-tracks into validated static plans. Whole-timeline scheduling, aggregate work
-accounting and animated bundle emission remain open under SDK-P2-07.
+tracks into validated static plans. `scene_motion.plan_scene` adds bounded
+timeline scheduling and aggregate work accounting. Animated bundle emission
+remains open under SDK-P2-07.
 A valid manifest alone is not a rendered scene,
 approval of a new style, or proof of a host's declared geometry.
 
@@ -100,9 +101,98 @@ place both anchors together.
 **A sampled plan is one static view.** Its cost describes that view over the
 original clip; it does not budget a batch of views. Its digest identifies the
 resolved scene, so repeated held samples can share the existing verified render
-cache. Sampling neither creates files nor emits an animated bundle. Timeline
-sampling, combined render budgets, complete animated emission and the DRAWING
-adoption proof remain required before SDK-P2-07 is complete.
+cache. Sampling neither creates files nor emits an animated bundle. Use
+`plan_scene` below to budget a complete sampled timeline. Animated emission and
+the DRAWING adoption proof remain required before SDK-P2-07 is complete.
+
+## Plan a scene timeline
+
+`scene_motion.plan_scene(spec, bindings, motion, rasters=...)` returns an
+immutable `SceneTimeline`. Supply one complete `PlateSource`, `ProxySource` or
+`RasterSequence` for each raster binding; vector-only plans use an empty tuple.
+The planner validates source identities, clocks, view envelopes and combined
+work without preparing geometry, accessing a cache, launching workers or
+creating files.
+
+```python
+from dataclasses import replace
+from srstudio import clay, composition as c, scene_motion as m
+
+model = clay.Model()
+model.box("skin", (0, 0, 0.2), (0.2, 0.2, 0.2))
+source = c.PlateSource(
+    "host", tuple(c.plate_mesh(mesh, basis="clay") for mesh in model.meshes()),
+    (c.PlateMaterial("skin", "#C88762"),),
+)
+binding = c.AssetBinding(
+    "host", "rafa", 1, "plates", c.Bounds((-1, -1, -1), (1, 1, 1)),
+    nodes=64, memory_bytes=1024**2,
+    plates=(c.PlateWork(c.plate_source_digest(source), 64, 64, 48, 4, 1, 1024**2),),
+)
+spec = c.ScenePlan(
+    c.StylePin("toon", c.style_revision("toon")), 64, 64, c.FrameRate(4),
+    1, 7, "meter",
+    c.CameraSpec("perspective", (0, 0, 10), (0, 0, 0), (32, 32), 100, 10),
+    c.LightRig("lit", (c.LightSpec("ambient", "ambient", "#FFFFFF", 1),)),
+    (c.LayerSpec("host", "host", 1, c.TemporalPolicy(0, 1)),), c.RenderBudget(),
+)
+motion = m.SceneMotion(transforms=(m.TransformTrack("host", (
+    m.TransformKey(0, c.Transform(), "smootherstep"),
+    m.TransformKey(1, c.Transform((0.1, 0, 0), (0, 0, 90))),
+)),))
+timeline = m.plan_scene(spec, (binding,), motion, rasters=(source,))
+assert timeline.cost.unique_plates == 4
+assert timeline.spans[-1].end == spec.duration
+```
+
+This is a small planning example with a host-declared binding. Actual geometry
+bounds, approved drawing provenance and prepared resource sizes still need
+their existing verification stages before rendering or adopting a drawing.
+
+`spans` are half-open scene intervals. Each names a `scene` index in `samples`,
+the active `layers`, and `rasters` whose `frame` is a source snapshot index or
+`None` for a static source. `terminal` records the validated clip-end view and
+does not add an output frame. All sampled plans retain original layer/source
+clocks. Identical adjacent view/visibility/source selections coalesce; repeated
+views elsewhere share immutable sample records.
+
+The schedule combines output frame times within changing numeric segments,
+authored scene keys, layer starts and ends, and mapped source snapshot boundaries.
+Constant and held segments avoid redundant frame samples while retaining the
+complete output-frame cost. Frame times are calculated from integer frame indices
+and the rational frame rate, without accumulated time steps. Explicit off-grid
+cuts remain exact representable boundaries. Continuous
+scene motion is held between these samples. This is a finite sampled rendering
+contract, not a claim of continuously safe camera paths between sample times.
+
+The cost counts visible raw render jobs across the complete schedule, including
+camera, resolved parent pose, world lights, physical scale, seed and dimensions.
+Repeated content and placements can share jobs. Proxy part-ID passes keep their
+own unlit view identity, so changing world lighting does not charge for new ID
+renders. Every source snapshot is validated structurally, including hidden ones;
+its declared work must cover all sampled views. The base manifest must also fit
+its existing static preflight budgets, even when the selected source window
+uses only part of the declared job set.
+
+Output frames/pixels, peak raster dimensions, distinct jobs, engine attempts,
+samples, node expansion, contact-proof samples and retained memory are bounded.
+The memory estimate includes source/worker declarations, expanded nodes, raster
+storage allowances and eight times the encoded retained scene/motion metadata.
+These are conservative planning estimates; they do not replace hard worker
+limits or certify measured GPU/host memory usage.
+
+There are at most 4,096 combined intervals and one million planned record visits.
+Long constant or held clips can contain more output frames when their explicit
+frame and output-pixel budgets permit it.
+The latter includes complete-manifest view revalidation and source snapshots.
+The input source buffers total at most eight MiB. Exceeding any bound raises a
+typed error before execution. The timeline digest pins inputs, source identities,
+samples, terminal state, intervals and costs. It is a planning identity; it does
+not replace renderer/cache identities or authorize a new drawing style.
+
+`compile_bundle` and `emit_bundle` still accept individual static plans or baked
+source timelines under a static view. Compiling and atomically publishing this
+new scene timeline remains open; do not treat its existence as an emitted clip.
 
 ## Register a plate view
 

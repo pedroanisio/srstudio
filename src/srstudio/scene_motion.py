@@ -1,7 +1,9 @@
 """Typed random-access camera, world-light and parent motion for composition.
 
 Each sample is a normal validated ScenePlan, suitable for existing preparation
-adapters. Sampling does not emit a timeline or estimate aggregate render work.
+adapters. plan_scene schedules samples and bounds aggregate work without renders,
+cache access or output writes;
+animated bundle emission remains a separate, unfinished adapter.
 Euler channels follow authored turns; no shortest-arc rotation is inferred.
 """
 
@@ -20,6 +22,8 @@ from ._composition_preflight import _unique as _identifiers
 Easing = Literal['linear', 'smoothstep', 'smootherstep', 'hold']
 SCHEMA = 'srstudio.scene-motion/1.0.0'
 MAX_KEYS = 1024
+MAX_TIMELINE_SAMPLES = 4096
+MAX_TIMELINE_RECORDS = 1_000_000
 
 
 @dataclass(frozen=True)
@@ -70,6 +74,62 @@ class SceneMotion(c._Record):
     lights: tuple[LightTrack, ...] = ()
     transforms: tuple[TransformTrack, ...] = ()
     schema: Literal['srstudio.scene-motion/1.0.0'] = 'srstudio.scene-motion/1.0.0'
+
+
+RasterSource = c.PlateSource | c.ProxySource | c.RasterSequence
+
+
+@dataclass(frozen=True)
+class RasterSample(c._Record):
+    layer: str
+    frame: int | None
+
+
+@dataclass(frozen=True)
+class SceneSpan(c._Record):
+    start: float
+    end: float
+    scene: int
+    layers: tuple[str, ...]
+    rasters: tuple[RasterSample, ...]
+
+
+@dataclass(frozen=True)
+class SceneTimeline:
+    """Validated held scene intervals and combined conservative work bounds.
+
+    ``terminal`` is checked at the clip end but is not an extra output frame.
+    Source snapshots remain immutable inputs; actual geometry and vector XML
+    still require the composition preparation adapters before rendering.
+    """
+
+    base: c.ValidatedScenePlan
+    motion: SceneMotion
+    rasters: tuple[RasterSource, ...]
+    samples: tuple[c.ValidatedScenePlan, ...]
+    terminal: c.ValidatedScenePlan
+    spans: tuple[SceneSpan, ...]
+    cost: c.CostEstimate
+    digest: str
+
+
+def plan_scene(
+    spec: c.ScenePlan,
+    bindings: tuple[c.AssetBinding, ...],
+    motion: SceneMotion,
+    *,
+    rasters: tuple[RasterSource, ...] = (),
+) -> SceneTimeline:
+    """Plan output-frame samples, authored cuts and source boundaries before execution.
+
+    Every raster binding needs its immutable source, including complete baked
+    sequences. The planner verifies declarations, view envelopes, source clocks
+    and aggregate work. It does not verify actual mesh bounds, prepare assets,
+    access caches, invoke a renderer or emit an animated scene.
+    """
+    from ._scene_motion_plan import plan_scene as plan
+
+    return plan(spec, bindings, motion, rasters=rasters)
 
 
 Key = CameraKey | LightKey | TransformKey
@@ -216,7 +276,15 @@ def sample_scene(
     _contact_motion(spec, motion.transforms)
     if not count:
         return base
-    sampled = replace(
+    sampled = _sample_spec(spec, motion, time)
+    return base if sampled == spec else c.preflight(sampled, bindings)
+
+
+def _sample_spec(spec: c.ScenePlan, motion: SceneMotion, time: float) -> c.ScenePlan:
+    """Resolve already validated tracks; callers own semantic preflight."""
+    light_tracks = {track.light: track for track in motion.lights}
+    transform_tracks = {track.layer: track for track in motion.transforms}
+    return replace(
         spec,
         camera=cast(c.CameraSpec, _sample(motion.camera, time)) if motion.camera else spec.camera,
         lights=replace(
@@ -233,4 +301,3 @@ def sample_scene(
             for layer in spec.layers
         ),
     )
-    return c.preflight(sampled, bindings)

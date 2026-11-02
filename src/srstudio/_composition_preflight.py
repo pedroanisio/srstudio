@@ -102,6 +102,16 @@ def _pose(layer: c.LayerSpec, layers: dict, cache: dict, visiting: set[str]) -> 
     return frame, scale
 
 
+def _pose_key(frame: Frame, scale: float) -> dict:
+    """Resolved geometry coordinates, independent of integer/float spelling."""
+    origin, rotation = frame.origin, frame.rotation
+    return {
+        'origin': tuple(float(v) for v in (origin.x, origin.y, origin.z)),
+        'rotation': tuple(float(v) for v in (rotation.w, rotation.x, rotation.y, rotation.z)),
+        'scale': float(scale),
+    }
+
+
 def _check_camera(
     layer: c.LayerSpec, binding: c.AssetBinding, pose: tuple[Frame, float], camera: c.CameraSpec, axes: tuple
 ) -> None:
@@ -364,8 +374,7 @@ def preflight(spec: c.ScenePlan, bindings: tuple[c.AssetBinding, ...]) -> c.Vali
             key = _digest(
                 {
                     'job': job.key,
-                    'frame': asdict(frame),
-                    'scale': scale,
+                    'pose': _pose_key(frame, scale),
                     'space': layer.space,
                     'backend': assets[layer.asset].backend,
                     'passes': layer.passes,

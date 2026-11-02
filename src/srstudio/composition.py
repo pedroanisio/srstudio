@@ -13,8 +13,8 @@ Printed labels retain immutable recipes/font bytes and share the plate render bu
 Static proxies share the camera/lights and convert verified light/ID passes in
 a bounded worker. RasterSequence verifies and emits held geometry/appearance
 snapshots on explicit source clocks. ``scene_motion`` samples camera, light and
-parent tracks into static validated plans; animated bundle emission and aggregate
-motion render budgets remain unsupported.
+parent tracks into static validated plans and budgets complete sampled timelines;
+animated bundle emission remains unsupported.
 """
 
 from __future__ import annotations
