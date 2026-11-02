@@ -72,6 +72,56 @@ gesture whose acceleration has corners, as a spline's has at its samples, reads 
 5% low at 24; and the fastest moment sits on a flat top of the speed, so it reads within 0.015 of the cycle. Comparisons
 between two stages read both sides the same way, so these limits cancel there.
 
+### A gesture's timing is kept to the picture
+
+`tests/test_dance_timing_stages.py` follows one gesture, a whip on the right upper arm (a slow lift and a strike back
+onto the hit in a quarter of the beat), through every stage between a move and a drawn picture, and measures it the
+same way at each:
+
+| Stage | What it does to the gesture's clock | Held |
+|---|---|---|
+| `dance.sample` -> `dance_pose` | adds the move's value onto the base pose | exactly |
+| skeleton | one control turns the hand round a fixed axis: the hand's speed is the control's times one radius | to 1e-6 |
+| clip -> `retarget.perform` | plays the clip's frames on the song's clock through a beat map | see below |
+| `tools/dance_views.py` | keeps two of the world's three axes | exactly |
+
+Two parts of the retarget stage bent the gesture, and both are fixed at their cause:
+
+- **Between frames, a straight turn.** A performance slerped each joint from one frame to the next, so speed was
+  constant between frames and stepped at each one, and acceleration became a spike at every frame. A clip of the whip
+  at 30 frames a second, played at its own tempo, read its peak acceleration 2.7 times too high (411.7 against 150.5
+  amplitudes per beat squared) and its fastest moment 0.04 of a cycle late. A performance now reads every frame into
+  the character's controls once and plays each control, and each axis of the hips' place, through the natural cubic
+  spline of its frames: continuous to the acceleration, exact at every frame. The same clip now reads its peak
+  acceleration 1% low and its fastest moment within 0.008 of a cycle. Between frames the spline stays within 0.002
+  radians of the slerp on the reference walk. Played in controls, not turns, a two-control joint such as a knee no
+  longer leaves its axes between frames. A control the spline carries past a limit that both frames keep is held at
+  the limit and not counted, since the clip never put it there; past a frame's own limit it is held and counted, or
+  refused, as before. `to_pose` at a single time keeps the slerp: one moment has no neighbours to curve through.
+- **At each beat, a step in rate.** A beat map ran straight between beats, so where two stretches of a take had
+  different rates every gesture in flight stepped its speed at the beat, and its acceleration spiked there. The rate
+  now eases from one stretch's to the next. Over a stretch of mean rate `R` it is `R + a phi(tau) + b phi(1 - tau)`
+  with `phi(tau) = 1 - 18 tau^2 + 32 tau^3 - 15 tau^4`, which is 1 at the stretch's start, 0 at its end, flat at
+  both, and integrates to 0. So every beat lands exactly on its beat, every stretch keeps its mean rate, the rate is
+  continuous at each beat and its change continuous too, and the change is bounded (`BeatMap.max_rate_change`). The
+  rate at a beat is the mean of its two stretches' rates where each has room for it. A stretch moves its rate by at
+  most half its room inside 0.5..2.0 at either end, so the instantaneous rate never leaves that range. Where two
+  neighbours are too far apart for that, the rate steps at that beat by what is left, which is always less than a
+  straight map's step. The first and last beats keep their stretch's rate, so the map still runs straight past the
+  ends. `song_time` turns a clip second back by Newton steps guarded by bisection, at most 64.
+
+A take whose beats fall unevenly, with its tempo easing between them as a dancer's does, plays the gesture on the
+song's even beats with its timing and acceleration kept. On such a take at 30 frames a second, the arm's speed stepped
+at a beat by up to 48% of its top speed, from the frame corners and the rate steps together. It now steps by under
+0.1%, which is the finite difference's own error. How well a take holds a strike's peak acceleration is the
+take's own limit, not a stage's. The whip's strike lasts under four frames at 30 frames a second, and on uneven beats
+those frames fall at a different place in each cycle, so they hold its peak 10% low at 30, 3% low at 60 and 0.1% at
+120.
+
+The drawing adapters of the stick and Toon styles are not on the base this decision was made on. Each draws a
+skeleton pose sampled at its own picture times. Their own stage test belongs with them: the same gesture, measured at
+their pictures, held to the source.
+
 ## Rejected alternatives
 
 - **Linear interpolation between samples.** Speed is constant between samples and jumps at each one; acceleration is a
