@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0.0",
+  "generated_by": {
+    "model": "GPT-6",
+    "tool": "OpenAI Codex"
+  },
+  "source_commit": "9f4728cd78ac4a0e24d982257733361a471ac47a",
+  "scene_sha256": {
+    "stick-entrance": "253b4abccc71d0ce8a2523d1cdeef00cab43897243aa8de63d4e0cb23f594a4a",
+    "stick-street-lens": "ad4e79d14bdaca0b0260d00f9b47503ba636884d37ef26bb050787ea3be4ebd2",
+    "stick-studio-flat": "ec31769c5cd90b0023dff277e8d7551d6053d3f03893785a5f759f78dd6e0f3d",
+    "stick-gym": "c659c586340bd3184e045ab761b4d616b200d6b0dfee5ee61209f246c5e17c8a",
+    "stick-classroom": "3015b7e48c97528d595eaa4f4746d838eb690eea2aa59f242740c78dccd00582",
+    "stick-checkout": "2eb83cd28dbe93dbff6500c5124fbecf0d2c6a541d1daf3bce208476a3d50ada",
+    "stick-duvet": "07cb32d7dcf16596b9c0c653f26e0711cbdade5315744b2107d55673a3957d24",
+    "stick-eye-mask": "c1b00b308841145537240099d422de34fc1245c90a97958acdd3986c057f36a3",
+    "stick-recorder": "64d6e0ccca607cd67064db4dba0735aa54f2e8dc49fc1e2a0d7485ef3ec21aeb",
+    "stick-lights-low": "26ff846e4a9bc5c19dca7d78a594c0816548a265df9e6f2e806c82b5437ac608",
+    "stick-glass-door": "76cb3fdd36c98666e4fa89165aedbf9fd968065c0dd30ab3d88d92692c81133a",
+    "stick-snow-cap": "50d6883c1d43f2f2f0dd4ed9fb14610b674f819d85678ff184cbe0dbed266b26",
+    "stick-marathon": "59aba5cc290cec6cb00b878625186db3d24b6e90ef956bc0a4e7e4689b6855db",
+    "stick-murphy-bed": "b21224ff99ac4f071e1e78d4f165f593064811eed96c67630c9ead797cc7a10c",
+    "stick-gym-counter": "bec38c6a9717bb14f40ea63ac9474974d23938a3e25856d3747c71fa2a8e8fdf",
+    "stick-tiny-chair": "8884b4283cd978b3bf58b1e1db62cadf00d24ac4a63bb3fa94bb8d9088630cf0",
+    "stick-teacher-desk": "177410c8fc5209cedf975e3f45511c2410fa3adf69e09482acc9353d52acfd6d",
+    "stick-kiosk": "9b50b9a35080210070b4c03445896749b4a7fecb1128146f07e84a8f10f7d742",
+    "stick-avocado": "a76bbdfa62bd00c5c14928b9ac2c58067e2a66a694ca52bba1afc6339d889280",
+    "stick-name-badge": "cc3d62bcd0b6630628cebaccf0e5bc8d9a80c8fbb63978b39bd5ff29122708b1",
+    "stick-clipboard": "4fbf93881debc9b2fa78fc458b136a2cdedaf228bbc4c16283358b4db7256d1a",
+    "stick-wall-brackets": "9183ca1d69ffdfe8279125593ec18d6d98d42600a8d17713109c9ca8987fb2f6",
+    "stick-folded-bedding": "e12a6a92dfb577be5310318816be4e4941ba485c3145e32e919f0a1a4128072a",
+    "stick-essay": "4e650f54e8805ae93f61ab1300e9b1764774b1b5387cb29feed9677b37c392d3"
+  }
+}

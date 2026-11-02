@@ -666,3 +666,49 @@ and finish before `end`. Their opacity keys follow the canvas clock, while the
 scale housing stays visible. `stick-carry-on(tag=None)` and
 `stick-gate-podium(plate=False)` need no font. `stick-gate` still requires its font
 and valid sign strings when `sign=False`.
+
+## Stick scene placement and partial handles
+
+The 24 builders in `stick_door`, `stick_flat`, `stick_gym`, `stick_school`,
+`stick_shop`, `stick_bed` and `stick_table` declare their return ownership,
+placement and timing. `stick-snow-cap` returns a path shape, while `stick-duvet`
+returns only the moving mound. The duvet cover and folds remain in sibling
+nodes; move or hide an outer parent to control the entire drawing.
+
+`duvet.lift` values are vertical displacements from the drawn mound.
+`folded_bedding.slide` values are absolute parent x positions and replace its
+`x` argument. Its interpolation is `cubic-out` per segment. An essay's `at`
+places its sheet center, with scaling about that center, rather than placing
+the sheet's top left. Inspect these semantics before attaching another prop.
+
+<!-- stick-scene-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry, stick_bed
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1920, fps='24', duration=3)
+cv = Canvas(scene, font_asset=None)
+bed_layer = cv.group(cv.comp, 'bed-layer')
+entry = registry.get('prop', 'stick-duvet')
+contract = entry.describe()['contract']
+assert contract['returns']['x-role'] == 'partial-drawing'
+
+# The phone uses the mound's authored drawing coordinates, not a new (0, 0) origin.
+mound = entry(cv, bed_layer, 3, x=540, y=1300, near=1800,
+              lift=((0, 0), (1, -20), (3, 0)))
+phone = stick_bed.recorder(cv, mound, 540, 1100, 3, lines=2, live=True)
+assert phone in list(mound.elements())
+
+# Darkening is a multiply overlay with a radial pool, not a scene light.
+stick_bed.lights_low(cv, cv.comp, pool=(540, 1100, 250), strength=0.6)
+```
+<!-- stick-scene-discovery:end -->
+
+Door closure and Murphy-bed folding switch held drawings; they do not solve
+hinge motion or collisions. Gym dawn, kiosk messages, alarms and scene motion
+keys follow `Canvas.local_time`. A kiosk's nested `Screen.start` uses that same
+clock, and its `tone` enumerates `idle`, `error`, `help` and `award`.
+The turned clipboard requires a font; its edge and quarter views use paths
+alone. These declarations describe supported drawing semantics, without
+claiming spatial contacts, physical lighting or biomechanical motion.

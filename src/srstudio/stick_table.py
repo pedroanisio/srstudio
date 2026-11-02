@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 
+from . import _stick_scene_contracts as sc
 from . import checks, stick_home
 from .canvas import Canvas
 from .registry import register
@@ -97,7 +98,12 @@ POSES: dict[str, RigPose] = {
 }  # fmt: skip
 
 
-@register("prop", "stick-clipboard", tags=("clipboard", "form", "official", "collections", "font"))
+@register(
+    "prop",
+    "stick-clipboard",
+    contract=sc.contract('stick-clipboard'),
+    tags=("clipboard", "form", "official", "collections", "font"),
+)
 def clipboard(cv: Canvas, parent, *, turned: bool = False, quarter: bool = False, heading: str = "SIGN HERE"):
     """A clipboard about its origin, the hand that holds it: edge on, as its reader sees the page and no one else does;
     ``quarter``, angled so the viewer sees a page of notes and cannot read them; or ``turned`` flat to the viewer:
@@ -189,7 +195,12 @@ def seats(cv: Canvas, parent) -> None:
     stick_home.chair(cv, parent, CHAIRS[1], FLOOR, rise=RISE)
 
 
-@register("prop", "stick-wall-brackets", tags=("shelf", "home", "diy", "unfinished", "wall"))
+@register(
+    "prop",
+    "stick-wall-brackets",
+    contract=sc.contract('stick-wall-brackets'),
+    tags=("shelf", "home", "diy", "unfinished", "wall"),
+)
 def wall_brackets(cv: Canvas, parent, x: float, y: float, *, span: float = 190.0, scale: float = 1.0):
     """Two steel shelf brackets on a wall with nothing on them, the first's top at ``x, y`` and the other ``span`` to
     its right, a pencilled level line running between them: a shelf that has been about to go up for some time."""
@@ -214,7 +225,12 @@ def _check_slide(slide: Sequence[tuple[float, float]]) -> None:
         raise StickDataError(f"a slide runs through at least two rising (second, x) keys, got {slide!r}")
 
 
-@register("prop", "stick-folded-bedding", tags=("home", "bed", "sofa", "pillow", "duvet", "reveal"))
+@register(
+    "prop",
+    "stick-folded-bedding",
+    contract=sc.contract('stick-folded-bedding'),
+    tags=("home", "bed", "sofa", "pillow", "duvet", "reveal"),
+)
 def folded_bedding(
     cv: Canvas, parent, x: float, y: float, *, scale: float = 1.0, slide: Sequence[tuple[float, float]] = ()
 ):

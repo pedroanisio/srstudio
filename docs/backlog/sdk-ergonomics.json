@@ -24,11 +24,11 @@
   "catalog_observation": {
     "parts": 734,
     "characters": 75,
-    "entries_with_explicit_part_contract": 443,
+    "entries_with_explicit_part_contract": 467,
     "all_default_characters_have_explicit_contracts": true,
     "noncharacter_parts": 659,
-    "noncharacter_parts_with_explicit_contracts": 368,
-    "source": "Fresh-process registry observation on 2026-11-02 after 28 Stick road/airport declarations. Drawing baselines were captured from e4aef221; current develop includes the pnkit ports merge. See review_verification.stick_transport_contracts.",
+    "noncharacter_parts_with_explicit_contracts": 392,
+    "source": "Fresh-process registry observation on 2026-11-02 after 24 Stick scene/prop declarations. Drawing baselines were captured from 9f4728cd. See review_verification.stick_scene_contracts.",
     "by_kind": {
       "character": {
         "registered": 75,
@@ -36,15 +36,15 @@
       },
       "prop": {
         "registered": 461,
-        "explicit_contracts": 293
+        "explicit_contracts": 310
       },
       "location": {
         "registered": 115,
-        "explicit_contracts": 55
+        "explicit_contracts": 61
       },
       "graphic": {
         "registered": 83,
-        "explicit_contracts": 20
+        "explicit_contracts": 21
       }
     },
     "qualification": "Fresh-process registry.entries() observation after the latest implemented contract batch. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates.",
@@ -54,6 +54,17 @@
     }
   },
   "review_verification": {
+    "stick_scene_contracts": {
+      "baseline_source_commit": "9f4728cd",
+      "initial_missing_contract_and_guide_regressions_red": 62,
+      "selected_regressions": {"passed": 1351, "skipped": 0},
+      "coverage_scope": "_stick_scene_contracts.py, _stick_drawing_contracts.py, contracts.py and registry.py; unchanged 80% branch-inclusive gate. Not a full-library suite run.",
+      "drawing_baseline_cases": 24,
+      "unchanged_executable_definitions": 66,
+      "mypy_source_files": 314,
+      "retained_artifacts": "../generated/sdk-stick-scene-contracts/v1/",
+      "qualification": "Declarations and executed examples distinguish absolute versus relative values, sheet-center anchors, actual canvas clocks, path-layer and partial-group returns, nested screen records and conditional fonts. No physical hinge, contact, lighting or gait claims. Full catalog expansion remains open."
+    },
     "stick_transport_contracts": {
       "baseline_source_commit": "e4aef221",
       "verified_develop_commit": "107526ec",
@@ -1233,15 +1244,22 @@
           "srstudio.stick_car",
           "srstudio.stick_street",
           "srstudio.stick_windshield",
-          "srstudio.stick_roadtrip"
+          "srstudio.stick_roadtrip",
+          "srstudio.stick_door",
+          "srstudio.stick_flat",
+          "srstudio.stick_gym",
+          "srstudio.stick_school",
+          "srstudio.stick_shop",
+          "srstudio.stick_bed",
+          "srstudio.stick_table"
         ],
         "additional_parts": [
           "toon-headset"
         ],
-        "new_contracts": 315,
-        "current_explicit_noncharacter_contracts": 368,
+        "new_contracts": 339,
+        "current_explicit_noncharacter_contracts": 392,
         "current_registered_noncharacters": 659,
-        "remaining_undeclared": 291,
+        "remaining_undeclared": 267,
         "evidence": [
           "tests/test_counter_store_contracts.py",
           "tests/data/counter-store-contract-baseline.json",
@@ -1275,9 +1293,13 @@
           "src/srstudio/_stick_transport_contracts.py",
           "tests/test_stick_transport_contracts.py",
           "tests/support/stick_transport_contracts.py",
-          "tests/data/stick-transport-contract-baseline.json"
+          "tests/data/stick-transport-contract-baseline.json",
+          "src/srstudio/_stick_scene_contracts.py",
+          "tests/test_stick_scene_contracts.py",
+          "tests/support/stick_scene_contracts.py",
+          "tests/data/stick-scene-contract-baseline.json"
         ],
-        "qualification": "The full catalog expansion remains open. Completed Cutout, Toon and 77 Stick household/transport builders declare authored units, clocks, return records and capability limits. Stick drawing baselines remain unchanged; specific correctness repairs are recorded separately as P1 findings. Seven newly merged Toon orbit props/sets and other families still require source review and executable semantic evidence."
+        "qualification": "The full catalog expansion remains open. Completed Cutout, Toon and 101 Stick household/transport/scene builders declare authored units, clocks, return records and capability limits. Stick drawing baselines remain unchanged; specific correctness repairs are recorded separately as P1 findings. Eight core Stick builders, seven Toon orbit props/sets and other families still require source review and executable semantic evidence."
       },
       "evidence": [
         "src/srstudio/registry.py:contract_coverage",
