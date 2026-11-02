@@ -274,6 +274,39 @@ All 69 moving patterns pass; every one is a `sine` or a `hold`. The smallest mar
 The rise is compared to within half a cycle of the highest overtone read (24), since a `hold` step is read through
 that curve and no finer.
 
+### Beat alignment, scored as AIST++ scores it
+
+`srstudio.dance_beats` adds the field's standard score for how well a dance's stops land on its music's beats. AIST++
+(Li, Yang, Ross and Kanazawa, "AI Choreographer: Music Conditioned 3D Dance Generation with AIST++", ICCV 2021, Eq. 2)
+takes the kinematic beats as the local minima of the body's kinetic velocity and scores each by
+`exp(-d² / (2σ²))`, where `d` is its distance to the nearest music beat and σ is 3 frames at 60 fps, averaged over
+the kinematic beats. Bailando (Siyao et al., "Bailando: 3D Dance Generation by Actor-Critic GPT with Choreographic
+Memory", CVPR 2022, Eq. 15) averages over the music beats instead. Both are kept, in seconds, so a take at any frame
+rate reads the same. The kinetic velocity is the mean speed of every joint and bone end, as in Bailando's published
+code; the music beats are the groove's.
+
+Bailando's code also smooths the velocity with a Gaussian of 5 frames at 60 fps, which neither paper states. It is off
+here, for a measured reason: a gesture that strikes onto its hit and eases away has a lopsided speed around the stop,
+and the smoothing drags the stop toward the slow side. Our `clap` at 120 BPM stops on the beat and at its far extreme
+(0.02 and 0.65 of the beat); smoothed, 0.15 and 0.52. Bailando's score then reads it at 0.29 on the beat and 0.87
+half a beat late. A held body has no strict minimum; a hold between two moves counts as one stop, at its middle.
+
+Read on the realistic skeleton at 120 BPM over four bars, Bailando's score on the beat, then half a beat late:
+
+| Preset | On the beat | Half a beat late |
+|---|---|---|
+| `sway` | 0.87 | 0.00 |
+| `shoulder-roll` | 0.83 | 0.00 |
+| `arm-wave-overhead` | 0.78 | 0.00 |
+| `clap`, `raise-the-roof` | 0.87 | 0.31 |
+| `arm-pump` | 0.87 | 0.18 |
+| `head-nod` | 0.83 | 0.39 |
+| `bounce` | 0.88 | 0.88 |
+
+The score reads stops, not which stop is the hit. `bounce` stops on the beat and between beats, so half a beat late
+reads the same. The AIST++ average over stops tops out near a half for a gesture that turns once a beat, since its
+far-extreme stop lies off the beat (0.48 for `clap`).
+
 ## Rejected alternatives
 
 - **Linear interpolation between samples.** Speed is constant between samples and jumps at each one; acceleration is a
@@ -293,3 +326,5 @@ that curve and no finer.
   and the study and the style count it for none.
 - The shipped style's peak-to-peak and snap ranges changed: they no longer hold the fit's noise.
 - A curve that rings or peaks away from its hit is refused when it is read, never drawn.
+- A dance can be scored for beat alignment the way the AIST++ and Bailando papers score theirs, without the smoothing
+  that misreads a snapped gesture.

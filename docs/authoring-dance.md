@@ -265,3 +265,8 @@ attack and release in beats, its peak acceleration, and its mean velocity profil
 when its curve holds more than a sine above the estimate's noise, and the profile only when those windows agree, so a
 noisy reference gives fewer of these ranges than of the others. `ChannelTarget.evidence["timed"]` says how many windows
 the timing stands on ([ADR 0204](decisions/0204-gesture-timing.md)).
+
+`srstudio.dance_beats.beat_alignment(points, fps, groove)` scores how well a take's stops land on the groove's beats,
+as the AIST++ and Bailando papers score dance generation: `points` is the body's positions per frame
+(`body_points(profile, pose)` for each), `score` averages over the stops and `music_score` over the beats. It reads
+stops, not hits: a move that stops on the beat and between beats reads the same half a beat late.
