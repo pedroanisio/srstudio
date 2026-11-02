@@ -26,6 +26,7 @@ from srstudio.compose import (
     locate_lyrics,
     measure_tempo,
 )
+from srstudio.files import WriteOnceError
 from srstudio.voice import VoiceOutputError, parse_transcript
 
 RATE = 48000
@@ -310,6 +311,17 @@ def test_cached_song_is_reverified_on_read(tmp_path, song_mp3):
     song.wav.unlink()
     with pytest.raises(MusicOutputError, match="decode"):
         MusicClient(tmp_path, key="").compose(plan(), seed=1, bpm=120)
+
+
+@ffmpeg
+def test_a_half_written_song_is_refused_before_a_paid_request_and_kept(tmp_path, song_mp3):
+    """A composed song is write-once (ADR 0170): its audio without its record is never paid for again over it."""
+    binary = Binary(song_mp3)
+    song = MusicClient(tmp_path, key="k", binary_transport=binary).compose(plan(), seed=1, bpm=120)
+    song.record.unlink()
+    with pytest.raises(WriteOnceError, match="half-written"):
+        MusicClient(tmp_path, key="k", binary_transport=binary).compose(plan(), seed=1, bpm=120)
+    assert len(binary.calls) == 1 and song.mp3.read_bytes() == song_mp3
 
 
 def test_missing_key_for_an_uncached_song_is_a_clear_error(tmp_path):

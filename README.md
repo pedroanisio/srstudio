@@ -238,7 +238,7 @@ Auto-enhance is on by default: each video lands one real change to the process o
 
 New Okayville reels and News and Host pilots have a comedy floor: the lower of the author's and an independent reviewer's score must reach 14/20 at first delivery. Mind and Maps pilots and anything already delivered owe no score. See [ADR 0064](docs/decisions/0064-comedy-floor.md).
 
-Render with `scene-render encode --strict`. A reel's first delivery through `episodes/instagram_posts.py` also passes the frame gates, which refuse measured defects such as captions that run sentences together or signature marks the camera hides, and someone who is not the author reviews frames at full size. `publish_pilots.py` does not run these gates. See [ADR 0073](docs/decisions/0073-frame-gates-and-standing-review.md).
+Render the master with `srstudio master <slug>.scene.xml -- --strict`, which never replaces a master already there: approved files (masters, voice takes, songs, package versions) are write-once through `srstudio.files`, and a re-run writes beside them or stops ([ADR 0170](docs/decisions/0170-approved-files-are-write-once.md)). A reel's first delivery through `episodes/instagram_posts.py` also passes the frame gates, which refuse measured defects such as captions that run sentences together or signature marks the camera hides, and someone who is not the author reviews frames at full size. `publish_pilots.py` does not run these gates. See [ADR 0073](docs/decisions/0073-frame-gates-and-standing-review.md).
 
 ## Lanes
 

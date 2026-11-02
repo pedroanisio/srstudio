@@ -27,7 +27,7 @@ import numpy as np
 from pedro_drive_plates import PLATES
 from sr_core.scene import Scene
 
-from srstudio import Canvas, flat_counter, pedro_host, plates, wire_car_prop, wire_jet_prop
+from srstudio import Canvas, files, flat_counter, pedro_host, plates, wire_car_prop, wire_jet_prop
 from srstudio.canvas import VOID
 from srstudio.errors import SrstudioError
 
@@ -469,16 +469,22 @@ class Piece:
 
 
 def encode(scene: Path, engine: Path) -> Path:
-    out = scene.with_suffix(".mp4")
-    done = subprocess.run(
-        [str(engine), "encode", scene.name, "-o", out.name, "--hw", "software"],
-        cwd=scene.parent,
-        capture_output=True,
-        text=True,
-    )
-    if done.returncode:
-        raise DriveError(f"the encode failed ({done.returncode}): {done.stdout[-800:]} {done.stderr[-800:]}")
-    return out
+    """The pilot's master beside its scene, write-once (ADR 0170): a re-run refuses before it encodes, and a failed
+    encode leaves nothing under the master's name."""
+    out = files.must_be_free(scene.with_suffix(".mp4"))
+    stage = out.with_name(f".{out.name}.encoding.mp4")
+    try:
+        done = subprocess.run(
+            [str(engine), "encode", scene.name, "-o", stage.name, "--hw", "software"],
+            cwd=scene.parent,
+            capture_output=True,
+            text=True,
+        )
+        if done.returncode:
+            raise DriveError(f"the encode failed ({done.returncode}): {done.stdout[-800:]} {done.stderr[-800:]}")
+        return files.install_once(stage, out)
+    finally:
+        stage.unlink(missing_ok=True)
 
 
 def main(argv: Sequence[str], run: Callable[[Path, Path], Path] = encode) -> int:

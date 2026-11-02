@@ -12,6 +12,7 @@ import subprocess
 
 import pytest
 
+from srstudio import files
 from srstudio.voice import Alignment, ElevenLabsClient, Speech, Voice, VoiceOutputError, VoiceSettings, parse_response
 from support.voice import Binary
 
@@ -249,6 +250,53 @@ def test_invalid_output_writes_nothing_to_the_cache(tmp_path):
     with pytest.raises(VoiceOutputError):
         client.synthesize(TEXT, VOICE, SETTINGS)
     assert list(tmp_path.iterdir()) == []
+
+
+@ffmpeg
+def test_a_half_written_take_is_refused_before_a_paid_request_and_kept(tmp_path, mp3):
+    """A take is write-once (ADR 0170): a cache entry with its audio and no timing is never paid for again over it."""
+    client = ElevenLabsClient(tmp_path, key="k", transport=(transport := Transport(response(audio=mp3))))
+    half = tmp_path / f"{client.fingerprint(TEXT, VOICE, SETTINGS)}.mp3"
+    half.write_bytes(b"the approved take")
+    with pytest.raises(files.WriteOnceError, match="half-written"):
+        client.synthesize(TEXT, VOICE, SETTINGS)
+    assert transport.calls == [] and half.read_bytes() == b"the approved take"
+
+
+@ffmpeg
+def test_a_take_written_by_another_process_during_the_request_is_not_replaced(tmp_path, mp3):
+    client = ElevenLabsClient(tmp_path, key="k")
+    taken = tmp_path / f"{client.fingerprint(TEXT, VOICE, SETTINGS)}.mp3"
+
+    def racing(url, payload, headers):
+        taken.write_bytes(b"the other process's take")
+        return response(audio=mp3), "req-2"
+
+    client.transport = racing
+    with pytest.raises(files.WriteOnceError):
+        client.synthesize(TEXT, VOICE, SETTINGS)
+    assert taken.read_bytes() == b"the other process's take"
+
+
+@ffmpeg
+def test_a_missing_wav_is_decoded_again_from_its_take(tmp_path, mp3):
+    client = ElevenLabsClient(tmp_path, key="k", transport=Transport(response(audio=mp3)))
+    line = client.synthesize(TEXT, VOICE, SETTINGS)
+    made = line.wav.read_bytes()
+    line.wav.unlink()
+    again = ElevenLabsClient(tmp_path, key="", transport=Transport()).synthesize(TEXT, VOICE, SETTINGS)
+    assert again.wav.read_bytes() == made
+
+
+@ffmpeg
+def test_a_half_written_sound_effect_is_refused_before_a_paid_request(tmp_path, mp3):
+    binary = Binary(mp3)
+    client = ElevenLabsClient(tmp_path, key="k", binary_transport=binary)
+    clip = client.sound_effect("a squeaky office chair", 1.0)
+    clip.file.unlink()
+    with pytest.raises(files.WriteOnceError, match="half-written"):
+        client.sound_effect("a squeaky office chair", 1.0)
+    assert len(binary.calls) == 1
 
 
 def test_missing_key_for_uncached_line_is_a_clear_error(tmp_path):

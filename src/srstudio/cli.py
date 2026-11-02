@@ -34,6 +34,7 @@ from . import (
     interview,
     lip_proof,
     lipsync,
+    master,
     music,
     outbox,
     overlap,
@@ -174,6 +175,17 @@ def main(argv=None):
     lip.add_argument("--master", type=Path, help="the final mp4; with --out, pull each instant's frame")
     lip.add_argument("--out", type=Path, help="folder for the frames")
     lip.add_argument("--crop", help="ffmpeg crop of each frame, w:h:x:y")
+    encoded = sub.add_parser(
+        "master", help="encode a reel's master and install it write-once: a re-run never replaces it (ADR 0170)"
+    )
+    encoded.add_argument("scene", type=Path, help="the reel's <slug>.scene.xml")
+    encoded.add_argument("--out-dir", type=Path, help="what the output paths are relative to (default: the folder "
+                         "SRSTUDIO_RENDERS is in)")  # fmt: skip
+    encoded.add_argument(
+        "--engine", type=Path, default=os.environ.get("SRSTUDIO_ENGINE") or shutil.which("scene-render")
+    )
+    encoded.add_argument("--next", action="store_true", help="write beside a master already there, as <slug>-v2.mp4")
+    encoded.add_argument("engine_args", nargs="*", help="after --: the engine's own, as -- --strict --hw software")
     measured = sub.add_parser("proof", help="a master's measures (ffprobe, ebur128) and a sheet of frames to look at")
     measured.add_argument("video", type=Path)
     measured.add_argument("--at", type=float, action="append", default=[], help="a moment to look at, in seconds")
@@ -305,6 +317,8 @@ def main(argv=None):
         return _beat(args)
     if args.cmd == "proof":
         return _proof(args)
+    if args.cmd == "master":
+        return _master(args)
     if args.cmd == "arms":
         return _arms(args)
     if args.cmd == "parts":
@@ -606,6 +620,23 @@ def _proof(args: argparse.Namespace) -> int:
     else:
         print(" ".join(f"{k}={v}" for k, v in made.items()))
     return 0
+
+
+def _master(args: argparse.Namespace) -> int:
+    renders = os.environ.get("SRSTUDIO_RENDERS")
+    out_dir = args.out_dir or (Path(renders).parent if renders else None)
+    if out_dir is None or args.engine is None:
+        print("srstudio master: set --out-dir and --engine, or SRSTUDIO_RENDERS and SRSTUDIO_ENGINE", file=sys.stderr)
+        return 2
+    try:
+        done = master.encode(args.scene, out_dir, engine=args.engine, args=args.engine_args, next_name=args.next)
+    except SrstudioError as exc:
+        _error("master", exc)
+        return 2
+    print(done.output.rstrip())
+    for path in done.paths:
+        print(f"master: {path}")
+    return done.returncode
 
 
 def _lip_proof(args: argparse.Namespace) -> int:
