@@ -28,7 +28,7 @@ BEATS = (
          stamp=Stamp("BUSTED", "MythBusters, 2003")),
     Beat("check", "Please do not check.", BATTERY, TOWER, "landed", framing="tight", hold=0.6),
     Beat("bolt", "What does hit that building? Lightning. About 23 times a year.", SMILE, panel="lightning",
-         stamp=Stamp("23 STRIKES A YEAR", "US National Weather Service")),
+         stamp=Stamp("23 STRIKES A YEAR", "NASA Goddard, citing NOAA, 2017")),
     Beat("end", "So up there, the penny is the safe one.", SMILE, TOWER, "top"),
 )  # fmt: skip
 KEPT = (2.4, 1.4, 1.5, 4.6, 2.2, 1.2, 4.0, 2.2)
@@ -119,6 +119,19 @@ def test_a_long_hold_after_the_opening_breathes():
     i = 5
     assert SHOW.starts()[i] + KEPT[i] > sp.OPENING
     with_beat(i, hold=1.5).validate()
+
+
+@pytest.mark.parametrize("source", ["US National Weather Service", "Guinness World Records", "NOAA, 23"])
+def test_a_stamp_whose_source_names_no_year_is_refused(source):
+    """Every fact on screen names its source and the year: a count of strikes from an undated page cannot be
+    checked against what changed since."""
+    with pytest.raises(ScriptError, match="names the year"):
+        with_beat(6, stamp=Stamp("23 STRIKES A YEAR", source)).validate()
+
+
+@pytest.mark.parametrize("source", ["Imai et al., Nature, 2002", "MythBusters, 1998", f"{sp.WORKED} 2 x 2 x 2 = 8"])
+def test_a_dated_source_or_a_sum_worked_on_screen_passes(source):
+    with_beat(6, stamp=Stamp("23 STRIKES A YEAR", source)).validate()
 
 
 def test_a_panel_on_the_first_or_last_beat_is_refused():

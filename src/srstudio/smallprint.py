@@ -109,6 +109,8 @@ PACE = 2.7  # spoken words a second, the estimate a length is checked at until a
 SHORTEST, LONGEST = 20.0, 30.0
 QUESTION_BY = 2.0  # seconds: the question is on screen by then (it is from the first frame)
 OPENING, QUIET = 5.0, 1.0  # seconds: no hold longer than QUIET starts in the first OPENING
+WORKED = "Arithmetic:"  # a stamp's source that is a sum the reel works on screen, which no year can date
+_YEAR = re.compile(r"\b(?:1[5-9]|20)\d{2}\b")
 ROOM_GAIN, BED_GAIN = -30.0, -27.0
 PLACEHOLDER = ("side", "flat", "desk")  # a pose for the sketch's check: this man is drawn from his beats
 TOP, BOTTOM = 220.0, 1240.0  # frame rows a panel draws inside: the safe area, clear of the caption band
@@ -273,6 +275,11 @@ class Show:
                 host_kit.check_copy(text)
             if not beat.stamp.source.strip() or len(beat.stamp.text) > 30:
                 raise ScriptError(f"{beat.id}: a stamp is 30 characters at most and names its source, got {beat.stamp}")
+            if not beat.stamp.source.startswith(WORKED) and not _YEAR.search(beat.stamp.source):
+                raise ScriptError(
+                    f"{beat.id}: a stamp's source names the year it is from, or is a sum worked on screen"
+                    f" ({WORKED} ...), got {beat.stamp.source!r}"
+                )
 
     def validate_sketch(self, sk: Sketch | None = None) -> None:
         """The sketch is consistent, parallel to the script, and every word on screen passes the copy check."""
