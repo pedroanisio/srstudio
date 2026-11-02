@@ -30,6 +30,7 @@ from pathlib import Path
 from typing import Any
 
 from . import _character_contracts as cc
+from . import _news_contracts as dc
 from . import checks, drawing_events, foley, look, signature, toon
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -313,7 +314,12 @@ SWEEP = ((1.12, 4.56), (2.68, 6.1), (4.25, 7.7))  # when each row of screens lig
 SWEEP_LIGHT = 0.1  # the white over a screen at the top of its swell
 
 
-@register("location", "news-set", summary="The studio: a plum wall and a bright monitor wall behind the desk")
+@register(
+    "location",
+    "news-set",
+    contract=dc.contract('news-set'),
+    summary="The studio: a plum wall and a bright monitor wall behind the desk",
+)
 def studio(cv: Canvas, parent, end: float = 10.0) -> None:
     """The far plane: the wall, nine bright screens out of focus and a slow light that passes down them row by row, so
     the room is alive while the anchors hold still. The light is drawn on each screen, so it can never cross the bare
@@ -350,7 +356,12 @@ def _wave(x: float, y: float, seed: int) -> str:
     )
 
 
-@register("prop", "news-desk", summary="The anchors' long desk, its edge lit, a tangerine stripe across its front")
+@register(
+    "prop",
+    "news-desk",
+    contract=dc.contract('news-desk'),
+    summary="The anchors' long desk, its edge lit, a tangerine stripe across its front",
+)
 def desk(cv: Canvas, parent) -> None:
     """The midground's front: a top with a lit edge, a front that fills the frame's foot."""
     g = cv.group(parent, cv.uid("g"))
@@ -939,7 +950,9 @@ def _text(cv: Canvas, parent, text: str, x, y, w, h, size, colour, align: Any = 
     cv.text(parent, cv.uid("news-text"), text, x, y, round(w), round(h), size, color=colour, align=align, wrap="none")
 
 
-@register("graphic", "news-bug", summary="The show's name in the corner, on every frame")
+@register(
+    "graphic", "news-bug", contract=dc.contract('news-bug'), summary="The show's name in the corner, on every frame"
+)
 def bug(cv: Canvas, parent, start: float, end: float, measure: Measure, id: str = "news-bug") -> None:
     """The show's name in a tangerine chip, top left."""
     _span(start, end, "the bug")
@@ -949,7 +962,12 @@ def bug(cv: Canvas, parent, start: float, end: float, measure: Measure, id: str 
     _text(cv, g, SHOW, TEXT_LEFT, BUG_Y, wide, BUG_H, 40, PLUM_DEEP, "center")
 
 
-@register("graphic", "news-parody-tag", summary="The PARODY tag, which stays on screen for a whole fictional reel")
+@register(
+    "graphic",
+    "news-parody-tag",
+    contract=dc.contract('news-parody-tag'),
+    summary="The PARODY tag, which stays on screen for a whole fictional reel",
+)
 def parody_tag(cv: Canvas, parent, start: float, end: float, measure: Measure, id: str = "news-parody-tag") -> None:
     """PARODY in butter on plum, top right, opposite the show's name."""
     _span(start, end, "the PARODY tag")
@@ -961,7 +979,10 @@ def parody_tag(cv: Canvas, parent, start: float, end: float, measure: Measure, i
 
 
 @register(
-    "graphic", "news-source-card", summary="A real story's source: outlet, date and headline, then small in a corner"
+    "graphic",
+    "news-source-card",
+    contract=dc.contract('news-source-card'),
+    summary="A real story's source: outlet, date and headline, then small in a corner",
 )
 def source_card(
     cv: Canvas,
@@ -1008,7 +1029,12 @@ def source_card(
     _text(cv, corner, label, TEXT_RIGHT - w, BUG_Y + 6, w, BUG_H - 12, 34, PLUM_DEEP, "center")
 
 
-@register("graphic", "news-lower-third", summary="The lower-third: a mint kicker over one line of the story")
+@register(
+    "graphic",
+    "news-lower-third",
+    contract=dc.contract('news-lower-third'),
+    summary="The lower-third: a mint kicker over one line of the story",
+)
 def lower_third(
     cv: Canvas,
     parent,
@@ -1035,7 +1061,12 @@ def lower_third(
     _slide(cv, g, start, moves=slide)
 
 
-@register("graphic", "news-banner", summary="The moving BREAKING banner: it slides in, its chevrons never stop")
+@register(
+    "graphic",
+    "news-banner",
+    contract=dc.contract('news-banner'),
+    summary="The moving BREAKING banner: it slides in, its chevrons never stop",
+)
 def banner(
     cv: Canvas, parent, start: float, end: float, measure: Measure, id: str = "news-banner", slide: bool = True
 ) -> None:
@@ -1065,7 +1096,12 @@ def banner(
     _slide(cv, g, start, moves=slide)
 
 
-@register("graphic", "news-ticker", summary="The ticker running along the foot of the safe zone")
+@register(
+    "graphic",
+    "news-ticker",
+    contract=dc.contract('news-ticker'),
+    summary="The ticker running along the foot of the safe zone",
+)
 def ticker(
     cv: Canvas, parent, items: Sequence[str], start: float, end: float, measure: Measure, id: str = "news-ticker"
 ) -> None:
@@ -1088,7 +1124,12 @@ def ticker(
     _text(cv, g, "NEWS", 0, TICKER_Y, 150, TICKER_H, 42, PLUM_DEEP, "center")
 
 
-@register("graphic", "news-captions", summary="The show's dialogue captions: one or two lines, a colour per anchor")
+@register(
+    "graphic",
+    "news-captions",
+    contract=dc.contract('news-captions'),
+    summary="The show's dialogue captions: one or two lines, a colour per anchor",
+)
 def captions(
     cv: Canvas,
     parent,
@@ -1126,7 +1167,12 @@ def captions(
     return track
 
 
-@register("graphic", "news-phone", summary="Gus's phone, filling the frame, its messages arriving one at a time")
+@register(
+    "graphic",
+    "news-phone",
+    contract=dc.contract('news-phone'),
+    summary="Gus's phone, filling the frame, its messages arriving one at a time",
+)
 def phone_insert(
     cv: Canvas,
     parent,

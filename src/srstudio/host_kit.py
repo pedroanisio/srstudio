@@ -33,6 +33,7 @@ from pathlib import Path
 from typing import Any
 
 from . import _character_contracts as cc
+from . import _presentation_contracts as dc
 from . import camera, checks, drawing_events, foley, head_motion, look, native, signature, sketch, toon
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -368,7 +369,12 @@ def _coat(cv: Canvas, parent, i: int, x: float, half: float, foot: float, top: s
     _stroke(cv, parent, f"M {x} {y - 28} L {x} {y - 92} Q {x} {y - 116} {x + 20} {y - 110}", "#b9a68a", 7.0)
 
 
-@register("location", "host-wardrobe", summary="Inside a wardrobe: cedar boards, a rail of coats, a door left ajar")
+@register(
+    "location",
+    "host-wardrobe",
+    contract=dc.contract('host-wardrobe'),
+    summary="Inside a wardrobe: cedar boards, a rail of coats, a door left ajar",
+)
 def wardrobe(cv: Canvas, parent, end: float = 10.0) -> None:
     """The far plane: boards, the rail and the coats out of focus, the warm line of a door left ajar on the left, its
     light across the room and dust drifting through it, so the room is alive while he holds still. The set's one key
@@ -436,7 +442,12 @@ def _phone(cv: Canvas, parent) -> None:
     cv.rect(parent, 1000, top + 62, 34, 12, "#55526a", INK, 3.0, radius=4.0)  # the side button, which he reaches for
 
 
-@register("prop", "host-phone", summary="The plank in front of him and a phone lying on it, wider than he is")
+@register(
+    "prop",
+    "host-phone",
+    contract=dc.contract('host-phone'),
+    summary="The plank in front of him and a phone lying on it, wider than he is",
+)
 def shelf(cv: Canvas, parent) -> None:
     """The midground's front: a lit plank, its front edge at the frame's foot, with the phone flat on it."""
     g = cv.group(parent, cv.uid("g"))
@@ -1039,7 +1050,12 @@ def _pulled(rows: Sequence[tuple[float, Pose]], end: float) -> Spans:
     return spans
 
 
-@register("graphic", "host-punch", summary="The punch-in and punch-out framings: cuts about his face, on the beat")
+@register(
+    "graphic",
+    "host-punch",
+    contract=dc.contract('host-punch'),
+    summary="The punch-in and punch-out framings: cuts about his face, on the beat",
+)
 def punch(cv: Canvas, group, who: str, at: float, was: str, push: tuple[float, float] | None = None) -> None:
     """The framing ``who`` from second ``at``, cut from ``was``: a punch-in or a punch-out, a hold on the cut, the face
     the pivot so the eyes stay where they were. ``push`` eases to a scale over ``(seconds, scale)`` after the cut, for a
@@ -1096,7 +1112,12 @@ def _tag(cv: Canvas, parent, x: float, y: float, w: float, h: float) -> None:
             cv.rect(parent, left, y + 8 + k * 16, 4, 9, AMBER)
 
 
-@register("graphic", "host-label", summary="The on-screen keyword, on a woven care label at the top of the frame")
+@register(
+    "graphic",
+    "host-label",
+    contract=dc.contract('host-label'),
+    summary="The on-screen keyword, on a woven care label at the top of the frame",
+)
 def label(cv: Canvas, parent, text: str, start: float, end: float, measure: Measure, id: str | None = None) -> None:
     """Seven words or fewer in ink on the label, over the head, from ``start`` to ``end``."""
     _span(start, end, "a label")
@@ -1170,7 +1191,12 @@ def _sentences(said: Sequence[native.Word]) -> list[list[native.Word]]:
     return parts
 
 
-@register("graphic", "host-captions", summary="Word-level engine captions on an ink band, the sung words in amber")
+@register(
+    "graphic",
+    "host-captions",
+    contract=dc.contract('host-captions'),
+    summary="Word-level engine captions on an ink band, the sung words in amber",
+)
 def captions(
     ep: Any, lines: Sequence[toon.Line], measure: Measure, words: Sequence[Word] = (), skip: Sequence[str] = ()
 ):
@@ -1192,7 +1218,12 @@ def captions(
     return bands, ep.native_captions(cues, look=CAPTION_LOOK, id="host-captions")
 
 
-@register("graphic", "host-sign-off", summary="The catchphrase on a large woven label, under the show's name")
+@register(
+    "graphic",
+    "host-sign-off",
+    contract=dc.contract('host-sign-off'),
+    summary="The catchphrase on a large woven label, under the show's name",
+)
 def sign_off(cv: Canvas, parent, phrase: str, start: float, end: float, measure: Measure, id: str = "host-sign-off"):
     """The label every episode closes on, under his chin: the show's name stitched small, the catchphrase large. It
     comes up with his first word and stays to the last frame. Returns its group."""
@@ -1210,7 +1241,12 @@ def sign_off(cv: Canvas, parent, phrase: str, start: float, end: float, measure:
     return g
 
 
-@register("graphic", "host-screen", summary="The phone, full frame: a chat's name and its messages, one at a time")
+@register(
+    "graphic",
+    "host-screen",
+    contract=dc.contract('host-screen'),
+    summary="The phone, full frame: a chat's name and its messages, one at a time",
+)
 def screen(
     cv: Canvas,
     parent,

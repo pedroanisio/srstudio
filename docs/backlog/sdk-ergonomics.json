@@ -24,11 +24,11 @@
   "catalog_observation": {
     "parts": 734,
     "characters": 75,
-    "entries_with_explicit_part_contract": 482,
+    "entries_with_explicit_part_contract": 540,
     "all_default_characters_have_explicit_contracts": true,
     "noncharacter_parts": 659,
-    "noncharacter_parts_with_explicit_contracts": 407,
-    "source": "Fresh-process registry observation on 2026-11-02 after eight core Stick and seven Toon orbit declarations. Drawing baselines were captured from f3d8940a. See review_verification.core_orbit_contracts.",
+    "noncharacter_parts_with_explicit_contracts": 465,
+    "source": "Fresh-process registry observation on 2026-11-02 after 27 News kit declarations. Drawing baselines were captured from 28724308. See review_verification.news_contracts.",
     "by_kind": {
       "character": {
         "registered": 75,
@@ -36,15 +36,15 @@
       },
       "prop": {
         "registered": 461,
-        "explicit_contracts": 315
+        "explicit_contracts": 327
       },
       "location": {
         "registered": 115,
-        "explicit_contracts": 65
+        "explicit_contracts": 70
       },
       "graphic": {
         "registered": 83,
-        "explicit_contracts": 27
+        "explicit_contracts": 68
       }
     },
     "qualification": "Fresh-process registry.entries() observation after the latest implemented contract batch. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates.",
@@ -58,6 +58,55 @@
     }
   },
   "review_verification": {
+    "news_contracts": {
+      "baseline_source_commit": "28724308",
+      "missing_contract_and_guide_regressions_red": 65,
+      "direct_guide_metadata_regressions_red": 1,
+      "selected_regressions": {
+        "passed": 1213,
+        "skipped": 0
+      },
+      "new_contract_tests": 74,
+      "unchanged_drawing_baselines": 27,
+      "unchanged_builder_definitions": 162,
+      "real_engine_route_tests": 2,
+      "branch_inclusive_coverage_percent": 90.65040650406505,
+      "coverage_scope": [
+        "src/srstudio/_news_contracts.py",
+        "src/srstudio/_presentation_contracts.py",
+        "src/srstudio/contracts.py",
+        "src/srstudio/registry.py"
+      ],
+      "ruff": "passed",
+      "format": "passed",
+      "mypy_source_files": 325,
+      "evidence": "../generated/sdk-news-contracts/v1/verification.json",
+      "qualification": "News kit and discovery regressions, including original full-resolution wall/sweep tests. This is not a full-library run; full catalog and other open SDK findings remain open."
+    },
+    "presentation_contracts": {
+      "baseline_source_commit": "9090b733",
+      "missing_contract_and_guide_regressions_red": 61,
+      "selected_regressions": {
+        "passed": 1096,
+        "skipped": 0
+      },
+      "new_contract_tests": 67,
+      "unchanged_drawing_baselines": 31,
+      "unchanged_builder_definitions": 134,
+      "real_engine_projected_marker_tests": 2,
+      "branch_inclusive_coverage_percent": 90.70080862533693,
+      "coverage_scope": [
+        "src/srstudio/_map_contracts.py",
+        "src/srstudio/_presentation_contracts.py",
+        "src/srstudio/contracts.py",
+        "src/srstudio/registry.py"
+      ],
+      "ruff": "passed",
+      "format": "passed",
+      "mypy_source_files": 324,
+      "evidence": "../generated/sdk-presentation-contracts/v1/verification.json",
+      "qualification": "Scoped discovery verification. Full catalog expansion and the other open SDK findings remain open."
+    },
     "core_orbit_contracts": {
       "baseline_source_commit": "f3d8940a",
       "missing_contract_and_guide_regressions_red": 36,
@@ -1269,15 +1318,20 @@
           "srstudio.stick_bed",
           "srstudio.stick_table",
           "srstudio.stick",
-          "srstudio.toon_orbit"
+          "srstudio.toon_orbit",
+          "srstudio.host_kit",
+          "srstudio.mind_kit",
+          "srstudio.map_kit",
+          "srstudio.news_kit",
+          "srstudio.news_inked"
         ],
         "additional_parts": [
           "toon-headset"
         ],
-        "new_contracts": 354,
-        "current_explicit_noncharacter_contracts": 407,
+        "new_contracts": 412,
+        "current_explicit_noncharacter_contracts": 465,
         "current_registered_noncharacters": 659,
-        "remaining_undeclared": 252,
+        "remaining_undeclared": 194,
         "evidence": [
           "tests/test_counter_store_contracts.py",
           "tests/data/counter-store-contract-baseline.json",
@@ -1321,9 +1375,18 @@
           "src/srstudio/_toon_orbit_contracts.py",
           "tests/test_core_orbit_contracts.py",
           "tests/support/core_orbit_contracts.py",
-          "tests/data/core-orbit-contract-baseline.json"
+          "tests/data/core-orbit-contract-baseline.json",
+          "src/srstudio/_presentation_contracts.py",
+          "src/srstudio/_map_contracts.py",
+          "tests/test_presentation_contracts.py",
+          "tests/support/presentation_contracts.py",
+          "tests/data/presentation-contract-baseline.json",
+          "src/srstudio/_news_contracts.py",
+          "tests/test_news_contracts.py",
+          "tests/support/news_contracts.py",
+          "tests/data/news-contract-baseline.json"
         ],
-        "qualification": "The full catalog expansion remains open. All 109 non-character builders in Stick-prefixed modules and all 158 in Toon-prefixed modules now declare authored contracts, alongside the completed Cutout families. These module counts do not include other families sharing their style names. Drawing baselines remain unchanged; specific correctness repairs are recorded separately as P1 findings. The 252 remaining non-character entries still require source review and executable semantic evidence."
+        "qualification": "The full catalog expansion remains open. All 109 non-character builders in Stick-prefixed modules and all 158 in Toon-prefixed modules now declare authored contracts, alongside the completed Cutout families. These module counts do not include other families sharing their style names. Drawing baselines remain unchanged; specific correctness repairs are recorded separately as P1 findings. Host, Mind and Map kits now declare all 31 non-character builders. Both News kit versions now declare their 27 non-character builders. The 194 remaining non-character entries still require source review and executable semantic evidence."
       },
       "evidence": [
         "src/srstudio/registry.py:contract_coverage",
