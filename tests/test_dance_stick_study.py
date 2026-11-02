@@ -50,6 +50,7 @@ def test_the_study_s_drawn_groove_meets_the_reference_targets(built):
             assert reading["misses"] == [] and reading["cycles_per_beat"] == pytest.approx(1.0, abs=0.02)
     assert record["numbers"]["solo_reach_px"] == 0
     assert record["numbers"]["pictures"] == {"car": 373, "room": 373}
+    assert record["numbers"]["swing"] is None  # straight bones unless --swing
 
 
 def test_the_raised_hand_moves_no_more_than_the_head(built):
@@ -89,7 +90,8 @@ def test_master_needs_the_engine(tmp_path):
     assert done.returncode != 0 and "SRSTUDIO_ENGINE" in done.stderr
 
 
-def test_the_page_is_rewritten_from_the_numbers_with_the_three_plane_views(tmp_path):
+@pytest.mark.parametrize("swing", [None, {"drag_s": 0.1, "cap": 0.3}])
+def test_the_page_is_rewritten_from_the_numbers_with_the_three_plane_views(tmp_path, swing):
     numbers = {"numbers": {}, "rendered": {}}
     reading = {"cycles_per_beat": 1.0, "onto_s": 0.19, "away_s": 0.26, "peak_to_peak": 0.38, "hit": "min"}
     reading["hit_offset_s"] = 0.001
@@ -108,6 +110,7 @@ def test_the_page_is_rewritten_from_the_numbers_with_the_three_plane_views(tmp_p
             "desk_legs_floor_px": 1602,
             "floor_px": 1830.0,
         },
+        "swing": swing,
     }
     late = {**reading, "hit_offset_s": 0.0286}
     head = {"bob": reading, "sway": reading}
@@ -129,3 +132,8 @@ def test_the_page_is_rewritten_from_the_numbers_with_the_three_plane_views(tmp_p
         "each head alone lands within 1 ms" in page
         and "between x 650 and 1060, right of the near desk leg's edge at 631" in page
     )
+    if swing is None:
+        assert "Limbs: straight bones, one stroke from joint to joint" in page
+    else:
+        assert "one curve through its joints that bows against the way they travel, by 0.1 s" in page
+        assert "at most 0.3 of a bone" in page

@@ -83,8 +83,9 @@ def blinks(start: float, end: float) -> tuple[float, ...]:
     return tuple(round(start + 1.3 + k * BLINK_EVERY, 3) for k in range(count) if start + 1.3 + k * BLINK_EVERY < end)
 
 
-def build(root: Path) -> tuple[Path, dict]:
-    """The scene, and the numbers read from the performances it draws."""
+def build(root: Path, swing: stick.Swing | None = None) -> tuple[Path, dict]:
+    """The scene, and the numbers read from the performances it draws; ``swing`` draws every figure's limbs as
+    dragging curves."""
     car_end = CAR_BARS * GROOVE.bar
     end = car_end + ROOM_BARS * GROOVE.bar
     (root / "audio").mkdir(parents=True, exist_ok=True)
@@ -133,8 +134,10 @@ def build(root: Path) -> tuple[Path, dict]:
     car = cv.group(ep.comp, "shot-car")
     cv.gate(car, [(0.0, car_end)])
     sw.windshield(cv, car, end, speed=0)
-    sd.draw(cv, car, noor, end=end, look=sw.NOOR, at=sw.PASSENGER_AT, prefix="noor", blinks=blinks(0.0, car_end))
-    sd.draw(cv, car, dev, end=end, at=sw.DRIVER_AT, prefix="dev", blinks=blinks(0.7, car_end))
+    sd.draw(cv, car, noor, end=end, look=sw.NOOR, at=sw.PASSENGER_AT, prefix="noor", blinks=blinks(0.0, car_end),
+            swing=swing)  # fmt: skip
+    sd.draw(cv, car, dev, end=end, at=sw.DRIVER_AT, prefix="dev", blinks=blinks(0.7, car_end),
+            swing=swing)  # fmt: skip
     sw.dashboard(cv, car, end)
 
     solo = sd.perform(SOLO, GROOVE, car_end, end)
@@ -142,7 +145,8 @@ def build(root: Path) -> tuple[Path, dict]:
     cv.gate(room, [(car_end, end)])
     stick.room(cv, room)
     at = (ROOM_FEET[0] - ROOM_SCALE * sd.SEAT[0], ROOM_FEET[1] - ROOM_SCALE * sd.FLOOR)
-    sd.draw(cv, room, solo, end=end, at=at, scale=ROOM_SCALE, prefix="solo", blinks=blinks(car_end, end))
+    sd.draw(cv, room, solo, end=end, at=at, scale=ROOM_SCALE, prefix="solo", blinks=blinks(car_end, end),
+            swing=swing)  # fmt: skip
 
     scene = ep.finish(root / f"{SLUG}.scene.xml", root / "qa" / "sdk-validation.json")
     numbers = {
@@ -155,6 +159,7 @@ def build(root: Path) -> tuple[Path, dict]:
         "solo_reach_px": solo.reach,
         "room_clearance": clearance(solo, at),
         "pictures": {"car": len(noor.poses), "room": len(solo.poses)},
+        "swing": None if swing is None else {"drag_s": swing.drag, "cap": swing.cap},
     }
     return scene, numbers
 
@@ -316,7 +321,16 @@ def page(out: Path, clip: str, views: str | None, numbers: dict) -> Path:
         if views
         else "<h2>Jump to</h2>"
     )
+    swing = car.get("swing")
+    limbs = (
+        "Limbs: each arm, each leg and the body line is one curve through its joints that bows against the way they "
+        f"travel, by {swing['drag_s']:g} s of the joints' speed and at most {swing['cap']:g} of a bone; a moving arm "
+        "should read as swinging, and a still one keeps a smooth bend through its joints."
+        if swing
+        else "Limbs: straight bones, one stroke from joint to joint, as published Stick figures are drawn."
+    )
     fields = {
+        "limbs": limbs,
         "clip": html.escape(clip),
         "views_figure": views_figure,
         "frames": ren["frames"],
@@ -349,13 +363,14 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--master", type=Path, help="encode the clip here and write the proof page beside it")
     parser.add_argument("--views", help="the three-plane video's file name in the --master folder, if there is one")
     parser.add_argument("--page", type=Path, help="only rewrite the page in this folder from its numbers.json")
+    parser.add_argument("--swing", action="store_true", help="draw the limbs as curves that drag (stick_dance.SWING)")
     args = parser.parse_args(argv)
     if args.page is not None:
         out = args.page.resolve()
         page(out, f"{SLUG}.mp4", args.views, json.loads((out / "numbers.json").read_text()))
         return 0
     root = args.project.resolve()
-    scene, numbers = build(root)
+    scene, numbers = build(root, sd.SWING if args.swing else None)
     record = {"numbers": numbers}
     if args.master is not None:
         engine = os.environ.get("SRSTUDIO_ENGINE")
