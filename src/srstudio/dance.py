@@ -14,6 +14,7 @@ planted feet planted, is the skeleton's and the body's job.
 
 from __future__ import annotations
 
+from ._dance_curve import CurveError
 from ._dance_measure import (
     SEAT_GROOVE_BOB,
     SEAT_GROOVE_SWAY,
@@ -24,6 +25,7 @@ from ._dance_measure import (
 )
 from ._dance_model import (
     CHAINS,
+    CURVE_POINTS,
     FEET,
     JOINTS,
     ROOT,
@@ -31,6 +33,7 @@ from ._dance_model import (
     TARGETS,
     WAVEFORMS,
     Contact,
+    Curve,
     DanceError,
     Entry,
     Move,
@@ -59,6 +62,7 @@ from ._dance_song import SongMap, SongMapError, SongPart, song_map
 
 __all__ = [
     "CHAINS",
+    "CURVE_POINTS",
     "FEET",
     "JOINTS",
     "MAX_FPS",
@@ -72,6 +76,8 @@ __all__ = [
     "TARGETS",
     "WAVEFORMS",
     "Contact",
+    "Curve",
+    "CurveError",
     "DanceDataError",
     "DanceError",
     "DanceFrame",

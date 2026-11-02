@@ -103,9 +103,14 @@ A pattern hits `+amplitude` once a cycle, `phase` beats after the grid's beat. A
 sign picks the direction of the hit, and it is in radians on a joint or head radii on the root. `snap` is the fraction
 of the cycle spent striking onto the hit.
 
+A gesture with its own timing uses the `curve` waveform (moves 1.1, [ADR 0199](decisions/0199-gesture-timing.md)):
+`curve` lists 8 to 64 samples of one cycle, evenly spaced from the hit, the first `1` and the lowest `-1`, and the
+pattern has no `snap`. The samples are played through a periodic cubic spline, so the gesture's speed and acceleration
+stay continuous, the loop's seam included. The head nod below eases out of the hit and strikes back onto it.
+
 ```json
 {
-  "schema": "srstudio.dance-moves/1.0.0",
+  "schema": "srstudio.dance-moves/1.1.0",
   "moves": [
     {
       "name": "chest-pop",
@@ -116,8 +121,9 @@ of the cycle spent striking onto the hit.
       "patterns": [
         {"target": "chest.front_back", "waveform": "sine", "cycles": 0.5, "per": "beat",
          "phase": 1, "amplitude": -0.12, "snap": 0.25},
-        {"target": "head.nod_down_up", "waveform": "sine", "cycles": 0.5, "per": "beat",
-         "phase": 1, "amplitude": -0.05, "snap": 0.25}
+        {"target": "head.nod_down_up", "waveform": "curve", "cycles": 0.5, "per": "beat",
+         "phase": 1, "amplitude": -0.05,
+         "curve": [1, 0.966, 0.866, 0.707, 0.5, 0.259, 0, -0.259, -0.5, -0.707, -0.866, -0.966, -1, -0.707, 0, 0.707]}
       ]
     }
   ]
