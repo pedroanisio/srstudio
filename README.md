@@ -198,6 +198,8 @@ Four shows are channels on Toon's road rather than styles of their own. Each is 
 
 `srstudio.look` holds the primitives every style shares, while each style keeps its own numbers: `grade` for bloom, vignette and grain, `depth` for a far plane out of focus, `pool` for a soft light and `fade` for haze or a shade. See [finishing a style](docs/authoring-styles.md#finishing-a-style-srstudiolook) and [ADR 0031](docs/decisions/0031-shared-look-and-caption-primitives.md).
 
+Caption breaks can keep phrases whole. With `CaptionLook(keep_together=True)`, or `keep_together=True` on `look.wrap`, no cue or line ends after a weak word such as `the` or `to`, inside a number such as `twenty thousand`, or inside a name such as `New York`, while another break fits. It is off by default so that a published reel rebuilds byte for byte, and new reels turn it on. `srstudio.caption_breaks.audit` lists the forbidden breaks in a built scene. See [ADR 0173](docs/decisions/0173-caption-breaks-keep-phrases-whole.md).
+
 The library draws in 2D, and what it models in 3D is a clay character or a rigid proxy. `srstudio.clay` bakes a model to meshes, and `srstudio.plates` path-traces a `Plate`, one camera, one set of lights and some placed meshes, into a still cached by its digest. Rafa, who hosts the Host show, is built this way ([ADR 0068](docs/decisions/0068-rafa-clay-host-on-plates.md)).
 
 Drawing digests remain stable; rendered artifacts additionally identify the renderer binary, compiled scenes,
@@ -246,7 +248,7 @@ A burned caption does not run across a sentence end: a window that drops the sto
 
 A text is timed as a viewer sees it: `text_rules` reads the frames the engine evaluates and times the words from the first frame they are legible to the last, across layers and cuts, against the 0.8333 s reading minimum, along with each page of a burned caption track. The check is `text-timing`, run by `srstudio build` when it has an engine and at first delivery (ADR 0150).
 
-Render with `scene-render encode --strict`. A reel's first delivery through `episodes/instagram_posts.py` also passes the frame gates, which refuse measured defects such as captions that run sentences together or signature marks the camera hides, and someone who is not the author reviews frames at full size. `publish_pilots.py` does not run these gates. See [ADR 0073](docs/decisions/0073-frame-gates-and-standing-review.md).
+Render the master with `srstudio master <slug>.scene.xml -- --strict`, which never replaces a master already there: approved files (masters, voice takes, songs, package versions) are write-once through `srstudio.files`, and a re-run writes beside them or stops ([ADR 0170](docs/decisions/0170-approved-files-are-write-once.md)). A reel's first delivery through `episodes/instagram_posts.py` also passes the frame gates, which refuse measured defects such as captions that run sentences together or signature marks the camera hides, and someone who is not the author reviews frames at full size. `publish_pilots.py` does not run these gates. See [ADR 0073](docs/decisions/0073-frame-gates-and-standing-review.md).
 
 ## Lanes
 
@@ -271,6 +273,10 @@ The configured coverage gate is 80%. Some integration tests require additional l
 | `SRSTUDIO_ENGINE` | A scene-render binary for engine tests. |
 | `SRSTUDIO_EPISODES` | Generated episode projects for Collage build tests. |
 | `SRSTUDIO_RENDERS` and `SRSTUDIO_FONTS` | Rendered videos and pinned fonts for the delivery gate. |
+
+Every `render` and `encode` srstudio starts takes one machine-wide GPU lock, `/run/lock/srstudio-gpu.lock`. You can point it elsewhere with `SRSTUDIO_GPU_LOCK`. A job that waits longer than `SRSTUDIO_GPU_WAIT` seconds (900 by default) for another job's render stops with `GpuBusyError`, which names the holder's pid and command. To run a bare engine command by hand under the same lock, use `flock -w 900 /run/lock/srstudio-gpu.lock scene-render ...`. See [ADR 0171](docs/decisions/0171-one-gpu-job-at-a-time.md).
+
+`srstudio scopes <video>...` reads a master's levels with the engine's `scopes` (every fifth frame). It fails on illegal codes, out-of-gamut and oversaturated samples, with a limit of 0 for each, and reports clipping without judging it. It exits 1 on a finding and 2 when a master cannot be measured. `scopes.scope_defects` is the first-delivery check. It is not wired into delivery, because all 240 masters measured on 2026-11-01 carry illegal samples. See [ADR 0172](docs/decisions/0172-master-levels-check.md).
 
 ## Layout
 

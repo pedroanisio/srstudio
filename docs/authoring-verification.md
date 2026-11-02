@@ -93,4 +93,4 @@ Run commands from the srstudio repository root.
   order, numbers rounded to five decimals, `metadata` ignored, `animate`/`expression` children compared after their
   sibling shapes (the engine evaluates them by property, so their position among shapes does not change the picture).
 
-Rendering needs the scene-render engine (`scene-render encode <slug>.scene.xml`); it is not part of this package.
+Rendering needs the scene-render engine; it is not part of this package. `srstudio master <slug>.scene.xml` runs its encode and installs the master write-once ([ADR 0170](decisions/0170-approved-files-are-write-once.md)).

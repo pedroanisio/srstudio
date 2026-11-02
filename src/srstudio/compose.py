@@ -31,7 +31,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import checks
+from . import checks, files
 from .errors import MissingKeyError, SrstudioError
 from .voice import (
     RATE,
@@ -41,6 +41,7 @@ from .voice import (
     VoiceOutputError,
     decode,
     normalize_words,
+    refuse_half_written,
     urllib_binary_transport,
 )
 
@@ -339,8 +340,9 @@ class MusicClient:
             audio = mp3.read_bytes()
             duration, tempo = verify_song(audio, plan, bpm)
             if not wav.exists():
-                wav.write_bytes(_decode_stereo(audio))
+                files.write_same(wav, _decode_stereo(audio))
             return Song(plan, seed, mp3, wav, record, duration, tempo)
+        refuse_half_written((mp3, wav, record))
         if not self.key:
             raise MissingKeyError("ELEVENLABS_API_KEY is required to compose an uncached song")
         audio, request_id = self.binary_transport(
@@ -353,9 +355,10 @@ class MusicClient:
         stereo = _decode_stereo(audio)
         # Verified: only now does it reach the cache.
         self.cache.mkdir(parents=True, exist_ok=True)
-        mp3.write_bytes(audio)
-        wav.write_bytes(stereo)
-        record.write_text(
+        files.write_once(mp3, audio)
+        files.write_same(wav, stereo)
+        files.write_once(
+            record,
             json.dumps(
                 {
                     "request": payload,
@@ -366,6 +369,6 @@ class MusicClient:
                 },
                 indent=2,
             )
-            + "\n"
+            + "\n",
         )
         return Song(plan, seed, mp3, wav, record, duration, tempo)

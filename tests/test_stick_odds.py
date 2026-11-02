@@ -293,3 +293,19 @@ def test_a_receipt_has_no_readable_figures():
     cv = canvas()
     stick_odds.receipt(cv, cv.comp, 100, 200, 500)
     assert b"<layer" not in cv.scene.to_bytes()
+
+
+def test_unlettered_half_wardrobe_fails_before_drawing():
+    from srstudio.canvas import CanvasError
+
+    cv = canvas()
+    cv.font_asset = None
+    before = cv.scene.to_bytes()
+    with pytest.raises(CanvasError):
+        stick_odds.wardrobe(cv, cv.comp, 100, 1400, stage="half")
+    assert cv.scene.to_bytes() == before
+    cv.font_asset = "inter"
+    stick_odds.wardrobe(cv, cv.comp, 100, 1400, stage="half")
+    fresh = canvas()
+    stick_odds.wardrobe(fresh, fresh.comp, 100, 1400, stage="half")
+    assert cv.scene.to_bytes() == fresh.scene.to_bytes()

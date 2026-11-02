@@ -145,7 +145,7 @@ PROXY_TONES = ('#102030', '#506070', '#90A0B0', '#D0E0F0')
 
 
 def proxy_source(*, under=False, oversample=2):
-    """A two-box clay model as a proxy source: the body behind, the seat under when ``under``."""
+    """Two clay boxes, a body behind and an optional seat under, as a proxy source in four flat tones."""
     model = clay.Model()
     model.box('body', (0, 0, 0), (0.2, 0.2, 0.2))
     model.box('seat', (0.15, 0, 0.15), (0.1, 0.1, 0.1))

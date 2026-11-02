@@ -8,10 +8,9 @@ import pytest
 
 from srstudio import clay, proxy
 from srstudio import composition as c
-from support.composition import PROXY_TONES, plate_plan, proxy_source
-
-TONES = PROXY_TONES
-source = proxy_source
+from support.composition import PROXY_TONES as TONES
+from support.composition import plate_plan
+from support.composition import proxy_source as source
 
 
 def plan_for(item, *, passes=('rgba',)):

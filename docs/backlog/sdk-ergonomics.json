@@ -22,25 +22,25 @@
   },
   "assessment": "Strong reusable primitives, explicit character discovery, common non-character drawing contracts, coordinated acting with opt-in transition policies, executable cross-system recipes and scoped numeric regression envelopes. Core callback and prop-option defects have atomic preflight and repairable failures. Common authoring failures now expose explicit repair fields with bounded SDK/CLI payloads. Head mechanics, records, seeded noise, speech analysis and behavioral planning now have separate implementation owners behind the existing public API. Limb transform, gesture, contact and skeletal sampling also have separate owners while retaining public records and shared interpolation. Explicit drawing events now cover synchronous and deferred execution without profiler inference. Rendered caches bind actual renderer and print-font inputs while retaining stable drawing identities. Scoped continuity discovery distinguishes source derivatives, estimated joins and held compiler output. Remaining priorities include broader contracts, bounded scene composition, drawing adoption evidence and broader body/emotion capabilities. Discovery deliberately retains unknown semantics for other non-character families. Numeric validity does not establish perceptual quality.",
   "catalog_observation": {
-    "parts": 726,
-    "characters": 74,
-    "entries_with_explicit_part_contract": 365,
+    "parts": 734,
+    "characters": 75,
+    "entries_with_explicit_part_contract": 415,
     "all_default_characters_have_explicit_contracts": true,
-    "noncharacter_parts": 652,
-    "noncharacter_parts_with_explicit_contracts": 291,
-    "source": "Fresh-process registry observation on 2026-11-01 after 21 Toon traffic/dining/parlour/room declarations. All 151 registered non-characters in toon-prefixed modules now declare contracts. Drawing baselines were captured from b3e72f0a. See review_verification.toon_social_contracts.",
+    "noncharacter_parts": 659,
+    "noncharacter_parts_with_explicit_contracts": 340,
+    "source": "Fresh-process registry observation on 2026-11-02 after 49 Stick home/office/everyday declarations. Includes the newly merged Lyra character and seven undeclared Toon orbit props/sets. Drawing baselines were captured from e8768834. See review_verification.stick_drawing_contracts.",
     "by_kind": {
       "character": {
-        "registered": 74,
-        "explicit_contracts": 74
+        "registered": 75,
+        "explicit_contracts": 75
       },
       "prop": {
-        "registered": 456,
-        "explicit_contracts": 228
+        "registered": 461,
+        "explicit_contracts": 272
       },
       "location": {
-        "registered": 113,
-        "explicit_contracts": 43
+        "registered": 115,
+        "explicit_contracts": 48
       },
       "graphic": {
         "registered": 83,
@@ -49,11 +49,28 @@
     },
     "qualification": "Fresh-process registry.entries() observation after the latest implemented contract batch. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates.",
     "toon_module_noncharacters": {
-      "registered": 151,
+      "registered": 158,
       "explicit_contracts": 151
     }
   },
   "review_verification": {
+    "stick_drawing_contracts": {
+      "baseline_source_commit": "e8768834",
+      "initial_missing_contract_regressions_red": 73,
+      "executable_guide_regressions_red": 1,
+      "final_selected_regressions": {
+        "distinct_passed": 1206,
+        "skipped": 0,
+        "engine_cases": 9
+      },
+      "branch_inclusive_coverage_percent": 89,
+      "coverage_scope": "_stick_drawing_contracts.py, contracts.py and registry.py; unchanged 80% gate. Not a full-library suite run.",
+      "drawing_baseline_cases": 49,
+      "unchanged_executable_definitions": 69,
+      "mypy_source_files": 305,
+      "retained_artifacts": "../generated/sdk-stick-drawing-contracts/v1/",
+      "qualification": "Authored metadata distinguishes baked parent geometry, local placement groups, canvas clocks, held drawing limits, font requirements and static choices. No spatial attachment or perceptual quality claims. The full catalog expansion remains open."
+    },
     "composition_sequences": {
       "baseline_source_commit": "4cef1d90",
       "checked_develop_commit": "2832b337",
@@ -879,6 +896,31 @@
   ],
   "findings": [
     {
+      "id": "SDK-P1-13",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Check the half-wardrobe font before drawing",
+      "problem": "The half wardrobe emitted cabinet geometry and consumed scene IDs before discovering that its mandatory label font was missing. Failed agent repair attempts left a partial drawing in the canvas.",
+      "resolution": "Check the font after stage/scale validation and before allocating any scene nodes. The done stage remains font-free. Repairing the font and retrying produces the same bytes as a fresh valid draw.",
+      "verification": [
+        "tests/test_stick_odds.py:test_unlettered_half_wardrobe_fails_before_drawing",
+        "tests/test_stick_drawing_contracts.py",
+        "tests/data/stick-drawing-contract-baseline.json"
+      ],
+      "acceptance": [
+        "Missing half-stage font raises CanvasError before scene mutation",
+        "Done stage draws without a font",
+        "Valid output and deterministic retry remain unchanged"
+      ],
+      "verification_summary": {
+        "red": 1,
+        "final_passed": 120,
+        "skipped": 0,
+        "branch_inclusive_stick_odds_coverage_percent": 100,
+        "retained_artifacts": "../generated/sdk-stick-font-preflight/v1/"
+      }
+    },
+    {
       "id": "SDK-P1-10",
       "priority": "P1",
       "status": "complete",
@@ -1144,15 +1186,18 @@
           "srstudio.toon_cars",
           "srstudio.toon_dinner",
           "srstudio.toon_parlour",
-          "srstudio.toon_rooms"
+          "srstudio.toon_rooms",
+          "srstudio.stick_home",
+          "srstudio.stick_office",
+          "srstudio.stick_odds"
         ],
         "additional_parts": [
           "toon-headset"
         ],
-        "new_contracts": 238,
-        "current_explicit_noncharacter_contracts": 291,
-        "current_registered_noncharacters": 652,
-        "remaining_undeclared": 361,
+        "new_contracts": 287,
+        "current_explicit_noncharacter_contracts": 340,
+        "current_registered_noncharacters": 659,
+        "remaining_undeclared": 319,
         "evidence": [
           "tests/test_counter_store_contracts.py",
           "tests/data/counter-store-contract-baseline.json",
@@ -1178,9 +1223,13 @@
           "src/srstudio/_toon_social_contracts.py",
           "tests/test_toon_social_contracts.py",
           "tests/data/toon-social-contract-baseline.json",
-          "docs/authoring-discovery.md"
+          "docs/authoring-discovery.md",
+          "src/srstudio/_stick_drawing_contracts.py",
+          "tests/test_stick_drawing_contracts.py",
+          "tests/support/stick_contracts.py",
+          "tests/data/stick-drawing-contract-baseline.json"
         ],
-        "qualification": "The full catalog expansion remains open. All 151 registered non-characters in toon-prefixed modules now declare contracts. These and completed Cutout families declare actual units, clocks, local slots, return records and capability limits. Captured baseline drawings remain unchanged; corrected behavior is recorded separately in SDK-P1-06 through SDK-P1-11. Other families still require source review and executable semantic evidence."
+        "qualification": "The full catalog expansion remains open. Completed Cutout, Toon and 49 Stick household/everyday builders declare authored units, clocks, return records and capability limits. The new Stick declarations preserve 49 baseline drawings and 69 executable definitions. Seven newly merged Toon orbit props/sets and other families still require source review and executable semantic evidence."
       },
       "evidence": [
         "src/srstudio/registry.py:contract_coverage",

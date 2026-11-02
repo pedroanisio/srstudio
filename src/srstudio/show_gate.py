@@ -29,7 +29,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import figure_record, fonts, framegraph, show, show_numbers
+from . import figure_record, fonts, framegraph, gpu, show, show_numbers
 from .figure_gates import figures_on
 from .figure_record import Figure
 from .frame_gates import FrameGateError, _duration, sample_times
@@ -269,12 +269,13 @@ def corner_defect(video: np.ndarray, scene: np.ndarray) -> str:
 def _render_corner(scene: Path, video: Path, engine: str | Path, frame: Frame) -> str:
     with tempfile.TemporaryDirectory(dir=scene.parent) as tmp:
         still = (Path(tmp) / "first.png").resolve()
-        made = subprocess.run(
-            [str(engine), "render", scene.name, "-f", "0", "-o", str(still)],
-            cwd=scene.parent,
-            capture_output=True,
-            check=False,
-        )
+        with gpu.held():
+            made = subprocess.run(
+                [str(engine), "render", scene.name, "-f", "0", "-o", str(still)],
+                cwd=scene.parent,
+                capture_output=True,
+                check=False,
+            )
         if made.returncode != 0:
             raise FrameGateError(
                 f"{scene.name}: the engine cannot draw it: {made.stderr.decode(errors='replace')[-200:]}"

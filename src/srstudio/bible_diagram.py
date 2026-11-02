@@ -21,7 +21,7 @@ from pathlib import Path
 import numpy as np
 from sr_core.scene import Scene
 
-from . import fonts
+from . import fonts, gpu
 from .bible import Bible
 from .canvas import OFFICE, Canvas, flat_counter
 from .cast_card import DISPLAY_ASSET, DISPLAY_FILE, ENGINE_ARGS, TEXT_ASSET, TEXT_FILE, Lettering, contrast
@@ -446,12 +446,13 @@ def render(bible: Bible, out: Path, faces: Lettering, engine: str | Path, work: 
     document, png = work / "relationships.scene.xml", work / "relationships.png"
     document.write_bytes(scene.to_bytes())
     try:
-        subprocess.run(
-            [str(engine), "render", document.name, *ENGINE_ARGS, "-o", png.name],
-            cwd=work,
-            check=True,
-            capture_output=True,
-        )
+        with gpu.held():
+            subprocess.run(
+                [str(engine), "render", document.name, *ENGINE_ARGS, "-o", png.name],
+                cwd=work,
+                check=True,
+                capture_output=True,
+            )
     except (OSError, subprocess.CalledProcessError) as exc:
         detail = getattr(exc, "stderr", b"") or b""
         raise DiagramError(

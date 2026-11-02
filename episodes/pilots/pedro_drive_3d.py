@@ -44,7 +44,7 @@ from pedro_drive import (
 from pedro_drive_plates import PLATES
 from sr_core.scene import Scene
 
-from srstudio import Canvas, clay, flat_counter, look, pedro, pedro_host, plates, wire_mesh
+from srstudio import Canvas, clay, flat_counter, gpu, look, pedro, pedro_host, plates, wire_mesh
 from srstudio.canvas import VOID
 
 TONES = ("#6a5c92", "#7a6aa0", "#5c5488", "#8a6aa0", "#4f4a7c")
@@ -768,12 +768,13 @@ def main(argv: list[str]) -> int:
         if arg.startswith("--still="):
             for t in arg.split("=")[1].split(","):
                 out = root / f"still-{t}.png"
-                done = subprocess.run(
-                    [str(engine), "render", scene.name, "-t", t, "-o", out.name],
-                    cwd=root,
-                    capture_output=True,
-                    text=True,
-                )
+                with gpu.held():
+                    done = subprocess.run(
+                        [str(engine), "render", scene.name, "-t", t, "-o", out.name],
+                        cwd=root,
+                        capture_output=True,
+                        text=True,
+                    )
                 print(out if not done.returncode else done.stderr[-600:])
     if "--encode" in argv[2:]:
         print(base.encode(scene, engine))

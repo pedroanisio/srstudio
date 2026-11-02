@@ -21,6 +21,8 @@ import pedro_drive as base
 import pedro_drive_toon as toon
 from PIL import Image
 
+from srstudio import gpu
+
 PALETTE_TOLERANCE = 2  # levels per 8-bit channel (DRAWING.md)
 CREAM = tuple(int(base.CREAM[i : i + 2], 16) for i in (1, 3, 5))
 
@@ -30,9 +32,13 @@ def sha(path: Path) -> str:
 
 
 def render(engine: str, scene: Path, t: float, out: Path) -> Path:
-    done = subprocess.run(
-        [engine, "render", scene.name, "-t", str(t), "-o", out.name], cwd=scene.parent, capture_output=True, text=True
-    )
+    with gpu.held():
+        done = subprocess.run(
+            [engine, "render", scene.name, "-t", str(t), "-o", out.name],
+            cwd=scene.parent,
+            capture_output=True,
+            text=True,
+        )
     if done.returncode:
         raise SystemExit(f"render failed: {done.stdout[-400:]} {done.stderr[-400:]}")
     return scene.parent / out.name
