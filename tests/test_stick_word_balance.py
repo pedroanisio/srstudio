@@ -204,3 +204,33 @@ def test_hold_moves_nothing_when_every_cue_is_long_enough():
 def test_hold_needs_the_length_it_holds_to():
     with pytest.raises(StickDataError, match="min_seconds"):
         stick.word_cues([PLANE], hold=True)
+
+
+ASKED = take(0.0, 2.2, [("What", 0.0, 0.2), ("about", 0.2, 0.5), ("Thanksgiving?", 0.5, 1.3)])
+WHO = take(3.5, 4.4, [("Who?", 0.0, 0.4)])
+TOLD = take(5.0, 6.6, [("It's", 0.0, 0.2), ("November", 0.2, 0.7), ("1st.", 0.7, 1.2)])
+ASKING = dict(min_seconds=0.85, linger=0.6, width=chars, max_width=2000, balance=True, sentences=True)
+
+
+def test_by_default_a_question_loses_its_mark_as_every_cue_does():
+    assert [c.text for c in stick.word_cues([ASKED, WHO, TOLD], **ASKING)] == [
+        "What about Thanksgiving",
+        "Who",
+        "It's November 1st",
+    ]
+
+
+@pytest.mark.parametrize("join", [False, True])
+def test_a_reel_that_asks_keeps_every_question_mark_and_drops_the_rest(join):
+    cues = stick.word_cues([ASKED, WHO, TOLD], asks=True, join=join, **ASKING)
+    assert [c.text for c in cues] == ["What about Thanksgiving?", "Who?", "It's November 1st"]
+
+
+@pytest.mark.parametrize("end", ['Who?"', "Who?!", "Who?”", "“Who?”"])  # fmt: skip
+def test_a_question_mark_survives_the_marks_around_it(end):
+    cues = stick.word_cues([take(0.0, 1.0, [(end, 0.0, 0.4)])], asks=True, **ASKING)
+    assert [c.text for c in cues] == ["Who?"]
+
+
+def test_a_joined_cue_keeps_its_question_mark_mid_cue_as_before():
+    assert [c.text for c in stick.word_cues([TWO_QUICK], asks=True, join=True, **JOINING)] == ["Love it. Evenings?"]

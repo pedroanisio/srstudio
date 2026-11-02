@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
 
 from . import _drawing_contracts as dc
 from .canvas import Canvas
+from .errors import SrstudioError
 from .registry import register
+
+
+class CaptionError(SrstudioError, ValueError):
+    """Captions asked for in a way they cannot be set."""
+
 
 GOLD = "#E2BB72"
 SLATE_INK = "#203638"
@@ -484,13 +491,23 @@ def captions(
     highlight_color="#F4D492",
     highlights: dict[str, Sequence[tuple[str, bool]]] | None = None,
     layer_suffix="-caption",
+    word_space: int = 1,
 ):
     """``specs`` = (start, end, text, name).
 
     ``highlights[name]`` = [(text, is_highlighted), ...] splits a line into spans. ``color`` is the text,
-    ``stroke`` its outline; ``shadow=None`` draws no drop shadow (dark text on a light stage)."""
+    ``stroke`` its outline; ``shadow=None`` draws no drop shadow (dark text on a light stage). ``word_space`` is the
+    count of spaces set where a line has one or more between two words: an outline drawn outside the letters reaches
+    into the space from both words, and a narrow space can close (:func:`srstudio.fonts.word_gaps` measures it). Only
+    the drawn text changes; the line breaks and the specs stay as given."""
+    if isinstance(word_space, bool) or not isinstance(word_space, int) or word_space < 1:
+        raise CaptionError(f"word_space is a count of spaces from 1, got {word_space!r}")
     if not specs:
         return []
+
+    def spaced(text: str) -> str:
+        return text if word_space == 1 else re.sub(r" +", " " * word_space, text)
+
     original_assets = cv._assets
     assets = cv.assets
     old_texts = {id(node) for node in assets.find_all("text")}
@@ -520,9 +537,9 @@ def captions(
             if name in highlights:
                 for part, lit in highlights[name]:
                     span = asset.add_span(color=highlight_color) if lit else asset.add_span()
-                    span.content = part
+                    span.content = spaced(part)
             else:
-                asset.text = text
+                asset.text = spaced(text)
             layers.append(cv.comp.add_layer(id=f"{name}{layer_suffix}", asset=name, x=x, y=y, start=start, end=end))
         return layers
     except Exception:

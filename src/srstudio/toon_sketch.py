@@ -141,6 +141,11 @@ class Staging:
     overlay: Callable[[Canvas, object, Sequence[Any], float, Callable[..., float]], None] | None = None
     """``(cv, parent, beats, end, measure)`` draws what stays over every shot, under the captions and out of the
     camera's reach, from the beats the build placed: a show's graphics."""
+    opening: Callable[[Canvas, object, float, Callable[..., float]], Any] | None = None
+    """``(cv, parent, said, measure)`` draws the reel's opening line (:mod:`srstudio.opener`) over every shot, out of
+    the camera's reach, from the first frame until ``said``, when the first spoken line stops
+    (:func:`srstudio.sketch.first_line_end`): its take on a recording, the next line's start on the scripted clock.
+    What it returns is kept off the cover."""
     safe_area: SafeArea | None = None  # declared on the project, for a show that keeps its text inside one
     loudness: str | None = None  # the master's integrated LUFS, when a reel departs from its style's
     moves: Mapping[str, Callable[[Canvas, Any, Any, Sequence[Any]], None]] = field(default_factory=dict)
@@ -345,6 +350,10 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
     lines = toon.load_script(root / ep.spec.dialogue)
     if staging.overlay is not None:
         staging.overlay(cv, ep.comp, sk.beats, sk.end, measure)
+    if staging.opening is not None:
+        drawn = staging.opening(cv, ep.comp, sketch.first_line_end(root, sk, voiced), measure)
+        if drawn is not None:
+            ep.hide_on_cover(drawn)
     if staging.captions is not None:
         drawn = staging.captions(cv, ep.comp, lines, measure, staging.tints)
         if drawn is not None:

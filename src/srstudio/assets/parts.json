@@ -14032,6 +14032,186 @@
           "rig": null
         }
       ]
+    },
+    "collage-big-type": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-02",
+          "note": "A phone on the largest text size: a few capital words filling the screen, a page at a time, on the phone already approved.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-02",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793486690.452509: \"The same conditions apply as before: an approved style, no real brand, logo or likeness, and no readable personal or financial data.\", the conditions confirmed by the orchestrator, a non-author reviewer, on the full-size frames of big-font (2026-11-02): an invented phone screen in an approved style, no brand, logo or likeness, no readable personal or financial data."
+          },
+          "drawing": "fa2ffe79b6afa836042877761025aa8ecd613de755948fa448261cb1812a624c",
+          "rig": null
+        }
+      ]
+    },
+    "soft-battery-screen": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-02",
+          "note": "A phone's glass showing only its charge: a plain battery under a whole percentage, green above 20 and red at 20 and under, each level timed in turn. Invented, no status bar, no real phone's look.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-02",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793486690.452509: \"The same conditions apply as before: an approved style, no real brand, logo or likeness, and no readable personal or financial data.\", the conditions confirmed by the orchestrator, a non-author reviewer, on the full-size frames of two-percent (2026-11-02): an invented interface in an approved style, no status bar, brand, logo or likeness, no readable personal data."
+          },
+          "drawing": "d6332cd56907cff93818068ac74acfc43ea5084ded26fa077e507934551eee9a",
+          "rig": null
+        }
+      ]
+    },
+    "stick-holiday-tree": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-02",
+          "note": "A small Christmas tree in three green tiers on a terracotta pot, a few round baubles, and an optional gold star on top. Faceless, unbranded.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-02",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\", the conditions confirmed by the orchestrator, a non-author reviewer, on the full-size frames of november-first (2026-11-02): a plain generic prop in an approved style, faceless, no brand, logo or likeness."
+          },
+          "drawing": "e25725cb45b8f1dfacf5c6f398f05a0b32922a666c235dea416fbde5758a3690",
+          "rig": null
+        }
+      ]
+    },
+    "stick-tree-star": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-02",
+          "note": "A five-pointed gold star, drawn about its middle so a hand can hold it. Faceless, unbranded.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-02",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\", the conditions confirmed by the orchestrator, a non-author reviewer, on the full-size frames of november-first (2026-11-02): a plain generic prop in an approved style, faceless, no brand, logo or likeness."
+          },
+          "drawing": "0633b9019789cedec109226b7c14145b63d5d2b567c9815623af10b93ac920ef",
+          "rig": null
+        }
+      ]
+    },
+    "stick-light-string": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-02",
+          "note": "A string of coloured bulbs sagging between two points, dark until it blinks on (off, on, off, on) at its moment. Faceless, unbranded.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-02",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\", the conditions confirmed by the orchestrator, a non-author reviewer, on the full-size frames of november-first (2026-11-02): a plain generic prop in an approved style, faceless, no brand, logo or likeness."
+          },
+          "drawing": "4d81e93f7bd7cee8bbbe340fab7fcd1fbf42919e4f8b1c99cd925a643075e661",
+          "rig": null
+        }
+      ]
+    },
+    "stick-step-stool": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-02",
+          "note": "A wooden step stool of one to three steps, standing on its foot, that says how high its top step is. Faceless, unbranded.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-02",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\", the conditions confirmed by the orchestrator, a non-author reviewer, on the full-size frames of november-first (2026-11-02): a plain generic prop in an approved style, faceless, no brand, logo or likeness."
+          },
+          "drawing": "44bea926e493f86531a443a3cd66ff28f3e2e1ae33b4383f440f4ea8d6b0c4e9",
+          "rig": null
+        }
+      ]
+    },
+    "stick-pumpkin": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-02",
+          "note": "A plain orange pumpkin with ribs and a stem and no carved face, wearing a plain red bobble hat, or bare. Faceless, unbranded.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-02",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\", the conditions confirmed by the orchestrator, a non-author reviewer, on the full-size frames of november-first (2026-11-02): a plain generic prop in an approved style, faceless, no brand, logo or likeness."
+          },
+          "drawing": "cdbadb367930a93396624da9bc6bfacd3e231077140f8adddb38e191f730873e",
+          "rig": null
+        }
+      ]
+    },
+    "stick-smart-speaker": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-02",
+          "note": "An invented smart speaker: a dark chamfered block with grille lines and a coral light ring on top that glows only for its spans. No letters, no logo, no real product's shape, ring colour or wake word.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-02",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793486690.452509: \"The same conditions apply as before: an approved style, no real brand, logo or likeness, and no readable personal or financial data.\", the conditions confirmed by the orchestrator, a non-author reviewer, on the full-size frames of november-first (2026-11-02): an invented device in an approved style, no brand, logo, real product's shape or likeness, no readable personal data."
+          },
+          "drawing": "d111d984879d5b23e95d5e100484f5fa01fe5156fdef0847d180dc114a2d3d46",
+          "rig": null
+        }
+      ]
+    },
+    "stick-worktop": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-02",
+          "note": "A kitchen worktop between two ends: a light top and green cupboard doors down to the frame's foot, for a near layer in front of a figure. Faceless, unbranded.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-02",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\", the conditions confirmed by the orchestrator, a non-author reviewer, on the full-size frames of november-first (2026-11-02): a plain generic prop in an approved style, faceless, no brand, logo or likeness."
+          },
+          "drawing": "05460ebcf99356fb8a5bccf53946a0a78b993f00c39c1558ad348c7c2f1b1bbc",
+          "rig": null
+        }
+      ]
     }
   }
 }

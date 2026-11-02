@@ -829,6 +829,38 @@ def test_hundreds_and_thousands_match_their_cardinal_words(heard, said):
     check_transcript(parse_transcript(transcript(heard)), said)
 
 
+@pytest.mark.parametrize(
+    ("heard", "said"),
+    [
+        ("You're 2,200", "You're twenty-two hundred."),
+        ("You're 2200.", "You're twenty-two hundred."),
+        ("1800, utilities included", "Eighteen hundred. Utilities included."),
+        ("It's $2,200.", "It's twenty-two hundred dollars."),
+        ("It's $2,200.", "It's $2,200."),
+        ("It's two thousand two hundred dollars.", "It's $2,200."),
+        ("It's twenty-two hundred dollars.", "It's $2,200."),
+    ],
+)
+def test_a_round_number_of_hundreds_and_a_grouped_number_read_as_they_are_said(heard, said):
+    check_transcript(parse_transcript(transcript(heard)), said)
+
+
+@pytest.mark.parametrize(
+    ("heard", "said"),
+    [
+        ("$5,800, utilities included", "$1,800. Utilities included."),
+        ("You're 2,300", "You're twenty-two hundred."),
+        ("You're 22,00", "You're twenty-two hundred."),
+        ("It's 2,200 pounds.", "It's $2,200."),
+        ("twenty hundred", "2000"),
+        ("Since 1999!", "Since nineteen hundred ninety-nine!"),
+    ],
+)
+def test_another_number_of_hundreds_is_still_a_mismatch(heard, said):
+    with pytest.raises(TranscriptMismatch):
+        check_transcript(parse_transcript(transcript(heard)), said)
+
+
 def test_silent_sound_effect_is_rejected():
     with pytest.raises(VoiceOutputError, match="sound effect is silent"):
         voice.verify_effect(wav_of([0] * 48000), 1.0)

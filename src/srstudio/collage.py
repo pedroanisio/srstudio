@@ -27,7 +27,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from . import _character_contracts as cc
-from . import anatomy, anatomy_ledger, checks
+from . import anatomy, anatomy_ledger, checks, show
 from .anatomy import Facing, Fingers, Side
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -1320,20 +1320,27 @@ def captions(
     *,
     sentences: bool = False,
     tops: Mapping[str, float] | None = None,
+    clear_bug: bool = False,
 ) -> None:
     """One pill per cue, centred under :data:`CAPTION_TOP`, one or two lines (:func:`caption_lines`), sized by
     ``measure(text)`` (the advance width at :data:`CAPTION_SIZE`), tinted by speaker (paper white otherwise).
-    ``tops`` moves the pill of a cue, by its text, for a shot whose picture the usual place would cover."""
+    ``tops`` moves the pill of a cue, by its text, for a shot whose picture the usual place would cover. With
+    ``clear_bug`` a pill in the rows of the show's bug wraps narrow enough to keep :data:`srstudio.show.CLEAR` pixels
+    off it; False keeps a published reel's rows."""
     cv.require_font("the Collage style letters its captions in its font", CollageError)
     for line in lines:
-        rows = caption_lines(measure, line.text, cv.width, sentences=sentences)
+        pill = (tops or {}).get(line.text, CAPTION_TOP)
+        room: float = cv.width
+        if clear_bug:
+            tallest = pill + 2 * CAPTION_LEADING + 2 * CAPTION_PAD_Y
+            room = min(room, show.widest_clear(pill, tallest, cv.width / 2) + 2 * CAPTION_MARGIN)
+        rows = caption_lines(measure, line.text, room, sentences=sentences)
         g = cv.group(parent, cv.uid("g"), start=line.start, end=line.end)
         cv.apply(g, cv.effect("collage-caption-shadow", "drop-shadow", **CAPTION_SHADOW))
         width = round(max(measure(r) for r in rows) + CAPTION_PAD, 2)
         height = len(rows) * CAPTION_LEADING + 2 * CAPTION_PAD_Y
         fill = (tints or {}).get(line.speaker, cv.white)
         x = round(cv.width / 2 - width / 2, 2)
-        pill = (tops or {}).get(line.text, CAPTION_TOP)
         cv.rect(g, x, pill, width, height, fill, INK, EDGE, radius=CAPTION_RADIUS)
         for i, row in enumerate(rows):
             top = pill + CAPTION_PAD_Y + i * CAPTION_LEADING

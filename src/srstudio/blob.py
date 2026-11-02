@@ -384,6 +384,17 @@ def _on_the_floor() -> Pose:
     return Pose("floor", sit.head, {**sit.limbs, **legs}, sit.front, sit.face)
 
 
+def _phone_up(name: str, hand_l: Point, hand_r: Point, head: Point = (-40, -322)) -> Pose:
+    """The sit pose with a phone up at the chest, its screen to the camera: each elbow drops and comes back up, so the
+    arm keeps its length with the hands that near the body."""
+    sit = _sitting((-170, -112), (-150, -108), head=head)
+    arms = {
+        "arm_l": Stroke((-62, -205), (-32, -116), (hand_l[0] + 8, hand_l[1] + 70), hand_l, *ARM),
+        "arm_r": Stroke((-42, -198), (-12, -112), (hand_r[0] + 8, hand_r[1] + 66), hand_r, *ARM),
+    }
+    return Pose(name, sit.head, {**sit.limbs, **arms}, sit.front, sit.face)
+
+
 def _named(pose: Pose, name: str) -> Pose:
     return Pose(name, pose.head, pose.limbs, pose.front, pose.face)
 
@@ -428,6 +439,8 @@ POSES: dict[str, Pose] = {
         _named(_sitting((-170, -112), (-150, -108), head=(-46, -308), face=(-28, 10)), "nod"),
         _lounging(),
         _on_the_floor(),
+        _phone_up("phone-a", (-112, -176), (-82, -168)),
+        _phone_up("phone-b", (-106, -172), (-88, -176), head=(-36, -326)),  # a thumb working on it
         _pose(
             "clasp",
             (0, -432),
@@ -548,7 +561,7 @@ POSES: dict[str, Pose] = {
     )
 }
 # Poses added after the cast was approved. An approved drawing walks only the others, so a new pose moves no digest.
-POSES_SINCE_APPROVAL = frozenset({"floor"})
+POSES_SINCE_APPROVAL = frozenset({"floor", "phone-a", "phone-b"})
 
 
 # -- faces ------------------------------------------------------------------------------------------------
