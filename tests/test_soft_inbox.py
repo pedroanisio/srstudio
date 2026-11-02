@@ -177,3 +177,44 @@ def test_a_battery_screen_refuses(kw):
     g = cv.comp
     with pytest.raises(SoftPropError):
         soft_inbox.battery_screen(cv, g, **kw)
+
+
+def number_boxes(cv: Canvas) -> dict[str, tuple[float, float]]:
+    """Each battery number's box: its left edge on the glass, and its width."""
+    root = tree(cv)
+    widths = {t.get("id"): float(t.get("width")) for t in root.iter("text")}
+    return {
+        layer.get("asset"): (float(layer.get("x")), widths[layer.get("asset")])
+        for layer in root.iter("layer")
+        if layer.get("asset") in widths
+    }
+
+
+def test_a_battery_number_measured_in_the_reel_s_font_has_a_box_only_as_wide_as_the_number():
+    """The engine keeps a text's box, not its letters, inside the safe area: a box as wide as the glass put a phone's
+    2% outside it at the frame edge while the 2% itself sat inside, so the reel drew no number there."""
+    cv = canvas()
+    soft_inbox.battery_screen(
+        cv,
+        cv.comp,
+        levels=(Level(2, 0.0, 1.0), Level(100, 1.0, 2.0)),
+        measure=lambda text, size: 0.5 * size * len(text),
+    )
+    pad = soft_inbox.NUMBER_PAD
+    assert number_boxes(cv) == {
+        "soft-battery-screen-text-0": pytest.approx((-(46 + 2 * pad) / 2, 46 + 2 * pad)),
+        "soft-battery-screen-text-1": pytest.approx((-(92 + 2 * pad) / 2, 92 + 2 * pad)),
+    }
+
+
+def test_a_battery_number_without_a_measure_keeps_the_glass_wide_box():
+    cv = canvas()
+    soft_inbox.battery_screen(cv, cv.comp, levels=(Level(2, 0.0, 1.0),))
+    assert number_boxes(cv) == {"soft-battery-screen-text-0": (-60.0, 120.0)}
+
+
+@pytest.mark.parametrize("width", [0.0, -3.0, float("nan"), 200.0])
+def test_a_battery_number_refuses_a_measure_it_cannot_box_on_the_glass(width):
+    cv = canvas()
+    with pytest.raises(SoftPropError, match="number"):
+        soft_inbox.battery_screen(cv, cv.comp, levels=(Level(2, 0.0, 1.0),), measure=lambda text, size: width)

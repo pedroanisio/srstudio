@@ -1,5 +1,6 @@
 """Soft scene discovery: framed slots, local drawing origins and canvas-clock gates."""
 
+from collections.abc import Callable
 from dataclasses import replace
 
 from sr_core.scene import Composition, Group, Symbol
@@ -273,8 +274,18 @@ _CONTRACTS = {
                 )
             ),
         ),
+        (
+            'measure',
+            P(
+                type=Callable[[str, float], float] | None,
+                role='text-measure',
+                description='Optional: called with (number text, size 46); return its advance in the bound Canvas '
+                'font, local pixels. The number box is then that advance plus 4 px each side; without it the box is '
+                '120 px wide.',
+            ),
+        ),
         constraints=(
-            FONT,
+            'Text uses the bound Canvas font at size 46; measure, when given, measures that same font.',
             'Glass spans local (-65,-130)..(65,130). Ordered nonoverlapping spans gate the charge and its number; '
             'the empty battery stays drawn through gaps. The charge and number go red at 20 percent and under; a level '
             'with number False shows its charge alone. '

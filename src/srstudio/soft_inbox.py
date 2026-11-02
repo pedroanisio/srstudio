@@ -8,7 +8,8 @@ status bar. No name, no address, no logo.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+import math
+from collections.abc import Callable, Sequence
 from typing import NamedTuple
 
 from . import _soft_scene_contracts as dc
@@ -33,6 +34,8 @@ BATTERY_GLASS = "#F3F6F8"
 LOW = 20  # percent: from here down the charge and its number go red
 CELL = (-46.0, 22.0, 84.0, 44.0)  # x, y, width and height the charge fills, in the glass
 SLIVER = 4.0  # px of charge left to see at the very bottom
+GLASS_WIDE = 130  # the glass's width
+NUMBER, NUMBER_PAD = 46, 4.0  # a battery number's size, and its box's margin each side of a measured number
 
 
 class Count(NamedTuple):
@@ -189,6 +192,14 @@ def call_screen(
     return g
 
 
+def _number_box(text: str, measure: Callable[[str, float], float]) -> int:
+    """The width of the box that holds ``text`` at the battery number's size: the measured number and its margins."""
+    advance = measure(text, NUMBER)
+    if not (checks.number(advance) and 0 < advance and advance + 2 * NUMBER_PAD <= GLASS_WIDE):
+        raise SoftPropError(f"a battery number {text!r} measured {advance!r} px wide: it needs a box on the glass")
+    return math.ceil(advance + 2 * NUMBER_PAD)
+
+
 def charge_width(percent: int) -> float:
     """How much of the cell ``percent`` fills, never so little it cannot be seen."""
     return max(SLIVER, CELL[2] * percent / 100)
@@ -208,10 +219,13 @@ def battery_screen(
     *,
     levels: Sequence[Level] = (Level(2, 0.0, 1.0),),
     scale: float = 1,
+    measure: Callable[[str, float], float] | None = None,
     id: str = "soft-battery-screen",
 ):
     """A percentage over a battery in the glass, reading each of ``levels`` in turn. The number sits in the top half,
-    so a phone held at the chest keeps it in the safe area."""
+    so a phone held at the chest keeps it in the safe area. With ``measure`` (the reel's font: text and size to its
+    advance) each number's box is only as wide as the number, which keeps a phone's number inside the safe area at
+    the frame edge: the engine checks the box, not the letters. Without it the box is the glass's width."""
     _place("a battery screen", x, y, scale)
     rows = list(levels)
     if not rows:
@@ -237,5 +251,7 @@ def battery_screen(
         cv.gate(shown, [(row.at, row.until)])
         cv.rect(shown, cx, cy, charge_width(row.percent), height, BADGE if low else BATTERY_OK, radius=4)
         if row.number:
-            cv.text(shown, f"{id}-text-{k}", f"{row.percent}%", -60, -68, 120, 64, 46, color=BADGE if low else ROW_INK)
+            text = f"{row.percent}%"
+            wide = 120 if measure is None else _number_box(text, measure)
+            cv.text(shown, f"{id}-text-{k}", text, -wide / 2, -68, wide, 64, NUMBER, color=BADGE if low else ROW_INK)
     return g
