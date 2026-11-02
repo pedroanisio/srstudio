@@ -18,6 +18,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from . import _character_contracts as cc
+from . import _ink_drawing_contracts as ic
 from . import checks, look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -292,6 +293,7 @@ def _truck(cv: Canvas, parent, front: float) -> object:
     summary="The pavement and the road from the side: the doodle, the talking meter and his parked car; a tow truck "
     "lifts the car and drives off with it on cue; or the meter alone, close",
     style="ink",
+    contract=ic.contract('ink-kerb', meter=meter),
 )
 def kerb(
     cv: Canvas,
@@ -403,6 +405,7 @@ def _star(cx: float, cy: float, r: float) -> str:
     summary="A parking app on a held phone: a title bar, form rows that arrive and tick (or flip to TAKEN) in "
     "turn, a progress bar that fills and five rating stars that light one after another",
     style="ink",
+    contract=ic.contract('ink-app-screen'),
 )
 def app_screen(
     cv: Canvas,

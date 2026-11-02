@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0.0",
+  "generated_by": {
+    "model": "GPT-6",
+    "tool": "OpenAI Codex"
+  },
+  "source_commit": "42b4ea53f5ca9d65d1a6de414bed988a4a30f86e",
+  "scene_sha256": {
+    "ink-desk-shot": "20bc5ebb786945567bf93d2c7b8df667164d26acf045996ec189c8cb3f892374",
+    "ink-closeup": "2560d6b1a0a2f018e53bc420a55c13a6be4443b961f434e0e84d1ab8e5c967c3",
+    "ink-printer-shot": "eda44d5ce947c9f3456aee02df46e3df578607d17a0a3b9dbadbdd7bc975adcd",
+    "ink-wide": "16e897d21933b87a68e194a34d5e26dc4c67b2a8625882dda851e90864f9d957",
+    "ink-router-shot": "99845f161e0bdc2ac0255dbad49275c2423f2b31624fc1523580452871773316",
+    "ink-router-wide": "528d91da6f17631976b44c0b19ba8902367c3a5e834d95f85f4b0fb0c528a035",
+    "ink-phone-shot": "43222d84cba39c94ad841b9b9dbb84237c1ab7af00b0fec72f136f5027db18c1",
+    "ink-kerb": "560780ae4996bf74ae0e190555b3795a05ad1dd2585bc5c7660a26e4fe1fea31",
+    "ink-doorstep": "e76738a8f13b3d55a53fab0bacf58df6ae2ba0bbb9818b7605635c9627438fcb",
+    "ink-vacuum-shot": "0e0659797c5226cb72e788660326673a98ddbc82412cb55c5c732d77a2aa3b3f",
+    "ink-laptop": "fdda153b5e46fc5472a6bf5ddf6584619de4823fd349ba71a8fb8bb2d860c731",
+    "ink-desk": "58b5de41d6da92964b0fc61f9e7274100ab16729b53c613a5ba014ef4c3ba5b2",
+    "ink-hand": "f2c3b39a7609df315fe26496ed17ffd26da6f04d335cf0486cc7ef0ab9fb1176",
+    "ink-phone": "3c638d221bef80bcebb8368a50f86e470c81acf01c8d4e7ddcd2822b2d8b22de",
+    "ink-captcha": "118e4ae0ab717bce5871e0c817bc33cb0c8510cc19d63daff2c8bbb003250983",
+    "ink-checkbox": "5408adf61be7780a3508c11a4a22db3580cfd43fde8d055a78b67d347cf935dc",
+    "ink-app-screen": "7a9166a5148788b3689e5b0b8e68468828549a63005ba2f4d42db34c319e9dba",
+    "ink-doorbell-view": "8295db789d28a1856c4cfbc5c899954163763ab9517d766c43c97b1d6eb63154",
+    "ink-floor-map": "4563625fee6da6e36fa4efed1453685e27fe2b58c1524b73a8a3914be90dc36b"
+  }
+}

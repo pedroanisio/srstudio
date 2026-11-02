@@ -1047,3 +1047,69 @@ group. Draw its contents in the flat local rectangle; the room applies the
 wall skew once. The other furniture, window light patches, clock, coffee
 steam and pendant glaze are static drawings. The home's `lamp_talk` toggles
 a drawn shade and halo in ordered spans, without changing shared lighting.
+
+## Ink shots and illustrated interfaces
+
+The 19 non-character builders in the Ink family declare their coordinates,
+clocks, returns and interface records. Ink uses a fixed square 1080x1080
+layout. Event times are authored from the beginning of a take, but builders
+emit them on the clock selected by `Canvas.local_time`. Set it to `True`
+for sequence shots. Changing `Take.start` alone does not offset animations,
+and a timed group is not a substitute for a sequence shot's clock.
+
+Return ownership varies. `ink-desk` draws into its parent and returns
+`None`; the desk, wide and router-wide shot builders return that parent.
+The router, phone, kerb, doorstep and vacuum shot builders return only the
+featured object, leaving surrounding scenery outside it. The doorbell view
+returns its lens overlay while the human remains a sibling. Use a dedicated
+parent when moving or hiding an entire shot.
+
+<!-- ink-drawing-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, ink, registry
+from srstudio.timeline import Take
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1080, fps='24', duration=6)
+cv = Canvas(scene, font_asset=None, local_time=True)
+sequence = cv.comp.add_sequence(id='shots')
+sequence.add_group(id='lead', end=2)
+shot = sequence.add_group(id='router-shot', end=4)
+whole = cv.group(shot, 'whole-shot')
+take = Take('02', 'router', 'router', '', start=2, duration=4)
+
+contract = registry.get('location', 'ink-router-shot').describe()['contract']
+assert contract['arguments']['properties']['hand_at']['x-timebase'] == 'canvas'
+assert contract['returns']['x-role'] == 'drawing-group'
+
+router = ink.router_shot(
+    cv, whole, take, power='down', hand_action='press', hand_at=1,
+)
+cv.gate(whole, ((0, 4),))
+assert router is not whole
+```
+<!-- ink-drawing-discovery:end -->
+
+The phone, kerb, doorstep and vacuum wrappers forward keyword options.
+Their discovery operations expose the actual `phone`, `meter`, `doorbell`
+or `vacuum` function and its typed inputs. The wrapper's variadic envelope
+remains explicitly open; use its documented subset of those inputs. In
+particular, the wide kerb supplies meter `zoom` and `framed` itself.
+
+`Bubble`, `AppRow` and map `Room` records distinguish display copy, event
+times and drawing coordinates. Chat status waits for the last outgoing
+bubble to appear; typing dots occupy an incoming reply's slot when possible.
+App forms reject overflow before drawing: five rows fit alone, four with a
+progress bar or stars, and three with both. Progress fills linearly; stars,
+ticks, tags and captcha picks use held states. These are illustrated
+interfaces, with no messaging, payment, navigation or verification service.
+Text-bearing builders require a bound font asset.
+
+Motion conventions matter across cuts. The kerb's negative `tow` time
+continues the lift or departure from before the take; `view` maps the
+pavement anchor to its new position and scale. The hand uses cubic easing
+and parent-pixel displacements independent of its drawing scale. The vacuum
+instead multiplies its travel by scale. None creates a physical grip or
+contact constraint, and the floor map's fixed route does not adapt to custom
+room geometry.

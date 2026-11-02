@@ -12,6 +12,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from functools import partial
 
+from . import _ink_drawing_contracts as ic
 from . import checks, look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -118,6 +119,7 @@ def _tile(cv: Canvas, parent, kind: str, x: float, y: float, name: str) -> objec
     "ink-captcha",
     summary="A picture captcha: a prompt in an ink band over a 3×3 grid of doodles, picks that tick and a verdict",
     style="ink",
+    contract=ic.contract('ink-captcha'),
 )
 def captcha(
     cv: Canvas,
@@ -190,6 +192,7 @@ def captcha(
     "ink-checkbox",
     summary='The "I\'m not a robot" card: an empty box and its label, ticked on the click',
     style="ink",
+    contract=ic.contract('ink-checkbox'),
 )
 def checkbox(cv: Canvas, parent, label: str, *, tick_at: float | None = None):
     """The checkbox card in the middle of the square frame: the box, ``label`` (1 to :data:`LABEL_MAX`
