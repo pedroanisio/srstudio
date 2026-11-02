@@ -643,6 +643,8 @@ def wardrobe(cv: Canvas, parent, x: float, floor: float, stage: str = "done", *,
         raise StickDataError(f"a wardrobe's stage is one of {WARDROBE_STAGES}, got {stage!r}")
     if scale <= 0:
         raise StickDataError(f"a wardrobe's scale is positive, got {scale!r}")
+    if stage == "half":
+        cv.require_font("the wardrobe's label is lettered in it")
     w, h = WARDROBE_W, WARDROBE_H
     half = w / 2
     g = _group(cv, parent, x=x, y=floor, scaleX=scale, scaleY=scale)
@@ -661,7 +663,6 @@ def wardrobe(cv: Canvas, parent, x: float, floor: float, stage: str = "done", *,
         box(cv, g, half + 44, -h + 34 + dy, 50, 18, STEEL_DARK, 3, r=4)
     for dy in (260, 300, 340, 380):
         oval(cv, g, w - 60, -h + dy, 16, 16, OAK_DARK)
-    cv.require_font("the wardrobe's label is lettered in it")
     label = _group(cv, g, x=half + 12, y=-h / 2 + 30)
     box(cv, label, 0, 0, 160, 110, "#ffffff", 4, r=4)
     name = cv.uid("text")

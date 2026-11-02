@@ -896,6 +896,31 @@
   ],
   "findings": [
     {
+      "id": "SDK-P1-13",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Check the half-wardrobe font before drawing",
+      "problem": "The half wardrobe emitted cabinet geometry and consumed scene IDs before discovering that its mandatory label font was missing. Failed agent repair attempts left a partial drawing in the canvas.",
+      "resolution": "Check the font after stage/scale validation and before allocating any scene nodes. The done stage remains font-free. Repairing the font and retrying produces the same bytes as a fresh valid draw.",
+      "verification": [
+        "tests/test_stick_odds.py:test_unlettered_half_wardrobe_fails_before_drawing",
+        "tests/test_stick_drawing_contracts.py",
+        "tests/data/stick-drawing-contract-baseline.json"
+      ],
+      "acceptance": [
+        "Missing half-stage font raises CanvasError before scene mutation",
+        "Done stage draws without a font",
+        "Valid output and deterministic retry remain unchanged"
+      ],
+      "verification_summary": {
+        "red": 1,
+        "final_passed": 120,
+        "skipped": 0,
+        "branch_inclusive_stick_odds_coverage_percent": 100,
+        "retained_artifacts": "../generated/sdk-stick-font-preflight/v1/"
+      }
+    },
+    {
       "id": "SDK-P1-10",
       "priority": "P1",
       "status": "complete",
