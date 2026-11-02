@@ -385,7 +385,7 @@ def _closed(open_at: Sequence[tuple[float, float]], end: float) -> list[tuple[fl
     for start, close in sorted(open_at):
         if start > at:
             out.append((at, start))
-        at = close
+        at = max(at, close)
     return [*out, (at, end)] if at < end else out
 
 

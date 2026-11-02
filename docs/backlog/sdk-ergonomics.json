@@ -1044,6 +1044,30 @@
   ],
   "findings": [
     {
+      "id": "SDK-P1-18",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Keep washer door drawings complementary for nested open intervals",
+      "problem": "A nested open interval moved the closed-gap cursor backward, showing both door drawings while the wider interval was still open.",
+      "resolution": "Advance the complement cursor to the maximum close time seen so far, preserving the union of nested, unordered, overlapping and touching spans.",
+      "verification": [
+        "tests/test_soft_odds.py:test_washer_door_states_are_complementary_for_overlapping_open_intervals",
+        "tests/test_canvas_and_registry.py"
+      ],
+      "acceptance": [
+        "Open and closed drawings remain complementary across overlapping intervals",
+        "Both Canvas clock modes retain identical interval semantics"
+      ],
+      "verification_summary": {
+        "red": 4,
+        "passed": 79,
+        "new_cases": 8,
+        "skipped": 0,
+        "branch_inclusive_module_coverage_percent": 99.43181818181819,
+        "retained_artifacts": "../generated/sdk-soft-washer-spans/v1/"
+      }
+    },
+    {
       "id": "SDK-P1-17",
       "priority": "P1",
       "status": "complete",
