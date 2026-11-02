@@ -85,12 +85,14 @@ def words(
     least: float = WORD_MIN,
     join: bool = False,
     hold: bool = False,
+    asks: bool = False,
 ):
     """The spoken ``takes`` as word captions on the episode clock; returns their group. ``alone=False`` keeps a word
     from a cue of its own wherever a neighbour fits it. With ``sentences``, no cue runs across a sentence end, and
     ``hold`` keeps the short cues that can leave up long enough to read (:func:`srstudio.stick.word_cues`): new reels
     ask for them, delivered ones keep theirs. ``least`` is the shortest a cue is meant to show; with ``join``, a cue
-    still under it joins a neighbour, keeping the sentence mark between them."""
+    still under it joins a neighbour, keeping the sentence mark between them. ``asks`` keeps a question's question mark
+    (:func:`srstudio.stick.word_cues`): new reels ask for it, delivered ones keep their bare cues."""
     group = ep.cv.group(ep.cv.comp, "spoken-words")
     font = (ep.root / str(ep.spec.font)).read_bytes()
     cues = stick.word_cues(
@@ -105,6 +107,7 @@ def words(
         sentences=sentences,
         join=join,
         hold=hold,
+        asks=asks,
     )
     stick.words(ep.cv, group, cues, y=y, scrim=SCRIM)
     return group

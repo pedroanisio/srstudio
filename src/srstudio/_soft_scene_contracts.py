@@ -1,5 +1,6 @@
 """Soft scene discovery: framed slots, local drawing origins and canvas-clock gates."""
 
+from collections.abc import Callable
 from dataclasses import replace
 
 from sr_core.scene import Composition, Group, Symbol
@@ -79,8 +80,12 @@ _CONTRACTS = {
         ('growth', P(items=P(prefix_items=(TIME, P(minimum=0, maximum=4))))),
         ('seated', SPANS),
         ('cast', _slot('Receives the framed room after the tree and bench, before the foreground.')),
+        ('night', P(type=bool)),
         constraints=(
             FRAME,
+            'night (default off) draws the park after dark: stars, lit town windows, a lamp behind the bench, and a '
+            'dark over the room and cast that rides with the shots. The foreground keeps its day colors but for '
+            'its bush.',
             'growth is held (time,stage) rows from zero, selecting tree stages 0..4; the town '
             'caps its stage at 3. This swaps drawings rather than growing geometry continuously.',
             'seated gates the bench; empty spans omit it. '
@@ -252,6 +257,39 @@ _CONTRACTS = {
             'Glass spans local (-65,-130)..(65,130). Count records contain display copy, not computed totals. '
             'Their ordered nonoverlapping spans gate text only; the badge stays drawn through gaps. '
             'Each nonblank count has at most seven characters.',
+        ),
+    ),
+    'soft-battery-screen': placed(
+        'the center of the phone glass',
+        (
+            'levels',
+            P(
+                items=P(
+                    fields=(
+                        ('percent', P(type=int, minimum=0, maximum=100)),
+                        ('at', TIME),
+                        ('until', TIME),
+                        ('number', P(type=bool)),
+                    )
+                )
+            ),
+        ),
+        (
+            'measure',
+            P(
+                type=Callable[[str, float], float] | None,
+                role='text-measure',
+                description='Optional: called with (number text, size 46); return its advance in the bound Canvas '
+                'font, local pixels. The number box is then that advance plus 4 px each side; without it the box is '
+                '120 px wide.',
+            ),
+        ),
+        constraints=(
+            'Text uses the bound Canvas font at size 46; measure, when given, measures that same font.',
+            'Glass spans local (-65,-130)..(65,130). Ordered nonoverlapping spans gate the charge and its number; '
+            'the empty battery stays drawn through gaps. The charge and number go red at 20 percent and under; a level '
+            'with number False shows its charge alone. '
+            'No status bar: a plain battery over a percentage, copying no real phone.',
         ),
     ),
     'soft-mail-list': placed(

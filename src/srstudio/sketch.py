@@ -72,6 +72,7 @@ __all__ = [
     "cues",
     "appearances",
     "events",
+    "first_line_end",
     "line_spans",
     "typing_bursts",
     "place",
@@ -752,6 +753,19 @@ def load_speech(path: Path, cast: Cast = TOON_CAST) -> tuple[list[Take], float]:
     if twice:
         raise SketchError(f"{path}: take {twice[0]} is listed twice")
     return takes, float(end)
+
+
+def first_line_end(root: Path, sketch: Sketch, voiced: bool) -> float:
+    """When the first spoken line stops: on a recording the end of its last word in ``voiced/speech.json``, not of the
+    file, which keeps a short tail; on the scripted clock the start of the next line. A recording with no first take is
+    a :class:`SketchError`, because a window read from nothing is no window."""
+    if not voiced:
+        return line_spans(sketch)[0][1]
+    takes, _ = load_speech(Path(root) / "voiced" / "speech.json", sketch.cast)
+    words = words_of(takes[0].alignment) if takes else []
+    if not words:
+        raise SketchError(f"{sketch.slug}: voiced/speech.json has no first line to time: record again")
+    return round(takes[0].at + words[-1][2], 6)
 
 
 class _Client(Protocol):

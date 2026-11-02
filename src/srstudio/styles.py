@@ -324,6 +324,7 @@ STICK = Style(
         "stick_door",
         "stick_flat",
         "stick_gym",
+        "stick_holiday",
         "stick_home",
         "stick_odds",
         "stick_office",
@@ -463,6 +464,7 @@ COLLAGE = Style(
     parts=(
         "collage",
         "collage_article",
+        "collage_big_type",
         "collage_everyday",
         "collage_forecast",
         "collage_odds",

@@ -16,7 +16,8 @@ from typing import TypedDict
 from .compile import BakeOptions
 from .errors import LimbError
 from .geometry import project_pose
-from .model import HUMAN, ArmProfile
+from .math3d import Vec3
+from .model import ArmProfile, DigitProfile, HandProfile
 from .motion import Action, Motion
 from .projection import Camera
 from .serialization import motion_dict
@@ -32,6 +33,21 @@ _METRICS = (
     'max_hand_angular_acceleration',
 )
 _ASSET = 'assets/limbs/quality-calibration-1.0.0.json'
+# The hand every 1.0.0 envelope was measured with, written out so a later change to HUMAN cannot move it (ADR 0089
+# fixes anatomy per version, ADR 0213): HUMAN before its thumb gained a third segment. The frozen source hashes in
+# the asset check it.
+CALIBRATED_HAND = HandProfile(
+    'human',
+    0.34,
+    0.36,
+    (
+        DigitProfile('thumb', Vec3(0.16, 0.16, 0), (0.17, 0.13), -0.8, True),
+        DigitProfile('index', Vec3(0.11, 0.36, 0), (0.18, 0.12, 0.08), -0.20),
+        DigitProfile('middle', Vec3(0.025, 0.36, 0), (0.20, 0.13, 0.09), -0.03),
+        DigitProfile('ring', Vec3(-0.065, 0.36, 0), (0.18, 0.12, 0.08), 0.13),
+        DigitProfile('little', Vec3(-0.14, 0.36, 0), (0.14, 0.10, 0.07), 0.30),
+    ),
+)
 
 
 def _fail(path: str, actual: object, expected: object, code: str = 'quality.scope') -> LimbError:
@@ -65,19 +81,21 @@ class _Measurement(TypedDict):
 
 
 def reference_cases(name: str) -> tuple[ReferenceCase, ...]:
-    """The exact immutable authoring corpus used to measure a preset; both anatomical sides."""
+    """The exact immutable authoring corpus used to measure a preset, on CALIBRATED_HAND; both anatomical sides."""
     _, span = _known(name)
     cases: list[ReferenceCase] = []
     for side in ('right', 'left'):
         arm = ArmProfile(side=side)
         cases.extend(
             (
-                ReferenceCase(f'point-{side}', Motion(arm, HUMAN, (Action('point', duration=span),))),
-                ReferenceCase(f'present-{side}', Motion(arm, HUMAN, (Action('present', duration=span),))),
+                ReferenceCase(f'point-{side}', Motion(arm, CALIBRATED_HAND, (Action('point', duration=span),))),
+                ReferenceCase(f'present-{side}', Motion(arm, CALIBRATED_HAND, (Action('present', duration=span),))),
                 ReferenceCase(
                     f'joined-{side}',
                     Motion(
-                        arm, HUMAN, (Action('point', duration=span), Action('present', start=span, duration=span))
+                        arm,
+                        CALIBRATED_HAND,
+                        (Action('point', duration=span), Action('present', start=span, duration=span)),
                     ).chain(),
                 ),
             )
@@ -157,7 +175,7 @@ class QualityPreset:
         }
 
     def options_for(self, motion: Motion, *, style: str, fps: int, policy: str = 'error') -> BakeOptions:
-        scope = QualityScope(self.style, 24)
+        scope = QualityScope(self.style, 24, hand=CALIBRATED_HAND)
         scope.check(motion, style, fps)
         limits = dict(self.limits)
         quality = QualityProfile(

@@ -167,6 +167,52 @@ def test_duplicate_placements_share_jobs_but_have_separate_spans():
     assert all(len(s.rasters) == 2 for s in timeline.spans)
 
 
+def test_large_raster_preparation_is_not_copied_into_every_output_interval():
+    spec, bindings, motion, source = fixture()
+    bindings = (replace(bindings[0], nodes=150_000),)
+    timeline = plan(spec, bindings, motion, (source,))
+    # Preparation retains 3D nodes; assembly emits only image/group references.
+    assert timeline.base.cost.nodes < timeline.cost.nodes <= spec.budget.max_nodes
+    restricted = replace(spec, budget=replace(spec.budget, max_nodes=timeline.cost.nodes - 1))
+    with pytest.raises(c.CompositionError, match='max_nodes'):
+        plan(restricted, bindings, motion, (source,))
+
+
+def test_motion_records_are_validated_once_and_sampled_by_key_time():
+    spec, bindings, _, source = fixture()
+    keys = tuple(m.TransformKey(i / 600, c.Transform((0.1 * (i % 2), 0, 0)), 'hold') for i in range(600))
+    motion = m.SceneMotion(transforms=(m.TransformTrack('host', keys),))
+    timeline = plan(spec, bindings, motion, (source,))
+    assert len(timeline.spans) == 600
+    assert len(timeline.samples) == 2
+    assert timeline.cost.engine_invocations == 2
+
+
+def test_motion_accounting_retains_the_combined_manifest_graph_cap(monkeypatch):
+    from srstudio._composition_preflight import _graph
+
+    spec, bindings, motion, source = fixture()
+    scene_count, motion_count = [0], [0]
+    _graph((spec, bindings), scene_count)
+    _graph(motion, motion_count)
+    monkeypatch.setattr(c, 'MAX_GRAPH_ITEMS', max(scene_count[0], motion_count[0]) + 1)
+    with pytest.raises(c.CompositionError, match='bounded manifest graph'):
+        plan(spec, bindings, motion, (source,))
+
+
+def test_raster_node_compaction_never_discounts_native_vector_copies():
+    spec, binding, _ = paper(animated=True)
+    binding = replace(binding, nodes=150_000)
+    spec = replace(spec, fps=c.FrameRate(4))
+    motion = m.SceneMotion(
+        transforms=(
+            m.TransformTrack('paper', (m.TransformKey(0, c.Transform()), m.TransformKey(2, c.Transform((10, 0, 0))))),
+        )
+    )
+    with pytest.raises(c.CompositionError, match='max_nodes'):
+        plan(spec, (binding,), motion, ())
+
+
 def test_vector_timeline_requires_no_raster_inputs_and_preserves_source_animation():
     spec, binding, _ = paper(animated=True)
     spec = replace(spec, fps=c.FrameRate(4))

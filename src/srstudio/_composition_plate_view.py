@@ -97,6 +97,15 @@ def plate_view(plan: c.ValidatedScenePlan, layer: str, *, meters_per_unit: float
         raise c._fail('plan/layer', None, 'a validated plan and layer identifier')
     if c.preflight(plan.spec, plan.bindings, purpose=plan.purpose) != plan:
         raise c._fail('plan', plan.digest, 'the current reproducible preflight result', 'composition.version')
+    return _from_validated_plan(plan, layer, meters_per_unit=meters_per_unit)
+
+
+def _from_validated_plan(plan: c.ValidatedScenePlan, layer: str, *, meters_per_unit: float | None = None) -> PlateView:
+    """Resolve a bridge immediately after internal preflight; public callers use plate_view.
+
+    This helper retains every backend-specific clipping, capability, units and
+    overscan check. It only omits revalidating the complete scene manifest.
+    """
     spec = plan.spec
     layers = {item.id: item for item in spec.layers}
     if layer not in layers:

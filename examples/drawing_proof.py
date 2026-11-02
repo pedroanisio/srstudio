@@ -73,12 +73,18 @@ def sample(time: float, *, size: tuple[int, int] = SIZE) -> Sample:
     return Sample(time, proxy.View(position, (0, -95, 0), 31, size=size), -15 + 30 * eased, lights)
 
 
-def schedule(*, fps: int = 12, size: tuple[int, int] = SIZE) -> tuple[Sample, ...]:
+def schedule(*, fps: int = 12, size: tuple[int, int] = SIZE, events: tuple[float, ...] = ()) -> tuple[Sample, ...]:
     if type(fps) is not int or not 1 <= fps <= 120:
         raise ValueError('proof fps must be an integer in 1..120')
     if type(size) is not tuple or len(size) != 2 or any(type(n) is not int or n < 2 or n > 1920 or n % 2 for n in size):
         raise ValueError('proof dimensions must be even integers in 2..1920')
-    return tuple(sample(i / fps, size=size) for i in range(DURATION * fps))
+    if (
+        type(events) is not tuple
+        or len(events) > 32
+        or any(type(time) not in (int, float) or not 0 <= time < DURATION for time in events)
+    ):
+        raise ValueError('proof events must be a tuple of at most 32 finite times in [0, 6)')
+    return tuple(sample(time, size=size) for time in sorted({i / fps for i in range(DURATION * fps)} | set(events)))
 
 
 def hand_world(point: Vec3) -> tuple[float, float, float]:

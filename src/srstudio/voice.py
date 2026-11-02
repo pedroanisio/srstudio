@@ -475,6 +475,7 @@ TITLES = {"mr": "mister", "mrs": "missus", "dr": "doctor"}  # speech-to-text wri
 
 MAX_READINGS = 4096  # readings of one text compared at most: each digit string has up to three
 ON_THE_HOUR = re.compile(r"\b(1[0-2]|0?[1-9]):00\b")  # speech-to-text writes a spoken "three a.m." as "3:00 AM"
+GROUPED = re.compile(r"(?<=\d),(?=\d{3}(?!\d))")  # "2,200": a thousands comma, which is no pause in speech
 DOLLARS = re.compile(r"\$(\d+)\b(?!\.\d)")  # and a spoken "a hundred dollars" as "$100"
 SCALED_DOLLARS = re.compile(r"\$(\d+) (thousand|million|billion|trillion)\b")  # "six billion dollars" as "$6 billion"
 DECIMAL = re.compile(r"(?<![$\d.])(\d+)\.(\d+)(?![\d.])")  # "fifty point two" as "50.2"; no price, no version number
@@ -482,6 +483,7 @@ DECIMAL = re.compile(r"(?<![$\d.])(\d+)\.(\d+)(?![\d.])")  # "fifty point two" a
 
 def _tokens(text: str) -> list[str]:
     text = text.lower().replace("\u2019", "'").replace("-", " ").replace("%", " percent ")
+    text = GROUPED.sub("", text)
     text = SCALED_DOLLARS.sub(r"\1 \2 dollars", text)
     text = DOLLARS.sub(r"\1 dollars", text)
     text = DECIMAL.sub(lambda m: " ".join((m[1], "point", *m[2])), text)
@@ -510,10 +512,19 @@ def _hundreds(n: int) -> list[str]:
     return ["".join(words) for words in joined if rest or words[0] == "a"]
 
 
+def _round_hundreds(n: int) -> list[str]:
+    """A round number of hundreds from 1100 to 9900 said as hundreds, as a price is ("twenty two hundred" for 2200,
+    "eighteen hundred" for 1800). Empty for any other number: a year or a whole thousand stays what it is."""
+    if not (1100 <= n <= 9900 and n % 100 == 0 and n % 1000):
+        return []
+    return ["".join([*_spell(n // 100), "hundred"])]
+
+
 def _readings(text: str) -> set[str]:
     """Every way ``text`` may be read aloud, its words joined: a digit string read as its cardinal or digit by
     digit, 0 as "zero" or as "oh" ("1028": "one thousand twenty eight", "one zero two eight", "one oh two eight"),
-    and a number in the hundreds as it is said (:func:`_hundreds`).
+    a number in the hundreds as it is said (:func:`_hundreds`), and a round number of hundreds as hundreds
+    (:func:`_round_hundreds`). A thousands comma is dropped first ("2,200" is 2200).
     More than :data:`MAX_READINGS` combinations raise :class:`TranscriptMismatch` before any is built."""
     options: list[list[str]] = []
     for token in _tokens(text):
@@ -522,6 +533,7 @@ def _readings(text: str) -> set[str]:
             for zero in ("zero", "oh"):
                 alternatives.append("".join(zero if d == 0 else _ONES[d] for d in map(int, token)))
             alternatives += _hundreds(int(token))
+            alternatives += _round_hundreds(int(token))
         options.append(sorted(set(alternatives)))
     if math.prod(len(o) for o in options) > MAX_READINGS:
         raise TranscriptMismatch(f"{text!r} has too many numbers to compare (more than {MAX_READINGS} readings)")

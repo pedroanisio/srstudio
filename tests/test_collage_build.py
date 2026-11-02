@@ -302,3 +302,90 @@ def test_a_staging_may_turn_off_b_frames_and_the_published_ones_do_not(pinned_fo
     for bad in (-1, 1.5, "0", True):
         with pytest.raises(collage_sketch.StagingError, match="bframes"):
             check_staging(still_staging(bframes=bad))
+
+
+def test_an_overlay_is_drawn_once_over_every_shot_out_of_the_cameras_reach_and_under_the_captions(
+    pinned_fonts, tmp_path
+):
+    seen = []
+
+    def overlay(layer):
+        seen.append(layer)
+        g = layer.cv.group(layer.parent, "over-it-all")
+        layer.cv.rect(g, 100.0, 240.0, 300.0, 84.0, "#15131f")
+        return g
+
+    st = replace(staging(), overlay=overlay)
+    ep = built(tmp_path, st, pinned_fonts)
+    assert len(seen) == 1
+    layer = seen[0]
+    assert layer.parent is ep.comp and layer.cv is ep.cv
+    assert layer.beats == tuple(BEATS) and layer.end == END
+    assert layer.first_line_end == sketch.line_spans(st.sketch)[0][1]
+    assert layer.measure("HI", 54) > 0
+    root = ET.fromstring(ep.scene.to_bytes(layout="pretty"))
+    comp = root.find("composition")
+    ids = [g.get("id") for g in comp.findall("group")]
+    shots = sketch.appearances(BEATS, END)
+    at = ids.index("over-it-all")  # a child of the composition, never of a shot and its zoom
+    assert at >= len(shots)
+    words = {t.get("id") for t in root.iter("text") if t.get("text")}
+    later = {
+        layer.get("asset")
+        for g in list(comp)[list(comp).index(comp.findall("group")[at]) + 1 :]
+        for layer in g.iter("layer")
+    }
+    assert words & later  # the captions come after it, so they stay on top
+    assert "over-it-all" in [node for node, _, _ in ep._cover_hidden]
+
+
+def test_no_overlay_draws_nothing_and_reads_nothing(pinned_fonts, tmp_path):
+    assert collage_sketch.Staging.overlay is None
+    ep = built(tmp_path, staging(), pinned_fonts)
+    assert not (tmp_path / "voiced").exists()
+    assert ep._cover_hidden == []
+
+
+def test_the_first_line_ends_where_its_take_stops_speaking_and_not_where_the_file_does(tmp_path):
+    st = staging()
+    letters = tuple("Natural, everyone!")
+    starts = tuple(0.05 * i for i in range(len(letters)))
+    ends = tuple(s + 0.05 for s in starts)
+    takes = [
+        sketch.Take("01", "gary", 0.25, 1.4, sketch.Alignment(letters, starts, ends)),
+        sketch.Take("02", "rosa", 1.6, 1.0, sketch.Alignment(tuple("I"), (0.0,), (0.1,))),
+    ]
+    sketch.write_speech(tmp_path, takes, 3.0)
+    assert collage_sketch.first_line_end(tmp_path, st.sketch, voiced=True) == pytest.approx(0.25 + 0.9)
+    assert collage_sketch.first_line_end(tmp_path, st.sketch, voiced=False) == sketch.line_spans(st.sketch)[0][1]
+
+
+def test_a_recording_with_no_first_take_is_refused(tmp_path):
+    sketch.write_speech(tmp_path, [], 3.0)
+    with pytest.raises(sketch.SketchError):
+        collage_sketch.first_line_end(tmp_path, staging().sketch, voiced=True)
+
+
+def test_a_staging_that_asks_its_captions_to_clear_the_bug_keeps_every_pill_off_it(pinned_fonts, tmp_path):
+    from srstudio import show
+
+    long = (sketch.Line("rosa", "Tell your brother I can read that."),)
+    beats, end = timed(long, ((2.4, "rosa", 0, "half", "smug", "hold"),), tail=1.0)
+    sk = make_sketch("clear-test", "Clear test", ("rosa",), long, beats, end)
+    base = Staging(sk, 7, "d", "a", "n", collage_sketch.TINTS, {"rosa": "living-room"})
+    assert base.clear_bug is False  # every published reel's rows stay as they were drawn
+
+    def pills(st: Staging) -> list[tuple[float, float, float, float]]:
+        root = ET.fromstring(built(tmp_path / str(st.clear_bug), st, pinned_fonts).scene.to_bytes(layout="pretty"))
+        rects = [
+            s for s in root.iter("shape") if s.get("shape") == "rect" and s.get("radius") == str(collage.CAPTION_RADIUS)
+        ]
+        return [
+            (float(r.get("x")), float(r.get("y")), float(r.get("x")) + float(r.get("width")),
+             float(r.get("y")) + float(r.get("height")))
+            for r in rects
+        ]  # fmt: skip
+
+    assert not all(show.clear_of_bug(box) for box in pills(base))
+    asked = pills(replace(base, clear_bug=True))
+    assert asked and all(show.clear_of_bug(box) for box in asked)

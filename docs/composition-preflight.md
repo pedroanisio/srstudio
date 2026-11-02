@@ -12,6 +12,12 @@ contacts, supported passes and conservative work bounds. It returns immutable
 records and a reproducible digest without invoking drawing builders, reading a
 render cache or creating files.
 
+Set `ScenePlan.background="#efe8df"` for an opaque native project clear color.
+The default `None` retains transparency and existing scene identities. The
+background stays outside world lighting and does not change raw plate work.
+Malformed colors fail before publication; vector sources cannot override this
+scene-owned setting. See [ADR 0210](decisions/0210-native-composition-background.md).
+
 `prepare_vector` verifies actual vector XML against a binding. `compile_scene`
 combines verified payloads into a self-contained scene, and `emit_scene` publishes
 that scene atomically. Public preparation and compilation run in workers with
@@ -304,9 +310,36 @@ per interval and placement. Repeated raw renders and final PNGs are deduplicated
 independently: proxy palette/grain changes can produce more final images than
 raw renders. Layer ordering and selected proxy passes remain explicit.
 
+When interval copying would exceed the XML or working-memory allowance, the
+compiler can retain one native vector source per layer and emit held placement
+keys outside its unchanged source clock. This applies to vectors with no form
+fields or only ink fields without spatial paths, and only where reuse reduces
+the conservative storage bound. Separate placements of one asset retain their
+own source offsets, rates and windows. Diffuse lighting, projected geometry and
+raster replacements keep their per-interval values in the same painter order.
+Already-fitting timelines retain their existing XML representation and digest.
+No authoring flag or larger output limit is needed. See
+[ADR 0206](decisions/0206-compact-native-vector-timelines.md).
+
+If native reuse still exceeds the allowance, the compiler can merge adjacent
+vector intervals whose source clock, coordinate space, resolved parent pose,
+camera and form fields are identical. Native animation continues within the
+merged interval. Visibility gaps and changed geometry, light fields or camera
+retain their boundaries. Raster preparation stays unchanged. The earlier
+layouts remain byte-identical when they already fit; this additional fallback
+retains the same limits. See [ADR 0208](decisions/0208-coalesced-vector-timeline-spans.md).
+
 The timeline assembly worker receives closed JSON with a 32 MiB transport cap;
 existing static composition workers retain their 16 MiB cap. Source buffers,
 combined vector/image inputs and complete bundle files each have an 8 MiB cap.
+
+Within planning, each distinct resolved scene receives full preflight once.
+Internal raster-view bridges reuse that immediate result while retaining their
+backend, clipping, units and overscan checks. Public `plate_view` calls still
+revalidate supplied plans. This avoids multiplying full scene validation by the
+number of raster layers; the one-million planned-record limit remains enforced.
+See [ADR 0209](decisions/0209-reuse-validated-timeline-views.md).
+
 The worker recomputes the schedule, validates every image reference and PNG,
 checks the final schema and bounds the output node count. Publication creates a
 private directory (0700) with private files (0600) through an atomic rename.
@@ -927,10 +960,19 @@ are never deserialized.
 ## Author vector form lighting
 
 Attach `FormSurface` records to a vector binding to use the scene's `LightRig`.
-Each source shape needs exactly one field: `diffuse` selects an authored palette
+Each source shape needs exactly one owner: `diffuse` selects an authored palette
 color, while `ink` preserves the original fill and stroke, including existing
-`brush.crescent` shapes. A field names the source shape ID before placement
-namespacing. Native information belongs in a separate screen information layer.
+`brush.crescent` shapes. A field names the source ID before placement namespacing.
+Native information belongs in a separate screen information layer.
+
+A native ink field may name a nonempty group: `c.FormSurface("figure", mode="ink")`
+preserves all shapes below that source group, including their original opacity,
+transforms and animation clocks. Nested fields and shape overrides inside that
+group are refused; ownership must be exclusive. Unknown targets, empty groups
+and unclaimed shapes fail before publication. Diffuse fields and spatial paths
+still name individual shapes. This avoids one record per preserved shape without
+changing the 256-field limit or inferring lighting intent. See
+[ADR 0207](decisions/0207-explicit-native-ink-groups.md).
 
 ```python
 from srstudio import composition as c

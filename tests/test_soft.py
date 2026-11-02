@@ -903,3 +903,13 @@ def test_lamp_talk_spans_out_of_order_or_empty_are_refused(spans):
     _, cv = canvas()
     with pytest.raises(BlobError, match="lamp_talk"):
         blob.home(cv, cv.comp, lamp_talk=spans)
+
+
+@pytest.mark.parametrize("name", ["phone-a", "phone-b"])
+def test_a_seated_phone_is_held_up_at_the_chest_between_the_lap_and_the_chin(name):
+    pose, sit = POSES[name], POSES["sit"]
+    for arm in ("arm_l", "arm_r"):
+        assert pose.limbs[arm].p0 == sit.limbs[arm].p0, "the shoulders stay on the seated body"
+        assert sit.limbs[arm].p3[1] - 40 > pose.limbs[arm].p3[1] > pose.head[1] + blob.HEAD
+    assert pose.limbs["leg_l"] == sit.limbs["leg_l"] and pose.limbs["torso"] == sit.limbs["torso"]
+    assert name in blob.POSES_SINCE_APPROVAL  # the approved drawing walks only the others, so no digest moves

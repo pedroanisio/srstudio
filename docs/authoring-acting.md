@@ -10,6 +10,43 @@ Compile one source performance, then place its windows into shots. The executabl
 
 Run commands from the srstudio repository root.
 
+## External arms on a candidate Toon figure
+
+Use `ToonClip.external_arms` when a scene draws a spatial arm outside the native
+split-head figure. The native drawer and its anatomy ledger both omit that side.
+The tuple accepts distinct `left` and `right` entries. Nonempty delegation
+requires a candidate rig with `drawn_as=None` and separable shared poses
+(`desk`, `lean`, `type`, `crossed`, `sigh`, `face`, `face2`).
+An indivisible drawing-specific gesture is refused before mutation.
+
+```python
+from dataclasses import replace
+from sr_core.scene import Scene
+from srstudio import Canvas
+from srstudio.character_clips import Interval, ToonClip, place_character
+from srstudio.toon import Pose
+from srstudio.toon_bento import BENTO_RIG_2
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="24", duration=2)
+canvas = Canvas(scene, font_asset=None)
+clip = ToonClip(
+    replace(BENTO_RIG_2, drawn_as=None),
+    (Pose(0, eyes="neutral", mouth="neutral", arms="desk"),),
+    external_arms=("right",),
+)
+place_character(canvas, canvas.comp, clip, interval=Interval(0, 2), id="carrier")
+assert {hand.side.name.lower() for hand in canvas.limbs.values()} == {"left"}
+assert scene.check(schema=True) == []
+```
+
+This builds the native component. The scene must supply the external arm and
+verify its shoulder registration, prop contact, painter order and complete
+motion. It does not grant drawing approval or make `LimbTrack` a supported
+input to the split-head adapter. Direct `toon_head.figure` accepts the same
+keyword; omission defaults to an empty tuple and retains existing output.
+See [ADR 0211](decisions/0211-explicit-external-toon-arms.md).
+
 ## Coordinated acting and continuity
 
 `srstudio.acting` compiles a bounded score once, then places windows of that same

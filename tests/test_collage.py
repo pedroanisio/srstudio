@@ -39,6 +39,7 @@ def test_the_style_is_registered_with_its_parts_and_font():
     assert COLLAGE.parts == (
         "collage",
         "collage_article",
+        "collage_big_type",
         "collage_everyday",
         "collage_forecast",
         "collage_odds",
@@ -476,3 +477,30 @@ def test_the_call_buttons_sit_in_the_frame_below_the_figure_and_clear_of_every_s
     assert reds  # the red hang-up button between the two grey ones
     assert not list(tree(cv).iter("text"))  # no lettering: nothing for the safe-area check to measure
     assert registry.get("prop", "collage-call-buttons") is not None
+
+
+def test_a_caption_asked_to_clear_the_bug_wraps_so_its_pill_keeps_the_clearance():
+    from srstudio import show
+
+    text = "Tell your brother I can read that."  # 34 characters, 884 px: one row 948 px wide unasked
+
+    def narrow(row: str) -> float:
+        return 26.0 * len(row)
+
+    def pills(**kw):
+        cv = canvas()
+        collage.captions(cv, cv.comp, [toon.Line("01", text, 0.0, 1.0, "rosa")], narrow, **kw)
+        root = tree(cv)
+        rects = [s for s in root.iter("shape") if s.get("shape") == "rect"]
+        boxes = [(float(r.get("x")), float(r.get("y"))) for r in rects]
+        return [
+            (x, y, x + float(r.get("width")), y + float(r.get("height")))
+            for (x, y), r in zip(boxes, rects, strict=True)
+        ], [t.get("text") for t in root.iter("text")]
+
+    (box,), rows = pills()
+    assert not show.clear_of_bug(box) and rows == [text]  # the frame's margins alone let it reach under the bug
+    (box,), rows = pills(clear_bug=True)
+    assert show.clear_of_bug(box) and len(rows) == 2 and " ".join(rows) == text
+    (box,), rows = pills(clear_bug=True, tops={text: show.BUG_BOX[3] + show.CLEAR})
+    assert rows == [text] and box[2] - box[0] > 2 * (show.BUG_BOX[0] - show.CLEAR - 540.0)  # clear below it
