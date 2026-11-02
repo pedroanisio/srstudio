@@ -61,6 +61,8 @@ The [effect shader](https://github.com/pedroanisio/scene-render/blob/af179e456d2
 
 The default is the material-aware ramp in `srstudio.proxy`: a light pass cut into tone bands per part, with interior ink where part families meet on the part-id pass. Palette, band thresholds, line width units (screen pixels or world units), color space, premultiplied alpha handling, and effect order are versioned style settings. A silhouette-only result is acceptable only for a style that explicitly wants it. No recipe is adopted solely because its XML validates.
 
+A moving 3D world is inked from an id pass in the same document: `srstudio.ink_pass` copies a 3D group into flat, unlit, double-sided id colours under the vendored, pinned `ink.fs`, and `srstudio.line_stability` measures popped ink, width chatter and ink swing between frames ([ADR 0160](docs/decisions/0160-ink-on-moving-3d.md)). A camera move is approved on a rendered clip watched at playback speed, with those measures beside it, not on stills. Line width on a slow push chatters by about a pixel with the engine's 3D antialias on, measured but not visible at playback.
+
 Animation obeys these contracts:
 
 - Paint and displacement are anchored to object/rig coordinates. Seeds derive from stable scene, asset, and channel identifiers, never evaluation order or wall-clock time. Intentional animated grain/noise has an explicit clock and rate. Rebuilding a frame, or sampling it out of order, gives the same result on the pinned renderer configuration.
