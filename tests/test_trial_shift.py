@@ -1,5 +1,6 @@
 """Trial Shift as data: the lines as decided, the real holds, the voices, and the holdout's post."""
 
+import math
 import sys
 from pathlib import Path
 
@@ -13,25 +14,45 @@ from srstudio.releases import load  # noqa: E402
 from trial_shift_audio import (  # noqa: E402
     ARM,
     AT_DOOR,
+    AVA_APART,
+    AVA_HAND,
+    AVA_REACH,
+    AVA_SHOULDER,
+    AVA_SIZE,
     BEHIND_HIM,
     CAPTION_LEAD,
     CAPTION_MIN,
     CAPTION_TAIL,
+    CODE_LEFT,
     CUE,
+    DOOR_RIGHT,
+    GONE,
+    HAND_RADIUS,
+    HEAD_AT_CODE,
     HELD_OUT,
     HOOK,
     KEY_LEFT,
+    LEAVES,
+    MILO_JAW,
+    MILO_RIGHT_HAND,
+    MILO_RIGHT_SHOULDER,
     MILO_SIZE,
+    MILO_X,
     MILO_Y,
     ON_AVA,
+    OUT_OF_SIGHT,
     PASTRY_RIGHT,
     REST,
     SCRIPT,
     SHOULDER,
     THE_TAG,
+    TRAY_HAND,
+    TRAY_SIZE,
     TURNS,
+    TURNS_FRAME,
     TWO,
     VOICES,
+    WALKS_ON,
     cue_off,
     extra,
     schedule,
@@ -134,6 +155,41 @@ def test_the_hand_stays_clear_of_a_folded_elbow_on_its_way_to_the_hook_and_out()
 def test_the_hook_line_leaves_the_prices_on_the_board():
     scale, x, _ = TWO
     assert scale * PASTRY_RIGHT + x < KEY_LEFT
+
+
+def test_the_tray_clears_milos_jaw_while_the_candidate_walks_on():
+    assert all(x + TRAY_SIZE * TRAY_HAND + HAND_RADIUS < MILO_X - MILO_JAW for x in WALKS_ON)
+
+
+def test_the_candidate_walks_on_clear_of_the_boards_code_and_in_the_frame():
+    scale, x, _ = TURNS_FRAME
+    assert all(room + HEAD_AT_CODE <= CODE_LEFT and scale * room + x >= 60 for room in WALKS_ON)
+    assert WALKS_ON[0] > WALKS_ON[1]  # he does not stop, and he goes the way he was going
+
+
+def test_ava_stays_in_the_frame_of_the_turn():
+    scale, x, _ = TURNS_FRAME
+    assert scale * (AVA_APART + AVA_REACH + HAND_RADIUS) + x <= 1080
+
+
+def test_the_candidate_has_gone_behind_the_door_before_milo_leaves_his_mark():
+    beats = extra(Timing(phrases()))
+    assert OUT_OF_SIGHT + TRAY_SIZE * TRAY_HAND + HAND_RADIUS <= DOOR_RIGHT
+    assert beats["wide"] < beats["down"] - LEAVES < beats["crosses"] + GONE < beats["arrives"]
+
+
+def _hanging(x, size, shoulder, hand, bend):
+    """The room's x of an arm hanging at a figure's side: the elbow and the hand, the two that can touch."""
+    aim, _ = cutout_arm.angles(shoulder, ARM, ARM, hand, bend)
+    elbow = shoulder[0] + ARM * math.cos(math.radians(aim))
+    return x + size * elbow, x + size * hand[0]
+
+
+def test_the_arms_between_ava_and_milo_do_not_stack_once_he_turns_to_her():
+    his = _hanging(MILO_X, MILO_SIZE, MILO_RIGHT_SHOULDER, MILO_RIGHT_HAND, 1)
+    hers = _hanging(AVA_APART, AVA_SIZE, AVA_SHOULDER, AVA_HAND, -1)
+    elbows, hands = hers[0] - his[0], hers[1] - his[1]
+    assert elbows >= 16 and hands >= 2 * HAND_RADIUS
 
 
 def test_the_cuts_rise_and_end_at_the_door():
