@@ -40,6 +40,15 @@ storage. View revalidation and all source snapshots count toward the expansion
 bound. Retained scene records require their own storage allowance even when a
 host declares tiny drawing-node counts. No cache or renderer is consulted.
 
+The record-visit estimate separates motion validation from sampled scene
+validation. The complete motion tree is checked once; each sampled track scans
+its key times and selects or interpolates one typed value. Charging every
+motion value recursively at every view rejected bounded authored body motion
+even though the planner does not perform those visits. The estimate now counts
+the initial motion graph, per-view key scans and selected-value bounds, complete
+scene/binding checks and raster bridges. The combined manifest graph cap and
+the one-million planned-visit cap remain unchanged.
+
 Raster preparation nodes describe complete source/pass documents; assembly
 emits image references instead of copying those documents into each interval.
 When the original per-interval estimate exceeds the node budget, the planner

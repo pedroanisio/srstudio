@@ -132,8 +132,22 @@ def _events(
             for span in clock:
                 add(span.start)
                 add(span.end)
-    count = [0]
+    count, motion_count = [0], [0]
     _graph((base.spec, base.bindings, motion), count)
+    _graph(motion, motion_count)
+    count[0] -= motion_count[0]
+    sampling = 0
+    for keys in groups:
+        if not keys:
+            continue
+        values = []
+        for key in keys:
+            size = [0]
+            _graph(key.value, size)
+            values.append(size[0])
+        # _sample scans key times and selects/interpolates one typed value.
+        # It does not recursively validate the complete motion tree per view.
+        sampling += len(keys) + max(values)
     raster_layers = [layer for layer in spec.layers if layer.asset in sources]
     source_records = sum(
         len(sources[layer.asset].frames) + sum(len(group) for group in sources[layer.asset].raw)
@@ -143,7 +157,7 @@ def _events(
     # reuse that result while visiting layers/bindings and eight bounds corners;
     # every source snapshot is still checked against every resolved view.
     bridges = len(raster_layers) * (len(spec.layers) + len(base.bindings) + 8)
-    visits = len(events) * (count[0] + bridges + source_records)
+    visits = motion_count[0] + len(events) * (count[0] + sampling + bridges + source_records)
     if visits > m.MAX_TIMELINE_RECORDS:
         raise m._fail('records', f'at most {m.MAX_TIMELINE_RECORDS} planned record visits')
     return tuple(sorted(events)), schedules
