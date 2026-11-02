@@ -270,3 +270,13 @@ the timing stands on ([ADR 0204](decisions/0204-gesture-timing.md)).
 as the AIST++ and Bailando papers score dance generation: `points` is the body's positions per frame
 (`body_points(profile, pose)` for each), `score` averages over the stops and `music_score` over the beats. It reads
 stops, not hits: a move that stops on the beat and between beats reads the same half a beat late.
+
+## Put a 2D track on the shared skeleton
+
+A cleaned 2D track (`dancepose.motion.clean`, fifteen joints, no depth) reaches a drawn figure through the shared
+skeleton ([ADR 0214](decisions/0214-dance-2d-skeleton-bridge.md)). `pose_clean.load(path)` reads it as untrusted data;
+`pose_lift.lift(track.points(), track.fps)` lifts it onto the 55-joint mannequin by named rules (depth from
+foreshortening, a common lean per bone, hinges in the bones' plane); `pose_lift.contacts(points, lifted)` finds the
+plants against a local floor; `pose_lift.foot_headings(points, plants)` says which way each foot points, from the hip
+line's width and the knees' bow, and faces the camera where the picture gives no direction. The record stays on the
+machine that made it; tests build their own tracks.
