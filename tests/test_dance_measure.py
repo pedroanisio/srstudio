@@ -233,3 +233,31 @@ def test_a_target_is_checked_when_built(changes):
     base = {"cycles_per_beat": 1, "onto": 0.19, "away": 0.26, "peak_to_peak": (0.26, 0.5), "hit": "min"}
     with pytest.raises(DanceMeasureError):
         DanceTarget(**(base | changes))
+
+
+# --- samples not seen (ADR 0196) --------------------------------------------------------------------------------------
+
+
+def test_a_series_with_samples_missing_reads_as_the_whole_one():
+    move = Move("probe", "seat", (Pattern("root.up", 0.3, cycles=2, snap=0.25, phase=0.1),))
+    grid = Groove(97)
+    whole = series(move, "root.up", grid, 30, span=20 * grid.beat)
+    rng = random.Random(4)
+    holed = [math.nan if rng.random() < 0.3 or 100 <= i < 125 else v for i, v in enumerate(whole)]
+    full, gappy = measure_dance(whole, 30, grid), measure_dance(holed, 30, grid, missing=True)
+    assert gappy.cycles_per_beat == pytest.approx(full.cycles_per_beat, abs=0.002)
+    assert gappy.peak_to_peak == pytest.approx(full.peak_to_peak, abs=0.01)
+    assert gappy.rise == pytest.approx(full.rise, abs=0.005)
+    assert gappy.hit_offset == pytest.approx(full.hit_offset, abs=0.01)
+
+
+def test_missing_samples_are_refused_unless_asked_for_and_too_few_seen_are_refused():
+    values = [math.sin(i / 3) for i in range(60)]
+    values[5] = math.nan
+    with pytest.raises(DanceMeasureError, match="finite"):
+        measure_dance(values, 25, REEL)
+    with pytest.raises(DanceMeasureError, match="finite"):
+        measure_dance([math.inf] + values[1:], 25, REEL, missing=True)
+    sparse = [v if i < 10 else math.nan for i, v in enumerate(values)]
+    with pytest.raises(DanceMeasureError, match="samples seen"):
+        measure_dance(sparse, 25, REEL, missing=True)

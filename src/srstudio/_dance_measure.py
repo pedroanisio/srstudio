@@ -8,6 +8,7 @@ dance a reel was measured to hold, and :meth:`DanceTarget.misses` is the accepta
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 
@@ -131,7 +132,9 @@ SEAT_GROOVE_BOB = DanceTarget(1.0, onto=0.19, away=0.26, peak_to_peak=(0.26, 0.5
 SEAT_GROOVE_SWAY = DanceTarget(1.0, onto=0.12, away=0.32, peak_to_peak=(0.17, 0.23), time_tolerance=0.025)
 
 
-def _series(values: object) -> np.ndarray:
+def _series(values: object, missing: bool) -> tuple[np.ndarray, np.ndarray]:
+    """The series about its mean, and which samples are present: all of them, unless ``missing`` lets a NaN stand
+    for a sample that was not seen."""
     if isinstance(values, (str, bytes)) or not isinstance(values, Sequence):
         raise DanceMeasureError("a series is a sequence of numbers", code="dance.measure", path="series")
     _bad(
@@ -139,10 +142,13 @@ def _series(values: object) -> np.ndarray:
         f"a series holds {MIN_SAMPLES}..{MAX_SAMPLES} samples, not {len(values)}",
         "series",
     )
-    _bad(not all(checks.number(v) for v in values), "a series holds finite numbers only", "series")
+    gap = (lambda v: isinstance(v, float) and math.isnan(v)) if missing else (lambda v: False)
+    _bad(not all(checks.number(v) or gap(v) for v in values), "a series holds finite numbers only", "series")
     x = np.asarray(values, float)
-    _bad(float(np.ptp(x)) < _FLAT, "the series does not move: nothing to measure", "series")
-    return x - x.mean()
+    present = np.isfinite(x)
+    _bad(int(present.sum()) < MIN_SAMPLES, f"a series holds at least {MIN_SAMPLES} samples seen", "series")
+    _bad(float(np.ptp(x[present])) < _FLAT, "the series does not move: nothing to measure", "series")
+    return np.where(present, x - x[present].mean(), 0.0), present
 
 
 def _cycle(x: np.ndarray, fps: int) -> float:
@@ -171,11 +177,11 @@ def _unexplained(x: np.ndarray, times: np.ndarray, hz: float, harmonics: int) ->
     return float(np.sum((x - basis @ _fit(x, basis)) ** 2))
 
 
-def _refined(x: np.ndarray, times: np.ndarray, hz: float, fps: int) -> float:
-    """The spectrum's cycle sharpened on the samples: a search of the width a span can resolve, then twice within one
-    step of the best. The period sets every phase, so an error here grows along the series."""
+def _refined(x: np.ndarray, times: np.ndarray, hz: float, fps: int, span: int) -> float:
+    """The spectrum's cycle sharpened on the samples: a search of the width a span of ``span`` pictures can resolve,
+    then twice within one step of the best. The period sets every phase, so an error here grows along the series."""
     harmonics = max(1, min(_HARMONICS, int(fps / 2 / hz - 1e-9)))
-    width = min(_SEARCH, 2 / (hz * len(x) / fps))
+    width = min(_SEARCH, 2 / (hz * span / fps))
     best = hz
     for _ in range(_PASSES):
         tries = best * (1 + np.linspace(-width, width, _STEPS))
@@ -196,27 +202,32 @@ def _curve(x: np.ndarray, times: np.ndarray, hz: float) -> tuple[np.ndarray, flo
 
 
 def measure_dance(
-    series: Sequence[float], fps: int, groove: Groove, *, start: float = 0.0, hit: str = "snap"
+    series: Sequence[float], fps: int, groove: Groove, *, start: float = 0.0, hit: str = "snap", missing: bool = False
 ) -> DanceReading:
     """A sampled channel's groove against ``groove``; ``series[0]`` is at second ``start``.
 
     ``hit`` is the extreme to place against the beat: ``max``, ``min``, or ``snap``, where the quicker stroke lands.
     The cost is bounded by ``MAX_SAMPLES``. A flat series, or one under two cycles, raises
-    :class:`DanceMeasureError`: a series that does not hold a groove reads as no groove, never as a poor one."""
+    :class:`DanceMeasureError`: a series that does not hold a groove reads as no groove, never as a poor one.
+
+    With ``missing``, a NaN is a sample not seen, as a pose estimator leaves when it loses a dancer (ADR 0196). Nothing
+    is filled in: the cycle is found on the series with the gaps at its mean, then fitted, and its shape read, on the
+    samples present alone, and ``resolution`` counts the gaps they leave in the cycle."""
     if not isinstance(groove, Groove):
         raise DanceMeasureError(f"a series is read on a music.Groove, not {type(groove).__name__}", path="groove")
     _bad(type(fps) is not int or not 1 <= fps <= 1000, f"fps {fps!r} is a whole number in 1..1000", "fps")
     _bad(not checks.number(start), f"start {start!r} is a finite number of seconds", "start")
     _bad(hit not in ("snap", "max", "min"), f"hit {hit!r} is snap, max or min", "hit")
-    x = _series(series)
+    x, present = _series(series, missing)
     hz = _cycle(x, fps)
     _bad(
         hz * len(x) / fps < MIN_CYCLES,
         f"the series holds {hz * len(x) / fps:.2f} cycles of its strongest motion; at least {MIN_CYCLES} are needed",
         "series",
     )
-    times = start - groove.offset + np.arange(len(x)) / fps
-    hz = _refined(x, times, hz, fps)
+    times = (start - groove.offset + np.arange(len(x)) / fps)[present]
+    x = x[present]
+    hz = _refined(x, times, hz, fps, len(present))
     curve, gap = _curve(x, times, hz)
     low, high = int(np.argmin(curve)) / _GRID, int(np.argmax(curve)) / _GRID
     period = 1 / hz
