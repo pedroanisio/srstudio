@@ -16,6 +16,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 
+from . import _stick_transport_contracts as tc
 from . import checks, signature
 from .canvas import Canvas
 from .registry import register
@@ -165,7 +166,12 @@ def _seat_back(cv: Canvas, parent, cx: float) -> None:
         shape(cv, parent, f"M {cx + dx} 960 L {cx + dx * 1.04} 1440", sw=3, stroke=SEAT_DEEP)
 
 
-@register("location", "stick-windshield", tags=("car", "interior", "front", "two-shot", "rear-window", "road"))
+@register(
+    "location",
+    "stick-windshield",
+    contract=tc.contract('stick-windshield'),
+    tags=("car", "interior", "front", "two-shot", "rear-window", "road"),
+)
 def windshield(cv: Canvas, parent, end: float, *, speed: float = 2.5) -> None:
     """The car from its hood, the back layer: the sky above the roof, the headliner with its mirror, the rear window
     with the road receding behind the car (``speed`` dashes of its centre line a second; 0 for a parked car), the
@@ -254,7 +260,12 @@ def _wheel(cv: Canvas, parent) -> None:
           f"{cy - ry * 0.7:.1f}", sw=5, stroke="#7b8290")  # fmt: skip
 
 
-@register("prop", "stick-windshield-dash", tags=("car", "front", "dashboard", "steering-wheel", "phone", "buzz"))
+@register(
+    "prop",
+    "stick-windshield-dash",
+    contract=tc.contract('stick-windshield-dash'),
+    tags=("car", "front", "dashboard", "steering-wheel", "phone", "buzz"),
+)
 def dashboard(
     cv: Canvas,
     parent,

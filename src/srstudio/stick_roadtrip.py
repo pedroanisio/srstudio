@@ -12,6 +12,7 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Sequence
 
+from . import _stick_transport_contracts as tc
 from . import checks
 from .canvas import Canvas
 from .registry import register
@@ -35,7 +36,12 @@ def _rounded(x: float, y: float, w: float, h: float, r: float) -> str:
             f"Q {x} {y} {x + r} {y} Z")  # fmt: skip
 
 
-@register("prop", "stick-rear-view", tags=("car", "mirror", "insert", "fullscreen", "eyes"))
+@register(
+    "prop",
+    "stick-rear-view",
+    contract=tc.contract('stick-rear-view'),
+    tags=("car", "mirror", "insert", "fullscreen", "eyes"),
+)
 def rear_view(cv: Canvas, parent, figure: Callable[[object], object] | None = None):
     """The whole frame as a rear-view mirror on its stem. ``figure`` is called with the masked glass and draws into
     it; returns the glass."""
@@ -64,7 +70,9 @@ def _arc(rx: float, ry: float, start: float, stop: float) -> str:
     return f"M {x0:.2f} {y0:.2f} A {rx} {ry} 0 0 1 {x1:.2f} {y1:.2f}"
 
 
-@register("prop", "stick-swim-ring", tags=("beach", "inflatable", "holiday", "car"))
+@register(
+    "prop", "stick-swim-ring", contract=tc.contract('stick-swim-ring'), tags=("beach", "inflatable", "holiday", "car")
+)
 def swim_ring(cv: Canvas, parent, x: float, y: float, *, rx: float = 120.0, ry: float = 120.0, band: str = "#d9483b"):
     """An inflated ring in ``band`` and white centred on (``x``, ``y``), ``ry`` under ``rx`` when it is squashed; its
     tube is as thick as a third of the smaller radius, so a ring too small to draw is refused."""
@@ -85,7 +93,9 @@ def swim_ring(cv: Canvas, parent, x: float, y: float, *, rx: float = 120.0, ry: 
     return g
 
 
-@register("prop", "stick-blinker", tags=("car", "indicator", "amber", "dashboard"))
+@register(
+    "prop", "stick-blinker", contract=tc.contract('stick-blinker'), tags=("car", "indicator", "amber", "dashboard")
+)
 def blinker(cv: Canvas, parent, x: float, y: float, end: float, clicks: Sequence[float] = (), *, scale: float = 1.0):
     """The indicator's left arrow centred on (``x``, ``y``): dark, and lit for :data:`CLICK_SHOWS` from each time in
     ``clicks``."""

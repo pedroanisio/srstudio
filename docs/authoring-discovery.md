@@ -604,3 +604,57 @@ receipt = entry(cv, shot, 540, 900, 300, unroll=(0.5, 1.5))
 # The receipt starts at 2% height and holds its full height after unrolling.
 ```
 <!-- stick-drawing-discovery:end -->
+
+## Stick road and airport composition
+
+The 28 builders in `stick_car`, `stick_windshield`, `stick_street`,
+`stick_roadtrip` and `stick_airport` declare their drawing frames, clocks and
+return ownership. Inspect nested records before interpreting a value as speed,
+a duration or physical geometry.
+
+`stick-car` takes `Scroll.speed` in frame pixels per second; its six scenery
+layers use different fractions of that speed. `Scroll.offset` changes scenery
+placement and is not a source-time offset for cuts. `stick-windshield.speed`
+counts receding road dashes per second. Both are authored 2D effects.
+`stick-ride` takes an existing `node`, modifies its y keys and returns `None`.
+Its waves depend on sample index, so changing `step` changes temporal frequency;
+the last sample can follow `end`. These adapters do not promise phase-preserving
+cuts or physical suspension dynamics.
+
+The mirror and mounted-phone returns have `x-role="partial-drawing"`. The mirror
+returns only its masked glass; the phone returns only its case. Use an outer
+parent when moving or hiding the complete drawing. A mirror callback receives
+parent coordinates, not coordinates translated to the glass's top-left.
+
+<!-- stick-transport-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry
+
+entry = registry.get("prop", "stick-rear-view")
+contract = entry.describe()["contract"]
+assert contract["returns"]["x-role"] == "partial-drawing"
+assert contract["arguments"]["properties"]["figure"]["x-role"] == "drawing-slot"
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="24", duration=6)
+cv = Canvas(scene, font_asset=None, local_time=True)
+shot = cv.group(cv.comp, "mirror-shot", start=2, end=5)
+seen = []
+
+def reflection(glass):
+    seen.append(glass)
+    cv.ellipse(glass, 450, 700, 180, 180, "#F0E9DF")
+
+# The callback runs once; the glass mask clips its drawing.
+# The outer parent owns visibility of glass, housing, background and glare.
+glass = entry(cv, shot, reflection)
+```
+<!-- stick-transport-discovery:end -->
+
+Airport readouts accept timed display strings, with `None` for a dark interval;
+they do not infer a physical weight unit. Readings begin at zero, rise strictly
+and finish before `end`. Their opacity keys follow the canvas clock, while the
+scale housing stays visible. `stick-carry-on(tag=None)` and
+`stick-gate-podium(plate=False)` need no font. `stick-gate` still requires its font
+and valid sign strings when `sign=False`.
