@@ -67,7 +67,7 @@ orthographic view, `front` (x, y), `left` (z, y, seen from the character's left 
 tempo. `--views` adds `three-quarter`, from a front corner and a little above. It draws bones only, so it shows what
 the skeleton does with a move before any style draws it. Leave out `--moves` for every preset. A character is a preset
 name or the path of a skeleton profile record, and `@seated` after it dances from a seat (`--characters stick@seated`
-with `--moves seat-groove`).
+with `--moves seat-groove`), `@stance` from the class's bent-knee wide stance.
 
 ## Dance arm gestures
 

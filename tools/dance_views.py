@@ -10,7 +10,8 @@ order on a fixed floor, through ``dance_floor`` so the feet hold and the body st
 stays put while the body travels and turns over it; ``--ensemble`` puts every character in one row, in a
 ``--formation`` across the floor, each ``--canon`` beats after the one before, with the small seeded variation of
 ``dance_floor.ensemble``. A character is a preset name or a path to a skeleton profile record, and ``@seated`` after it
-dances from :func:`dance_floor.seated` (``stick@seated``). The track is ``music.render`` at the same tempo.
+dances from :func:`dance_floor.seated` (``stick@seated``), ``@stance`` from :func:`dance_floor.stance`. The track is
+``music.render`` at the same tempo.
 
 Axes are the skeleton's: x right, y down, z anatomical forward. ``front`` draws (x, y); ``left``, seen from the
 character's left side, draws (z, y), so the character faces screen right; ``top``, seen from above, draws (x, z), so its
@@ -39,7 +40,7 @@ from srstudio.errors import SrstudioError
 
 VIEWS = ("front", "left", "top", "three-quarter")
 DEFAULT_VIEWS = ("front", "left", "top")
-BASES = ("standing", "seated")
+BASES = ("standing", "seated", "stance")
 CELL, TOP_BAR, BOTTOM_BAR = 360, 56, 48
 MAX_BARS = 64
 MAX_FPS = 60
@@ -72,11 +73,14 @@ class Character:
     def base(self) -> sk.SkeletonPose:
         if self.base_name == "seated":
             return dance_floor.seated(self.profile)
+        if self.base_name == "stance":
+            return dance_floor.stance(self.profile)
         return sk.rest_pose(self.profile)
 
 
 def character(spec: str) -> Character:
-    """A preset name or a profile record's path, with ``@seated`` to dance from a seat."""
+    """A preset name or a profile record's path, with ``@seated`` to dance from a seat or ``@stance`` from the class's
+    bent-knee wide stance."""
     name, _, base = spec.partition("@")
     base = base or "standing"
     if base not in BASES:
@@ -508,7 +512,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("out", type=Path)
     parser.add_argument("--moves", help="comma-separated preset moves; all presets when neither list is given")
     parser.add_argument("--phrases", help="comma-separated phrases, danced in order on a fixed floor")
-    parser.add_argument("--characters", default="realistic,cartoon,stick", help="presets or profile records; @seated")
+    parser.add_argument(
+        "--characters", default="realistic,cartoon,stick", help="presets or profile records; @seated or @stance"
+    )
     parser.add_argument("--views", default=",".join(DEFAULT_VIEWS))
     parser.add_argument("--bars-each", type=int, default=2)
     parser.add_argument("--bpm", type=float, default=129.0)

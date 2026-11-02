@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import dance, music
+from srstudio import dance, dance_floor, music
 from srstudio import skeleton as sk
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -178,6 +178,14 @@ def test_a_profile_record_that_does_not_parse_is_refused(tmp_path):
     record.write_text('{"name": "bad"}')
     with pytest.raises(views.ViewsError, match="bad.json"):
         views.Sheet((str(record),), ("front",))
+
+
+def test_a_character_may_stand_in_the_class_stance():
+    low = views.Sheet(("cartoon@stance",), ("front",)).cast[0]
+    assert low.label == "cartoon · stance" and low.base_name == "stance"
+    assert dance_floor.knee_bend(low.profile, low.base()) == pytest.approx(dance_floor.STANCE_BEND, abs=1e-3)
+    rest = sk.rest_pose(low.profile)
+    assert dance_floor.knee_bend(low.profile, rest) < 0.1 < dance_floor.STANCE_BEND  # the rest pose stands straight
 
 
 def test_a_seated_row_dances_a_seat_move_from_the_seat():

@@ -142,8 +142,8 @@ belongs to the timing work's `curve` waveform in the moves schema, which a key i
 
 `tools/dance_views.py --phrases` dances phrases in order on a fixed floor whose grid stays put while the body travels
 over it, with a `three-quarter` view beside `front`, `left` and `top`, planted feet marked, and `--ensemble` puts every
-character in one row in a formation with a `--canon`. A character is a preset or a profile record's path, and
-`@seated` dances from `seated(profile)`.
+character in one row in a formation with a `--canon`. A character is a preset or a profile record's path;
+`@seated` dances from `seated(profile)` and `@stance` from `stance(profile)`.
 
 ## Consequences
 
