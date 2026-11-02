@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 
+from . import _stick_drawing_contracts as dc
 from . import checks, signature
 from .canvas import Canvas
 from .registry import register
@@ -125,7 +126,7 @@ TILL_ROW = 34  # px between a receipt's scrawled rows
 FLOOR_SHADOW = "#3a2a1c"
 
 
-@register("prop", "stick-box", tags=("box", "parcel", "delivery", "home"))
+@register("prop", "stick-box", contract=dc.contract('stick-box'), tags=("box", "parcel", "delivery", "home"))
 def carton(
     cv: Canvas,
     parent,
@@ -161,7 +162,7 @@ def carton(
     return g
 
 
-@register("prop", "stick-receipt", tags=("receipt", "paper", "money", "shop"))
+@register("prop", "stick-receipt", contract=dc.contract('stick-receipt'), tags=("receipt", "paper", "money", "shop"))
 def receipt(
     cv: Canvas, parent, x: float, y: float, length: float, *, w: float = 74, unroll: tuple[float, float] | None = None
 ):
@@ -188,7 +189,7 @@ def receipt(
     return g
 
 
-@register("prop", "stick-poster", tags=("wall", "poster", "sign", "font"))
+@register("prop", "stick-poster", contract=dc.contract('stick-poster'), tags=("wall", "poster", "sign", "font"))
 def poster(cv: Canvas, parent, x: float, y: float, w: float, h: float, text: str, *, size: float = 92):
     """A paper poster at ``x, y`` of ``w`` by ``h`` with ``text`` in the caption font, balanced over up to 4 lines."""
     cv.require_font("the poster is lettered in it")
@@ -207,7 +208,9 @@ def poster(cv: Canvas, parent, x: float, y: float, w: float, h: float, text: str
     return g
 
 
-@register("prop", "stick-headset", tags=("headset", "front-desk", "phone", "work"))
+@register(
+    "prop", "stick-headset", contract=dc.contract('stick-headset'), tags=("headset", "front-desk", "phone", "work")
+)
 def headset(cv: Canvas, parent, x: float, y: float, *, flip: bool = False, scale: float = 1.0):
     """A headset on the head centred at ``x, y``: the band, the ear pad and the mic at the mouth, on the side the
     figure faces (``flip``: left). Draw it after the figure."""
@@ -228,7 +231,12 @@ def _scanned(cv: Canvas, parent, name: str, x: float, y: float, scale: float) ->
         shape(cv, g, path, f"{fill}55" if fill else None, 7, stroke=stroke)
 
 
-@register("prop", "stick-xray", tags=("airport", "security", "scanner", "insert", "fullscreen", "effect"))
+@register(
+    "prop",
+    "stick-xray",
+    contract=dc.contract('stick-xray'),
+    tags=("airport", "security", "scanner", "insert", "fullscreen", "effect"),
+)
 def xray(cv: Canvas, parent, end: float, items: Sequence[tuple[str, float, float, float]]):
     """A scanner's screen filling the frame: ``items`` (a name from :data:`XRAY_ITEMS`, x, y, scale) in false colour,
     each over a blurred copy of itself so that it glows, and a scan line that crosses the screen once in ``end``."""
@@ -255,7 +263,7 @@ def xray(cv: Canvas, parent, end: float, items: Sequence[tuple[str, float, float
     return g
 
 
-@register("prop", "stick-plate", tags=("home", "food", "dinner", "plate"))
+@register("prop", "stick-plate", contract=dc.contract('stick-plate'), tags=("home", "food", "dinner", "plate"))
 def plate(cv: Canvas, parent, x: float, y: float, *, heap: int = 2, scale: float = 1.0):
     """A dinner plate seen from the side, standing on ``x, y``, under ``heap`` (0 to 3) tiers of food."""
     if heap not in range(4):
@@ -273,7 +281,7 @@ def plate(cv: Canvas, parent, x: float, y: float, *, heap: int = 2, scale: float
     return g
 
 
-@register("prop", "stick-spoon", tags=("home", "food", "kitchen", "spoon"))
+@register("prop", "stick-spoon", contract=dc.contract('stick-spoon'), tags=("home", "food", "kitchen", "spoon"))
 def spoon(cv: Canvas, parent, grip: tuple[float, float], bowl: tuple[float, float], *, full: bool = False):
     """A big serving spoon from the hand at ``grip`` to its bowl at ``bowl``, with a helping in it if ``full``."""
     g = _group(cv, parent)
@@ -300,7 +308,7 @@ def _robed(cv: Canvas, parent, pose: RigPose, colour: str, belt: str) -> None:
     shape(cv, parent, f"M {hx - 86} {hy - 10} L {hx + 86} {hy - 10}", sw=14, stroke=belt)
 
 
-@register("prop", "stick-robe", tags=("clothes", "robe", "coat", "home"))
+@register("prop", "stick-robe", contract=dc.contract('stick-robe'), tags=("clothes", "robe", "coat", "home"))
 def robe(cv: Canvas, parent, keys: Sequence[RigKey], end: float, poses: Mapping[str, RigPose], *,
          at: tuple[float, float] = (0, 0), scale: float = 1.0, flip: bool = False, colour: str = ROBE_COLOUR,
          belt: str = ROBE_EDGE):  # fmt: skip
@@ -316,7 +324,9 @@ def robe(cv: Canvas, parent, keys: Sequence[RigKey], end: float, poses: Mapping[
     return g
 
 
-@register("prop", "stick-scan-belt", tags=("airport", "security", "scanner", "belt"))
+@register(
+    "prop", "stick-scan-belt", contract=dc.contract('stick-scan-belt'), tags=("airport", "security", "scanner", "belt")
+)
 def scan_belt(cv: Canvas, parent):
     """The security belt across the frame from the left of its scanner to the right edge, its top at
     :data:`BELT_TOP`: drawn over the officer behind it, so it hides his legs. The scanner's hood is at the left."""
@@ -341,7 +351,9 @@ def _crumple(cv: Canvas, parent, x: float, y: float, w: float, h: float) -> None
         shape(cv, parent, f"M {corners} Z", FOIL_LIGHT if k % 2 else FOIL_DARK, opacity=0.7)
 
 
-@register("prop", "stick-foil-parcel", tags=("food", "foil", "leftovers", "parcel"))
+@register(
+    "prop", "stick-foil-parcel", contract=dc.contract('stick-foil-parcel'), tags=("food", "foil", "leftovers", "parcel")
+)
 def foil_parcel(cv: Canvas, parent, x: float, y: float, *, scale: float = 1.0):
     """A crumpled foil parcel of leftovers centred on ``x, y``."""
     if scale <= 0:
@@ -351,7 +363,12 @@ def foil_parcel(cv: Canvas, parent, x: float, y: float, *, scale: float = 1.0):
     return g
 
 
-@register("prop", "stick-foil-note", tags=("food", "foil", "note", "insert", "fullscreen", "font"))
+@register(
+    "prop",
+    "stick-foil-note",
+    contract=dc.contract('stick-foil-note'),
+    tags=("food", "foil", "note", "insert", "fullscreen", "font"),
+)
 def foil_note(cv: Canvas, parent, text: str, *, size: float = 104):
     """The frame given over to a sheet of foil and the note taped to it, lettered ``text``, up to five lines."""
     cv.require_font("the note is lettered in it")
@@ -381,7 +398,12 @@ def _sx(side: int, out: float, depth: float) -> float:
     return 540 + side * out * depth
 
 
-@register("location", "stick-aisle", tags=("airport", "plane", "cabin", "aisle", "perspective", "travel"))
+@register(
+    "location",
+    "stick-aisle",
+    contract=dc.contract('stick-aisle'),
+    tags=("airport", "plane", "cabin", "aisle", "perspective", "travel"),
+)
 def aisle(cv: Canvas, parent):
     """A plane's aisle from the back of the cabin in one-point perspective: the hull, the bins on both sides and the
     seat rows shrinking toward the bulkhead at :data:`HORIZON`. Stand people in it with :func:`queue`. The code sits on
@@ -448,7 +470,9 @@ def _passenger(
     _gate(cv, face, turn, end, end)
 
 
-@register("prop", "stick-queue", tags=("airport", "plane", "cabin", "crowd", "people"))
+@register(
+    "prop", "stick-queue", contract=dc.contract('stick-queue'), tags=("airport", "plane", "cabin", "crowd", "people")
+)
 def queue(cv: Canvas, parent, end: float, *, turn: float, rows: int = AISLE_ROWS, legs: bool = False):
     """A line of ``rows`` pairs of people down :func:`aisle`, backs to the viewer, who all turn to face them at
     ``turn`` seconds, with ``legs`` under their coats for a shot that shows the floor. Fixed hair and coats, so a shot
@@ -469,7 +493,7 @@ def queue(cv: Canvas, parent, end: float, *, turn: float, rows: int = AISLE_ROWS
     return g
 
 
-@register("prop", "stick-book", tags=("book", "reading", "hand-prop"))
+@register("prop", "stick-book", contract=dc.contract('stick-book'), tags=("book", "reading", "hand-prop"))
 def book(cv: Canvas, parent, x: float, y: float, *, shut: bool = False, scale: float = 1.0, colour: str = COVER):
     """A paperback centred on ``x, y``, seen from its ``colour`` cover: open and held up to read, or ``shut``."""
     if scale <= 0:
@@ -484,7 +508,7 @@ def book(cv: Canvas, parent, x: float, y: float, *, shut: bool = False, scale: f
     return g
 
 
-@register("prop", "stick-duffel", tags=("bag", "travel", "hand-prop"))
+@register("prop", "stick-duffel", contract=dc.contract('stick-duffel'), tags=("bag", "travel", "hand-prop"))
 def duffel(cv: Canvas, parent, x: float, y: float, *, scale: float = 1.0, colour: str = DUFFEL):
     """A soft duffel bag centred on ``x, y``, its strap up, in ``colour``."""
     if scale <= 0:
@@ -506,7 +530,9 @@ def double_take(at: float, pose: str, first: Face, away: Face, second: Face, *, 
     return [RigKey(at, pose, first), RigKey(at + step, pose, away), RigKey(at + 2 * step, pose, second)]
 
 
-@register("prop", "stick-wheelie-bin", tags=("trash", "street", "bin", "home"))
+@register(
+    "prop", "stick-wheelie-bin", contract=dc.contract('stick-wheelie-bin'), tags=("trash", "street", "bin", "home")
+)
 def wheelie_bin(cv: Canvas, parent, x: float, y: float, *, wheels: int = 2, lean: float = 0.0, scale: float = 1.0):
     """A wheeled trash bin standing on ``x, y``, its handle at the top right, tipped ``lean`` degrees onto its wheels.
     ``wheels`` is how many it still has: with none it stands on its corner."""
@@ -523,7 +549,9 @@ def wheelie_bin(cv: Canvas, parent, x: float, y: float, *, wheels: int = 2, lean
     return g
 
 
-@register("prop", "stick-trash-truck", tags=("trash", "street", "truck", "vehicle"))
+@register(
+    "prop", "stick-trash-truck", contract=dc.contract('stick-trash-truck'), tags=("trash", "street", "truck", "vehicle")
+)
 def trash_truck(cv: Canvas, parent, x: float, y: float, *, scale: float = 1.0):
     """A trash truck heading right, its rear on ``x`` and its wheels on the road at ``y``: the hopper, the body and the
     cab, :data:`TRUCK_LENGTH` long. The cab's window is :data:`CAB_WINDOW`, so a driver can be drawn in it."""
@@ -547,7 +575,7 @@ def trash_truck(cv: Canvas, parent, x: float, y: float, *, scale: float = 1.0):
     return g
 
 
-@register("prop", "stick-slipper", tags=("clothes", "home", "slipper", "shoe"))
+@register("prop", "stick-slipper", contract=dc.contract('stick-slipper'), tags=("clothes", "home", "slipper", "shoe"))
 def slipper(cv: Canvas, parent, x: float, y: float, *, scale: float = 1.0):
     """One bedroom slipper centred on ``x, y``, toe to the right; key the group to throw it."""
     if scale <= 0:
@@ -558,7 +586,7 @@ def slipper(cv: Canvas, parent, x: float, y: float, *, scale: float = 1.0):
     return g
 
 
-@register("prop", "stick-sparks", tags=("effect", "sparks", "scrape", "metal"))
+@register("prop", "stick-sparks", contract=dc.contract('stick-sparks'), tags=("effect", "sparks", "scrape", "metal"))
 def sparks(cv: Canvas, parent, x: float, y: float, end: float, *, rate: float = 12.0, scale: float = 1.0):
     """A spray of sparks thrown back from ``x, y``, redrawn ``rate`` times a second for ``end`` seconds: two sprays turn
     about, so it flickers the same on every render."""
@@ -581,7 +609,9 @@ def sparks(cv: Canvas, parent, x: float, y: float, end: float, *, rate: float = 
     return g
 
 
-@register("prop", "stick-planks", tags=("furniture", "flat-pack", "home", "planks"))
+@register(
+    "prop", "stick-planks", contract=dc.contract('stick-planks'), tags=("furniture", "flat-pack", "home", "planks")
+)
 def planks(cv: Canvas, parent, x: float, floor: float, *, scale: float = 1.0):
     """What a flat-pack is before it is anything: panels leaning on the wall and the flat box they came in, its left
     edge at ``x`` and its foot on ``floor``."""
@@ -599,7 +629,12 @@ def planks(cv: Canvas, parent, x: float, floor: float, *, scale: float = 1.0):
     return g
 
 
-@register("prop", "stick-wardrobe", tags=("furniture", "flat-pack", "home", "wardrobe", "stages", "font"))
+@register(
+    "prop",
+    "stick-wardrobe",
+    contract=dc.contract('stick-wardrobe'),
+    tags=("furniture", "flat-pack", "home", "wardrobe", "stages", "font"),
+)
 def wardrobe(cv: Canvas, parent, x: float, floor: float, stage: str = "done", *, scale: float = 1.0):
     """A flat-pack wardrobe with its left edge at ``x`` and its foot on ``floor``: ``"half"`` up, with no top and its
     right door hung backwards, raw side out with the hinges showing and the label meant for the inside, or ``"done"``,
@@ -644,7 +679,7 @@ def _door(cv: Canvas, parent, x: float, y: float, w: float, h: float, handle: in
     box(cv, parent, x + (w - 26 if handle > 0 else 12), y + h / 2 - 50, 14, 100, STEEL_DARK, r=6)
 
 
-@register("prop", "stick-drill", tags=("tool", "drill", "hand-prop", "home"))
+@register("prop", "stick-drill", contract=dc.contract('stick-drill'), tags=("tool", "drill", "hand-prop", "home"))
 def drill(cv: Canvas, parent, x: float, y: float, *, flip: bool = False, scale: float = 1.0):
     """A cordless drill with its grip at ``x, y``, the bit pointing right (``flip``: left)."""
     if scale <= 0:
@@ -658,7 +693,7 @@ def drill(cv: Canvas, parent, x: float, y: float, *, flip: bool = False, scale: 
     return g
 
 
-@register("prop", "stick-screws", tags=("tool", "screws", "small", "flat-pack"))
+@register("prop", "stick-screws", contract=dc.contract('stick-screws'), tags=("tool", "screws", "small", "flat-pack"))
 def screws(cv: Canvas, parent, x: float, y: float, *, count: int = 4, scale: float = 1.0):
     """``count`` loose screws in a row, the first centred on ``x, y``: small enough to matter."""
     if count < 1:
@@ -752,7 +787,12 @@ def _speech(cv: Canvas, parent, text: str) -> None:
     parent.add_layer(id=cv.uid("layer"), asset=name, x=x + 40, y=y + 20)
 
 
-@register("prop", "stick-manual-page", tags=("insert", "fullscreen", "flat-pack", "manual", "font"))
+@register(
+    "prop",
+    "stick-manual-page",
+    contract=dc.contract('stick-manual-page'),
+    tags=("insert", "fullscreen", "flat-pack", "manual", "font"),
+)
 def manual_page(cv: Canvas, parent, step: int, drawing: str, *, bubble: str = ""):
     """The frame given over to one page of an assembly manual: the step's number and one of :data:`MANUAL_DRAWINGS`
     in its wordless little people. Only ``"argument"`` has words, its ``bubble``, and it must have them."""
@@ -794,10 +834,10 @@ def manual_page(cv: Canvas, parent, step: int, drawing: str, *, bubble: str = ""
     return g
 
 
-@register("prop", "stick-caller", tags=("phone", "ringing", "hand-prop", "font"))
+@register("prop", "stick-caller", contract=dc.contract('stick-caller'), tags=("phone", "ringing", "hand-prop", "font"))
 def caller(cv: Canvas, parent, x: float, y: float, name: str, *, ring: Sequence[float] = (), scale: float = 1.0):
     """A phone centred on ``x, y`` ringing with ``name`` across its screen, the answer and decline buttons under it;
-    it shakes for a moment at each time in ``ring`` (seconds on the parent's clock)."""
+    it shakes for a moment at each time in ``ring`` (seconds on the canvas clock)."""
     cv.require_font("the caller's name is set in it")
     if not name.strip():
         raise StickDataError("a ringing phone says who is calling")
