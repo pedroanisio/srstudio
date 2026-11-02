@@ -26,6 +26,7 @@ a similar character or pass contract JSON directly to a builder.
 | Carry state through a cut | [Listening](authoring-acting.md#sustained-listening-and-repairable-capability-failures) and [carrying](authoring-acting.md#carrying-a-prop-across-a-cut) recipes | Window one source performance; preserve contact, expression and texture clocks. |
 | Author constrained arm motion | [Limbs guide](catalog/limbs.md) | Declare anatomy, reference units, projection and contacts; canonical-arm limits do not certify whole-body motion. |
 | Coordinate pelvis, torso, feet and steps | [`body.compile_body`](authoring-body.md) | World sole anchors, explicit joint envelopes and a sampled static support proxy; source-clock cuts. |
+| Make a character dance to a song | [`dance.sample`, `dance.Routine`](authoring-dance.md) | Moves are data on canonical joints, timed by a `music.Groove`; `measure_dance` holds a move to the dance it was measured from. |
 | Choose a continuity guarantee | [Continuity discovery](catalog/limbs.md#inspect-continuity-before-choosing-a-transition) | Inspect source key derivatives, estimated joins, endpoint holds and rendered sampling separately. |
 | Repair invalid authoring input | [Diagnostic recipe](authoring-diagnostics.md#repairing-authoring-input) | Match `code` and `path`, validate corrected input, and bound retries in ordinary code. |
 | Evaluate motion quality | [Quality study](../examples/limbs_quality.py) | Keep numeric limits, strict rendering and human temporal ratings separate. |
