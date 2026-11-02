@@ -121,7 +121,7 @@ Inspect `BENTO.describe()["transitions"]` for acting contracts. Its legacy and p
 numeric linear baked keys from held expression, gesture and gaze arrivals. Easing a source curve does not
 preserve its derivatives after baking. Windowing one performance preserves its source-time samples across
 cuts; it does not make an independently authored camera cut or discrete drawing switch continuous.
-See [acting policies](../authoring-reference.md#opt-in-acting-transition-policies).
+See [acting policies](../authoring-acting.md#opt-in-acting-transition-policies).
 
 ## Chain gestures without returning to rest
 

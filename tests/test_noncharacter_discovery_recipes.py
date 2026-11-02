@@ -9,7 +9,7 @@ from srstudio.head_motion import Channel
 
 
 def recipe(name):
-    document = Path(__file__).resolve().parents[1] / 'docs/authoring-reference.md'
+    document = Path(__file__).resolve().parents[1] / 'docs/authoring-discovery.md'
     section = document.read_text().split(f'<!-- {name}:start -->')[1].split(f'<!-- {name}:end -->')[0]
     code = section.split('```python\n')[1].split('```')[0]
     namespace = {}
@@ -24,6 +24,19 @@ def test_location_discovery_recipe_invokes_a_real_actor_slot_once():
     assert ns['scene'].check(schema=True) == []
     assert ns['repair']['code'] == 'location.slot'
     assert ns['repair']['path'] == 'behind_desk'
+
+
+def test_toon_discovery_recipe_distinguishes_reference_coordinates_and_animation_clocks():
+    ns = recipe('toon-drawing-discovery')
+    assert ns['scene'].check(schema=True) == []
+    assert ns['plant_result'] is ns['clock_result'] is None
+    assert ns['plant_info']['returns']['type'] == 'null'
+    assert (
+        ns['clock_info']['arguments']['properties']['times']['items']['prefixItems'][0]['x-timebase'] == 'composition'
+    )
+    animations = list(ns['scene'].iter('animate'))
+    assert any(a.timeBase == 'local' for a in animations)
+    assert any(a.property == 'rotation' and a.timeBase is None for a in animations)
 
 
 def test_held_prop_recipe_publishes_a_schema_valid_scene_and_no_contact_shadow():

@@ -17,9 +17,11 @@ combines verified payloads into a self-contained scene, and `emit_scene` publish
 that scene atomically. Public preparation and compilation run in workers with
 hard address-space limits and preemptive deadlines. Plate renderer sessions also
 enforce process limits and count retries; see [render sessions](authoring-benchmark.md#bound-a-plate-authoring-operation).
-`prepare_plate` also verifies static untextured mesh payloads and prepares their
-closed scene/resources in a bounded worker. Proxy/textured payloads, compiled
-plate/proxy emission and renderer budget integration remain open under SDK-P2-07.
+`prepare_plate` also verifies static mesh and texture payloads and prepares their
+closed scene/resources in a bounded worker. `compile_bundle` and `emit_bundle`
+combine verified vectors and static plates with bounded rendering and portable
+image resources. Printed-label, animated plate and proxy adapters remain open under
+SDK-P2-07.
 A valid manifest alone is not a rendered scene,
 approval of a new style, or proof of a host's declared geometry.
 
@@ -110,11 +112,12 @@ resolved placement, backend and passes: two placements of the same source need
 two cold renders; identical placements can share one. A rendered artifact must
 also bind the actual camera, lighting, renderer and other rendering inputs.
 
-The current preparation adapter accepts one static, untextured plate job per
-source, up to 128 meshes/materials and eight MiB of total input buffers. Prepared
-XML/resources have a separate eight MiB cap. Materials support `#RRGGBB` base and
-optional emissive colors, roughness and metallic values. UVs, textures, proxy
-recipes and animated source bindings are refused. Source memory declarations
+The preparation adapter accepts one static plate job per source, up to 128
+meshes, 128 materials and 128 textures, with eight MiB of combined input buffers.
+Prepared XML/resources have a separate eight MiB cap. Materials support `#RRGGBB`
+base, emissive and sheen colors, roughness/metallic/subsurface values in `0..1`,
+and normal-map strength in `0..16`. Printed-label recipes, proxy recipes and
+animated source bindings are refused. Source memory declarations
 must cover eight times the input buffer bytes; the job must cover prepared
 resource storage and its frame buffer. These storage checks complement the
 hard process cap; they do not measure or guarantee renderer/GPU peak memory.
@@ -122,6 +125,110 @@ hard process cap; they do not measure or guarantee renderer/GPU peak memory.
 [Payload tests](../tests/test_composition_plates.py) exercise typed refusals,
 mutable-input snapshots, malformed worker messages, kernel memory limits,
 timeouts, placement accounting and a real render using only the prepared files.
+
+## Preserve textured materials
+
+Use the snapshot adapter with existing `clay.Mesh` and `plates.Material` values:
+
+```python
+source = composition.plate_source(
+    "host", tuple(meshes), tuple(materials), basis="clay",
+)
+# Bind composition.plate_source_digest(source) as the PlateWork.key, preflight
+# the complete manifest, then verify the source in its selected placement.
+prepared = composition.prepare_plate(plan, "host-layer", source)
+```
+
+The adapter copies geometry, UVs and `plates.Texture` pixels into immutable bytes.
+It preserves color maps, normal maps, their strength, sheen and subsurface values.
+Shared pixel maps are deduplicated by both dimensions and contents. The adapter
+refuses `Material.print` recipes; it never drops a label or substitutes a flat
+material. Printed textures need their own bounded rendering and font-provenance
+adapter before that path can be supported.
+
+For explicit records, `plate_texture("paint", texture)` creates a `PlateTexture`.
+Put it in `PlateSource.textures` and name it with
+`PlateMaterial(..., color_map="paint")` or `normal_map="paint"`. Every declared
+texture must be referenced by a material, IDs must be unique, and every reference
+must resolve. Texture records contain width, height and exact row-major RGBA8
+bytes. Arrays must already be `uint8` with four channels; no implicit quantization
+or alpha conversion occurs. Each dimension is in `1..8192`, subject to the
+combined eight MiB raw-input cap.
+
+Every textured mesh needs one finite float64 UV pair per vertex. UVs remain in
+source surface coordinates through parent transforms and camera projection.
+Repeated coordinates outside `0..1` are retained; the adapter neither clamps them
+nor invents a mapping for an unwrapped mesh. The existing engine OBJ convention
+and sampler determine orientation and wrapping. PNG encoding and OBJ generation
+run inside the bounded preparation worker without filesystem writes.
+
+Prepared resources use `textures/<PNG-sha256>.png` and `meshes/<OBJ-sha256>.obj`.
+PNG identity includes its dimensions, so equal pixel bytes in differently shaped
+images cannot alias. Source identity includes UVs, raw pixels, dimensions and
+material fields. Untextured inputs using the original defaults retain their
+existing source and prepared identities; extended sources use identity schema
+`srstudio.plate-source/1.1.0`. Renderer caches include the prepared resources, so a
+changed map produces a new render job. Public bundle compilation reverifies the
+original source and rejects forged prepared resources before rendering.
+
+[Texture tests](../tests/test_composition_textures.py) cover ownership, coordinate
+basis parity, repeated UVs, material preservation, closed resource limits, source
+and cache identities, typed refusals, and a rendered color-map registration probe.
+These checks establish material transport and rendering on the tested engine;
+they do not approve a new character drawing or a texture-animation policy.
+
+## Render and publish a mixed bundle
+
+```python
+from pathlib import Path
+
+bundle = composition.emit_bundle(
+    plan,
+    (prepared, composition.VectorSource("overlay", overlay_xml)),
+    Path("output/shot"),
+    engine=Path("/path/to/scene-render"),
+    cache=Path("cache/plates"),
+)
+# output/shot/scene.xml and image-<sha256>.png travel together.
+print(bundle.work.new_plates, bundle.work.cache_hits, bundle.work.engine_invocations)
+```
+
+Supply one `PreparedPlate` per plate layer and one `VectorSource` or
+`PreparedVector` per vector binding. All sources and their evidence are reverified
+before cache mutation or renderer invocation. `compile_bundle` returns the same
+immutable XML/resources without publishing an output directory; it can populate
+the render cache.
+
+Each unique render job binds the prepared XML, mesh resources and actual renderer
+bytes. Identical jobs share one render, including repeated static placements in
+different time windows. Warm entries must pass record, content, dimension, CRC and
+bounded PNG decompression checks; corruption is refused without repair or retry.
+Changing renderer bytes creates a different cache identity. Valid completed cache
+entries can remain after a later job or final publication fails.
+
+Rendering inherits every enclosing `plates.render_session` limit and also enforces
+the plan's invocation, address-space and per-invocation timeout limits. Each file
+written by the renderer has a 256 MiB kernel limit, allowing graphics-backend
+scratch/mapped files larger than the final PNG. This is a per-file limit,
+not an aggregate disk quota. PNG verification and final scene assembly execute
+in bounded workers. Complete bundle files are limited to eight MiB; the bounded
+wire protocol can refuse large repeated inputs before assembly.
+
+Plate images already contain the parent/camera transform and are placed at the
+registered screen offset exactly once. Vector layers retain their authored
+geometry, clocks and stacking order. Static plate visibility follows the layer's
+start/end interval; this adapter supports static textures but does not supply animated geometry or texture changes.
+
+`emit_bundle` publishes all files as one new directory using Linux
+`renameat2(RENAME_NOREPLACE)`. Existing destinations, including empty directories,
+are refused. Output and cache directories must not overlap. New directories use
+mode `700`, files use `600`. Publication requires filesystem support for this
+operation; no partial-output fallback is used. Atomic visibility does not promise
+recovery after power loss.
+
+The [bundle tests](../tests/test_composition_bundles.py) exercise cold/warm work,
+renderer failures, cache integrity, placement and real mixed-scene rendering.
+These numeric fixtures do not establish drawing approval or animated style quality.
 
 ## Start with a real drawing
 

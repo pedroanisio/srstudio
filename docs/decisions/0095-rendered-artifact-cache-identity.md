@@ -49,6 +49,12 @@ renderer-owned hit. New artifacts are rendered once. Existing published projects
 and their copied assets are not rewritten by this cache migration; approval
 fingerprints still describe drawings, not a renderer installation.
 
+[ADR 0107](0107-texture-shape-and-snapshot-identity.md) corrects ambiguous
+code-generated texture names by including image dimensions. That correction
+changes custom textured drawing references and all textured render keys. Exact
+authored-map aliases preserve approved drawing references; published assets and
+approval records remain untouched.
+
 ## Alternatives
 
 A renderer version string can be shared by distinct builds. Path/stat-only keys

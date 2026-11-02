@@ -25,6 +25,7 @@ from . import checks, gloss
 from ._transaction import scene_transaction
 from .canvas import Canvas
 from .errors import SrstudioError
+from .gaze import GazePlan
 from .head_motion import CHANNELS, Channel, HeadPlan
 from .limbs.integration import LimbTrack, prepare_tracks
 from .rig import Actor, Performance
@@ -135,6 +136,7 @@ class ToonClip:
     head: HeadPlan = field(default_factory=HeadPlan.still)
     mouths: Track = ()
     taps: tuple[float, ...] = ()
+    target_gaze: GazePlan | None = None
 
 
 @dataclass(frozen=True)
@@ -329,6 +331,10 @@ def _check(cv: Canvas, clip: CharacterClip, end: float) -> None:
             _track(channel.keys, f'head.{name}', end, numeric=True)
         _track(clip.head.gaze, 'head.gaze', end)
         clip.head.check_bounds(clip.rig.style)
+        if clip.target_gaze is not None:
+            from ._gaze_drawing import prepare
+
+            prepare(clip.rig, clip.poses, end, clip.head, clip.target_gaze)
         if any(name != 'ahead' for _, name in clip.head.gaze) and not isinstance(clip.rig.look.drawing, Glancing):
             raise _fail('head.gaze', clip.rig.look.name, 'a drawing supporting gaze', code='character.unsupported')
     elif isinstance(clip, GlossClip):
@@ -364,7 +370,17 @@ def _draw(cv: Canvas, parent: Group, clip: CharacterClip, end: float) -> None:
     if isinstance(clip, ActorClip):
         clip.actor(cv, tag=f'{parent.id}-actor').build(parent, 0, 0, perf=clip.performance, end=end)
     elif isinstance(clip, ToonClip):
-        figure(cv, parent, clip.rig, clip.poses, end, clip.head, taps=clip.taps, mouths=clip.mouths)
+        figure(
+            cv,
+            parent,
+            clip.rig,
+            clip.poses,
+            end,
+            clip.head,
+            taps=clip.taps,
+            mouths=clip.mouths,
+            target_gaze=clip.target_gaze,
+        )
     elif isinstance(clip, GlossClip):
         if clip.who == 'sunny':
             gloss.sunny(cv, parent, at=(0, 0), end=end, talk=clip.talk, face=clip.face)

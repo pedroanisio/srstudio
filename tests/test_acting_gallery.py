@@ -39,7 +39,7 @@ def test_gallery_has_two_families_and_reuses_the_full_clock_after_a_cut(tmp_path
 
 
 def test_documented_score_recipe_is_executable_and_preserves_state():
-    path = Path(__file__).resolve().parents[1] / 'docs/authoring-reference.md'
+    path = Path(__file__).resolve().parents[1] / 'docs/authoring-acting.md'
     section = path.read_text().split('<!-- acting:start -->')[1].split('<!-- acting:end -->')[0]
     code = section.split('```python\n')[1].split('```')[0]
     namespace = {}

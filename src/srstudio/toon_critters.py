@@ -38,6 +38,7 @@ from functools import cached_property, lru_cache
 from typing import TYPE_CHECKING
 
 from . import brush
+from ._gaze_drawing import EyeLayers
 from .brush import Point, Shape
 from .canvas import Canvas
 from .head_motion import HeadStyle, Spring
@@ -208,7 +209,13 @@ def _round_pupil(look: Look, px: float, py: float, size: float) -> list[Layer]:
 
 
 def _sleepy(
-    look: Look, centre: Point, inner: float, pupil: Pupil, cover: Callable[[Sequence[Point]], Shape] | None = None
+    look: Look,
+    centre: Point,
+    inner: float,
+    pupil: Pupil,
+    cover: Callable[[Sequence[Point]], Shape] | None = None,
+    *,
+    _moving: list[int] | None = None,
 ) -> list[Layer]:
     """Sleepy eyes: a lid hung past the middle of the eye, drooping to the outer corner over a low pupil, a relaxed
     brow and a tired line under the eye. ``cover`` draws the lid from its outline, the plain outline by default."""
@@ -222,7 +229,10 @@ def _sleepy(
         out.append((brush.stroke([(outer, y + 5.0), (ex, y + 1.0), (inside, y)], INK * 0.95), "ink"))
     out.append((brush.ellipse(ex, ey, r + INK, r + INK), "ink"))
     out.append((brush.ellipse(ex, ey, r, r), "white"))
+    first = len(out)
     out += pupil(look, ex, ey + 0.4 * r, r * 0.28)
+    if _moving is not None:
+        _moving.extend(range(first, len(out)))
     top = ey - r - INK - 1.0
     outer_x, inside_x = ex - inner * (r + INK + 1.0), ex + inner * (r + INK + 1.0)
     y_out, y_in = ey + 0.32 * r, ey + 0.18 * r
@@ -320,6 +330,20 @@ def shared_mouth(look: Look, kind: str) -> list[Layer]:
 
 
 # -- the critters' own drawing -----------------------------------------------------------------------------------------
+_PUPIL_POSITIONS = {
+    'wide': (0.0, 0.0),
+    'half': (0.0, 0.15),
+    'left': (-0.45, 0.05),
+    'up': (0.0, -0.5),
+    'down': (0.0, 0.5),
+    'side': (0.5, 0.12),
+    'narrow': (0.0, 0.15),
+    'shock': (0.0, 0.0),
+    'roll': (0.42, -0.5),
+    'teary': (0.0, 0.05),
+}
+
+
 @dataclass(frozen=True, eq=False)
 class Critter:
     """A critter's own drawing (:class:`srstudio.toon_cast.Drawing`). ``face`` is the look untilted and without a
@@ -394,7 +418,28 @@ class Critter:
             return self.turn(_sleepy(self.face, local, inner, self.pupil, lambda box: self._lid(box, local, reach)))
         return self.turn(self._open_eye(local, kind, inner))
 
-    def _open_eye(self, centre: Point, kind: str, inner: float) -> list[Layer]:
+    def tracked_eye(self, look: Look, centre: Point, kind: str, inner: float) -> EyeLayers:
+        """Declare the pupil layers in their original painter order for target tracking."""
+        if self.tilt != 0:
+            from .gaze import _fail
+
+            raise _fail('rig.tilt', self.tilt, 'an untilted split-head drawing', 'gaze.unsupported')
+        moving: list[int] = []
+        local = self._local(inner)
+        if kind in ('closed', 'wince', 'hearts'):
+            return EyeLayers(tuple(self.eye(look, centre, kind, inner)), (), self.face.eye_r)
+        if kind == 'sleepy':
+            reach = self.face.eye_r + INK + 1.0
+            layers = _sleepy(
+                self.face, local, inner, self.pupil, lambda box: self._lid(box, local, reach), _moving=moving
+            )
+            origin = (0.0, 0.4)
+        else:
+            layers = self._open_eye(local, kind, inner, _moving=moving)
+            origin = _PUPIL_POSITIONS[kind]
+        return EyeLayers(tuple(self.turn(layers)), tuple(moving), self.face.eye_r, origin)
+
+    def _open_eye(self, centre: Point, kind: str, inner: float, *, _moving: list[int] | None = None) -> list[Layer]:
         """An open eye of every kind with a pupil: a pressed ring heavier along the upper lid, the critter's pupil,
         and the kind's lids as tapered lines."""
         face = self.face
@@ -404,21 +449,13 @@ class Critter:
         out: list[Layer] = [_brow(face, centre, kind, inner)] if face.brows else []
         out.append((pressed(_oval(ex, ey, r, r, 10), INK, self.lid_press), "ink"))
         out.append((brush.ellipse(ex, ey, r, r), "white"))
-        pupil = {
-            "wide": (0.0, 0.0),
-            "half": (0.0, 0.15),
-            "left": (-0.45, 0.05),
-            "up": (0.0, -0.5),
-            "down": (0.0, 0.5),
-            "side": (0.5, 0.12),
-            "narrow": (0.0, 0.15),
-            "shock": (0.0, 0.0),
-            "roll": (0.42, -0.5),
-            "teary": (0.0, 0.05),
-        }[kind]
+        pupil = _PUPIL_POSITIONS[kind]
         size = r * {"shock": 0.14, "teary": 0.38}.get(kind, 0.28)
         px, py = ex + pupil[0] * r, ey + pupil[1] * r
+        first = len(out)
         out += self.pupil(face, px, py, size)
+        if _moving is not None:
+            _moving.extend(range(first, len(out)))
         edge = r + INK + 1.0
         lids = {"half": 0.5, "down": 0.3, "side": 0.45}
         if kind in lids:
@@ -438,6 +475,8 @@ class Critter:
             out.append((self._lid(box, centre, edge), lid))
             out.append((brush.stroke([(ex - r - 2.0, y), (ex, y - 1.5), (ex + r + 2.0, y)], INK, LINE), "ink"))
         elif kind == "teary":
+            if _moving is not None:
+                _moving.append(len(out))
             out.append((brush.ellipse(px + size * 0.4, py + size * 0.4, size * 0.18, size * 0.18), "white"))
             from .toon_cast import TEAR, _tear
 

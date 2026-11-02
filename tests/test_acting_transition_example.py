@@ -41,7 +41,7 @@ def test_study_has_comparable_intent_with_observable_timing_and_real_cut_windows
 
 
 def test_documented_policy_recipe_executes_with_explicit_timing():
-    path = Path(__file__).resolve().parents[1] / 'docs/authoring-reference.md'
+    path = Path(__file__).resolve().parents[1] / 'docs/authoring-acting.md'
     section = path.read_text().split('<!-- acting-policy:start -->')[1].split('<!-- acting-policy:end -->')[0]
     code = section.split('```python\n')[1].split('```')[0]
     namespace = {}

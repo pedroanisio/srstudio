@@ -72,7 +72,7 @@ def test_example_binds_hand_and_prop_to_the_same_cut_clock(tmp_path, scene_rende
 
 @pytest.mark.parametrize('recipe', ['listening', 'carrying'])
 def test_cross_system_documentation_is_executable(recipe):
-    path = Path(__file__).resolve().parents[1] / 'docs/authoring-reference.md'
+    path = Path(__file__).resolve().parents[1] / 'docs/authoring-acting.md'
     section = path.read_text().split(f'<!-- {recipe}:start -->')[1].split(f'<!-- {recipe}:end -->')[0]
     code = section.split('```python\n')[1].split('```')[0]
     namespace = {}

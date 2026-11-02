@@ -10,9 +10,12 @@ from dataclasses import asdict, replace
 from . import _composition_wire as wire
 from . import composition as c
 from ._composition_preflight import _digest, _graph, _id
+from ._composition_texture import MAX_TEXTURES
+from ._composition_texture import validate as validate_texture
 
 MAX_BYTES = 8 * 1024**2
 MAX_MESHES = 128
+MAX_RESOURCES = MAX_MESHES + MAX_TEXTURES
 
 
 def _bytes(value: object) -> bytes:
@@ -57,30 +60,62 @@ def validate_source(source: c.PlateSource) -> int:
             raise wire.fail(None, 'PlateMesh records with an explicit source basis')
         _id(mesh.material, 'mesh.material')
         total += sum(len(_bytes(buf)) for buf in (mesh.vertices, mesh.normals, mesh.triangles))
+        if mesh.uvs is not None:
+            total += len(_bytes(mesh.uvs))
         if total > MAX_BYTES:
             raise wire.fail(total, 'at most eight MiB of total mesh buffers')
     for material in source.materials:
         if type(material) is not c.PlateMaterial:
             raise wire.fail(None, 'PlateMaterial records')
         _graph(material, [0])
+    if type(source.textures) is not tuple or len(source.textures) > MAX_TEXTURES:
+        raise wire.fail(None, 'at most 128 immutable texture records')
+    for texture in source.textures:
+        total += validate_texture(texture)
+        if total > MAX_BYTES:
+            raise wire.fail(total, 'at most eight MiB of combined mesh and texture bytes')
     return total
 
 
 def source_digest(source: c.PlateSource) -> str:
     validate_source(source)
+    additions = {'color_map': '', 'normal_map': '', 'normal_scale': 1.0, 'sheen': '', 'subsurface': 0.0}
+    legacy = (
+        not source.textures
+        and all(m.uvs is None for m in source.meshes)
+        and all(getattr(m, field) == default for m in source.materials for field, default in additions.items())
+    )
     return _digest(
         {
-            'schema': 'srstudio.plate-source/1.0.0',
+            'schema': 'srstudio.plate-source/1.0.0' if legacy else 'srstudio.plate-source/1.1.0',
             'meshes': [
                 {
                     'material': m.material,
                     'basis': m.basis,
                     **{k: hashlib.sha256(getattr(m, k)).hexdigest() for k in ('vertices', 'normals', 'triangles')},
+                    **({} if legacy else {'uvs': hashlib.sha256(m.uvs).hexdigest() if m.uvs is not None else None}),
                 }
                 for m in source.meshes
             ],
-            'materials': [asdict(m) for m in source.materials],
+            'materials': [
+                {k: v for k, v in asdict(m).items() if not legacy or k not in additions} for m in source.materials
+            ],
             'meters_per_unit': source.meters_per_unit,
+            **(
+                {}
+                if legacy
+                else {
+                    'textures': [
+                        {
+                            'id': t.id,
+                            'width': t.width,
+                            'height': t.height,
+                            'pixels': hashlib.sha256(t.pixels).hexdigest(),
+                        }
+                        for t in source.textures
+                    ]
+                }
+            ),
         }
     )
 
@@ -91,11 +126,15 @@ def source_encode(source: c.PlateSource) -> dict:
         'id': source.id,
         'meters_per_unit': source.meters_per_unit,
         'materials': [asdict(m) for m in source.materials],
+        'textures': [
+            {'id': t.id, 'width': t.width, 'height': t.height, 'pixels': _encode(t.pixels)} for t in source.textures
+        ],
         'meshes': [
             {
                 'material': m.material,
                 'basis': m.basis,
                 **{k: _encode(getattr(m, k)) for k in ('vertices', 'normals', 'triangles')},
+                'uvs': _encode(m.uvs) if m.uvs is not None else None,
             }
             for m in source.meshes
         ],
@@ -103,23 +142,36 @@ def source_encode(source: c.PlateSource) -> dict:
 
 
 def source_decode(value: object) -> c.PlateSource:
-    data = wire.fields(value, {'id', 'meters_per_unit', 'materials', 'meshes'})
+    data = wire.fields(value, {'id', 'meters_per_unit', 'materials', 'meshes', 'textures'})
     if any(type(data[k]) is not list or not 1 <= len(data[k]) <= MAX_MESHES for k in ('meshes', 'materials')):
         raise wire.fail(None, 'bounded lists of meshes and materials')
     meshes = []
     total = 0
     for value in data['meshes']:
-        m = wire.fields(value, {'material', 'basis', 'vertices', 'normals', 'triangles'})
+        m = wire.fields(value, {'material', 'basis', 'vertices', 'normals', 'triangles', 'uvs'})
         buffers = [_decode(m[k]) for k in ('vertices', 'normals', 'triangles')]
+        uvs = _decode(m['uvs']) if m['uvs'] is not None else None
         total += sum(map(len, buffers))
+        total += len(uvs) if uvs is not None else 0
         if total > MAX_BYTES:
             raise wire.fail(total, 'at most eight MiB of total mesh buffers')
-        meshes.append(c.PlateMesh(m['material'], buffers[0], buffers[1], buffers[2], m['basis']))
+        meshes.append(c.PlateMesh(m['material'], buffers[0], buffers[1], buffers[2], m['basis'], uvs))
+    if type(data['textures']) is not list or len(data['textures']) > MAX_TEXTURES:
+        raise wire.fail(None, 'a bounded texture list')
+    textures = []
+    for value in data['textures']:
+        t = wire.fields(value, {'id', 'width', 'height', 'pixels'})
+        texture = c.PlateTexture(t['id'], t['width'], t['height'], _decode(t['pixels']))
+        total += validate_texture(texture)
+        if total > MAX_BYTES:
+            raise wire.fail(total, 'at most eight MiB of combined mesh and texture bytes')
+        textures.append(texture)
     source = c.PlateSource(
         data['id'],
         tuple(meshes),
         tuple(wire.record(c.PlateMaterial, m) for m in data['materials']),
         data['meters_per_unit'],
+        tuple(textures),
     )
     validate_source(source)
     return source
@@ -157,7 +209,7 @@ def prepared_encode(asset: c.PreparedPlate) -> dict:
 def prepared_decode(value: object, plan: c.ValidatedScenePlan, layer: str, source: c.PlateSource) -> c.PreparedPlate:
     data = wire.fields(value, {'xml', 'resources', 'bounds', 'nodes', 'width', 'height', 'offset', 'digest'})
     binding = next(b for b in plan.bindings if b.id == source.id)
-    if type(data['resources']) is not list or not 1 <= len(data['resources']) <= MAX_MESHES:
+    if type(data['resources']) is not list or not 1 <= len(data['resources']) <= MAX_RESOURCES:
         raise wire.fail(None, 'a bounded resource list')
     xml = _decode(data['xml'])
     resources = []
@@ -166,9 +218,14 @@ def prepared_decode(value: object, plan: c.ValidatedScenePlan, layer: str, sourc
     for entry in data['resources']:
         r = wire.fields(entry, {'name', 'data'})
         content = _decode(r['data'])
-        expected = 'meshes/' + hashlib.sha256(content).hexdigest() + '.obj'
-        if r['name'] != expected or expected in names:
-            raise wire.fail(None, 'unique content-addressed mesh paths')
+        digest = hashlib.sha256(content).hexdigest()
+        expected = r['name']
+        if (
+            type(expected) is not str
+            or expected not in ('meshes/' + digest + '.obj', 'textures/' + digest + '.png')
+            or expected in names
+        ):
+            raise wire.fail(None, 'unique content-addressed mesh or texture paths')
         total += len(content)
         if total > MAX_BYTES:
             raise wire.fail(total, 'at most eight MiB of prepared resources')

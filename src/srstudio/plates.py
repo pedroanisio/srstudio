@@ -26,8 +26,7 @@ import zlib
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
-from dataclasses import asdict, dataclass
-from functools import cached_property
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 
 import numpy as np
@@ -75,6 +74,17 @@ RIM_POWER = 220.0
 EDGE_LEVEL, DILATE, FEATHER = 8.0, 3, 4  # a patch: levels of change that count, then how far it grows and softens
 FOLDER_MODE, FILE_MODE = 0o700, 0o600
 
+# Closed compatibility aliases for authored maps at e15fe9cc (ADR 0107).
+# Both raw pixel hash and exact (width, height) must match. New maps never
+# acquire a legacy alias; changed pixels or dimensions use the versioned name.
+_LEGACY_TEXTURE_SHAPES = {
+    '6a00aead39ee1254ab2e90acc73cd7420c75ab031cd76f8db4bd8677f3685504': (256, 256),  # Rafa knit
+    '1a1c0dac9348e6391bffbf63814617bf8b45da65c0d9f39d75206547ea192d40': (512, 512),  # Rafa clay
+    '163071864c1eadfd510eab6dfed04ec39e17fd32a0290db5f085ae4431ebe8ed': (421, 241),  # Rafa skin
+    '401293498f1d1a3ba859623315d8b94b98b72fac0ed2b6aff5fbc0c405bde034': (1024, 1024),  # Pedro scalp
+    '5358382f6ff591492fb1401360d884a2a2bf9016db33e5141a7ca243d9a1fbe2': (1024, 768),  # Pedro goatee
+}
+
 
 class PlateError(SrstudioError, ValueError):
     """A plate that cannot be described or rendered, or a cached file that is not what its name says."""
@@ -100,6 +110,7 @@ class _RenderScope:
     timeout: float
     memory_bytes: int
     stats: RenderStats
+    file_bytes: int | None = None
     spent: int = 0
 
 
@@ -108,7 +119,11 @@ _RENDER_SCOPES: ContextVar[tuple[_RenderScope, ...]] = ContextVar('srstudio_plat
 
 @contextmanager
 def render_session(
-    *, max_invocations: int = 100, timeout: float = 60, max_memory_bytes: int = 8 * 1024**3
+    *,
+    max_invocations: int = 100,
+    timeout: float = 60,
+    max_memory_bytes: int = 8 * 1024**3,
+    max_file_bytes: int | None = None,
 ) -> Iterator[RenderStats]:
     """Measure and bound plate/print renderer work in this context, including nested calls.
 
@@ -116,6 +131,8 @@ def render_session(
     active timeout and smallest memory limit apply. Memory is a POSIX hard
     per-process virtual-address-space limit, not aggregate RSS or GPU memory.
     Each output stream is capped at 64 KiB; failures stop the owned process group.
+    max_file_bytes optionally caps each file written by a renderer process using
+    RLIMIT_FSIZE. Nested scopes use the smallest supplied cap; None adds no cap.
     A zero invocation budget permits only cache hits. These limits do not bound
     mesh preparation, image decoding or other renderer entry points.
     """
@@ -125,7 +142,9 @@ def render_session(
         raise PlateError('timeout must be finite seconds in (0, 600]', code='plate.render.limit')
     if type(max_memory_bytes) is not int or not 1 <= max_memory_bytes <= 1024**4:
         raise PlateError('max_memory_bytes must be an integer in 1..1099511627776', code='plate.render.limit')
-    scope = _RenderScope(max_invocations, timeout, max_memory_bytes, RenderStats())
+    if max_file_bytes is not None and (type(max_file_bytes) is not int or not 1 <= max_file_bytes <= 1024**4):
+        raise PlateError('max_file_bytes must be None or an integer in 1..1099511627776', code='plate.render.limit')
+    scope = _RenderScope(max_invocations, timeout, max_memory_bytes, RenderStats(), max_file_bytes)
     token = _RENDER_SCOPES.set((*_RENDER_SCOPES.get(), scope))
     try:
         yield scope.stats
@@ -165,13 +184,44 @@ class Print:
 
 @dataclass(frozen=True, eq=False)
 class Texture:
-    """A picture made in code, height by width by 4, named by the digest of its pixels."""
+    """An RGBA8 picture, named by its dimensions and current row-major pixels.
+
+    The caller owns the mutable array. Rendering snapshots it before cache lookup;
+    edits between requests change both drawing and render identity.
+    """
 
     pixels: np.ndarray
 
-    @cached_property
+    @property
     def sha256(self) -> str:
-        return hashlib.sha256(self.pixels.tobytes()).hexdigest()
+        pixels = self._validated_pixels()
+        height, width = pixels.shape[:2]
+        raw = pixels.tobytes(order='C')
+        legacy = hashlib.sha256(raw).hexdigest()
+        if _LEGACY_TEXTURE_SHAPES.get(legacy) == (width, height):
+            return legacy
+        digest_ = hashlib.sha256(b'srstudio.texture/1.0.0\0' + struct.pack('>II', width, height))
+        digest_.update(raw)
+        return digest_.hexdigest()
+
+    def _validated_pixels(self) -> np.ndarray:
+        pixels = self.pixels
+        if (
+            type(pixels) is not np.ndarray
+            or pixels.ndim != 3
+            or pixels.shape[2] != 4
+            or pixels.dtype != np.dtype('uint8')
+            or any(not 1 <= n <= 2**31 - 1 for n in pixels.shape[:2])
+        ):
+            raise PlateError(
+                'a texture needs a nonempty height-by-width-by-four uint8 array',
+                code='plate.texture.pixels',
+                path='texture.pixels',
+                actual=type(pixels).__name__,
+                expected='an RGBA8 numpy.ndarray with PNG-compatible positive dimensions',
+                remedy='Supply uint8 RGBA pixels; explicitly convert other formats before constructing the texture.',
+            )
+        return pixels
 
 
 @dataclass(frozen=True)
@@ -289,6 +339,14 @@ def _add_light(lights, light: Light) -> None:
 
 def document(plate: Plate) -> bytes:
     """The scene document of ``plate``, naming its meshes and prints by digest."""
+    texture_names: dict[int, str] = {}
+
+    def texture_name(texture: Texture) -> str:
+        key = id(texture)
+        if key not in texture_names:
+            texture_names[key] = texture.sha256
+        return texture_names[key]
+
     scene = Scene(version="auto")
     scene.add_project(
         width=plate.width,
@@ -311,9 +369,9 @@ def document(plate: Plate) -> bytes:
         if material.print is not None:
             attrs["baseColorMap"] = f"prints/{print_name(material.print)}.png"
         if material.color_map is not None:
-            attrs["baseColorMap"] = f"textures/{material.color_map.sha256}.png"
+            attrs["baseColorMap"] = f"textures/{texture_name(material.color_map)}.png"
         if material.normal_map is not None:
-            attrs["normalMap"] = f"textures/{material.normal_map.sha256}.png"
+            attrs["normalMap"] = f"textures/{texture_name(material.normal_map)}.png"
             attrs["normalScale"] = material.normal_scale
         if material.sheen:
             attrs.update(sheenColor=material.sheen, sheenRoughness=0.6)
@@ -458,6 +516,7 @@ def _engine_render(engine: Path, source: Path, out: Path) -> None:
                 memory_bytes=min(s.memory_bytes for s in scopes),
                 stdout_bytes=65536,
                 stderr_bytes=65536,
+                file_bytes=min((s.file_bytes for s in scopes if s.file_bytes is not None), default=None),
             )
             if scopes
             else None
@@ -541,6 +600,7 @@ class _RenderInputs:
     engine: Path
     engine_digest: str
     font: bytes | None
+    textures: tuple[tuple[str, Texture], ...] = ()
 
     def check_engine(self) -> None:
         if _engine_digest(self.engine) != self.engine_digest:
@@ -554,14 +614,20 @@ class _RenderInputs:
             )
 
     def key(self, kind: str, source: bytes, prints: Sequence[bytes] = ()) -> str:
-        definition = {
-            'schema': 'srstudio.plate-render/1.0.0',
+        textured = kind == 'plate' and bool(self.textures)
+        definition: dict[str, object] = {
+            'schema': 'srstudio.plate-render/1.1.0' if textured else 'srstudio.plate-render/1.0.0',
             'kind': kind,
             'engine': self.engine_digest,
             'font': hashlib.sha256(self.font).hexdigest() if self.font is not None else None,
             'document': hashlib.sha256(source).hexdigest(),
             'prints': sorted(hashlib.sha256(item).hexdigest() for item in prints),
         }
+        if textured:
+            definition['textures'] = [
+                {'name': name, 'width': texture.pixels.shape[1], 'height': texture.pixels.shape[0]}
+                for name, texture in sorted(self.textures)
+            ]
         return hashlib.sha256(json.dumps(definition, sort_keys=True).encode()).hexdigest()
 
     def folder(self, cache: Path) -> Path:
@@ -647,10 +713,8 @@ def _lay_out(plate: Plate, cache: Path, inputs: _RenderInputs, folder: Path, pri
         target = _folder(cache / 'prints') / f'{name}.png'
         shutil.copyfile(rendered, target)
         target.chmod(FILE_MODE)
-    for material in plate.materials:
-        for texture in (material.color_map, material.normal_map):
-            if texture is not None and not (textures / f"{texture.sha256}.png").exists():
-                write_png(textures / f"{texture.sha256}.png", texture.pixels)
+    for name, texture in inputs.textures:
+        write_png(textures / f'{name}.png', texture.pixels)
 
 
 def render(plate: Plate, *, engine: Path, cache: Path, fonts: Path) -> Path:
@@ -664,8 +728,24 @@ def render(plate: Plate, *, engine: Path, cache: Path, fonts: Path) -> Path:
 
 
 def _prepare(plate: Plate, engine: Path, fonts: Path) -> tuple[_RenderInputs, bytes, dict[str, bytes]]:
+    snapshots: dict[int, Texture] = {}
+    materials = []
+    for material in plate.materials:
+        maps = {}
+        for name in ('color_map', 'normal_map'):
+            texture = getattr(material, name)
+            if texture is not None:
+                key = id(texture)
+                if key not in snapshots:
+                    pixels = texture._validated_pixels()
+                    snapshots[key] = Texture(np.frombuffer(pixels.tobytes(order='C'), np.uint8).reshape(pixels.shape))
+                maps[name] = snapshots[key]
+        materials.append(replace(material, color_map=maps.get('color_map'), normal_map=maps.get('normal_map')))
+    plate = replace(plate, materials=tuple(materials))
     printed = [material.print for material in plate.materials if material.print is not None]
     inputs = _render_inputs(engine, fonts, printed=bool(printed))
+    textures = {texture.sha256: texture for texture in snapshots.values()}
+    inputs = replace(inputs, textures=tuple(textures.items()))
     prints = {print_name(item): _print_document(item, inputs.font) for item in printed if inputs.font is not None}
     return inputs, document(plate), prints
 
@@ -727,8 +807,8 @@ def pixels(png: Path) -> np.ndarray:
     return np.frombuffer(raw, np.uint8).reshape(height, width, 4)
 
 
-def write_png(path: Path, rgba: np.ndarray) -> Path:
-    """``rgba`` as an 8-bit PNG, the same bytes for the same pixels, mode 600."""
+def _png_bytes(rgba: np.ndarray) -> bytes:
+    """The canonical RGBA8 encoding shared by plate files and bounded composition workers."""
     height, width = rgba.shape[:2]
 
     def chunk(tag: bytes, data: bytes) -> bytes:
@@ -736,7 +816,12 @@ def write_png(path: Path, rgba: np.ndarray) -> Path:
 
     rows = b"".join(b"\0" + row.tobytes() for row in rgba.astype(np.uint8))
     body = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
-    data = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", body) + chunk(b"IDAT", zlib.compress(rows, 6)) + chunk(b"IEND", b"")
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", body) + chunk(b"IDAT", zlib.compress(rows, 6)) + chunk(b"IEND", b"")
+
+
+def write_png(path: Path, rgba: np.ndarray) -> Path:
+    """``rgba`` as an 8-bit PNG, the same bytes for the same pixels, mode 600."""
+    data = _png_bytes(rgba)
     tmp = path.with_suffix(f".{os.getpid()}.tmp")
     tmp.write_bytes(data)
     return _keep(tmp, path)
