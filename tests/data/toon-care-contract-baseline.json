@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0.0",
+  "generated_by": {
+    "model": "GPT-6",
+    "tool": "OpenAI Codex"
+  },
+  "baseline_source_commit": "df5c4507",
+  "scene_sha256": {
+    "toon-double-bed": "2894d829faa75603fcdebcc74cc4cbf6658f5c997a4bad273fb4e96f9dcbb001",
+    "toon-bedroom-corner": "1f3a846f28ef96f4ae5a0ecfea0ee3eb79e0ca0eb7bdc50a5ac3aaa45c25bf2c",
+    "toon-surgery": "cc23f0f313190444b8e266bd1dea289ab82f6853fa01f550edeb10a6c961e8b3",
+    "toon-ward": "4d55d473a1c6cb3199c1f0dec050b74eccb86d5a22dd3a29baabec6a281a401b",
+    "toon-double-quilt": "83fdeb179606c7f54fc8683b96a5344ca70f1d9aba5769035622b0d0ee92c914",
+    "toon-quilt-heap": "377200545aa2a1b368184466b4eb5d531718da519be15a70811a2d1297bbb491",
+    "toon-bedside-drawer": "357ef5df8b262cc9cd5fce48c5fab0df2e31605bd2721e4bef7a03e82ab22c8b",
+    "toon-swung-arm": "c72b2755cd95c2859d1186ffdc2002da41c58bbe378bbf2371c886cab8f7fb1b",
+    "toon-dental-lamp": "a77cff8b65e06cddcf74d6b8862aa14e1a8354721b5c2bbcf33ce9884d4f0429",
+    "toon-dental-tray": "1d06a4e99f7a854d5ba07e7e546ccaaac9c1848a11797823d3b8e00dc471a97a",
+    "toon-tooth-photo": "ecbf5958db0d0d07d7530c2868c75dd42f80346b9da63645a091eee5d139e314",
+    "toon-probe": "4bd0a24341b7d65edb2b8c174a6ced7cce87cd2f402915036cc19eae4578524f",
+    "toon-bib-insert": "adba24605004ba6c2659eb3f028e99159272aeb5a830482768840df24da6b808",
+    "toon-ward-bed": "8c027459953933b63350a7c6a1b7cadbd81af6f911487872d143769e37bbc64a",
+    "toon-bandage": "931b7eb8d0285895fa7b0624aee78e702c014e5e518de6655a99aa8f522ed444"
+  }
+}

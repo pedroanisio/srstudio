@@ -6,7 +6,7 @@ for the rest, so a fix to a camera move or a crossfade reaches every style:
 * :func:`check_cover`, :func:`check_move` and :func:`check_spans` refuse a staging that does not fit the recording,
   in the style's own error class;
 * :func:`rig` is the camera: a framed group that moves (:class:`Move`) holding a group that shakes (:func:`shake`);
-  :func:`blackout` blacks the frame out in spans;
+  :func:`throw` rolls a cabin hit from outside (:class:`Throw`), and :func:`blackout` blacks the frame out in spans;
 * :func:`crossfades` times the crossfade into a closing card, and :func:`close` draws the transitions, the engine's
   captions and the mix of the takes and the music bed, ducked under every line;
 * :func:`freeze` holds a drawn shot still: every animated property at its value at the shot's start.
@@ -14,6 +14,7 @@ for the rest, so a fix to a camera move or a crossfade reaches every style:
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -25,6 +26,7 @@ from .errors import SrstudioError
 __all__ = [
     "StagingError",
     "Move",
+    "Throw",
     "SHAKE_STEP",
     "SHAKE_PX",
     "CROSSFADE",
@@ -34,6 +36,8 @@ __all__ = [
     "check_spans",
     "rig",
     "shake",
+    "check_throw",
+    "throw",
     "blackout",
     "freeze",
     "crossfades",
@@ -62,6 +66,16 @@ class Move:
     y: float
     until: float | None = None
     back: float | None = None
+
+
+@dataclass(frozen=True)
+class Throw:
+    """A cabin thrown by a hit: its ``roll`` in degrees and its ``scale``, each as (second, value) keys that ease
+    linearly about the frame's centre. The scale keeps the set past the frame's edges through the roll, and both come
+    back to rest, so the shot cuts to the same framing as the next."""
+
+    roll: Sequence[tuple[float, float]]
+    scale: Sequence[tuple[float, float]]
 
 
 def inside(a: float, b: float, end: float) -> bool:
@@ -142,6 +156,49 @@ def rig(cv, parent, move: Move | None, shaking: Spans, *, name: str | None = Non
     if shaking:
         shake(cv, shaken, shaking)
     return shaken
+
+
+def _at(keys: Sequence[tuple[float, float]], t: float) -> float:
+    """The linear value of ``keys`` at second ``t``, held past either end."""
+    if t <= keys[0][0]:
+        return keys[0][1]
+    for (a, va), (b, vb) in zip(keys, keys[1:], strict=False):
+        if t <= b:
+            return va + (vb - va) * (t - a) / (b - a)
+    return keys[-1][1]
+
+
+def check_throw(
+    thrown: Throw, width: float, height: float, *, end: float = math.inf, error: type[Exception] = StagingError
+) -> None:
+    """Keys rise inside the shot, both end at rest, and on every 1/48 s the set still covers the frame."""
+    for name, keys in (("roll", thrown.roll), ("scale", thrown.scale)):
+        times = [t for t, _ in keys]
+        if len(keys) < 2 or times != sorted(set(times)) or times[0] < 0 or times[-1] > end:
+            raise error(f"a throw's {name} keys must rise inside the shot, got {times}")
+    if thrown.roll[-1][1] != 0 or thrown.scale[-1][1] != 1:
+        raise error("a throw must settle at roll 0 and scale 1, so the shot cuts to its own framing")
+    steps = math.ceil(max(thrown.roll[-1][0], thrown.scale[-1][0]) * 48)
+    for i in range(steps + 1):
+        t = i / 48
+        turned = math.radians(abs(_at(thrown.roll, t)))
+        need = math.cos(turned) + max(width, height) / min(width, height) * math.sin(turned)
+        if _at(thrown.scale, t) < need - 1e-6:
+            raise error(
+                f"a throw shows the edge of the set at {t:.3f} s: scale {_at(thrown.scale, t):.3f} < {need:.3f}"
+            )
+
+
+def throw(cv, parent, thrown: Throw):
+    """A group in ``parent`` thrown as ``thrown`` says about the frame's centre (:func:`check_throw`); the set, cast
+    and props of the shot go inside it."""
+    check_throw(thrown, cv.width, cv.height)
+    g = cv.group(parent, cv.uid("g"))
+    camera.anchor(g, cv.width / 2, cv.height / 2, place=True)
+    cv.keys(g, "rotation", thrown.roll, hold=False)
+    cv.keys(g, "scaleX", thrown.scale, hold=False)
+    cv.keys(g, "scaleY", thrown.scale, hold=False)
+    return g
 
 
 def blackout(cv, parent, spans: Spans):

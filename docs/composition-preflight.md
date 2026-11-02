@@ -20,7 +20,7 @@ enforce process limits and count retries; see [render sessions](authoring-benchm
 `prepare_plate` also verifies static mesh and texture payloads and prepares their
 closed scene/resources in a bounded worker. `compile_bundle` and `emit_bundle`
 combine verified vectors and static plates with bounded rendering and portable
-image resources. Printed-label, animated plate and proxy adapters remain open under
+image resources, including bounded printed labels. Animated plate and proxy adapters remain open under
 SDK-P2-07.
 A valid manifest alone is not a rendered scene,
 approval of a new style, or proof of a host's declared geometry.
@@ -113,11 +113,11 @@ two cold renders; identical placements can share one. A rendered artifact must
 also bind the actual camera, lighting, renderer and other rendering inputs.
 
 The preparation adapter accepts one static plate job per source, up to 128
-meshes, 128 materials and 128 textures, with eight MiB of combined input buffers.
+meshes, 128 materials, 128 textures and 128 printed labels, with eight MiB of combined input buffers.
 Prepared XML/resources have a separate eight MiB cap. Materials support `#RRGGBB`
 base, emissive and sheen colors, roughness/metallic/subsurface values in `0..1`,
-and normal-map strength in `0..16`. Printed-label recipes, proxy recipes and
-animated source bindings are refused. Source memory declarations
+and normal-map strength in `0..16`. Printed labels require explicit font bytes
+and license metadata. Proxy recipes and animated source bindings are refused. Source memory declarations
 must cover eight times the input buffer bytes; the job must cover prepared
 resource storage and its frame buffer. These storage checks complement the
 hard process cap; they do not measure or guarantee renderer/GPU peak memory.
@@ -141,10 +141,9 @@ prepared = composition.prepare_plate(plan, "host-layer", source)
 
 The adapter copies geometry, UVs and `plates.Texture` pixels into immutable bytes.
 It preserves color maps, normal maps, their strength, sheen and subsurface values.
-Shared pixel maps are deduplicated by both dimensions and contents. The adapter
-refuses `Material.print` recipes; it never drops a label or substitutes a flat
-material. Printed textures need their own bounded rendering and font-provenance
-adapter before that path can be supported.
+Shared pixel maps are deduplicated by both dimensions and contents. A
+`Material.print` requires the font inputs described below. A material cannot
+specify both a printed label and a color map.
 
 For explicit records, `plate_texture("paint", texture)` creates a `PlateTexture`.
 Put it in `PlateSource.textures` and name it with
@@ -167,7 +166,8 @@ PNG identity includes its dimensions, so equal pixel bytes in differently shaped
 images cannot alias. Source identity includes UVs, raw pixels, dimensions and
 material fields. Untextured inputs using the original defaults retain their
 existing source and prepared identities; extended sources use identity schema
-`srstudio.plate-source/1.1.0`. Renderer caches include the prepared resources, so a
+`srstudio.plate-source/1.1.0` for textures and `1.2.0` for printed labels.
+Renderer caches include the prepared resources, so a
 changed map produces a new render job. Public bundle compilation reverifies the
 original source and rejects forged prepared resources before rendering.
 
@@ -176,6 +176,59 @@ basis parity, repeated UVs, material preservation, closed resource limits, sourc
 and cache identities, typed refusals, and a rendered color-map registration probe.
 These checks establish material transport and rendering on the tested engine;
 they do not approve a new character drawing or a texture-animation policy.
+
+## Preserve printed labels
+
+For materials with an existing `plates.Print`, supply the font's immutable bytes
+and its license identifier explicitly:
+
+```python
+source = composition.plate_source(
+    "host", tuple(meshes), tuple(materials), basis="clay",
+    print_font=font_bytes, print_license="OFL-1.1",
+)
+```
+
+The host owns the font selection and license declaration. The adapter performs
+no download or filesystem read. `PlateSource.prints` holds immutable `PlatePrint`
+records containing each exact `plates.Print` recipe, font bytes and license;
+`PlateMaterial.print` names the record. Identical recipes and font inputs are
+deduplicated. Every record must be referenced, every reference must resolve,
+and every printed mesh must have authored UVs. Text uses `plates.PRINTABLE`.
+Recipes allow at most 128 lines, 4096 characters per line and 32768 text bytes
+in total. Dimensions are `2..8192`; all labels together are limited to eight MiB
+of decoded RGBA pixels, independently of the source-buffer cap.
+
+Preparation inspects the TrueType font's actual family, weight and upright style
+inside the bounded worker, compiles and schema-checks each label scene, and
+retains content-addressed `prints/<scene-sha256>.scene.xml` and
+`fonts/<font-sha256>.ttf` resources. Source and prepared identities include the
+recipe, font and license. Preparation does not invoke the renderer. Invalid
+font metadata, ambiguous color maps and unsupported label inputs produce
+`CompositionError` before cache or output mutation.
+
+The source still has one `PlateWork` declaration. For `N` distinct labels, its
+`engine_invocations` must cover `N + 1`, and its `samples` must cover
+`plates.SAMPLES * (N + 1)`; the latter conservatively charges the same sample
+bound for each label. Its width and height cover the maximum of the registered
+plate view and every label. Node and memory bounds include compiled label
+scenes and fonts. Existing global field caps still apply: a large label set can
+exceed the sample or byte budget even when its count fits.
+
+A cold bundle renders each unique label scene, validates its PNG dimensions,
+CRC and bounded decompression, then renders the plate. All attempts consume
+the per-source, plan and enclosing render-session limits. `new_plates` counts
+completed plate jobs; `engine_invocations` includes their label attempts. Labels
+are intermediate dependencies within the private render directory. Only a
+fully verified plate enters the cache, and a warm plate needs no label render.
+The portable bundle contains the final images, so it needs neither fonts nor
+label recipes at playback. Changing font bytes or recipe content invalidates
+the dependent plate cache.
+
+[Print tests](../tests/test_composition_prints.py) exercise bounded input and wire
+validation, font provenance, closed preparation, failure preservation, cache
+invalidation, nested attempt limits and a real rendered UV label probe. This
+establishes label transport; it does not certify arbitrary text legibility.
 
 ## Render and publish a mixed bundle
 

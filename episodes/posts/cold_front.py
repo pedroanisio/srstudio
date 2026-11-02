@@ -19,7 +19,7 @@ RELEASE = Release(
             "effects synthesized in code."
         ),
         hashtags=("#ex", "#dating", "#bestfriend", "#animatedshorts", "#okayville"),
-        thumbnail=ShowCover("Exes moving in tonight", 14.2, number=205, focus=(570.0, 915.0), zoom=1.2),
+        thumbnail=ShowCover("Exes moving in tonight", 12.9, number=205, focus=(491.0, 851.0), zoom=1.1),
     ),
     tags=Tags(
         "relationships",

@@ -14,6 +14,7 @@ from . import clay, plates
 from . import composition as c
 from ._composition_plate_wire import MAX_BYTES, identity, source_digest, validate_source
 from ._composition_preflight import _id
+from ._composition_print import prepare as prepare_prints
 from ._composition_texture import prepare as prepare_textures
 from .errors import SrstudioError
 
@@ -103,12 +104,13 @@ def prepare_plate(plan: c.ValidatedScenePlan, layer: str, source: c.PlateSource)
     if job.key != digest:
         raise _fail('job.key', 'the exact plate_source_digest of the immutable source')
     if (
-        job.width < view.width
-        or job.height < view.height
-        or job.samples < plates.SAMPLES
+        job.width < max((view.width, *(p.recipe.width for p in source.prints)))
+        or job.height < max((view.height, *(p.recipe.height for p in source.prints)))
+        or job.samples < plates.SAMPLES * (1 + len(source.prints))
         or job.bounces < plates.BOUNCES
+        or job.engine_invocations < 1 + len(source.prints)
     ):
-        raise _fail('job', 'bounds covering the actual overscan, path samples and bounces')
+        raise _fail('job', 'bounds covering the plate and label dimensions, samples, bounces and render attempts')
     if binding.memory_bytes < size * 8:
         raise _fail('memory_bytes', 'at least eight times the input buffer bytes for preparation storage')
     materials = {}
@@ -131,7 +133,7 @@ def prepare_plate(plan: c.ValidatedScenePlan, layer: str, source: c.PlateSource)
             sheen=material.sheen,
             subsurface=material.subsurface,
         )
-    mapped = {m.id for m in source.materials if m.color_map or m.normal_map}
+    mapped = {m.id for m in source.materials if m.color_map or m.normal_map or m.print}
     rotation = np.array([view.direction(p) for p in ((1, 0, 0), (0, 1, 0), (0, 0, 1))]).T
     translation = np.array(view.point((0, 0, 0)))
     meshes = []
@@ -169,6 +171,8 @@ def prepare_plate(plan: c.ValidatedScenePlan, layer: str, source: c.PlateSource)
             tuple(materials.values()),
         )
         texture_paths, resources = prepare_textures(source)
+        print_paths, print_resources, print_nodes = prepare_prints(source)
+        resources.update(print_resources)
         resources.update({f'meshes/{mesh.sha256}.obj': mesh.obj for mesh in meshes})
         total = sum(map(len, resources.values()))
         if total > MAX_BYTES:
@@ -177,6 +181,8 @@ def prepare_plate(plan: c.ValidatedScenePlan, layer: str, source: c.PlateSource)
         for node, material in zip(root.findall('materials/material'), source.materials, strict=True):
             if material.color_map:
                 node.set('baseColorMap', texture_paths[material.color_map])
+            if material.print:
+                node.set('baseColorMap', print_paths[material.print])
             if material.normal_map:
                 node.set('normalMap', texture_paths[material.normal_map])
                 node.set('normalScale', str(material.normal_scale))
@@ -185,8 +191,8 @@ def prepare_plate(plan: c.ValidatedScenePlan, layer: str, source: c.PlateSource)
         project.set('seed', str(plan.spec.seed))
         xml = ET.tostring(root, encoding='utf-8', xml_declaration=True)
         total += len(xml)
-        nodes = len(list(root.iter()))
-        if total > MAX_BYTES or nodes > binding.nodes or job.memory_bytes < total * 8 + view.width * view.height * 8:
+        nodes = len(list(root.iter())) + print_nodes
+        if total > MAX_BYTES or nodes > binding.nodes or job.memory_bytes < total * 8 + job.width * job.height * 8:
             raise _fail('job', 'prepared resources/nodes within the declared memory, node and payload bounds')
         scene = read(xml)
         assert isinstance(scene, Scene)

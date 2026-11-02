@@ -10,7 +10,7 @@ import pytest
 from sr_core.scene import Scene
 
 from srstudio import VOID, Canvas, flat_counter, native, staging
-from srstudio.staging import Move, StagingError
+from srstudio.staging import Move, StagingError, Throw
 
 
 def canvas() -> Canvas:
@@ -397,3 +397,30 @@ def test_close_without_a_bed_mixes_no_music_and_ducks_nothing():
 
     out = staging.close(FakeEpisode(), None, [], fades={}, look=native.CAPTION_LOOK, pans={}, duck=-9.0)
     assert out["mix"] == ([], None)
+
+
+# -- a thrown cabin ---------------------------------------------------------------------------------------------------
+def test_a_thrown_cabin_rolls_and_settles_about_the_frame_centre_with_no_edge_showing():
+    cv = canvas()
+    parent = cv.group(cv.comp, "shot")
+    inner = staging.throw(cv, parent, Throw(roll=((0.0, 3.0), (0.1, 5.0), (0.9, 0.0)), scale=((0.0, 1.18), (0.9, 1.0))))
+    root = ET.fromstring(cv.scene.to_bytes())
+    thrown = node(root, inner.id)
+    assert (thrown.get("anchorX"), thrown.get("anchorY")) == ("540", "960")
+    assert keys(thrown, "rotation")[-1] == (0.9, 0.0)
+    assert keys(thrown, "scaleX") == keys(thrown, "scaleY")
+    assert keys(thrown, "scaleX")[-1] == (0.9, 1.0)
+
+
+@pytest.mark.parametrize(
+    "throw",
+    [
+        Throw(roll=((0.0, 5.0), (0.9, 0.0)), scale=((0.0, 1.0), (0.9, 1.0))),  # the set's edge shows at once
+        Throw(roll=((0.0, 5.0), (0.5, 5.0), (0.9, 0.0)), scale=((0.0, 1.2), (0.3, 1.0), (0.9, 1.0))),  # shows midway
+        Throw(roll=((0.0, 1.0), (0.9, 1.0)), scale=((0.0, 1.2), (0.9, 1.2))),  # never comes back to the next shot
+    ],
+)
+def test_a_throw_that_shows_the_edge_of_the_set_or_does_not_settle_is_refused(throw):
+    cv = canvas()
+    with pytest.raises(staging.StagingError, match="edge|settle"):
+        staging.throw(cv, cv.group(cv.comp, "shot"), throw)

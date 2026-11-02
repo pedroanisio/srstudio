@@ -40,7 +40,7 @@ SCRIPT = [  # role, text, caption, speed
 CUE = 0.86  # the least a line starts after the one before, so that one's caption cue holds
 START = 0.30  # the first word: the apron is already being tied
 BEHIND_HIM = 0.95  # after "2019.": Milo's smile, and the Candidate crossing behind him with a tray
-THE_TAG = 0.95  # then Ava's tag, seen for the first time
+THE_TAG = 0.85  # then Ava's tag, seen for the first time
 TURNS = 0.60  # after "Which Friday?": the Candidate walks on, Milo turns to Ava
 ON_AVA = 0.60  # after "Who?": the smile holds, the chime
 LOOK = 0.90  # the wide: the hand at the door, and all three look
@@ -48,6 +48,47 @@ LOOKS_DOWN = 0.25  # Milo, at his apron
 CROSSES = 0.60  # to the door
 TAKES = 0.30  # the spare, off its hook, then the line
 ENDING = 0.08  # out on the last word
+CAPTION_LEAD = 0.05  # a caption comes on this long before its line
+CAPTION_TAIL = 0.20  # and stays this long past it
+CAPTION_MIN = 0.84  # a short word's cue is up at least this long
+# The picture's numbers the tests read, here because importing the episode runs its build.
+MILO_Y, MILO_SIZE, AT_DOOR = 1035.0, 1.4, 270.0
+SHOULDER, ARM, REST = (-72.0, 143.0), 96.0, (-96.0, 326.0)  # his left arm, in rig units
+HOOK = (226.0, 1440.0)  # hip height on the counter's end, on the wood: his hand drops to it, with the elbow open
+HELD_OUT = (58.0, 1467.0)  # low, clear of his face, with his arm under the fingers at the door
+TWO = (1.2, -232.0, -320.0)  # scale, x, y of the two-shot: the board clear of the hook line
+PASTRY_RIGHT = 365.0  # where the board's "$3" ends in the room
+KEY_LEFT = 220.0  # where the hook line's bar starts in the frame
+MILO_X, MILO_JAW = 630.0, 125.0  # where he stands, and half his head at the height of the tray
+MILO_HEAD_HALF = 145.0  # half his head at its widest, the height of the Candidate's elbows
+MILO_RIGHT_SHOULDER, MILO_RIGHT_HAND = (73.0, 144.0), (84.0, 332.0)  # his arm by Ava, the whole reel, in rig units
+AVA_SIZE, AVA_APART, AVA_REACH = 1.3, 905.0, 153.0  # she stands off him: her far hand's reach in the room
+AVA_SHOULDER, AVA_HAND = (-66.0, 140.0), (-80.0, 328.0)  # her near arm, close at her side
+AVA_TUG = (-66.0, 326.0)  # the top of a pull on his strings, in rig units: away from him, so the elbows stay parted
+STRINGS_TO = (700.0, 1360.0)  # the room: his apron strings end behind him, so his body covers the knot
+STANDS = {"open": AVA_APART, "ava": 660.0, "tag": 620.0}  # Ava's mark by shot; every other shot has her where she opens
+TRAY_SIZE, TRAY_HAND, HAND_RADIUS = 1.35, 122.0, 18.0  # the Candidate's hands, in rig units, on the ends of the tray
+TRAY_HOLD, TRAY_ARM = 240.0, 80.0  # how low he holds it, and the length of each part of his arm, in rig units
+TRAY_SHOULDERS = {"left": (-66.0, 148.0), "right": (67.0, 148.0)}
+TRAY_BEND = {"left": -1, "right": 1}  # his elbows go out: bent in, they lie over the cups
+CUP_X, CUP_HALF = 56.0, 14.0  # the cups stand this far off the middle of the tray, and half a cup at that scale
+CUP_Y, CUP_SCALE, CUP_BASE = -28.0, 0.5, 57.0  # a cup's place on the tray: the corners of its base, in the cup's units
+ENTERS, MACHINE_LEFT = 1075.0, 884.0  # where the Candidate starts in the room, the whole tray behind the machine
+TURNS_FRAME = (1.2, -220.0, -320.0)  # the two-shot, slid so the Candidate has the side of the frame
+WALKS_ON = (262.0, 245.0)  # through the turn he is past Milo, his arm and his body clear of the head
+CODE_LEFT, HEAD_AT_CODE = 381.0, 112.0  # where the board's code starts in the room, and half his head at its height
+DOOR_RIGHT, OUT_OF_SIGHT = 198.0, 0.0  # the frame of the door, and where the whole of him is behind it
+BY_THE_DOOR, BODY_GONE, BODY_HALF = 272.0, 108.0, 90.0  # his mark in the wide, and where his body is behind the door
+HEAD_HALF = 143.0  # half his head, the widest of him, so it is the last of him to go
+LEAVES, GONE = 0.15, 0.10  # before Milo looks down, and after he crosses: the Candidate goes, and Milo has the door
+
+
+def carried_until(down: float, crosses: float) -> float:
+    """When his body is behind the door: the tray and its hands end there, not trailing past the frame on their own."""
+    start, end = down - LEAVES, crosses + GONE
+    return start + (end - start) * (BY_THE_DOOR - BODY_GONE) / (BY_THE_DOOR - OUT_OF_SIGHT)
+
+
 INTERVIEW = Interview(
     slug="trial-shift",
     title="Trial Shift",
@@ -62,6 +103,11 @@ INTERVIEW = Interview(
     end_card=0.0,
     font=NOTO_SANS_BOLD,
 )
+
+
+def cue_off(line: dict) -> float:
+    """When a line's caption comes down, unless the next line's takes it first."""
+    return max(line["end"] + CAPTION_TAIL, line["start"] - CAPTION_LEAD + CAPTION_MIN)
 
 
 def schedule(speech: list[float], effect: dict[str, float]) -> Schedule:
@@ -81,7 +127,7 @@ def schedule(speech: list[float], effect: dict[str, float]) -> Schedule:
     end = say(3, 0.15)
     end = say(4, 0.15)
     end = say(5, 0.20)
-    end = say(6, BEHIND_HIM + THE_TAG)
+    end = say(6, CAPTION_TAIL + BEHIND_HIM + THE_TAG + CAPTION_LEAD)
     end = say(7, 0.15)
     end = say(8, TURNS)
     end = say(9, 0.15)
@@ -93,7 +139,7 @@ def schedule(speech: list[float], effect: dict[str, float]) -> Schedule:
 def extra(t: Timing) -> dict:
     """The beats the picture keys on, and the cuts: medium, closes, the tag, the two-shots, the wide, the door."""
     p = t.phrases
-    behind = p[5]["end"] + 0.10
+    behind = cue_off(p[5])
     tag = behind + BEHIND_HIM
     chime = p[10]["end"] + ON_AVA - 0.10
     wide = p[10]["end"] + ON_AVA
@@ -119,7 +165,7 @@ def extra(t: Timing) -> dict:
             {"time": tag, "angle": "tag"},
             {"time": p[6]["start"] - 0.05, "angle": "friday"},
             {"time": p[7]["start"] - 0.05, "angle": "milo"},
-            {"time": p[7]["end"] + 0.05, "angle": "turns"},
+            {"time": cue_off(p[7]), "angle": "turns"},
             {"time": p[9]["start"] - 0.05, "angle": "ava"},
             {"time": wide, "angle": "wide"},
             {"time": arrives, "angle": "door"},

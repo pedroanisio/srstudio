@@ -50,7 +50,9 @@ INTERVIEW = Interview(
 LEAD = 0.25  # the phone is already rising, and the badge ticks under her question
 CUE_MIN = 0.92  # a line's start to the next, so its caption holds its 0.84 s
 ANSWER = 0.3  # the two-shot lands before he answers
-HOLD = 1.3  # the bracket: her thumb stops on the third row, and she reads it again
+CAPTION_TAIL = 0.3  # a caption stays up this long past its line
+LOOK_UP = 0.34  # the list goes this long before her next line: she looks up at him before she says it
+HOLD = 1.56  # the bracket: his caption comes down, her thumb stops on the third row, and she reads it again
 RING = 1.35  # the bracket: the phone rings at him and he looks at it, and then at her
 
 
@@ -67,7 +69,7 @@ def extra(t: Timing) -> dict:
     """The silent beats, each from the line before it."""
     p = t.phrases
     return {
-        "stop_start": p[3]["end"] + 0.04,
+        "stop_start": p[3]["end"] + CAPTION_TAIL,  # the cut waits for his caption
         "ring_start": max(p[6]["end"] + 0.04, p[6]["start"] + CUE_MIN),  # "Eleven times." keeps its 0.84 s
         "camera_cuts": [{"time": 0, "angle": "room"}],
     }

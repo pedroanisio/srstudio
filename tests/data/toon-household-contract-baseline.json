@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0.0",
+  "generated_by": {
+    "model": "GPT-6",
+    "tool": "OpenAI Codex"
+  },
+  "baseline_source_commit": "7dbc869a",
+  "scene_sha256": {
+    "toon-flat": "147e5c9340ddfa9adf59d42af7fd505563a4267b4f7ca61343df35e441b4712f",
+    "toon-closet": "78e4527d80d3e954724f36f8ec7055aa93f44fc00a629526fe0594aa7281883e",
+    "toon-oven": "f190d2962d096c4d355a95919f2aec31b602d0b06adbf3c2cf01509ec045e449",
+    "toon-plates": "4192109b06ea18dcad43665c008d10bc904796595b74a8a5f3c1d7a54789504a",
+    "toon-shower": "7e782f4ccab2ac14e57ae40dd0ab0cf8b6c87edc896a16ae7373a6417a5e7ab0",
+    "toon-front-door": "58c98a33eef7749a9f7771a632bd6f6a2ae8a4851be65b952c7c9cb658b89564",
+    "toon-laundry-pile": "498ba32f6f4801a96bcdf86567451a09411690ff4fc387092414994fd2557520",
+    "toon-tiny-drawer": "167b68dadb66ae2711d17b46c494d8486b88be4a80904e6d53a00e9c458c27d5",
+    "toon-whirl": "7cbe0026e0edd499ab1cb941f563facc20ed39492203a787bcf1dab0c6552cf4",
+    "toon-sparkles": "c6691abe5578ac9341845e5b27724bc0961b9ae765252c99a42156af54303955",
+    "toon-pipe": "f5662bc64c352d1ca39e73c44f944cc9d26decb42135ea9b941eddc5ae518096",
+    "toon-faucet": "d01edf1620c41ceff8810cf52c14d8d9012baa5af8295f1b2f6b3b360f232511",
+    "toon-paper-insert": "6584f31535fd253b7339aec87cac67d99bc3448fe65a715b794d15fc64f33d57",
+    "toon-mosquito": "21d84d5cca8f7149830e9c0fc10982a8ac135941daf40b864eb55fc11ee45287",
+    "toon-rolled-towel": "178f740bf5fdcddf1ad7051d3fa9e800b4c1deaa7c9d9b12deacaeab7ce19b23",
+    "toon-wrestled-sheet": "99b103a7c782255ec4397778f4c200141ee22f43a6a8dc709c8ce79bdce5d7d8",
+    "toon-balled-sheets": "a384217b112938771afb56dc1c8dd9509c592c1a051df36a3e5a8de30d32bd6c",
+    "toon-folded-sheet": "41d53b6be8c1b0fd1784fb04085e568647017e17c27bc0a159b571ddfad42b3a",
+    "toon-padlock": "07e5eda335f5cc5efb184091822893a25991a88b0f61317248621f2af7c55045",
+    "toon-tasting-spoons": "e46037f93cceff8635a66745399cd6dbeacf73f41d5ac284dfecbfc7a579da0c"
+  }
+}

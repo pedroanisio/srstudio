@@ -1,14 +1,16 @@
 """Toon odds and ends: small props the everyday reels need, each a thing one sketch asks of a room.
 
 :func:`pipe` is a leaking wall pipe whose drips are keyed to the sketch, ending in a spray if the sketch asks. Every
-prop stands at a reference point (screen pixels as :func:`srstudio.toon.fx`/``fy`` map them), its cue times in project
-seconds; a bad cue is a :class:`srstudio.toon.ToonDataError`.
+prop stands at a reference point (screen pixels as :func:`srstudio.toon.fx`/``fy`` map them), except the paper insert,
+which uses frame pixels. Most animation keys use composition seconds; the paper insert follows Canvas.local_time.
+Visibility uses parent seconds. A bad cue is a :class:`srstudio.toon.ToonDataError`.
 """
 
 from __future__ import annotations
 
 from collections.abc import Sequence
 
+from . import _toon_household_contracts as hc
 from . import anatomy_ledger, checks
 from .canvas import Canvas
 from .registry import register
@@ -49,7 +51,13 @@ def _cues(cues: Sequence[float], end: float, what: str) -> list[float]:
     return times
 
 
-@register("prop", "toon-pipe", summary="A leaking wall pipe that drips on cue and can burst into a spray", style="toon")
+@register(
+    "prop",
+    "toon-pipe",
+    contract=hc.contract('toon-pipe'),
+    summary="A leaking wall pipe that drips on cue and can burst into a spray",
+    style="toon",
+)
 def pipe(
     cv: Canvas,
     parent,
@@ -82,7 +90,11 @@ def pipe(
 
 
 @register(
-    "prop", "toon-faucet", summary="A kitchen tap on the counter, a bad joint that drips and can burst", style="toon"
+    "prop",
+    "toon-faucet",
+    contract=hc.contract('toon-faucet'),
+    summary="A kitchen tap on the counter, a bad joint that drips and can burst",
+    style="toon",
 )
 def faucet(
     cv: Canvas,
@@ -127,7 +139,11 @@ def faucet(
 
 
 @register(
-    "prop", "toon-paper-insert", summary="A full-frame paper held to the lens: an invoice, a card, a form", style="toon"
+    "prop",
+    "toon-paper-insert",
+    contract=hc.contract('toon-paper-insert'),
+    summary="A full-frame paper held to the lens: an invoice, a card, a form",
+    style="toon",
 )
 def paper_insert(
     cv: Canvas, parent, title: str, lines: Sequence[str], start: float, end: float, paper: str = "#fff6c9"
@@ -156,7 +172,11 @@ def paper_insert(
 
 
 @register(
-    "prop", "toon-mosquito", summary="A mosquito that wanders a keyed path with a jitter, or sits still", style="toon"
+    "prop",
+    "toon-mosquito",
+    contract=hc.contract('toon-mosquito'),
+    summary="A mosquito that wanders a keyed path with a jitter, or sits still",
+    style="toon",
 )
 def mosquito(cv: Canvas, parent, path: Sequence[tuple[float, float, float]], end: float = 4.0, id: str = "mosquito"):
     """A mosquito through ``path``, ``(second, x, y)`` keys in rising seconds on reference pixels, from the first key
@@ -174,7 +194,13 @@ def mosquito(cv: Canvas, parent, path: Sequence[tuple[float, float, float]], end
     return g
 
 
-@register("prop", "toon-rolled-towel", summary="A rolled towel in a fist, raised and swung on cue", style="toon")
+@register(
+    "prop",
+    "toon-rolled-towel",
+    contract=hc.contract('toon-rolled-towel'),
+    summary="A rolled towel in a fist, raised and swung on cue",
+    style="toon",
+)
 def rolled_towel(
     cv: Canvas,
     parent,
@@ -200,7 +226,11 @@ def rolled_towel(
 
 
 @register(
-    "prop", "toon-wrestled-sheet", summary="A sheet in a losing fight with someone, heaving on the beat", style="toon"
+    "prop",
+    "toon-wrestled-sheet",
+    contract=hc.contract('toon-wrestled-sheet'),
+    summary="A sheet in a losing fight with someone, heaving on the beat",
+    style="toon",
 )
 def wrestled_sheet(cv: Canvas, parent, start: float = 0.0, end: float = 4.0, y: float = 760.0, beat: float = 0.28):
     """A billowing sheet over someone's arms at height ``y`` from ``start`` to ``end``, heaving every ``beat`` s."""
@@ -223,6 +253,7 @@ def wrestled_sheet(cv: Canvas, parent, start: float = 0.0, end: float = 4.0, y: 
 @register(
     "prop",
     "toon-balled-sheets",
+    contract=hc.contract('toon-balled-sheets'),
     summary="An avalanche of balled-up white sheets, rising or already there",
     style="toon",
 )
@@ -247,7 +278,13 @@ def balled_sheets(cv: Canvas, parent, top: float = 700.0, start: float | None = 
     return g
 
 
-@register("prop", "toon-folded-sheet", summary="One impossibly square folded sheet, held out on two paws", style="toon")
+@register(
+    "prop",
+    "toon-folded-sheet",
+    contract=hc.contract('toon-folded-sheet'),
+    summary="One impossibly square folded sheet, held out on two paws",
+    style="toon",
+)
 def folded_sheet(
     cv: Canvas, parent, at: Point = (190.0, 700.0), coat: str = "#a9744f", start: float = 0.0, end: float = 4.0
 ):
@@ -265,7 +302,13 @@ def folded_sheet(
     return g
 
 
-@register("prop", "toon-padlock", summary="A brass padlock on a door that drops away when it is unlocked", style="toon")
+@register(
+    "prop",
+    "toon-padlock",
+    contract=hc.contract('toon-padlock'),
+    summary="A brass padlock on a door that drops away when it is unlocked",
+    style="toon",
+)
 def padlock(cv: Canvas, parent, at: Point = (400.0, 540.0), start: float = 0.0, opened: float = 4.0, end: float = 4.0):
     """A padlock at reference ``at`` from ``start``, falling out of frame at ``opened``."""
     if not (checks.number(start) and checks.number(opened) and 0 <= start <= opened <= end):
@@ -281,10 +324,15 @@ def padlock(cv: Canvas, parent, at: Point = (400.0, 540.0), start: float = 0.0, 
 
 
 @register(
-    "prop", "toon-tasting-spoons", summary="Tiny tasting spoons that pile up on a counter, one per cue", style="toon"
+    "prop",
+    "toon-tasting-spoons",
+    contract=hc.contract('toon-tasting-spoons'),
+    summary="Tiny tasting spoons that pile up on a counter, one per cue",
+    style="toon",
 )
 def tasting_spoons(cv: Canvas, parent, cues: Sequence[float], at: Point = (450.0, 880.0), end: float = 4.0):
-    """One small pink spoon lands on the pile at reference ``at`` at every second of ``cues`` and stays to ``end``."""
+    """One small pink spoon appears at reference ``at`` per cue. ``end`` bounds the cues, not visibility;
+    give the parent a visibility end to hide the pile."""
     times = _cues(cues, end, "a pile's spoons")
     x0, y0 = at
     g = cv.group(parent, cv.uid("g"))

@@ -18,6 +18,7 @@ import math
 import re
 from collections.abc import Sequence
 
+from . import _toon_contracts as tc
 from . import brush, checks
 from .brush import Point, Shape
 from .canvas import Canvas
@@ -247,6 +248,7 @@ def _door(cv: Canvas, g, x0: float, y0: float, x1: float, y1: float, colour: str
 @register(
     "location",
     "toon-kitchen",
+    contract=tc.contract('toon-kitchen'),
     summary="The office kitchen: tiled backsplash, mint cabinets, a counter for props and a tall fridge with a note",
 )
 def kitchen(cv: Canvas, parent, note: str = "", chair: bool = True) -> None:
@@ -308,6 +310,7 @@ INSERT_PUSH = 1.04  # the slow push through the insert
 @register(
     "prop",
     "toon-note-insert",
+    contract=tc.contract('toon-note-insert'),
     summary="A full-frame close-up of the fridge note: the evidence cut in, legible on a phone",
     style="toon",
 )
@@ -430,6 +433,7 @@ def _shelf(cv: Canvas, g) -> None:
 @register(
     "location",
     "toon-home",
+    contract=tc.contract('toon-home'),
     summary="A home office at night: a moonlit window over the city, string lights, a curtain and a bookshelf",
 )
 def home(cv: Canvas, parent, end: float = 0.0) -> None:
@@ -469,6 +473,7 @@ def home(cv: Canvas, parent, end: float = 0.0) -> None:
 @register(
     "prop",
     "toon-coffee-machine",
+    contract=tc.contract('toon-coffee-machine'),
     summary="A drip coffee machine on the kitchen counter: while it brews its light blinks, coffee drips, steam rises",
 )
 def coffee_machine(cv: Canvas, parent, brewing: Spans = (), at: tuple[float, float] = (418, COUNTER_Y)) -> None:
@@ -537,6 +542,7 @@ def coffee_machine(cv: Canvas, parent, brewing: Spans = (), at: tuple[float, flo
 @register(
     "prop",
     "toon-desk-lamp",
+    contract=tc.contract('toon-desk-lamp'),
     summary="An angled desk lamp at the desk's right that pools warm light over the laptop, and can go dark",
 )
 def desk_lamp(cv: Canvas, parent, lit: Spans | None = None, at: tuple[float, float] = (610, 838)) -> None:
@@ -587,7 +593,12 @@ def _leaf(base: Point, angle: float, length: float, width: float) -> list[Point]
     return [base, *left, tip, *reversed(right)]
 
 
-@register("prop", "toon-plant", summary="A potted plant with glossy leaves that sway, for a desk, a counter or a shelf")
+@register(
+    "prop",
+    "toon-plant",
+    contract=tc.contract('toon-plant'),
+    summary="A potted plant with glossy leaves that sway, for a desk, a counter or a shelf",
+)
 def plant(cv: Canvas, parent, at: tuple[float, float] = (380, 838), scale: float = 0.8, end: float = 0.0) -> None:
     """A terracotta pot standing on ``at`` (its centre and base; by default the desk's left end, the mug's place)
     with five leaves on stems, each with a vein and a
@@ -651,7 +662,11 @@ def parse_pages(pages: Sequence[tuple[float, str]]) -> list[tuple[float, str, st
 
 
 @register(
-    "prop", "toon-calendar", summary="A tear-off wall calendar whose page rips and falls at each new date", style="toon"
+    "prop",
+    "toon-calendar",
+    contract=tc.contract('toon-calendar'),
+    summary="A tear-off wall calendar whose page rips and falls at each new date",
+    style="toon",
 )
 def calendar(cv: Canvas, parent, pages: Sequence[tuple[float, str]], at: tuple[float, float] = (105, 390)) -> None:
     """A tear-off calendar hung on a nail at ``at`` (its centre), in the clock's place by default: a red header
@@ -686,6 +701,7 @@ def calendar(cv: Canvas, parent, pages: Sequence[tuple[float, str]], at: tuple[f
 @register(
     "location",
     "toon-call-centre",
+    contract=tc.contract('toon-call-centre'),
     summary="A call-centre cubicle: a fabric partition, a YOUR CALL MATTERS poster and a CALLS WAITING board",
 )
 def call_centre(

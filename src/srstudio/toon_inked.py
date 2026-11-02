@@ -41,6 +41,7 @@ from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from . import brush
+from ._gaze_drawing import EyeLayers
 from .brush import Point, Shape
 from .canvas import Canvas
 from .head_motion import HeadStyle, Spring
@@ -359,7 +360,24 @@ class Inked:
     def _turn(self, layers: list[Layer], centre: Point) -> list[Layer]:
         return [(brush.rotate(s, centre[0], centre[1], self.tilt), c) for s, c in layers]
 
-    def eye(self, look: Look, centre: Point, kind: str, inner: float) -> list[Layer]:
+    def tracked_eye(self, look: Look, centre: Point, kind: str, inner: float) -> EyeLayers:
+        """Declare iris, pupil and glint layers without changing the authored eye."""
+        if self.tilt != 0:
+            from .gaze import _fail
+
+            raise _fail('rig.tilt', self.tilt, 'an untilted split-head drawing', 'gaze.unsupported')
+        moving: list[int] = []
+        layers = self.eye(look, centre, kind, inner, _moving=moving)
+        return EyeLayers(
+            tuple(layers),
+            tuple(moving),
+            look.eye_r * self.sizes[0 if inner > 0 else 1],
+            self._iris(kind) if moving else (0.0, 0.0),
+        )
+
+    def eye(
+        self, look: Look, centre: Point, kind: str, inner: float, *, _moving: list[int] | None = None
+    ) -> list[Layer]:
         """One eye of ``kind``, drawn for this face: ``inner`` is +1 for the near eye (the nose to its right)."""
         if kind not in _BROW:
             raise ToonDataError(f"{look.name}: no eyes {kind!r} drawn for this face")
@@ -403,6 +421,7 @@ class Inked:
         out += [(brush.inked(almond, INK, EYE_HAND), "ink"), (brush.outline(almond), "white")]
         dx, dv = self._iris(kind)
         ix, iy = ex + dx * r, ey + dv * r
+        first = len(out)
         if kind == "shock":  # a pinpoint: no iris to see
             out.append((lump(ix, iy, 0.17 * r, 0.2 * r, "pupil", 0.14), "ink"))
             out.append((lump(ix - 0.06 * r, iy - 0.08 * r, 0.07 * r, 0.06 * r, "shine", 0.2), "white"))
@@ -411,6 +430,8 @@ class Inked:
             out.append((lump(ix, iy, ri * r, ri * r * 1.06, "iris", 0.08), self.iris))
             out.append((lump(ix + inner * 0.03 * r, iy + 0.02 * r, rp * r * 0.86, rp * r * 1.08, "pupil", 0.12), "ink"))
             out.append((lump(ix - 0.22 * r, iy - 0.24 * r, 0.13 * r, 0.11 * r, "shine", 0.22, -20.0), "white"))
+        if _moving is not None:
+            _moving.extend(range(first, len(out)))
         if kind in _LID:
             v_out, v_in = _LID[kind]
             out.append(
@@ -426,6 +447,8 @@ class Inked:
             )  # fmt: skip
             out.append((brush.stroke([at(-1.12, 0.36), at(0.0, 0.27), at(1.1, 0.42)], INK, LINE, steps=6), "ink"))
         elif kind == "teary":  # glistening, a welling line and a tear at the outer corner
+            if _moving is not None:
+                _moving.append(len(out))
             out.append((lump(ix + 0.24 * r, iy + 0.26 * r, 0.08 * r, 0.08 * r, "glint", 0.22), "white"))
             well = [at(-0.8, 0.6), at(-0.2, 0.74), at(0.5, 0.66)]
             out.append((brush.stroke(well, FINE * 1.2, brush.EVEN, steps=6), TEAR))

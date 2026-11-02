@@ -15,6 +15,21 @@ def tree(cv: Canvas):
     return ET.fromstring(cv.scene.to_bytes(layout="pretty"))
 
 
+@pytest.mark.parametrize('local', [False, True])
+def test_held_cone_swing_follows_authored_times_with_nonzero_visibility_start(local, tmp_path, scene_render):
+    from support.acting import evaluate
+
+    cv = canvas()
+    cv.local_time = local
+    g = toon_parlour.held(
+        cv, cv.comp, ((1, 3, 'mint'),), (150, 800), (250, 500), '#aa7755', '#bb8866', 1, 3, swings=((1, 0), (2, 90))
+    )
+    path = tmp_path / 'held.scene.xml'
+    path.write_bytes(cv.scene.to_bytes())
+    node = next(n for n in evaluate(scene_render, path, 1.5) if n['id'] == g.id)
+    assert float(node['props']['rotation']) == pytest.approx(45)
+
+
 def texts(cv: Canvas) -> list:
     return [t for t in tree(cv).iter("text")]
 

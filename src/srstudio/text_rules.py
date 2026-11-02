@@ -1,4 +1,4 @@
-"""What is burned into a reel, read as a viewer reads it: rules 7 and 8 of the structural rules (ADR 0146, ADR 0147).
+"""What is burned into a reel, read as a viewer reads it: rules 7 and 8 of the structural rules (ADR 0147, ADR 0148).
 
 The check named ``caption-grammar``: a burned window does not run across a sentence end. It has two faults, each read
 from the scene and the reel's lines. :func:`srstudio.frame_gates.run_together` is a window that drops the stop, and
@@ -59,8 +59,8 @@ __all__ = [
     "timing_notes",
 ]
 
-CAPTION_RUN = "caption-run"  # a burned window that runs across a sentence end (ADR 0146)
-TEXT_SHORT = "text-short"  # a text on the composited frames for less than the reading minimum (ADR 0147)
+CAPTION_RUN = "caption-run"  # a burned window that runs across a sentence end (ADR 0147)
+TEXT_SHORT = "text-short"  # a text on the composited frames for less than the reading minimum (ADR 0148)
 RULES = frozenset({CAPTION_RUN, TEXT_SHORT})
 EXEMPTIONS = "text_published.json"
 MINIMUM = 0.8333  # seconds: the limit the engine's LEG-SHORT reports
@@ -99,7 +99,7 @@ def refuse_captions(reel: str, document: bytes, project: Path) -> None:
     faults = anatomy_ledger.unexcused(reel, caption_notes(document, project), exemptions())
     if faults:
         said = "; ".join(map(str, faults))
-        raise TextRefusedError(f"{reel}: {said}: cut the window at the sentence end (ADR 0146)")
+        raise TextRefusedError(f"{reel}: {said}: cut the window at the sentence end (ADR 0147)")
 
 
 def caption_defects(releases: Mapping[str, Release], episodes: Path, first: Mapping[str, str]) -> list[Drift]:

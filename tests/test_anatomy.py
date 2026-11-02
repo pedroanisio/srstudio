@@ -1,4 +1,4 @@
-"""The shared contract of a hand (ADR 0144): the rule, read from the arm, and every way of breaking it."""
+"""The shared contract of a hand (ADR 0145): the rule, read from the arm, and every way of breaking it."""
 
 import pytest
 

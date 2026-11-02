@@ -15,6 +15,7 @@ from __future__ import annotations
 import re
 from collections.abc import Sequence
 
+from . import _toon_care_contracts as tc
 from . import checks, signature
 from .canvas import Canvas
 from .registry import register
@@ -85,6 +86,7 @@ def _window(cv: Canvas, g, day: bool) -> None:
 @register(
     "location",
     "toon-double-bed",
+    contract=tc.contract('toon-double-bed'),
     summary="A headboard and two pillows for a couple in bed, the wall behind by night with the blind down or by day",
     style="toon",
 )
@@ -104,6 +106,7 @@ def double_bed(cv: Canvas, parent, *, day: bool = False) -> object:
 @register(
     "prop",
     "toon-double-quilt",
+    contract=tc.contract('toon-double-quilt'),
     summary="A quilt across a double bed in front of the cast, a nightstand beside it signed as the desk is",
     style="toon",
 )
@@ -154,6 +157,7 @@ def double_quilt(cv: Canvas, parent, pattern: str = "plum", *, day: bool = False
 @register(
     "location",
     "toon-bedroom-corner",
+    contract=tc.contract('toon-bedroom-corner'),
     summary="The floor beside the bed: the wall by night or day, a skirting board and floorboards",
     style="toon",
 )
@@ -171,6 +175,7 @@ def floor_corner(cv: Canvas, parent, *, day: bool = False) -> object:
 @register(
     "prop",
     "toon-quilt-heap",
+    contract=tc.contract('toon-quilt-heap'),
     summary="A quilt dragged down and heaped in the foreground, over the lap of whoever sits on the floor behind it",
     style="toon",
 )
@@ -208,6 +213,7 @@ def _cue(value: object, what: str) -> float:
 @register(
     "prop",
     "toon-bedside-drawer",
+    contract=tc.contract('toon-bedside-drawer'),
     summary="A nightstand close up, its drawer buzzing against whatever leans on it and sliding out by itself on cue",
     style="toon",
 )
@@ -215,10 +221,13 @@ def bedside_drawer(
     cv: Canvas, parent, *, buzzes: Sequence[float] = (), slides: float | None = None, lit: float = 0.0
 ) -> object:
     """The nightstand from the floor with the cactus on it and the code on its side, its top drawer shaking at each of
-    ``buzzes`` and easing out from second ``slides``, ``lit`` the opacity of the light in the gap. Returns the drawer's
-    group."""
+    ``buzzes`` and easing out from second ``slides``, ``lit`` the finite 0..1 opacity of the light in the gap.
+    Motion and light use composition keys; the light remains on after opening. Returns only the moving drawer
+    front, nested inside the cabinet. Use a caller-owned parent to move or hide the whole nightstand."""
     shakes = [_cue(t, "a drawer's buzz") for t in buzzes]
     out = None if slides is None else _cue(slides, "a drawer slides")
+    if not (checks.number(lit) and 0 <= lit <= 1):
+        raise ToonDataError(f"a drawer's light is a finite opacity from 0 to 1, got {lit!r}")
     g = cv.group(parent, cv.uid("g"))
     x, y, w, h = STAND
     cv.rect(g, fx(x), fy(y - 22), fh(w), fh(26), NIGHTSTAND, cv.ink, INK_W * 0.8, radius=fh(5))
@@ -229,7 +238,8 @@ def bedside_drawer(
     cv.rect(g, fx(dx), fy(dy), fh(dw), fh(dh), GAP)
     if out is not None and lit > 0:
         glow = cv.rect(g, fx(dx), fy(dy), fh(dw), fh(26), GLOW, opacity=lit)
-        cv.gate(glow, [(out, 3600.0)])
+        light_keys = ([(0.0, 0.0)] if out else []) + [(out, lit)]
+        cv.keys(glow, "opacity", light_keys, local=False)
     drawer = cv.group(g, cv.uid("g"), anchorX=fx(dx + dw / 2), anchorY=fy(dy + dh), x=fx(dx + dw / 2), y=fy(dy + dh))
     cv.rect(drawer, fx(dx), fy(dy), fh(dw), fh(dh), NIGHTSTAND, cv.ink, FINE_W, radius=fh(4))
     cv.ellipse(drawer, fx(dx + dw / 2 - 18), fy(dy + dh / 2 - 18), fh(36), fh(36), "#c9a56b", cv.ink, FINE_W * 0.7)
@@ -252,6 +262,7 @@ def bedside_drawer(
 @register(
     "prop",
     "toon-swung-arm",
+    contract=tc.contract('toon-swung-arm'),
     summary="A character's arm in its own coat, swinging about the shoulder: flopped across a partner or stretched up",
     style="toon",
 )

@@ -177,6 +177,9 @@ def test_real_engine_renders_mixed_bundle_and_preserves_vector_information(
     inputs, tmp_path, scene_render, record_property
 ):
     plan, assets = inputs
+    # Both the plate and final composite need the software-renderer allowance.
+    plan = c.preflight(replace(plan.spec, budget=replace(plan.spec.budget, timeout=120)), plan.bindings)
+    assets = tuple(c.prepare_plate(plan, a.layer, a.source) if type(a) is c.PreparedPlate else a for a in assets)
     output = tmp_path / 'bundle'
     result = c.emit_bundle(plan, assets, output, engine=scene_render, cache=tmp_path / 'cache')
     rendered = tmp_path / 'frame.png'

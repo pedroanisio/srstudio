@@ -158,12 +158,12 @@ def main(argv=None):
     strict = sub.add_parser("strict", help="list the reels shipped with findings proven false (ADR 0078)")
     strict.add_argument("--scripts", type=Path, default=_scripts_default(), help="the episodes folder")
     strict.add_argument("--delivery", type=Path, default=_delivery_default(), help="the delivery folder")
-    bodies = sub.add_parser("anatomy", help="list what is published against the anatomy and text rules (ADR 0144)")
+    bodies = sub.add_parser("anatomy", help="list what is published against the anatomy and text rules (ADR 0145)")
     bodies.add_argument("--manifest", type=Path, nargs="*", default=None, help="the delivery manifests to read")
     enhance = sub.add_parser(
-        "enhance", help="the auto-enhance mode, its ledger and the kinds of enhancement (ADR 0056)"
+        "enhance", help="the auto-enhance mode, its ledger, its kinds and a check of this branch's claims (ADR 0056)"
     )
-    enhance.add_argument("action", nargs="?", choices=("status", "kinds", "on", "off"), default="status")
+    enhance.add_argument("action", nargs="?", choices=("status", "kinds", "check", "on", "off"), default="status")
     enhance.add_argument("--scripts", type=Path, default=_scripts_default(), help="folder of episode scripts")
     versions = sub.add_parser("parts", help="list each part's versions, print a digest, check the pins")
     versions.add_argument("--json", action="store_true")
@@ -686,17 +686,20 @@ def _enhance(action: str, repo: Path) -> int:
             print(f"{kind:<10} {what}")
         return 0
     try:
-        if action != "status":
-            auto_enhance.set_mode(repo, on=action == "on")
-        print(f"auto-enhance: {'on' if auto_enhance.enabled(repo) else 'off'}")
-        rows = auto_enhance.ledger(repo) if action == "status" else []
+        if action == "check":
+            rows = auto_enhance.unsound(repo)
+        else:
+            if action != "status":
+                auto_enhance.set_mode(repo, on=action == "on")
+            print(f"auto-enhance: {'on' if auto_enhance.enabled(repo) else 'off'}")
+            rows = auto_enhance.ledger(repo) if action == "status" else []
     except auto_enhance.EnhanceError as exc:
         _error("enhance", exc)
         return 2
     for row in rows:
         verdict = "; ".join(row.problems) or "counts"
         print(f"{row.commit[:7]} {','.join(row.slugs)} [{','.join(row.kinds)}] {row.subject}: {verdict}")
-    return 0
+    return 1 if action == "check" and rows else 0
 
 
 def _cards(args) -> int:
@@ -812,7 +815,7 @@ def _strict(args: argparse.Namespace) -> int:
 def _anatomy_frames(project: Path) -> int:
     """The rules that read the frames, on what was just built: rule 2 of the anatomy rules and the timing of a text.
     Measuring takes the engine, so a build with no engine says it did not measure, and the first delivery still does
-    (ADR 0145, ADR 0147). 1 for a fault."""
+    (ADR 0146, ADR 0148). 1 for a fault."""
     scenes = sorted(project.glob("*.scene.xml"))
     if not scenes:
         return 0

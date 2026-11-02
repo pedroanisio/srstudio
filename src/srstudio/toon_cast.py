@@ -33,6 +33,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from . import _character_contracts as cc
+from . import _toon_contracts as tc
 from . import brush, checks
 from .brush import Point, Shape
 from .canvas import Canvas
@@ -990,6 +991,7 @@ HEADSET_LIGHT = "#6b7385"
 @register(
     "prop",
     "toon-headset",
+    contract=tc.contract('toon-headset'),
     summary="A call-centre headset for any brush-drawn character: a band over the crown, a cup and a mic boom",
     style="toon",
 )

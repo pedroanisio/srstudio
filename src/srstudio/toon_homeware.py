@@ -5,13 +5,16 @@ its receiver with level bars; a swing door between a kitchen and a dining room; 
 bottle that gives up one bubble; a pile of soup tubs that grows; a streaming service's profile screen and device list;
 a scribble that stands where a caption would for words nobody caught; a garden power tool that drowns a voice.
 
-Every measure is a reference screen pixel (:func:`srstudio.toon.fx`/``fy``), like the rest of the style.
+Geometry uses reference screen pixels (:func:`srstudio.toon.fx`/``fy``); typography uses frame pixels.
+Animation keys follow Canvas.local_time (composition by default); visibility uses the parent timeline.
 """
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 
+from . import _toon_domestic_contracts as dc
 from . import anatomy_ledger, checks
 from .canvas import Canvas
 from .registry import register
@@ -113,7 +116,12 @@ def _mug(cv: Canvas, parent, x: float, y: float, s: float, tilt: float = 0.0):
     return g
 
 
-@register("prop", "toon-dishwasher", summary="An open dishwasher that fills, dish by dish, on cue")
+@register(
+    "prop",
+    "toon-dishwasher",
+    contract=dc.contract('toon-dishwasher'),
+    summary="An open dishwasher that fills, dish by dish, on cue",
+)
 def dishwasher(
     cv: Canvas, parent, at: Point = (448.0, 838.0), scale: float = 1.0, loads: Sequence[float] = (), end: float = 0.0
 ) -> None:
@@ -149,7 +157,12 @@ def dishwasher(
             )
 
 
-@register("prop", "toon-rack", summary="A dishwasher's top rack seen close: perfect rows of mugs, rolling out on cue")
+@register(
+    "prop",
+    "toon-rack",
+    contract=dc.contract('toon-rack'),
+    summary="A dishwasher's top rack seen close: perfect rows of mugs, rolling out on cue",
+)
 def rack(
     cv: Canvas,
     parent,
@@ -187,7 +200,12 @@ def rack(
     return g
 
 
-@register("prop", "toon-baby-monitor", summary="A small white baby monitor with an aerial and one green light")
+@register(
+    "prop",
+    "toon-baby-monitor",
+    contract=dc.contract('toon-baby-monitor'),
+    summary="A small white baby monitor with an aerial and one green light",
+)
 def baby_monitor(cv: Canvas, parent, at: Point = (452.0, 500.0), scale: float = 1.0) -> None:
     """The nursery unit standing on reference ``at``, its green light on."""
     x, y = _point(at, "a baby monitor's place")
@@ -200,7 +218,12 @@ def baby_monitor(cv: Canvas, parent, at: Point = (452.0, 500.0), scale: float = 
     cv.ellipse(g, fx(x - 8 * s), fy(y - 34 * s), fh(16 * s), fh(16 * s), LED, cv.ink, FINE_W / 2)
 
 
-@register("prop", "toon-monitor-receiver", summary="A baby monitor's receiver, its green level bars jumping on cue")
+@register(
+    "prop",
+    "toon-monitor-receiver",
+    contract=dc.contract('toon-monitor-receiver'),
+    summary="A baby monitor's receiver, its green level bars jumping on cue",
+)
 def monitor_receiver(
     cv: Canvas, parent, at: Point = (440.0, 800.0), scale: float = 1.5, pulses: Sequence[float] = (), end: float = 0.0
 ) -> None:
@@ -227,7 +250,12 @@ def monitor_receiver(
         cv.rect(g, fx(x - 26 * s), fy(y - 44 * s + i * 11 * s), fh(52 * s), fh(4 * s), PLASTIC_SHADE, radius=fh(2))
 
 
-@register("prop", "toon-swing-door", summary="A swing door with a round window, shut or open on a lit dining room")
+@register(
+    "prop",
+    "toon-swing-door",
+    contract=dc.contract('toon-swing-door'),
+    summary="A swing door with a round window, shut or open on a lit dining room",
+)
 def swing_door(
     cv: Canvas,
     parent,
@@ -273,7 +301,12 @@ def swing_door(
         cv.keys(guest, "opacity", seen)
 
 
-@register("prop", "toon-cupcakes", summary="Trays of cupcakes filling the frame, each with a tiny flag")
+@register(
+    "prop",
+    "toon-cupcakes",
+    contract=dc.contract('toon-cupcakes'),
+    summary="Trays of cupcakes filling the frame, each with a tiny flag",
+)
 def cupcakes(cv: Canvas, parent, start: float = 0.0, end: float = 2.0, rows: int = 5, cols: int = 6) -> None:
     """A worktop of cupcakes, ``rows`` by ``cols``, each frosted, each with a tiny red flag, from ``start`` to
     ``end``."""
@@ -297,7 +330,12 @@ def cupcakes(cv: Canvas, parent, start: float = 0.0, end: float = 2.0, rows: int
             _inked(cv, g, [(x + 2, y - 78), (x + 30, y - 68), (x + 2, y - 58)], FLAG, FINE_W / 2, 1)
 
 
-@register("prop", "toon-shampoo", summary="A squeezy shampoo bottle, held up or standing, that gives up one bubble")
+@register(
+    "prop",
+    "toon-shampoo",
+    contract=dc.contract('toon-shampoo'),
+    summary="A squeezy shampoo bottle, held up or standing, that gives up one bubble",
+)
 def shampoo(cv: Canvas, parent, at: Point = (340.0, 700.0), scale: float = 1.0, bubble: float | None = None):
     """A shampoo bottle with its base at reference ``at``, one bubble rising from its cap at ``bubble`` (seconds);
     returns the group, whose keys move the whole bottle."""
@@ -318,7 +356,12 @@ def shampoo(cv: Canvas, parent, at: Point = (340.0, 700.0), scale: float = 1.0, 
     return g
 
 
-@register("prop", "toon-soup-tubs", summary="A pile of soup tubs with red lids that grows, stop by stop")
+@register(
+    "prop",
+    "toon-soup-tubs",
+    contract=dc.contract('toon-soup-tubs'),
+    summary="A pile of soup tubs with red lids that grows, stop by stop",
+)
 def soup_tubs(
     cv: Canvas, parent, counts: Sequence[tuple[float, int]], at: Point = (300.0, 838.0), end: float = 0.0
 ) -> None:
@@ -332,12 +375,27 @@ def soup_tubs(
         raise ToonDataError(f"a stack lasts past its last count, got {end}")
     g = cv.group(parent, cv.uid("g"))
     for n in range(max(c[1] for c in counts)):
-        arrives = next(t for t, (_, count) in zip(times, counts, strict=True) if count > n)
-        tub = cv.group(g, cv.uid("g"), start=arrives, end=end)
-        top = y - (n + 1) * 74
-        cv.rect(tub, fx(x - 78), fy(top + 16), fh(156), fh(56), TUB, cv.ink, INK_W, radius=fh(10))
-        cv.rect(tub, fx(x - 66), fy(top + 30), fh(132), fh(36), SOUP, radius=fh(8))
-        cv.rect(tub, fx(x - 86), fy(top), fh(172), fh(20), TUB_LID, cv.ink, INK_W, radius=fh(6))
+        for arrives, leaves in _tub_spans(counts, n, end):
+            tub = cv.group(g, cv.uid("g"), start=arrives, end=leaves)
+            top = y - (n + 1) * 74
+            cv.rect(tub, fx(x - 78), fy(top + 16), fh(156), fh(56), TUB, cv.ink, INK_W, radius=fh(10))
+            cv.rect(tub, fx(x - 66), fy(top + 30), fh(132), fh(36), SOUP, radius=fh(8))
+            cv.rect(tub, fx(x - 86), fy(top), fh(172), fh(20), TUB_LID, cv.ink, INK_W, radius=fh(6))
+
+
+def _tub_spans(counts: Sequence[tuple[float, int]], level: int, end: float) -> list[tuple[float, float]]:
+    """Merge consecutive cues keeping this tub visible, including disappearance and return."""
+    spans = []
+    start = None
+    for time, count in counts:
+        if count > level and start is None:
+            start = float(time)
+        elif count <= level and start is not None:
+            spans.append((start, float(time)))
+            start = None
+    if start is not None:
+        spans.append((start, end))
+    return spans
 
 
 def _fit(text: str, what: str) -> str:
@@ -346,7 +404,12 @@ def _fit(text: str, what: str) -> str:
     return text
 
 
-@register("prop", "toon-profile-list", summary="A streaming service's Who's on the couch? list: round avatars, names")
+@register(
+    "prop",
+    "toon-profile-list",
+    contract=dc.contract('toon-profile-list'),
+    summary="A streaming service's Who's on the couch? list: round avatars, names",
+)
 def profile_list(
     cv: Canvas, parent, names: Sequence[str] = ("Mia", "Brock"), start: float = 0.0, end: float = 2.0
 ) -> None:
@@ -373,7 +436,12 @@ def profile_list(
         cv.rect(g, fx(150), fy(y + 76), fh(390), fh(2), soft, cv.clear, 0, radius=0, opacity=0.5)
 
 
-@register("prop", "toon-device-list", summary="A streaming account's device list: who is watching on what, right now")
+@register(
+    "prop",
+    "toon-device-list",
+    contract=dc.contract('toon-device-list'),
+    summary="A streaming account's device list: who is watching on what, right now",
+)
 def device_list(
     cv: Canvas, parent, rows: Sequence[tuple[str, str, str]] = (("Kyle", "Living Room TV", "Now watching"),),
     start: float = 0.0, end: float = 2.0, *, paints: tuple[str, str, str, str, str] = DARK_SCREEN,
@@ -401,7 +469,12 @@ def device_list(
                 align="start", wrap="none")  # fmt: skip
 
 
-@register("prop", "toon-scribble", summary="A caption pill with a scrawl in it, for words nobody could make out")
+@register(
+    "prop",
+    "toon-scribble",
+    contract=dc.contract('toon-scribble'),
+    summary="A caption pill with a scrawl in it, for words nobody could make out",
+)
 def scribble(
     cv: Canvas, parent, spans: Spans, at: Point = (296.0, 278.0), width: float = 420.0, colour: str = SCRAWL_BG
 ) -> None:
@@ -419,7 +492,12 @@ def scribble(
         _line(cv, g, points, 5.0, SCRAWL_INK)
 
 
-@register("prop", "toon-mower", summary="A red lawn mower's engine and handle, seen over a fence")
+@register(
+    "prop",
+    "toon-mower",
+    contract=dc.contract('toon-mower'),
+    summary="A red lawn mower's engine and handle, seen over a fence",
+)
 def mower(cv: Canvas, parent, at: Point = (70.0, 838.0), scale: float = 1.0, running: Spans = ()) -> None:
     """A mower on reference ``at``, its handle rising to the right; it shudders over each of ``running``."""
     x, y = _point(at, "a mower's place")
@@ -432,7 +510,9 @@ def mower(cv: Canvas, parent, at: Point = (70.0, 838.0), scale: float = 1.0, run
     _shudder(cv, g, spans)
 
 
-@register("prop", "toon-blower", summary="An orange leaf blower held out, tube first")
+@register(
+    "prop", "toon-blower", contract=dc.contract('toon-blower'), summary="An orange leaf blower held out, tube first"
+)
 def blower(cv: Canvas, parent, at: Point = (150.0, 760.0), scale: float = 1.0, running: Spans = ()) -> None:
     """A leaf blower with its grip at reference ``at``, the tube pointing right; it shudders over each of
     ``running``."""
@@ -449,16 +529,20 @@ def blower(cv: Canvas, parent, at: Point = (150.0, 760.0), scale: float = 1.0, r
 def _shudder(cv: Canvas, g, spans: list[tuple[float, float]]) -> None:
     keys: list[tuple[float, float]] = [(0.0, 0.0)]
     for a, b in spans:
-        t = a
-        while t < b:
-            keys.append((round(t, 3), -fh(3) if int(round((t - a) * 24)) % 2 else fh(3)))
-            t += 1 / 12
+        for tick in range(math.ceil((b - a) * 12)):
+            t = a + tick / 12
+            keys.append((round(t, 3), -fh(3) if tick % 2 else fh(3)))
         keys.append((b, 0.0))
     if len(keys) > 1:
         cv.keys(g, "y", keys)
 
 
-@register("prop", "toon-lasagna", summary="A deep dish of lasagna carried in two oven gloves")
+@register(
+    "prop",
+    "toon-lasagna",
+    contract=dc.contract('toon-lasagna'),
+    summary="A deep dish of lasagna carried in two oven gloves",
+)
 def lasagna(cv: Canvas, parent, at: Point = (185.0, 838.0), scale: float = 1.0) -> None:
     """The dish with its base at reference ``at``, an oven glove at each end."""
     anatomy_ledger.loose_hand(cv, "toon-lasagna")
@@ -473,7 +557,12 @@ def lasagna(cv: Canvas, parent, at: Point = (185.0, 838.0), scale: float = 1.0) 
                 radius=fh(26 * s))  # fmt: skip
 
 
-@register("prop", "toon-plate-of-toast", summary="A plate of toast, two slices, on whatever it is put down on")
+@register(
+    "prop",
+    "toon-plate-of-toast",
+    contract=dc.contract('toon-plate-of-toast'),
+    summary="A plate of toast, two slices, on whatever it is put down on",
+)
 def toast(cv: Canvas, parent, at: Point = (300.0, 838.0), scale: float = 1.0) -> None:
     """The plate standing on reference ``at``, two slices leaning on each other."""
     x, y = _point(at, "a plate's place")

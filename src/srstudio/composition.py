@@ -9,7 +9,8 @@ plate_view resolves perspective plate coordinates and shared lights. prepare_pla
 verifies static geometry and texture pixels and produces a closed document/resource bundle
 in a bounded worker. compile_bundle and emit_bundle combine verified vectors and
 static plates with bounded rendering, verified caching and atomic publication.
-Printed-label, animated plate and proxy adapters remain unsupported.
+Printed labels retain immutable recipes/font bytes and share the plate render budget.
+Animated plate and proxy adapters remain unsupported.
 """
 
 from __future__ import annotations
@@ -21,7 +22,7 @@ from typing import TYPE_CHECKING, Literal
 if TYPE_CHECKING:
     from ._composition_plate_view import PlateView
     from .clay import Mesh
-    from .plates import Material, Texture
+    from .plates import Material, Print, Texture
 
 from .errors import SrstudioError
 
@@ -337,6 +338,7 @@ class PlateMaterial(_Record):
     normal_scale: float = field(default=1.0, metadata={'minimum': 0, 'maximum': 16})
     sheen: str = ''
     subsurface: float = field(default=0.0, metadata={'minimum': 0, 'maximum': 1})
+    print: str = ''
 
 
 @dataclass(frozen=True)
@@ -366,12 +368,27 @@ class PlateTexture:
 
 
 @dataclass(frozen=True)
+class PlatePrint:
+    """Immutable typed label recipe and font bytes; license is supplied by the host.
+
+    Preparation verifies the TrueType metadata and compiles the label in its
+    bounded worker. Rendering occurs only while compiling a bundle.
+    """
+
+    id: str
+    recipe: Print
+    font: bytes
+    license: str
+
+
+@dataclass(frozen=True)
 class PlateSource:
     id: str
     meshes: tuple[PlateMesh, ...]
     materials: tuple[PlateMaterial, ...]
     meters_per_unit: float | None = None
     textures: tuple[PlateTexture, ...] = ()
+    prints: tuple[PlatePrint, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -382,7 +399,7 @@ class PlateResource:
 
 @dataclass(frozen=True)
 class PreparedPlate:
-    """Verified static plate document and closed mesh/texture resources, bound to one scene placement."""
+    """Verified static plate and closed mesh, texture, label and font resources for one scene placement."""
 
     binding: AssetBinding
     source: PlateSource
@@ -420,19 +437,30 @@ def plate_source(
     *,
     basis: Literal['canonical', 'clay'],
     meters_per_unit: float | None = None,
+    print_font: bytes | None = None,
+    print_license: str | None = None,
 ) -> PlateSource:
     """Snapshot existing geometry and materials, deduplicating pixel maps without losing authored fields.
 
-    Printed-label recipes require a separate rendering adapter and are refused.
-    prepare_plate verifies geometry and emits PNG/OBJ resources in a bounded worker.
+    Printed-label recipes require explicit immutable TrueType font bytes and
+    their license. prepare_plate verifies and compiles closed resources in a
+    bounded worker; compile_bundle renders labels under the shared budget.
     """
     from ._composition_texture import snapshot_source
 
-    return snapshot_source(id, meshes, materials, basis=basis, meters_per_unit=meters_per_unit)
+    return snapshot_source(
+        id,
+        meshes,
+        materials,
+        basis=basis,
+        meters_per_unit=meters_per_unit,
+        print_font=print_font,
+        print_license=print_license,
+    )
 
 
 def plate_source_digest(source: PlateSource) -> str:
-    """Identity for PlateWork.key, including mesh bytes, materials, basis and physical scale."""
+    """Identity for PlateWork.key, including geometry, maps, label recipes/fonts and physical scale."""
     from ._composition_plate_wire import source_digest
 
     return source_digest(source)

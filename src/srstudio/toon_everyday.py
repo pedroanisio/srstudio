@@ -10,12 +10,13 @@ unrolls, its rows of items and prices showing as the paper passes them; a longer
 display whose number changes on cue. :func:`clipboard` holds a printed form (a job application, a sign-in sheet):
 its title, labelled rows whose handwritten values are filled in on cue, and a stamp that lands across it.
 
-Every prop stands at a reference point (``at``, screen pixels as :func:`srstudio.toon.fx`/``fy`` map them), is
-drawn ``scale`` times its size about that point, and returns its footprint, the reference box it may draw in over
-its whole life (motion included). A placement whose footprint leaves the frame, enters the caption band or touches
+The phone, speaker, receipt, dispenser and clipboard stand at reference ``at`` (:func:`srstudio.toon.fx`/``fy``),
+drawn ``scale`` times their size, and return a reference footprint including their motion allowance.
+The TV menu and remote return groups; rating stars return None. A checked footprint leaving the frame, entering
+the caption band or touching
 the signature marks on the desk (:data:`SIGNATURE_BOX`) is refused, and so is a text its box does not hold, measured
 in the style's font by the ``measure`` the sketch build passes (``Shot.measure``). States are keyed from 0 in rising
-project seconds, on the composition clock like the rest of the style; every refusal is a :class:`ToonDataError`.
+project seconds on the composition clock; every refusal is a :class:`ToonDataError`.
 """
 
 from __future__ import annotations
@@ -25,6 +26,7 @@ import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
+from . import _toon_detail_contracts as dc
 from . import anatomy_ledger, checks
 from .canvas import Align, Canvas
 from .registry import register
@@ -329,6 +331,7 @@ def _screen(cv: Canvas, g, gid: str, s: Screen, fill_until: float) -> None:
 @register(
     "prop",
     "toon-phone",
+    contract=dc.contract('toon-phone'),
     summary="A smartphone standing on a surface or held, whose screen changes on cue: a notification that buzzes it, "
     "a code or password prompt, a dating profile, a declined payment, a loading bar, the screen off",
 )
@@ -389,6 +392,7 @@ REMOTE_BODY, REMOTE_KEY, REMOTE_LIGHT = "#2b2f3a", "#8d94a6", "#d8dde8"
 @register(
     "prop",
     "toon-tv-menu",
+    contract=dc.contract('toon-tv-menu'),
     summary="A full-frame TV menu with one row: a plain door on its tile, a bar as far as it has been seen, a label. "
     "An invented interface, no app name or logo",
 )
@@ -416,7 +420,9 @@ def tv_menu(cv: Canvas, parent, label: str, seen: float, *, measure: Measure, id
     return g
 
 
-@register("prop", "toon-remote", summary="A plain TV remote, small enough for a paw")
+@register(
+    "prop", "toon-remote", contract=dc.contract('toon-remote'), summary="A plain TV remote, small enough for a paw"
+)
 def remote(cv: Canvas, parent, at: tuple[float, float], *, scale: float = 1.0, tilt: float = 0.0, id: str = "remote"):
     """A remote with its middle at reference ``at``, turned ``tilt`` degrees, for a hand to hold. Returns its group."""
     if not (checks.number(scale) and scale > 0):
@@ -438,7 +444,12 @@ STAR_R = 21.0  # a star's outer radius, reference pixels
 STAR_MAX = 5
 
 
-@register("prop", "toon-stars", summary="A row of rating stars that fill one at a time, for a phone's screen or a sign")
+@register(
+    "prop",
+    "toon-stars",
+    contract=dc.contract('toon-stars'),
+    summary="A row of rating stars that fill one at a time, for a phone's screen or a sign",
+)
 def stars(
     cv: Canvas,
     parent,
@@ -545,6 +556,7 @@ def ring_keys(states: Sequence[tuple[float, str]], end: float) -> dict[str, list
 @register(
     "prop",
     "toon-speaker",
+    contract=dc.contract('toon-speaker'),
     summary="A smart speaker whose light ring shows what it is doing: dark, listening, thinking (a light chasing "
     "round), speaking (the ring pulsing) or an error (red)",
 )
@@ -619,6 +631,7 @@ def _dashes(cv: Canvas, g, y: float) -> None:
 @register(
     "prop",
     "toon-receipt",
+    contract=dc.contract('toon-receipt'),
     summary="A receipt that unrolls from a printer's slot, its items and prices showing as the paper passes them; "
     "an optional store name on top and a total under a rule",
 )
@@ -711,6 +724,7 @@ def _number(value, slot: Slot, measure: Measure, what: str) -> str:
 @register(
     "prop",
     "toon-take-a-number",
+    contract=dc.contract('toon-take-a-number'),
     summary="A take-a-number dispenser on its pole, a ticket sticking out of it, under a NOW SERVING display whose "
     "number changes on cue",
 )
@@ -829,6 +843,7 @@ def _stamp(stamp, measure: Measure) -> tuple[float, str, str] | None:
 @register(
     "prop",
     "toon-clipboard",
+    contract=dc.contract('toon-clipboard'),
     summary="A clipboard holding a printed form (a job application, a sign-in sheet): its title, labelled rows "
     "whose handwritten values are filled in on cue, and a REJECTED or HIRED stamp that lands across it",
 )

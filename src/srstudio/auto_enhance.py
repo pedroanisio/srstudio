@@ -27,7 +27,7 @@ from pathlib import Path
 from .social import DeliveryError, Drift
 
 __all__ = ["BRANCH", "KINDS", "SETTINGS", "SKILL", "VERSION", "EnhanceError", "Enhancement"]
-__all__ += ["enabled", "ledger", "refused", "set_mode"]
+__all__ += ["enabled", "ledger", "refused", "set_mode", "unsound"]
 
 KINDS = {
     "comedy": "funnier: joke mechanisms, beat timing, hooks, payoffs, rubric rules",
@@ -150,9 +150,9 @@ def _problems(repo: Path, commit: str, slugs: tuple[str, ...], kinds: tuple[str,
     return tuple(found)
 
 
-def ledger(repo: Path) -> list[Enhancement]:
-    """Every commit on :data:`BRANCH` that carries the trailers, newest first, each with what is wrong with it."""
-    log = _git(repo, "log", BRANCH, "--no-merges", "--grep=^Enhances:", f"--format={_FORMAT}")
+def ledger(repo: Path, revisions: str = BRANCH) -> list[Enhancement]:
+    """Every commit in ``revisions`` that carries the trailers, newest first, each with what is wrong with it."""
+    log = _git(repo, "log", revisions, "--no-merges", "--grep=^Enhances:", f"--format={_FORMAT}")
     rows = []
     for record in filter(str.strip, log.split(_RECORD)):
         commit, named, kind, subject = record.strip().split(_FIELD)
@@ -161,6 +161,11 @@ def ledger(repo: Path) -> list[Enhancement]:
             kinds = tuple(filter(None, (k.strip() for k in kind.split(","))))
             rows.append(Enhancement(commit, slugs, kinds, subject, _problems(repo, commit, slugs, kinds)))
     return rows
+
+
+def unsound(repo: Path) -> list[Enhancement]:
+    """The claims this branch would land that could not count: history cannot be rewritten after the merge."""
+    return [row for row in ledger(repo, f"{BRANCH}..HEAD") if row.problems]
 
 
 def refused(videos: Mapping[str, str], repo: Path) -> list[Drift]:

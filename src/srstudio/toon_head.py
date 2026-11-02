@@ -25,8 +25,14 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from typing import Any, Protocol, runtime_checkable
 
+from . import _gaze_drawing as target_drawing
 from . import anatomy_ledger, brush, drawing_events
+from ._gaze_drawing import EyeLayers as EyeLayers
+from ._gaze_drawing import TrackingEyes as TrackingEyes
+from ._transaction import scene_transaction
 from .canvas import Canvas, _at_zero
+from .gaze import GazePlan
+from .gaze import _fail as _gaze_fail
 from .head_motion import (
     CHANNELS,
     GAZES,
@@ -64,11 +70,14 @@ __all__ = [
     "SPRING_RUN",
     "TILT_EASE",
     "Glancing",
+    "EyeLayers",
+    "TrackingEyes",
     "HeadRig",
     "figure",
     "gaze_states",
     "open_seam",
     "rest_springs",
+    "gaze_capabilities",
 ]
 
 TILT_EASE = 0.4  # seconds a held tilt takes to reach its pose's value, less when the pose is short, see _held_tilts
@@ -298,12 +307,38 @@ def figure(
     stickers: Sequence[Layer] = (),
     mouths: Mouths = (),
     on_face: Callable[[Any], None] | None = None,
+    *,
+    target_gaze: GazePlan | None = None,
 ):
     """The character in nested groups (the module's docstring), one drawing per pose run inside the chains, moved by
     ``plan``. The arguments mean what they mean to :func:`srstudio.toon_cast.figure`; ``on_face`` draws into the face's
     group last, so what it adds moves with the head. Returns the outermost group."""
     plan.check_bounds(rig.style, frozen=bool(cv._frozen))
+    if target_gaze is not None:
+        if cv._frozen:
+            raise _gaze_fail('canvas', 'frozen', 'a running canvas for target gaze', 'gaze.unsupported')
+        tracking = target_drawing.prepare(rig, poses, duration, plan, target_gaze)
+        with scene_transaction(cv.scene, cv):
+            return _draw_figure(
+                cv,
+                parent,
+                rig,
+                poses,
+                duration,
+                tracking.head,
+                taps,
+                enter,
+                stickers,
+                mouths,
+                on_face,
+                tracking=tracking,
+            )
     return _draw_figure(cv, parent, rig, poses, duration, plan, taps, enter, stickers, mouths, on_face)
+
+
+def gaze_capabilities(rig: HeadRig) -> dict:
+    """Explicit continuous target-gaze support and the drawing's stylized mapping."""
+    return target_drawing.capabilities(rig)
 
 
 def _draw_reach(cv: Canvas, parent, rig: HeadRig, poses: Sequence[Pose], duration: float, taps=(), *, mouths=()):
@@ -327,6 +362,8 @@ def _draw_figure(
     stickers: Sequence[Layer] = (),
     mouths: Mouths = (),
     on_face: Callable[[Any], None] | None = None,
+    *,
+    tracking: target_drawing.PreparedGaze | None = None,
 ):
     """Emit a preflighted performance or the fixed, rig-derived specimen probe."""
     if rig.drawn_as is not None:
@@ -381,7 +418,10 @@ def _draw_figure(
 
             g = cv.group(face, cv.uid("g"), start=start, end=end)
             _draw(cv, g, _place(list(rig.face()), arms))
-            _eyes(cv, g, look, pose.eyes, arms, plan.gaze, start, end)
+            if tracking is None:
+                _eyes(cv, g, look, pose.eyes, arms, plan.gaze, start, end)
+            else:
+                target_drawing.draw_eyes(cv, g, tracking, pose.eyes, arms)
             cheeks, worn = wear_layers(face_of(look), pose.wear) if pose.wear else ([], [])
             nose = [(shape, "ink" if i == 0 else "white") for i, shape in enumerate(look.nose)]
             _draw(cv, g, _place(cheeks + nose + (_whiskers(look) if look.whiskers else []), arms))

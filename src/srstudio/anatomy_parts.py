@@ -1,4 +1,4 @@
-"""What every character and every hand part of the library is, against :mod:`srstudio.anatomy` (ADR 0144).
+"""What every character and every hand part of the library is, against :mod:`srstudio.anatomy` (ADR 0145).
 
 A row says what a part's hands are: a pair the contract draws, one drawing for one arm, hands with no thumb to place,
 or no hands. A row with a thumb carries the side and the facing its drawing was made for, and a row with none says why.
@@ -227,7 +227,7 @@ BODIES: Final = MappingProxyType(
 )
 
 # A pair whose thumb follows its arm but whose other fingers do not mirror. Each is an approved look, so it stays as
-# drawn until the operator says otherwise; ADR 0144 names it.
+# drawn until the operator says otherwise; ADR 0145 names it.
 NOT_MIRRORED: Final = MappingProxyType(
     {"rafa": "rafa._hand keeps one row of four fingers on both hands; only the thumb moves to the arm's side"}
 )

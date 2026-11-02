@@ -773,6 +773,18 @@ def frames(*spans: tuple[float, float], step: float = 1 / 24) -> list[float]:
     return sorted(out)
 
 
+def _short_turns(spots: Sequence[tuple[float, Point]], frm: Point) -> list[tuple[float, float]]:
+    """The arm's angle at each of ``spots``, each key the short way round from the last: two hands either side of
+    straight above the shoulder are a few degrees apart, not most of a circle."""
+    out: list[tuple[float, float]] = []
+    for t, (x, y) in spots:
+        turn = math.degrees(math.atan2(frm[0] - x, y - frm[1]))
+        if out:
+            turn += 360.0 * round((out[-1][1] - turn) / 360.0)
+        out.append((t, turn))
+    return out
+
+
 def reach(
     cv: Canvas,
     parent,
@@ -799,8 +811,7 @@ def reach(
     pivot = cv.group(parent, cv.uid("g"), x=frm[0], y=frm[1])
     upper = cv.group(pivot, cv.uid("g"))
     arm(cv, upper, look, (0.0, 0.0), (0.0, REACH_DRAWN), width=width, hand=False)
-    turns = [(t, math.degrees(math.atan2(frm[0] - x, y - frm[1]))) for t, (x, y) in spots]
-    cv.keys(pivot, "rotation", turns, hold=False, local=False)
+    cv.keys(pivot, "rotation", _short_turns(spots, frm), hold=False, local=False)
     lengths = [(t, max(math.hypot(x - frm[0], y - frm[1]) - REACH_CUFF, 1.0) / REACH_DRAWN) for t, (x, y) in spots]
     cv.keys(upper, "scaleY", lengths, hold=False, local=False)
     held = cv.group(parent, cv.uid("g"))

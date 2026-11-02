@@ -1,4 +1,4 @@
-"""What a build noted of a character's body, what is excused, and the refusal (ADR 0144).
+"""What a build noted of a character's body, what is excused, and the refusal (ADR 0145).
 
 A draw site that cannot refuse by itself, because an old version must stay drawable for what is already published,
 notes the fault on its :class:`~srstudio.canvas.Canvas`. :meth:`srstudio.episode.Episode.finish` then refuses the reel
@@ -58,9 +58,9 @@ __all__ = [
 
 HAND_UNPAIRED = "hand-unpaired"  # one drawing of a hand on both arms, so one arm has the other's hand
 HAND_NO_SIDE = "hand-no-side"  # a hand that does not say which arm it is on
-HAND_NO_ARM = "hand-no-arm"  # a hand part that no character's arm holds (ADR 0145)
-ARM_THIRD = "arm-third"  # two hands on one arm of one character on one frame (ADR 0145)
-BUST_OPEN = "bust-open"  # a figure drawn to the waist ending in the open, where it would need legs (ADR 0145)
+HAND_NO_ARM = "hand-no-arm"  # a hand part that no character's arm holds (ADR 0146)
+ARM_THIRD = "arm-third"  # two hands on one arm of one character on one frame (ADR 0146)
+BUST_OPEN = "bust-open"  # a figure drawn to the waist ending in the open, where it would need legs (ADR 0146)
 
 RULES = frozenset({HAND_UNPAIRED, HAND_NO_SIDE, HAND_NO_ARM, ARM_THIRD, BUST_OPEN})
 RECORD = "anatomy.json"

@@ -111,6 +111,8 @@ Clocks are explicit:
 | `x-timebase` | Meaning |
 | --- | --- |
 | `project` | Absolute project seconds. In Toon and Collage, `duration` is the exit time, not an interval length. |
+| `composition` | Animation keys explicitly use the composition clock, even if `Canvas.local_time=True`. |
+| `parent` | Visibility start/end attributes use the containing parent's timeline. These are not durations. |
 | `relative:enter` | Pose start relative to the character's `enter`; the drawer adds the entrance once. |
 | `canvas` | The canvas animation clock. With `Canvas(local_time=True)` under a shot sequence, zero is the shot start. |
 | `relative:take` | Time since the supplied take starts. Ink builders expect a corresponding local canvas; they do not add `Take.start`. |
@@ -160,6 +162,255 @@ srstudio catalog --contract-coverage --json
 srstudio catalog --style cutout --kind prop --contract-coverage
 srstudio inspect prop coffee-cup --json
 ```
+
+Forty Toon core, props, sets and world builders also declare their semantics,
+including `toon-headset`. Toon positions use `toon-reference` space: `fx(x)` maps
+`x * 1080 / 592`, while `fy(y)` maps `(y - 70) * 1080 / 592`, both rounded to two
+decimals. Distances use `fh` without the y offset. Font sizes and measurement callback
+results use frame pixels. Resizing the canvas does not rescale this reference artwork.
+The note insert is an explicitly documented frame-pixel exception.
+
+Most of these Toon builders return `None`; draw inside a group you create if you need
+a placement handle. `toon-headset` instead returns ordered geometry/paint layers for
+`stickers=`, with no scene mutation. These declarations do not promise spatial grips.
+
+The clock and logo explicitly pin animation keys to composition time. The plant,
+coffee machine and other canvas-keyed parts follow `Canvas.local_time`. Toasts mix
+parent visibility bounds with composition-keyed movement; inspect constraints before
+placing them in a shifted shot. `measure(text)` and `measure(text, size)` are runtime
+text-measurement bindings, not drawing callbacks.
+
+<!-- toon-drawing-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry
+
+plant = registry.get("prop", "toon-plant")
+clock = registry.get("prop", "toon-clock")
+plant_info = plant.describe()["contract"]
+clock_info = clock.describe()["contract"]
+assert plant_info["arguments"]["properties"]["at"]["x-space"] == "toon-reference"
+assert plant_info["capabilities"]["spatial_attachment"] is False
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="24", duration=4)
+cv = Canvas(scene, font_asset=None, local_time=True)
+parent = cv.group(cv.comp, "drawings")
+plant_result = plant(cv, parent, at=(120, 750), scale=1, end=4)
+clock_result = clock(cv, parent, times=((0, "08:00"), (2, "09:30")), at=(350, 400))
+# Plant keys use local time. Clock hands remain on composition time.
+# This unshifted parent aligns both clocks; neither builder returns a handle.
+assert plant_result is clock_result is None
+```
+<!-- toon-drawing-discovery:end -->
+
+The 20 builders in `toon_flat` and `toon_odds` also declare their semantics.
+Check individual arguments: `toon-closet.at` is an opening time, while
+`toon-pipe.at` is a reference point. Flat animations follow the canvas clock;
+pipe drips and mosquito paths explicitly use composition time. The paper insert
+uses frame-pixel geometry and the canvas animation clock.
+
+Flat builders return `None`; the odds builders return a `Group` whose coordinates
+are already converted to frame pixels. Neither family supplies spatial grips.
+An `end` marked `validation-limit` checks timing without hiding the drawing:
+laundry piles, tiny drawers and tasting spoons remain visible. Give them a parent
+with a visibility end when the shot needs one. A pipe's `end` hides its drops and
+jets, while its body remains visible.
+
+<!-- toon-household-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry
+
+pile = registry.get("prop", "toon-laundry-pile")
+pipe = registry.get("prop", "toon-pipe")
+pile_info = pile.describe()["contract"]
+assert pile_info["arguments"]["properties"]["end"]["x-role"] == "validation-limit"
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="24", duration=4)
+cv = Canvas(scene, font_asset=None)
+holder = cv.group(cv.comp, "household", end=3)
+pile_result = pile(cv, holder, start=None, top=750, end=3)
+pipe_result = pipe(cv, holder, at=(470, 560), drips=(0.5, 1.5), end=3)
+assert pile_result is None
+# The holder ends visibility for both the pile and the pipe body at 3 seconds.
+# No shifted parent is used: composition animation and parent visibility align.
+```
+<!-- toon-household-discovery:end -->
+
+The 33 `toon_house` and `toon_homeware` builders declare room, costume, appliance
+and screen conventions. Worn props such as `toon-towel` accept a reference point;
+they do not track a character automatically. `toon-rack` and `toon-shampoo` return
+their root groups. Other builders in these two modules return `None`.
+
+Dishwasher loads, screen changes and soup-tub counts use parent visibility.
+Receiver pulses, rack movement, bubbles and garden-tool vibration use canvas
+animation time. Finger movement and shower-water phases force composition time.
+The horse's `start`/`end` control automatic blinks, not visibility; an explicit
+blink sequence also works with `end=0`. Inspect nullable schemas through `anyOf`
+to distinguish omitted behavior from an empty sequence.
+
+<!-- toon-domestic-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry
+
+shampoo = registry.get("prop", "toon-shampoo")
+towel = registry.get("prop", "toon-towel")
+point_schema = towel.describe()["contract"]["arguments"]["properties"]["at"]
+assert point_schema["type"] == "array"
+assert shampoo.describe()["contract"]["capabilities"]["returns_scene_handle"]
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="24", duration=4)
+cv = Canvas(scene, font_asset=None)
+holder = cv.group(cv.comp, "bathroom-props")
+bottle = shampoo(cv, holder, at=(340, 700), bubble=1)
+bottle.end = 3
+towel(cv, holder, at=(185, 500), start=0, end=3)
+# The bottle handle controls the whole prop; its bubble has its own child keys.
+```
+<!-- toon-domestic-discovery:end -->
+
+The 15 `toon_bed`, `toon_ward` and `toon_surgery` builders distinguish scene
+handles, visibility spans and animation limits. Bed builders return groups;
+`toon-bedside-drawer` returns only the moving drawer front inside its cabinet.
+Create a containing group to move or hide the whole nightstand. Drawer buzzes,
+opening and light use composition animation time; `lit` is the held opacity,
+from zero to one. Opening has no automatic visibility end.
+
+Ward and surgery builders generally return `None`. The bandage returns a group;
+give it a face drawing parent and a runtime object whose `eyes` contains two
+reference points. It inherits that parent's transform without finding or binding
+an actor. The swung arm similarly rotates a drawn limb about a fixed reference
+shoulder; it supplies no elbow or contact solve.
+
+The dental lamp's `end` limits animation without hiding the lamp. Photo and probe
+`end=0` instead means a still: their `start` is ignored. A positive end gives them
+parent visibility bounds and a 0.28-second composition-keyed arrival. Keep parent
+visibility and animation clocks aligned. Group `timeOffset`/`timeScale` remap the
+child timeline, including composition-keyed animations within that group.
+
+<!-- toon-care-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry
+
+drawer = registry.get("prop", "toon-bedside-drawer")
+lamp = registry.get("prop", "toon-dental-lamp")
+drawer_info = drawer.describe()["contract"]
+lamp_info = lamp.describe()["contract"]
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="30", duration=4)
+cv = Canvas(scene, font_asset=None, local_time=True)
+cabinet = cv.group(cv.comp, "cabinet", end=3)
+front = drawer(cv, cabinet, buzzes=(1,), slides=2, lit=0.35)
+lamp_holder = cv.group(cv.comp, "lamp-holder", end=3)
+lamp_result = lamp(cv, lamp_holder, pivot=(712, 30), end=3)
+# Both caller-owned parents hide complete drawings at 3 seconds.
+# Moving or hiding front alone affects only the drawer front.
+assert drawer_info["capabilities"]["returns_scene_handle"]
+assert lamp_result is None
+```
+<!-- toon-care-discovery:end -->
+
+The 21 builders in `toon_cars`, `toon_dinner`, `toon_parlour` and `toon_rooms`
+complete the registered Toon non-character declarations. Passing vehicles use
+`Passing(at, kind, colour)`: `at` is the composition time when the vehicle crosses
+the frame center. Road scrolling follows the canvas clock; tally marks use parent
+visibility. Loose wheels keep translation and rotation proportional to their
+converted radius. Their scale, position and destination must produce finite
+geometry and a positive frame-pixel radius.
+
+Dining dishes accept `(kind, x)` or `(kind, x, at)` rows. They use a fixed table
+height and canvas-keyed opacity reveals. Cones and the parlour case return groups
+with geometry already placed in frame pixels; changing their group `x` adds a
+translation to that placement. The parlour front's `start` and `end` are only
+validation limits: they do not trim traffic or hide the room.
+
+Lit rooms return a dictionary of `toon_rooms.Cue` records. Their closed light maps
+list the room's supported sources; omitted sources receive defaults. A screen's
+first cue names its color, and later cues can retain or change it. Light levels,
+screen colors, tickets and router LEDs follow the canvas clock. The lounge speaker
+ring uses composition keys. `end=0` draws a still; positive `end` bounds generated
+keys without hiding the room.
+
+Create the light layer after the actor and before the foreground desk. This lets
+room lighting reach the character while keeping the signature clear. `dim` fades
+linearly over 1.5 seconds; it can support a quiet mood change, but it does not
+select or animate the actor's expression.
+
+<!-- toon-lit-room-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry, toon
+
+room = registry.get("location", "toon-lounge")
+room_info = room.describe()["contract"]
+dog = registry.get("character", "toon-dog")
+names = dog.describe()["contract"]["vocabularies"]
+pose = toon.Pose(0, names["eyes"][0], names["mouths"][0], names["arms"][0])
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="30", duration=4)
+cv = Canvas(scene, font_asset=None)
+back = cv.group(cv.comp, "back")
+actor = cv.group(cv.comp, "actor")
+light = cv.group(cv.comp, "light")
+front = cv.group(cv.comp, "front")
+cues = room(cv, back, {"lamp": ((0, "on"), (1, "dim")),
+                       "tv": ((0, "on", "blue"),)}, end=4, light=light)
+dog(cv, actor, [pose], enter=0, duration=4)
+toon.desk(cv, front)
+assert room_info["returns"]["x-role"] == "parsed-light-cues"
+```
+<!-- toon-lit-room-discovery:end -->
+
+The 22 parts in `toon_everyday`, `toon_inserts`, `toon_study` and `toon_laptop`
+also publish contracts. Inspect the return before using it:
+
+| Parts | Return |
+| --- | --- |
+| Phone, speaker, receipt, take-a-number dispenser, clipboard | `(left, top, right, bottom)` footprint in Toon reference pixels |
+| TV menu, remote, open laptop | Created scene `Group` |
+| Other registered parts in these four modules | `None` |
+
+Footprint checks use the fixed Toon frame, caption band and signature box; they
+do not account for an external parent transform. Text measurement callbacks take
+`(text, font_size)` and return frame-pixel widths. Phone `Screen.at` and clipboard
+`Field.at` are composition times, while the props' `at` arguments are positions.
+Laptop notes use `u`/`v` fractions of a bilinear screen quad.
+
+Books use reference positions, but the highlighter, study page and quiz sheet use
+frame pixels. `row_span` and `note_span` convert book geometry into frame positions
+for the marker. The following example keeps the marker on the advancing highlight
+edge using the same composition clock and linear interpolation:
+
+<!-- toon-study-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry
+from srstudio.toon_study import HIGHLIGHT, SWEEP, row_span
+
+book = registry.get("prop", "toon-open-book")
+marker = registry.get("prop", "toon-highlighter")
+marker_info = marker.describe()["contract"]
+assert marker_info["arguments"]["properties"]["at"]["x-space"] == "frame"
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="24", duration=3)
+cv = Canvas(scene, font_asset=None)
+left, right, y = row_span(0, at=(300, 801))
+tip = left + 0.02 * (right - left)
+book_result = book(cv, cv.comp, at=(300, 801), sweep=(0, HIGHLIGHT, 1), id="book")
+marker_result = marker(
+    cv, cv.comp, at=(tip, y), paw="#c49a6c",
+    path=((1, tip), (1 + SWEEP, right)), id="marker",
+)
+```
+<!-- toon-study-discovery:end -->
 
 `srstudio.contract_coverage(style=None, kind=None)` returns the same versioned coverage report. Per-kind counts
 separate explicit declarations, complete argument shapes, units, clocks and anchors; `undeclared_parts` names
