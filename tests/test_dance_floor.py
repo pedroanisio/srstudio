@@ -53,33 +53,49 @@ def performed(name: str, preset: str) -> Performance:
 # --- the support polygon: body's public geometry -----------------------------------------------------------------
 
 
-def test_the_support_is_bodys_hull_of_bodys_footprints():
+def _set(pose, up=0.0, values=None):
+    """``pose`` raised by ``up`` metres (y points down), with ``values`` in place of its own."""
+    root = sk.Frame(pose.root.origin - sk.Vec3(0.0, up, 0.0), pose.root.rotation)
+    return sk.SkeletonPose(root, pose.values if values is None else values)
+
+
+def test_the_support_is_the_skeleton_bridges_support_on_the_floor():
     profile = sk.preset("realistic")
-    frames = sk.world(profile, sk.rest_pose(profile))
-    anatomy = sk.body_profile(profile)
-    corners = []
-    for side in ("left", "right"):
-        ankle = frames[f"{side}_foot"].origin
-        corners += body.support_footprint(sk.Frame(sk.Vec3(ankle.x, 0.0, ankle.z), sk.Quaternion()), anatomy)
-    expected = body.support_hull([(p.x, p.z) for p in corners])
-    found = support(profile, frames, ("left", "right"))
+    rest = sk.rest_pose(profile)
+    floor = floor_of(profile, rest)
+    expected = sk.to_body_pose(profile, _set(rest, floor), planted=("left", "right")).support_polygon
+    found, sides = support(profile, rest, floor, ("left", "right"))
+    assert sides == ("left", "right")
     assert [c for p in found for c in p] == pytest.approx([c for p in expected for c in p])
     point = sk.Vec3(0.0, -0.9, 0.0)
-    assert margin(expected, point) == body.support_margin(expected, point) > 0
-    with pytest.raises(body.BodyError):
-        support(profile, frames, ())  # no foot holds nothing up
+    assert margin(found, point) == body.support_margin(found, point) > 0
+    left, sides = support(profile, rest, floor, ("left",))
+    expected = sk.to_body_pose(profile, _set(rest, floor), planted=("left",)).support_polygon
+    assert sides == ("left",) and [c for p in left for c in p] == pytest.approx([c for p in expected for c in p])
+
+
+def test_only_a_foot_that_lies_flat_holds_the_body_up():
+    profile = sk.preset("realistic")
+    rest = sk.rest_pose(profile)
+    floor = floor_of(profile, rest)
+    assert support(profile, _set(rest, 0.01), floor, ("left", "right")) is None  # both feet off the floor
+    assert support(profile, rest, floor, ()) is None  # no foot named
+    tipped = _set(rest, values=rest.values + (("right_foot.up_down", 0.3),))
+    found, sides = support(profile, tipped, floor, ("left", "right"))
+    assert sides == ("left",)  # the tipped foot holds nothing up
+    alone, _ = support(profile, rest, floor, ("left",))
+    assert [c for p in found for c in p] == pytest.approx([c for p in alone for c in p])
 
 
 @pytest.mark.parametrize("preset", sk.PRESETS)
 def test_a_standing_body_stands_inside_its_feet(preset):
     profile = sk.preset(preset)
-    frames = sk.world(profile, sk.rest_pose(profile))
     com = dance_floor.centre_of_mass(profile, sk.rest_pose(profile))
     assert com.x == pytest.approx(0.0, abs=1e-9)  # the rest pose is symmetric
     floor = floor_of(profile, sk.rest_pose(profile))
     assert 0.3 * profile.stature < floor - com.y < 0.7 * profile.stature  # about the middle of the body
-    both = support(profile, frames, ("left", "right"))
-    one = support(profile, frames, ("left",))
+    both, _ = support(profile, sk.rest_pose(profile), floor, ("left", "right"))
+    one, _ = support(profile, sk.rest_pose(profile), floor, ("left",))
     assert margin(both, com) > max(0.0, margin(one, com))  # a stick's broad soles overlap, so one may hold it too
     half, heel, toe = sole(profile)
     assert 0 < half and 0 < heel < toe  # a footprint on any profile, with toes or without
@@ -275,8 +291,8 @@ def test_stance_stands_wide_on_bent_knees_with_the_feet_flat(preset):
     assert across == pytest.approx(dance_floor.STANCE_WIDTH * height, rel=1e-3)
     assert knee_bend(profile, pose) == pytest.approx(dance_floor.STANCE_BEND, abs=0.01)
     assert world["hips"].origin.y > sk.world(profile, rest)["hips"].origin.y + 0.02 * height  # the hips sit lower
-    frames, com = sk.world(profile, pose), dance_floor.centre_of_mass(profile, pose)
-    assert margin(support(profile, frames, ("left", "right")), com) > 0
+    com = dance_floor.centre_of_mass(profile, pose)
+    assert margin(support(profile, pose, floor_of(profile, pose), ("left", "right"))[0], com) > 0
     ahead = [world[f"{side}_foot"].rotation.rotate(sk.Vec3(0.0, 0.0, 1.0)).x for side in ("left", "right")]
     assert ahead[0] < 0 < ahead[1]  # the toes turn out
 

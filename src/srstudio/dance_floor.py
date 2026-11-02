@@ -376,7 +376,6 @@ class _Pass:
     # --- balance --------------------------------------------------------------------------------------------------
 
     def _balance(self, keys: Sequence[tuple[float, str]]) -> None:
-        height = self.profile.pelvis_height
         aim = self.margin_m + AIM_SHARE * 2 * sole(self.profile)[0]
         last = Vec3()
         for t, kind in keys:  # bounded by the keys the caller built, each solved in SHIFT_PASSES
@@ -388,21 +387,38 @@ class _Pass:
             if frame.support != "feet":
                 around = frozenset()
             around = around & set(self.legs)
-            shift = Vec3() if around else last
-            for _ in range(SHIFT_PASSES if around else 0):
+            shift = self._shift_over(frame, t, around, last, aim)
+            self.keys.append(_Key(t, kind, around))
+            self.shifts.append(shift)
+            last = shift
+
+    def _shift_over(self, frame: DanceFrame, t: float, around: frozenset[str], last: Vec3, aim: float) -> Vec3:
+        """The least horizontal shift of the hips that stands the centre of mass ``aim`` inside the support of the
+        feet held ``around`` a key: ``SHIFT_PASSES`` passes, each moving the hips by what the centre of mass misses,
+        at most ``MAX_SHIFT`` hip heights. Each pass reads the support of the held feet that lie flat in its pose (a
+        leg held at a limit may tip one until the hips move); the search starts unshifted, or from ``last`` when no
+        held foot lies flat there, and keeps ``last`` when none does in either, for the pass to refuse or report."""
+        height = self.profile.pelvis_height
+        for start in (Vec3(), last) if around else ():
+            shift, kept = start, None
+            for _ in range(SHIFT_PASSES):
                 pose, _ = self.solve(frame, t, shift, Tally(True))
-                frames, com = body_of(self.profile, pose)
-                polygon = support(self.profile, frames, around)
-                if margin(polygon, com) >= aim:
+                held = support(self.profile, pose, self.floor_y, around)
+                if held is None:  # no held foot lies flat at this shift: keep the last one that read
+                    shift = kept if kept is not None else shift
                     break
-                goal = _toward(polygon, com, aim)
+                kept = shift
+                _, com = body_of(self.profile, pose)
+                if margin(held[0], com) >= aim and len(held[1]) == len(around):
+                    break
+                goal = _toward(held[0], com, aim)
                 shift = shift + Vec3(goal[0] - com.x, 0.0, goal[1] - com.z)
                 size = math.hypot(shift.x, shift.z)
                 if size > MAX_SHIFT * height:
                     shift = shift * (MAX_SHIFT * height / size)
-            self.keys.append(_Key(t, kind, around))
-            self.shifts.append(shift)
-            last = shift
+            if kept is not None:
+                return shift
+        return last
 
     def shift(self, t: float) -> Vec3:
         if not self.keys:
@@ -420,11 +436,12 @@ class _Pass:
         pose, dropped = self.solve(frame, t, self.shift(t), tally)
         if tally.breach_count:
             raise FloorLimitError(tuple(tally.breaches), tally.breach_count)
-        frames, com = body_of(self.profile, pose)
+        _, com = body_of(self.profile, pose)
         feet = _sides(frame) & set(self.legs)
         found = None
-        if frame.support == "feet" and feet:
-            found = margin(support(self.profile, frames, feet), com)
+        held = support(self.profile, pose, self.floor_y, feet) if frame.support == "feet" and feet else None
+        if held is not None:  # with clamp on, a foot the leg cannot lay flat holds nothing up
+            found = margin(held[0], com)
         planted = frozenset(f"{side}_foot" for side in feet)
         return FloorFrame(t, pose, planted, frame.airborne, frame.support, com, found, dropped)
 
