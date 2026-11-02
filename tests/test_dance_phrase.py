@@ -1,6 +1,7 @@
 """Dance phrases (ADR 0194): counted eights, key poses on counts, travel and turns on the floor, a strict reader, and
 the phrase carried by sampling, routines, the choreographer and ``dance_pose``."""
 
+import itertools
 import json
 import math
 
@@ -11,6 +12,7 @@ from srstudio import dance
 from srstudio import skeleton as sk
 from srstudio.dance import (
     EASES,
+    HIT_SHARE,
     PHRASES_SCHEMA,
     DanceDataError,
     DanceError,
@@ -473,6 +475,54 @@ def test_the_class_phrases_dance_what_they_say():
     assert max(abs(k.floor.right) + abs(k.floor.forward) for k in turn.keys) >= 0.2  # with travel
     groove = found["groove-step"]
     assert max(k.floor.right for k in groove.keys) >= 0.25 and len({k.contacts for k in groove.keys}) == 3
+
+
+FLOOR_CHANNELS = ("right", "forward", "up", "turn")
+
+
+def _read(channel, values, floor):
+    return getattr(floor, channel) if channel in FLOOR_CHANNELS else dict(values).get(channel, 0.0)
+
+
+def _span_motion(phrase, a, b, channel, steps=200):
+    """Speed and acceleration of ``channel`` (a joint or a floor channel) across the span from key ``a`` to key ``b``,
+    by finite differences of the sampled phrase, as shares of the change per unit of the span; with the share of the
+    span where each speed sample sits."""
+    start = _read(channel, a.pose, a.floor)
+    change = _read(channel, b.pose, b.floor) - start
+    us = [i / steps for i in range(steps + 1)]
+    at = [moment(phrase, a.beat + u * (b.beat - a.beat)) for u in us]
+    share = [(_read(channel, m.values, m.floor) - start) / change for m in at]
+    speed = [(share[i + 1] - share[i]) * steps for i in range(steps)]
+    accel = [(speed[i + 1] - speed[i]) * steps for i in range(steps - 1)]
+    return [(us[i] + us[i + 1]) / 2 for i in range(steps)], speed, accel
+
+
+def test_each_class_transition_keeps_its_own_speed_and_acceleration():
+    seen = set()
+    for phrase in dance.phrases().values():
+        for a, b in itertools.pairwise(phrase.keys):
+            channels = {*dict(a.pose), *dict(b.pose), *FLOOR_CHANNELS}
+            for channel in channels:
+                if abs(_read(channel, b.pose, b.floor) - _read(channel, a.pose, a.floor)) <= 0.05:
+                    continue
+                mid, speed, accel = _span_motion(phrase, a, b, channel)
+                peak = max(range(len(speed)), key=lambda i: speed[i])
+                assert min(speed) >= -1e-9  # every transition runs one way, onto its key
+                if b.ease == "hit":
+                    held = [s for u, s in zip(mid, speed, strict=True) if u < 1 - HIT_SHARE]
+                    assert max(held) <= 1e-9  # the hit holds the last pose
+                    assert 1 - HIT_SHARE <= mid[peak] <= 1.0
+                    assert speed[peak] >= 1.4 / HIT_SHARE  # and strikes at about three times a smooth's peak speed
+                elif b.ease == "smooth":
+                    assert 0.4 <= mid[peak] <= 0.6 and 1.4 <= speed[peak] <= 1.6
+                    assert max(speed[0], speed[-1]) <= 0.05 * speed[peak]  # leaves and lands at rest
+                    turn = peak - 1
+                    assert min(accel[: turn - 2]) > 0 and max(accel[turn + 2 :]) < 0  # speeds up, then slows down
+                else:
+                    assert max(speed) - min(speed) <= 1e-6  # linear travel keeps one speed
+                seen.add(b.ease)
+    assert {"hit", "smooth"} <= seen  # the class phrases strike and flow
 
 
 def test_each_class_phrase_returns_to_the_front():

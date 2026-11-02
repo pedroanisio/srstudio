@@ -60,7 +60,7 @@ from ._dance_parse import (
     parse_routine,
     phrases,
 )
-from ._dance_phrase import EASES, Floor, Key, Moment, Phrase, PhraseError, beat_of, count_of, ease, moment
+from ._dance_phrase import EASES, HIT_SHARE, Floor, Key, Moment, Phrase, PhraseError, beat_of, count_of, ease, moment
 from ._dance_sample import MAX_FPS, MAX_FRAMES, DanceFrame, frames, sample
 from ._dance_song import SongMap, SongMapError, SongPart, song_map
 
@@ -68,6 +68,7 @@ __all__ = [
     "CHAINS",
     "EASES",
     "FEET",
+    "HIT_SHARE",
     "JOINTS",
     "MAX_FPS",
     "MAX_FRAMES",
