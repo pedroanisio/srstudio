@@ -44,6 +44,7 @@ CELL, TOP_BAR, BOTTOM_BAR = 360, 56, 48
 MAX_BARS = 64
 MAX_FPS = 60
 MAX_CANON = 4.0
+SPACING = 0.9  # dancers of an ensemble stand this share of the tallest one's height apart: about an arm's span
 BPM_RANGE = (40.0, 240.0)
 FIGURE_PX = 235  # a character's stature on screen; leaves room for arms overhead
 CORNER = math.radians(35)  # the three-quarter camera stands this far round toward the dancer's right
@@ -201,7 +202,7 @@ def stage(
         raise ViewsError(f"the phrases do not fill whole bars of {per_bar} beats: {error}") from None
     if sheet.ensemble:
         tallest = max(c.profile.stature for c in sheet.cast)
-        spots = dance_floor.formation(formation, len(sheet.cast), 0.55 * tallest)
+        spots = dance_floor.formation(formation, len(sheet.cast), SPACING * tallest)
         dancers = [
             dance_floor.Dancer(c.profile, spot, i * canon_beats, c.base())
             for i, (c, spot) in enumerate(zip(sheet.cast, spots, strict=True))

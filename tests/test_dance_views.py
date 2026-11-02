@@ -210,6 +210,8 @@ def test_an_ensemble_dances_every_character_in_one_row():
     assert [r.delay_s / CLASS.beat for r in row] == pytest.approx([0.0, 0.5, 1.0], abs=0.05)
     xs = [r.pose(r.start_s).root.origin.x for r in row]
     assert xs == sorted(xs) and xs[0] < 0 < xs[2]  # standing in a line across the floor
+    tallest = max(sk.preset(p).stature for p in sk.PRESETS)
+    assert min(b - a for a, b in zip(xs, xs[1:], strict=False)) >= 0.85 * tallest  # an arm's span apart
     assert views.render_frame(sheet, stage, CLASS, 1.0).size == sheet.size
 
 
