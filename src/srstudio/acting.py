@@ -1,8 +1,9 @@
 """Coordinated acting on one persistent performance clock.
 
 Compile a score once, sample it in any order, and place windows of that same plan in
-shots. Emotion mappings are explicit artistic choices of a rig profile. Discrete faces
-and gestures switch on arrival; numeric head and breath targets ease during transitions.
+shots. Emotion mappings are explicit artistic choices of a rig profile. By default faces
+and gestures switch on arrival; capable rigs can opt into authored facial deformation.
+Numeric head and breath targets ease during transitions.
 Explicit track overrides own their channels. No audio synthesis or model calls occur.
 """
 
@@ -20,6 +21,7 @@ from ._transaction import scene_transaction
 from .canvas import Canvas
 from .character_clips import GlossClip, Interval, Placement, ToonClip, place_character
 from .errors import SrstudioError
+from .face_blends import FaceSample
 from .gaze import GazePlan, GazeSample
 from .head_motion import CHANNELS, HeadPlan, Spring
 from .limbs.integration import LimbTrack
@@ -47,6 +49,7 @@ __all__ = [
     'SpokenLine',
     'TransitionPolicy',
     'compile_performance',
+    'bento_blends',
     'gloss_actor',
     'parse_score',
 ]
@@ -113,6 +116,7 @@ class ActingRig:
             'clock': 'performance seconds',
             'capabilities': {
                 'expression': True,
+                'expression_blend': self.head_rig is not None and self.head_rig.face_blender is not None,
                 'speech': True,
                 'head': self.family == 'toon',
                 'gaze': self.family == 'toon'
@@ -128,6 +132,27 @@ class ActingRig:
                 for e in self.emotions
             ],
             'transitions': {
+                'face_blend': {
+                    'score_schema': 'srstudio.acting/1.2.0',
+                    'request': 'beat.blend=true; explicitly declared pairs only',
+                    'output': 'held authored geometry at score.sample_rate on the performance clock',
+                    'curves': ['linear', 'sine-in-out', 'cubic-in-out', 'quint-in-out'],
+                    'limits': {'fps': [1, 120], 'frames': 1000, 'coordinates': 2_000_000},
+                    'conflicts': [
+                        'expression override',
+                        'speech',
+                        'named/target gaze',
+                        'pose replacement during blend',
+                    ],
+                },
+                'authored_faces': [
+                    {'source': {'eyes': a.eyes, 'mouth': a.mouth}, 'target': {'eyes': b.eyes, 'mouth': b.mouth}}
+                    for a, b in (
+                        self.head_rig.face_blender.transitions
+                        if self.head_rig is not None and self.head_rig.face_blender is not None
+                        else ()
+                    )
+                ],
                 'discrete': 'switch at arrival',
                 'numeric': 'sampled sine-in-out',
                 'continuity': describe_continuity(policy=False),
@@ -176,6 +201,7 @@ class ActingBeat:
     transition: float = 0.25
     reset: bool = False
     policy: TransitionPolicy | None = None
+    blend: bool = False
 
 
 @dataclass(frozen=True)
@@ -246,6 +272,7 @@ class ActingState:
     mouth: str
     head: HeadValues | None
     limbs: tuple[LimbState, ...]
+    face_blend: FaceSample | None = None
 
 
 def _held(track, time):
@@ -298,6 +325,7 @@ class PerformancePlan:
             _held(self.mouths, time),
             head,
             tuple(limbs),
+            self.clip.face_blends.sample(time) if isinstance(self.clip, ToonClip) and self.clip.face_blends else None,
         )
 
     def with_target_gaze(self, target: GazePlan) -> PerformancePlan:
@@ -312,6 +340,8 @@ class PerformancePlan:
 
         if not isinstance(self.clip, ToonClip) or self.rig.head_rig is None:
             raise _fail('rig', self.rig.name, 'a Toon rig declaring target gaze', 'gaze.unsupported')
+        if self.clip.face_blends is not None:
+            raise _fail('target_gaze', None, 'one facial owner; no authored face blends', 'gaze.unsupported')
         tracking = prepare(self.rig.head_rig, self.clip.poses, self.duration, self.clip.head, target)
         owners = dict(self.owners)
         owners.update(gaze='target', head='base plus target follow')
@@ -389,7 +419,7 @@ def compile_performance(rig: ActingRig, score: ActingScore) -> PerformancePlan:
 
 
 def parse_score(data: object, *, overrides: Overrides | None = None) -> ActingScore:
-    """Strictly parse a decoded acting score (1.0.0 or opt-in-policy 1.1.0).
+    """Strictly parse a score: 1.0.0, policies in 1.1.0, authored blends in 1.2.0.
 
     Unknown fields and primitive type coercions are refused. HeadPlan/LimbTrack overrides
     are explicit Python runtime bindings, never opaque values forwarded from generated JSON.
@@ -438,3 +468,21 @@ def _bento() -> ActingRig:
 
 
 BENTO = _bento()
+
+
+def bento_blends() -> ActingRig:
+    """Opt-in Bento candidate supporting neutral/deadpan/concerned face blends.
+
+    Uses the version-2 paired hands. This candidate has no approved drawing identity;
+    approval of the original Bento parts does not certify these new intermediate faces.
+    Pair declarations, temporal easing and held sampling are exposed by ``describe``.
+    """
+    from ._bento_blends import BentoBlender
+    from .toon_bento import BENTO_RIG_2
+
+    return replace(
+        BENTO,
+        name='toon-bento-blends',
+        version='1.0.0',
+        head_rig=replace(BENTO_RIG_2, drawn_as=None, face_blender=BentoBlender()),
+    )

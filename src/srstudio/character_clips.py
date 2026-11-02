@@ -25,6 +25,7 @@ from . import checks, gloss
 from ._transaction import scene_transaction
 from .canvas import Canvas
 from .errors import SrstudioError
+from .face_blends import FaceTrack
 from .gaze import GazePlan
 from .head_motion import CHANNELS, Channel, HeadPlan
 from .limbs.integration import LimbTrack, prepare_tracks
@@ -129,6 +130,8 @@ class ToonClip:
 
     Arm gestures belong to the poses. This adapter does not accept replacement LimbTracks;
     the underlying split-head figure has no such drawing hook.
+    ``face_blends`` uses a declared rig driver and holds geometry on its source-clock
+    grid; speech and named/target gaze require separate facial ownership and are refused.
     """
 
     rig: HeadRig
@@ -137,6 +140,7 @@ class ToonClip:
     mouths: Track = ()
     taps: tuple[float, ...] = ()
     target_gaze: GazePlan | None = None
+    face_blends: FaceTrack | None = None
 
 
 @dataclass(frozen=True)
@@ -331,6 +335,16 @@ def _check(cv: Canvas, clip: CharacterClip, end: float) -> None:
             _track(channel.keys, f'head.{name}', end, numeric=True)
         _track(clip.head.gaze, 'head.gaze', end)
         clip.head.check_bounds(clip.rig.style)
+        if clip.face_blends is not None:
+            if not isinstance(clip.face_blends, FaceTrack):
+                raise _fail('face_blends', None, 'a FaceTrack')
+            if (
+                clip.target_gaze is not None
+                or any(n != 'ahead' for _, n in clip.head.gaze)
+                or any(n != 'closed' for _, n in clip.mouths)
+            ):
+                raise _fail('face_blends', None, 'one facial owner; no named/target gaze or speech')
+            clip.face_blends.prepare(clip.rig, clip.poses, end)
         if clip.target_gaze is not None:
             from ._gaze_drawing import prepare
 
@@ -380,6 +394,7 @@ def _draw(cv: Canvas, parent: Group, clip: CharacterClip, end: float) -> None:
             taps=clip.taps,
             mouths=clip.mouths,
             target_gaze=clip.target_gaze,
+            face_blends=clip.face_blends,
         )
     elif isinstance(clip, GlossClip):
         if clip.who == 'sunny':

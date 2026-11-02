@@ -328,3 +328,71 @@ For changing emotion and the same intent on two rig families, run
 [`acting_gallery.py`](../examples/acting_gallery.py) from the preceding section. These
 studies demonstrate supported clocks and composition; they do not certify emotional
 readability, collision-free gripping or whole-body balance.
+
+## Authored emotional blends
+
+Score `srstudio.acting/1.2.0` adds `blend: true` to a beat. Inspect
+`rig.describe()["transitions"]["authored_faces"]` before choosing a transition;
+unsupported pairs fail during compilation. The default `BENTO` profile retains
+discrete expression replacement. `bento_blends()` is an opt-in candidate supporting
+all directed pairs between neutral, deadpan and concerned. It uses version-2 hands
+and carries no approved drawing identity.
+
+<!-- acting-blends:start -->
+```python
+from srstudio.acting import bento_blends, compile_performance, parse_score
+
+rig = bento_blends()
+score = parse_score({
+    "schema": "srstudio.acting/1.2.0", "duration": 3,
+    "idle": False, "sample_rate": 24,
+    "beats": [
+        {"at": 0, "breath": 0, "transition": 0},
+        {"at": 1, "emotion": "concerned", "gesture": "tablet",
+         "transition": 1, "blend": True,
+         "head": {"lean": 0.3, "nod": 4}},
+    ],
+})
+plan = compile_performance(rig, score)
+middle = plan.sample(1.5)
+assert abs(middle.face_blend.weight - 0.5) < 1e-12
+assert plan.window(1.25, 2.5).sample(0.25) == middle
+# plan.window(1.25, 2.5).place(ep.cv, ep.comp, at=0)
+```
+<!-- acting-blends:end -->
+
+The driver deforms lids, brows and mouth controls before clipping and inking.
+Only the face geometry is sampled; the existing head/body transform chain remains
+shared. Rendered faces hold at `sample_rate`, anchored at performance zero, with
+exact launch and arrival boundaries. `sample().face_blend` reports continuous
+intent; it is `None` outside an active blend. The expression and emotion labels
+still change at arrival. No continuous-raster or perceptual-quality guarantee is
+implied by these numeric samples.
+
+Use `idle=False` or an explicit empty gaze override to avoid procedural gaze
+ownership. Speech, named/target gaze, expression overrides and pose changes inside
+a blend are refused. A beat may coordinate numeric posture, head and breath with
+the face; gestures still replace at arrival. Monotone linear, sine-in-out,
+cubic-in-out and quint-in-out curves are supported. Existing transition policies
+can stagger the expression's launch/arrival relative to numeric channels; their
+anticipation and settling do not add facial overshoot.
+
+Custom Toon rigs bind a `face_blends.FaceBlender` to `HeadRig.face_blender`.
+Declare directed `FacePose` pairs and return `FaceLayers` with reference-pixel
+cubic geometry and `ink`, `white`, `#RRGGBB` or `#RRGGBBAA` colors. Preflight checks
+endpoint equivalence against the bound rig and validates emitted geometry. Tracks
+allow at most 1,000 held frames and 2,000,000 coordinates (including endpoint
+checks), with 1–120 samples/second and a 600-second performance limit. Untrusted
+data never supplies Python callbacks; a driver is a trusted runtime binding.
+
+Run the five-second face/body study and its cut variant:
+
+```sh
+python -m examples.acting_blends ../generated/acting-blends
+scene-render render ../generated/acting-blends/cuts.xml --frames 0..120 --output 'frame-%04d.png' --strict --quality final
+scene-render encode ../generated/acting-blends/cuts.xml --strict --quality final
+```
+
+The uncut and cut variants share framing and should match at every frame, including
+cuts inside both blends. `report.json` preserves the score's sampled state, rig
+capabilities and explicit limits; it does not grant drawing approval.

@@ -111,7 +111,9 @@ def _bounded(value: object, path: str, maximum: float) -> None:
         raise _error(path, value, f'a finite number in 0..{maximum}, excluding booleans')
 
 
-def validate(policy: object, rig: ActingRig, assigned: set[str], path: str) -> TransitionPolicy:
+def validate(
+    policy: object, rig: ActingRig, assigned: set[str], path: str, *, facial: bool = False
+) -> TransitionPolicy:
     if not isinstance(policy, TransitionPolicy):
         raise _error(path, policy, 'a TransitionPolicy')
     if policy.version != VERSION:
@@ -145,7 +147,7 @@ def validate(policy: object, rig: ActingRig, assigned: set[str], path: str) -> T
     if not available:
         raise _error(path, policy, 'at least one supported channel assigned by this beat')
     if not available.intersection(CHANNELS) and (
-        policy.curve != 'sine-in-out'
+        (policy.curve != 'sine-in-out' and not facial)
         or policy.anticipation
         or policy.settle
         or policy.overshoot
@@ -180,7 +182,7 @@ def schedules(beat: ActingBeat, rig: ActingRig, assigned: set[str], duration: fl
     if beat.policy is None:
         return {name: Window(on, on, off, off) for name in sorted(assigned)}
     path += '.policy'
-    policy = validate(beat.policy, rig, assigned, path)
+    policy = validate(beat.policy, rig, assigned, path, facial=beat.blend is True and 'expression' in assigned)
     timings = {t.channel: t for t in policy.timing}
     windows = {}
     for name in sorted(assigned):
