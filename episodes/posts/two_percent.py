@@ -40,6 +40,7 @@ RELEASE = Release(
         "show-bug": 1,
         "signature-cactus": 1,
         "signature-code": 1,
+        "soft-battery-screen": 1,
         "soft-bench": 1,
         "soft-park": 1,
         "soft-phone": 1,
