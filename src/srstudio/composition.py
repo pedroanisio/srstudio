@@ -13,8 +13,9 @@ Printed labels retain immutable recipes/font bytes and share the plate render bu
 Static proxies share the camera/lights and convert verified light/ID passes in
 a bounded worker. RasterSequence verifies and emits held geometry/appearance
 snapshots on explicit source clocks. ``scene_motion`` samples camera, light and
-parent tracks into static validated plans and budgets complete sampled timelines;
-animated bundle emission remains unsupported.
+parent tracks into static validated plans, budgets complete sampled timelines,
+and emits portable animated bundles. spatial_camera shares that projection with
+spatial arm/prop bakers without applying layer transforms twice.
 """
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ if TYPE_CHECKING:
     from .proxy import Recipe
 
 from .errors import SrstudioError
+from .limbs.projection import Camera as SpatialCamera
 
 SCHEMA: Literal['srstudio.scene-plan/1.0.0'] = 'srstudio.scene-plan/1.0.0'
 MAX_INPUT_BYTES = 1_048_576
@@ -310,6 +312,21 @@ def plate_view(plan: ValidatedScenePlan, layer: str, *, meters_per_unit: float |
     from ._composition_plate_view import plate_view as resolve
 
     return resolve(plan, layer, meters_per_unit=meters_per_unit)
+
+
+def spatial_camera(plan: ValidatedScenePlan, layer: str | None = None) -> SpatialCamera:
+    """Derive a limbs.Camera for world coordinates or one world layer's local coordinates.
+
+    The optional layer folds all parent rotations, translations and uniform
+    scales into the camera. Feed untransformed source points to its project()
+    method or to spatial bakers; drawing-parent inversion still happens once.
+    Depths are in this camera's source units. Orthographic spatial projection is
+    supported without extending the separate perspective-only plate backend.
+    No drawing, cache access, physical-unit conversion or style approval occurs.
+    """
+    from ._composition_spatial_camera import spatial_camera as resolve
+
+    return resolve(plan, layer)
 
 
 @dataclass(frozen=True)

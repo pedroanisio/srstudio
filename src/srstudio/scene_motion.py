@@ -19,6 +19,7 @@ from . import composition as c
 from ._composition_parse import _bounded_tree, _record, _string_bytes, _unique
 from ._composition_preflight import _COLOR, _camera, _graph
 from ._composition_preflight import _unique as _identifiers
+from .limbs.projection import CameraTrack as SpatialCameraTrack
 
 Easing = Literal['linear', 'smoothstep', 'smootherstep', 'hold']
 SCHEMA = 'srstudio.scene-motion/1.0.0'
@@ -145,6 +146,30 @@ def compile_timeline(
     from ._scene_motion_bundle import compile_timeline as compile_bundle
 
     return compile_bundle(timeline, vectors, engine=engine, cache=cache)
+
+
+def spatial_cameras(timeline: SceneTimeline, layer: str | None = None) -> SpatialCameraTrack:
+    """Revalidate a timeline and derive held spatial cameras on its scene clock.
+
+    Pass the result as camera= to limbs.interaction.bake_interaction. An optional
+    world layer folds its complete parent pose into every camera. Geometry stays
+    in source coordinates; generated vectors already contain projection and
+    must be composed in screen space. Lighting still belongs to each drawing.
+    """
+    from ._scene_motion_wire import checked
+    from .limbs.projection import CameraSample, CameraTrack
+
+    timeline = checked(timeline)
+    cameras = {index: c.spatial_camera(plan, layer) for index, plan in enumerate(timeline.samples)}
+    samples: list[CameraSample] = []
+    for span in timeline.spans:
+        camera = cameras[span.scene]
+        if not samples or samples[-1].camera != camera:
+            samples.append(CameraSample(span.start, camera))
+    terminal = c.spatial_camera(timeline.terminal, layer)
+    if terminal != samples[-1].camera:
+        samples.append(CameraSample(timeline.base.spec.duration, terminal))
+    return CameraTrack(timeline.base.spec.duration, tuple(samples))
 
 
 def emit_timeline(

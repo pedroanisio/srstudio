@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from bisect import bisect_right
 from dataclasses import dataclass
 
 from .errors import LimbError
-from .math3d import Frame, Vec3, items, number
+from .math3d import Frame, Quaternion, Vec3, items, number
 
 _IDENTITY = Frame()
 
@@ -90,3 +91,63 @@ class Camera:
             factor = self.focal / distance
         xy = (self.origin[0] + p.x * self.scale * factor, self.origin[1] + p.y * self.scale * factor)
         return Projected(parent.inverse().point(xy), p.z, self.scale * factor)
+
+
+@dataclass(frozen=True)
+class CameraSample:
+    """A held spatial camera beginning at an explicit scene-second time."""
+
+    time: float
+    camera: Camera
+
+    def __post_init__(self) -> None:
+        if not 0 <= number(self.time, 'camera sample time') <= 600:
+            raise LimbError('camera sample time must lie in 0..600', code='projection')
+        if (
+            type(self.camera) is not Camera
+            or type(self.camera.origin) is not tuple
+            or type(self.camera.view) is not Frame
+            or type(self.camera.view.origin) is not Vec3
+            or type(self.camera.view.rotation) is not Quaternion
+        ):
+            raise LimbError('camera samples need immutable Camera and Frame records', code='projection')
+        self.camera.__post_init__()
+        self.camera.view.origin.__post_init__()
+
+
+@dataclass(frozen=True)
+class CameraTrack:
+    """Bounded held camera samples on the scene clock; the terminal sample is optional.
+
+    Spatial interaction bakers merge these cuts with their frame grid. Geometry
+    remains on its original local performance clock, even with a bake offset.
+    This is sampled projection, not interpolation between camera orientations.
+    """
+
+    duration: float
+    samples: tuple[CameraSample, ...]
+
+    def __post_init__(self) -> None:
+        if not 0 < number(self.duration, 'camera track duration') <= 600:
+            raise LimbError('camera track duration must lie in (0, 600]', code='projection')
+        if (
+            type(self.samples) is not tuple
+            or not 1 <= len(self.samples) <= 4097
+            or any(type(sample) is not CameraSample for sample in self.samples)
+        ):
+            raise LimbError('camera track needs 1..4097 immutable CameraSample records', code='projection')
+        for sample in self.samples:
+            sample.__post_init__()
+        if (
+            self.samples[0].time != 0
+            or self.samples[-1].time > self.duration
+            or any(a.time >= b.time for a, b in zip(self.samples, self.samples[1:], strict=False))
+        ):
+            raise LimbError(
+                'camera samples must begin at zero and strictly increase within duration', code='projection'
+            )
+
+    def sample(self, time: float) -> Camera:
+        if not 0 <= number(time, 'camera sample time') <= self.duration:
+            raise LimbError('camera sampling time is outside the track duration', code='projection')
+        return self.samples[bisect_right(tuple(sample.time for sample in self.samples), time) - 1].camera
