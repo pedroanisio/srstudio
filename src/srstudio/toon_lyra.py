@@ -30,6 +30,7 @@ from typing import TYPE_CHECKING
 from . import brush, checks
 from .brush import Point
 from .canvas import Canvas
+from .contracts import ParameterContract, PartContract
 from .head_motion import Channel, HeadPlan, HeadStyle, Spring
 from .registry import register
 from .toon import ARMS, Pose, ToonDataError
@@ -698,11 +699,41 @@ def mood_plan(poses: Sequence[Pose], duration: float, rig: HeadRig = LYRA_RIG) -
     return HeadPlan(turn=Channel(tuple(keys), curve="cubic-in-out"))
 
 
+_CONTRACT = PartContract(
+    parameters=(
+        (
+            "poses",
+            ParameterContract(
+                items=ParameterContract(
+                    fields=(("start", ParameterContract(unit="seconds", timebase="relative:enter", minimum=0)),)
+                )
+            ),
+        ),
+        ("enter", ParameterContract(unit="seconds", timebase="project", role="start", minimum=0)),
+        (
+            "duration",
+            ParameterContract(
+                unit="seconds", timebase="project", role="end", description="Exit time; must be greater than enter."
+            ),
+        ),
+        ("taps", ParameterContract(items=ParameterContract(unit="seconds", timebase="project"))),
+    ),
+    capabilities=(("limbs", False), ("head_motion", False), ("expressions", True), ("mouths", True)),
+    constraints=(
+        "Pose starts are ordered relative to enter and begin at zero.",
+        "duration is the project exit time, strictly after enter.",
+        "Her wings are drawn with her, so limb tracks are refused.",
+        "For procedural head motion use toon_head.figure with LYRA_RIG and a HeadPlan.",
+    ),
+)
+
+
 @register(
     "character",
     "toon-lyra",
     summary="Lyra, the owl astronomy presenter: swept tufts, almond eyes, boomerang brows, a tapered uniform and a "
     "comet scarf, in flat print colour, with six moods, eight eye poses and a beak that speaks",
+    contract=_CONTRACT,
 )
 def lyra(
     cv: Canvas,

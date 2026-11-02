@@ -29,7 +29,7 @@ from functools import partial
 from typing import TYPE_CHECKING, Any
 
 from . import _character_contracts as cc
-from . import camera, checks, lipsync, rig
+from . import camera, checks, drawing_events, lipsync, rig
 from .canvas import PLASTIC, Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -428,6 +428,7 @@ def _person(
     body_extra: Callable[[Any], None] | None = None,
     head_extra: Callable[[Any], None] | None = None,
     limbs: tuple[LimbTrack, ...] = (),
+    owner: Callable[..., Any] | None = None,
 ) -> Drawn:
     rig.check_place(scale, end, GlossError)
     if skin not in SKIN.values():
@@ -443,38 +444,41 @@ def _person(
         limbs = prepare_tracks(cv, limbs, end)
         facing = Facing(front=True, flip=flip)  # faces the viewer; ``flip`` mirrors the doll
         sides = facing.slots(limbs)
-    root = _root(cv, parent, at, scale, flip, end, walk, colour)
-    g = _fall(cv, root, fall, end)
-    if base is None:  # the peg's round foot
-        cv.ellipse(g, -92, -62, 184, 66, vinyl(cv, mix(colour, "#4a2470", 0.18)), cv.ink, INK_W)
-    else:
-        g = base(g)
-    behind = cv.group(g, cv.uid("g")) if limbs else None
-    _glossy_body(cv, g, colour)
-    if body_extra is not None:
-        body_extra(g)
-    poses = _switch(cv, g, pose, "down", lambda node, state: _arms(cv, node, colour, skin, state, sides))
-    limb_body = cv.group(g, cv.uid("g")) if limbs else None
-    head = cv.group(g, cv.uid("g"))
-    hair(head, "back")
-    _glossy_head(cv, head, skin)
-    hair(head, "front")
-    eyes = cv.group(head, cv.uid("g"))
-    camera.anchor(eyes, 0, EYE_Y, place=True)
+    with drawing_events.drawing(owner):
+        root = _root(cv, parent, at, scale, flip, end, walk, colour)
+        g = _fall(cv, root, fall, end)
+        if base is None:  # the peg's round foot
+            cv.ellipse(g, -92, -62, 184, 66, vinyl(cv, mix(colour, "#4a2470", 0.18)), cv.ink, INK_W)
+        else:
+            g = base(g)
+        behind = cv.group(g, cv.uid("g")) if limbs else None
+        _glossy_body(cv, g, colour)
+        if body_extra is not None:
+            body_extra(g)
+        poses = _switch(cv, g, pose, "down", lambda node, state: _arms(cv, node, colour, skin, state, sides))
+        limb_body = cv.group(g, cv.uid("g")) if limbs else None
+        head = cv.group(g, cv.uid("g"))
+        hair(head, "back")
+        _glossy_head(cv, head, skin)
+        hair(head, "front")
+        eyes = cv.group(head, cv.uid("g"))
+        camera.anchor(eyes, 0, EYE_Y, place=True)
 
-    def eyes_in(node, state: str) -> None:
-        for dx in (-EYE_GAP, EYE_GAP):
-            _eye(cv, node, state, dx, EYE_Y, skin)
+        def eyes_in(node, state: str) -> None:
+            for dx in (-EYE_GAP, EYE_GAP):
+                _eye(cv, node, state, dx, EYE_Y, skin)
 
-    faces = _switch(cv, eyes, face, "open", eyes_in)
-    _blinks(cv, eyes, end)
-    if head_extra is not None:
-        head_extra(head)
-    mouths = _switch(cv, head, talk, "closed", lambda node, state: _mouth_shape(cv, node, state, 0, MOUTH_Y, MOUTH_W))
-    if limbs:
-        front = cv.group(g, cv.uid("g"))
-        draw_tracks(cv, LayerTargets(behind, limb_body, front), limbs, id=cv.uid("limbs"), facing=facing)
-    return Drawn(root, {"mouth": mouths, "face": faces, "pose": poses})
+        faces = _switch(cv, eyes, face, "open", eyes_in)
+        _blinks(cv, eyes, end)
+        if head_extra is not None:
+            head_extra(head)
+        mouths = _switch(
+            cv, head, talk, "closed", lambda node, state: _mouth_shape(cv, node, state, 0, MOUTH_Y, MOUTH_W)
+        )
+        if limbs:
+            front = cv.group(g, cv.uid("g"))
+            draw_tracks(cv, LayerTargets(behind, limb_body, front), limbs, id=cv.uid("limbs"), facing=facing)
+        return Drawn(root, {"mouth": mouths, "face": faces, "pose": poses})
 
 
 # -- stroked lettering ------------------------------------------------------------------------------------------------
@@ -608,7 +612,8 @@ def nadia(
         cv.line(h, -8, EYE_Y - 4, 8, EYE_Y - 4, "#3a2f5c", 6)
 
     return _person(cv, parent, at=at, scale=scale, flip=flip, talk=talk, face=face, pose=pose, end=end, walk=walk,
-                   fall=fall, limbs=limbs, skin=SKIN["tan"], colour="#2fb3a6", hair=hair, body_extra=sticker,
+                   fall=fall, limbs=limbs, owner=nadia,
+                   skin=SKIN["tan"], colour="#2fb3a6", hair=hair, body_extra=sticker,
                    head_extra=glasses)  # fmt: skip
 
 
@@ -701,7 +706,8 @@ def gus(
         return g
 
     return _person(cv, parent, at=at, scale=scale, flip=flip, talk=talk, face=face, pose=pose, end=end, walk=walk,
-                   fall=fall, limbs=limbs, skin=SKIN["umber"], colour="#f0b43c", hair=hair, base=base, body_extra=chips,
+                   fall=fall, limbs=limbs, owner=gus,
+                   skin=SKIN["umber"], colour="#f0b43c", hair=hair, base=base, body_extra=chips,
                    head_extra=moustache)  # fmt: skip
 
 
@@ -783,7 +789,8 @@ def tamsin(
         return top
 
     return _person(cv, parent, at=at, scale=scale, flip=flip, talk=talk, face=face, pose=pose, end=end, walk=walk,
-                   fall=fall, limbs=limbs, skin=SKIN["peach"], colour="#ff7fb6", hair=hair, base=spring)  # fmt: skip
+                   fall=fall, limbs=limbs, owner=tamsin,
+                   skin=SKIN["peach"], colour="#ff7fb6", hair=hair, base=spring)  # fmt: skip
 
 
 # -- the host ---------------------------------------------------------------------------------------------------------

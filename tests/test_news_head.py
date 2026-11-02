@@ -654,22 +654,20 @@ def test_version_4_is_approved_and_its_specimen_shows_every_mouth(who):
     assert {tuple(mouth_of(who, s, 4)) for s in ("gape", "grin")} <= outlines
 
 
-@pytest.mark.parametrize(
-    "reel",
-    [
-        "seabird_jet_lag",
-        "space_haiku",
-        "you_too",
-        "one_more_episode",
-        "security_question",
-        "where_to_eat",
-        "missing_lid",
-        "came_in_for",
-    ],
-)
+@pytest.mark.parametrize("reel", ["seabird_jet_lag", "missing_lid"])
 def test_a_delivered_reel_names_the_version_it_went_out_on(reel):
     source = (Path(__file__).parents[1] / "episodes" / "pilots" / f"{reel}.py").read_text()
     assert "news_inked.stage(ACTS, version=3)" in source
+
+
+def test_only_a_published_reel_stays_on_a_version_before_the_hands():
+    pinned = sorted(
+        path.stem
+        for path in (Path(__file__).parents[1] / "episodes" / "pilots").glob("*.py")
+        for number in re.findall(r"news_inked\.stage\(ACTS, version=(\d+)\)", path.read_text())
+        if int(number) < 6
+    )
+    assert pinned == ["missing_lid", "seabird_jet_lag"]
 
 
 @anchors
@@ -680,7 +678,7 @@ def test_a_new_version_redraws_nothing_but_the_limits(who):
     assert specimens.rig_digest(name, 3) != specimens.rig_digest(name, 2)
 
 
-@pytest.mark.parametrize(("version", "number"), [(None, 5), (5, 5), (4, 4), (3, 3), (2, 2)])
+@pytest.mark.parametrize(("version", "number"), [(None, 6), (6, 6), (5, 5), (4, 4), (3, 3), (2, 2)])
 def test_a_reel_takes_the_latest_rig_and_a_delivered_reel_can_stay_on_its_own(version, number):
     used = []
     real = news_head.plan_of
@@ -697,7 +695,7 @@ def test_a_reel_takes_the_latest_rig_and_a_delivered_reel_can_stay_on_its_own(ve
     assert used == [news_inked.RIGS[f"news-gus@{number}"]]
 
 
-@pytest.mark.parametrize("number", [3, 4, 5])
+@pytest.mark.parametrize("number", [3, 4, 5, 6])
 def test_a_rig_not_approved_stops_the_stage_on_its_version(monkeypatch, number):
     monkeypatch.setattr(news_head, "approved", lambda who, asked=2: asked != number)
     cv = canvas(10.0)

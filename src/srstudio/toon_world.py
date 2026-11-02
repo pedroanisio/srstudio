@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 
+from . import _toon_contracts as tc
 from . import brush, checks, signature
 from .canvas import Canvas
 from .registry import register
@@ -116,7 +117,12 @@ def marks(cv: Canvas, parent, code: str = LEDGE_CODE) -> None:
     signature.code(cv, g, fx(580), fy(866), 14, color=code, opacity=0.9, align="end")
 
 
-@register("prop", "toon-sofa-back", summary="The sofa's back behind a character, for a sofa that is not in the lounge")
+@register(
+    "prop",
+    "toon-sofa-back",
+    contract=tc.contract('toon-sofa-back'),
+    summary="The sofa's back behind a character, for a sofa that is not in the lounge",
+)
 def sofa_back(cv: Canvas, parent) -> None:
     g = cv.group(parent, cv.uid("g"))
     cv.rect(g, fx(-20), fy(560), fh(400), fh(250), SOFA, cv.ink, INK_W, radius=fh(30))
@@ -171,6 +177,7 @@ _GROUND = {"rug": _rug, "bare": _bare, "lawn": _lawn, "flatbed": _flatbed, "heap
 @register(
     "prop",
     "toon-sofa",
+    contract=tc.contract('toon-sofa'),
     summary="A sofa's seat with a side table that carries the signature, on a rug, a bare floor, a lawn, a truck's "
     "flatbed or a heap of bags",
 )
@@ -202,7 +209,12 @@ def sofa(cv: Canvas, parent, ground: str = "rug", signed: bool = True) -> None:
         signature.code(cv, g, fx(572), fy(866), 14, color=SIGN_CODE, opacity=0.9, align="end")
 
 
-@register("prop", "toon-worktop", summary="A plain counter top in the desk's place, no laptop, signed as the desk is")
+@register(
+    "prop",
+    "toon-worktop",
+    contract=tc.contract('toon-worktop'),
+    summary="A plain counter top in the desk's place, no laptop, signed as the desk is",
+)
 def ledge(cv: Canvas, parent, top: str = LEDGE_TOP, front: str = LEDGE_FRONT, code: str = LEDGE_CODE) -> None:
     g = cv.group(parent, cv.uid("g"))
     cv.rect(g, fx(-10), fy(848), fh(612), fh(300), front, cv.clear, 0, radius=0)
@@ -216,7 +228,10 @@ def ledge(cv: Canvas, parent, top: str = LEDGE_TOP, front: str = LEDGE_FRONT, co
 
 
 @register(
-    "location", "toon-far-wall", summary="The lounge's teal wall and floor, seen from the TV: room for a far sofa"
+    "location",
+    "toon-far-wall",
+    contract=tc.contract('toon-far-wall'),
+    summary="The lounge's teal wall and floor, seen from the TV: room for a far sofa",
 )
 def wall(cv: Canvas, parent) -> None:
     g = cv.group(parent, cv.uid("g"))
@@ -249,6 +264,7 @@ def _sign(cv: Canvas, g, text: str, x: float, y: float, w: float, h: float, size
 @register(
     "location",
     "toon-yard",
+    contract=tc.contract('toon-yard'),
     summary="A front yard on a bright day: a house, a picket fence, a YARD SALE sign and a folding table holding "
     "the room's own TV",
 )
@@ -296,6 +312,7 @@ def _drift(cv: Canvas, g, speed: float, start: float, end: float) -> None:
 @register(
     "location",
     "toon-road",
+    contract=tc.contract('toon-road'),
     summary="A highway seen from the moving truck: sky, hills, trees and fence posts passing at their own speeds, "
     "the truck's cab beside the load",
 )
@@ -356,6 +373,7 @@ def _mound(cv: Canvas, g, points: Sequence[Point], colour: str) -> None:
 @register(
     "location",
     "toon-dump",
+    contract=tc.contract('toon-dump'),
     summary="A landfill at dusk: heaps of bags, a tyre, a crate and, at the right, a dead TV with a cracked screen",
 )
 def dump(cv: Canvas, parent) -> None:
@@ -413,7 +431,12 @@ def _gull_body(cv: Canvas, g, flap: float | None) -> None:
     _inked(cv, g, at(wing), GULL_GREY, FINE_W, 3)
 
 
-@register("prop", "toon-gull", summary="A seagull that flies in from the frame's top right and lands, then stands")
+@register(
+    "prop",
+    "toon-gull",
+    contract=tc.contract('toon-gull'),
+    summary="A seagull that flies in from the frame's top right and lands, then stands",
+)
 def gull(cv: Canvas, parent, at: Point = (165.0, HEAD_TOP), land: float = 0.5, end: float = 4.0) -> None:
     """The gull lands on ``at`` (where its feet stand) at ``land`` seconds and stays to ``end``."""
     if not (checks.number(land) and checks.number(end) and GULL_FLIGHT <= land < end):
@@ -427,7 +450,12 @@ def gull(cv: Canvas, parent, at: Point = (165.0, HEAD_TOP), land: float = 0.5, e
     _gull_body(cv, standing, None)
 
 
-@register("prop", "toon-paw", summary="An arm in the colour of a character's coat that slides in holding something")
+@register(
+    "prop",
+    "toon-paw",
+    contract=tc.contract('toon-paw'),
+    summary="An arm in the colour of a character's coat that slides in holding something",
+)
 def paw(
     cv: Canvas,
     parent,
@@ -513,7 +541,9 @@ def _stroke(points: Sequence[Point], width: float):
     return brush.stroke(points, width, brush.EVEN)
 
 
-@register("prop", "toon-snores", summary="Zs that rise and fade from a sleeper's mouth")
+@register(
+    "prop", "toon-snores", contract=tc.contract('toon-snores'), summary="Zs that rise and fade from a sleeper's mouth"
+)
 def snores(
     cv: Canvas, parent, spans: Sequence[tuple[float, float]] = ((0.0, 2.0),), at: Point = (300.0, 520.0)
 ) -> None:
@@ -551,7 +581,10 @@ ROTOR, HULL, BEAM = "#0d1020", "#171b33", "#fff3b0"
 
 
 @register(
-    "location", "toon-night-street", summary="A night street of dark houses; a crowd holds its lights and walks away"
+    "location",
+    "toon-night-street",
+    contract=tc.contract('toon-night-street'),
+    summary="A night street of dark houses; a crowd holds its lights and walks away",
 )
 def night_street(cv: Canvas, parent, leave: Sequence[float] = (), end: float = 4.0, said: str = "home") -> None:
     """Houses against the night and the street's crowd, each figure with its light; the figures named by ``leave``
@@ -594,7 +627,12 @@ def night_street(cv: Canvas, parent, leave: Sequence[float] = (), end: float = 4
             )
 
 
-@register("location", "toon-press-room", summary="A press conference: curtain, flags, stage, flashes, a LIVE bug")
+@register(
+    "location",
+    "toon-press-room",
+    contract=tc.contract('toon-press-room'),
+    summary="A press conference: curtain, flags, stage, flashes, a LIVE bug",
+)
 def press_room(cv: Canvas, parent, flashes: Sequence[float] = (), live: bool = True) -> None:
     """A briefing room's curtain with two plain flags and, at each of ``flashes``, a press camera firing."""
     g = cv.group(parent, cv.uid("g"))
@@ -616,7 +654,12 @@ def press_room(cv: Canvas, parent, flashes: Sequence[float] = (), live: bool = T
         cv.ellipse(pop, fx(x - 70), fy(y - 70), fh(140), fh(140), "#ffffff", opacity=0.85)
 
 
-@register("prop", "toon-mics", summary="A bunch of microphones on the lectern, aimed at whoever stands behind it")
+@register(
+    "prop",
+    "toon-mics",
+    contract=tc.contract('toon-mics'),
+    summary="A bunch of microphones on the lectern, aimed at whoever stands behind it",
+)
 def mics(cv: Canvas, parent, x: float = 185.0, top: float = 730.0) -> None:
     g = cv.group(parent, cv.uid("g"))
     for dx, colour in ((-70, "#3a3f4b"), (-24, "#c8473f"), (24, "#2f6bb0"), (70, "#3a3f4b")):
@@ -625,7 +668,10 @@ def mics(cv: Canvas, parent, x: float = 185.0, top: float = 730.0) -> None:
 
 
 @register(
-    "graphic", "toon-lower-third", summary="A news strap on the lectern's front, its text changing at given times"
+    "graphic",
+    "toon-lower-third",
+    contract=tc.contract('toon-lower-third'),
+    summary="A news strap on the lectern's front, its text changing at given times",
 )
 def lower_third(
     cv: Canvas, parent, spans: Sequence[tuple[float, float, str]], measure: Callable[..., float], size: int = 40
@@ -641,7 +687,12 @@ def lower_third(
                 color=THIRD_TEXT, wrap="none")  # fmt: skip
 
 
-@register("prop", "toon-chopper", summary="A helicopter in the window with a searchlight that sweeps the room")
+@register(
+    "prop",
+    "toon-chopper",
+    contract=tc.contract('toon-chopper'),
+    summary="A helicopter in the window with a searchlight that sweeps the room",
+)
 def chopper(cv: Canvas, parent, start: float = 0.0, end: float = 3.0, sky: Point = (480.0, 400.0), over=None) -> None:
     """From ``start`` it flies in to hover at ``sky``, rotor flickering; a pale patch sweeps the frame until ``end``,
     in ``over`` (a group in front of the character) when there is one."""
@@ -680,7 +731,12 @@ SLIP_FLOOR, SLIP_BOARD, SLIP_BACK = "#a9774a", "#8a5c33", "#1c1420"
 SLIP_SLIDE = 0.7
 
 
-@register("prop", "toon-hall-chair", summary="A plain wooden chair back behind whoever sits on it")
+@register(
+    "prop",
+    "toon-hall-chair",
+    contract=tc.contract('toon-hall-chair'),
+    summary="A plain wooden chair back behind whoever sits on it",
+)
 def hall_chair(cv: Canvas, parent) -> None:
     g = cv.group(parent, cv.uid("g"))
     for x in (20, 322):
@@ -690,7 +746,12 @@ def hall_chair(cv: Canvas, parent) -> None:
         _line(cv, g, [(36, y + 34), (334, y + 34)], 5.0, CHAIR_DARK)
 
 
-@register("location", "toon-porch", summary="A clapboard wall and a front door from outside, a mat at its foot")
+@register(
+    "location",
+    "toon-porch",
+    contract=tc.contract('toon-porch'),
+    summary="A clapboard wall and a front door from outside, a mat at its foot",
+)
 def porch(cv: Canvas, parent) -> None:
     g = cv.group(parent, cv.uid("g"))
     cv.rect(g, 0, 0, cv.width, cv.height, SIDING)
@@ -703,7 +764,12 @@ def porch(cv: Canvas, parent) -> None:
     cv.rect(g, fx(350), fy(780), fh(250), fh(24), MAT, cv.ink, FINE_W / 2, radius=fh(4))
 
 
-@register("prop", "toon-van", summary="A plain white van driving away down the street, getting smaller")
+@register(
+    "prop",
+    "toon-van",
+    contract=tc.contract('toon-van'),
+    summary="A plain white van driving away down the street, getting smaller",
+)
 def van(cv: Canvas, parent, start: float = 0.0, end: float = 2.0, at: Point = (440.0, 660.0)) -> None:
     """The van's back from ``start``, leaving past the frame's right as it shrinks until ``end``."""
     if not (checks.number(start) and checks.number(end) and 0 <= start and start + 0.3 <= end):
@@ -722,7 +788,12 @@ def van(cv: Canvas, parent, start: float = 0.0, end: float = 2.0, at: Point = (4
     cv.rect(g, fx(x - 84), fy(y + 26), fh(168), fh(26), VAN_DARK, cv.ink, FINE_W, radius=fh(4))
 
 
-@register("prop", "toon-missed-slip", summary="A delivery slip sliding out from under a door until it fills the frame")
+@register(
+    "prop",
+    "toon-missed-slip",
+    contract=tc.contract('toon-missed-slip'),
+    summary="A delivery slip sliding out from under a door until it fills the frame",
+)
 def missed_slip(cv: Canvas, parent, text: str = "Sorry we missed you.", start: float = 0.0, end: float = 1.6) -> None:
     """From ``start`` to ``end`` the foot of a door and the floor, the slip coming out of the gap at the viewer until
     it can be read: draw it before the ledge that signs the shot."""
@@ -746,7 +817,12 @@ def missed_slip(cv: Canvas, parent, text: str = "Sorry we missed you.", start: f
     cv.rect(g, fx(-10), fy(186), fh(612), fh(16), SLIP_BACK, cv.clear, 0, radius=0)
 
 
-@register("prop", "toon-stuck-note", summary="A yellow note with words on it, on someone's forehead or in their lap")
+@register(
+    "prop",
+    "toon-stuck-note",
+    contract=tc.contract('toon-stuck-note'),
+    summary="A yellow note with words on it, on someone's forehead or in their lap",
+)
 def stuck_note(
     cv: Canvas,
     parent,

@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import DAYLIGHT, Canvas, flat_counter, stick_home
+from srstudio import DAYLIGHT, Canvas, flat_counter, stick, stick_home
 from srstudio.canvas import Signature
 from srstudio.stick import StickDataError
 
@@ -143,3 +143,13 @@ def test_a_reel_can_place_the_kitchens_marks_itself():
         for cv in (with_marks, without)
     ]
     assert len(marks[0]) == 2 and marks[1] == []
+
+
+def test_the_study_leaves_its_marks_to_the_reel_when_asked():
+    """A reel that throws the room out of focus draws the marks itself, or the blur softens them (ADR 0001)."""
+
+    with_marks, without = canvas(signed=True), canvas(signed=True)
+    stick.room(with_marks, with_marks.comp)
+    stick.room(without, without.comp, marks=False)
+    assert b"sig-cactus" in with_marks.scene.to_bytes() and b"sig-code" in with_marks.scene.to_bytes()
+    assert b"sig-cactus" not in without.scene.to_bytes() and b"sig-code" not in without.scene.to_bytes()

@@ -34,6 +34,12 @@ src = ["src", "tests", "episodes"]
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP"]
 
+[tool.ruff.lint.per-file-ignores]
+# The wire models' helpers are closures that are called inside the loop iteration that defines them, never kept: B023's
+# late-binding hazard does not arise.
+"src/srstudio/wire_car.py" = ["B023"]
+"src/srstudio/wire_jet.py" = ["B023"]
+
 [tool.ruff.lint.isort]
 split-on-trailing-comma = false
 known-first-party = ["srstudio"]
@@ -49,6 +55,7 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+tmp_path_retention_policy = "failed"  # a run keeps only its failures' folders: /tmp is a tmpfs with a fixed inode count
 
 [tool.coverage.run]
 branch = true

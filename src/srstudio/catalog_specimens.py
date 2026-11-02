@@ -13,14 +13,15 @@ still in its place, and a registered part in neither table stops the build (:fun
 
 A framed part takes two renders: the first, at half scale with room around the frame, finds what the part covers
 (:func:`bounds`); the second scales the composition so that fills a square, and ``ffmpeg`` crops and resizes it. Files
-are named by the digest of the drawing (:func:`key`), so a part that did not change is not rendered again.
+use a drawing key (:func:`key`) bound to the renderer bytes and any printed-plate dependencies, so unchanged
+inputs are not rendered again. Drawing/approval identities remain independent of this rendered-artifact key.
 """
 
 from __future__ import annotations
 
 import hashlib
 import inspect
-import os
+import json
 import re
 import shutil
 import subprocess
@@ -28,7 +29,7 @@ import tempfile
 import xml.etree.ElementTree as ET
 from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -39,6 +40,7 @@ from sr_core.scene import Scene
 
 from . import (
     cel,
+    collage_forecast,
     collage_group,
     gloss_sets,
     host_kit,
@@ -143,6 +145,9 @@ class Plan:
     at: float
     key: str
     set: bool  # a location: the whole frame on its own stage colour, not framed
+    renderer_sha256: str | None = None
+    plate_inputs: tuple[plates.Plate, ...] | None = None
+    plate_keys: tuple[str, ...] | None = None
 
 
 FILLED = {
@@ -326,7 +331,8 @@ RECIPES: dict[str, Recipe] = {
     "collage-stool": Recipe(part(540, 1000, 480)),
     "collage-towel": Recipe(part(540, 700)),
     "collage-ring-corner": Recipe(part()),
-    "collage-eye-twitch": Recipe(part("brent", (0.2, 0.8))),
+    "collage-eye-twitch": Recipe(part("brent", (0.2, 0.8)), at=0.25),  # the lid is down for 0.09 s at each time
+    "location-chip": Recipe(part(), at=0.5),  # its one stop is over at the default second
     "collage-confetti": Recipe(part(0.0, SECONDS)),
     "collage-arm": Recipe(part("deb", (760, 1500), (420, 900))),
     "collage-tv": Recipe(part(300, 700, 480)),
@@ -397,6 +403,8 @@ RECIPES: dict[str, Recipe] = {
     "stick-slipper": Recipe(part(540, 960, scale=3.0)),
     "stick-trash-truck": Recipe(part(40, 1100)),
     "stick-wheelie-bin": Recipe(part(540, 1100, scale=1.5)),
+    "stick-box": Recipe(part(540, 1100, scale=2.0)),
+    "stick-receipt": Recipe(part(540, 300, 1200)),
     "stick-duffel": Recipe(part(540, 960, scale=2.0)),
     "stick-book": Recipe(part(540, 960, scale=3.0)),
     "stick-queue": Recipe(part(SECONDS, turn=SECONDS / 2)),
@@ -460,7 +468,7 @@ RECIPES: dict[str, Recipe] = {
         lambda cv, g, e, ctx: e(cv, _on_area(cv, g, ctx), {"inside": (0.0, 0.5), "rest": (0.0, 0.5)}, _HOT)
     ),
     "map-ring": Recipe(part(map_kit.ring_px(3300.0, 1.6), 0.0, SECONDS)),
-    "map-far-side": Recipe(_far_side, at=SECONDS),
+    "map-far-side": Recipe(_far_side, at=SECONDS * 0.75),  # over by half time, and gone at SECONDS itself
     "map-clock": Recipe(part(540.0, 960.0, 300.0, 10.0, 0.0, SECONDS)),
     "map-daylight": Recipe(
         lambda cv, g, e, ctx: e(
@@ -530,6 +538,8 @@ RECIPES: dict[str, Recipe] = {
     "toon-tee": Recipe(part((180, 660))),
     "toon-bow-tie": Recipe(part((180, 640))),
     "toon-stars": Recipe(part(5)),
+    "toon-tv-menu": Recipe(lettered("EPISODE 8", 0.92)),
+    "toon-remote": Recipe(part((296.0, 600.0), scale=2.0)),
     "toon-shower-water": Recipe(part(((0.0, SECONDS),))),
     "toon-suds": Recipe(part((540, 700))),
     "toon-towel": Recipe(part((540, 700))),
@@ -604,11 +614,26 @@ RECIPES: dict[str, Recipe] = {
     "collage-full-glass": Recipe(part(540.0, 1100.0)),
     "collage-water-jug": Recipe(part(540.0, 1100.0)),
     "collage-doctor-scale": Recipe(part(540.0, 1500.0, 1.0, 900.0, SECONDS)),
+    "collage-weather-map": Recipe(part(300.0, 500.0, 480.0, 680.0, arrow="EXES")),
+    "collage-thread": Recipe(
+        part(
+            310.0,
+            420.0,
+            460.0,
+            800.0,
+            contact="DON'T",
+            clock=((0.0, "8:59"), (0.5, "9:00")),
+            messages=(collage_forecast.Message("HEY", 0.5),),
+        )
+    ),
     "toon-paper-insert": Recipe(part("Invoice", ("Labor", "Parts", "The last guy"), 0.0, SECONDS)),
     "toon-mosquito": Recipe(part(((0.0, 150.0, 400.0), (SECONDS / 2, 300.0, 500.0), (SECONDS, 300.0, 500.0)), SECONDS)),
     "toon-tasting-spoons": Recipe(part(tuple(0.1 * k for k in range(9)), end=SECONDS)),
     "soft-star-card": Recipe(part(540.0, 960.0, tap=0.5, scale=1.6)),
     "soft-mug": Recipe(part(540.0, 960.0, scale=2.0)),
+    "soft-mail-screen": Recipe(part(540.0, 960.0, scale=3.0)),
+    "soft-mail-list": Recipe(part(540.0, 960.0, marked=2, scale=3.0)),
+    "soft-call-screen": Recipe(part(540.0, 960.0, scale=3.0)),
 }  # fmt: skip
 RECIPES.update(  # a kit's second version takes the same arguments, so it takes the same recipe
     {
@@ -659,11 +684,24 @@ REFUSED: dict[str, Refused] = {
 
 def font_of(style: Style, episodes: Path) -> bytes | None:
     """The bytes of a style's font, as the first project that holds it has them; ``None`` for a style with no font."""
-    if style.font is None:
-        return None
-    for found in sorted(Path(episodes).glob(f"*/{style.font.src}")):
+    return None if style.font is None else _held(style.font.src, episodes)
+
+
+def _held(src: str, episodes: Path) -> bytes:
+    """The bytes of the file at ``src`` in the first project that has one."""
+    for found in sorted(Path(episodes).glob(f"*/{src}")):
         return found.read_bytes()
-    raise SpecimenRenderError(f"no project in {episodes} holds {style.font.src}")
+    raise SpecimenRenderError(f"no project in {episodes} holds {src}")
+
+
+def print_fonts(episodes: Path, work: Path) -> Path:
+    """A folder with the font plates print in. A build reads fonts from its projects and nothing else, so what it
+    draws does not depend on who started it or where: the catalog's service sets no fonts variable."""
+    name = plates.PRINT_FONT[2]
+    folder = work / "fonts"
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / name).write_bytes(_held(f"assets/{name}", episodes))
+    return folder
 
 
 def style_of(entry: registry.Entry) -> Style:
@@ -854,7 +892,27 @@ def _resize(png: Path, out: Path, crop: str, scale: str) -> None:
     )
 
 
-def render_one(plan_: Plan, engine: Path, folder: Path) -> None:
+def _check_renderer(engine: Path, expected: str) -> None:
+    if plates._engine_digest(engine) != expected:
+        raise SpecimenRenderError(
+            'renderer changed during the catalog build',
+            code='catalog.renderer.changed',
+            path='engine',
+            actual=str(engine),
+            expected=expected,
+            remedy='Keep the renderer immutable for this build, then retry.',
+        )
+
+
+def render_one(plan_: Plan, engine: Path, folder: Path, fonts: Path) -> None:
+    expected = plan_.renderer_sha256 or plates._engine_digest(engine)
+    _check_renderer(engine, expected)
+
+    def draw(document: bytes, at: float, out: Path) -> None:
+        _check_renderer(engine, expected)
+        _render(engine, document, at, out)
+        _check_renderer(engine, expected)
+
     style = style_of(plan_.entry)
     project = ET.fromstring(plan_.document).find("project")
     assert project is not None  # framed() refuses a document without one before anything is rendered
@@ -862,24 +920,46 @@ def render_one(plan_: Plan, engine: Path, folder: Path) -> None:
     name = plan_.entry.name
     work = folder / "work" / style.slug
     work.mkdir(parents=True, exist_ok=True)
-    for plate in (*rafa_host.part_plates(name), *pedro_host.part_plates(name)):
-        plates.render(plate, engine=engine, cache=work / "plates", fonts=Path(os.environ.get("SRSTUDIO_FONTS", "")))
+    definitions = plan_.plate_inputs
+    if definitions is None:
+        definitions = (*rafa_host.part_plates(name), *pedro_host.part_plates(name))
+    if plan_.plate_keys is not None and len(plan_.plate_keys) != len(definitions):
+        raise SpecimenRenderError('bound plate keys do not match the specimen dependencies')
+    for index, plate in enumerate(definitions):
+        cache = work / 'plates'
+        rendered = plates.render(plate, engine=engine, cache=cache, fonts=fonts)
+        if plan_.plate_keys is not None and rendered.stem != plan_.plate_keys[index]:
+            raise SpecimenRenderError(
+                'plate inputs changed after binding the specimen cache',
+                code='catalog.inputs.changed',
+                path=f'plates[{index}]',
+                actual=rendered.stem,
+                expected=plan_.plate_keys[index],
+                remedy='Keep fonts, plate definitions and renderer inputs immutable for the build, then retry.',
+            )
+        # Specimen documents use stable drawing references; select the renderer-
+        # owned artifact explicitly instead of treating those names as cache hits.
+        target = cache / f'{plates.digest(plate)}.png'
+        with tempfile.TemporaryDirectory(dir=cache) as scratch:
+            staged = Path(scratch) / target.name
+            shutil.copyfile(rendered, staged)
+            staged.chmod(plates.FILE_MODE)
+            staged.replace(target)
     trial = work / f"{plan_.key}.trial.png"
     final = folder / f"{plan_.key}.png"
     if plan_.set:
         document = framed(plan_.document, background=style.palettes[0].background)
-        _render(engine, document, plan_.at, trial)
+        draw(document, plan_.at, trial)
         stage = rgb(style.palettes[0].background)
         if bounds(pixels_of(trial, width, height), stage) is None:
             raise SpecimenRenderError(f"{name}: the set drew nothing at {plan_.at:g} s")
         _resize(trial, final.with_suffix(".tmp.png"), "", f"{SIZE}:-2")
+        _check_renderer(engine, expected)
         final.with_suffix(".tmp.png").replace(final)
         trial.unlink()
         return
     # half scale, centred: what a part draws past the edge of the frame is still measured
-    _render(
-        engine, framed(plan_.document, background=BACKGROUND, x=width / 4, y=height / 4, scale=0.5), plan_.at, trial
-    )
+    draw(framed(plan_.document, background=BACKGROUND, x=width / 4, y=height / 4, scale=0.5), plan_.at, trial)
     box = bounds(pixels_of(trial, width, height), rgb(BACKGROUND))
     if box is None:
         raise SpecimenRenderError(f"{name}: the recipe drew nothing at {plan_.at:g} s")
@@ -898,8 +978,9 @@ def render_one(plan_: Plan, engine: Path, folder: Path) -> None:
         y=height / 2 - scale * (y0 + y1) / 2,
         scale=scale,
     )
-    _render(engine, document, plan_.at, trial)
+    draw(document, plan_.at, trial)
     _resize(trial, final.with_suffix(".tmp.png"), f"crop={side}:{side},", f"{SIZE}:{SIZE}")
+    _check_renderer(engine, expected)
     final.with_suffix(".tmp.png").replace(final)
     trial.unlink()
 
@@ -911,16 +992,46 @@ def _size(plan_: Plan) -> tuple[int, int]:
     return SIZE, round(SIZE * style.height / style.width / 2) * 2
 
 
+def _failure(plan_: Plan, exc: BaseException) -> str:
+    """Why ``plan_`` failed, under its part's name: most errors do not know which part they stopped."""
+    name, text = plan_.entry.name, str(exc)
+    return text if text.startswith(f"{name}:") else f"{name}: {text}"
+
+
 def render_all(engine: Path, cache: Path, episodes: Path) -> Shelf:
-    """Every part's specimen and every refusal. Only a drawing with no file yet is rendered."""
+    """Every part's specimen and refusal, cached for its renderer and printed-plate dependencies."""
     if not shutil.which("ffmpeg"):
         raise SpecimenRenderError("specimens need ffmpeg")
-    folder = Path(cache).resolve() / "specimens"
+    engine = Path(engine).resolve()
+    engine_digest = plates._engine_digest(engine)
+    folder = Path(cache).resolve() / "specimens" / engine_digest
     plans, refused = plan(episodes, folder / "work")
+    bound = []
+    fonts = print_fonts(episodes, folder / "work")
+    for item in plans:
+        definitions = (*rafa_host.part_plates(item.entry.name), *pedro_host.part_plates(item.entry.name))
+        dependencies = []
+        for definition in definitions:
+            inputs, source, prints = plates._prepare(definition, engine, fonts)
+            dependencies.append(inputs.key('plate', source, tuple(prints.values())))
+        data = {
+            'schema': 'srstudio.specimen-render/1.0.0',
+            'drawing': item.key,
+            'engine': engine_digest,
+            'plates': sorted(dependencies),
+        }
+        key_ = hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
+        bound.append(
+            replace(
+                item, key=key_, renderer_sha256=engine_digest, plate_inputs=definitions, plate_keys=tuple(dependencies)
+            )
+        )
+    plans = bound
+    _check_renderer(engine, engine_digest)
     missing = {p.key: p for p in plans if not (folder / f"{p.key}.png").exists()}
     with ThreadPoolExecutor(WORKERS) as pool:
-        running = [(p, pool.submit(render_one, p, Path(engine).resolve(), folder)) for p in missing.values()]
-    failed = [str(f.exception()) for _, f in running if f.exception() is not None]
+        running = [(p, pool.submit(render_one, p, engine, folder, fonts)) for p in missing.values()]
+    failed = [_failure(p, exc) for p, f in running if (exc := f.exception()) is not None]
     if failed:
         raise SpecimenRenderError(f"{len(failed)} specimens failed:\n" + "\n".join(failed))
     done = {p.entry.name: Specimen(p.entry.name, folder / f"{p.key}.png", *_size(p)) for p in plans}
@@ -960,8 +1071,11 @@ def poster(packages: Path, slug: str, engine: Path, cache: Path) -> Path:
     if duration <= 0:
         raise SpecimenRenderError(f"package {slug}: {scene.name} has no duration")
     at = round(duration * POSTER_AT, 3)
-    folder = Path(cache).resolve() / "posters"
-    out = folder / f"{slug}-{poster_key(scene, at)}.jpg"
+    engine = Path(engine).resolve()
+    engine_digest = plates._engine_digest(engine)
+    folder = Path(cache).resolve() / "posters" / engine_digest
+    rendered_key = hashlib.sha256(f'{engine_digest}|{poster_key(scene, at)}'.encode()).hexdigest()
+    out = folder / f"{slug}-{rendered_key}.jpg"
     if out.exists():
         return out
     folder.mkdir(parents=True, exist_ok=True)
@@ -975,7 +1089,9 @@ def poster(packages: Path, slug: str, engine: Path, cache: Path) -> Path:
     )
     if run.returncode != 0 or not frame.exists():
         raise SpecimenRenderError(f"package {slug}: scene-render failed: {run.stdout[-400:]} {run.stderr[-400:]}")
+    _check_renderer(engine, engine_digest)
     _resize(frame, folder / f"{out.stem}.tmp.jpg", "", f"{POSTER_WIDTH}:-2")
+    _check_renderer(engine, engine_digest)
     (folder / f"{out.stem}.tmp.jpg").replace(out)
     frame.unlink()
     return out

@@ -155,5 +155,52 @@ def test_every_check_a_process_names_is_a_check_this_tool_has(name):
             assert commands[stage["check"]][2:] == [stage["check"], "{dir}"]
 
 
+REVIEW = {"author": "writer", "reviewer": "orchestrator", "comedy": [17, 18], "frames": 6}
+
+
+def reviewed(tmp_path, reviews, reels=("one",)):
+    (tmp_path / "reviews.json").write_text(reviews if isinstance(reviews, str) else json.dumps(reviews))
+    return lane(tmp_path, branch="feat/okay", reels=list(reels))
+
+
+def test_a_batch_reviewed_by_another_hand_at_the_floor_passes(tmp_path):
+    lane_check.check("reviewed", reviewed(tmp_path, {"one": REVIEW}))
+
+
+@pytest.mark.parametrize(
+    ("reviews", "reason"),
+    [
+        ({}, "one: not reviewed"),
+        ({"one": REVIEW, "two": REVIEW}, "two: not one of the lane's reels"),
+        ({"one": "fine"}, "one: a review must be an object"),
+        ({"one": {**REVIEW, "mood": "great"}}, "one: unknown fields: mood"),
+        ({"one": {**REVIEW, "reviewer": "writer"}}, "writer reviewed their own reel"),
+        ({"one": {**REVIEW, "reviewer": ""}}, "one: needs an author and a reviewer"),
+        ({"one": {**REVIEW, "comedy": [17, 13]}}, "comedy 13 is under the floor of 14"),
+        ({"one": {**REVIEW, "comedy": [17]}}, "comedy must be the pair of scores"),
+        ({"one": {**REVIEW, "comedy": [17, True]}}, "comedy must be the pair of scores"),
+        ({"one": {**REVIEW, "frames": 3}}, "needs at least 4 frames"),
+        ({"one": {**REVIEW, "frames": "many"}}, "needs at least 4 frames"),
+        ([], "must hold an object"),
+        ("{", "unreadable"),
+    ],
+)
+def test_a_review_that_does_not_count_keeps_the_batch_in_build(tmp_path, reviews, reason):
+    with pytest.raises(lane_check.LaneError, match=reason):
+        lane_check.check("reviewed", reviewed(tmp_path, reviews))
+
+
+def test_a_batch_without_reviews_or_reels_cannot_leave_build(tmp_path):
+    with pytest.raises(lane_check.LaneError, match="no reviews.json"):
+        lane_check.check("reviewed", lane(tmp_path, branch="feat/okay", reels=["one"]))
+    with pytest.raises(lane_check.LaneError, match="needs its reels"):
+        lane_check.check("reviewed", lane(tmp_path, branch="feat/okay"))
+
+
+def test_a_reel_cannot_leave_build_without_its_review():
+    build = next(stage for stage in process("reel")["stages"] if stage["name"] == "build")
+    assert build["check"] == "reviewed" and build["requires"] == "check"
+
+
 def test_a_reel_waits_for_nobody():
     assert process("reel")["gates"] == []

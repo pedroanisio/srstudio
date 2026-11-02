@@ -2,8 +2,8 @@
   "schema_version": "1.0.0",
   "generated_by": {"model": "GPT-6", "tool": "OpenAI Codex"},
   "reviewed_on": "2026-11-01",
-  "reviewed_source_commit": "865ac902",
-  "reviewed_working_tree": "Reviewed develop at 865ac902 with the authoring-diagnostics implementation and documentation changes described below. Catalog counts were rechecked unchanged. Earlier observations retain their original verification scope; the prior transition collection blocker is resolved.",
+  "reviewed_source_commit": "ea60f48d",
+  "reviewed_working_tree": "Refreshed review of develop at ea60f48d and the uncommitted explicit drawing-event migration. Catalog counts were rechecked unchanged. New schedule, deferred-execution, composition, contract, cache and maintainability findings retain the complete P0-P4 scope. Earlier verification entries keep their original scope.",
   "implementation_updated_on": "2026-11-01",
   "character_contract_coverage": {
     "default_registered_characters": 70,
@@ -20,24 +20,663 @@
     "P3": "Integration, documentation, evidence or maintainability improvement",
     "P4": "Broader capability or measurement-led optimization"
   },
-  "assessment": "Strong reusable primitives, explicit character discovery, common non-character drawing contracts, coordinated acting with opt-in transition policies, executable cross-system recipes and scoped numeric regression envelopes. Core callback and prop-option defects have atomic preflight and repairable failures. Common authoring failures now expose explicit repair fields with bounded SDK/CLI payloads. Remaining priorities include cohesive head mechanics, explicit usage events, drawing adoption evidence and broader body/gaze capabilities. Discovery deliberately retains unknown semantics for other non-character families. Numeric validity does not establish perceptual quality.",
+  "assessment": "Strong reusable primitives, explicit character discovery, common non-character drawing contracts, coordinated acting with opt-in transition policies, executable cross-system recipes and scoped numeric regression envelopes. Core callback and prop-option defects have atomic preflight and repairable failures. Common authoring failures now expose explicit repair fields with bounded SDK/CLI payloads. Head mechanics, records, seeded noise, speech analysis and behavioral planning now have separate implementation owners behind the existing public API. Limb transform, gesture, contact and skeletal sampling also have separate owners while retaining public records and shared interpolation. Explicit drawing events now cover synchronous and deferred execution without profiler inference. Rendered caches bind actual renderer and print-font inputs while retaining stable drawing identities. Scoped continuity discovery distinguishes source derivatives, estimated joins and held compiler output. Remaining priorities include broader contracts, bounded scene composition, drawing adoption evidence and broader body/emotion capabilities. Discovery deliberately retains unknown semantics for other non-character families. Numeric validity does not establish perceptual quality.",
   "catalog_observation": {
-    "parts": 701,
-    "characters": 70,
-    "entries_with_explicit_part_contract": 123,
+    "parts": 726,
+    "characters": 74,
+    "entries_with_explicit_part_contract": 365,
     "all_default_characters_have_explicit_contracts": true,
-    "noncharacter_parts": 631,
-    "noncharacter_parts_with_explicit_contracts": 53,
-    "source": "Fresh-process contract_coverage() observation at 909025e7 on 2026-11-01.",
+    "noncharacter_parts": 652,
+    "noncharacter_parts_with_explicit_contracts": 291,
+    "source": "Fresh-process registry observation on 2026-11-01 after 21 Toon traffic/dining/parlour/room declarations. All 151 registered non-characters in toon-prefixed modules now declare contracts. Drawing baselines were captured from b3e72f0a. See review_verification.toon_social_contracts.",
     "by_kind": {
-      "character": {"registered": 70, "explicit_contracts": 70},
-      "prop": {"registered": 436, "explicit_contracts": 34},
-      "location": {"registered": 112, "explicit_contracts": 8},
-      "graphic": {"registered": 83, "explicit_contracts": 11}
+      "character": {
+        "registered": 74,
+        "explicit_contracts": 74
+      },
+      "prop": {
+        "registered": 456,
+        "explicit_contracts": 228
+      },
+      "location": {
+        "registered": 113,
+        "explicit_contracts": 43
+      },
+      "graphic": {
+        "registered": 83,
+        "explicit_contracts": 20
+      }
     },
-    "qualification": "Fresh-process registry.entries() observation at the reviewed checkout. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates."
+    "qualification": "Fresh-process registry.entries() observation after the latest implemented contract batch. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates.",
+    "toon_module_noncharacters": {
+      "registered": 151,
+      "explicit_contracts": 151
+    }
   },
   "review_verification": {
+    "proxy_numeric": {
+      "baseline_source_commit": "d10c2022",
+      "initial_numeric_and_recipe_regressions_red": 19,
+      "additional_transition_overflow_regressions_red": 3,
+      "authoring_example_red": 1,
+      "final_tests": {
+        "passed": 126,
+        "subtests_passed": 29,
+        "skipped": 0
+      },
+      "branch_inclusive_coverage_percent": {
+        "on_beat": 100,
+        "proxy": 97,
+        "vehicle": 95
+      },
+      "coverage_scope": "proxy.py, vehicle.py and on_beat.py; 97% total with the unchanged 80% gate. Not a full-repository suite run.",
+      "baseline_outputs_unchanged": 12,
+      "limits": "Static pixel-domain conversion and existing renderer registration/cache checks. Composition proxy payloads, moving-camera proof and style adoption remain separate open work."
+    },
+    "toon_social_contracts": {
+      "baseline_source_commit": "b3e72f0a",
+      "wheel_validation_regressions_red": {
+        "failed": 17
+      },
+      "composition_clock_regressions_red": {
+        "failed": 2,
+        "passed": 2
+      },
+      "initial_contract_tests_red": {
+        "failed": 31
+      },
+      "mixed_clock_declaration_red": {
+        "failed": 1
+      },
+      "documentation_recipe_red": {
+        "failed": 2
+      },
+      "final_engine_enabled_tests": {
+        "passed": 687,
+        "skipped": 0
+      },
+      "branch_inclusive_coverage_percent": {
+        "toon_social_contracts": 100,
+        "toon_contracts": 100,
+        "toon_cars": 97,
+        "toon_dinner": 82,
+        "toon_parlour": 99,
+        "toon_rooms": 98,
+        "contracts": 87,
+        "registry": 92,
+        "total": 93
+      },
+      "coverage_scope": "Social and common Toon metadata, four drawing modules, contracts.py and registry.py; unchanged 80% gate. Not a full-library suite run.",
+      "drawing_baseline_cases": 21,
+      "cue_return_baseline_cases": 2,
+      "unchanged_executable_definitions": 71,
+      "changed_executable_definitions": [
+        "toon_cars.loose_wheel",
+        "toon_cars.drive_past",
+        "toon_parlour.held"
+      ],
+      "metadata_factory_changes": [
+        "_toon_contracts.draw"
+      ],
+      "mypy_source_files": 294,
+      "rendered_room_regressions": 4,
+      "generated_episode_staging_checks": 1,
+      "guide_engine_evaluation_times": [
+        0.5,
+        1,
+        1.375,
+        1.75,
+        2.5,
+        3
+      ],
+      "guide_render_times": [
+        0.5,
+        2.5
+      ],
+      "guide_render_pixels": "Both 1080x1920 frames were visually inspected. The sampled character crop darkens in all RGB channels, while 500 full-width desk rows remain pixel-identical; see render-check.json.",
+      "retained_artifacts": "../generated/sdk-toon-social-contracts/v1/",
+      "qualification": "All 151 registered non-characters in toon-prefixed modules now have explicit contracts; catalog-wide expansion remains open. Captured drawings and cue returns are unchanged. Separate engine regressions verify wheel rolling at three scales and correct traffic/arm timing with local canvas mode enabled. Room pixel comparisons and numeric fade samples are scoped evidence, not encoded-video review or a perceptual preference score.",
+      "post_merge_integration": {
+        "head": "becb0ef4",
+        "passed": 201,
+        "skipped": 0,
+        "scope": "Fresh catalog observation, staging, generated-episode layer order, social contracts, executable discovery guides and authoring navigation. Mypy and Ruff also rerun successfully after the concurrent merge."
+      },
+      "engine": {
+        "version": "0.8.0",
+        "sha256": "90bf26f00439e3615206fa8c7ea4accea8cf5be009e188b60d7c5938ec4e0b4a"
+      }
+    },
+    "toon_care_contracts": {
+      "baseline_source_commit": "df5c4507",
+      "drawer_light_regressions_red": {
+        "failed": 10
+      },
+      "initial_contract_tests_red": {
+        "failed": 25
+      },
+      "documentation_recipe_red": {
+        "failed": 2
+      },
+      "final_engine_enabled_tests": {
+        "passed": 493,
+        "skipped": 0
+      },
+      "branch_inclusive_coverage_percent": {
+        "toon_care_contracts": 100,
+        "toon_bed": 100,
+        "toon_ward": 100,
+        "toon_surgery": 100,
+        "contracts": 87,
+        "registry": 92,
+        "total": 94
+      },
+      "coverage_scope": "New care metadata, three drawing modules, contracts.py and registry.py; unchanged 80% gate. Not a full-library suite run.",
+      "drawing_baseline_cases": 15,
+      "unchanged_executable_definitions": 20,
+      "changed_executable_definitions": [
+        "toon_bed.bedside_drawer"
+      ],
+      "mypy_source_files": 293,
+      "guide_engine_evaluation_times": [
+        0.5,
+        1.02,
+        2,
+        2.225,
+        2.45
+      ],
+      "retained_artifacts": "../generated/sdk-toon-care-contracts/v1/",
+      "qualification": "15 captured drawing baselines remain unchanged. Drawer light now retains its authored opacity, rejects invalid intensity before mutation, and uses composition keys consistently with movement. Engine checks exercise ordinary and time-remapped parents; the guide samples shake and eased opening at interior times. No encoded-video or perceptual-rating claim; full catalog expansion remains open."
+    },
+    "toon_detail_contracts": {
+      "baseline_source_commit": "8ae98f8f",
+      "interpolation_regressions_red": {
+        "failed": 4
+      },
+      "initial_contract_tests_red": {
+        "failed": 28
+      },
+      "documentation_recipe_red": {
+        "failed": 1
+      },
+      "final_engine_enabled_tests": {
+        "passed": 638,
+        "skipped": 0
+      },
+      "branch_inclusive_coverage_percent": {
+        "toon_detail_contracts": 100,
+        "toon_everyday": 99,
+        "toon_inserts": 100,
+        "toon_laptop": 97,
+        "toon_study": 99,
+        "contracts": 87,
+        "registry": 92,
+        "total": 96
+      },
+      "coverage_scope": "New detail metadata, four drawing modules, contracts.py and registry.py; unchanged 80% gate. Not a full-library suite run.",
+      "drawing_baseline_cases": 22,
+      "footprint_baseline_cases": 5,
+      "unchanged_executable_definitions": 62,
+      "changed_executable_definitions": [
+        "toon_study._band",
+        "toon_study.highlighter",
+        "toon_study.open_book"
+      ],
+      "mypy_source_files": 292,
+      "guide_engine_evaluation_times": [
+        1.1375,
+        1.275,
+        1.4125
+      ],
+      "retained_artifacts": "../generated/sdk-toon-detail-contracts/v1/",
+      "qualification": "Original static drawing cases and footprint returns are unchanged. Sweeps and marker paths now interpolate; a separate engine test samples interior values. The executable guide keeps the marker on the highlight edge at three independently evaluated times. No encoded-video or perceptual-rating claim; full catalog expansion remains open."
+    },
+    "toon_domestic_contracts": {
+      "baseline_source_commit": "edcdeac2",
+      "behavior_regressions_red": {
+        "failed": 7
+      },
+      "initial_contract_tests_red": {
+        "failed": 44
+      },
+      "documentation_recipe_red": {
+        "failed": 1
+      },
+      "final_engine_enabled_tests": {
+        "passed": 588,
+        "skipped": 0
+      },
+      "branch_inclusive_coverage_percent": {
+        "toon_domestic_contracts": 100,
+        "toon_homeware": 98,
+        "toon_house": 99,
+        "contracts": 87,
+        "registry": 92,
+        "total": 95
+      },
+      "coverage_scope": "New domestic metadata, both drawing modules, contracts.py and registry.py; unchanged 80% gate. Not a full-library suite run.",
+      "drawing_baseline_cases": 33,
+      "unchanged_executable_definitions": 50,
+      "changed_executable_definitions": [
+        "toon_homeware._shudder",
+        "toon_homeware._tub_spans",
+        "toon_homeware.soup_tubs"
+      ],
+      "mypy_source_files": 291,
+      "engine_evaluation_times": [
+        0.26,
+        0.35,
+        1,
+        2,
+        3
+      ],
+      "retained_artifacts": "../generated/sdk-toon-domestic-contracts/v1/",
+      "qualification": "33 original drawing baselines remain unchanged for their captured inputs. Corrected alternating tool offsets and decreasing/returning tub counts have separate unit and engine-evaluation evidence. No new encoded-video or perceptual-rating claim; full catalog expansion remains open."
+    },
+    "toon_household_contracts": {
+      "baseline_source_commit": "7dbc869a",
+      "initial_contract_tests_red": {
+        "failed": 28
+      },
+      "documentation_recipe_red": {
+        "failed": 1
+      },
+      "final_engine_enabled_tests": {
+        "passed": 395,
+        "skipped": 0
+      },
+      "branch_inclusive_coverage_percent": {
+        "toon_household_contracts": 100,
+        "toon_contracts": 100,
+        "contracts": 87,
+        "registry": 92,
+        "total": 90
+      },
+      "coverage_scope": "Two Toon metadata modules, contracts.py and registry.py; unchanged 80% gate. Not a full-library suite run.",
+      "drawing_baseline_cases": 20,
+      "unchanged_executable_definitions": 24,
+      "mypy_source_files": 290,
+      "retained_artifacts": "../generated/sdk-toon-household-contracts/v1/",
+      "qualification": "24 function definitions retain executable AST, signatures and defaults; only contract decorators and corrected docstrings differ. Tests distinguish canvas/composition animation, parent visibility, validation-only end values and actual returned groups. No spatial grips or perceptual quality claims. Full catalog expansion remains open."
+    },
+    "toon_drawing_contracts": {
+      "baseline_source_commit": "a2f23560",
+      "initial_contract_tests_red": {
+        "failed": 47
+      },
+      "final_selected_regressions": {
+        "passed": 961,
+        "skipped": 1
+      },
+      "branch_inclusive_coverage_percent": 90,
+      "coverage_scope": "_toon_contracts.py, contracts.py and registry.py; unchanged 80% gate. Not a full-library suite run.",
+      "drawing_baseline_cases": 40,
+      "unchanged_function_and_class_definitions": 157,
+      "mypy_source_files": 289,
+      "retained_artifacts": "../generated/sdk-toon-contracts/v1/",
+      "qualification": "Authored discovery metadata only. Reference positions, frame typography, parent visibility, canvas/composition keys and data-only returns match actual builders. The complete catalog expansion remains open."
+    },
+    "target_gaze": {
+      "implementation_commit": "fe54e334",
+      "rendered_study_red": {"failed": 2},
+      "caption_overlap_red": {"failed": 1},
+      "final_engine_enabled_tests": {"passed": 183, "skipped": 0},
+      "branch_inclusive_coverage_percent": {"gaze": 93, "gaze_drawing": 89, "example": 90, "total": 91},
+      "coverage_scope": "Two gaze modules and the executable example, unchanged 80% gate. This is not a full-library suite run.",
+      "rendered_frames": 96,
+      "rendered_size": [1920, 1080],
+      "rendered_fps": 24,
+      "strict_render_findings": [],
+      "cut_uncut_pixel_equality_times": [1.25, 2.875],
+      "geometry_clearance_times": [0.5, 1.25, 2.875, 3.5],
+      "engine_sha256": "90bf26f00439e3615206fa8c7ea4accea8cf5be009e188b60d7c5938ec4e0b4a",
+      "scene_sha256": "9b7960abbc5e92288d2f46196b00c226241249896cc538bed84553c01c55cd95",
+      "video_sha256": "d455c04db7ac017590b6780871649f5ba3158150df26b288f2885ee9c78437b0",
+      "mypy_source_files": 289,
+      "retained_artifacts": "../generated/sdk-target-gaze/v2/",
+      "visual_review": "OpenAI Codex (GPT-6) inspected the contact sheet and full frames at 2 and 2.75 seconds. Corrected character framing clears the captions; wide eyes show rightward direction, and half eyes retain lid occlusion over pupil layers. This is sampled visual inspection, not every-frame inspection or a human perceptual rating.",
+      "human_ratings": null,
+      "qualification": "Continuous target gaze is opt-in for drawings declaring pupil layers. Eye/head controls are authored limits, not anatomy. Toon output is stylized pupil translation plus face_x/nod, not world-space fixation. Named-state approximation requires explicit vocabulary/error allowance and returns eye keys only. The example exercises Critter Sloth and Inked Fox; unsupported rigs are refused. Existing drawing approval and the broader animated DRAWING.md adoption proof remain separate."
+    },
+    "plate_texture_identity": {
+      "baseline_source_commit": "e15fe9cc",
+      "identity_and_snapshot_red": {
+        "failed": 13
+      },
+      "warm_encoding_red": {
+        "failed": 1
+      },
+      "authored_alias_red": {
+        "failed": 5
+      },
+      "approved_drawing_regressions_before_aliases": {
+        "failed": 2
+      },
+      "shared_map_hashing_red": {
+        "failed": 1
+      },
+      "final_selected_regressions": {
+        "passed": 517,
+        "skipped": 3,
+        "deselected": 2,
+        "subtests_passed": 29
+      },
+      "final_real_renderer_test": {
+        "passed": 1,
+        "renderer_attempts": 3,
+        "warm_attempts": 0
+      },
+      "authoring_navigation": {
+        "passed": 104
+      },
+      "plates_branch_inclusive_coverage_percent": 98,
+      "engine_sha256": "90bf26f00439e3615206fa8c7ea4accea8cf5be009e188b60d7c5938ec4e0b4a",
+      "mypy_source_files": 286,
+      "qualification": "The final suite checks both approved host specimen fingerprints without rewriting approval records. The real renderer probe checks 64x64 square/strip texture differences and exact legacy-square pixel parity. Three optional engine tests were skipped in the broad selection; the new texture probe ran separately with the pinned engine. This is not a full-suite run or the complete animated DRAWING.md proof."
+    },
+    "composition_runtime_limits": {
+      "baseline_source_commit": "40e67f49",
+      "process_boundary_red": {"failed": 16},
+      "public_worker_boundary_red": {"failed": 12},
+      "node_budget_and_prepared_metadata_red": {"failed": 2},
+      "remote_typed_cause_red": {"failed": 1},
+      "worker_startup_diagnostic_red": {"failed": 1},
+      "engine_enabled_regressions": {"passed": 409, "skipped": 0, "subtests_passed": 28},
+      "branch_inclusive_coverage_percent": {
+        "bounded_process": 91,
+        "process_bootstrap": 100,
+        "composition_runtime": 88,
+        "composition_wire": 85,
+        "composition_worker": 100,
+        "composition": 100,
+        "composition_emit": 87,
+        "composition_parse": 90,
+        "composition_preflight": 95,
+        "composition_vector": 95,
+        "total": 93
+      },
+      "coverage_scope": "Ten composition/runtime modules, unchanged 80% gate. Subprocess and exec instrumentation measures real worker execution. The full repository suite was not run.",
+      "kernel_address_space_test_limit_bytes": 134217728,
+      "refused_allocation_bytes": 268435456,
+      "parent_limits_and_environment_unchanged": true,
+      "timed_out_descendants_verified_inactive": true,
+      "worker_output_caps_verified": true,
+      "example_xml_equal_to_previous_compiler": true,
+      "example_xml_sha256": "08028df34cadb149c9f1ee211f4006ed5a3745faf40ef1bf2c0d380e3943ee16",
+      "ruff_formatted_files": 794,
+      "mypy_source_files": 271,
+      "retained_artifacts": "../generated/sdk-composition-runtime/v1/",
+      "qualification": "Kernel limits apply to each worker's virtual address space, including runtime and mappings, not aggregate RSS or GPU memory. Deadlines bound worker invocations and binary IPC; host drawing generation, bounded manifest intake and atomic filesystem publication remain host operations. Vector verification/compilation uses these limits; plate/proxy and renderer integration remain open. No performance improvement is claimed; VectorSource batches work to avoid separate preparation invocations."
+    },
+    "composition_vector_emission": {
+      "baseline_source_commit": "f8ccb9c2",
+      "manifest_commit": "f8ccb9c2",
+      "initial_emission_red": {"failed": 19, "skipped": 1},
+      "expansion_before_copy_red": {"failed": 1},
+      "gradient_clock_and_nonfinite_red": {"failed": 2},
+      "misplaced_xml_root_red": {"failed": 1},
+      "engine_enabled_regressions": {"passed": 353, "skipped": 0, "subtests_passed": 28},
+      "branch_inclusive_coverage_percent": {
+        "composition": 100,
+        "composition_parse": 90,
+        "composition_preflight": 95,
+        "composition_vector": 95,
+        "composition_emit": 91,
+        "total": 95
+      },
+      "coverage_scope": "Five composition modules, unchanged 80% gate; focused composition, drawing-document, canvas/registry, parts/catalog, recovery and layout tests. The full repository suite was not run.",
+      "ruff_formatted_files": 787,
+      "mypy_source_files": 266,
+      "strict_rendered_source_clock_comparisons": 2,
+      "rendered_pixel_equality": true,
+      "engine_sha256": "90bf26f00439e3615206fa8c7ea4accea8cf5be009e188b60d7c5938ec4e0b4a",
+      "sr_core_installed_content_sha256": "7e2374e6d150f026d5925fdf6ae500481accfb55baf7430b700a9f2ed84368cf",
+      "retained_artifacts": "../generated/sdk-composition-emission/v1/",
+      "qualification": "Strict rendering matches two source-time samples of the real pinned paper fixture, with engine-evaluated parent/camera and screen-space checks. Payload geometry does not establish authorship or biomechanical semantics. Source preparation is host-owned, timeouts are cooperative and memory is a planning allowance; plate/proxy emission and hard runtime enforcement remain open. The installed sr-core package has no recorded Git revision; its installed Python/schema/JSON contents are hashed instead."
+    },
+    "authoring_benchmark": {
+      "baseline_source_commit": "a4a5331a",
+      "initial_render_session_red": {
+        "failed": 12
+      },
+      "initial_benchmark_red": {
+        "failed": 15
+      },
+      "renderer_output_collision_and_duplicate_json_red": {
+        "failed": 2
+      },
+      "engine_enabled_regressions": {
+        "passed": 111,
+        "skipped": 0
+      },
+      "final_fast_checks": {
+        "passed": 46,
+        "deselected": 4
+      },
+      "branch_inclusive_coverage_percent": {
+        "benchmark_fixtures": 93,
+        "benchmark": 95,
+        "plates": 95
+      },
+      "coverage_scope": "The focused pytest-cov invocation exited 1 because its whole-SDK coverage denominator measured 23.02%, below the unchanged 80% gate. The scoped report for all three changed modules passed at 95%; the full repository test suite was not run.",
+      "real_benchmark_repeats_verified": 2,
+      "phases_per_repeat": 16,
+      "cold_plate_engine_invocations": 2,
+      "warm_plate_engine_invocations": 0,
+      "verification_plate_engine_invocations": 2,
+      "drawing_frames_per_fixture": 8,
+      "planning_state_samples_per_fixture": 9,
+      "contact_compiler_audited_samples": 8,
+      "ruff_formatted_files": 1596,
+      "mypy_source_files": 261,
+      "engine_sha256": "90bf26f00439e3615206fa8c7ea4accea8cf5be009e188b60d7c5938ec4e0b4a",
+      "qualification": "Real renderer tests verify repeatable phase outputs and decoded plate pixels. Timing is observational, not a correctness threshold. Cold application processes and caches do not flush OS or GPU caches. Hardware/driver identity requires external pinning. The compiler audits the eight emitted frames separately from the nine-point planning grid. A 30-second render limit was too small on this host; correctness integration uses explicit 120-second render and 600-second worker limits. No speedup is claimed."
+    },
+    "limb_motion_boundaries": {
+      "baseline_source_commit": "83917174",
+      "ownership_red": {
+        "failed": 5,
+        "passed": 67
+      },
+      "public_function_introspection_red": {
+        "failed": 1
+      },
+      "engine_enabled_regressions": {
+        "passed": 891,
+        "skipped": 0
+      },
+      "final_compatibility_and_continuity": {
+        "passed": 92,
+        "skipped": 0
+      },
+      "branch_inclusive_coverage_percent": {
+        "motion": 97,
+        "motion_contacts": 98,
+        "motion_gestures": 100,
+        "motion_interpolation": 100,
+        "motion_kinematics": 92,
+        "motion_transforms": 100,
+        "transitions": 85
+      },
+      "unchanged_numeric_motions": 40,
+      "numeric_rounding_decimal_places": 12,
+      "unchanged_emitted_scene_hashes": 10,
+      "unchanged_native_capability_refusals": 6,
+      "original_protocol4_record_types": 10,
+      "unchanged_record_fields_and_constructor_validation_asts": 10,
+      "unchanged_extracted_bodies_after_receiver_rename": 11,
+      "ruff_formatted_files": 1592,
+      "mypy_source_files": 259,
+      "engine_sha256": "90bf26f00439e3615206fa8c7ea4accea8cf5be009e188b60d7c5938ec4e0b4a",
+      "qualification": "Public records remain in limbs.motion; implementation owners receive those objects through typed boundaries. Shared easing and Hermite tangent coefficients remove repeated interpolation formulas. Numeric, emitted XML, JSON roundtrip, constructor signature, type-hint and original pickle evidence preserve behavior. A later failing test caught and restored postponed annotations on the shared public smooth function. The final focused coverage run includes that correction. This is maintainability evidence, not a new motion-quality or renderer capability claim."
+    },
+    "cutout_family_contracts": {
+      "baseline_source_commit": "d9a3ef01",
+      "verified_develop_commit": "fb36cff7",
+      "initial_red": {
+        "failed": 88
+      },
+      "clock_red_after_correcting_xml_test_selector": {
+        "failed": 4
+      },
+      "focused_green": {
+        "passed": 212
+      },
+      "final_engine_enabled_selection": {
+        "passed": 721,
+        "skipped": 0
+      },
+      "branch_inclusive_coverage_percent": {
+        "cutout_contracts": 100,
+        "drawing_contracts": 100,
+        "counter_store_contracts": 100,
+        "cutout_hiring": 100,
+        "cutout_home": 100,
+        "cutout_office": 99,
+        "cutout_shop": 100,
+        "cutout_handed": 99,
+        "cutout_leak": 100,
+        "cutout_lobby": 100,
+        "cutout_locate": 98,
+        "cutout_odds": 100,
+        "cutout_reference": 100
+      },
+      "unchanged_drawing_scene_hashes": 60,
+      "unchanged_function_asts_excluding_registration_decorators_and_docstrings": 88,
+      "unchanged_previous_counter_store_contracts": 27,
+      "ruff_formatted_files": 1586,
+      "mypy_source_files": 254,
+      "qualification": "Adds 60 authored contracts across ten complete Cutout modules. Default drawings preserve pre-change hashes. Runtime tests verify nested durations, both canvas clocks, local photo slots, actor clothing coordinates and reflection. Existing counter/store declarations remain equal after helper extraction. Coverage and engine-enabled regressions are scoped evidence, not a full-catalog or perceptual quality claim. The initial duration test used the wrong XML selector; the corrected selector failed for missing metadata before implementation."
+    },
+    "counter_store_contracts": {
+      "baseline_source_commit": "6af7ed0b",
+      "contract_red": {"failed": 36, "passed": 1},
+      "explicit_slot_registration_red": {"failed": 3, "passed": 1},
+      "slot_listing_and_recipe_red": {"failed": 2},
+      "remaining_shape_red": {"failed": 1, "passed": 27},
+      "final_engine_enabled_selection": {"passed": 404, "skipped": 0},
+      "branch_inclusive_coverage_percent": {"counter_store_contracts": 100, "cutout_counter": 98, "cutout_store": 100, "registry": 94},
+      "unchanged_drawing_scene_hashes": 28,
+      "unchanged_function_asts_excluding_registration_decorators": 36,
+      "ruff_formatted_files": 1562,
+      "mypy_source_files": 246,
+      "qualification": "Adds 27 authored contracts, covering both complete counter/store families including the existing reaching-hand contract. Every builder executes and retains its baseline scene hash; nested clock, placement, return and callback-depth tests verify metadata. Explicit callback slots now work for every drawing kind and reject nonexistent parameters before registration. Engine evaluation exercises existing frozen-canvas regressions; no new perceptual or full-catalog completion claim is made."
+    },
+    "continuity_discovery": {
+      "baseline_source_commit": "c39e2033",
+      "discovery_red": {"failed": 6, "passed": 7},
+      "recipe_red": {"failed": 1, "passed": 6},
+      "focused_engine_enabled_selection": {"passed": 113, "skipped": 0},
+      "final_engine_enabled_regressions": {"passed": 356, "skipped": 0},
+      "branch_inclusive_coverage_percent": {"limbs_continuity": 100, "limbs_motion": 93, "acting": 91, "acting_transitions": 97},
+      "unchanged_original_motion_function_and_method_asts": 40,
+      "ruff_formatted_files": 1560,
+      "mypy_source_files": 245,
+      "qualification": "Tests verify scoped source-key derivatives, explicit endpoint holds, approximate angular matching, estimated action joins, unchanged contacts, source-time cuts and actual native held-frame emission. Existing serialization and acting drawing fixtures pass. This publishes supported guarantees without changing interpolation or certifying perceptual quality; it is not a full-suite run."
+    },
+    "rendered_artifact_identity": {
+      "baseline_source_commit": "2dab35c1",
+      "initial_plate_identity_red": {"failed": 7, "passed": 2},
+      "catalog_materialization_red": {"failed": 1},
+      "outer_cache_identity_red": {"failed": 2},
+      "font_binding_race_red": {"failed": 1},
+      "final_focused_identity_tests": {"passed": 17, "deselected_real_engine_test": 1},
+      "broader_engine_enabled_regressions": {
+        "passed": 929,
+        "skipped": 0,
+        "qualification": "Includes proxy, vehicle and host/reel checks; this run began before the final catalog font-binding guard. The final revision is covered by the selection below."
+      },
+      "final_engine_enabled_selection": {"passed": 731, "subtests_passed": 25, "skipped": 0},
+      "branch_inclusive_coverage_percent": {"plates": 97, "catalog_specimens": 97},
+      "engine_sha256": "90bf26f00439e3615206fa8c7ea4accea8cf5be009e188b60d7c5938ec4e0b4a",
+      "ruff_formatted_files": 1558,
+      "mypy_source_files": 244,
+      "qualification": "Real-engine checks verify printed-texture dependency resolution, deterministic plate pixels and warm reuse. Boundary-injected tests verify renderer/font changes and failure publication. These are selected regressions, not a full-suite run or evidence of perceptual improvement."
+    },
+    "explicit_drawing_events": {
+      "baseline_source_commit": "ea60f48d",
+      "deferred_execution_red": {
+        "failed": 7
+      },
+      "catalog_entry_red": {
+        "failed": 6,
+        "passed": 1
+      },
+      "late_observation_red": {
+        "failed": 3,
+        "passed": 9
+      },
+      "default_metadata_red": {
+        "failed": 4
+      },
+      "transitive_source_measurement_red": {
+        "failed": 1
+      },
+      "earlier_broad_run": {
+        "passed": 768,
+        "failed": 1,
+        "qualification": "Gloss default metadata inspection failed; positional and keyword default metadata are now retained."
+      },
+      "final_engine_enabled_selection": {
+        "passed": 801,
+        "skipped": 0
+      },
+      "additional_engine_enabled_regressions": {
+        "passed": 282,
+        "skipped": 0
+      },
+      "direct_inked_versions": {
+        "passed": 8
+      },
+      "branch_inclusive_coverage_percent": {
+        "drawing_events": 100,
+        "gloss": 98,
+        "host_kit": 92,
+        "limbs_evaluation": 99,
+        "news_inked": 94,
+        "news_kit": 87,
+        "registry": 94,
+        "usage": 92
+      },
+      "repository_collection": {
+        "collected": 20082,
+        "errors": 0
+      },
+      "ruff_formatted_files": 1556,
+      "mypy_source_files": 244,
+      "qualification": "Selected regressions preserve attribution, emission, introspection and deferred execution. These results do not represent a full-suite run or new perceptual quality evidence."
+    },
+    "head_module_refactor": {
+      "baseline_source_commit": "fdae9a22",
+      "repository_collection": {"collected": 20020, "errors": 0},
+      "pre_extraction_compatibility_tests": {
+        "passed": 58,
+        "failed": 6,
+        "qualification": "Six module-boundary checks failed before their implementation modules existed; numeric, signature, emission and serialization baseline checks passed."
+      },
+      "broader_engine_enabled_run": {
+        "passed": 1305,
+        "failed": 1,
+        "skipped": 0,
+        "qualification": "A missing private _CURVES alias caused the only failure. The alias was restored and the failed renderer comparison passed in the final selection below."
+      },
+      "final_engine_enabled_selection": {
+        "passed": 691,
+        "skipped": 0
+      },
+      "branch_inclusive_coverage_percent": {
+        "head_channels": 97,
+        "head_noise": 100,
+        "head_planner": 94,
+        "head_speech": 96,
+        "head_types": 99,
+        "head_motion_facade": 100,
+        "canvas": 93
+      },
+      "ruff_files": 1553,
+      "mypy_source_files": 244,
+      "qualification": "All 47 extracted class/function definitions had identical ASTs to the baseline, with no duplicate definitions. The committed fixture verifies 47 channel cases and nine record types. Expanded animation-safety checks also found a schema-error catch regression; commit 0de21daf preserves both SDK and schema catches, with serialized diagnostic round trips. Selected regressions and renderer evaluation do not establish new animation quality or a full-suite execution."
+    },
     "authoring_diagnostics_implementation": {
       "selected_regressions": {
         "passed": 1322,
@@ -152,12 +791,13 @@
     },
     {
       "topic": "Documentation ergonomics",
-      "observation": "The authoring reference now opens with a task-to-API table linking discovery, typed acting, clip clocks, transitions, contacts, repair and quality evaluation. The README links directly to it. Its diagnostic repair example executes in tests; detailed episode histories remain below the task guide.",
+      "observation": "The authoring reference now opens with a task-to-API table linking discovery, typed acting, clip clocks, transitions, contacts, repair and quality evaluation. The README links directly to it. Its diagnostic repair example executes in tests; focused task guides now own reusable workflows and a separate episode-history document retains production records. All original section bookmarks still resolve through the task index.",
       "improvement": "Keep the task guide linked to executable recipes and generated contract vocabularies; avoid duplicating capability declarations in prose.",
       "evidence": ["README.md", "docs/authoring-reference.md", "src/srstudio/_acting_parse.py", "src/srstudio/character_clips.py"]
     }
   ],
   "resolved_findings": [
+    {"priority": "P1", "title": "Invalid key times retain existing schema-error catches", "commit": "0de21daf", "evidence": ["tests/test_animation_safety.py", "tests/test_authoring_diagnostics.py:test_invalid_key_time_retains_schema_catch_and_round_trip_repair_fields"], "qualification": "Expanded regression checks reproduced five broken SchemaValueError catches after SDK preflight began raising CanvasError. KeyTimeError now inherits both exception contracts and preserves SDK repair metadata when serialized."},
     {"priority": "P1", "title": "Malformed authoring input and oversized diagnostic graphs must fail predictably", "evidence": ["tests/test_authoring_diagnostics.py", "tests/test_diagnostics.py"], "qualification": "Red tests reproduced raw unpacking/type/string-conversion failures, a silently accepted nonfinite facing interval, excessive tiny-period blink iteration, plugin SDK failures escaping the CLI envelope, and a shared nested diagnostic payload expanding beyond three million characters. Source validation, preflight work limits and shared diagnostic traversal budgets now exercise typed bounded failure paths. This is scoped to the tested authoring boundaries, not an exhaustive malformed-input audit."},
     {"priority": "P1", "title": "Direct builder swaps must not retain stale semantic declarations", "evidence": ["src/srstudio/registry.py:Entry._current_contract", "tests/test_noncharacter_contracts.py:test_direct_builder_swap_cannot_keep_the_previous_drawing_contract", "tests/test_agent_approved_recovery.py:test_mutated_character_builder_is_unverified"], "qualification": "Authored contracts are now bound to the registered callable identity. Inspection marks stale declarations as builder-changed without applying them, and coverage lists the part as undeclared/stale. Re-registration or restoration supplies the matching contract. Drawing approval remains independent."},
     {"priority": "P1", "title": "Diagnostic mapping keys must not crash the repair envelope", "commit": "b7ed0f36", "evidence": ["src/srstudio/errors.py:_json_key", "tests/test_diagnostics.py:test_extreme_dictionary_keys_do_not_replace_the_original_diagnostic_with_an_error", "tests/test_diagnostics.py:test_diagnostic_keys_do_not_invoke_opaque_object_stringification", "tests/test_diagnostics.py:test_json_cli_preserves_failure_status_and_original_error_with_extreme_keys"], "qualification": "Confirmed with failing tests before the fix. Huge integer keys previously raised ValueError during string conversion; opaque keys could execute a failing __str__. Keys now use bounded scalar conversion or an opaque type label, preserving the original SDK/CLI diagnostic and failure status."},
@@ -171,6 +811,449 @@
     {"priority": "P2", "title": "Continuous transforms and explicit action chaining", "commit": "64efa1c7", "evidence": ["src/srstudio/limbs/transitions.py", "tests/test_action_chaining.py", "tests/test_continuous_tracks.py", "docs/catalog/limbs.md"], "qualification": "Joins match numerically estimated boundary velocities, preserve constraints and support random access. They do not promise acceleration continuity or perceptual preference."}
   ],
   "findings": [
+    {
+      "id": "SDK-P1-10",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Validate loose-wheel geometry before mutating a scene",
+      "problem": "The loose wheel bypassed the other car props scale check and emitted geometry before calculating travel. Invalid coordinates, scales, targets and overflowing times could leave partial drawings or raise raw schema/type/index failures.",
+      "resolution": "Check finite points, destination and positive scale, then precompute and validate converted geometry, radius, end time and rotation before adding any scene nodes. Valid rolling geometry and linear translation/rotation retain their original output.",
+      "evidence": [
+        "src/srstudio/toon_cars.py:loose_wheel"
+      ],
+      "verification": [
+        "tests/test_toon_cars.py:test_loose_wheel_refuses_invalid_or_unrepresentable_geometry_before_drawing",
+        "tests/test_toon_cars.py:test_engine_loose_wheel_travel_and_rotation_agree_at_interior_times",
+        "tests/data/toon-social-contract-baseline.json"
+      ],
+      "acceptance": [
+        "Invalid plans raise ToonDataError before scene mutation",
+        "Converted radius remains positive and derived keys finite",
+        "Engine samples confirm proportional travel and rotation at three scales",
+        "Captured default drawing baseline remains unchanged"
+      ]
+    },
+    {
+      "id": "SDK-P1-12",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Keep proxy palette conversion finite and deterministic",
+      "problem": "Zero-width tone transitions divide by zero, a one-cell grain grid normalizes by zero variance, and tiny positive transitions can overflow before saturation. Very large finite recipe inputs can create infinite transition intervals. Invalid grain seeds, empty quiet families and non-Ink values are accepted at construction; None seeds use fresh entropy and other settings fail only after rendering.",
+      "resolution": "Clamp light values to transition intervals before division, define collapsed intervals as upper-inclusive steps and use zero wander for zero-variance grain. Recipe construction rejects unrepresentable intervals, nondeterministic or invalid seeds, empty families, invalid ink records and boolean oversampling with explicit repair diagnostics. Existing soft-band, seeded-grain and split-layer outputs retain captured byte identities.",
+      "evidence": [
+        "src/srstudio/proxy.py:Recipe",
+        "src/srstudio/proxy.py:_smooth",
+        "src/srstudio/proxy.py:composite"
+      ],
+      "verification": [
+        "tests/test_proxy_numeric_contract.py",
+        "tests/data/proxy-numeric-baseline.json",
+        "tests/test_proxy.py",
+        "tests/test_vehicle.py",
+        "tests/test_car_vibe_study.py",
+        "docs/authoring-parts.md#rigid-proxies-and-deterministic-tone-conversion"
+      ],
+      "acceptance": [
+        "Hard bands and tiny views produce finite RGBA without floating-point exceptions",
+        "Invalid or unrepresentable settings fail during recipe construction with repair fields",
+        "Valid seeded conversion is independent of sampling order",
+        "Captured ordinary soft-band and layer outputs remain byte-identical",
+        "Existing engine registration, layering and warm-cache checks pass"
+      ]
+    },
+    {
+      "id": "SDK-P1-11",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Keep traffic crossings and held-cone swings on their authored clock",
+      "problem": "drive_past and held inherited Canvas.local_time despite documented composition cues. With local_time=True, their nonzero visibility starts delayed movement: a passing car missed its crossing cue and an arm held its first angle at the intended midpoint.",
+      "resolution": "Both animations explicitly use composition keys. Discovery distinguishes road canvas keys, traffic composition cues, tally parent visibility and mixed room lighting clocks.",
+      "evidence": [
+        "src/srstudio/toon_cars.py:drive_past",
+        "src/srstudio/toon_parlour.py:held",
+        "src/srstudio/_toon_social_contracts.py"
+      ],
+      "verification": [
+        "tests/test_toon_cars.py:test_passing_vehicle_crosses_at_its_cue_in_both_canvas_modes",
+        "tests/test_toon_parlour.py:test_held_cone_swing_follows_authored_times_with_nonzero_visibility_start",
+        "tests/test_toon_social_contracts.py:test_mixed_clock_builders_do_not_claim_all_keys_follow_one_clock"
+      ],
+      "acceptance": [
+        "Passing vehicle center reaches the frame center at its cue in either canvas mode",
+        "Held-cone arm reaches the eased midpoint at the authored time despite nonzero visibility start",
+        "Mixed-clock builders do not publish a conflicting blanket clock claim",
+        "Captured default drawing baselines remain unchanged"
+      ]
+    },
+    {
+      "id": "SDK-P1-09",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Preserve drawer-light intensity and validate it before drawing",
+      "problem": "The bedside drawer used a 0/1 visibility gate on a shape with authored opacity, replacing dim light with full intensity. Invalid intensity could be silently ignored or fail after part of the cabinet had been drawn.",
+      "resolution": "Preflight requires finite 0..1 intensity. Held composition keys retain the supplied opacity from the slide cue onward, consistently with the drawer movement. The arbitrary 3600-second gate cutoff is removed.",
+      "evidence": [
+        "src/srstudio/toon_bed.py:bedside_drawer"
+      ],
+      "verification": [
+        "tests/test_toon_bed.py:test_drawer_light_keeps_its_intensity_and_composition_clock",
+        "tests/test_toon_bed.py:test_bad_drawer_light_is_refused_before_drawing",
+        "tests/test_noncharacter_discovery_recipes.py:test_care_discovery_recipe_keeps_dim_light_and_smooth_drawer_motion",
+        "docs/authoring-discovery.md"
+      ],
+      "acceptance": [
+        "Light remains at authored intensity after opening, including a zero-second cue",
+        "Invalid, nonfinite and boolean intensities raise ToonDataError before scene mutation",
+        "Light and drawer use composition keys under either Canvas.local_time setting",
+        "Engine samples exercise parent time remapping and intermediate eased drawer movement",
+        "Captured default drawing baselines remain unchanged"
+      ]
+    },
+    {
+      "id": "SDK-P1-08",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Interpolate study highlights and marker paths between cues",
+      "problem": "Book row and note sweeps, and the highlighter path, inherited Canvas.keys held interpolation. Their geometry jumped at the final key instead of progressing between authored times.",
+      "resolution": "The three animations now explicitly use linear interpolation on composition time. The agent guide uses row_span to convert reference book geometry into frame-pixel marker positions and synchronizes the marker with the highlight edge.",
+      "evidence": [
+        "src/srstudio/toon_study.py:_band",
+        "src/srstudio/toon_study.py:open_book",
+        "src/srstudio/toon_study.py:highlighter"
+      ],
+      "verification": [
+        "tests/test_toon_study.py:test_book_sweeps_interpolate_across_the_row_instead_of_holding_until_the_end",
+        "tests/test_toon_study.py:test_marker_path_interpolates_between_authored_frame_positions",
+        "tests/test_toon_study.py:test_engine_samples_a_sweep_and_marker_between_their_keys",
+        "tests/test_noncharacter_discovery_recipes.py:test_study_discovery_recipe_maps_reference_book_geometry_to_frame_marker_keys",
+        "docs/authoring-discovery.md"
+      ],
+      "acceptance": [
+        "Row and note highlights interpolate from 2% to full width over the sweep duration",
+        "Marker x interpolates between authored frame positions",
+        "Actual engine samples at interior times agree with linear progress",
+        "Static drawing baselines remain unchanged"
+      ]
+    },
+    {
+      "id": "SDK-P1-06",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Alternate garden-tool vibration on the actual sampling clock",
+      "problem": "The shudder loop sampled at 12 keys per second but computed sign parity at 24, so every sample kept the same positive offset instead of vibrating.",
+      "resolution": "Integer sample indices alternate positive and negative displacement, reset phase per running span and restore zero at each end. Existing canvas-clock selection is preserved.",
+      "evidence": [
+        "src/srstudio/toon_homeware.py:_shudder"
+      ],
+      "verification": [
+        "tests/test_toon_homeware.py:test_running_tools_alternate_displacement_and_rest_between_spans",
+        "tests/test_toon_homeware.py:test_engine_evaluates_alternating_tool_motion_and_decreasing_tub_counts"
+      ],
+      "acceptance": [
+        "Both garden tools alternate displacement during each running span",
+        "Offsets are zero between and after spans",
+        "Local and composition canvas modes retain their declared clocks"
+      ]
+    },
+    {
+      "id": "SDK-P1-07",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Honor decreasing soup-tub count cues",
+      "problem": "The stack selected only the first appearance of each tub and left it visible until end, ignoring later smaller counts.",
+      "resolution": "Each tub now receives merged visibility intervals derived from all count cues, allowing disappearance and return. Increasing-count output preserves its baseline.",
+      "evidence": [
+        "src/srstudio/toon_homeware.py:soup_tubs",
+        "src/srstudio/toon_homeware.py:_tub_spans"
+      ],
+      "verification": [
+        "tests/test_toon_homeware.py:test_tub_visibility_matches_every_count_including_decreases",
+        "tests/test_toon_homeware.py:test_engine_evaluates_alternating_tool_motion_and_decreasing_tub_counts",
+        "tests/test_toon_domestic_contracts.py"
+      ],
+      "acceptance": [
+        "Visible count equals the authored count at each cue and between cues",
+        "Decreasing counts and subsequent increases work",
+        "No tubs remain at end and ordinary increasing drawings remain unchanged"
+      ]
+    },
+    {
+      "id": "SDK-P1-05",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Bind texture identities to image shape and owned render snapshots",
+      "problem": "Texture hashes omit image dimensions and are cached despite mutable pixel arrays. Reshaping equal bytes can collapse separate drawing assets, color/normal resources and rendered cache entries. Pixel edits can reuse stale hashes or stage data different from the cache-key document.",
+      "resolution": "Versioned texture identities bind dimensions and RGBA8 pixels. Five closed, exact pixel-hash/dimension aliases preserve authored Rafa/Pedro drawing references; edits or reshapes cannot use those aliases. Textured render keys bind dimensions under schema 1.1.0 and refuse old ambiguous artifacts. Preparation snapshots all maps before cache mutation and stages those same bytes. Hashing is deduplicated within each document, and warm hits neither encode PNGs nor launch a renderer.",
+      "evidence": [
+        "src/srstudio/plates.py:Texture.sha256",
+        "src/srstudio/plates.py:_prepare",
+        "src/srstudio/plates.py:_RenderInputs.key"
+      ],
+      "verification": [
+        "tests/test_plate_texture_identity.py",
+        "tests/test_catalog_render_identity.py",
+        "tests/test_catalog_specimens.py:test_a_character_on_plates_repeats_no_id_and_still_draws_what_was_approved",
+        "docs/decisions/0107-texture-shape-and-snapshot-identity.md"
+      ],
+      "acceptance": [
+        "Reshaping or editing pixels changes drawing and rendered identity",
+        "A render and both verify passes use one owned texture snapshot",
+        "Malformed RGBA input fails before cache creation with typed repair fields",
+        "Existing authored host drawing fingerprints remain pinned",
+        "Real-render shape differences, unchanged-image parity and zero-launch warm reuse are verified"
+      ]
+    },
+    {
+      "id": "SDK-P1-03",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Bound procedural head planning before schedule generation",
+      "resolution": "Procedural planning now checks worst-case seeded schedule counts and six-decimal clock precision before generation. Limits are 10000 estimated breathing cycles or glance candidates and 100000 estimated keys per idle channel. Slow subnormal idle frequencies use finite endpoints without multiplying zero by infinity. Normal output retains the committed numeric and serialization baseline.",
+      "verification": {"red": {"failed": 11, "passed": 1}, "focused_green": {"passed": 285}, "engine_enabled_regressions": {"passed": 483, "skipped": 0}, "planner_branch_inclusive_coverage_percent": 95, "ruff_formatted_files": 1555, "mypy_source_files": 244},
+      "problem": "Positive finite style values can stall rounded breath time, cause excessive glance iteration, or overflow idle sampling. Extremely slow idle frequencies also produce NaN through zero times an infinite reciprocal.",
+      "evidence": [
+        "src/srstudio/_head_planner.py",
+        "tests/test_head_planner_budgets.py"
+      ],
+      "acceptance": [
+        "Invalid schedules fail before generators run",
+        "Typed budget and precision failures identify repairable inputs",
+        "Existing normal motion retains numeric and serialized parity"
+      ]
+    },
+    {
+      "id": "SDK-P1-04",
+      "resolution": "Registered generators and async generators now scope each resume, send, throw and close; coroutines scope awaited execution and cancellation cleanup. Function kinds and default metadata remain inspectable. Entry calls bind raw replacements even when created before observation. Context-local figure ownership separates interleaved tasks, and closed observers reject late copied-context events.",
+      "verification": ["tests/test_drawing_deferred.py", "tests/test_usage_event_migration.py", "tests/test_drawing_events.py", "tests/test_usage.py", "tests/test_limbs_evaluation.py", "docs/decisions/0094-explicit-drawing-execution.md"],
+      "priority": "P1",
+      "status": "complete",
+      "title": "Preserve deferred drawing execution in the event migration",
+      "problem": "The uncommitted registered-builder wrapper closes its drawing scope before a generator executes, losing figure IDs while reporting the part as used.",
+      "evidence": [
+        "src/srstudio/drawing_events.py",
+        "src/srstudio/usage.py"
+      ],
+      "acceptance": [
+        "Generator resume, send, throw and close retain drawing attribution",
+        "Coroutine and async-generator failures and cancellation restore scopes",
+        "Concurrent execution does not mix independent figure IDs"
+      ]
+    },
+    {
+      "id": "SDK-P2-06",
+      "priority": "P2",
+      "status": "open",
+      "title": "Expand explicit non-character contracts beyond core workflows",
+      "problem": "Only 53 of 631 non-character parts declare semantic contracts; agents must inspect implementation for most coordinate, clock and return conventions.",
+      "progress": {
+        "completed_additional_families": [
+          "srstudio.cutout_counter",
+          "srstudio.cutout_store",
+          "srstudio.cutout_hiring",
+          "srstudio.cutout_home",
+          "srstudio.cutout_office",
+          "srstudio.cutout_shop",
+          "srstudio.cutout_handed",
+          "srstudio.cutout_leak",
+          "srstudio.cutout_lobby",
+          "srstudio.cutout_locate",
+          "srstudio.cutout_odds",
+          "srstudio.cutout_reference",
+          "srstudio.toon",
+          "srstudio.toon_props",
+          "srstudio.toon_sets",
+          "srstudio.toon_world",
+          "srstudio.toon_flat",
+          "srstudio.toon_odds",
+          "srstudio.toon_house",
+          "srstudio.toon_homeware",
+          "srstudio.toon_everyday",
+          "srstudio.toon_inserts",
+          "srstudio.toon_study",
+          "srstudio.toon_laptop",
+          "srstudio.toon_bed",
+          "srstudio.toon_ward",
+          "srstudio.toon_surgery",
+          "srstudio.toon_cars",
+          "srstudio.toon_dinner",
+          "srstudio.toon_parlour",
+          "srstudio.toon_rooms"
+        ],
+        "additional_parts": [
+          "toon-headset"
+        ],
+        "new_contracts": 238,
+        "current_explicit_noncharacter_contracts": 291,
+        "current_registered_noncharacters": 652,
+        "remaining_undeclared": 361,
+        "evidence": [
+          "tests/test_counter_store_contracts.py",
+          "tests/data/counter-store-contract-baseline.json",
+          "src/srstudio/_counter_store_contracts.py",
+          "tests/test_cutout_family_contracts.py",
+          "tests/data/cutout-family-contract-baseline.json",
+          "src/srstudio/_cutout_contracts.py",
+          "src/srstudio/_toon_contracts.py",
+          "tests/test_toon_drawing_contracts.py",
+          "tests/data/toon-drawing-contract-baseline.json",
+          "src/srstudio/_toon_household_contracts.py",
+          "tests/test_toon_household_contracts.py",
+          "tests/data/toon-household-contract-baseline.json",
+          "src/srstudio/_toon_domestic_contracts.py",
+          "tests/test_toon_domestic_contracts.py",
+          "tests/data/toon-domestic-contract-baseline.json",
+          "src/srstudio/_toon_detail_contracts.py",
+          "tests/test_toon_detail_contracts.py",
+          "tests/data/toon-detail-contract-baseline.json",
+          "src/srstudio/_toon_care_contracts.py",
+          "tests/test_toon_care_contracts.py",
+          "tests/data/toon-care-contract-baseline.json",
+          "src/srstudio/_toon_social_contracts.py",
+          "tests/test_toon_social_contracts.py",
+          "tests/data/toon-social-contract-baseline.json",
+          "docs/authoring-discovery.md"
+        ],
+        "qualification": "The full catalog expansion remains open. All 151 registered non-characters in toon-prefixed modules now declare contracts. These and completed Cutout families declare actual units, clocks, local slots, return records and capability limits. Captured baseline drawings remain unchanged; corrected behavior is recorded separately in SDK-P1-06 through SDK-P1-11. Other families still require source review and executable semantic evidence."
+      },
+      "evidence": [
+        "src/srstudio/registry.py:contract_coverage",
+        "src/srstudio/_drawing_contracts.py"
+      ],
+      "acceptance": [
+        "All supported non-character builders have authored units, clocks, returns and capability declarations where applicable",
+        "Contract examples execute against actual builders",
+        "Unknown or unsupported spatial semantics are never inferred"
+      ]
+    },
+    {
+      "id": "SDK-P2-07",
+      "priority": "P2",
+      "status": "open",
+      "title": "Implement bounded scene-wide composition preflight",
+      "problem": "DRAWING.md proposes shared scene contracts, but subsystem compilation does not yet provide one validated plan with cross-layer bindings, versions and render budgets.",
+      "progress": {
+        "implemented": [
+          "Strict frozen manifest records and bounded parsing; approved references, camera/view envelopes, source clocks, declared contacts and reproducible work estimates",
+          "Actual closed vector payload verification, content hashes, node counts and conservative complete animation bounds",
+          "Revalidated compilation with scoped IDs/paints, one parent/camera projection and preserved source clocks",
+          "Atomic self-contained scene publication with expansion allowances, cooperative timeout checks and failure preservation",
+          "Public vector verification/compilation workers with hard kernel address-space limits, parent deadlines, bounded IPC and preserved typed causes; VectorSource batches preparation and compilation",
+          "Plate/print renderer sessions enforce nested address-space limits, process-group deadlines and bounded diagnostics; failures and explicit retries consume every enclosing attempt budget without publishing partial images",
+          "Perspective plate-view bridge resolves canonical units, handedness, parent transforms, shared world lights and bounded principal-point overscan without applying projection twice",
+          "Bounded static untextured plate preparation verifies immutable mesh buffers, materials, bounds, source identities and declared work; emits a closed XML/resource bundle with retained source evidence; preflight counts distinct resolved placements as distinct cold jobs",
+          "Static mixed vector/plate bundles reverify all inputs, render unique jobs under nested limits, verify PNGs and warm caches, and atomically publish portable scene/image directories",
+          "Immutable UV and RGBA8 snapshots preserve color/normal maps, normal strength, sheen and subsurface settings; source snapshots deduplicate dimensions plus pixels, bounded workers generate content-addressed PNG/OBJ resources, and legacy untextured identities remain unchanged",
+          "Static printed labels retain immutable typed recipes, actual font bytes and explicit licenses; bounded workers compile closed scenes/fonts, cold bundles render labels under per-source and shared attempt/memory/deadline limits, verify PNGs and publish only complete plate artifacts"
+        ],
+        "remaining": [
+          "Animated plate and proxy payload adapters and supported backend emission under shared camera/light contracts",
+          "Cross-backend rendering evidence for the complete DRAWING.md contract"
+        ],
+        "verification": ["tests/test_composition_preflight.py", "tests/test_composition_emission.py", "tests/test_composition_runtime.py", "tests/test_bounded_process.py", "tests/test_composition_example.py", "tests/test_composition_plate_view.py", "tests/test_composition_plates.py", "tests/test_composition_bundles.py", "tests/test_composition_textures.py", "tests/test_composition_prints.py", "tests/test_bundle_primitives.py", "tests/test_plate_runtime_limits.py", "tests/test_plate_render_sessions.py", "docs/composition-preflight.md", "docs/authoring-benchmark.md", "docs/decisions/0144-bounded-composition-prints.md"]
+      },
+      "evidence": [
+        "DRAWING.md#agent-facing-composition-contract"
+      ],
+      "acceptance": [
+        "Strict typed input validates references, capabilities, clocks and budgets before mutation",
+        "Immutable validated plans expose reproducible cost estimates",
+        "Emission refuses unsupported backend capabilities and never publishes partial output"
+      ]
+    },
+    {
+      "id": "SDK-P2-08",
+      "priority": "P2",
+      "status": "complete",
+      "title": "Publish and verify transition continuity guarantees",
+      "problem": "Transition policies expose easing without derivative guarantees; limb action joins estimate boundary velocities. Agents need to distinguish position, velocity and acceleration continuity.",
+      "resolution": "TransformTrack.describe_continuity and Motion.describe_continuity expose versioned JSON-compatible contracts for source key derivatives, endpoint velocity jumps, estimated joins and held compiler output. ActingRig discovery describes both legacy and policy baking, discrete arrivals and source-time-preserving cuts. Nonuniform-key derivative tests verify supported translation C2 and smooth rotational stops; counterexamples demonstrate small-arc angular approximation, join acceleration mismatch and baked-policy velocity jumps. Existing numeric interpolation and serialized output remain unchanged. The executable guide distinguishes conditional guarantees from complete-motion or perceptual certification.",
+      "verification": ["tests/test_continuity_contracts.py", "tests/test_continuous_tracks.py", "tests/test_action_chaining.py", "tests/test_acting_transitions.py", "docs/catalog/limbs.md#inspect-continuity-before-choosing-a-transition", "docs/decisions/0096-scoped-continuity-discovery.md"],
+      "evidence": [
+        "src/srstudio/acting.py:TransitionPolicy",
+        "src/srstudio/limbs/transitions.py"
+      ],
+      "acceptance": [
+        "Discovery declares continuity and explicit discontinuities",
+        "Supported derivative-preserving transitions pass boundary and random-access tests",
+        "Contacts remain valid and existing policy output stays compatible"
+      ]
+    },
+    {
+      "id": "SDK-P2-09",
+      "priority": "P2",
+      "status": "complete",
+      "title": "Include renderer identity in plate cache ownership",
+      "problem": "Plate cache lookup uses only serialized scene content and can return an earlier renderer build output when the same cache directory is reused.",
+      "resolution": "Keep drawing digests stable and key rendered plates, prints, catalog specimens and posters by renderer bytes and relevant compiled inputs. Printed textures and their dependent plates include actual font bytes. Unique private work directories and atomic installation preserve prior artifacts. Catalogs materialize the selected plate at its logical drawing reference and refuse dependency changes after binding. Legacy flat cache files remain untouched and are not trusted as renderer-owned hits. Returned filenames preserve render identity through copied host assets.",
+      "verification": ["tests/test_plate_cache_identity.py", "tests/test_catalog_render_identity.py", "tests/test_plates.py", "tests/test_catalog_specimens.py", "docs/decisions/0095-rendered-artifact-cache-identity.md"],
+      "limits": ["Renderer runtime dependencies, hardware and environment must remain pinned; hashing the executable does not fingerprint those inputs.", "Warm hits still read and hash inputs. Zero new renderer invocations is not a zero-cost lookup guarantee."],
+      "evidence": [
+        "src/srstudio/plates.py:render",
+        "DRAWING.md#rules"
+      ],
+      "acceptance": [
+        "Renderer changes invalidate affected cached outputs",
+        "Relevant rendering inputs and quality configuration participate in cache identity",
+        "Unchanged warm builds invoke no new plate render"
+      ]
+    },
+    {
+      "id": "SDK-P3-07",
+      "priority": "P3",
+      "status": "complete",
+      "title": "Separate task documentation from episode history",
+      "resolution": "Replaced the 3043-line mixed reference with a task index, eleven focused authoring guides and a separate episode history. Kept all 87 legacy section bookmarks resolvable and all 74 existing code fences unchanged in their new owners. README and limbs links go directly to task guides; recipe tests execute from those guides, and the author-facing brand check still scans every moved document. Audio now has a reusable workflow guide rather than an episode case-study entry point.",
+      "verification": ["tests/test_authoring_navigation.py", "tests/data/authoring-reference-layout.json", "tests/test_character_discovery_recipe.py", "tests/test_character_clip_recipe.py", "tests/test_noncharacter_discovery_recipes.py", "tests/test_acting_gallery.py", "tests/test_acting_continuity_example.py", "tests/test_acting_transition_example.py", "tests/test_authoring_diagnostics.py", "tests/test_catalog_contracts.py", "tests/test_counter_store_contracts.py", "tests/test_cutout_family_contracts.py", "tests/test_agent_p3_input_and_ids.py", "tests/test_agent_docs_p2.py", "tests/test_okayville.py", "tests/test_recording.py"],
+      "problem": "The authoring reference has 2917 lines mixing reusable workflows with detailed episode history.",
+      "evidence": [
+        "docs/authoring-reference.md"
+      ],
+      "acceptance": [
+        "Task index links focused guides with imports, clocks, bindings and failure examples",
+        "Existing links remain resolvable",
+        "Executable examples remain verified"
+      ]
+    },
+    {
+      "id": "SDK-P3-08",
+      "priority": "P3",
+      "status": "complete",
+      "title": "Separate transform, gesture and contact responsibilities in limb motion",
+      "problem": "limbs/motion.py combines transform interpolation, gesture synthesis and contact sampling behind the same public module.",
+      "evidence": [
+        "src/srstudio/limbs/motion.py"
+      ],
+      "acceptance": [
+        "Cohesive internal modules preserve public imports and record identities",
+        "Sampled numeric and emitted output match captured baselines",
+        "No duplicate interpolation or contact implementation"
+      ],
+      "resolution": "Separated transform interpolation, gesture synthesis, moving contacts, elbow-pole solving and shared interpolation into five internal owners. Public motion records and their constructor validation stay at the original import path. Eleven extracted function bodies retain their ASTs after receiver renaming; the common tangent basis replaces repeated formulas in transforms, contacts and joins. Forty motion baselines, ten emitted scenes, six native capability refusals and ten original record pickles verify compatibility, with random-access, serialization, error-context and explicit delegation checks. Bounded caches and per-subsystem continuity limits are preserved.",
+      "verification": [
+        "tests/test_limb_motion_boundaries.py",
+        "tests/data/limb-motion-compatibility.json",
+        "tests/test_limbs_motion.py",
+        "tests/test_continuity_contracts.py",
+        "tests/test_motion_review_regressions.py",
+        "docs/decisions/0099-limb-motion-module-boundaries.md"
+      ]
+    },
+    {
+      "id": "SDK-P4-04",
+      "priority": "P4",
+      "status": "open",
+      "title": "Support authored emotional blends on capable rigs",
+      "problem": "Coordinated acting holds or replaces expressions; richer facial transitions need explicit authored support coordinated with posture and gesture.",
+      "evidence": [
+        "src/srstudio/acting.py",
+        "src/srstudio/_acting_compile.py"
+      ],
+      "acceptance": [
+        "Rigs explicitly declare supported expression transitions",
+        "Unsupported blends fail before drawing",
+        "Deterministic cuts and temporal rendered review cover facial and body coordination"
+      ]
+    },
     {
       "id": "SDK-P1-01",
       "priority": "P1",
@@ -293,18 +1376,22 @@
     {
       "id": "SDK-P3-03",
       "priority": "P3",
-      "status": "open",
+      "status": "complete",
       "title": "Separate head-channel mechanics from speech planning",
       "problem": "head_motion.py combines channel interpolation, spring baking, bounds, speech analysis, deterministic noise and behavioral planning. Changes to one concern require reviewing a large shared module.",
       "evidence": ["src/srstudio/head_motion.py:Channel", "src/srstudio/head_motion.py:speech_of", "src/srstudio/head_motion.py:plan", "src/srstudio/_curves.py"],
       "change": "Extract cohesive channel and speech-planning internals while preserving public imports. Keep shared interpolation semantics in one implementation; use the same boundary approach for further motion/contact decomposition when it reduces coupling.",
       "acceptance": ["Existing imports remain valid", "Numeric and serialized output parity at keys, cuts and spring boundaries", "No new duplicate sampler or planner behavior"],
+      "resolution": "Extracted five implementation modules behind the existing head_motion facade. All 47 original class/function definitions moved with identical ASTs and no duplicates. Public aliases, signatures, type hints, established internal helper imports and serialized Python record identities are retained. A pre-extraction fixture covers 47 channel cases, composed speaking/listening/facing/noise, cut boundaries, emitted XML and nine protocol-4 record types. Shared curve math and existing bounded caches remain single implementations.",
+      "verification": ["tests/test_head_module_compatibility.py", "tests/data/head-motion-compatibility.json", "tests/test_channel_contracts.py", "tests/test_head_motion.py", "tests/test_acting_contracts.py", "docs/decisions/0093-head-motion-module-boundaries.md"],
       "complexity": "M"
     },
     {
       "id": "SDK-P3-04",
+      "resolution": "Registered function and class-method instrumentation plus explicit Gloss, News, Inked News and Host ownership replace all profiler, source, closure and frame-local inference in usage tracing. Nine pre-migration builder cases retain exact used parts, figure IDs and scene XML. All eight direct Inked News version combinations are attributed explicitly. Nested and failing drawings preserve scope behavior. Source measurements unwrap functions to retain transitive helper counts.",
+      "verification": ["tests/test_drawing_deferred.py", "tests/test_usage_event_migration.py", "tests/test_drawing_events.py", "tests/test_usage.py", "tests/test_limbs_evaluation.py", "docs/decisions/0094-explicit-drawing-execution.md"],
       "priority": "P3",
-      "status": "open",
+      "status": "complete",
       "title": "Complete explicit drawing-event instrumentation",
       "problem": "Drawing events now identify rig drawings and IDs, but usage tracing still installs a profiler and inspects function source/frames to identify legacy calls and delegates.",
       "evidence": ["src/srstudio/usage.py:_tail_call", "src/srstudio/usage.py:_performed", "src/srstudio/usage.py:trace", "src/srstudio/drawing_events.py"],
@@ -350,27 +1437,31 @@
     {
       "id": "SDK-P4-02",
       "priority": "P4",
-      "status": "open",
+      "status": "complete",
       "title": "Support target-based gaze where rigs can draw it",
       "problem": "The shared gaze planner has four named states and held eye transitions. It cannot express continuous target tracking or a richer eye/head relationship across rig families.",
       "evidence": ["src/srstudio/head_motion.py:GAZES", "src/srstudio/head_motion.py:_gaze", "src/srstudio/toon_head.py:gaze_states"],
       "change": "Introduce typed target gaze with explicit eye/head limits and latency, capability-gated continuous sampling, and deliberate mappings for rigs that only support named states.",
       "acceptance": ["No silent substitution for unsupported gaze", "Target motion remains deterministic across cuts and sampling order", "Bounds and eye/head timing tests plus rendered review"],
+      "resolution": "Added strict typed target/observer tracks, separate eye/head limits and latency, deterministic bounded angle sampling, explicit named-state approximation and capability-gated pupil transforms. Acting bindings retain the full performance clock across cuts and reject conflicting ownership. The two-style study exports reproducible inputs and source hashes, passes strict full-size encoding, and has exact cut/uncut rendered-pixel tests. A rendered-review framing defect was fixed with a geometry-clearance regression test. Limits and sampled visual review are recorded in review_verification.target_gaze.",
+      "verification": ["tests/test_gaze.py", "tests/test_gaze_drawing.py", "tests/test_acting_target_gaze.py", "tests/test_target_gaze_example.py", "examples/target_gaze.py", "docs/authoring-acting.md", "docs/decisions/0108-source-clock-target-gaze.md"],
       "complexity": "L"
     },
     {
       "id": "SDK-P4-03",
       "priority": "P4",
-      "status": "open",
+      "status": "complete",
       "title": "Benchmark the agent authoring loop before optimizing it",
       "problem": "The package eagerly imports registered builders, and existing measurement helpers cover source/build comparisons. There is no single benchmark separating discovery, planning, compilation, rendering and cold/warm cache work.",
       "evidence": ["src/srstudio/__init__.py", "src/srstudio/limbs/evaluation.py:measure", "src/srstudio/plates.py"],
       "change": "Create representative bounded benchmarks for those phases; optimize only measured bottlenecks while preserving discovery completeness and deterministic output.",
       "acceptance": ["Separate cold/warm measurements and pinned fixture inputs", "Report sample, frame, plate and engine invocation counts", "Output-equivalence checks accompany any optimization", "No wall-clock performance threshold in ordinary correctness tests"],
+      "resolution": "Added an opt-in, bounded authoring-loop benchmark with fresh-process import/discovery, acting and moving-contact planning, repeated compilation, frame rendering, cold/warm plates and fresh pixel verification. Reports pin fixture parameters, Python sources, package versions and renderer bytes, define per-phase work counts and refuse changed outputs before publication. Scoped plate render sessions expose actual launch attempts, nested budgets and timeouts. No performance optimization or motion-quality improvement is claimed.",
+      "verification": ["tests/test_authoring_benchmark.py", "tests/test_plate_render_sessions.py", "tests/test_plate_cache_identity.py", "tests/test_plates.py", "tests/test_proxy.py", "docs/authoring-benchmark.md", "docs/decisions/0100-authoring-loop-measurements.md"],
       "complexity": "M"
     }
   ],
-  "recommended_order": ["SDK-P3-03", "SDK-P3-04", "SDK-P3-06", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02"],
+  "recommended_order": ["SDK-P2-06", "SDK-P2-07", "SDK-P3-06", "SDK-P4-01", "SDK-P4-04"],
   "agent_authoring_guidance": [
     "Discover registered versions, explicit capabilities, coordinate spaces and clocks before choosing a builder; keep unknown metadata unknown.",
     "Use parse_score and compile_performance for supported coordinated intent, character clips for placement, and windows of one performance for cuts. Inspect family capabilities before requesting a channel.",
@@ -380,7 +1471,7 @@
     "Pair scoped numeric checks and strict renders with full-size temporal review and actual blinded ratings for weight, intent and emotional readability. Do not infer perceptual approval from a passing schema or speed limit."
   ],
   "limits": [
-    "No P0 was confirmed. The callback/option P1 findings and additional malformed-input, blink-budget and diagnostic-amplification defects reproduced during implementation are now fixed; previously repaired sequence-clock defects remain resolved. This is not an exhaustive claim of defect absence.",
+    "No P0 was confirmed. Earlier callback/option, malformed-input, blink-budget and diagnostic-amplification repairs remain recorded. The refreshed review reproduced additional procedural head-schedule and deferred tracing defects, tracked separately above. This is not an exhaustive claim of defect absence.",
     "Numeric regression tests establish constrained sampled behavior, not continuous collision safety or perceptual preference.",
     "The complete P0-P4 implementation goal remains active; open findings are not represented as completed work."
   ]

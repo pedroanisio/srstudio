@@ -23,6 +23,7 @@ __all__ = ["DOOR", "PRINT", "WALL_FOOT", "SoftFrontError", "front_room", "mug", 
 
 Slot = Callable[[object], object] | None
 
+MUG_INSIDE = "#E2DACD"
 WALL_FOOT = 1290.0  # where the back wall meets the floor
 DOOR = (720.0, 760.0, 280.0, 530.0)  # x, y, width and height of the opening in the back wall
 PRINT = (500.0, 1500.0, 400.0, 120.0)  # x, y, width and height of the pale print a sofa left on the rug
@@ -139,15 +140,15 @@ def shelf(cv: Canvas, parent, *, id: str):
 
 
 @register("prop", "soft-mug", summary="A plain white mug of coffee, for a hand; no lettering, no brand")
-def mug(cv: Canvas, parent, x: float = 0, y: float = 0, *, scale: float = 1, id: str = "soft-mug"):
-    """A mug 120 x 120 px at ``scale`` 1, centred on (``x``, ``y``)."""
+def mug(cv: Canvas, parent, x: float = 0, y: float = 0, *, scale: float = 1, empty: bool = False, id: str = "soft-mug"):
+    """A mug 120 x 120 px at ``scale`` 1, centred on (``x``, ``y``). ``empty`` shows its pale inside, not the coffee."""
     if not (checks.number(x) and checks.number(y) and checks.number(scale) and scale > 0):
         raise SoftFrontError(f"a mug sits at a finite place with a positive scale, got {x!r}, {y!r}, {scale!r}")
     g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
     cv.ellipse(g, 26, -32, 62, 62, cv.clear, cv.ink, 16)
     cv.ellipse(g, 33, -24, 48, 46, cv.clear, "#F7F3EC", 8)
     cv.rect(g, -60, -56, 112, 116, "#F7F3EC", cv.ink, 6, radius=18)
-    cv.ellipse(g, -56, -68, 104, 30, "#5B3A26", cv.ink, 6)
+    cv.ellipse(g, -56, -68, 104, 30, MUG_INSIDE if empty else "#5B3A26", cv.ink, 6)
     return g
 
 

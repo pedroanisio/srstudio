@@ -18,6 +18,7 @@ from .contracts import PartContract
 TIME = P(unit='seconds', timebase='canvas')
 START = P(unit='seconds', timebase='canvas', role='start')
 END = P(unit='seconds', timebase='canvas', role='end')
+DURATION = P(unit='seconds', role='duration')
 SPAN = P(type=tuple[float, float], prefix_items=(START, END))
 SPANS = P(type=Sequence[tuple[float, float]], items=SPAN)
 SHOTS = P(type=Sequence[tuple[float, float]] | None, items=SPAN)
@@ -63,6 +64,19 @@ def _drawing(
 
 def prop(name: str) -> PartContract:
     return _PROPS[name]
+
+
+def _slot(description: str) -> P:
+    return P(
+        type=Callable[[Group], object] | None,
+        role='drawing-slot',
+        description='Receives the existing local Group once during building; return is ignored. ' + description,
+    )
+
+
+def _placed(origin: str, **options) -> PartContract:
+    constraints = options.pop('constraints', ())
+    return _drawing(coordinates=('x', 'y'), constraints=(f'x/y places {origin}.', *constraints), **options)
 
 
 def location(name: str) -> PartContract:

@@ -1,0 +1,809 @@
+{
+  "schema_version": "1.0.0",
+  "generated_by": {
+    "model": "GPT-6",
+    "tool": "OpenAI Codex"
+  },
+  "source_commit": "83917174",
+  "numeric_rounding_decimal_places": 12,
+  "numeric": {
+    "left-rest": "d60ec151ca97b8567b2845f952c5241dfc71352b56bb721d376a8bdd383f0b6f",
+    "left-crossed": "36125e293fb3d26034eddb65578bf0b9ab9845e07ba8ed58e4110d6b172e4a24",
+    "left-reach": "aeb7e49b98a91cb036e4034ec6784c4c6c24ab233f2665bb31c321713d3bf65c",
+    "left-point": "2e7eb072e229d4aa7afb8fc41a5622bfa01e281fd295aae10f174f4ea0cc2e76",
+    "left-present": "d4a8020365dcf8f9f3ebcdec6cb0778612737539c94a6a33ed774a475cb6d8ed",
+    "left-shrug": "1fcf2af863d4d77a8ba064d766f5f0814d6c4d810eb5ea9bffbe70ff14a61423",
+    "left-wave": "62696b60e616974ad0170ec49061cdb5740251fac3336cc0bfc54303385c33d2",
+    "left-facepalm": "0b5c0d95c81dd835a4bb41ae3eaac26505f1d21f3d4fb57c609fc7f53af67252",
+    "left-pinch": "91d52e95fbeeed426d1683d24510a837917ad8b21702887b065a9c7f3bfe718f",
+    "left-grasp": "b78e915577409723ce2c180dba576e53299358b9d42548863374175a84364bb6",
+    "left-release": "4cce3ae703490990fdf6d9369255e47885a4732dbf20fb9c9769b3f41f5502d2",
+    "left-press": "0a713ed442bc8cbdd330fbb9ec3e1679e17877be3c8178299abd42044fd782ff",
+    "left-type": "c65400d96ca8f9f73f3e5185526e13157672e3e7d331e9df03eb22e463c5c8f6",
+    "right-rest": "cbc26ece75eeed4a487602c88aafe6c04221d786746242b69153f5662f3d3ab2",
+    "right-crossed": "b2aa5880b0aaa3488d5f8d94c002d0d923081b9a5993aec8d8426cb0d20981f6",
+    "right-reach": "46e984d82e4b3abdd8c71e0c34eb404ee12db2ea6c350be40bd9e3ef002f7099",
+    "right-point": "e547f9fb2072b675ec1ccf7e403110051071330c782d5693d68d6309f3e21f97",
+    "right-present": "85bca22ff080d9fa06303865341952848fbd387b9b73d5c0c4d4a172c3df79f1",
+    "right-shrug": "aebb02060d6a686c3a91046ab4333f01f9fbc13e3da2569238c0daee435dfd4e",
+    "right-wave": "72aa022c1f15947022485dff127ddbee4d40ad8e194f29830bbdc820de368f8e",
+    "right-facepalm": "42b19a36ea8a83dc0c407914c576f8b2d52277587be1a26a4e885a7890400b40",
+    "right-pinch": "486f2cad47633689db1b09a1e5dc16bc27ecc7fe6dca803cbd590471aea101e6",
+    "right-grasp": "6e81b6da77cd8d33a9b54d8895bd89f4a8c8fd426cf3d2238a8d988ee0d2fcfd",
+    "right-release": "82fa925a0de76d35d34abad2a730ef5e9033c9548cd513d1d8e2fa45f2e0e91a",
+    "right-press": "fa8528bff69b3604475d34d64dd025d201e527f70ec2a78a8967cda9b4a77129",
+    "right-type": "9da7ce0e4a6384f5f14fde9b8e918f45ed9953cd6e10191ffda9495b59d20086",
+    "anatomy-human": "8cf70207a7181b9d1c098201ee5d9b73999d17e06bf4054208b07f9f2d2a6cb9",
+    "anatomy-three-finger": "7f858a6aecc677aac0130d07ec7f8c95b239ef514d802f5175c6fa6a255a3b98",
+    "anatomy-mitten": "8fe90aa69eddb1c7054778764724085c42bc0f8ba03ae8e3ef0ecd83131643bc",
+    "anatomy-paw": "eb149f44c743c73deb5d4983909588d7566b69841f8b4b47deda291c7a434ee8",
+    "anatomy-gripper": "cc325eb07d0d72f37d559c612de039b5feeebf9e629796a1fa091925ab421005",
+    "expressive": "15c15c4e23efe14f50d6dbb8aae5309db1e5672fb8d7d2342a06e308d89e1bd5",
+    "continuous-root": "941df6255fb54bbd6ae47d6e16f8f82d8484832bb7833e3b83349daca859154e",
+    "joined": "351f37caa2f42b303cb34eac89d3fedefc323f2c1b4d3f94ac2ae885cb6dff48",
+    "moving-contact": "0e5e77c6ab2f6761f2664d62a05f0bfd6419316655ed9c972b983f3f95558abd",
+    "attachment": "e20235b38914c97aeb0082c0019066b8482313c8c8e9f562eece472747950859",
+    "finger-contact": "1f40b3075285f405fd53d059801339564f4a57eea3ee0795d0e89e23532f8506",
+    "pole": "d42ea57a67e64e7e9b78c4cdb9e7a5c269577d2287223b684313e571788c40e0",
+    "planar-left": "0bdea62a7b28304e058f7212b9f18ffc82cc330153a5024d6754ec45acd7fb79",
+    "planar-right": "5a3f362bc7c8aff2ccb5e19cb0b3e1e250f66b9b5bc71c2ad223ef9c8abfd333"
+  },
+  "emitted": {
+    "right-point/baked": {
+      "sha256": "e3d41e6b9e6a7deee593b9901887c466c7cd16d284904d8d4282a0ac7de2201b",
+      "frames": 24,
+      "report": {
+        "samples": 24,
+        "max_bone_error": 0.0,
+        "max_contact_error": 0.0,
+        "max_speed": 5.507822665872,
+        "max_acceleration": 28.091905242715,
+        "bounds": [
+          -28.657264648111,
+          -39.172680467176,
+          190.763378124323,
+          206.158863102808
+        ],
+        "hidden_parts": 0,
+        "nodes": 360,
+        "max_reach_error": 0.0,
+        "max_elbow_speed": 4.031352961964,
+        "max_hand_angular_speed": 5.777142029753,
+        "max_jerk": 293.973726495018,
+        "max_hand_angular_acceleration": 32.611375566176,
+        "max_penetration": 0.0,
+        "quality_profile": null,
+        "quality_findings": [],
+        "metric_definitions": {
+          "max_speed": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second"
+          },
+          "max_acceleration": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second^2"
+          },
+          "max_elbow_speed": {
+            "subject": "elbow",
+            "space": "world",
+            "unit": "canonical units/second"
+          },
+          "max_hand_angular_speed": {
+            "subject": "hand frame",
+            "space": "world",
+            "unit": "radians/second"
+          },
+          "max_jerk": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second^3"
+          },
+          "max_hand_angular_acceleration": {
+            "subject": "hand frame",
+            "space": "world",
+            "unit": "radians/second^2"
+          },
+          "max_penetration": {
+            "subject": "arm capsules versus obstacle spheres",
+            "space": "world",
+            "unit": "canonical units"
+          },
+          "bounds": {
+            "subject": "drawn geometry",
+            "space": "drawing parent",
+            "unit": "drawing units"
+          }
+        }
+      }
+    },
+    "right-point/native": {
+      "refused": "capability",
+      "message": "native limb compilation requires a planar arm, orthographic camera and a common untransformed drawing parent without artist contour corrections"
+    },
+    "joined/baked": {
+      "sha256": "f327b22377c73c4e6f2e8b817efa7889e848b31ed5eb9eccf8412801153dc5aa",
+      "frames": 24,
+      "report": {
+        "samples": 24,
+        "max_bone_error": 0.0,
+        "max_contact_error": 0.0,
+        "max_speed": 6.859590958747,
+        "max_acceleration": 35.02769851275,
+        "bounds": [
+          -26.907024690928,
+          -47.860615473771,
+          190.763378124323,
+          204.646400541449
+        ],
+        "hidden_parts": 0,
+        "nodes": 360,
+        "max_reach_error": 0.0,
+        "max_elbow_speed": 4.612535045056,
+        "max_hand_angular_speed": 6.972677715576,
+        "max_jerk": 350.850601677662,
+        "max_hand_angular_acceleration": 50.816149329811,
+        "max_penetration": 0.0,
+        "quality_profile": null,
+        "quality_findings": [],
+        "metric_definitions": {
+          "max_speed": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second"
+          },
+          "max_acceleration": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second^2"
+          },
+          "max_elbow_speed": {
+            "subject": "elbow",
+            "space": "world",
+            "unit": "canonical units/second"
+          },
+          "max_hand_angular_speed": {
+            "subject": "hand frame",
+            "space": "world",
+            "unit": "radians/second"
+          },
+          "max_jerk": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second^3"
+          },
+          "max_hand_angular_acceleration": {
+            "subject": "hand frame",
+            "space": "world",
+            "unit": "radians/second^2"
+          },
+          "max_penetration": {
+            "subject": "arm capsules versus obstacle spheres",
+            "space": "world",
+            "unit": "canonical units"
+          },
+          "bounds": {
+            "subject": "drawn geometry",
+            "space": "drawing parent",
+            "unit": "drawing units"
+          }
+        }
+      }
+    },
+    "joined/native": {
+      "refused": "capability",
+      "message": "native limb compilation requires a planar arm, orthographic camera and a common untransformed drawing parent without artist contour corrections"
+    },
+    "continuous-root/baked": {
+      "sha256": "68733e33043f69a6638b8857d3e6795eabff41538e889be6d6d7a17f869cc4f4",
+      "frames": 24,
+      "report": {
+        "samples": 24,
+        "max_bone_error": 0.0,
+        "max_contact_error": 0.0,
+        "max_speed": 3.864370926815,
+        "max_acceleration": 14.816659930875,
+        "bounds": [
+          -29.758005847291,
+          -38.090856534225,
+          217.563183934791,
+          206.192804740158
+        ],
+        "hidden_parts": 0,
+        "nodes": 360,
+        "max_reach_error": 0.0,
+        "max_elbow_speed": 2.950741411973,
+        "max_hand_angular_speed": 3.968362021905,
+        "max_jerk": 101.399405673971,
+        "max_hand_angular_acceleration": 18.541692947845,
+        "max_penetration": 0.0,
+        "quality_profile": null,
+        "quality_findings": [],
+        "metric_definitions": {
+          "max_speed": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second"
+          },
+          "max_acceleration": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second^2"
+          },
+          "max_elbow_speed": {
+            "subject": "elbow",
+            "space": "world",
+            "unit": "canonical units/second"
+          },
+          "max_hand_angular_speed": {
+            "subject": "hand frame",
+            "space": "world",
+            "unit": "radians/second"
+          },
+          "max_jerk": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second^3"
+          },
+          "max_hand_angular_acceleration": {
+            "subject": "hand frame",
+            "space": "world",
+            "unit": "radians/second^2"
+          },
+          "max_penetration": {
+            "subject": "arm capsules versus obstacle spheres",
+            "space": "world",
+            "unit": "canonical units"
+          },
+          "bounds": {
+            "subject": "drawn geometry",
+            "space": "drawing parent",
+            "unit": "drawing units"
+          }
+        }
+      }
+    },
+    "continuous-root/native": {
+      "refused": "capability",
+      "message": "native limb compilation requires a planar arm, orthographic camera and a common untransformed drawing parent without artist contour corrections"
+    },
+    "moving-contact/baked": {
+      "sha256": "6ce2115654ec2e7232ee66d06f864925e7de1161fac8d6d67fdbfe0b12eb178e",
+      "frames": 24,
+      "report": {
+        "samples": 24,
+        "max_bone_error": 0.0,
+        "max_contact_error": 0.0,
+        "max_speed": 1.689483528694,
+        "max_acceleration": 5.18864094981,
+        "bounds": [
+          -23.128564539325,
+          -30.883805849139,
+          117.306419986872,
+          201.785271704015
+        ],
+        "hidden_parts": 0,
+        "nodes": 360,
+        "max_reach_error": 0.0,
+        "max_elbow_speed": 1.549797031478,
+        "max_hand_angular_speed": 0.996497701276,
+        "max_jerk": 26.992830846953,
+        "max_hand_angular_acceleration": 3.025748712426,
+        "max_penetration": 0.0,
+        "quality_profile": null,
+        "quality_findings": [],
+        "metric_definitions": {
+          "max_speed": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second"
+          },
+          "max_acceleration": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second^2"
+          },
+          "max_elbow_speed": {
+            "subject": "elbow",
+            "space": "world",
+            "unit": "canonical units/second"
+          },
+          "max_hand_angular_speed": {
+            "subject": "hand frame",
+            "space": "world",
+            "unit": "radians/second"
+          },
+          "max_jerk": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second^3"
+          },
+          "max_hand_angular_acceleration": {
+            "subject": "hand frame",
+            "space": "world",
+            "unit": "radians/second^2"
+          },
+          "max_penetration": {
+            "subject": "arm capsules versus obstacle spheres",
+            "space": "world",
+            "unit": "canonical units"
+          },
+          "bounds": {
+            "subject": "drawn geometry",
+            "space": "drawing parent",
+            "unit": "drawing units"
+          }
+        }
+      }
+    },
+    "moving-contact/native": {
+      "refused": "capability",
+      "message": "native limb compilation requires a planar arm, orthographic camera and a common untransformed drawing parent without artist contour corrections"
+    },
+    "finger-contact/baked": {
+      "sha256": "a7d9989f534c9026b5d10bf72acc6be8ac6586b01811a03a1da8ade45c929e38",
+      "frames": 24,
+      "report": {
+        "samples": 24,
+        "max_bone_error": 0.0,
+        "max_contact_error": 0.0,
+        "max_speed": 1.674064282407,
+        "max_acceleration": 5.096407061207,
+        "bounds": [
+          -23.128564539325,
+          -13.240315467204,
+          132.685523395896,
+          201.785271704015
+        ],
+        "hidden_parts": 0,
+        "nodes": 360,
+        "max_reach_error": 0.0,
+        "max_elbow_speed": 1.275955322256,
+        "max_hand_angular_speed": 1.334278011801,
+        "max_jerk": 28.521770238692,
+        "max_hand_angular_acceleration": 3.999573513518,
+        "max_penetration": 0.0,
+        "quality_profile": null,
+        "quality_findings": [],
+        "metric_definitions": {
+          "max_speed": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second"
+          },
+          "max_acceleration": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second^2"
+          },
+          "max_elbow_speed": {
+            "subject": "elbow",
+            "space": "world",
+            "unit": "canonical units/second"
+          },
+          "max_hand_angular_speed": {
+            "subject": "hand frame",
+            "space": "world",
+            "unit": "radians/second"
+          },
+          "max_jerk": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second^3"
+          },
+          "max_hand_angular_acceleration": {
+            "subject": "hand frame",
+            "space": "world",
+            "unit": "radians/second^2"
+          },
+          "max_penetration": {
+            "subject": "arm capsules versus obstacle spheres",
+            "space": "world",
+            "unit": "canonical units"
+          },
+          "bounds": {
+            "subject": "drawn geometry",
+            "space": "drawing parent",
+            "unit": "drawing units"
+          }
+        }
+      }
+    },
+    "finger-contact/native": {
+      "refused": "capability",
+      "message": "native limb compilation requires a planar arm, orthographic camera and a common untransformed drawing parent without artist contour corrections"
+    },
+    "pole/baked": {
+      "sha256": "279155120633ddb2dc313b4649c6be2f32a4cf20639a7255d6ef4ad2230d0137",
+      "frames": 24,
+      "report": {
+        "samples": 24,
+        "max_bone_error": 0.0,
+        "max_contact_error": 0.0,
+        "max_speed": 0.0,
+        "max_acceleration": 0.0,
+        "bounds": [
+          -55.148818605725,
+          -10.796918863969,
+          107.109623821924,
+          201.785271704015
+        ],
+        "hidden_parts": 0,
+        "nodes": 435,
+        "max_reach_error": 0.0,
+        "max_elbow_speed": 7.230150838327,
+        "max_hand_angular_speed": 11.771196372618,
+        "max_jerk": 0.0,
+        "max_hand_angular_acceleration": 67.035965783047,
+        "max_penetration": 0.0,
+        "quality_profile": null,
+        "quality_findings": [],
+        "metric_definitions": {
+          "max_speed": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second"
+          },
+          "max_acceleration": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second^2"
+          },
+          "max_elbow_speed": {
+            "subject": "elbow",
+            "space": "world",
+            "unit": "canonical units/second"
+          },
+          "max_hand_angular_speed": {
+            "subject": "hand frame",
+            "space": "world",
+            "unit": "radians/second"
+          },
+          "max_jerk": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second^3"
+          },
+          "max_hand_angular_acceleration": {
+            "subject": "hand frame",
+            "space": "world",
+            "unit": "radians/second^2"
+          },
+          "max_penetration": {
+            "subject": "arm capsules versus obstacle spheres",
+            "space": "world",
+            "unit": "canonical units"
+          },
+          "bounds": {
+            "subject": "drawn geometry",
+            "space": "drawing parent",
+            "unit": "drawing units"
+          }
+        }
+      }
+    },
+    "pole/native": {
+      "refused": "capability",
+      "message": "native limb compilation requires a planar arm, orthographic camera and a common untransformed drawing parent without artist contour corrections"
+    },
+    "planar-left/baked": {
+      "sha256": "ae05418fb593fba9e1e876846e30eb101eb067bec91bd1a43e163a8a13936f6f",
+      "frames": 24,
+      "report": {
+        "samples": 24,
+        "max_bone_error": 0.0,
+        "max_contact_error": 0.0,
+        "max_speed": 2.972662145848,
+        "max_acceleration": 11.479777760249,
+        "bounds": [
+          -166.38214928108,
+          -37.903764523041,
+          28.151193168532,
+          204.82315459968
+        ],
+        "hidden_parts": 0,
+        "nodes": 360,
+        "max_reach_error": 0.0,
+        "max_elbow_speed": 2.522779395423,
+        "max_hand_angular_speed": 2.527604195681,
+        "max_jerk": 79.607462837118,
+        "max_hand_angular_acceleration": 10.897114227632,
+        "max_penetration": 0.0,
+        "quality_profile": null,
+        "quality_findings": [],
+        "metric_definitions": {
+          "max_speed": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second"
+          },
+          "max_acceleration": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second^2"
+          },
+          "max_elbow_speed": {
+            "subject": "elbow",
+            "space": "world",
+            "unit": "canonical units/second"
+          },
+          "max_hand_angular_speed": {
+            "subject": "hand frame",
+            "space": "world",
+            "unit": "radians/second"
+          },
+          "max_jerk": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second^3"
+          },
+          "max_hand_angular_acceleration": {
+            "subject": "hand frame",
+            "space": "world",
+            "unit": "radians/second^2"
+          },
+          "max_penetration": {
+            "subject": "arm capsules versus obstacle spheres",
+            "space": "world",
+            "unit": "canonical units"
+          },
+          "bounds": {
+            "subject": "drawn geometry",
+            "space": "drawing parent",
+            "unit": "drawing units"
+          }
+        }
+      }
+    },
+    "planar-left/native": {
+      "sha256": "8804318999861a8d58a4979cc83d03916c40cbc332f1b04658b2a9ae2ffc3946",
+      "frames": 24,
+      "report": {
+        "samples": 24,
+        "max_bone_error": 0.0,
+        "max_contact_error": 0.0,
+        "max_speed": 2.972662145848,
+        "max_acceleration": 11.479777760249,
+        "bounds": [
+          -166.38214928108,
+          -37.903764523041,
+          28.151193168532,
+          204.82315459968
+        ],
+        "hidden_parts": 0,
+        "nodes": 486,
+        "max_reach_error": 0.0,
+        "max_elbow_speed": 2.522779395423,
+        "max_hand_angular_speed": 2.527604195681,
+        "max_jerk": 79.607462837118,
+        "max_hand_angular_acceleration": 10.897114227632,
+        "max_penetration": 0.0,
+        "quality_profile": null,
+        "quality_findings": [],
+        "metric_definitions": {
+          "max_speed": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second"
+          },
+          "max_acceleration": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second^2"
+          },
+          "max_elbow_speed": {
+            "subject": "elbow",
+            "space": "world",
+            "unit": "canonical units/second"
+          },
+          "max_hand_angular_speed": {
+            "subject": "hand frame",
+            "space": "world",
+            "unit": "radians/second"
+          },
+          "max_jerk": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second^3"
+          },
+          "max_hand_angular_acceleration": {
+            "subject": "hand frame",
+            "space": "world",
+            "unit": "radians/second^2"
+          },
+          "max_penetration": {
+            "subject": "arm capsules versus obstacle spheres",
+            "space": "world",
+            "unit": "canonical units"
+          },
+          "bounds": {
+            "subject": "drawn geometry",
+            "space": "drawing parent",
+            "unit": "drawing units"
+          }
+        }
+      }
+    },
+    "planar-right/baked": {
+      "sha256": "b2a216fc4da2036cc92b8482bc37f5cff6b10234df615c14c445a4d80737328e",
+      "frames": 24,
+      "report": {
+        "samples": 24,
+        "max_bone_error": 0.0,
+        "max_contact_error": 0.0,
+        "max_speed": 2.972662145848,
+        "max_acceleration": 11.479777760249,
+        "bounds": [
+          -28.151193168532,
+          -37.903764523041,
+          166.38214928108,
+          204.82315459968
+        ],
+        "hidden_parts": 0,
+        "nodes": 360,
+        "max_reach_error": 0.0,
+        "max_elbow_speed": 2.522779395423,
+        "max_hand_angular_speed": 2.527604195681,
+        "max_jerk": 79.607462837118,
+        "max_hand_angular_acceleration": 10.897114227632,
+        "max_penetration": 0.0,
+        "quality_profile": null,
+        "quality_findings": [],
+        "metric_definitions": {
+          "max_speed": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second"
+          },
+          "max_acceleration": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second^2"
+          },
+          "max_elbow_speed": {
+            "subject": "elbow",
+            "space": "world",
+            "unit": "canonical units/second"
+          },
+          "max_hand_angular_speed": {
+            "subject": "hand frame",
+            "space": "world",
+            "unit": "radians/second"
+          },
+          "max_jerk": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second^3"
+          },
+          "max_hand_angular_acceleration": {
+            "subject": "hand frame",
+            "space": "world",
+            "unit": "radians/second^2"
+          },
+          "max_penetration": {
+            "subject": "arm capsules versus obstacle spheres",
+            "space": "world",
+            "unit": "canonical units"
+          },
+          "bounds": {
+            "subject": "drawn geometry",
+            "space": "drawing parent",
+            "unit": "drawing units"
+          }
+        }
+      }
+    },
+    "planar-right/native": {
+      "sha256": "5b4a6f5c36f5768d2a9d0b37c0824711aecc53cf82f9a7ea235f927c1c83649e",
+      "frames": 24,
+      "report": {
+        "samples": 24,
+        "max_bone_error": 0.0,
+        "max_contact_error": 0.0,
+        "max_speed": 2.972662145848,
+        "max_acceleration": 11.479777760249,
+        "bounds": [
+          -28.151193168532,
+          -37.903764523041,
+          166.38214928108,
+          204.82315459968
+        ],
+        "hidden_parts": 0,
+        "nodes": 486,
+        "max_reach_error": 0.0,
+        "max_elbow_speed": 2.522779395423,
+        "max_hand_angular_speed": 2.527604195681,
+        "max_jerk": 79.607462837118,
+        "max_hand_angular_acceleration": 10.897114227632,
+        "max_penetration": 0.0,
+        "quality_profile": null,
+        "quality_findings": [],
+        "metric_definitions": {
+          "max_speed": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second"
+          },
+          "max_acceleration": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second^2"
+          },
+          "max_elbow_speed": {
+            "subject": "elbow",
+            "space": "world",
+            "unit": "canonical units/second"
+          },
+          "max_hand_angular_speed": {
+            "subject": "hand frame",
+            "space": "world",
+            "unit": "radians/second"
+          },
+          "max_jerk": {
+            "subject": "wrist",
+            "space": "world",
+            "unit": "canonical units/second^3"
+          },
+          "max_hand_angular_acceleration": {
+            "subject": "hand frame",
+            "space": "world",
+            "unit": "radians/second^2"
+          },
+          "max_penetration": {
+            "subject": "arm capsules versus obstacle spheres",
+            "space": "world",
+            "unit": "canonical units"
+          },
+          "bounds": {
+            "subject": "drawn geometry",
+            "space": "drawing parent",
+            "unit": "drawing units"
+          }
+        }
+      }
+    }
+  },
+  "records": {
+    "TransformKey": {
+      "signature": "(time: 'float', frame: 'Frame', velocity: 'Vec3 | None' = None, angular_velocity: 'Vec3 | None' = None) -> None",
+      "pickle4": "gASVIgEAAAAAAACMFXNyc3R1ZGlvLmxpbWJzLm1vdGlvbpSMDFRyYW5zZm9ybUtleZSTlCmBlH2UKIwEdGltZZRLAIwFZnJhbWWUjBVzcnN0dWRpby5saW1icy5tYXRoM2SUjAVGcmFtZZSTlCmBlH2UKIwGb3JpZ2lulGgHjARWZWMzlJOUKYGUfZQojAF4lEcAAAAAAAAAAIwBeZRHAAAAAAAAAACMAXqURwAAAAAAAAAAdWKMCHJvdGF0aW9ulGgHjApRdWF0ZXJuaW9ulJOUKYGUfZQojAF3lEc/8AAAAAAAAGgRRwAAAAAAAAAAaBJHAAAAAAAAAABoE0cAAAAAAAAAAHVidWKMCHZlbG9jaXR5lE6MEGFuZ3VsYXJfdmVsb2NpdHmUTnViLg=="
+    },
+    "TransformTrack": {
+      "signature": "(keys: 'tuple[TransformKey, ...]', interpolation: 'str' = 'smooth') -> None",
+      "pickle4": "gASVYQEAAAAAAACMFXNyc3R1ZGlvLmxpbWJzLm1vdGlvbpSMDlRyYW5zZm9ybVRyYWNrlJOUKYGUfZQojARrZXlzlGgAjAxUcmFuc2Zvcm1LZXmUk5QpgZR9lCiMBHRpbWWUSwCMBWZyYW1llIwVc3JzdHVkaW8ubGltYnMubWF0aDNklIwFRnJhbWWUk5QpgZR9lCiMBm9yaWdpbpRoDIwEVmVjM5STlCmBlH2UKIwBeJRHAAAAAAAAAACMAXmURwAAAAAAAAAAjAF6lEcAAAAAAAAAAHVijAhyb3RhdGlvbpRoDIwKUXVhdGVybmlvbpSTlCmBlH2UKIwBd5RHP/AAAAAAAABoFkcAAAAAAAAAAGgXRwAAAAAAAAAAaBhHAAAAAAAAAAB1YnVijAh2ZWxvY2l0eZROjBBhbmd1bGFyX3ZlbG9jaXR5lE51YoWUjA1pbnRlcnBvbGF0aW9ulIwGc21vb3RolHViLg=="
+    },
+    "Target": {
+      "signature": "(position: 'Vec3', space: 'str' = 'relative') -> None",
+      "pickle4": "gASVhQAAAAAAAACMFXNyc3R1ZGlvLmxpbWJzLm1vdGlvbpSMBlRhcmdldJSTlCmBlH2UKIwIcG9zaXRpb26UjBVzcnN0dWRpby5saW1icy5tYXRoM2SUjARWZWMzlJOUKYGUfZQojAF4lEsBjAF5lEsCjAF6lEsDdWKMBXNwYWNllIwIcmVsYXRpdmWUdWIu"
+    },
+    "MotionStyle": {
+      "signature": "(amplitude: 'float' = 1.0, speed: 'float' = 1.0, tension: 'float' = 0.0, overshoot: 'float' = 0.0, asymmetry: 'float' = 0.0, settling: 'float' = 0.0, arc: 'float' = 0.04) -> None",
+      "pickle4": "gASVtwAAAAAAAACMFXNyc3R1ZGlvLmxpbWJzLm1vdGlvbpSMC01vdGlvblN0eWxllJOUKYGUfZQojAlhbXBsaXR1ZGWURz/wAAAAAAAAjAVzcGVlZJRHP/AAAAAAAACMB3RlbnNpb26URwAAAAAAAAAAjAlvdmVyc2hvb3SURwAAAAAAAAAAjAlhc3ltbWV0cnmURwAAAAAAAAAAjAhzZXR0bGluZ5RHAAAAAAAAAACMA2FyY5RHP6R64UeuFHt1Yi4="
+    },
+    "WordRef": {
+      "signature": "(take: 'str', index: 'int') -> None",
+      "pickle4": "gASVQAAAAAAAAACMFXNyc3R1ZGlvLmxpbWJzLm1vdGlvbpSMB1dvcmRSZWaUk5QpgZR9lCiMBHRha2WUaAWMBWluZGV4lEsAdWIu"
+    },
+    "Action": {
+      "signature": "(name: 'str', start: 'float' = 0.0, duration: 'float' = 1.5, target: 'Target | None' = None, style: 'MotionStyle' = MotionStyle(amplitude=1.0, speed=1.0, tension=0.0, overshoot=0.0, asymmetry=0.0, settling=0.0, arc=0.04), preparation: 'float' = 0.15, stroke: 'float' = 0.25, hold: 'float' = 0.35, control: 'HandControl | None' = None, pole: 'Vec3 | None' = None) -> None",
+      "pickle4": "gASVVwEAAAAAAACMFXNyc3R1ZGlvLmxpbWJzLm1vdGlvbpSMBkFjdGlvbpSTlCmBlH2UKIwEbmFtZZSMBWdyYXNwlIwFc3RhcnSURwAAAAAAAAAAjAhkdXJhdGlvbpRLA4wGdGFyZ2V0lE6MBXN0eWxllGgAjAtNb3Rpb25TdHlsZZSTlCmBlH2UKIwJYW1wbGl0dWRllEc/8AAAAAAAAIwFc3BlZWSURz/wAAAAAAAAjAd0ZW5zaW9ulEcAAAAAAAAAAIwJb3ZlcnNob290lEcAAAAAAAAAAIwJYXN5bW1ldHJ5lEcAAAAAAAAAAIwIc2V0dGxpbmeURwAAAAAAAAAAjANhcmOURz+keuFHrhR7dWKMC3ByZXBhcmF0aW9ulEc/wzMzMzMzM4wGc3Ryb2tllEc/0AAAAAAAAIwEaG9sZJRHP9ZmZmZmZmaMB2NvbnRyb2yUTowEcG9sZZROdWIu"
+    },
+    "Contact": {
+      "signature": "(name: 'str', start: 'float', end: 'float', target: 'TransformTrack', digit: 'str | None' = None, anchor: 'Frame' = Frame(origin=Vec3(x=0.0, y=0.0, z=0.0), rotation=Quaternion(w=1.0, x=0.0, y=0.0, z=0.0))) -> None",
+      "pickle4": "gASVtAIAAAAAAACMFXNyc3R1ZGlvLmxpbWJzLm1vdGlvbpSMB0NvbnRhY3SUk5QpgZR9lCiMBG5hbWWUjANjdXCUjAVzdGFydJRLAYwDZW5klEsCjAZ0YXJnZXSUaACMDlRyYW5zZm9ybVRyYWNrlJOUKYGUfZQojARrZXlzlGgAjAxUcmFuc2Zvcm1LZXmUk5QpgZR9lCiMBHRpbWWUSwCMBWZyYW1llIwVc3JzdHVkaW8ubGltYnMubWF0aDNklIwFRnJhbWWUk5QpgZR9lCiMBm9yaWdpbpRoFYwEVmVjM5STlCmBlH2UKIwBeJRHP+vpDgA7IgGMAXmURz/k6eoHtO7WjAF6lEe/xTU9BWii03VijAhyb3RhdGlvbpRoFYwKUXVhdGVybmlvbpSTlCmBlH2UKIwBd5RHP++zgLL1AphoH0e/v6WIgut2/mggRz99KrbAogbgaCFHP603lrerXwd1YnVijAh2ZWxvY2l0eZROjBBhbmd1bGFyX3ZlbG9jaXR5lE51YmgQKYGUfZQoaBNLA2gUaBcpgZR9lChoGmgcKYGUfZQoaB9HP/Ba7WaD92doIEc/5OnqB7Tu1mghR7/FNT0FaKLTdWJoImgkKYGUfZQoaCdHP++mces55YloH0e/wCso/irbemggRz+s/d7CuCyIaCFHP6oEbObuNNd1YnViaChOaClOdWKGlIwNaW50ZXJwb2xhdGlvbpSMBnNtb290aJSMBl90aW1lc5RLAEsDhpR1YowFZGlnaXSUTowGYW5jaG9ylGgXKYGUfZQoaBpoHCmBlH2UKGgfRwAAAAAAAAAAaCBHAAAAAAAAAABoIUcAAAAAAAAAAHViaCJoJCmBlH2UKGgnRz/wAAAAAAAAaB9HAAAAAAAAAABoIEcAAAAAAAAAAGghRwAAAAAAAAAAdWJ1YnViLg=="
+    },
+    "Attachment": {
+      "signature": "(name: 'str', attach: 'float', release: 'float', initial: 'Frame', offset: 'Frame' = Frame(origin=Vec3(x=0.0, y=0.0, z=0.0), rotation=Quaternion(w=1.0, x=0.0, y=0.0, z=0.0)), tolerance: 'float' = 1e-06) -> None",
+      "pickle4": "gASVnAEAAAAAAACMFXNyc3R1ZGlvLmxpbWJzLm1vdGlvbpSMCkF0dGFjaG1lbnSUk5QpgZR9lCiMBG5hbWWUjANjdXCUjAZhdHRhY2iUSwGMB3JlbGVhc2WUSwKMB2luaXRpYWyUjBVzcnN0dWRpby5saW1icy5tYXRoM2SUjAVGcmFtZZSTlCmBlH2UKIwGb3JpZ2lulGgKjARWZWMzlJOUKYGUfZQojAF4lEc/6s7c0evRm4wBeZRHP+4oZTGW+ueMAXqUR7/OlQNzWja4dWKMCHJvdGF0aW9ulGgKjApRdWF0ZXJuaW9ulJOUKYGUfZQojAF3lEc/77OAsvUCmGgUR7+/pYiC63b+aBVHP30qtsCiBuBoFkc/rTeWt6tfCHVidWKMBm9mZnNldJRoDCmBlH2UKGgPaBEpgZR9lChoFEsAaBVHP9MzMzMzMzNoFksAdWJoF2gZKYGUfZQoaBxHP/AAAAAAAABoFEcAAAAAAAAAAGgVRwAAAAAAAAAAaBZHAAAAAAAAAAB1YnVijAl0b2xlcmFuY2WURz6wxvegte2NdWIu"
+    },
+    "Sample": {
+      "signature": "(time: 'float', arm: 'ArmPose', hand: 'HandPose', control: 'HandControl', action: 'str', phase: 'str', contacts: 'tuple[Diagnostic, ...]' = ()) -> None",
+      "pickle4": "gASVTAgAAAAAAACMFXNyc3R1ZGlvLmxpbWJzLm1vdGlvbpSMBlNhbXBsZZSTlCmBlH2UKIwEdGltZZRLAYwDYXJtlIwUc3JzdHVkaW8ubGltYnMubW9kZWyUjAdBcm1Qb3NllJOUKYGUfZQojAhzaG91bGRlcpSMFXNyc3R1ZGlvLmxpbWJzLm1hdGgzZJSMBFZlYzOUk5QpgZR9lCiMAXiURwAAAAAAAAAAjAF5lEcAAAAAAAAAAIwBepRHAAAAAAAAAAB1YowFZWxib3eUaA8pgZR9lChoEkc/7zHMeUZYHGgTR7/Lqbp2Zw88aBRHP6wNXHTxpyB1YowFd3Jpc3SUaA8pgZR9lChoEkc/7Orzc+eyH2gTRz/k6eoHtO7XaBRHv8U1PQVootN1YowFZnJhbWWUaA2MBUZyYW1llJOUKYGUfZQojAZvcmlnaW6UaBmMCHJvdGF0aW9ulGgNjApRdWF0ZXJuaW9ulJOUKYGUfZQojAF3lEc/77qXv/tIx2gSR7+/rJxwHycIaBNHP3QQKxZMJc1oFEc/pBkGTNSOrnVidWKMC2VsYm93X2FuZ2xllEc//f8Vnoj1Y4wIcmVzaWR1YWyURwAAAAAAAAAAjAtkaWFnbm9zdGljc5QpdWKMBGhhbmSUaAeMCEhhbmRQb3NllJOUKYGUfZQoaBtoHSmBlH2UKGggaBloIWgjKYGUfZQoaCZHP++ycZpRxgpoEke/v8xUyoRHB2gTRz+R77tFfuz6aBRHP6yNJdn+BLN1YnVijARwYWxtlChoDymBlH2UKGgSRz/pZ+uYAB4taBNHP+SJ2fCOvDRoFEe/xIVuqExLu3ViaA8pgZR9lChoEkc/8Db9p+ejCGgTRz/lSfoe2yF6aBRHv8XlC2KE+et1YmgPKYGUfZQoaBJHP/CG2yqBMnBoE0c/8J+c3k8XgGgUR7/HKAsO7x9bdWJoDymBlH2UKGgSRz/mP3bEEnZHaBNHP/AL0uIUU3FoFEe/xQsZ8HCJh3VidJSMBmRpZ2l0c5QoaAeMCURpZ2l0UG9zZZSTlCmBlH2UKIwEbmFtZZSMBXRodW1ilIwGcG9pbnRzlGgPKYGUfZQoaBJHP/C70gWDeFhoE0c/6wLkmwSzl2gUR7/BdD9faUhodWJoDymBlH2UKGgSRz/tDBbLzeBZaBNHP+4J+DXvh4BoFEe/u1z6VRBnfHViaA8pgZR9lChoEkc/6XcwPQRwYmgTRz/tOl3tvAyAaBRHv6d0nEH2Cvx1YoeUdWJoPymBlH2UKGhCjAVpbmRleJRoRChoDymBlH2UKGgSRz/vIIPf4GojaBNHP/Bnk81GvWpoFEe/ynBeqZJlPnViaA8pgZR9lChoEkc/74tV6BNLlmgTRz/yzUwYqtTMaBRHv7uPtjybqOx1YmgPKYGUfZQoaBJHP++XyBkKuxJoE0c/8xljZewTPGgURz+GSU2ieORAdWJoDymBlH2UKGgSRz/vf90WKuR6aBNHP/KUDBp1QB9oFEc/tXqCe+Er5HVidJR1Ymg/KYGUfZQoaEKMBm1pZGRsZZRoRChoDymBlH2UKGgSRz/sZdG58EbraBNHP/AYMZ/QPcxoFEe/zxbVGfmy6nViaA8pgZR9lChoEkc/7CF1yeCkxmgTRz/ywpRL41iLaBRHv8D3IPkphAJ1YmgPKYGUfZQoaBJHP+xAMruJKP9oE0c/8xT3q1cHw2gUR79xDEvcEBigdWJoDymBlH2UKGgSRz/scz/WmcjKaBNHP/J+wtd1lm1oFEc/s+oh6hQ7VnVidJR1Ymg/KYGUfZQoaEKMBHJpbmeUaEQoaA8pgZR9lChoEkc/6YzvI270vGgTRz/wBQsRAJhNaBRHv8wXyLPF3Jt1YmgPKYGUfZQoaBJHP+izGlfl9t5oE0c/8l76ChwvSGgUR7++dlfTerkGdWJoDymBlH2UKGgSRz/o3kPrCJ03aBNHP/KsLtHdSmxoFEe/Q6nSghi5AHViaA8pgZR9lChoEkc/6Uv8lUxl62gTRz/yK7GSphdKaBRHP7JfIN5UwgJ1YnSUdWJoPymBlH2UKGhCjAZsaXR0bGWUaEQoaA8pgZR9lChoEkc/5zEG31F11mgTRz/wCeLvfGcdaBRHv8cOuZX2oUR1YmgPKYGUfZQoaBJHP+YLvOTyCwBoE0c/8cnQ0gJ1O2gUR7+5s1f9k6x5dWJoDymBlH2UKGgSRz/mPENK72+/aBNHP/IMNMCjuMtoFEe/XwQ8s9Y/AHViaA8pgZR9lChoEkc/5tWhSvoAp2gTRz/xpSbN8JD8aBRHP68SmG7cBqR1YnSUdWJ0lIwGbm9ybWFslGgPKYGUfZQoaBJHP5VY/yJMq8toE0c/z79HJFARRmgURz/u/jE6c4kpdWJ1YowHY29udHJvbJRoB4wLSGFuZENvbnRyb2yUk5QpgZR9lCiMBGN1cmyURz/kgmU2odHMjAZzcHJlYWSURwAAAAAAAAAAjApvcHBvc2l0aW9ulEc/6rvfLwtACowDY3VwlEc/33OdKEl4hYwKd3Jpc3RfZmxleJRHv0i1+asgPTeMD3dyaXN0X2RldmlhdGlvbpRHP6Jl6yESwmGMDWZvcmVhcm1fdHdpc3SURz+VejxGj257jAVjdXJsc5QpjAZqb2ludHOUKXVijAZhY3Rpb26UjAVncmFzcJSMBXBoYXNllIwGc3Ryb2tllIwIY29udGFjdHOUjBVzcnN0dWRpby5saW1icy5lcnJvcnOUjApEaWFnbm9zdGljlJOUKYGUfZQojARjb2RllIwHY29udGFjdJSMB21lc3NhZ2WUaIhoKEc8oAAAAAAAAHVihZR1Yi4="
+    },
+    "Motion": {
+      "signature": "(arm: 'ArmProfile', hand: 'HandProfile', actions: 'tuple[Action, ...]' = (), contacts: 'tuple[Contact, ...]' = (), attachments: 'tuple[Attachment, ...]' = (), root: 'TransformTrack' = TransformTrack(keys=(TransformKey(time=0, frame=Frame(origin=Vec3(x=0.0, y=0.0, z=0.0), rotation=Quaternion(w=1.0, x=0.0, y=0.0, z=0.0)), velocity=None, angular_velocity=None),), interpolation='smooth'), reach_policy: 'str' = 'strict', joins: 'tuple[ActionJoin, ...]' = ()) -> None",
+      "pickle4": "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"
+    }
+  }
+}

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from . import checks
+from . import _cutout_contracts, checks
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -93,7 +93,13 @@ def _glyph(cv: Canvas, g, kind: str, x, y) -> None:
                 "#F2D86B", ink, 3)  # fmt: skip
 
 
-@register("prop", "table-phone", style="cutout", summary="A phone lying on a table that rings, lights and talks")
+@register(
+    "prop",
+    "table-phone",
+    style="cutout",
+    summary="A phone lying on a table that rings, lights and talks",
+    contract=_cutout_contracts.contract('table-phone'),
+)
 def table_phone(
     cv: Canvas,
     parent,
@@ -147,7 +153,13 @@ def table_phone(
     return g
 
 
-@register("prop", "location-chip", style="cutout", summary="An invented map chip: a blue dot at each place it caught")
+@register(
+    "prop",
+    "location-chip",
+    style="cutout",
+    summary="An invented map chip: a blue dot at each place it caught",
+    contract=_cutout_contracts.contract('location-chip'),
+)
 def location_chip(
     cv: Canvas,
     parent,
@@ -183,7 +195,13 @@ def location_chip(
     return g
 
 
-@register("prop", "notice-phone", style="cutout", summary="A phone held up, a map on it and a notice chip landing")
+@register(
+    "prop",
+    "notice-phone",
+    style="cutout",
+    summary="A phone held up, a map on it and a notice chip landing",
+    contract=_cutout_contracts.contract('notice-phone'),
+)
 def notice_phone(
     cv: Canvas,
     parent,
@@ -220,7 +238,13 @@ def notice_phone(
     return g
 
 
-@register("prop", "dinner-plate", style="cutout", summary="A dinner plate seen across a table, half eaten")
+@register(
+    "prop",
+    "dinner-plate",
+    style="cutout",
+    summary="A dinner plate seen across a table, half eaten",
+    contract=_cutout_contracts.contract('dinner-plate'),
+)
 def dinner_plate(cv: Canvas, parent, x=300, y=1220, *, scale: float = 1.0, id: str = "dinner-plate"):
     """Centred on (``x``, ``y``), 230 wide at scale 1."""
     _scale(scale)
@@ -233,7 +257,13 @@ def dinner_plate(cv: Canvas, parent, x=300, y=1220, *, scale: float = 1.0, id: s
     return g
 
 
-@register("prop", "table-fork", style="cutout", summary="A fork, held at its grip")
+@register(
+    "prop",
+    "table-fork",
+    style="cutout",
+    summary="A fork, held at its grip",
+    contract=_cutout_contracts.contract('table-fork'),
+)
 def table_fork(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, rotation: float = 0, id: str = "table-fork"):
     """The grip is on (``x``, ``y``) and the tines point up, ``rotation`` degrees round; 170 long at scale 1."""
     _scale(scale)
@@ -245,7 +275,13 @@ def table_fork(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, rotation
     return g
 
 
-@register("prop", "held-phone", style="cutout", summary="A phone held up by its edge, seen from the back")
+@register(
+    "prop",
+    "held-phone",
+    style="cutout",
+    summary="A phone held up by its edge, seen from the back",
+    contract=_cutout_contracts.contract('held-phone'),
+)
 def held_phone(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str = "held-phone"):
     """Centred on (``x``, ``y``), 90 by 176 at scale 1, its back to the camera."""
     _scale(scale)

@@ -83,7 +83,9 @@ def _reached(builder: Callable[..., Any]) -> tuple[tuple[str, int], ...]:
     counted: dict[str, int] = {}
     pending = [builder]
     while pending:
-        function = pending.pop()
+        # Registration preserves source through __wrapped__, while the wrapper's
+        # globals belong to instrumentation. Resolve names in the source owner.
+        function = inspect.unwrap(pending.pop())
         key = f"{function.__module__}.{function.__qualname__}"
         if key in counted:
             continue

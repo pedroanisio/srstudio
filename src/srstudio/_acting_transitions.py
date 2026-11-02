@@ -35,6 +35,23 @@ def supported(rig: ActingRig) -> set[str]:
     return result
 
 
+def describe_continuity(*, policy: bool) -> dict:
+    return {
+        'position': (
+            'linear baked keys; zero-duration arrivals change within one scene quantum (1 microsecond)'
+            if policy
+            else 'linear baked keys on the score sample grid'
+        ),
+        'velocity': False,
+        'acceleration': False,
+        'scope': 'compiled numeric channels, before rig drawing and projection',
+        'source_curve_derivatives_preserved': False,
+        'discrete': dict(position=False, velocity=False, acceleration=False),
+        'discrete_boundary': 'held drawings switch at arrival; no facial morph',
+        'cuts': 'same performance source time',
+    }
+
+
 def describe_policy(rig: ActingRig) -> dict:
     channels = supported(rig)
     return {
@@ -44,11 +61,7 @@ def describe_policy(rig: ActingRig) -> dict:
         'numeric_channels': [name for name in CHANNELS if name in channels],
         'discrete_channels': sorted(channels - set(CHANNELS)),
         'facial_morph': False,
-        'continuity': {
-            'position': 'linear baked keys; zero-duration arrivals change within one scene quantum (1 microsecond)',
-            'velocity': False,
-            'acceleration': False,
-        },
+        'continuity': describe_continuity(policy=True),
         'fields': {
             'version': {'required_in_json': True, 'value': VERSION},
             'curve': {'default': 'sine-in-out', 'requires': 'an assigned numeric channel'},

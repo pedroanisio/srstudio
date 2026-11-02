@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.0.0",
+  "generated_by": {
+    "model": "GPT-6",
+    "tool": "OpenAI Codex"
+  },
+  "baseline_source_commit": "b3e72f0a",
+  "scene_sha256": {
+    "toon-lounge": "d6ea89be960758c5a7dbab2b2a35832b89301873bb21e753a0175d1b0f1c3695",
+    "toon-counter": "ae8e38e8fce8ef5e8b9f4e93207d0411236f59da8fdb389a8615e26ac66598bb",
+    "toon-car-inside": "f04c6c85896660ab24d76b47dadd7ad5e972ece30d0d826b01591477cf5c6e3a",
+    "toon-restaurant": "b1d147e22fbcdb303b36f6644d07f8e1828e82052f27df95f849dee9811cdb00",
+    "toon-parlour-front": "f01ccf008c1df07fe02b321b1f6391a4c3339f18a65a33b876cbea427eeede1e",
+    "toon-parlour-back": "8649196ec35cc033aa83231fd61359ba843974c779331170a1ccc3ce8f0ef3a0",
+    "toon-side-car": "92fc2f0f26e07b8583cfb08820ecb457632a19daf333e3d90d3dd2f5199a12a1",
+    "toon-loose-wheel": "16b1fb56eddf396a6c6351e6610c9f6975c378b5ca29a61f33b7dcaca71656ce",
+    "toon-school-bus": "c9b99b3ebba19e2066c0b9eb21c63dd86caa02c8ffd350475e0b79711e51bc84",
+    "toon-banana": "712615942b8132b6b063bcacdd4c504424d6be43ae31ae6c61bcf53ee4ea3217",
+    "toon-car-seat": "d14706d053cfe240e77cb9f69e40a68431dff3025b3a64e5b78f01465e0d191b",
+    "toon-dash-vents": "8f04250bdc1c17a443beec3a2f6d51b103d12b62930549ce78eee2a835a58319",
+    "toon-steering-wheel": "902d34c687ac4853aa37d6a01eab5cf22592867fc343fb9ae61eb38c2df1b212",
+    "toon-tally-pad": "9f748bc3b704f4049e111900caf5e2758d032fb51042fa093427ad747966a628",
+    "toon-table": "78e795e4e5803b9ccdea194ec88ab4905faffbb6e0ad4cd480e5bd31d4d375dc",
+    "toon-dishes": "a113411e78934be70ef181deb6502a0f08ea1b58e865fd53dc263a1f8787c38e",
+    "toon-mint": "b168114b88da212fe588fedab8ef12a567ba0e7bec2334b808bc456710586225",
+    "toon-card-reader": "eddee96784b4b5de493b686f295192bdf6c82b79c9ae43539e205954c545c57c",
+    "toon-cone": "19d6ad251a5389b19e8bf0196a965014ec919c331c544128d2f5be3ac09de433",
+    "toon-toothpaste-cone": "3e821dab717e68ff2ab1dfc2cf13e95e1bfb6b4ece80518c96218a2a51fa8f00",
+    "toon-parlour-case": "6537e2f170b37b0498272646b48156155106daab041dd5fddf5efeb4476efa09"
+  },
+  "cues": {
+    "toon-lounge": {
+      "lamp": [
+        {
+          "at": 0.0,
+          "state": "on",
+          "colour": null
+        }
+      ],
+      "tv": [
+        {
+          "at": 0.0,
+          "state": "on",
+          "colour": "blue"
+        }
+      ]
+    },
+    "toon-counter": {
+      "tubes": [
+        {
+          "at": 0.0,
+          "state": "on",
+          "colour": null
+        }
+      ],
+      "board": [
+        {
+          "at": 0.0,
+          "state": "on",
+          "colour": "red"
+        }
+      ]
+    }
+  }
+}

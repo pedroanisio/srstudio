@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 
-from . import checks
+from . import _cutout_contracts, checks
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -41,7 +41,13 @@ def _line(value: str, most: int, what: str) -> None:
         raise CutoutLobbyError(f"{what} is 1 to {most} characters, got {value!r}")
 
 
-@register("prop", "wall-plaque", style="cutout", summary="A brass plaque on a wood back, scrawl until it is read")
+@register(
+    "prop",
+    "wall-plaque",
+    style="cutout",
+    summary="A brass plaque on a wood back, scrawl until it is read",
+    contract=_cutout_contracts.contract('wall-plaque'),
+)
 def wall_plaque(
     cv: Canvas,
     parent,
@@ -91,7 +97,13 @@ def wall_plaque(
     return g
 
 
-@register("prop", "sheet-cake", style="cutout", summary="A white sheet cake on a board, piped with two lines of icing")
+@register(
+    "prop",
+    "sheet-cake",
+    style="cutout",
+    summary="A white sheet cake on a board, piped with two lines of icing",
+    contract=_cutout_contracts.contract('sheet-cake'),
+)
 def sheet_cake(
     cv: Canvas,
     parent,
@@ -123,7 +135,14 @@ def sheet_cake(
     return g
 
 
-@register("prop", "id-lanyard", style="cutout", summary="A staff lanyard with a clip and a card with a small photo")
+@register(
+    "prop",
+    "id-lanyard",
+    style="cutout",
+    summary="A staff lanyard with a clip and a card with a small photo",
+    contract=_cutout_contracts.contract('id-lanyard'),
+    slots=('photo',),
+)
 def id_lanyard(
     cv: Canvas,
     parent,
@@ -135,8 +154,8 @@ def id_lanyard(
     scale: float = 1.0,
     id: str = "id-lanyard",
 ):
-    """The top of the loop hangs from (``x``, ``y``), 190 long to the bottom of a 120 × 150 card at scale 1. ``photo``
-    draws in the card's photo window, around (0, 0), about 80 across."""
+    """The top of the loop hangs from (``x``, ``y``), 270 long to the bottom of a 136 × 170 card at scale 1. ``photo``
+    receives a child group at local y=178; draw around (0, 0) within its 88 × 84 window. It is not clipped."""
     _line(label, CARD_LABEL, "a lanyard's card")
     _scale(scale)
     cv.require_font("a lanyard's card is printed in it", CutoutLobbyError)
@@ -157,7 +176,13 @@ def id_lanyard(
     return g
 
 
-@register("prop", "paper-streamers", style="cutout", summary="Swags of crepe paper pinned along a wall, for a party")
+@register(
+    "prop",
+    "paper-streamers",
+    style="cutout",
+    summary="Swags of crepe paper pinned along a wall, for a party",
+    contract=_cutout_contracts.contract('paper-streamers'),
+)
 def paper_streamers(
     cv: Canvas, parent, x0=100, x1=980, y=200, *, swags: int = 4, sag: float = 90.0, id: str = "paper-streamers"
 ):

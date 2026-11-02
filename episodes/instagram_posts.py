@@ -81,6 +81,7 @@ RELEASES = releases.load(Path(__file__).resolve().parent / "posts")  # one file 
 STRICT = Path(__file__).resolve().parent / "strict"  # strict/<slug>.json: a reel's findings proven false (ADR 0078)
 BIBLE_DIR = Path(__file__).resolve().parent.parent / "bible"  # the cast bible a first delivery is checked against
 GRANDFATHERED = releases.grandfathered(Path(__file__).resolve().parent / "posts")  # published before the caption gate
+HELD = releases.held(Path(__file__).resolve().parent / "posts", RELEASES)  # stopped before a first delivery (ADR 0140)
 POSTS: dict[str, InstagramPost] = {slug: r.post for slug, r in RELEASES.items()}
 VIDEOS = {slug: r.video_name for slug, r in RELEASES.items()}  # project slug -> its rendered video's file name
 COVER_SCENES = {slug: r.scene_file for slug, r in RELEASES.items() if r.cover}  # scenes with a cover variant
@@ -103,13 +104,18 @@ def _beside(renders: Path) -> Path:
 
 
 def numbers(renders: Path) -> dict[str, show_numbers.Claim]:
-    """:data:`NUMBERS` with each reel's brief, which only the ledger beside ``renders`` holds (ADR 0080). With no
-    numbered reel the ledger is not read."""
+    """:data:`NUMBERS` with each reel's brief and posting days, which only the ledger beside ``renders`` holds
+    (ADR 0080). With no numbered reel the ledger is not read."""
     if not NUMBERS:
         return {}
     held = show_numbers.read(show_numbers.ledger_path(renders)).reels
-    briefs = {VIDEOS[slug]: c.brief for slug, c in held.items() if slug in VIDEOS and c.brief}
-    return {name: replace(claim, brief=briefs.get(name, "")) for name, claim in NUMBERS.items()}
+    ledger = {VIDEOS[slug]: c for slug, c in held.items() if slug in VIDEOS}
+    return {
+        name: replace(claim, brief=kept.brief, post_by=kept.post_by, not_before=kept.not_before)
+        if (kept := ledger.get(name))
+        else replace(claim, brief="")
+        for name, claim in NUMBERS.items()
+    }
 
 
 def items(renders: Path, episodes: Path | None = None) -> dict[str, Item]:
@@ -152,12 +158,18 @@ def bible_findings(first: dict[str, str], chosen: dict[str, releases.Release], e
     }
 
 
+def held_videos() -> set[str]:
+    """The rendered names of the reels :data:`HELD` stopped."""
+    return {r.video_name for slug, r in RELEASES.items() if slug in HELD}
+
+
 def _delivering(out: Path, renders: Path, font: Path, only: list[str] | None) -> set[str]:
     """The videos a delivery would write: those named, else those that drifted, or all if the manifest is unreadable."""
     if only:
         return set(only)
-    stale = {d.name for d in check_delivery(items(renders), out, font=font, frozen=FROZEN)}
-    return {r.video_name for r in RELEASES.values()} if "*" in stale else stale
+    held = held_videos()
+    stale = {d.name for d in check_delivery(items(renders), out, font=font, frozen=FROZEN, held=held)}
+    return {r.video_name for r in RELEASES.values()} - held if "*" in stale else stale
 
 
 def send_drift(renders: Path, chosen: Mapping[str, releases.Release]) -> list[Drift]:
@@ -178,7 +190,13 @@ def write_all(
     (ADR 0064), over the hashtag limit (ADR 0065), with bait on the send test (ADR 0080), refused by a frame gate
     (ADR 0073), out of the show's look (ADR 0074), with a --strict finding not proven false (ADR 0078) or one the cast
     bible refuses (ADR 0069), is a :class:`DeliveryError` before anything is written. A video in the manifest is past
-    all of these: what was published stays as it went out."""
+    all of these: what was published stays as it went out. A reel on the hold list (ADR 0140) is passed over, and
+    naming one is a :class:`DeliveryError`."""
+    stopped = {
+        r.video_name: HELD[slug] for slug, r in RELEASES.items() if slug in HELD and r.video_name in (only or ())
+    }
+    if stopped:
+        raise DeliveryError("; ".join(f"held, not delivered: {name}: {why}" for name, why in sorted(stopped.items())))
     refused = caption_drift(renders, only=only)
     if refused:
         raise DeliveryError("the caption gate refuses: " + "; ".join(str(d) for d in refused))
@@ -220,12 +238,14 @@ def write_all(
     refused = auto_enhance.refused(first, REPO)
     if refused:
         raise DeliveryError("; ".join(map(str, refused)))
-    return publish(items(renders), out, font=font_file(fonts_dir), engine=engine, only=only, frozen=FROZEN)
+    return publish(
+        items(renders), out, font=font_file(fonts_dir), engine=engine, only=only, frozen=FROZEN, held=held_videos()
+    )
 
 
 def check_all(out: Path, renders: Path, *, fonts_dir: Path) -> list[Drift]:
     """Every drift between ``out`` and delivering every post from ``renders`` now, with every missing pin."""
-    drift = check_delivery(items(renders), out, font=font_file(fonts_dir), frozen=FROZEN)
+    drift = check_delivery(items(renders), out, font=font_file(fonts_dir), frozen=FROZEN, held=held_videos())
     return [
         *releases.unpinned(RELEASES, _beside(renders)),
         *drift,

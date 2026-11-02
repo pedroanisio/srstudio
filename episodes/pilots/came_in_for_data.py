@@ -42,7 +42,7 @@ NARRATION = "Voiced with ElevenLabs premade voices Matilda and Charlie; an origi
 NOTE = "ElevenLabs premade voices Matilda and Charlie at their natural pace; no reference-voice cloning."
 TINTS = {"vera": news_kit.CREAM, "gus": news_kit.TANGERINE}
 MOUTH = replace(sketch.MOUTH_STYLE, spelling=True, close_bilabials=True, lead=0.04, min_rest=0.12)
-VERSIONS = {"news-vera": 3, "news-gus": 3}
+VERSIONS = {"news-vera": 6, "news-gus": 6}
 DOOR = "KITCHEN"
 SMALL = -9.11864  # dB, 35% of the full voice: the same word he shouted, with the air gone out of it
 SLAM = 0.35  # seconds into the held beat at which the door shuts: long enough to see it open first

@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.0.0",
+  "generated_by": {
+    "model": "GPT-6",
+    "tool": "OpenAI Codex"
+  },
+  "baseline_source_commit": "8ae98f8f",
+  "qualification": "Original study source executed from Git without registration decorators; other three modules were unchanged. Captured study calls are static; sweep and marker interpolation have separate regression evidence.",
+  "scene_sha256": {
+    "toon-phone": "695aeea9581826045f66acf7ce8f92a67883766ba41fd90895c02f406fa78fb5",
+    "toon-tv-menu": "8d439cfdd3a156ef4c0da0b4323640211a6aa1eed40c4dbccbae9bd86c088c7a",
+    "toon-remote": "51e108c25ab36bbdca6e60809e353aa86662c27e0854e6ead7c9fe092bd8ffde",
+    "toon-stars": "741041ead1cfa57f41d7797e3d772aeb8eef994a58ad7c49630bf6dd9101a4d3",
+    "toon-speaker": "a2bf72d8570e9fb48c2daa99df2223cfd34e59e87abab785eecf26f7e9eee8c8",
+    "toon-receipt": "db971c3ee72d8420a6f257147bfad0479c4a464d16bd1e279ffe5a41af63fa32",
+    "toon-take-a-number": "0f79be687407b0fc00ab46c2f31645f6c5bb49475b61cee6a2d6b1c42982ae8c",
+    "toon-clipboard": "695e34a23cd4a1e5840f134e52d5fafe2093610d534b348e6873b32e022d6a3a",
+    "toon-eye-drops": "d0d45f90cbd813400870e8c5ffdc3f2e001abf09e62176837364245f9a0e8f3c",
+    "toon-reception-glass": "c0d12bc80b2719b7d60ad4fa3dd3c27556a70a7767cd4acefa18979b88a38e86",
+    "toon-gull-stare": "c35afc2242bb40d41fcf23ff23a96b0d6fe54ff00399fc7dab8679a8885f2244",
+    "toon-rain": "3b2d85aa80e8c2e61446e160110d8bad3911b7787eb6260d88a580c7e632257f",
+    "toon-gnome": "1c41e3bcfdf7d4f7aac47ac063f94782bc178217e7770d5904e2a9a50b4ce643",
+    "toon-noodle-box": "26ed83579f3b1b570384f69a228c18429c33bc6eee714407c7ce855202a01344",
+    "toon-open-laptop": "d7dc26bce6317e12aeb399c9d6e06e5e73d2ec87551b4fdeb8f713bcbe8eab02",
+    "toon-open-book": "a9d65750f9bbcc0283d44479446175d6e8c8c55caa3a6c2160bb32b639445ce7",
+    "toon-shut-book": "b5043e43a7c6f1cfcc9afd7e7c31dcbc52e97174d0da45e07ca6282fa09a7c37",
+    "toon-highlighter": "cb47e129d81eac41e6a5888516b6f459e3375fd3a19a4861b1bd4ea5ada7dfe6",
+    "toon-study-page": "a7af48ca3a55184aa436ab2f2040550553a2733cca5c14751d728b3369495985",
+    "toon-quiz-sheet": "ed6af876484d57049c7267c11fd4b37fedaa0bc6121dac9f4a1b376f00de4ee0",
+    "toon-voice-note-bar": "bb9fdd35189f32931f447e2a4d97270cf1ce516d4888517201c563b0cd5cd4fa",
+    "toon-wifi-list": "fa9c8d258e95be548b98404066a512cd55e5049a37115258f3466e7bdd7c2963"
+  },
+  "footprints": {
+    "toon-phone": [
+      222.0,
+      580.0,
+      378.0,
+      828.0
+    ],
+    "toon-speaker": [
+      390.0,
+      680.0,
+      490.0,
+      834.0
+    ],
+    "toon-receipt": [
+      372.0,
+      316.0,
+      508.0,
+      370.0
+    ],
+    "toon-take-a-number": [
+      372.0,
+      538.0,
+      520.0,
+      834.0
+    ],
+    "toon-clipboard": [
+      328.0,
+      580.0,
+      512.0,
+      834.0
+    ]
+  }
+}

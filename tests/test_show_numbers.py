@@ -286,8 +286,91 @@ def test_a_ledger_written_before_briefs_still_reads_and_moves_up_on_the_next_wri
     assert read(path).reels == {"old-reel": Claim(201)}
     claim(path, "new-reel", brief="send-v1")
     document = json.loads(path.read_text())
-    assert document["schema"] == show_numbers.SCHEMA == "1.1.0"
+    assert document["schema"] == show_numbers.SCHEMA == "1.3.0"
     assert document["reels"]["old-reel"] == {"number": 201}
+
+
+# -- the day a timely reel is due ---------------------------------------------------------------------------
+def test_a_due_day_is_recorded_and_reaches_the_episode_document(path):
+    set_base(path, 200)
+    held = claim(path, "clocks", post_by="2026-11-02")
+    assert held == Claim(201, post_by="2026-11-02")
+    assert json.loads(path.read_text())["reels"]["clocks"] == {"number": 201, "post_by": "2026-11-02"}
+    assert read(path).reels["clocks"].post_by == "2026-11-02"
+    assert episode_document(held) == {"number": 201, "series": "", "series_number": 0, "post_by": "2026-11-02"}
+
+
+def test_a_held_claim_takes_a_due_day_later_and_keeps_its_number(path):
+    set_base(path, 200)
+    claim(path, "clocks", brief="send-v1")
+    claim(path, "other")
+    assert claim(path, "clocks", post_by="2026-11-02") == Claim(201, brief="send-v1", post_by="2026-11-02")
+    assert claim(path, "clocks") == Claim(201, brief="send-v1", post_by="2026-11-02")
+    assert read(path).reels["other"].number == 202
+
+
+@pytest.mark.parametrize("day", ["tomorrow", "2026-13-01", "2026-02-30", "2026/11/02", "20261102", " 2026-11-02"])
+def test_a_due_day_that_is_no_date_is_refused_and_claims_nothing(path, day):
+    set_base(path, 200)
+    with pytest.raises(NumberError, match="post_by"):
+        claim(path, "clocks", post_by=day)
+    assert "clocks" not in read(path).reels
+
+
+def test_a_due_day_the_ledger_cannot_vouch_for_is_refused(path):
+    write(path, schema="1.2.0", base=200, reels={"reel": {"number": 201, "post_by": "soon"}})
+    with pytest.raises(NumberError, match="post_by"):
+        read(path)
+
+
+def test_a_first_day_is_recorded_and_reaches_the_episode_document(path):
+    set_base(path, 200)
+    held = claim(path, "clocks", post_by="2026-11-27", not_before="2026-11-20")
+    assert held == Claim(201, post_by="2026-11-27", not_before="2026-11-20")
+    assert json.loads(path.read_text())["reels"]["clocks"]["not_before"] == "2026-11-20"
+    assert read(path).reels["clocks"].not_before == "2026-11-20"
+    assert episode_document(held)["not_before"] == "2026-11-20"
+
+
+def test_a_held_claim_takes_a_first_day_later_and_keeps_its_due_day(path):
+    set_base(path, 200)
+    claim(path, "clocks", post_by="2026-11-27")
+    assert claim(path, "clocks", not_before="2026-11-20") == Claim(201, post_by="2026-11-27", not_before="2026-11-20")
+    assert claim(path, "clocks") == Claim(201, post_by="2026-11-27", not_before="2026-11-20")
+
+
+def test_a_reel_due_before_its_first_day_is_refused_and_claims_nothing(path):
+    set_base(path, 200)
+    with pytest.raises(NumberError, match="not_before"):
+        claim(path, "clocks", post_by="2026-11-20", not_before="2026-11-27")
+    assert "clocks" not in read(path).reels
+
+
+def test_a_later_first_day_cannot_pass_the_due_day_a_held_claim_has(path):
+    set_base(path, 200)
+    claim(path, "clocks", post_by="2026-11-20")
+    with pytest.raises(NumberError, match="not_before"):
+        claim(path, "clocks", not_before="2026-11-27")
+    assert read(path).reels["clocks"].not_before == ""
+
+
+def test_a_first_day_that_is_no_date_is_refused(path):
+    set_base(path, 200)
+    with pytest.raises(NumberError, match="not_before"):
+        claim(path, "clocks", not_before="soon")
+
+
+def test_a_first_day_the_ledger_cannot_vouch_for_is_refused(path):
+    write(path, schema="1.3.0", base=200, reels={"reel": {"number": 201, "not_before": "soon"}})
+    with pytest.raises(NumberError, match="not_before"):
+        read(path)
+
+
+def test_a_ledger_holding_a_reel_due_before_its_first_day_is_refused(path):
+    row = {"number": 201, "post_by": "2026-11-20", "not_before": "2026-11-27"}
+    write(path, schema="1.3.0", base=200, reels={"reel": row})
+    with pytest.raises(NumberError, match="not_before"):
+        read(path)
 
 
 def test_a_brief_the_ledger_cannot_vouch_for_is_refused(path):

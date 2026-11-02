@@ -11,7 +11,7 @@ from __future__ import annotations
 import random
 from collections.abc import Sequence
 
-from . import checks, locations, look, props, signature
+from . import _cutout_contracts, checks, locations, look, props, signature
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -89,6 +89,7 @@ def _shake(cv: Canvas, g, spans: Sequence[tuple[float, float]], reach: float = 5
     style="cutout",
     summary="A home printer seen from the front: a display that shows readings over time, a rattle while it whirs, "
     "and sheets that slide into its tray",
+    contract=_cutout_contracts.contract('desk-printer'),
 )
 def desk_printer(
     cv: Canvas,
@@ -164,6 +165,7 @@ def desk_printer(
     "ransom-note",
     style="cutout",
     summary="A ransom note: a sheet with its demand in letters cut from magazines, each on its own scrap",
+    contract=_cutout_contracts.contract('ransom-note'),
 )
 def ransom_note(
     cv: Canvas,
@@ -242,6 +244,7 @@ def ransom_note(
     "hostage-photo",
     style="cutout",
     summary="An instant photo of a sheet of paper tied to a chair with rope, under one bulb",
+    contract=_cutout_contracts.contract('hostage-photo'),
 )
 def hostage_photo(
     cv: Canvas, parent, x=270, y=760, *, rotation: float = -5, scale: float = 1.0, id: str = "hostage-photo"
@@ -278,7 +281,13 @@ def hostage_photo(
     return g
 
 
-@register("prop", "paper-bag", style="cutout", summary="A very small paper carrier bag with string handles")
+@register(
+    "prop",
+    "paper-bag",
+    style="cutout",
+    summary="A very small paper carrier bag with string handles",
+    contract=_cutout_contracts.contract('paper-bag'),
+)
 def paper_bag(cv: Canvas, parent, x=760, y=1300, *, scale: float = 1.0, id: str = "paper-bag"):
     """Its foot's middle stands on (``x``, ``y``)."""
     _check_scale(scale)
@@ -312,6 +321,8 @@ def _book(cv: Canvas, g, x, y, w, h, colour):
     style="cutout",
     summary="A study at home: a sage wall, a window with a curtain, a bookshelf out of focus, and a desk that fills "
     "the foot of the frame",
+    contract=_cutout_contracts.contract('home-study'),
+    slots=('behind_desk', 'on_desk', 'cactus'),
 )
 def home_study(
     cv: Canvas,
@@ -378,6 +389,8 @@ def home_study(
     "shop-till",
     style="cutout",
     summary="A shop's till: shelves out of focus and a pale laminate counter that fills the foot of the frame",
+    contract=_cutout_contracts.contract('shop-till'),
+    slots=('on_counter',),
 )
 def shop_till(
     cv: Canvas, parent, on_counter: Slot = None, id: str = "location-shop-till", shots=None, *, depth: float = 9.0

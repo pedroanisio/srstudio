@@ -15,7 +15,7 @@ from types import MappingProxyType
 
 from . import parts
 from .toon import ToonDataError
-from .toon_bento import BENTO_RIG
+from .toon_bento import BENTO_RIG, BENTO_RIG_2
 from .toon_critters import GOAT_RIG, HAMSTER_RIG, SLOTH_RIG
 from .toon_head import HeadRig
 from .toon_inked import FOX_RIG
@@ -38,6 +38,7 @@ RIGS: Mapping[str, HeadRig] = MappingProxyType(
         "toon-raccoon@2": RACCOON_RIG,
         "toon-hedgehog@2": HEDGEHOG_RIG,
         "toon-bento": BENTO_RIG,
+        "toon-bento@2": BENTO_RIG_2,
     }
 )
 

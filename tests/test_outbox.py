@@ -670,6 +670,23 @@ def test_numbers_take_each_reels_brief_from_the_ledger(tmp_path, monkeypatch):
     }
 
 
+def test_numbers_carry_each_reels_posting_days_from_the_ledger(tmp_path, monkeypatch):
+    sys.path.insert(0, str(EPISODES))
+    try:
+        import instagram_posts as posts
+    finally:
+        sys.path.remove(str(EPISODES))
+    renders = tmp_path / "generated" / "renders"
+    ledger = show_numbers.ledger_path(renders)
+    show_numbers.set_base(ledger, 200)
+    show_numbers.claim(ledger, "dated-reel", brief="send-v1", post_by="2026-11-27", not_before="2026-11-20")
+    monkeypatch.setattr(posts, "VIDEOS", {"dated-reel": "dated-reel"})
+    monkeypatch.setattr(posts, "NUMBERS", {"dated-reel": Claim(201)})
+    assert posts.numbers(renders) == {
+        "dated-reel": Claim(201, brief="send-v1", post_by="2026-11-27", not_before="2026-11-20")
+    }
+
+
 def test_no_numbered_reel_means_the_ledger_is_never_read(tmp_path, monkeypatch):
     sys.path.insert(0, str(EPISODES))
     try:

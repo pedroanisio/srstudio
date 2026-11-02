@@ -282,13 +282,23 @@ def test_a_thud_beat_plays_a_thud(tmp_path):
     assert [e["id"] for e in sound_effects(beats, 3.0, tmp_path, 7)] == ["thud"]
 
 
-def test_a_staging_may_set_its_keyframes_and_the_published_ones_do_not(pinned_fonts, tmp_path):
-    def output(ep) -> dict:
-        return dict(next(ET.fromstring(ep.scene.to_bytes(layout="pretty")).iter("output")).attrib)
+def output(ep) -> dict:
+    return dict(next(ET.fromstring(ep.scene.to_bytes(layout="pretty")).iter("output")).attrib)
 
+
+def test_a_staging_may_set_its_keyframes_and_the_published_ones_do_not(pinned_fonts, tmp_path):
     assert "keyframeInterval" not in output(built(tmp_path / "default", still_staging(), pinned_fonts))
     set_ = output(built(tmp_path / "set", still_staging(keyframes=52 / 24), pinned_fonts))
     assert set_["keyframeInterval"] == "2.1667"
     for bad in (-1, "2", float("nan")):
         with pytest.raises(collage_sketch.StagingError, match="keyframes"):
             check_staging(still_staging(keyframes=bad))
+
+
+def test_a_staging_may_turn_off_b_frames_and_the_published_ones_do_not(pinned_fonts, tmp_path):
+    """0 is a setting here, not the unset value: the engine's default is the encoder's three."""
+    assert "bFrames" not in output(built(tmp_path / "default", still_staging(), pinned_fonts))
+    assert output(built(tmp_path / "set", still_staging(bframes=0), pinned_fonts))["bFrames"] == "0"
+    for bad in (-1, 1.5, "0", True):
+        with pytest.raises(collage_sketch.StagingError, match="bframes"):
+            check_staging(still_staging(bframes=bad))

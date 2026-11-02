@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Any
 
 from . import _character_contracts as cc
+from . import _toon_contracts as tc
 from . import checks, signature
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -402,7 +403,9 @@ CHAIR_D = _d(
 )  # fmt: skip
 
 
-@register("location", "toon-room", summary="A gradient wall, a window and a chair back")
+@register(
+    "location", "toon-room", contract=tc.contract('toon-room'), summary="A gradient wall, a window and a chair back"
+)
 def room(cv: Canvas, parent) -> None:
     g = cv.group(parent, cv.uid("g"))
     cv.rect(g, 0, 0, cv.width, cv.height, cv.grad("toon-wall", [(float(o), c) for o, c in WALL], (0, 0, 0, 1)))
@@ -413,7 +416,12 @@ def room(cv: Canvas, parent) -> None:
     _path(cv, g, CHAIR_D, CHAIR)
 
 
-@register("location", "toon-desk", summary="The laptop lid and the desk in front of the character")
+@register(
+    "location",
+    "toon-desk",
+    contract=tc.contract('toon-desk'),
+    summary="The laptop lid and the desk in front of the character",
+)
 def desk(cv: Canvas, parent) -> None:
     g = cv.group(parent, cv.uid("g"))
     _path(cv, g, _d("M", (418, 531), "L", (660, 523), "L", (660, 760), "L", (415, 752), "Z"), LAPTOP)
@@ -550,7 +558,12 @@ def pill_width(measure: Callable[[str], float], text: str) -> float:
     return round(max(measure(text) + CAPTION_PAD, round(fh(CAPTION_H))), 2)
 
 
-@register("graphic", "toon-captions", summary="Each cue in a white pill at the top, in the style's italic")
+@register(
+    "graphic",
+    "toon-captions",
+    contract=tc.contract('toon-captions'),
+    summary="Each cue in a white pill at the top, in the style's italic",
+)
 def captions(
     cv: Canvas,
     parent,

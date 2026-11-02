@@ -6,6 +6,11 @@ The library builds and validates scene XML. Rendering that XML into video requir
 
 For AI coding agents, the [task-to-API entry points](docs/authoring-reference.md#agent-authoring-entry-points)
 link discovery, typed inputs, clocks, capabilities, executable recipes and repairable failures.
+The [authoring benchmark](docs/authoring-benchmark.md) measures discovery, planning, compilation,
+rendering and cold/warm cache work with pinned fixtures and output-equivalence checks.
+The [composition guide](docs/composition-preflight.md) covers strict scene manifests,
+declared contacts, work budgets, verified vector/static-plate inputs, bounded rendering
+and atomic scene or portable bundle emission.
 
 ## Install
 
@@ -76,7 +81,7 @@ scene_path = ep.finish()
 print(scene_path)
 ```
 
-The default Cutout project uses `dialogue.json`, `assets/dialogue.wav` and a caption font under its root. Other styles use different inputs, such as a take timeline or a timed caption script. `Timeline.load()` chooses the format by content; see [timeline input examples](docs/authoring-reference.md#timeline-input-formats). `shots()` accepts one angle name, a collection of names, or a predicate.
+The default Cutout project uses `dialogue.json`, `assets/dialogue.wav` and a caption font under its root. Other styles use different inputs, such as a take timeline or a timed caption script. `Timeline.load()` chooses the format by content; see [timeline input examples](docs/authoring-timelines.md#timeline-input-formats). `shots()` accepts one angle name, a collection of names, or a predicate.
 
 | API | Purpose |
 | --- | --- |
@@ -107,11 +112,11 @@ srstudio inspect prop coffee-cup --json
 srstudio inspect character manager --json
 ```
 
-SDK errors retain their exception types and expose `error.to_dict()` with the versioned
+srstudio errors retain their exception types and expose `error.to_dict()` with the versioned
 `srstudio.diagnostic/1.0.0` envelope: `code`, `path`, `message`, `actual`, `expected`, `remedy`, `context`, and
 `residual`. Semantic details that a legacy error does not supply are `null`; they are never guessed from its
 message. Common head, spring, speech, gaze, placement, mouth, blink and keyframe failures provide explicit
-[repair fields and a retry recipe](docs/authoring-reference.md#repairing-authoring-input). Limb errors retain their existing codes,
+[repair fields and a retry recipe](docs/authoring-diagnostics.md#repairing-authoring-input). Limb errors retain their existing codes,
 geometric residuals and context. Payloads bound strings, collection sizes and nesting; nonfinite numbers become
 strings so diagnostics remain valid JSON. Commands accepting `--json` write this envelope to stderr on failure,
 including argument and plugin-import errors, and preserve their existing nonzero exit codes.
@@ -133,12 +138,12 @@ capabilities, vocabularies, and helper operations. Actor contracts distinguish c
 exposes its `pose_of` vocabulary and identifies `duration` as the project exit time. Unknown metadata stays
 explicitly unknown, and runtime objects such as a canvas are marked as runtime bindings. Contracts describe the
 API; they do not deserialize records or replace builder validation. See the
-[agent contract reference](docs/authoring-reference.md#agent-contracts).
+[agent contract reference](docs/authoring-discovery.md#agent-contracts).
 
 Core Cutout props, locations and graphics also declare placement units, clocks, return shapes and callback
 semantics. Selected props publish local drawing anchors. Run `srstudio catalog --contract-coverage --json` to
 see explicit declarations separately from inferred argument shapes and the remaining gaps. The
-[location and held-prop recipes](docs/authoring-reference.md#non-character-discovery-and-drawing-anchors) use
+[location and held-prop recipes](docs/authoring-discovery.md#non-character-discovery-and-drawing-anchors) use
 those contracts to place an actor and carry a cup between palm and fingers. Flat drawing anchors do not imply
 spatial attachment or collision capabilities.
 
@@ -160,16 +165,16 @@ A `Style` supplies defaults for frame size, timing, input files, palette, captio
 | `COLLAGE` | Mixed-media characters and sets. |
 | `GLOSS` | Glossy characters and shot sequences. |
 
-The [authoring reference](docs/authoring-reference.md#styles) compares their inputs, clocks, palettes and captions. [Character clips](docs/authoring-reference.md#character-clips-one-placement-and-timing-boundary) give Actor, split-head Toon, Gloss and prepared plates one explicit placement and timing boundary. The [limbs guide](docs/catalog/limbs.md) covers reusable arm and hand motion across styles; runnable examples are in [examples/](examples/).
+The [authoring reference](docs/authoring-styles.md#styles) compares their inputs, clocks, palettes and captions. [Character clips](docs/authoring-clips.md#character-clips-one-placement-and-timing-boundary) give Actor, split-head Toon, Gloss and prepared plates one explicit placement and timing boundary. The [limbs guide](docs/catalog/limbs.md) covers reusable arm and hand motion across styles; runnable examples are in [examples/](examples/).
 
-[Coordinated acting](docs/authoring-reference.md#coordinated-acting-and-continuity) compiles typed emotion, speech,
+[Coordinated acting](docs/authoring-acting.md#coordinated-acting-and-continuity) compiles typed emotion, speech,
 gaze and head intent with explicit channel ownership. Reuse windows of one performance across cuts; inspect
 rig capabilities before generating a score. The [two-family study](examples/acting_gallery.py) builds Bento and
 Gloss Nadia with a reproducible scene and JSON continuity report. The
 [listening and carrying study](examples/acting_continuity.py) adds sustained reactions and a moving hand/prop
-interaction across a cut, with executable [authoring recipes](docs/authoring-reference.md#sustained-listening-and-repairable-capability-failures).
+interaction across a cut, with executable [authoring recipes](docs/authoring-acting.md#sustained-listening-and-repairable-capability-failures).
 
-Opt-in [acting transition policies](docs/authoring-reference.md#opt-in-acting-transition-policies) add curves,
+Opt-in [acting transition policies](docs/authoring-acting.md#opt-in-acting-transition-policies) add curves,
 springs, anticipation, settling and separate channel arrival times through strict score schema 1.1.0.
 Existing scores retain their output. The [transition comparison](examples/acting_transitions.py) demonstrates
 faces arriving before heads, with cuts through anticipation and settling; faces remain held drawings, and
@@ -191,9 +196,14 @@ Four shows are channels on Toon's road rather than styles of their own. Each is 
 
 ## Finish and plates
 
-`srstudio.look` holds the primitives every style shares, while each style keeps its own numbers: `grade` for bloom, vignette and grain, `depth` for a far plane out of focus, `pool` for a soft light and `fade` for haze or a shade. See [finishing a style](docs/authoring-reference.md#finishing-a-style-srstudiolook) and [ADR 0031](docs/decisions/0031-shared-look-and-caption-primitives.md).
+`srstudio.look` holds the primitives every style shares, while each style keeps its own numbers: `grade` for bloom, vignette and grain, `depth` for a far plane out of focus, `pool` for a soft light and `fade` for haze or a shade. See [finishing a style](docs/authoring-styles.md#finishing-a-style-srstudiolook) and [ADR 0031](docs/decisions/0031-shared-look-and-caption-primitives.md).
 
 The library draws in 2D, and what it models in 3D is a clay character or a rigid proxy. `srstudio.clay` bakes a model to meshes, and `srstudio.plates` path-traces a `Plate`, one camera, one set of lights and some placed meshes, into a still cached by its digest. Rafa, who hosts the Host show, is built this way ([ADR 0068](docs/decisions/0068-rafa-clay-host-on-plates.md)).
+
+Drawing digests remain stable; rendered artifacts additionally identify the renderer binary, compiled scenes,
+quality settings and actual print font bytes. Use the path returned by `plates.render` or `print_png` rather than
+constructing it from a drawing digest. [Plate cache ownership](docs/authoring-clips.md#plate-cache-ownership)
+explains warm builds, legacy cache migration and catalog materialization.
 
 [DRAWING.md](DRAWING.md) is the default drawing method for new work ([ADR 0091](docs/decisions/0091-hybrid-drawing-is-the-default.md)); published reels and approved drawings stay as they are. Its rigid-object layer is built: `srstudio.proxy` turns a clay model into cel plates, cut into back, front and under so people draw between them; `srstudio.vehicle` adds tyres and turning rims; `srstudio.on_beat` moves a drawing on a `music.Groove`, and `srstudio beat <audio>` measures that groove from a recorded track. [examples/car_vibe](examples/car_vibe) is the worked example. Its `forms` and `paint` modules are not built, and a type's first use of a layer needs an approved proof.
 
@@ -212,17 +222,17 @@ def status_light(cv: Canvas, parent: Composition | Group, x: float, y: float) ->
     return group
 ```
 
-Call the builder while assembling the episode, before `finish()`. Duplicate kind/name registrations raise `RegistryError`; use `replace=True` for an intentional replacement. Location plugins can declare unannotated callbacks with `slots=("slot_name",)` and provide runnable inspection examples through `examples=`. See [the extension reference](docs/authoring-reference.md#extending).
+Call the builder while assembling the episode, before `finish()`. Duplicate kind/name registrations raise `RegistryError`; use `replace=True` for an intentional replacement. Location plugins can declare unannotated callbacks with `slots=("slot_name",)` and provide runnable inspection examples through `examples=`. See [the extension reference](docs/authoring-extensions.md#extending-drawing-calls).
 
 ## Signature
 
-Signed episodes carry a small code and cactus. Built-in locations draw both automatically; a custom location should draw both through `srstudio.signature`. `EpisodeSpec.signature` defaults to `True`. The [signature reference](docs/authoring-reference.md#signature) describes placement, customization and the cactus callback.
+Signed episodes carry a small code and cactus. Built-in locations draw both automatically; a custom location should draw both through `srstudio.signature`. `EpisodeSpec.signature` defaults to `True`. The [signature reference](docs/authoring-delivery.md#signature) describes placement, customization and the cactus callback.
 
 ## Audio and delivery
 
 `ep.audio()` selects the available source: pinned generated clips, take audio, one mixed file, verified narration, or silence. It uses the style's master levels unless `loudness=` or `true_peak=` is supplied. Explicit `mix()` settings update an existing mix; an implicit `mix()` or `add_track()` preserves the settings already chosen. Take WAVs are checked for readable container structure and supported format tags (PCM, IEEE float, A-law, μ-law, IMA ADPCM, and extensible PCM or float); failures raise `SoundtrackError` with their path. This check does not decode samples, so a renderer may still reject malformed audio. Convert other take WAV encodings to PCM or IEEE float before adding them. The soundtrack used for mouth animation requires 16-bit PCM; extra and narration files are not decoded by this check.
 
-Recording and generated audio use separate workflows and may require provider credentials and permission to send data. See the [audio reference](docs/authoring-reference.md#new-episodes-with-generated-audio-five-years-06), [episode scripts](episodes/) and [recording module](src/srstudio/recording.py). For captions, covers, release checks and outbox packaging, see the [delivery reference](docs/authoring-reference.md#instagram-captions). Pilots for a future channel go to their own Drive folder, never to @okayville.tv's: see [`publish_pilots.py`](episodes/publish_pilots.py).
+Recording and generated audio use separate workflows and may require provider credentials and permission to send data. See the [audio reference](docs/authoring-audio.md), [episode scripts](episodes/) and [recording module](src/srstudio/recording.py). For captions, covers, release checks and outbox packaging, see the [delivery reference](docs/authoring-delivery.md#instagram-captions). Pilots for a future channel go to their own Drive folder, never to @okayville.tv's: see [`publish_pilots.py`](episodes/publish_pilots.py).
 
 Auto-enhance is on by default: each video lands one real change to the process on `develop` before its first delivery, and both delivery commands refuse a new video without it. `srstudio enhance` shows the mode and the ledger, `srstudio enhance kinds` the possibilities, and `srstudio enhance off` is the operator's switch back to just delivering. See [ADR 0056](docs/decisions/0056-auto-enhance.md).
 
@@ -261,7 +271,8 @@ The configured coverage gate is 80%. Some integration tests require additional l
 - [episodes/](episodes/) — episode builders, recording scripts and releases.
 - [tests/](tests/) — unit, integration and fidelity tests.
 - [docs/decisions/](docs/decisions/) — architecture decisions.
+- [Head motion internals](docs/decisions/0093-head-motion-module-boundaries.md) — module ownership and public API compatibility.
 - [DRAWING.md](DRAWING.md) — the default drawing method for new work.
-- [Authoring and episode reference](docs/authoring-reference.md) — detailed style, episode, signature and delivery notes.
+- [Authoring task index](docs/authoring-reference.md) — task guides for discovery, acting, timing, styles and delivery; links to episode history.
 
 The project is licensed under MIT.

@@ -173,23 +173,35 @@ class Reading:
 
 
 def measure(
-    path: Path | str, *, seconds: float | None = None, beats_per_bar: int = 4, ffmpeg: str = "ffmpeg"
+    path: Path | str,
+    *,
+    seconds: float | None = None,
+    beats_per_bar: int = 4,
+    near: float = 120.0,
+    ffmpeg: str = "ffmpeg",
 ) -> Groove:
     """The grid of a recorded track: see :func:`reading`."""
-    return reading(path, seconds=seconds, beats_per_bar=beats_per_bar, ffmpeg=ffmpeg).groove
+    return reading(path, seconds=seconds, beats_per_bar=beats_per_bar, near=near, ffmpeg=ffmpeg).groove
 
 
 def reading(
-    path: Path | str, *, seconds: float | None = None, beats_per_bar: int = 4, ffmpeg: str = "ffmpeg"
+    path: Path | str,
+    *,
+    seconds: float | None = None,
+    beats_per_bar: int = 4,
+    near: float = 120.0,
+    ffmpeg: str = "ffmpeg",
 ) -> Reading:
     """The grid of a recorded track, over its first ``seconds`` when given: the tempo whose beat, double and bar all
-    repeat in its onsets, leaning toward 120 BPM, and the beat that opens a bar. Going by the beat alone reads a 3-3-2
-    rhythm at two thirds of its tempo. A tempo holds on a few bars; the bar line needs ``SURE_BARS`` of them, and short
-    of that the reading says so. An even pulse holds nothing that tells a tempo from its double or half, and the lean
-    decides: clicks read true from 75 to 165 BPM, and outside that at the octave inside it. A track that changes tempo
-    has no single grid: measure each part of it."""
+    repeat in its onsets, leaning toward ``near`` BPM, and the beat that opens a bar. Going by the beat alone reads a
+    3-3-2 rhythm at two thirds of its tempo. A tempo holds on a few bars; the bar line needs ``SURE_BARS`` of them, and
+    short of that the reading says so. An even pulse holds nothing that tells a tempo from its double or half, and the
+    lean decides: clicks read true from 75 to 165 BPM at the default, and outside that at the octave inside it, so name
+    a fast or slow track's tempo in ``near``. A track that changes tempo has no single grid: measure each part of it."""
     if beats_per_bar < 1:
         raise MusicError(f"beats_per_bar {beats_per_bar} must be at least 1")
+    if not (checks.number(near) and near > 0):
+        raise MusicError(f"near {near} must be a tempo above zero")
     samples = _decoded(Path(path), seconds, ffmpeg)
     if len(samples) < 2 * _RATE:
         raise MusicError(f"{path} is too short to hold a tempo: {len(samples) / _RATE:.2f} s")
@@ -208,7 +220,7 @@ def reading(
         if not marks:
             continue
         score = float(np.interp(marks, np.arange(len(echo)), echo).mean())  # a clip can be shorter than a slow bar
-        score *= math.exp(-0.5 * (math.log2(bpm / 120.0) / 0.8) ** 2)
+        score *= math.exp(-0.5 * (math.log2(bpm / near) / 0.8) ** 2)
         if score > best:
             best, best_bpm = score, float(bpm)
     if best <= 0:

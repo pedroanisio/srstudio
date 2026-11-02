@@ -144,3 +144,31 @@ def test_the_close_nightstand_keeps_its_code_clear_of_the_drawer(monkeypatch: py
     toon_bed.bedside_drawer(cv, cv.comp)
     _, top, _, tall = toon_bed.DRAWER
     assert seen and all(y > fy(top + tall) for y in seen)
+
+
+@pytest.mark.parametrize('local', [False, True])
+@pytest.mark.parametrize('slides', [0, 2])
+def test_drawer_light_keeps_its_intensity_and_composition_clock(local, slides, tmp_path, scene_render):
+    from support.acting import evaluate
+
+    cv = canvas()
+    cv.local_time = local
+    # Group time remapping shifts both the slide and the light by one second.
+    holder = cv.group(cv.comp, 'holder', start=1, timeOffset=1)
+    toon_bed.bedside_drawer(cv, holder, slides=slides, lit=0.35)
+    glow = next(s for s in cv.scene.iter('shape') if s.fill == toon_bed.GLOW)
+    path = tmp_path / 'drawer.scene.xml'
+    path.write_bytes(cv.scene.to_bytes())
+    times = ((2.5, 0), (3.2, 0.35), (4.2, 0.35)) if slides else ((1.5, 0.35), (2.2, 0.35))
+    for time, expected in times:
+        nodes = {n['id']: n for n in evaluate(scene_render, path, time)}
+        assert nodes[glow.id]['world_opacity'] == pytest.approx(expected)
+
+
+@pytest.mark.parametrize('lit', [-0.1, 1.1, float('nan'), float('inf'), True, 'bright'])
+def test_bad_drawer_light_is_refused_before_drawing(lit):
+    cv = canvas()
+    before = cv.scene.to_bytes()
+    with pytest.raises(ToonDataError, match='light'):
+        toon_bed.bedside_drawer(cv, cv.comp, slides=1, lit=lit)
+    assert cv.scene.to_bytes() == before

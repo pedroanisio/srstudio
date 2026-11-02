@@ -268,6 +268,8 @@ def test_the_style_value(tmp_path):
         "stick-manual-page",
         "stick-drill",
         "stick-caller",
+        "stick-box",
+        "stick-receipt",
         "stick-wheelie-bin",
         "stick-trash-truck",
         "stick-sparks",

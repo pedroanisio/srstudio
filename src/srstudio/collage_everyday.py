@@ -673,15 +673,41 @@ def shoulder(who: str | Look, side: int = -1) -> Point:
     return (CX + side * (HALF_WIDTH[look.build] - 46), SHOULDER_Y[look.build] + 50)
 
 
+def _check_side(side: int) -> None:
+    if side not in (-1, 1):
+        raise EverydayError(f"an arm's side is -1 (screen left) or 1 (screen right), got {side!r}")
+
+
+def _mirrored_hand(cv: Canvas, parent, look: Look, x: float, y: float) -> None:
+    """The hand of the screen-right arm at ``x, y``: the screen-left hand turned over at its own centre, cut edge and
+    shading with it, so that a thumb follows its side."""
+    turned = cv.group(parent, cv.uid("g"), x=x, y=y, scaleX=-1.0)
+    draw_shapes(cv, turned, _hand(look, "reach-hand", 0.0, 0.0, r=38))
+
+
 @register("prop", "collage-arm", summary="A character's arm on its own, sleeve and hand, for reaching past the pose")
 def arm(
-    cv: Canvas, parent, who: str | Look, frm: Point, to: Point, *, width: float = 72.0, hand: bool = True
+    cv: Canvas,
+    parent,
+    who: str | Look,
+    frm: Point,
+    to: Point,
+    *,
+    width: float = 72.0,
+    hand: bool = True,
+    side: int = -1,
 ) -> object:
     """``who``'s arm from ``frm`` (off the frame, usually) to its hand at ``to``; returns the group, which a caller
-    keys to bring it in. ``hand=False`` is an upper arm, which ends in the elbow the forearm starts from."""
+    keys to bring it in. ``hand=False`` is an upper arm, which ends in the elbow the forearm starts from. ``side`` is
+    the side of the body the arm is on, as in :func:`shoulder`: the hand of one is the mirror of the other's, and on a
+    figure facing the camera the back of either shows, its thumb on the outside. An upper arm is the same on both."""
+    _check_side(side)
     look = LOOKS[who] if isinstance(who, str) else who
     g = cv.group(parent, cv.uid("g"))
-    draw_shapes(cv, g, _sleeve(look, "reach", frm, to, width) + (_hand(look, "reach-hand", *to, r=38) if hand else []))
+    left = hand and side == -1
+    draw_shapes(cv, g, _sleeve(look, "reach", frm, to, width) + (_hand(look, "reach-hand", *to, r=38) if left else []))
+    if hand and side == 1:
+        _mirrored_hand(cv, g, look, *to)
     return g
 
 
@@ -711,6 +737,18 @@ def frames(*spans: tuple[float, float], step: float = 1 / 24) -> list[float]:
     return sorted(out)
 
 
+def _short_turns(spots: Sequence[tuple[float, Point]], frm: Point) -> list[tuple[float, float]]:
+    """The arm's angle at each of ``spots``, each key the short way round from the last: two hands either side of
+    straight above the shoulder are a few degrees apart, not most of a circle."""
+    out: list[tuple[float, float]] = []
+    for t, (x, y) in spots:
+        turn = math.degrees(math.atan2(frm[0] - x, y - frm[1]))
+        if out:
+            turn += 360.0 * round((out[-1][1] - turn) / 360.0)
+        out.append((t, turn))
+    return out
+
+
 def reach(
     cv: Canvas,
     parent,
@@ -720,10 +758,13 @@ def reach(
     times: Sequence[float],
     *,
     width: float = 72.0,
+    side: int = -1,
 ) -> object:
     """``who``'s arm fixed at its shoulder ``frm`` while its hand goes where ``hand`` says at each of ``times``: the
-    arm turns and stretches, which :func:`arm` cannot, since its two ends are drawn into one group. Returns the hand's
-    group, at the hand's origin, for what it holds."""
+    arm turns and stretches, which :func:`arm` cannot, since its two ends are drawn into one group. ``side`` picks the
+    hand as in :func:`arm`. Returns the hand's group, at the hand's origin, for what it holds, which is never mirrored
+    with the hand."""
+    _check_side(side)
     if not times:
         raise EverydayError("an arm that reaches needs times to reach at")
     look = LOOKS[who] if isinstance(who, str) else who
@@ -733,14 +774,16 @@ def reach(
     pivot = cv.group(parent, cv.uid("g"), x=frm[0], y=frm[1])
     upper = cv.group(pivot, cv.uid("g"))
     arm(cv, upper, look, (0.0, 0.0), (0.0, REACH_DRAWN), width=width, hand=False)
-    turns = [(t, math.degrees(math.atan2(frm[0] - x, y - frm[1]))) for t, (x, y) in spots]
-    cv.keys(pivot, "rotation", turns, hold=False, local=False)
+    cv.keys(pivot, "rotation", _short_turns(spots, frm), hold=False, local=False)
     lengths = [(t, max(math.hypot(x - frm[0], y - frm[1]) - REACH_CUFF, 1.0) / REACH_DRAWN) for t, (x, y) in spots]
     cv.keys(upper, "scaleY", lengths, hold=False, local=False)
     held = cv.group(parent, cv.uid("g"))
     cv.keys(held, "x", [(t, x) for t, (x, _) in spots], hold=False, local=False)
     cv.keys(held, "y", [(t, y) for t, (_, y) in spots], hold=False, local=False)
-    draw_shapes(cv, held, _hand(look, "reach-hand", 0.0, 0.0, r=38))
+    if side == -1:
+        draw_shapes(cv, held, _hand(look, "reach-hand", 0.0, 0.0, r=38))
+    else:
+        _mirrored_hand(cv, held, look, 0.0, 0.0)
     return held
 
 

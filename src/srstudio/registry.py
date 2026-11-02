@@ -15,6 +15,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, TypedDict, TypeVar
 
+from . import drawing_events
 from .contracts import PartContract, describe_callable, describe_part
 from .errors import SrstudioError
 
@@ -124,7 +125,7 @@ class Entry:
         )
 
     def __call__(self, *args, **kwargs):
-        return self.builder(*args, **kwargs)
+        return drawing_events.call(self.builder, *args, **kwargs)
 
     @property
     def _current_contract(self) -> PartContract | None:
@@ -275,9 +276,14 @@ def register(
 
     ``style`` names the style the part belongs to; by default it is the style whose ``parts`` list the
     module, and ``""`` for a part shared by every style. Duplicate names are refused unless
-    ``replace=True`` explicitly replaces the existing builder. ``slots`` declares location callbacks when
+    ``replace=True`` explicitly replaces the existing builder. ``slots`` declares drawing callbacks when
     they have no ``Slot`` annotation; ``examples`` supplies Python snippets using an existing ``ep`` Episode.
-    ``contract`` adds structured discovery semantics without replacing the builder's runtime validation."""
+    ``contract`` adds structured discovery semantics without replacing the builder's runtime validation.
+
+    Use the returned callable: it emits explicit usage events while preserving its signature and function kind.
+    Class registration retains the class identity and instruments only methods declared on that class.
+    Deferred builders are attributed when their bodies execute, not when their generator/coroutine is created.
+    Shared performers can identify their owning registered callable with ``drawing_events.drawing(owner)``."""
     if kind not in KINDS:
         raise RegistryError(f"unknown kind {kind!r}; one of {KINDS}")
 
@@ -287,8 +293,6 @@ def register(
         if contract is not None:
             describe_callable(obj, contract)  # Refuse invalid metadata before mutating the registry.
         if slots:
-            if kind != "location":
-                raise RegistryError("only locations declare callback slots")
             parameters = _signature(obj).parameters
             for slot in slots:
                 if slot not in parameters or parameters[slot].kind in (
@@ -303,6 +307,8 @@ def register(
 
         resolved = style_of_module(obj.__module__) if style is None else style
         previous = _REGISTRY[kind].get(name)
+        if previous is None or obj is not previous.builder:  # the current builder is already instrumented
+            obj = drawing_events.instrument(obj)
         entry = Entry(
             kind,
             name,

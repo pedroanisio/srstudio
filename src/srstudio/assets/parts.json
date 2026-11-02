@@ -6585,6 +6585,29 @@
             },
             "drawing": "e82a0f54d4f6caa1de25ca9866e3e6f4922f3bfe4c3969203ed3be34edd26517"
           }
+        },
+        {
+          "number": 2,
+          "date": "2026-11-01",
+          "note": "A true pair of hands: the right the mirror of the left, each thumb on its own side, a hand's back without its palm crease, and the paw's ink closed at the wrist.",
+          "status": "approved",
+          "proof": "generated/character-proofs/bento-hands/index.html",
+          "approval": {
+            "date": "2026-11-01",
+            "words": "approved"
+          },
+          "drawing": "89e3f5fdb19a9b7a351b2a8f72aafa67f9dcf4dd868ecf98708650dba328ffc5",
+          "rig": {
+            "date": "2026-11-01",
+            "note": "Head rig: version 1's limits, unchanged, over the new hands.",
+            "status": "approved",
+            "proof": "generated/character-proofs/bento-hands/index.html",
+            "approval": {
+              "date": "2026-11-01",
+              "words": "approved"
+            },
+            "drawing": "ef85037b5d2d1d641affd657a1194497eeb66a95744a8088c86e188b9b49bdcb"
+          }
         }
       ]
     },
@@ -8728,6 +8751,29 @@
               "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793489774.457989: \"it's Pedro's own request, so there's no approval step from me. Apply it as the default in new News Compiler reels once your gates pass, as with the head motion.\""
             }
           }
+        },
+        {
+          "number": 6,
+          "date": "2026-11-01",
+          "note": "A pair of hands: the hand on the frame's left is the mirror of the one on the right, so a thumb follows its side, inward on a palm to the camera, and a hand on the other arm is refused. Face, costume and arms as version 5.",
+          "status": "approved",
+          "proof": "generated/character-proofs/news-hands/they-voted-no.mp4",
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793545038.063029: \"The fix, in the rig: the right hand is the mirror of the left, and a hand's thumb follows its side.\""
+          },
+          "drawing": "c4c176f8564ce3e7c425ed52d33705669db720ea401c8e8400a2658ee6b04549",
+          "rig": {
+            "date": "2026-11-01",
+            "note": "Head rig: the limits of version 3 unchanged. The arms are keyed as on version 5.",
+            "status": "approved",
+            "proof": "generated/character-proofs/news-hands/they-voted-no.mp4",
+            "drawing": "bbde6a145a4af188bfa68f4c0862304fb58a0169defe2b5218ee2d6c6092d45d",
+            "approval": {
+              "date": "2026-11-01",
+              "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793545038.063029: \"The fix, in the rig: the right hand is the mirror of the left, and a hand's thumb follows its side.\""
+            }
+          }
         }
       ]
     },
@@ -8813,9 +8859,12 @@
           "number": 1,
           "date": "2026-11-01",
           "note": "An unbranded money app on Gus's phone, a balance and one button that stops working on cue. First drawn for safe-from-you.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793540353.039279: \"The two new faceless parts are fine under the rule.\""
+          },
           "drawing": "5a35676e77907271798a8f65cdf742aaecc5973b1ebf78f1769e9701ed334344",
           "rig": null
         }
@@ -8830,9 +8879,12 @@
           "number": 1,
           "date": "2026-11-01",
           "note": "A corridor from above: two plain dots that step in sync, and a count. First drawn for same-way.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793544715.992549: \"The two new faceless parts are fine under the rule.\""
+          },
           "drawing": "0e0ecb949210cf09f0bf3b4ec040a70a0e13e8d5ecf62f350766b01a935f4859",
           "rig": null
         }
@@ -8847,9 +8899,12 @@
           "number": 1,
           "date": "2026-11-01",
           "note": "An invented county in the sun with one pin, and a cloud small enough to find it. First drawn for leave-it-home.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793544715.992549: \"The two new faceless parts are fine under the rule.\""
+          },
           "drawing": "62057b1c9178ce157087a77cf0aa3234c69ec4d126caf9b550e15180fe1ab615",
           "rig": null
         }
@@ -8864,9 +8919,12 @@
           "number": 1,
           "date": "2026-11-01",
           "note": "An unbranded stove on the show: a seven-segment clock that never changes and a tag that does. First drawn for they-voted-no.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793540353.039279: \"The two new faceless parts are fine under the rule.\""
+          },
           "drawing": "662f89a0fe43754230dff013aa79f2cca8f90e3e8f17e4b12fd72076954dc2a9",
           "rig": null
         }
@@ -9164,6 +9222,29 @@
             "approval": {
               "date": "2026-10-31",
               "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793489774.457989: \"it's Pedro's own request, so there's no approval step from me. Apply it as the default in new News Compiler reels once your gates pass, as with the head motion.\""
+            }
+          }
+        },
+        {
+          "number": 6,
+          "date": "2026-11-01",
+          "note": "A pair of hands: the hand on the frame's left is the mirror of the one on the right, so a thumb follows its side, inward on a palm to the camera, and a hand on the other arm is refused. Face, costume and arms as version 5.",
+          "status": "approved",
+          "proof": "generated/character-proofs/news-hands/they-voted-no.mp4",
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793545038.063029: \"The fix, in the rig: the right hand is the mirror of the left, and a hand's thumb follows its side.\""
+          },
+          "drawing": "1908e0c7db30a017d20bae53ba8624aeb06c46b61320db3dbd89abff1e176668",
+          "rig": {
+            "date": "2026-11-01",
+            "note": "Head rig: the limits of version 3 unchanged. The arms are keyed as on version 5.",
+            "status": "approved",
+            "proof": "generated/character-proofs/news-hands/they-voted-no.mp4",
+            "drawing": "3c03b09caedb87b2a96f9bacbb39425648c07dfdd8087fd5220f036f6f0b5eac",
+            "approval": {
+              "date": "2026-11-01",
+              "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793545038.063029: \"The fix, in the rig: the right hand is the mirror of the left, and a hand's thumb follows its side.\""
             }
           }
         }
@@ -12870,10 +12951,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A phone flat on a table that rings, lights and talks on speaker Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A phone flat on a table that rings, lights and talks on speaker",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793486690.452509: \"Cutout joins the approved styles, for props too.\", checked by a non-author reviewer on the frames of nobody-died: a generic phone, no brand and no readable data."
+          },
           "drawing": "30d0a9c57b3ab79a30326101585114bcc3d2520b93c9351c4b5f940acd129389",
           "rig": null
         }
@@ -13295,10 +13379,13 @@
         {
           "number": 1,
           "date": "2026-11-01",
-          "note": "A forwarded article on a phone: a headline the caller supplies, a faceless picture box and grey bars. No masthead, byline or date; the headline is measured and refused if it would clip or not read. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A forwarded article on a phone: a headline the caller supplies, a faceless picture box and grey bars. No masthead, byline or date; the headline is measured and refused if it would clip or not read.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793486690.452509: \"Invented on-screen interfaces (players, lists, chats, notifications, forms) pass under it if they copy no real app's look or logo.\", checked on the frames of thought-of-you: invented headlines, no masthead, no real app and no personal data."
+          },
           "drawing": "8597f6fd75e211330b1a32b4e096680f8811e09b796fac2b40323e6067002b2b",
           "rig": null
         }
@@ -13312,11 +13399,368 @@
         {
           "number": 1,
           "date": "2026-11-01",
-          "note": "An open laptop seen from its screen side, three quarters, a page of bars on it and square notes that land on it one by one and can lift. Proposed: awaiting the operator's decision.",
+          "note": "An open laptop seen from its screen side, three quarters, a page of bars on it and square notes that land on it one by one and can lift.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Also, as a standing rule from now on, any version-1 prop that meets all of these conditions\", checked on the frames of home-anyway: a generic laptop, scribbled notes, no brand and no readable data."
+          },
+          "drawing": "0e7bccdffcb3c3831780d4aa22a3f312e7c81bdb9a90beae36f5ddca3f33ce0f",
+          "rig": null
+        }
+      ]
+    },
+    "wire-car": {
+      "kind": "prop",
+      "style": "",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A seeded wireframe car with its hidden lines removed, from the side or a corner; proposed until the operator has seen it.",
           "status": "proposed",
           "proof": "",
           "approval": null,
-          "drawing": "0e7bccdffcb3c3831780d4aa22a3f312e7c81bdb9a90beae36f5ddca3f33ce0f",
+          "drawing": "",
+          "rig": null
+        }
+      ]
+    },
+    "wire-jet": {
+      "kind": "prop",
+      "style": "",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A seeded wireframe fighter jet with its hidden lines removed, from any side; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "",
+          "rig": null
+        }
+      ]
+    },
+    "stick-box": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A plain delivery box on the floor, with no lettering or logo.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Also, as a standing rule from now on, any version-1 prop that meets all of these conditions\", checked by a non-author reviewer on the frames of cant-afford-to-save: a plain box and tape, no lettering."
+          },
+          "drawing": "ebc6d13567b5c85ee7ff9170435afe157d7c5ccf0654aced61015627d35d01e6",
+          "rig": null
+        }
+      ]
+    },
+    "stick-receipt": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A long receipt hanging from a hand, its rows unreadable, unrolling to the floor.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Also, as a standing rule from now on, any version-1 prop that meets all of these conditions\", checked by a non-author reviewer on the frames of cant-afford-to-save: dashes with no digits or names."
+          },
+          "drawing": "86fb7662d49e2ce3754de1ea59c4acc4c584714ad63212619845805603c6e172",
+          "rig": null
+        }
+      ]
+    },
+    "toon-tv-menu": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A full-frame TV menu with one row: a plain door, a bar and a label. An invented interface with no app name or logo.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793486690.452509: \"Invented on-screen interfaces (players, lists, chats, notifications, forms) pass under it if they copy no real app's look or logo.\", checked by a non-author reviewer on the frames of it-autoplayed: an invented menu, no real app and no logo."
+          },
+          "drawing": "eee46f3acb3a8aadfceae1aa387d881bc2d0033339a7209a430be94a143c55f3",
+          "rig": null
+        }
+      ]
+    },
+    "toon-remote": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A plain TV remote, small enough for a paw.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Also, as a standing rule from now on, any version-1 prop that meets all of these conditions\", checked by a non-author reviewer on the frames of it-autoplayed: a generic remote, no brand."
+          },
+          "drawing": "a3cfa6e114f0a889f913cad7267487230c27e60eea5c48d521a45602fde3cf41",
+          "rig": null
+        }
+      ]
+    },
+    "video-tile": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "An invented video call on a laptop's screen: a plain room, a frame and a name plate. It draws nobody: the sitter is the reel's own drawing. No app name or logo.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793486690.452509: \"Invented on-screen interfaces (players, lists, chats, notifications, forms) pass under it if they copy no real app's look or logo.\", checked by a non-author reviewer on the frames of nobody-died: an invented call tile that draws no face of its own; the reel puts the approved Manager in it."
+          },
+          "drawing": "4ae4c33ce705c1711b03d3b92ffa4e2aa2decf7e7cff7315edcfcbb390d95754",
+          "rig": null
+        }
+      ]
+    },
+    "desk-phone": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A phone on a desk seen from above: it buzzes, takes lines as they land and can turn itself over.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793486690.452509: \"Cutout joins the approved styles, for props too.\", checked by a non-author reviewer on the frames of nobody-died: a generic phone, the word MOM on it and no personal data."
+          },
+          "drawing": "aea5826d9bc14f9529c7105eb69904513afc1662d121ba9977c8621737762c9e",
+          "rig": null
+        }
+      ]
+    },
+    "soft-door": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "Doors let into the back wall of a Soft room, shut or standing open on the dark, with a slot for what stands in the doorway.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Also, as a standing rule from now on, any version-1 prop that meets all of these conditions\", checked by a non-author reviewer on the frames of wrong-door: a generic door, no brand."
+          },
+          "drawing": "14146d235b23bca4c900470bc898a2d5b072447b92539001cec537691c9f4155",
+          "rig": null
+        }
+      ]
+    },
+    "soft-mop": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A string mop standing on its head, that can tip over, slowly.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Also, as a standing rule from now on, any version-1 prop that meets all of these conditions\", checked by a non-author reviewer on the frames of wrong-door: a generic mop, no brand."
+          },
+          "drawing": "22e16ea456379efdf716c60e607e06d1324e7be9237b81efa0135ef857724ad3",
+          "rig": null
+        }
+      ]
+    },
+    "soft-closet": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "The whole frame dark, with one line of light: what stands inside shows plainly only where it crosses the line.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Also, as a standing rule from now on, any version-1 prop that meets all of these conditions\", checked by a non-author reviewer on the frames of wrong-door: a generic closet, no brand."
+          },
+          "drawing": "de8b908afcca7ecbee98f80ce63031f430a9c0c52bb1ea7d116fbb13d2dfaf18",
+          "rig": null
+        }
+      ]
+    },
+    "collage-weather-map": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A paper weather map on an easel-less sheet: two invented land shapes, isobars inside the sheet, a big arrow that takes a word, an optional clock card.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793515120.026389: \"Faceless graphics pass under the same conditions as props: hook cards, punctuation and generic icons in an approved style.\", checked by a non-author reviewer on the frames of cold-front: an invented map, no real publisher or network graphic."
+          },
+          "drawing": "849f994bf0c12fa9c44bfd315bd0adfa1700bef8b00f355e509c643e03d9dcd9",
+          "rig": null
+        }
+      ]
+    },
+    "collage-thread": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "An invented messaging thread on a phone: a contact name, a clock that changes, an optional call banner, grey and green bubbles that land on their seconds. Copies no real app.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793486690.452509: \"Invented on-screen interfaces (players, lists, chats, notifications, forms) pass under it if they copy no real app's look or logo.\", checked by a non-author reviewer on the frames of cold-front: bubbles and a plain bar, no icons, ticks or logo."
+          },
+          "drawing": "f52adc0569fb0801c34e6e574f7561f76634578d047a4207d35bf6241c56abef",
+          "rig": null
+        }
+      ]
+    },
+    "soft-mail-screen": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A phone's glass: an envelope and a red badge whose count ticks up. Generic, no app.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793486690.452509: \"Invented on-screen interfaces (players, lists, chats, notifications, forms) pass under it if they copy no real app's look or logo.\", checked by a non-author reviewer on the frames of unread: an invented mail screen, no real app and no personal data."
+          },
+          "drawing": "521019c033f6429e6a917c2d75607a3a2898efb808813b82a1efbb5ac7a12b30",
+          "rig": null
+        }
+      ]
+    },
+    "soft-mail-list": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A phone's glass: a plain list of invented subjects with one row lit. No sender, no address.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793486690.452509: \"Invented on-screen interfaces (players, lists, chats, notifications, forms) pass under it if they copy no real app's look or logo.\", checked by a non-author reviewer on the frames of unread: an invented list, no real app and no personal data."
+          },
+          "drawing": "4e8fccccc7d18c486f2beed5867b0abc7cc3fe83760211e080a45f020760afed",
+          "rig": null
+        }
+      ]
+    },
+    "soft-call-screen": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A phone's glass ringing: a caller over a red and a green round button that darkens when pressed. Generic, no app.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793486690.452509: \"Invented on-screen interfaces (players, lists, chats, notifications, forms) pass under it if they copy no real app's look or logo.\", checked by a non-author reviewer on the frames of unread: an invented call screen, no real app and no logo."
+          },
+          "drawing": "449930f37bd37ed0d24666b45bfbd656cbd5691b95d04ede218f7c28b16b46ab",
+          "rig": null
+        }
+      ]
+    },
+    "apron-spare": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A spare green cafe apron held by its neck loop, ties hanging. Generic, no name, no logo.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793486690.452509: \"Cutout joins the approved styles, for props too.\", checked by a non-author reviewer on the frames of trial-shift: a plain apron, no brand."
+          },
+          "drawing": "b091dd5d5c1bb36ae85e5af0cca615b9ee66a7a5e061d9d46c1df2373d161b94",
+          "rig": null
+        }
+      ]
+    },
+    "trial-tag": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A small pinned tag with one short word, TRIAL. Generic, no logo, no name.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793486690.452509: \"Cutout joins the approved styles, for props too.\", checked by a non-author reviewer on the frames of trial-shift: a tag reading TRIAL, no name."
+          },
+          "drawing": "913a06400dab7c54aa8fcc28eaf492c2aca5304a0d3876025f4b332919ae677f",
           "rig": null
         }
       ]

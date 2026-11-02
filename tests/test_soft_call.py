@@ -78,3 +78,20 @@ def test_the_name_tag_can_move_inside_the_picture():
     assert (float(tag.get("x")), float(tag.get("y"))) == (60.0, 140.0)
     with pytest.raises(SoftPropError):
         soft_props.beach_call(cv, cv.comp, 300.0, 200.0, name="BO", tag=(290.0, 140.0), id="outside")
+
+
+def test_the_meeting_room_keeps_its_swivel_chair_unless_told_to_clear_the_way():
+    furnished, kept = canvas()
+    cleared, bare = canvas()
+    blob.meeting_room(kept, kept.comp)
+    blob.meeting_room(bare, bare.comp, chair=False)
+    assert [i for i in elements(furnished) if "swivel-chair" in i]
+    found = elements(cleared)
+    assert not [i for i in found if "swivel-chair" in i]
+    assert [i for i in found if "laptop" in i]
+
+
+def test_the_meeting_room_refuses_a_chair_that_is_not_yes_or_no():
+    _, cv = canvas()
+    with pytest.raises(blob.BlobError, match="chair"):
+        blob.meeting_room(cv, cv.comp, chair="sometimes")

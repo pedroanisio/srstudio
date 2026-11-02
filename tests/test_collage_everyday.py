@@ -1,10 +1,13 @@
 """The Collage everyday props and rooms: they draw, they refuse what they cannot draw, and their timing is the
 caller's project clock."""
 
+import re
+import xml.etree.ElementTree as ET
+
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import Canvas, collage, collage_everyday, collage_sets, flat_counter, foley, registry
+from srstudio import Canvas, collage, collage_everyday, collage_sets, flat_counter, foley, parts, registry, specimens
 from srstudio.canvas import Signature
 from srstudio.collage_everyday import EverydayError
 
@@ -162,6 +165,117 @@ def test_an_arm_takes_a_name_or_a_look():
     collage_everyday.arm(a, a.comp, "deb", (0, 0), (100, 100))
     collage_everyday.arm(b, b.comp, collage.LOOKS["deb"], (0, 0), (100, 100))
     assert body(a) == body(b)
+
+
+SHOULDER, WRIST = (760.0, 1500.0), (420.0, 900.0)
+REACH_DRAWING = "a9bb126c32de2afcfcfc9a4127353d290761bd365a099c63567c5b87c8ffd443"  # as reels were built before side=
+
+
+def spots(t: float) -> tuple[float, float]:
+    return WRIST[0] + t * 10, WRIST[1]
+
+
+def on_screen(
+    element: ET.Element, x: float = 0.0, y: float = 0.0, scale: float = 1.0
+) -> list[list[tuple[float, float]]]:
+    """The outline of every shape under ``element``, carried through its groups' ``x``, ``y`` and ``scaleX``."""
+    out: list[list[tuple[float, float]]] = []
+    for child in element:
+        if child.tag == "group":
+            s = scale * float(child.get("scaleX", 1))
+            out += on_screen(child, x + scale * float(child.get("x", 0)), y + float(child.get("y", 0)), s)
+        elif child.tag == "shape":
+            numbers = [float(n) for n in re.findall(r"-?\d+(?:\.\d+)?", child.attrib["path"])]
+            out.append([(x + scale * a, y + b) for a, b in zip(numbers[::2], numbers[1::2], strict=True)])
+    return out
+
+
+def drawn(cv: Canvas) -> list[list[tuple[float, float]]]:
+    return on_screen(ET.fromstring(body(cv)).find("composition"))
+
+
+def assert_mirrored(left: list[list[tuple[float, float]]], right: list[list[tuple[float, float]]], x: float) -> None:
+    """``right`` is ``left`` turned over about the vertical line at ``x``; the outlines are rounded to 0.1 px."""
+    assert len(left) == len(right)
+    for a, b in zip(left, right, strict=True):
+        assert [v for px, py in a for v in (2 * x - px, py)] == pytest.approx([v for p in b for v in p], abs=0.21)
+
+
+def thumb_side(hand: list[list[tuple[float, float]]], x: float) -> int:
+    """-1 when the thumb, the hand's first shape, lies on the screen-left of ``x``, 1 on its screen-right."""
+    outline = hand[0]
+    return 1 if sum(px for px, _ in outline) / len(outline) > x else -1
+
+
+def test_an_arm_left_alone_still_draws_what_was_approved_and_published():
+    named, unnamed = canvas(), canvas()
+    collage_everyday.arm(named, named.comp, "deb", SHOULDER, WRIST, side=-1)
+    collage_everyday.arm(unnamed, unnamed.comp, "deb", SHOULDER, WRIST)
+    assert body(unnamed) == body(named)
+    assert specimens.fingerprint(body(unnamed)) == parts.get("collage-arm").version(1).drawing
+
+
+def test_a_reach_left_alone_still_draws_what_was_published():
+    named, unnamed = canvas(), canvas()
+    collage_everyday.reach(named, named.comp, "deb", SHOULDER, spots, [0.0, 1.0], side=-1)
+    collage_everyday.reach(unnamed, unnamed.comp, "deb", SHOULDER, spots, [0.0, 1.0])
+    assert body(unnamed) == body(named)
+    assert specimens.fingerprint(body(unnamed)) == REACH_DRAWING
+
+
+def test_a_reach_past_straight_up_turns_the_short_way_round():
+    """Two hands either side of straight above the elbow are a few degrees apart, not most of a circle: an angle
+    keyed across the branch swung the arm down under the duvet and left the hand floating on its own."""
+    cv = canvas()
+    elbow = (654.0, 1740.0)
+    hands = {0.0: (640.0, 1570.0), 1.0: (712.0, 1338.0), 2.0: (625.0, 1480.0)}
+    collage_everyday.reach(cv, cv.comp, "deb", elbow, lambda t: hands[t], list(hands))
+    pivot = ET.fromstring(body(cv)).find("composition").findall("group")[0]
+    turn = next(a for a in pivot.findall("animate") if a.get("property") == "rotation")
+    angles = [float(k.get("value")) for k in turn.findall("key")]
+    assert len(angles) == 3
+    assert all(abs(b - a) < 25.0 for a, b in zip(angles, angles[1:], strict=False))
+
+
+def test_the_arm_on_the_other_side_carries_the_mirror_of_the_hand():
+    left, right = canvas(), canvas()
+    collage_everyday.arm(left, left.comp, "deb", SHOULDER, WRIST)
+    collage_everyday.arm(right, right.comp, "deb", SHOULDER, WRIST, side=1)
+    assert_mirrored(drawn(left)[3:], drawn(right)[3:], WRIST[0])
+    assert (thumb_side(drawn(left)[3:], WRIST[0]), thumb_side(drawn(right)[3:], WRIST[0])) == (-1, 1)
+    assert drawn(left)[:3] == drawn(right)[:3]  # a sleeve is not handed: its shading and cuff stay as they fall
+
+
+def test_the_reach_on_the_other_side_carries_the_mirror_of_the_hand():
+    left, right = canvas(), canvas()
+    collage_everyday.reach(left, left.comp, "deb", SHOULDER, spots, [0.0, 1.0])
+    held = collage_everyday.reach(right, right.comp, "deb", SHOULDER, spots, [0.0, 1.0], side=1)
+    assert_mirrored(drawn(left)[-3:], drawn(right)[-3:], 0.0)
+    assert (thumb_side(drawn(left)[-3:], 0.0), thumb_side(drawn(right)[-3:], 0.0)) == (-1, 1)
+    assert drawn(left)[:-3] == drawn(right)[:-3]
+    collage_everyday.food(right, held, "taco", 0.0, 0.0)
+    groups = ET.fromstring(body(right)).find("composition").findall("group")
+    assert groups[-1].get("scaleX") is None  # what the hand holds is not turned over with it
+
+
+def test_an_upper_arm_is_the_same_on_either_side():
+    left, right = canvas(), canvas()
+    collage_everyday.arm(left, left.comp, "deb", SHOULDER, WRIST, hand=False)
+    collage_everyday.arm(right, right.comp, "deb", SHOULDER, WRIST, hand=False, side=1)
+    assert body(left) == body(right)
+
+
+@pytest.mark.parametrize("side", [0, 2, -2, 0.5, "left", None])
+def test_an_unknown_side_is_refused_before_anything_is_drawn(side):
+    cv = canvas()
+    before = body(cv)
+    with pytest.raises(EverydayError, match="side"):
+        collage_everyday.arm(cv, cv.comp, "deb", SHOULDER, WRIST, side=side)
+    with pytest.raises(EverydayError, match="side"):
+        collage_everyday.arm(cv, cv.comp, "deb", SHOULDER, WRIST, hand=False, side=side)
+    with pytest.raises(EverydayError, match="side"):
+        collage_everyday.reach(cv, cv.comp, "deb", SHOULDER, spots, [0.0, 1.0], side=side)
+    assert body(cv) == before
 
 
 def test_chewing_opens_and_shuts_the_mouth_and_keeps_the_track_outside_it():

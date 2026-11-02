@@ -56,8 +56,10 @@ __all__ = [
     "ARMS",
     "DRAWN",
     "EYES",
+    "GESTURES",
     "IGNORED",
     "MOUTHS",
+    "OWN_ARMS",
     "SPECIMENS",
     "WEAR",
     "DrawingChangedError",
@@ -123,6 +125,8 @@ NEWER_EYES = (*EYES, "sleepy")  # what the characters drawn since draw besides, 
 NEWER_MOUTHS = (*MOUTHS, "yawn", "scream", "puff")
 TRACED_MOUTHS = MOUTHS[:9]
 ARMS = ("desk", "type", "crossed", "sigh", "lean", "face", "face2")
+GESTURES = ("ready", "present", "empathy", "shrug", "folded", "firm", "panic", "facepalm", "tablet")  # Bento's own
+OWN_ARMS = {"toon-bento@2": GESTURES}  # a drawing whose hands are in its own poses, drawn after the shared arms
 WEAR = ("glasses", "sweat", "flush")
 PAPER_EYES = ("open", "side", "up", "half", "closed", "wide", "angry", "sad")
 PAPER_MOUTHS = ("flat", "smile", "frown", "o", "grin", "smug")
@@ -182,7 +186,7 @@ OWN_POSES: dict[str, Callable[[float, float], list[toon.Pose]]] = {"toon-lyra": 
 
 
 def _newer_toon(entry: registry.Entry) -> Canvas:
-    poses = _poses(NEWER_EYES, NEWER_MOUTHS, ARMS, WEAR)
+    poses = _poses(NEWER_EYES, NEWER_MOUTHS, (*ARMS, *OWN_ARMS.get(entry.name, ())), WEAR)
     if entry.name in OWN_POSES:
         poses += OWN_POSES[entry.name](len(poses) * STEP, STEP)
     seconds = len(poses) * STEP
@@ -346,6 +350,7 @@ SPECIMENS: dict[str, Callable[[registry.Entry], Canvas]] = {
     "toon-fox@2": _newer_toon,
     **dict.fromkeys(("toon-sloth", "toon-goat", "toon-hamster", "toon-bento", "toon-lyra"), _newer_toon),
     **{f"toon-{name}@2": _newer_toon for name in TOON_REDRAWN},
+    "toon-bento@2": _newer_toon,
     **{f"collage-{name}": _paper for name in collage.LOOKS},
     **{f"gloss-{name}": _guest for name in ("nadia", "gus", "tamsin", "sunny")},
     **{f"saga-{name}": _space for name in ("gloom", "enforcer", "droid", "juno", "rook", "mabel")},
@@ -364,6 +369,8 @@ SPECIMENS: dict[str, Callable[[registry.Entry], Canvas]] = {
             "news-gus@4",
             "news-vera@5",
             "news-gus@5",
+            "news-vera@6",
+            "news-gus@6",
         ),
         _anchor,
     ),

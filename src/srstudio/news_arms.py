@@ -60,6 +60,36 @@ class Hold:
     hand: str
 
 
+# The arm on the side of the frame each shape is drawn for: a palm to the camera has its thumb inward, so ``open`` is
+# the hand on the frame's right, and the other three are the frame's left with the thumb on top.
+DRAWN_FOR: Mapping[str, float] = MappingProxyType({"open": 1.0, "fist": -1.0, "rest": -1.0, "point": -1.0})
+
+
+@dataclass(frozen=True)
+class Hand:
+    """One of a pair of hands, from version 6: a shape and the arm it hangs on. The hand on the other arm is the same
+    drawing mirrored, so a thumb follows its side and the two can never be the same hand."""
+
+    kind: str
+    side: float
+
+    def __post_init__(self) -> None:
+        if self.kind not in DRAWN_FOR:
+            raise NewsKitError(f"no hand drawn as {self.kind!r}")
+        if self.side not in (-1.0, 1.0):
+            raise NewsKitError(f"a hand is on the frame's left (-1) or right (1), not {self.side}")
+
+    @property
+    def mirrored(self) -> bool:
+        return self.side != DRAWN_FOR[self.kind]
+
+    def on(self, side: float) -> Hand:
+        """This hand once it is placed on the arm on ``side``. Only its own arm takes it."""
+        if side != self.side:
+            raise NewsKitError(f"the {self.kind} hand of the arm on side {self.side} was placed on side {side}")
+        return self
+
+
 Keys = tuple[tuple[float, float], ...]
 BUILDS: Mapping[str, Build] = MappingProxyType(
     {

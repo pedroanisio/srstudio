@@ -1,6 +1,6 @@
 {
  "schema": "1.0.0",
- "version": "1.1.1",
+ "version": "1.2.0",
  "generated_by": "Claude Sonnet 5.5 (claude-sonnet-5-5) in Claude Code",
  "characters": [
   {
@@ -3336,7 +3336,8 @@
     "out-of-cyan",
     "the-boxes",
     "the-family-photo",
-    "the-will"
+    "the-will",
+    "only-your-aunt"
    ],
    "look": {
     "palette": "Two drawings. Collage Rosa (six reels): brown skin, white-grey hair in a bun, a plum dress, pearls and a cane; caption pill pink. Cutout Rosa (four reels): white face with an ink line, a grey bob, round glasses, a terracotta cardigan with ROSA stitched on its pocket.",
@@ -5682,7 +5683,8 @@
     "entry-level",
     "the-cactus",
     "storage-full",
-    "just-one-thing"
+    "just-one-thing",
+    "only-your-aunt"
    ],
    "look": {
     "palette": "Mustard beanie with a lighter ribbed band, warm skin with stubble, blue-grey jacket over a darker collar, navy trousers, tan shoes, a dark phone with a mint screen in his left hand and a takeaway cup in his right.",

@@ -1,13 +1,11 @@
 """Which registered parts each episode uses, measured from the calls its build makes.
 
 Hand-written declarations of the episodes that use a part drift as episodes are added (ADR 0017, ADR 0032).
-:func:`trace` records instead every registered builder that runs: it matches the code objects of each builder (a
-function, or the methods a class part defines itself) under a profiler hook, so a call counts however it is
-reached (a module attribute, an imported name, the registry, or another part drawing it). A character moving its
-head emits an explicit :mod:`srstudio.drawing_events` scope identifying its rig, so private emitter refactors
-do not change which part the drawing belongs to. Canvas ID allocation also emits explicit events.
-A part that only returns a call to a drawing of its own module (a one-pose convenience over the performer a shot calls
-instead) counts when that drawing runs with the arguments the part passes it (:func:`_delegates`).
+:func:`trace` consumes explicit registered-builder and performer scopes. Function
+builders retain their signatures; class builders keep their identity and emit from
+class-owned methods. Shared performers identify the part and version they draw.
+Head rigs and Canvas ID allocation use the same event stream. Tracing leaves an
+existing profiler untouched and needs neither Python source nor frame-local names.
 :func:`measure` runs each
 episode script on a copy of its project in a fresh interpreter (:func:`probe`) and gathers a :class:`Report`: the
 parts each episode used, and with the registry, the parts no episode uses. ``srstudio usage`` writes it as JSON.
@@ -15,23 +13,18 @@ parts each episode used, and with the registry, the parts no episode uses. ``srs
 
 from __future__ import annotations
 
-import ast
-import functools
-import inspect
 import json
-import operator
 import os
 import re
 import runpy
 import shutil
 import subprocess
 import sys
-import textwrap
-from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 from pathlib import Path
-from types import CodeType
 
 from . import drawing_events, figure_record, parts, registry, releases, toon_rigs
 from .errors import SrstudioError
@@ -44,132 +37,26 @@ class UsageError(SrstudioError, RuntimeError):
     """An episode that failed to build, or a usage file that cannot be read."""
 
 
-def _cells(func) -> tuple[object, ...]:
-    """The values a closure closed over, in its code's ``co_freevars`` order (empty for a plain function)."""
-    return tuple(cell.cell_contents for cell in func.__closure__ or ())
-
-
-def _codes() -> dict[CodeType, list[tuple[str, tuple[object, ...]]]]:
-    """Each builder's code object, with the part it draws and the values it closed over: parts made by one factory
-    (one closure per look) share a code object, and only those values tell them apart."""
-    codes: dict[CodeType, list[tuple[str, tuple[object, ...]]]] = {}
-    for entry in registry.entries():
-        b = entry.builder
-        if inspect.isclass(b):
-            for value in vars(b).values():
-                func = value.__func__ if isinstance(value, (staticmethod, classmethod)) else value
-                if inspect.isfunction(func):
-                    codes.setdefault(func.__code__, []).append((entry.name, ()))
-        elif inspect.isfunction(b):
-            codes.setdefault(b.__code__, []).append((entry.name, _cells(b)))
-    return codes
-
-
-def _called(frame, parts: Sequence[tuple[str, tuple[object, ...]]]) -> str | None:
-    """The part a call into a builder's code draws: the only one with that code, or the one whose closed-over values
-    are the frame's own."""
-    if len(parts) == 1:
-        return parts[0][0]
-    values = tuple(frame.f_locals.get(name) for name in frame.f_code.co_freevars)
-    return next(
-        (name for name, cells in parts if len(cells) == len(values) and all(map(operator.is_, cells, values))), None
-    )
-
-
-_MISSING = object()
-
-
-@functools.cache
-def _tail_call(builder) -> tuple[ast.Call, inspect.Signature] | None:
-    """The call a function builder ends by returning, when it is a call by name: the part is that call's drawing in
-    one pose. None for a builder whose source cannot be read or that ends otherwise."""
-    try:
-        tree = ast.parse(textwrap.dedent(inspect.getsource(builder)))
-    except (OSError, TypeError, SyntaxError):
-        return None
-    last = tree.body[0].body[-1] if tree.body and isinstance(tree.body[0], ast.FunctionDef) else None
-    if isinstance(last, ast.Return) and isinstance(last.value, ast.Call) and isinstance(last.value.func, ast.Name):
-        target = builder.__globals__.get(last.value.func.id)
-        return (last.value, inspect.signature(target)) if inspect.isfunction(target) else None
-    return None
-
-
-def _passed(call: ast.Call, signature: inspect.Signature) -> dict[str, object]:
-    """The constants a call passes, by the parameter that takes each: what tells the parts of one drawing apart."""
-    names = list(signature.parameters)
-    passed: dict[str, object] = {}
-    for place, arg in enumerate(call.args):
-        if isinstance(arg, ast.Starred):
-            break
-        if isinstance(arg, ast.Constant) and place < len(names):
-            passed[names[place]] = arg.value
-    passed.update({k.arg: k.value.value for k in call.keywords if k.arg and isinstance(k.value, ast.Constant)})
-    return passed
-
-
-def _delegates(
-    entries: Iterable, registered: Collection[CodeType]
-) -> dict[CodeType, list[tuple[str, dict[str, object]]]]:
-    """The drawings of their own module that parts only call, by code object: each with the parts that return a call
-    to it and the constants each passes. A shot draws a character through its performer (``news_kit.perform``) and the
-    part registered for it is the one-pose call, which no shot makes, so only the performer's own call can show the
-    part is used. A drawing that is itself registered is traced as that part, and parts that pass it the same constants
-    cannot be told apart, so they are left out and the hot drawings they share are not looked into at all."""
-    found: dict[CodeType, list[tuple[str, dict[str, object]]]] = {}
-    for entry in entries:
-        builder = entry.builder
-        tail = _tail_call(builder) if inspect.isfunction(builder) else None
-        if tail is None:
-            continue
-        call, signature = tail
-        target = builder.__globals__[call.func.id]  # type: ignore[attr-defined]
-        if target.__module__ == builder.__module__ and target.__code__ not in registered:
-            found.setdefault(target.__code__, []).append((entry.name, _passed(call, signature)))
-    apart: dict[CodeType, list[tuple[str, dict[str, object]]]] = {}
-    for code, named in found.items():
-        alike = [passed for _, passed in named]
-        if distinct := [(name, passed) for name, passed in named if alike.count(passed) == 1]:
-            apart[code] = distinct
-    return apart
-
-
-def _performed(frame, parts: Sequence[tuple[str, dict[str, object]]]) -> str | None:
-    """The part a call into a performer draws: the one whose constants are the frame's arguments, when only one is."""
-    matching = [name for name, passed in parts if all(frame.f_locals.get(k, _MISSING) == v for k, v in passed.items())]
-    return matching[0] if len(matching) == 1 else None
-
-
 @contextmanager
 def trace(figures: list[figure_record.Figure] | None = None) -> Iterator[set[str]]:
-    """The names of the registered parts called inside the block (the set fills as they run). With ``figures``, each
-    outermost call of a character also leaves the ids of what it drew there."""
-    codes, used = _codes(), set()
-    delegates = _delegates(registry.entries(), set(codes))
-    rigged = {id(rig): name for name, rig in toon_rigs.RIGS.items()}
-    characters = {entry.name for entry in registry.entries() if entry.kind == "character"} | set(rigged.values())
-    names = {entry.name for entry in registry.entries()}
-    drawing: tuple[object, str, list[str]] | None = None  # the character's frame, its name and the ids so far
-    previous = sys.getprofile()
+    """Observe explicit builder and rig scopes, retaining outermost character IDs.
 
-    def hook(frame, event, arg):
-        nonlocal drawing
-        if event == "call":
-            parts = codes.get(frame.f_code)
-            name = _called(frame, parts) if parts else None
-            if name is None and frame.f_code in delegates:
-                name = _performed(frame, delegates[frame.f_code])
-            if name is not None:
-                used.add(name)
-                if figures is not None and drawing is None and name in characters:
-                    drawing = (frame, name, [])
-        elif event == "return" and drawing is not None:
-            if frame is drawing[0]:
-                if drawing[2] and figures is not None:
-                    figures.append(figure_record.Figure(drawing[1], tuple(drawing[2])))
-                drawing = None
+    Nested traces each receive the events. An existing profiler remains installed
+    and continues receiving calls; neither source files nor stack frames are read.
+    Failed scopes still report attempted usage, while recorded() refuses failed builds.
+    """
+    entries = tuple(registry.entries())
+    used: set[str] = set()
+    builders: dict[int, str] = {}
+    for entry in entries:
+        builders.setdefault(id(entry.builder), entry.name)
+    rigged = {id(rig): name for name, rig in toon_rigs.RIGS.items()}
+    characters = {entry.name for entry in entries if entry.kind == 'character'} | set(rigged.values())
+    names = {entry.name for entry in entries}
+    drawing_state: ContextVar[tuple[object, str, list[str]] | None] = ContextVar('srstudio_usage_figure', default=None)
 
     def event(event: drawing_events.DrawEvent) -> None:
-        nonlocal drawing
+        drawing = drawing_state.get()
         name: str | None
         if event.kind == 'begin':
             if isinstance(event.subject, str):
@@ -177,25 +64,21 @@ def trace(figures: list[figure_record.Figure] | None = None) -> Iterator[set[str
                     raise UsageError(f'no registered drawing named {event.subject!r}')
                 name = event.subject
             else:
-                name = rigged.get(id(event.subject))
+                name = builders.get(id(event.subject)) or rigged.get(id(event.subject))
             if name is not None:
                 used.add(name)
                 if figures is not None and drawing is None and name in characters:
-                    drawing = (event.token, name, [])
+                    drawing_state.set((event.token, name, []))
         elif drawing is not None:
             if event.kind == 'id' and event.identifier is not None:
                 drawing[2].append(event.identifier)
             elif event.kind == 'end' and drawing[0] is event.token:
                 if drawing[2] and figures is not None:
                     figures.append(figure_record.Figure(drawing[1], tuple(drawing[2])))
-                drawing = None
+                drawing_state.set(None)
 
-    sys.setprofile(hook)
-    try:
-        with drawing_events.observe(event):
-            yield used
-    finally:
-        sys.setprofile(previous)
+    with drawing_events.observe(event):
+        yield used
 
 
 @contextmanager

@@ -86,6 +86,14 @@ def test_bad_notes_are_refused(tmp_path, doc, match):
         cp.load_notes(path)
 
 
+def test_notes_that_name_a_key_twice_are_refused(tmp_path):
+    """A merge can join two entries into one object, and JSON keeps only the last of each key: the first is lost."""
+    path = tmp_path / "notes.json"
+    path.write_text('{"schema": "1.1.0", "episodes": {}, "styles": {}, "gallery": [{"name": "a", "name": "b"}]}')
+    with pytest.raises(cp.CatalogError, match="'name' twice"):
+        cp.load_notes(path)
+
+
 def test_unreadable_notes_are_refused(tmp_path):
     path = tmp_path / "notes.json"
     path.write_text("{not json")

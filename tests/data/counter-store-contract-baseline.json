@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0.0",
+  "generated_by": {
+    "model": "GPT-6",
+    "tool": "OpenAI Codex"
+  },
+  "source_commit": "6af7ed0b",
+  "scene_sha256": {
+    "back-room": "1f7cf89a30c52dd7d605b89f36dacfdecfa12418b65ae3102071a520f90baff9",
+    "store-aisle": "d0658be03eea2037ed20abd2524e5fb9677e5e5123e898cff13b2b9056ca54f4",
+    "pen-on-chain": "645f8226ed41bd7a697323414a809ec0328bd1a7678f32088a3c1637891ace66",
+    "paper-poster": "73d012798106814c5f85fbf9c86ff4b6959067b2f6935d7ad67006373000aace",
+    "jump-clock": "624e5d9379201bba1312cb616106d3eec2694a653be5d33d86ea319820f6eaf2",
+    "sandwich": "f18fec6effd7fcebc992e8ef98a7da1efb628a5210eae33e32ad67f27bb4a1bd",
+    "qr-code": "326e824a58721d3c1cbf238cdd7744b78afdf4b50c4c63651d50e0355b2146ab",
+    "table-tent": "8b1d5dbd2a36b8c7115b3de1d51944d9beacdf3615f3cda3899f0823bfb26cb9",
+    "cafe-table": "8fa38215940655aa19f553c53a066e492251b6a8daf12c51b1d64a929fd7e67e",
+    "paper-menu": "67bf1e40716cdb78fa54af8099ef2af457b62f9b619a775d5ff6b98e03731cd0",
+    "soup-bowl": "99f1da01e0ee487cf5eec125d1377c0f6199c2f3f9087d012b4ad7edb2bd02bb",
+    "phone-screen": "dfba4296af8857c49b2fc9dadfdf507a757b4c1f899c0bc17eeba2d96a15f5d6",
+    "reaching-hand": "e13080d2bb62b3be9a005f925f231cba04d29f1986e8106234c28b3f497a4995",
+    "rising-bubbles": "149398dab3d2007b02e14cda8c8184490e568e1b54450abe9e505ae20e6c7269",
+    "water-splash": "baf47f5cca487b6518fa37eb5323cd4392184982910b7da9bdbc37d0028f3dcf",
+    "hand-basket": "ae3b163fc92064c667f156e5d893adbf2c10bd3a0c2174c780edf02be51b1f6c",
+    "shopping-cart": "73d4122a53def8432d89dd4a43c4c74d53d61005bc03fbb00067295d4fedce22",
+    "table-lamp": "92744bcf8c5141a5a61c5f2f146802360794bc68d265729e17bbd0fd5bcbc4a3",
+    "taper-candles": "643660e51446e212bbb5ee5337c31e6404395ecb3c990e669a12961b94661281",
+    "step-ladder": "fd66defb535ebd2658d2b14442e720ffd6f137a5679f3c9d281293700c58d275",
+    "kayak": "1c080bf5c33731a0d3d75aedcbd0def41a223a0b33a014cf16077ae39ca0fa9b",
+    "paddle": "00705a7a216fe6d0b2d3be511c8f24b8d86e8d8cbaa19cf20a4553744aad71f0",
+    "life-ring": "7a662dd70bbf0facb8235bf7ea0a2da91e268468bfe5fc3ebd4b3cbd5875f2d6",
+    "dark-eyes": "9a8c0cc2b7069a2de764ecca5805661e2ec4c56ac2457f0ce89cf9cbe68ca685",
+    "shelf-goods": "c0c65b1503c0c9f88d674fc37413415c62b69020b602ecb9749f0e99cba7338b",
+    "light-switch": "42e6027b6f3d7c6c1663480c4ce1c15d4e367d543a132c3f9e33394ad2719906",
+    "long-receipt": "986fc756826c43f6c6af25de53546c878b22e1e53091659f8d7cc8ca1ead2d2a",
+    "checkout-lane": "5f8e5e4dc528204f8356d3bda7b5a6016fb12c184d789ce88dab473f8cf7453e"
+  }
+}

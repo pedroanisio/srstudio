@@ -270,7 +270,7 @@ SOFT = Style(
         google=GoogleFont("Poppins", 700),
     ),
     mouths={WARM.name: SOFT_MOUTH},
-    parts=("blob", "soft_bedtime", "soft_front", "soft_odds", "soft_props", "soft_sets"),
+    parts=("blob", "soft_bedtime", "soft_closet", "soft_front", "soft_inbox", "soft_odds", "soft_props", "soft_sets"),
 )
 
 CEL = Style(
@@ -462,6 +462,7 @@ COLLAGE = Style(
         "collage",
         "collage_article",
         "collage_everyday",
+        "collage_forecast",
         "collage_odds",
         "collage_photo",
         "collage_sets",

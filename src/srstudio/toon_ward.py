@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from . import _toon_care_contracts as tc
 from .canvas import Canvas
 from .registry import register
 from .toon import FINE_W, INK_W, ToonDataError, fh, fx, fy
@@ -16,7 +17,12 @@ GAUZE, GAUZE_FOLD = "#fdfcf6", "#d9d6cb"
 BED_TOP = 742.0  # reference y of the sheet's edge, in front of whoever lies in the bed
 
 
-@register("location", "toon-ward", summary="A hospital ward: a pale wall, a drawn curtain on its rail and a drip stand")
+@register(
+    "location",
+    "toon-ward",
+    contract=tc.contract('toon-ward'),
+    summary="A hospital ward: a pale wall, a drawn curtain on its rail and a drip stand",
+)
 def ward(cv: Canvas, parent) -> None:
     """The wall, a curtain drawn along the left on a rail, and a drip stand on the right with its bag."""
     g = cv.group(parent, cv.uid("g"))
@@ -33,7 +39,12 @@ def ward(cv: Canvas, parent) -> None:
     cv.rect(g, fx(519), fy(296), fh(4), fh(180), RAIL, cv.clear, 0, radius=2)
 
 
-@register("prop", "toon-ward-bed", summary="The foot of a hospital bed: a turned-down sheet over a blue blanket")
+@register(
+    "prop",
+    "toon-ward-bed",
+    contract=tc.contract('toon-ward-bed'),
+    summary="The foot of a hospital bed: a turned-down sheet over a blue blanket",
+)
 def ward_bed(cv: Canvas, parent, marks_in: float = 0.0) -> None:
     """The sheet and blanket across the frame, in front of whoever lies in the bed, up to :data:`BED_TOP`."""
     from . import signature
@@ -48,7 +59,12 @@ def ward_bed(cv: Canvas, parent, marks_in: float = 0.0) -> None:
     signature.code(cv, g, fx(580 - marks_in), fy(866), 14, color="#0b3a53", opacity=0.9, align="end")
 
 
-@register("prop", "toon-bandage", summary="A bandage round a character's head, and a plaster on the cheek")
+@register(
+    "prop",
+    "toon-bandage",
+    contract=tc.contract('toon-bandage'),
+    summary="A bandage round a character's head, and a plaster on the cheek",
+)
 def bandage(cv: Canvas, parent, start: float, end: float, look: Any) -> Any:
     """A band of gauze across the brow of a rig's ``look``, tied off at the side, and a crossed plaster on one cheek.
     It goes in the face's own group, so it stays on him when he talks. Returns its group."""
