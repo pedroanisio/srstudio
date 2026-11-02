@@ -43,7 +43,7 @@ def compile_timeline(request: dict) -> c.CompiledScene:
         vectors[name] = prepare_vector(bindings[name], xml, fonts=fonts)
     if vectors.keys() != bindings.keys():
         raise wire.fail(None, 'exactly the required vector sources')
-    tw.expansion(timeline, vectors)
+    shared = tw.expansion(timeline, vectors)
     images = {}
     for value in request['images']:
         item = wire.fields(value, {'digest', 'png'})
@@ -117,13 +117,18 @@ def compile_timeline(request: dict) -> c.CompiledScene:
     has_text = any(asset.fonts for asset in vectors.values())
     if has_text:
         root.find('project').set('fontPolicy', 'pinned')  # type: ignore[union-attr]
+    shelf = None
     if images or has_text:
         shelf = ET.SubElement(root, 'assets')
         for digest in sorted(images):
             ET.SubElement(shelf, 'image', image_metadata[digest])
     paints = ET.SubElement(root, 'paints')
     content = ET.SubElement(root, 'composition')
-    for index, span in enumerate(timeline.spans):
+    if shared:
+        from ._scene_motion_compact import assemble
+
+        assemble(timeline, vectors, placements, shared, content, shelf, paints)
+    for index, span in enumerate(() if shared else timeline.spans):
         if not span.layers:
             continue
         plan = timeline.samples[span.scene]
@@ -151,6 +156,7 @@ def compile_timeline(request: dict) -> c.CompiledScene:
             text_assets.scope(source, prefix)
             source_assets = source.find('assets')
             if source_assets is not None and len(source_assets):
+                assert shelf is not None
                 shelf.extend(source_assets)
             source_paints = source.find('paints')
             if source_paints is not None:

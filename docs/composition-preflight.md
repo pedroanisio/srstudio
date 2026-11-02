@@ -304,6 +304,17 @@ per interval and placement. Repeated raw renders and final PNGs are deduplicated
 independently: proxy palette/grain changes can produce more final images than
 raw renders. Layer ordering and selected proxy passes remain explicit.
 
+When interval copying would exceed the XML or working-memory allowance, the
+compiler can retain one native vector source per layer and emit held placement
+keys outside its unchanged source clock. This applies to vectors with no form
+fields or only ink fields without spatial paths, and only where reuse reduces
+the conservative storage bound. Separate placements of one asset retain their
+own source offsets, rates and windows. Diffuse lighting, projected geometry and
+raster replacements keep their per-interval values in the same painter order.
+Already-fitting timelines retain their existing XML representation and digest.
+No authoring flag or larger output limit is needed. See
+[ADR 0206](decisions/0206-compact-native-vector-timelines.md).
+
 The timeline assembly worker receives closed JSON with a 32 MiB transport cap;
 existing static composition workers retain their 16 MiB cap. Source buffers,
 combined vector/image inputs and complete bundle files each have an 8 MiB cap.

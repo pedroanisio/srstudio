@@ -139,13 +139,20 @@ def test_expansion_is_refused_before_cache_or_renderer(tmp_path, monkeypatch):
     spec, binding, xml = paper()
     motion = m.SceneMotion(
         transforms=(
-            m.TransformTrack('paper', (m.TransformKey(0, c.Transform()), m.TransformKey(20, c.Transform((10, 0, 0))))),
+            m.TransformTrack('paper', (m.TransformKey(0, c.Transform()), m.TransformKey(34, c.Transform((10, 0, 0))))),
         )
     )
     spec = replace(
-        spec, duration=20, fps=c.FrameRate(120), layers=(replace(spec.layers[0], temporal=c.TemporalPolicy(0, 20)),)
+        spec,
+        duration=34,
+        fps=c.FrameRate(120),
+        layers=(replace(spec.layers[0], temporal=c.TemporalPolicy(0, 34)),),
+        budget=replace(spec.budget, max_frames=4080),
     )
     timeline = m.plan_scene(spec, (binding,), motion)
+
+    # Even after native geometry reuse, 4,080 placement spans exceed the
+    # conservative eight-MiB expansion allowance.
 
     def forbidden(*args, **kwargs):
         pytest.fail('known expansion exhaustion reached rendering')
