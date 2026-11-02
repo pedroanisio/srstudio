@@ -247,7 +247,7 @@ def flip_card(
     for i, (at, text) in enumerate(sides):
         _check_fits(text, w, h, size)
         side = cv.group(g, cv.uid("g"))
-        cv.gate(side, [(at, times[i + 1] if i + 1 < len(sides) else FOREVER)])
+        cv.gate(side, [(at, times[i + 1] if i + 1 < len(sides) else FOREVER)], local=False)
         draw_shapes(cv, side, _paper(_cut(f"flip-card-{i}", _box(w, h), 3), CARD_FILLS[i % len(CARD_FILLS)]))
         cv.rect(side, -w / 2 + 16, -h / 2 + 16, w - 32, h - 32, "#ffffff00", "#c1121f", 6, radius=10)
         _letter(cv, side, "flip-card", text, -w / 2 + CARD_PAD, -h / 2, w - 2 * CARD_PAD, h, size, color=INK)

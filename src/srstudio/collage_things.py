@@ -159,9 +159,9 @@ def resume(
     if turn is None:
         return g
     mid = round(turn + TURN / 2, 6)
-    cv.gate(front, [(0.0, mid)])
+    cv.gate(front, [(0.0, mid)], local=False)
     back = cv.group(g, cv.uid("g"))
-    cv.gate(back, [(mid, FOREVER)])
+    cv.gate(back, [(mid, FOREVER)], local=False)
     _sheet(cv, back, f"resume-back-{w}", _box(-w / 2, -h / 2, w, h), "#fffaf0")
     cv.keys(g, "scaleX", [(turn, 1.0), (mid, camera.EDGE_ON), (round(turn + TURN, 6), 1.0)], hold=False, local=False)
     return g

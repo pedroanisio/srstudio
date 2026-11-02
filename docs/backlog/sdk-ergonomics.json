@@ -1130,6 +1130,33 @@
   ],
   "findings": [
     {
+      "id": "SDK-P1-21",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Keep Collage paper turns and face changes on one clock",
+      "problem": "With Canvas.local_time enabled in a later sequence shot, resume and flip_card scaled on project time while swapping faces on local time. The completed turn could still show its front.",
+      "resolution": "Add a keyword-only local override to Canvas.gate, matching Canvas.keys, and explicitly use project time for both paper builders. Existing default-clock drawings remain byte-identical.",
+      "verification": [
+        "tests/test_collage_paper_clocks.py"
+      ],
+      "acceptance": [
+        "Visibility overrides preserve Canvas.local_time and merge interval unions",
+        "Paper scale and faces all use project time for either Canvas default",
+        "Random-access engine evaluation shows the blank back after the midpoint in a nonzero sequence shot"
+      ],
+      "verification_summary": {
+        "red": 9,
+        "initial_green": 3,
+        "passed": 216,
+        "new_cases": 12,
+        "skipped": 0,
+        "branch_inclusive_coverage_percent": 88.05744520030234,
+        "branch_coverage_percent": 80.82191780821918,
+        "unchanged_default_clock_drawings": 2,
+        "retained_artifacts": "../generated/sdk-collage-paper-clocks/v1/"
+      }
+    },
+    {
       "id": "SDK-P1-20",
       "priority": "P1",
       "status": "complete",
