@@ -71,6 +71,39 @@ def test_study_discovery_recipe_maps_reference_book_geometry_to_frame_marker_key
     assert all(a.defaultInterpolation == 'linear' and a.timeBase is None for a in animations)
 
 
+def test_care_discovery_recipe_distinguishes_whole_cabinet_from_moving_front():
+    ns = recipe('toon-care-discovery')
+    assert ns['scene'].check(schema=True) == []
+    assert ns['cabinet'].end == 3
+    assert ns['front'] not in ns['cabinet'].elements()
+    assert ns['front'].end is None
+    assert 'moving drawer front' in ns['drawer_info']['returns']['description']
+    assert ns['lamp_result'] is None
+    assert ns['lamp_info']['arguments']['properties']['end']['x-role'] == 'animation-limit'
+    assert ns['lamp_holder'].end == 3
+    assert all(a.timeBase is None for a in ns['scene'].iter('animate'))
+
+
+def test_care_discovery_recipe_keeps_dim_light_and_smooth_drawer_motion(tmp_path, scene_render):
+    from srstudio.toon import fx
+    from srstudio.toon_bed import GLOW
+    from support.acting import evaluate
+
+    ns = recipe('toon-care-discovery')
+    scene, front = ns['scene'], ns['front']
+    glow = next(s for s in scene.iter('shape') if s.fill == GLOW)
+    path = tmp_path / 'care.scene.xml'
+    path.write_bytes(scene.to_bytes())
+    for time, opacity in ((0.5, 0), (2, 0.35), (2.225, 0.35), (2.45, 0.35)):
+        nodes = {n['id']: n for n in evaluate(scene_render, path, time)}
+        assert nodes[glow.id]['world_opacity'] == pytest.approx(opacity)
+        if time == 2.225:
+            assert nodes[front.id]['local'][0] == pytest.approx(1.025)
+            assert nodes[front.id]['local'][3] == pytest.approx(0.93)
+    nodes = {n['id']: n for n in evaluate(scene_render, path, 1.02)}
+    assert float(nodes[front.id]['props']['x']) == pytest.approx(fx(494) - 3.5)
+
+
 def test_held_prop_recipe_publishes_a_schema_valid_scene_and_no_contact_shadow():
     ns = recipe('held-prop-discovery')
     assert ns['scene'].check(schema=True) == []

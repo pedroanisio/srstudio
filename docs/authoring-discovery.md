@@ -273,6 +273,49 @@ towel(cv, holder, at=(185, 500), start=0, end=3)
 ```
 <!-- toon-domestic-discovery:end -->
 
+The 15 `toon_bed`, `toon_ward` and `toon_surgery` builders distinguish scene
+handles, visibility spans and animation limits. Bed builders return groups;
+`toon-bedside-drawer` returns only the moving drawer front inside its cabinet.
+Create a containing group to move or hide the whole nightstand. Drawer buzzes,
+opening and light use composition animation time; `lit` is the held opacity,
+from zero to one. Opening has no automatic visibility end.
+
+Ward and surgery builders generally return `None`. The bandage returns a group;
+give it a face drawing parent and a runtime object whose `eyes` contains two
+reference points. It inherits that parent's transform without finding or binding
+an actor. The swung arm similarly rotates a drawn limb about a fixed reference
+shoulder; it supplies no elbow or contact solve.
+
+The dental lamp's `end` limits animation without hiding the lamp. Photo and probe
+`end=0` instead means a still: their `start` is ignored. A positive end gives them
+parent visibility bounds and a 0.28-second composition-keyed arrival. Keep parent
+visibility and animation clocks aligned. Group `timeOffset`/`timeScale` remap the
+child timeline, including composition-keyed animations within that group.
+
+<!-- toon-care-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry
+
+drawer = registry.get("prop", "toon-bedside-drawer")
+lamp = registry.get("prop", "toon-dental-lamp")
+drawer_info = drawer.describe()["contract"]
+lamp_info = lamp.describe()["contract"]
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="30", duration=4)
+cv = Canvas(scene, font_asset=None, local_time=True)
+cabinet = cv.group(cv.comp, "cabinet", end=3)
+front = drawer(cv, cabinet, buzzes=(1,), slides=2, lit=0.35)
+lamp_holder = cv.group(cv.comp, "lamp-holder", end=3)
+lamp_result = lamp(cv, lamp_holder, pivot=(712, 30), end=3)
+# Both caller-owned parents hide complete drawings at 3 seconds.
+# Moving or hiding front alone affects only the drawer front.
+assert drawer_info["capabilities"]["returns_scene_handle"]
+assert lamp_result is None
+```
+<!-- toon-care-discovery:end -->
+
 The 22 parts in `toon_everyday`, `toon_inserts`, `toon_study` and `toon_laptop`
 also publish contracts. Inspect the return before using it:
 
