@@ -7,6 +7,7 @@ import json
 import os
 import stat
 import tempfile
+import xml.etree.ElementTree as ET
 from dataclasses import asdict
 from pathlib import Path
 
@@ -126,13 +127,17 @@ def _inputs(
 
 
 def _png(data: bytes, asset: c.PreparedPlate, budget: c.RenderBudget) -> str:
+    return _png_size(data, asset.width, asset.height, budget)
+
+
+def _png_size(data: bytes, width: int, height: int, budget: c.RenderBudget) -> str:
     response = _call(
         {
             'schema': wire.SCHEMA,
             'operation': 'validate-png',
             'png': wire.xml_encode(data),
-            'width': asset.width,
-            'height': asset.height,
+            'width': width,
+            'height': height,
         },
         budget,
     )
@@ -206,6 +211,24 @@ def _render(
             path = work / resource.name
             path.parent.mkdir(exist_ok=True, mode=0o700)
             plates._private_bytes(path, resource.data)
+        printed_bytes = 0
+        for resource in asset.resources:
+            if not resource.name.endswith('.scene.xml'):
+                continue
+            document = work / resource.name
+            picture = work / resource.name.replace('.scene.xml', '.png')
+            project = ET.fromstring(resource.data).find('project')
+            assert project is not None
+            width, height = int(project.attrib['width']), int(project.attrib['height'])
+            plates._engine_render(engine, document, picture)
+            if _engine_hash(engine) != engine_hash:
+                raise _failure('engine', 'unchanged renderer bytes throughout label rendering', 'composition.render')
+            data = _read(picture, MAX_BYTES)
+            _png_size(data, width, height, budget)
+            printed_bytes += len(data)
+            if printed_bytes > MAX_BYTES:
+                raise _failure('print', 'at most eight MiB of rendered print resources', 'composition.budget')
+            picture.chmod(0o600)
         output = work / 'image.png'
         plates._engine_render(engine, source, output)
         if _engine_hash(engine) != engine_hash:
@@ -258,7 +281,13 @@ def compile_bundle(plan: c.ValidatedScenePlan, assets: Assets, *, engine: Path, 
         ) as work:
             for key, asset in jobs.items():
                 if key not in images:
-                    images[key] = _render(entries[key], key, engine_hash, asset, engine, budget)
+                    with plates.render_session(
+                        max_invocations=asset.binding.plates[0].engine_invocations,
+                        timeout=budget.timeout,
+                        max_memory_bytes=budget.max_memory_bytes,
+                        max_file_bytes=MAX_RENDER_FILE_BYTES,
+                    ):
+                        images[key] = _render(entries[key], key, engine_hash, asset, engine, budget)
         resources = {hashlib.sha256(data).hexdigest(): data for data in images.values()}
         if sum(map(len, resources.values())) + sum(len(v.xml) for v in vectors.values()) > MAX_BYTES:
             raise _failure('budget.bundle', 'at most eight MiB of combined vector/image inputs', 'composition.budget')

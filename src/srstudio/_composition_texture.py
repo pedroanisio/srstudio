@@ -59,9 +59,13 @@ def snapshot_source(
     *,
     basis: Literal['canonical', 'clay'],
     meters_per_unit: float | None,
+    print_font: bytes | None,
+    print_license: str | None,
 ) -> c.PlateSource:
     from ._composition_plate import snapshot as mesh_snapshot
     from ._composition_plate_wire import MAX_MESHES, validate_source
+    from ._composition_print import snapshot as print_snapshot
+    from ._composition_print import validate as validate_print
 
     if any(type(items) is not tuple or not 1 <= len(items) <= MAX_MESHES for items in (meshes, materials)):
         raise _fail('source', 'bounded immutable mesh and material tuples')
@@ -74,12 +78,22 @@ def snapshot_source(
             raise _fail('source', 'at most eight MiB of combined mesh and texture bytes')
         copied.append(frozen)
     textures: dict[str, c.PlateTexture] = {}
+    prints: dict[str, c.PlatePrint] = {}
     converted = []
     for material in materials:
-        if type(material) is not plates.Material or material.print is not None:
-            raise _fail(
-                'material', 'a plates.Material without a printed-label recipe; labels require explicit rendering'
-            )
+        if type(material) is not plates.Material:
+            raise _fail('material', 'a plates.Material')
+        label = ''
+        if material.print is not None:
+            if material.color_map is not None:
+                raise _fail('material', 'only one printed label or color map')
+            printed = print_snapshot(material.print, print_font, print_license)
+            label = printed.id
+            if label not in prints:
+                total += validate_print(printed)
+                if total > MAX_BYTES:
+                    raise _fail('source', 'at most eight MiB of combined source buffers and labels')
+                prints[label] = printed
         maps = {}
         for field in ('color_map', 'normal_map'):
             value = getattr(material, field)
@@ -111,9 +125,12 @@ def snapshot_source(
                 material.normal_scale,
                 material.sheen,
                 material.subsurface,
+                label,
             )
         )
-    source = c.PlateSource(id, tuple(copied), tuple(converted), meters_per_unit, tuple(textures.values()))
+    source = c.PlateSource(
+        id, tuple(copied), tuple(converted), meters_per_unit, tuple(textures.values()), tuple(prints.values())
+    )
     validate_source(source)
     return source
 

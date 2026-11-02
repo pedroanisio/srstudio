@@ -9,13 +9,16 @@ from dataclasses import asdict, replace
 
 from . import _composition_wire as wire
 from . import composition as c
+from . import plates
 from ._composition_preflight import _digest, _graph, _id
+from ._composition_print import MAX_PRINTS, definition
+from ._composition_print import validate as validate_print
 from ._composition_texture import MAX_TEXTURES
 from ._composition_texture import validate as validate_texture
 
 MAX_BYTES = 8 * 1024**2
 MAX_MESHES = 128
-MAX_RESOURCES = MAX_MESHES + MAX_TEXTURES
+MAX_RESOURCES = MAX_MESHES + MAX_TEXTURES + 2 * MAX_PRINTS
 
 
 def _bytes(value: object) -> bytes:
@@ -74,6 +77,14 @@ def validate_source(source: c.PlateSource) -> int:
         total += validate_texture(texture)
         if total > MAX_BYTES:
             raise wire.fail(total, 'at most eight MiB of combined mesh and texture bytes')
+    if type(source.prints) is not tuple or len(source.prints) > MAX_PRINTS:
+        raise wire.fail(None, 'at most 128 immutable print records')
+    for printed in source.prints:
+        total += validate_print(printed)
+        if total > MAX_BYTES:
+            raise wire.fail(total, 'at most eight MiB of combined source buffers and labels')
+    if sum(p.recipe.width * p.recipe.height * 4 for p in source.prints) > MAX_BYTES:
+        raise wire.fail(None, 'at most eight MiB of combined label RGBA pixels')
     return total
 
 
@@ -82,12 +93,20 @@ def source_digest(source: c.PlateSource) -> str:
     additions = {'color_map': '', 'normal_map': '', 'normal_scale': 1.0, 'sheen': '', 'subsurface': 0.0}
     legacy = (
         not source.textures
+        and not source.prints
         and all(m.uvs is None for m in source.meshes)
         and all(getattr(m, field) == default for m in source.materials for field, default in additions.items())
+        and all(not m.print for m in source.materials)
     )
     return _digest(
         {
-            'schema': 'srstudio.plate-source/1.0.0' if legacy else 'srstudio.plate-source/1.1.0',
+            'schema': (
+                'srstudio.plate-source/1.2.0'
+                if source.prints or any(m.print for m in source.materials)
+                else 'srstudio.plate-source/1.0.0'
+                if legacy
+                else 'srstudio.plate-source/1.1.0'
+            ),
             'meshes': [
                 {
                     'material': m.material,
@@ -98,9 +117,15 @@ def source_digest(source: c.PlateSource) -> str:
                 for m in source.meshes
             ],
             'materials': [
-                {k: v for k, v in asdict(m).items() if not legacy or k not in additions} for m in source.materials
+                {
+                    k: v
+                    for k, v in asdict(m).items()
+                    if (not legacy or k not in additions) and (k != 'print' or source.prints or m.print)
+                }
+                for m in source.materials
             ],
             'meters_per_unit': source.meters_per_unit,
+            **({'prints': [{'id': p.id, **definition(p)} for p in source.prints]} if source.prints else {}),
             **(
                 {}
                 if legacy
@@ -126,6 +151,15 @@ def source_encode(source: c.PlateSource) -> dict:
         'id': source.id,
         'meters_per_unit': source.meters_per_unit,
         'materials': [asdict(m) for m in source.materials],
+        'prints': [
+            {
+                'id': p.id,
+                'recipe': {**asdict(p.recipe), 'lines': [asdict(line) for line in p.recipe.lines]},
+                'font': _encode(p.font),
+                'license': p.license,
+            }
+            for p in source.prints
+        ],
         'textures': [
             {'id': t.id, 'width': t.width, 'height': t.height, 'pixels': _encode(t.pixels)} for t in source.textures
         ],
@@ -142,7 +176,7 @@ def source_encode(source: c.PlateSource) -> dict:
 
 
 def source_decode(value: object) -> c.PlateSource:
-    data = wire.fields(value, {'id', 'meters_per_unit', 'materials', 'meshes', 'textures'})
+    data = wire.fields(value, {'id', 'meters_per_unit', 'materials', 'meshes', 'textures', 'prints'})
     if any(type(data[k]) is not list or not 1 <= len(data[k]) <= MAX_MESHES for k in ('meshes', 'materials')):
         raise wire.fail(None, 'bounded lists of meshes and materials')
     meshes = []
@@ -166,12 +200,37 @@ def source_decode(value: object) -> c.PlateSource:
         if total > MAX_BYTES:
             raise wire.fail(total, 'at most eight MiB of combined mesh and texture bytes')
         textures.append(texture)
+    if type(data['prints']) is not list or len(data['prints']) > MAX_PRINTS:
+        raise wire.fail(None, 'a bounded print list')
+    prints = []
+    for value in data['prints']:
+        p = wire.fields(value, {'id', 'recipe', 'font', 'license'})
+        recipe = wire.fields(p['recipe'], {'background', 'width', 'height', 'lines', 'border'})
+        if type(recipe['lines']) is not list or len(recipe['lines']) > MAX_PRINTS:
+            raise wire.fail(None, 'a bounded print line list')
+        try:
+            lines = tuple(
+                plates.Line(**wire.fields(line, {'text', 'x', 'y', 'size', 'color'})) for line in recipe['lines']
+            )
+        except plates.PlateError as error:
+            raise wire.fail(None, 'valid typed printed lines') from error
+        printed = c.PlatePrint(
+            p['id'],
+            plates.Print(recipe['background'], recipe['width'], recipe['height'], lines, recipe['border']),
+            _decode(p['font']),
+            p['license'],
+        )
+        total += validate_print(printed)
+        if total > MAX_BYTES:
+            raise wire.fail(total, 'at most eight MiB of combined source buffers and labels')
+        prints.append(printed)
     source = c.PlateSource(
         data['id'],
         tuple(meshes),
         tuple(wire.record(c.PlateMaterial, m) for m in data['materials']),
         data['meters_per_unit'],
         tuple(textures),
+        tuple(prints),
     )
     validate_source(source)
     return source
@@ -222,10 +281,16 @@ def prepared_decode(value: object, plan: c.ValidatedScenePlan, layer: str, sourc
         expected = r['name']
         if (
             type(expected) is not str
-            or expected not in ('meshes/' + digest + '.obj', 'textures/' + digest + '.png')
+            or expected
+            not in (
+                'meshes/' + digest + '.obj',
+                'textures/' + digest + '.png',
+                'prints/' + digest + '.scene.xml',
+                'fonts/' + digest + '.ttf',
+            )
             or expected in names
         ):
-            raise wire.fail(None, 'unique content-addressed mesh or texture paths')
+            raise wire.fail(None, 'unique content-addressed mesh, texture, print or font paths')
         total += len(content)
         if total > MAX_BYTES:
             raise wire.fail(total, 'at most eight MiB of prepared resources')
