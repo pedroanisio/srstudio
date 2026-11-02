@@ -15,6 +15,7 @@ battery going down in its inserts, where nobody speaks, and the hold on the two 
 
 from __future__ import annotations
 
+from srstudio import opener
 from srstudio.interview import Interview, Schedule, Spoken, Timing, main
 from srstudio.song import Singer
 from srstudio.styles import SOFT
@@ -56,6 +57,9 @@ AFTER_ASK = 0.2  # the insert comes in after she has asked
 BACK = 0.3  # the two-shot lands before her next line
 AFTER_ALIVE = 0.2  # the insert comes in after "alive"
 HOLD = 1.3  # the bracket: he shows her his 2%, she looks at it, and at him
+OPENING = "my best friend who's\nalways on 2%"  # the viewer's line; one row is wider than the safe area in Poppins
+OPENER_TOP = opener.SAFE.y0  # the pill at the top of the safe area: the text line is read first, above any caption
+UNDER_OPENER = 330.0  # the caption box while the opening line is up: its letters start below the pill
 
 
 def schedule(speech: list[float], effect: dict[str, float]) -> Schedule:

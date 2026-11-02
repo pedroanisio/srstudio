@@ -32,6 +32,7 @@ RELEASE = Release(
         send_line="You should really charge your phone.",
     ),
     style="Soft",
+    video="two-percent-v2",  # the keeper: the first master ran the caption outlines across the spaces between words
     parts={
         "captions": 1,
         "juno": 1,

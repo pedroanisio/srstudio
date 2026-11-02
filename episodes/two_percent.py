@@ -19,7 +19,7 @@ from srstudio import SOFT, Episode, EpisodeSpec, blob, foley, fonts, layout, ope
 from srstudio.interview import said
 from srstudio.soft_inbox import Level
 from srstudio.soft_sets import BENCH_SEAT, Shot
-from two_percent_audio import INTERVIEW, STEP
+from two_percent_audio import INTERVIEW, OPENER_TOP, OPENING, STEP, UNDER_OPENER
 
 os.umask(0o077)  # generated outputs are private: folders 700, files 600
 
@@ -54,9 +54,11 @@ CAPTION_TAIL = 0.3  # a caption stays up this long past its line
 FLASH = said(ep.root, P[3], "photo")
 RIDE_TICK = RIDE + STEP
 DRAIN_TICKS = (DRAIN + STEP, DRAIN + 2 * STEP)
+FONT = (ROOT / ep.spec.font).read_bytes()
+MEASURE = partial(fonts.text_width, FONT)  # a battery number's box is as wide as the number: at the frame edge it fits
 LOOKS_AT_HIM = DRAIN_END + 0.65  # the hold: she looks at his phone, then at him
 CLOSE = (P[1].start - CAPTION_LEAD, P[2].start - CAPTION_LEAD)  # the close on her for "Since Tuesday."
-CLOSER = P[4].start - CAPTION_LEAD  # the last close on her; his phone shows its charge alone at the frame edge in both
+CLOSER = P[4].start - CAPTION_LEAD  # the last close on her; his phone at the frame edge still reads 2%: both phones do
 
 CRICKETS = [0.9, 1.05, 4.3, 4.45, 8.2, 8.35, 12.1, 12.25]
 foley.write_bursts(
@@ -135,9 +137,9 @@ def world(g):
                 Level(41, CLOSE[0], CLOSE[1], number=False),  # at the frame edge in her close: the charge alone
                 Level(41, CLOSE[1], RIDE),
                 Level(33, RIDE_END, DRAIN),
-                Level(2, DRAIN_END, CLOSER),
-                Level(2, CLOSER, DURATION + 1.0, number=False),
+                Level(2, DRAIN_END, DURATION + 1.0),
             ),
+            measure=MEASURE,
             id="pip-battery",
         ),
         id="pip-phone",
@@ -151,6 +153,7 @@ def world(g):
             cv,
             s,
             levels=(Level(2, 0.0, RIDE), Level(2, RIDE_END, DRAIN), Level(2, DRAIN_END, DURATION + 1.0)),
+            measure=MEASURE,
             id="juno-battery",
         ),
         id="juno-phone",
@@ -188,7 +191,7 @@ soft_props.phone(
     y=INSERT_AT[1],
     scale=INSERT_SCALE,
     screen=lambda s: soft_inbox.battery_screen(
-        cv, s, levels=(Level(41, RIDE, RIDE_TICK), Level(33, RIDE_TICK, RIDE_END)), id="ride-battery"
+        cv, s, levels=(Level(41, RIDE, RIDE_TICK), Level(33, RIDE_TICK, RIDE_END)), measure=MEASURE, id="ride-battery"
     ),
     id="ride-phone",
 )
@@ -207,17 +210,21 @@ soft_props.phone(
             Level(12, DRAIN_TICKS[0], DRAIN_TICKS[1]),
             Level(2, DRAIN_TICKS[1], DRAIN_END),
         ),
+        measure=MEASURE,
         id="drain-battery",
     ),
     id="drain-phone",
 )
 
-OPENING = "my best friend who's\nalways on 2%"  # one row is wider than the safe area in Poppins
 HELD = max(P[0].end, opener.seconds(OPENING))  # to the end of his line, held on if it ends before it can be read
-font = (ROOT / ep.spec.font).read_bytes()
-line = opener.draw(
-    cv, ep.comp, OPENING, HELD, measure=partial(fonts.text_width, font), top=446.0, names=("juno", "pip")
-)
+line = opener.draw(cv, ep.comp, OPENING, HELD, measure=MEASURE, top=OPENER_TOP, names=("juno", "pip"))
+
+# A caption spaced so its outlined words stay apart is wider than the line was: the fourth splits at its second
+# sentence, each window the words of one sentence, the second from when she says its "and".
+SPLIT, PARTS = 3, ("And a photo of us.", "And text my mom\nI'm alive.")
+if " ".join(PARTS).split() != P[SPLIT].caption.split():
+    raise SystemExit(f"caption {SPLIT + 1} splits into other words than {P[SPLIT].caption!r}: {PARTS!r}")
+SECOND = said(ep.root, P[SPLIT], "and", 1) - CAPTION_LEAD
 
 specs = []
 for i, p in enumerate(P):
@@ -227,8 +234,16 @@ for i, p in enumerate(P):
         held = min(held, RIDE)
     if i == 3:
         held = min(held, DRAIN)
-    specs.append((max(0.0, p.start - CAPTION_LEAD), held, p.caption, f"caption-{i + 1}"))
-ep.hide_on_cover(line, flash, *ep.captions(specs, **soft_sets.CAPTIONS))
+    start = max(0.0, p.start - CAPTION_LEAD)
+    if i == SPLIT:
+        specs += [(start, SECOND - 0.05, PARTS[0]), (SECOND, held, PARTS[1])]
+    else:
+        specs.append((start, held, p.caption))
+specs = [(a, b, text, f"caption-{k + 1}") for k, (a, b, text) in enumerate(specs)]
+look = soft_sets.caption_look(FONT, [text for _, _, text, _ in specs])  # the Soft caption layer: words kept apart
+under = [s for s in specs if s[0] < HELD]  # up with the opening line: set below its pill, which is read first
+captions = [*ep.captions(under, **{**look, "y": UNDER_OPENER}), *ep.captions(specs[len(under) :], **look)]
+ep.hide_on_cover(line, flash, *captions)
 ep.markers(
     extra=[
         ("marker-ride", RIDE, "The ride"),
