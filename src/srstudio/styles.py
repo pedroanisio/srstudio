@@ -464,8 +464,8 @@ COLLAGE = Style(
     parts=(
         "collage",
         "collage_article",
-        "collage_everyday",
         "collage_big_type",
+        "collage_everyday",
         "collage_forecast",
         "collage_odds",
         "collage_photo",
