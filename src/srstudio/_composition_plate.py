@@ -91,7 +91,7 @@ def _mesh(mesh: c.PlateMesh) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.nda
 
 
 def prepare_plate(plan: c.ValidatedScenePlan, layer: str, source: c.PlateSource) -> c.PreparedPlate:
-    size = validate_source(source)
+    validate_source(source)
     view = c.plate_view(plan, layer, meters_per_unit=source.meters_per_unit)
     selected = next(item for item in plan.spec.layers if item.id == layer)
     if source.id != selected.asset:
@@ -103,6 +103,20 @@ def prepare_plate(plan: c.ValidatedScenePlan, layer: str, source: c.PlateSource)
     job = binding.plates[0]
     if job.key != digest:
         raise _fail('job.key', 'the exact plate_source_digest of the immutable source')
+    return prepare_source(plan, layer, source, binding, job, view)
+
+
+def prepare_source(
+    plan: c.ValidatedScenePlan,
+    layer: str,
+    source: c.PlateSource,
+    binding: c.AssetBinding,
+    job: c.PlateWork,
+    view: c.PlateView,
+) -> c.PreparedPlate:
+    """Shared worker core; adapters own binding/job/view relationship validation."""
+    size = validate_source(source)
+    digest = source_digest(source)
     if (
         job.width < max((view.width, *(p.recipe.width for p in source.prints)))
         or job.height < max((view.height, *(p.recipe.height for p in source.prints)))

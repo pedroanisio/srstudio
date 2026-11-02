@@ -20,8 +20,9 @@ enforce process limits and count retries; see [render sessions](authoring-benchm
 `prepare_plate` also verifies static mesh and texture payloads and prepares their
 closed scene/resources in a bounded worker. `compile_bundle` and `emit_bundle`
 combine verified vectors and static plates with bounded rendering and portable
-image resources, including bounded printed labels. Animated plate and proxy adapters remain open under
-SDK-P2-07.
+image resources, including bounded printed labels. `prepare_proxy` adds static
+light/part-ID conversion under the same camera, lighting and worker budgets.
+Animated plate and proxy adapters remain open under SDK-P2-07.
 A valid manifest alone is not a rendered scene,
 approval of a new style, or proof of a host's declared geometry.
 
@@ -230,6 +231,96 @@ validation, font provenance, closed preparation, failure preservation, cache
 invalidation, nested attempt limits and a real rendered UV label probe. This
 establishes label transport; it does not certify arbitrary text legibility.
 
+## Prepare a static proxy
+
+`proxy_source` snapshots existing mesh arrays and a `proxy.Recipe`. Its required
+`lighting="scene"` argument explicitly replaces that recipe's private lights with
+the shared scene rig. Immutable `ProxyRecipe`, `ProxyPart` and `ProxyInk` records
+also support direct host construction. No callable or file path crosses the
+worker boundary.
+
+```python
+from srstudio import clay, proxy
+from srstudio import composition as c
+
+model = clay.Model()
+model.box("body", (0, 0, 0), (0.2, 0.2, 0.2))
+recipe = proxy.Recipe({"body": ("#102030", "#506070", "#90A0B0", "#D0E0F0")})
+source = c.proxy_source(
+    "host", tuple(model.meshes()), recipe, basis="clay", lighting="scene"
+)
+# Width/height bound the final registered view, including any principal-point
+# overscan. proxy_jobs applies the recipe's oversampling exactly once.
+jobs = c.proxy_jobs(source, width=64, height=64, memory_bytes=8 * 1024**2)
+binding = c.AssetBinding(
+    "host", "rafa", 1, "proxy", c.Bounds((-1, -1, -1), (1, 1, 1)),
+    nodes=128, memory_bytes=32 * 1024**2, plates=jobs,
+)
+spec = c.ScenePlan(
+    c.StylePin("toon", c.style_revision("toon")), 64, 64, c.FrameRate(), 1, 7,
+    "meter", c.CameraSpec("perspective", (0, 0, 10), (0, 0, 0), (32, 32), 100, 10),
+    c.LightRig("lit", (c.LightSpec("ambient", "ambient", "#FFFFFF", 1),)),
+    (c.LayerSpec("host", "host", 1, c.TemporalPolicy(0, 1), passes=("rgba",)),),
+    c.RenderBudget(timeout=120),
+)
+plan = c.preflight(spec, (binding,))
+prepared = c.prepare_proxy(plan, "host", source)
+```
+
+This box demonstrates the host binding and preparation protocol; a valid binding
+is not approval of new geometry or a new style. Pass `prepared` to
+`compile_bundle` or `emit_bundle` alongside the other prepared placements.
+Preparation validates the actual geometry and returns light/ID documents without
+rendering. The light pass uses world-space scene lights; the semantic ID pass
+uses black ambient illumination and deterministic emissive material IDs.
+
+Each proxy layer selects exactly one pass:
+
+| Pass | Image contents |
+| --- | --- |
+| `rgba` | Full converted model, including its normally visible under parts |
+| `back` | Designated behind parts; under parts are excluded |
+| `front` | Other visible parts; behind and under parts are excluded |
+| `under` | A separate under-only render, including surfaces hidden by the full model |
+
+Use separate layers with the same asset and pose to place supported plate/proxy
+picture assets between `under`, `back` and `front`. Those layers share identical
+raw render jobs. Vector information can be placed above all picture layers;
+vector picture assets still require a shared-light adapter and are refused in
+this lit workflow. A
+recipe with under parts declares four jobs; otherwise it declares two. If the
+under subset is the whole model, identical jobs are deduplicated. The planning
+estimate may conservatively count separate selected passes; actual `BundleWork`
+counts unique cold/warm raw jobs and real launch attempts. No depth or normal
+pass, automatic intersecting-layer strategy or cross-layer shadow receiver is
+implied.
+
+`proxy_source_digest` includes palette, ink and grain controls. The `PlateWork`
+keys returned by `proxy_jobs` identify only the raw geometry/material inputs.
+Changing tones or grain can therefore reuse verified light/ID cache entries
+while producing a new converted image. Changed geometry, roughness, view,
+lighting or renderer bytes invalidate the affected raw renders. Conversion
+runs again in the bounded worker on warm builds. Portable bundles contain only
+the selected converted PNGs; intermediate light/ID images stay in the cache.
+
+The immutable adapter supports 1–64 parts and oversampling 1–4. Mesh and recipe
+inputs, combined prepared pass resources, conversion PNG inputs and final
+bundle files each have an eight MiB cap. Raw dimensions must stay within 8192
+and the plan's frame-pixel budget. For `P` raw pixels and `N` palette parts,
+the binding's memory declaration must cover at least
+`8 * source_bytes + P * (64 * N + 512)` bytes. This reserves the part-distance
+tensor and conversion intermediates; it is not measured RSS. Job declarations
+also cover the actual raw dimensions, samples, bounces and prepared storage.
+Worker memory/deadline limits remain authoritative. Ink uses final image pixels;
+premultiplied-alpha downsampling applies oversampling once. Tiny parts remain
+subject to the existing proxy classifier's 3×3 opening.
+
+[Proxy tests](../tests/test_composition_proxy.py) execute this recipe and check
+shared projection, all four conversion results, content-sensitive cache reuse,
+malformed inputs, forged evidence and real-engine part-ID registration.
+Animation, temporal stability and style approval require the separate
+[DRAWING acceptance study](../DRAWING.md#proof-and-acceptance-gates).
+
 ## Render and publish a mixed bundle
 
 ```python
@@ -401,8 +492,8 @@ bounded manifest intake and final filesystem publication are outside the worker.
 This execution boundary is not a sandbox for hostile Python programs.
 
 The vector compiler makes no engine calls. Rendering its output independently
-does not inherit these budgets; plate/proxy adapters and renderer integration
-remain required work. Timeout and memory-allocation failures expose budget paths;
+does not inherit these budgets. Static plate/proxy bundle rendering does inherit
+the plan limits; independently rendered scene playback needs its own session. Timeout and memory-allocation failures expose budget paths;
 other worker startup, exit or protocol failures have explicit worker codes.
 There are no automatic retries. Typed SDK causes, including part-version errors,
 survive the worker boundary through a closed diagnostic protocol.

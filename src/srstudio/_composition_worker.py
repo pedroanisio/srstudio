@@ -17,6 +17,32 @@ def dispatch(raw: bytes) -> dict:
 
     request = wire.loads(raw)
     operation = request.get('operation')
+    if operation == 'prepare-proxy':
+        from srstudio import _composition_plate_wire as pw
+        from srstudio._composition_proxy_runtime import decode
+        from srstudio._composition_proxy_worker import prepare_proxy
+
+        wire.fields(request, {'schema', 'operation', 'plan', 'layer', 'source'})
+        plan = wire.record(c.ValidatedScenePlan, request['plan'])
+        proxy_asset = prepare_proxy(plan, request['layer'], decode(request['source']))
+        return {
+            'schema': SCHEMA,
+            'status': 'ok',
+            'passes': [pw.prepared_encode(p) for p in proxy_asset.passes],
+            'digest': proxy_asset.digest,
+        }
+    if operation == 'convert-proxy':
+        import hashlib
+
+        from srstudio._composition_proxy_worker import convert
+
+        output = convert(request)
+        return {
+            'schema': SCHEMA,
+            'status': 'ok',
+            'png': wire.xml_encode(output),
+            'digest': hashlib.sha256(output).hexdigest(),
+        }
     if operation == 'validate-png':
         from srstudio._composition_png import verify
 

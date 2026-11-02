@@ -11,8 +11,8 @@ import pytest
 from srstudio import composition as c
 from srstudio import plates
 from srstudio.sample import SYSTEM_FONTS
+from support.composition import mesh as model
 from support.composition import prepared_plate_plan
-from test_composition_textures import model
 
 
 def source(label=None, font=None):

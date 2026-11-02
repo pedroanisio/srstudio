@@ -10,7 +10,8 @@ verifies static geometry and texture pixels and produces a closed document/resou
 in a bounded worker. compile_bundle and emit_bundle combine verified vectors and
 static plates with bounded rendering, verified caching and atomic publication.
 Printed labels retain immutable recipes/font bytes and share the plate render budget.
-Animated plate and proxy adapters remain unsupported.
+Static proxies share the camera/lights and convert verified light/ID passes in
+a bounded worker. Animated plate and proxy adapters remain unsupported.
 """
 
 from __future__ import annotations
@@ -23,6 +24,7 @@ if TYPE_CHECKING:
     from ._composition_plate_view import PlateView
     from .clay import Mesh
     from .plates import Material, Print, Texture
+    from .proxy import Recipe
 
 from .errors import SrstudioError
 
@@ -474,6 +476,92 @@ def prepare_plate(plan: ValidatedScenePlan, layer: str, source: PlateSource) -> 
 
 
 @dataclass(frozen=True)
+class ProxyPart(_Record):
+    name: str
+    tones: tuple[str, str, str, str]
+    roughness: float = field(default=0.6, metadata={'minimum': 0, 'maximum': 1})
+
+
+@dataclass(frozen=True)
+class ProxyInk(_Record):
+    colour: str = '#26303a'
+    weight: float = field(default=0.8, metadata={'minimum': 0, 'maximum': 1024})
+    grain: float = field(default=0.2, metadata={'minimum': 0, 'maximum': 1024})
+    shade: float = field(default=0.5, metadata={'minimum': 0, 'maximum': 1024})
+    least: float = field(default=0.6, metadata={'minimum': 0, 'maximum': 1024})
+    most: float = field(default=2.0, metadata={'minimum': 0, 'maximum': 1024})
+
+
+@dataclass(frozen=True)
+class ProxyRecipe(_Record):
+    """Immutable conversion controls. Illumination belongs to ScenePlan.lights."""
+
+    parts: tuple[ProxyPart, ...]
+    quiet: tuple[tuple[str, ...], ...] = ()
+    behind: tuple[str, ...] = ()
+    under: tuple[str, ...] = ()
+    ink: ProxyInk = ProxyInk()
+    thresholds: tuple[float, float, float] = (0.365, 0.475, 0.565)
+    soft_edge: float = field(default=0.07, metadata={'minimum': 0, 'maximum': 1})
+    oversample: int = field(default=2, metadata={'minimum': 1, 'maximum': 4})
+    grain_seed: int = field(default=7, metadata={'minimum': 0, 'maximum': 2**53})
+
+
+@dataclass(frozen=True)
+class ProxySource:
+    id: str
+    meshes: tuple[PlateMesh, ...]
+    recipe: ProxyRecipe
+    meters_per_unit: float | None = None
+
+
+@dataclass(frozen=True)
+class PreparedProxy:
+    binding: AssetBinding
+    source: ProxySource
+    layer: str
+    plan_digest: str
+    passes: tuple[PreparedPlate, ...]
+    digest: str
+
+
+def proxy_source(
+    id: str,
+    meshes: tuple[Mesh, ...],
+    recipe: Recipe,
+    *,
+    basis: Literal['canonical', 'clay'],
+    lighting: Literal['scene'],
+    meters_per_unit: float | None = None,
+) -> ProxySource:
+    """Snapshot a proxy recipe/geometry, explicitly replacing its lights with scene lights."""
+    from ._composition_proxy import snapshot
+
+    return snapshot(id, meshes, recipe, basis=basis, lighting=lighting, meters_per_unit=meters_per_unit)
+
+
+def proxy_source_digest(source: ProxySource) -> str:
+    """Full source identity including conversion controls; raw render jobs have separate keys."""
+    from ._composition_proxy import source_digest
+
+    return source_digest(source)
+
+
+def proxy_jobs(source: ProxySource, *, width: int, height: int, memory_bytes: int) -> tuple[PlateWork, ...]:
+    """Declare unique light/ID jobs from final view bounds; oversampling is applied once."""
+    from ._composition_proxy import jobs
+
+    return jobs(source, width=width, height=height, memory_bytes=memory_bytes)
+
+
+def prepare_proxy(plan: ValidatedScenePlan, layer: str, source: ProxySource) -> PreparedProxy:
+    """Verify a static proxy for one explicit rgba/back/front/under layer, without rendering."""
+    from ._composition_proxy_runtime import prepare_proxy as prepare
+
+    return prepare(plan, layer, source)
+
+
+@dataclass(frozen=True)
 class CompiledScene:
     """A self-contained scene, its content identity and the manifest it implements."""
 
@@ -537,7 +625,7 @@ class CompiledBundle:
 
 def compile_bundle(
     plan: ValidatedScenePlan,
-    assets: tuple[PreparedVector | VectorSource | PreparedPlate, ...],
+    assets: tuple[PreparedVector | VectorSource | PreparedPlate | PreparedProxy, ...],
     *,
     engine: Path,
     cache: Path,
@@ -554,7 +642,7 @@ def compile_bundle(
 
 def emit_bundle(
     plan: ValidatedScenePlan,
-    assets: tuple[PreparedVector | VectorSource | PreparedPlate, ...],
+    assets: tuple[PreparedVector | VectorSource | PreparedPlate | PreparedProxy, ...],
     output: Path,
     *,
     engine: Path,

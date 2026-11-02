@@ -1,4 +1,4 @@
-"""Rule 2: a hand is on an arm, a character has one pair of arms, and a bust does not stand in the open (ADR 0146)."""
+"""Rule 2: a hand is on an arm, a character has one pair of arms, and a bust does not stand in the open (ADR 0147)."""
 
 from __future__ import annotations
 

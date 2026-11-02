@@ -135,7 +135,7 @@ def broken_off(document: bytes, sentences: Sequence[str]) -> list[RunTogether]:
     """Every burned window of the scene ``document`` that keeps a sentence's stop, goes on into the next sentence and
     stops inside it: ``Meetings have been reduced to one. It is``. The stop does not save it, since the reader is left
     in the middle of a sentence the window has already begun. A last word with a mark of its own, or one that ends a
-    sentence of the lines, is a window that holds whole sentences, and passes (ADR 0147)."""
+    sentence of the lines, is a window that holds whole sentences, and passes (ADR 0148)."""
     boundaries = _boundaries(sentences)
     ends = {_plain(word) for word in " ".join(sentences).split() if _ends_sentence(word)}
     found: list[RunTogether] = []

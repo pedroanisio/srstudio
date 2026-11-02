@@ -1,4 +1,4 @@
-"""What a hand is, in every style: a part of an arm, with a side, and a thumb that follows it (ADR 0145).
+"""What a hand is, in every style: a part of an arm, with a side, and a thumb that follows it (ADR 0146).
 
 The rule is arc4d3's: "the right hand is the mirror of the left, and a hand's thumb follows its side. Palms to camera,
 both thumbs point inward; backs to camera, both point outward." A :class:`Hand` is built from an :class:`Arm`, by

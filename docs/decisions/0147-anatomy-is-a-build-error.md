@@ -2,10 +2,10 @@
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 ---
 
-# ADR 0146: A hand on an arm, one pair of arms, a bust that does not stand in the open
+# ADR 0147: A hand on an arm, one pair of arms, a bust that does not stand in the open
 
 - Status: accepted (2026-11-01), ordered by arc4d3; written by Claude Opus 5.5 in Claude Code
-- Follows [ADR 0145](0145-hand-chirality-is-a-build-error.md) and
+- Follows [ADR 0146](0146-hand-chirality-is-a-build-error.md) and
   [ADR 0073](0073-frame-gates-and-standing-review.md)
 - Back to the [library README](../../README.md)
 
@@ -24,7 +24,7 @@ the waist or the chest, and `WHOLE` is all there as drawn: an appliance, a bird,
 pair or none, and a body with no arms, or a `WHOLE`, says why. `anatomy_parts.BODIES` declares every character, a test
 reads it against the registry, and a character with hands has arms for them.
 
-Three rules join the two of ADR 0145, in the same ledger, the same list and the check named `anatomy`:
+Three rules join the two of ADR 0146, in the same ledger, the same list and the check named `anatomy`:
 
 - `hand-no-arm`, at the build. `anatomy_parts.LOOSE_HANDS` lists the props that draw a hand and no arm: `toon-phone` and
   `toon-clipboard` with `hand=`, `toon-lasagna`, `toon-watering-can`, `toon-highlighter`, `toon-folded-sheet` and

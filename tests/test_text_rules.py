@@ -1,4 +1,4 @@
-"""Rules 7 and 8: a caption does not run across a sentence end, and a text is timed on the frame (ADR 0147, 0148)."""
+"""Rules 7 and 8: a caption does not run across a sentence end, and a text is timed on the frame (ADR 0148, 0149)."""
 
 from __future__ import annotations
 

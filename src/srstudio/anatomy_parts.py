@@ -1,4 +1,4 @@
-"""What every character and every hand part of the library is, against :mod:`srstudio.anatomy` (ADR 0145).
+"""What every character and every hand part of the library is, against :mod:`srstudio.anatomy` (ADR 0146).
 
 A row says what a part's hands are: a pair the contract draws, one drawing for one arm, hands with no thumb to place,
 or no hands. A row with a thumb carries the side and the facing its drawing was made for, and a row with none says why.
@@ -90,6 +90,7 @@ _STROKE = _thumbless("arms end in a stroke's round cap")
 _BALL = _thumbless("hands are balls on the ends of the arms")
 _MITT = _thumbless("paws are mitts with toes")
 _SOFT = _thumbless("arms are strokes that end round, with no hand drawn")
+_WINGTIP = _thumbless("wings that end in three primary feathers: no hand and no thumb")
 _APPLIANCE = _none("an appliance with a face: no arms and no hands")
 
 CHARACTERS: Final = MappingProxyType(
@@ -154,6 +155,7 @@ CHARACTERS: Final = MappingProxyType(
         "toon-goat": _MITT,
         "toon-hamster": _MITT,
         "toon-hedgehog": _MITT,
+        "toon-lyra": _WINGTIP,
         "toon-rabbit": _MITT,
         "toon-raccoon": _MITT,
         "toon-sloth": _MITT,
@@ -220,6 +222,7 @@ BODIES: Final = MappingProxyType(
         "toon-goat": _DESK,
         "toon-hamster": _DESK,
         "toon-hedgehog": _DESK,
+        "toon-lyra": _LEGS,  # an owl who stands to present: her uniform tapers to drawn legs and feet
         "toon-rabbit": _DESK,
         "toon-raccoon": _DESK,
         "toon-sloth": _DESK,
@@ -227,7 +230,7 @@ BODIES: Final = MappingProxyType(
 )
 
 # A pair whose thumb follows its arm but whose other fingers do not mirror. Each is an approved look, so it stays as
-# drawn until the operator says otherwise; ADR 0145 names it.
+# drawn until the operator says otherwise; ADR 0146 names it.
 NOT_MIRRORED: Final = MappingProxyType(
     {"rafa": "rafa._hand keeps one row of four fingers on both hands; only the thumb moves to the arm's side"}
 )
