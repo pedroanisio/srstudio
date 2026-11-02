@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import re
 from bisect import bisect_right
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Literal
 
 from sr_core.scene import Composition, Group
@@ -20,11 +20,12 @@ from ._transaction import scene_transaction
 from .canvas import Canvas
 from .character_clips import GlossClip, Interval, Placement, ToonClip, place_character
 from .errors import SrstudioError
+from .gaze import GazePlan, GazeSample
 from .head_motion import CHANNELS, HeadPlan, Spring
 from .limbs.integration import LimbTrack
 from .limbs.math3d import Frame
 from .limbs.motion import Sample
-from .toon_head import Glancing, HeadRig
+from .toon_head import Glancing, HeadRig, gaze_capabilities
 from .voice import Alignment
 
 __all__ = [
@@ -117,6 +118,7 @@ class ActingRig:
                 'gaze': self.family == 'toon'
                 and self.head_rig is not None
                 and isinstance(self.head_rig.look.drawing, Glancing),
+                'target_gaze': self.head_rig is not None and gaze_capabilities(self.head_rig)['continuous'],
                 'breath': self.family == 'toon',
                 'gesture': self.gloss_character != 'sunny',
                 'limbs': self.family == 'gloss' and self.gloss_character != 'sunny',
@@ -240,7 +242,7 @@ class ActingState:
     emotion: str
     expression: Expression
     gesture: str | None
-    gaze: str | None
+    gaze: str | GazeSample | None
     mouth: str
     head: HeadValues | None
     limbs: tuple[LimbState, ...]
@@ -273,6 +275,8 @@ class PerformancePlan:
             raise _error('time', time, f'a finite performance second in 0..{self.duration}')
         head = HeadValues(*(getattr(self.head, name).sample(time) for name in CHANNELS)) if self.head else None
         gaze = _held(((0, 'ahead'), *self.head.gaze), time) if self.head else None
+        if isinstance(self.clip, ToonClip) and self.clip.target_gaze is not None:
+            gaze = self.clip.target_gaze.sample(time)
         limbs = []
         for track in self.limbs:
             t = max(0, time - track.options.offset)
@@ -294,6 +298,25 @@ class PerformancePlan:
             _held(self.mouths, time),
             head,
             tuple(limbs),
+        )
+
+    def with_target_gaze(self, target: GazePlan) -> PerformancePlan:
+        """Bind target eyes and additive head follow without restarting the performance.
+
+        Neutral named holds may be replaced; authored look-away states are refused.
+        Use Overrides(gaze=()) at score compilation to suppress procedural glances
+        while retaining idle and breath. Rebinding replaces the previous target.
+        """
+        from ._gaze_drawing import prepare
+        from .gaze import _fail
+
+        if not isinstance(self.clip, ToonClip) or self.rig.head_rig is None:
+            raise _fail('rig', self.rig.name, 'a Toon rig declaring target gaze', 'gaze.unsupported')
+        tracking = prepare(self.rig.head_rig, self.clip.poses, self.duration, self.clip.head, target)
+        owners = dict(self.owners)
+        owners.update(gaze='target', head='base plus target follow')
+        return replace(
+            self, clip=replace(self.clip, target_gaze=target), head=tracking.head, owners=tuple(owners.items())
         )
 
     def window(self, start: float, end: float) -> PerformanceWindow:

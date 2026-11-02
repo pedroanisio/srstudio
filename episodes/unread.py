@@ -19,7 +19,7 @@ from instagram_posts import POSTS
 from srstudio import SOFT, Episode, EpisodeSpec, blob, foley, layout, soft_inbox, soft_odds, soft_props, soft_sets
 from srstudio.soft_inbox import Count
 from srstudio.soft_sets import BENCH_SEAT, Shot
-from unread_audio import INTERVIEW
+from unread_audio import CAPTION_TAIL, INTERVIEW, LOOK_UP
 
 os.umask(0o077)  # generated outputs are private: folders 700, files 600
 
@@ -46,13 +46,14 @@ FPS = 15
 SCALE = 2.2
 PIP_SEAT, JUNO_SEAT = (178.0, BENCH_SEAT), (902.0, BENCH_SEAT)
 PHONE_AT, PHONE_SCALE = (540.0, 1125.0), 3.4
-HOOK_END = P[1].start - 0.08  # the two-shot lands before he answers
+CAPTION_LEAD = 0.03  # a caption comes up this long before its line, and a cut to a new line lands with it
+HOOK_END = P[1].start - CAPTION_LEAD  # the two-shot lands as he answers
 TICK = min(0.92, HOOK_END - 0.86)  # the badge goes up by one: each count holds 0.84 s
 STOPPED = STOP + 0.26  # the list has stopped; the row is read from here
-INSERT_END = P[4].start - 0.34  # she looks up at him before she says it
+INSERT_END = P[4].start - LOOK_UP
 RING_INSERT = RING + 0.36  # he has looked at it
 PRESS = P[7].start - 0.12  # the thumb lands and the ring stops
-INSERT_LAST = P[7].start - 0.02
+INSERT_LAST = P[7].start - CAPTION_LEAD  # the phone goes on the frame his caption comes up
 SCROLLS = [P[2].start + k * 0.34 for k in range(7)]
 BIRDS = [HOOK_END + 0.2, HOOK_END + 0.5, HOOK_END + 0.72, P[3].start + 0.2, P[3].start + 0.45]
 
@@ -122,11 +123,11 @@ JUNO_CLOSE = (1.5, 720.0, 1042.0)  # her bun clears the caption
 PIP_CLOSE = (1.5, 360.0, 1020.0)  # and so does his sprout
 shots = [
     TWO,
-    Shot(P[2].start - 0.05, *JUNO_CLOSE),
-    Shot(P[3].start - 0.05, *PIP_CLOSE),
+    Shot(P[2].start - CAPTION_LEAD, *JUNO_CLOSE),
+    Shot(P[3].start - CAPTION_LEAD, *PIP_CLOSE),
     Shot(INSERT_END, *JUNO_CLOSE),
-    Shot(P[5].start - 0.05, *PIP_CLOSE),
-    Shot(P[6].start - 0.05, 1.0, 540.0, 960.0),
+    Shot(P[5].start - CAPTION_LEAD, *PIP_CLOSE),
+    Shot(P[6].start - CAPTION_LEAD, 1.0, 540.0, 960.0),
     Shot(RING, *PIP_CLOSE),
 ]
 graded = soft_sets.finish(cv, ep.comp)
@@ -193,14 +194,14 @@ finger(
     [(RING_INSERT, 2100.0), (PRESS - 0.26, 1620.0), (PRESS, PHONE_AT[1] + 66 * PHONE_SCALE)], -180,
 )  # fmt: skip
 
-CUT = P[2].start - 0.05
+CUT = P[2].start - CAPTION_LEAD
 over = soft_odds.notice(cv, ep.comp, 540, 524, "LAST OPENED:\n2021", scale=0.82, size=50, shown=[(0.0, CUT)])
 
 specs = []
 for i, p in enumerate(P):
     until = P[i + 1].start - 0.05 if i + 1 < len(P) else DURATION
-    held = min(until, max(p.end + 0.3, p.start + 0.87))
-    specs.append((max(0.0, p.start - 0.03), RING if i == 6 else held, p.caption, f"caption-{i + 1}"))
+    held = min(until, max(p.end + CAPTION_TAIL, p.start + 0.87))
+    specs.append((max(0.0, p.start - CAPTION_LEAD), RING if i == 6 else held, p.caption, f"caption-{i + 1}"))
 ep.hide_on_cover(over, *ep.captions(specs, **soft_sets.CAPTIONS))
 ep.markers(extra=[("marker-stop", STOP, "Her thumb stops"), ("marker-ring", RING, "It rings")])
 if SLUG in POSTS:

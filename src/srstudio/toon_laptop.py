@@ -12,6 +12,7 @@ import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from . import _toon_detail_contracts as dc
 from . import checks
 from .canvas import Canvas
 from .registry import register
@@ -139,6 +140,7 @@ def _note(cv: Canvas, parent, quad: Quad, n: Note) -> None:
 @register(
     "prop",
     "toon-open-laptop",
+    contract=dc.contract('toon-open-laptop'),
     summary="An open laptop with its screen to the viewer, a page of gray bars, and notes that land on it one by one",
     style="toon",
 )

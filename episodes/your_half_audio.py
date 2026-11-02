@@ -18,12 +18,36 @@ from dataclasses import replace
 from functools import partial
 
 from _saga import Reel, effect, line, record
-from srstudio import saga_sets
-from srstudio.saga_reel import Place, Prop, Stage
+from srstudio import saga, saga_sets
+from srstudio.saga_reel import Place, Prop, Stage, Throw
 
 Panel = partial(saga_sets.Panel, fade=True)  # fades in, so each panel is judged as read (strict contrast)
 
 SEATS = (Place("rook", 330, behind=True), Place("juno", 760, flip=True, behind=True))
+THROWN = (  # the missile comes in on her side: she goes first and hardest, he follows two frames on
+    Place(
+        "rook",
+        330,
+        behind=True,
+        lurch=((0.0, 0, 0), (0.12, -26, -5.0), (0.4, 14, 2.5), (0.7, -6, -1.0), (1.0, 0, 0)),
+        mouth=((0.1, "round"), (0.85, "closed")),
+    ),
+    Place(
+        "juno",
+        760,
+        flip=True,
+        behind=True,
+        lurch=((0.0, -12, -2.0), (0.08, -48, -9.0), (0.35, 22, 4.0), (0.62, -10, -1.5), (0.95, 0, 0)),
+        mouth=((0.0, "shout"), (0.9, "closed")),
+    ),
+)
+THROW = Throw(  # the cabin rolls away from the hit: the scale keeps the set past the frame through the roll and shake
+    roll=((0.0, 2.0), (0.06, 5.0), (0.3, -3.0), (0.55, 1.4), (0.8, -0.5), (1.05, 0.0)),
+    scale=((0.0, 1.18), (0.35, 1.12), (0.7, 1.05), (1.05, 1.0)),
+)
+JAB = saga_sets.Jab(  # her right arm comes over the console from the sleeve, and the hand stays on the stick
+    at=0.2, sleeve="#efe2c4", hand=saga.SKIN["deep"], elbow=(404, 1040), scale=1.55
+)
 ROOK_CLOSE = (Place("rook", 500, 1560, scale=1.55, behind=True),)  # a cast placed closer, so the console's marks stay
 JUNO_CLOSE = (Place("juno", 580, 1560, scale=1.55, flip=True, behind=True),)
 BITE = Panel(0, "ROOK REQUESTS 3.40 CR", "Half a ration bar.", tone="gold")
@@ -55,8 +79,8 @@ TAKES = (
 def stages(takes) -> dict[str, Stage]:
     t = {x.id: x for x in takes}
 
-    def cockpit(*panels: saga_sets.Panel, close=SEATS, **kw) -> Stage:
-        return Stage("cockpit", cast=close, panels=panels, **kw)
+    def cockpit(*panels: saga_sets.Panel, close=SEATS, front=None, **kw) -> Stage:
+        return Stage("cockpit", cast=close, panels=panels, front={"ledge": True, **(front or {})}, **kw)
 
     hit, jab = t["05"].duration, t["09"].duration
     return {
@@ -64,11 +88,13 @@ def stages(takes) -> dict[str, Stage]:
         "02": cockpit(BITE),
         "03": cockpit(BITE, close=JUNO_CLOSE),
         "04": cockpit(BITE, close=ROOK_CLOSE),
-        "05": cockpit(shake=((0.0, hit * 0.6),), options={"jump": ((hit * 0.35, hit),)}),
+        "05": cockpit(
+            close=THROWN, shake=((0.0, hit * 0.6),), options={"hit": 0.0}, front={"hit": 0.0}, thrown=THROW
+        ),  # on the first frame of the effect, whose bang is its first quarter second
         "06": cockpit(MISSILE),
         "07": cockpit(MISSILE, close=JUNO_CLOSE),
         "08": cockpit(MISSILE, close=ROOK_CLOSE),
-        "09": cockpit(MISSILE, replace(PAID, start=round(jab - 0.9, 3)), close=JUNO_CLOSE),
+        "09": cockpit(MISSILE, replace(PAID, start=round(jab - 0.9, 3)), close=JUNO_CLOSE, front={"jab": JAB}),
         "10": cockpit(PAID, close=ROOK_CLOSE),
     }
 

@@ -9,6 +9,7 @@ import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
+from . import _toon_contracts as tc
 from . import brush, checks
 from .canvas import Canvas
 from .registry import register
@@ -67,7 +68,12 @@ class Toast:
 
 
 # -- sets -------------------------------------------------------------------------------------------------------------
-@register("location", "toon-meeting", summary="A mint meeting room: a whiteboard where the window was, and the chair")
+@register(
+    "location",
+    "toon-meeting",
+    contract=tc.contract('toon-meeting'),
+    summary="A mint meeting room: a whiteboard where the window was, and the chair",
+)
 def meeting(cv: Canvas, parent) -> None:
     g = cv.group(parent, cv.uid("g"))
     cv.rect(
@@ -84,6 +90,7 @@ def meeting(cv: Canvas, parent) -> None:
 @register(
     "prop",
     "toon-mug",
+    contract=tc.contract('toon-mug'),
     summary="A coffee mug on the desk, steaming while asked",
     examples=('from srstudio import get\nget("prop", "toon-mug")(ep.cv, ep.comp, steam=[(0.1, 0.3)])',),
 )
@@ -122,7 +129,12 @@ def clock_angles(time: str) -> tuple[float, float]:
     return ((hh % 12) * 30 + mm * 0.5) % 360, mm * 6.0
 
 
-@register("prop", "toon-clock", summary="A wall clock whose hands jump to each listed time")
+@register(
+    "prop",
+    "toon-clock",
+    contract=tc.contract('toon-clock'),
+    summary="A wall clock whose hands jump to each listed time",
+)
 def clock(
     cv: Canvas, parent, times: Sequence[tuple[float, str]], at: tuple[float, float] = (105, 385), r: float = 45
 ) -> None:
@@ -153,7 +165,12 @@ def clock(
     cv.ellipse(g, fx(cx - 5), fy(cy - 5), fh(10), fh(10), cv.ink)
 
 
-@register("prop", "toon-notes", summary="Sticky notes on the back of the laptop lid, lettered in the style's font")
+@register(
+    "prop",
+    "toon-notes",
+    contract=tc.contract('toon-notes'),
+    summary="Sticky notes on the back of the laptop lid, lettered in the style's font",
+)
 def notes(cv: Canvas, parent, texts: Sequence[str], size: int = 26) -> None:
     """Up to four notes on the lid, each turned a little the other way; ``texts`` are short (one or two words)."""
     if not texts or len(texts) > 4 or any(not t.strip() or len(t) > 10 for t in texts):
@@ -176,7 +193,12 @@ def notes(cv: Canvas, parent, texts: Sequence[str], size: int = 26) -> None:
         cv.text(n, cv.uid("note"), text, fx(x), fy(y), int(fh(side)), int(fh(side)), size, color=cv.ink, wrap="word")
 
 
-@register("graphic", "toon-toast", summary="A phone notification that buzzes in over the window")
+@register(
+    "graphic",
+    "toon-toast",
+    contract=tc.contract('toon-toast'),
+    summary="A phone notification that buzzes in over the window",
+)
 def toasts(cv: Canvas, parent, items: Sequence[Toast], size: int = 28, gated: bool = False) -> None:
     """Each toast slides in from the right, shakes with the buzz and holds until its end. ``gated`` letters the card
     only once it has landed wholly on frame: lettering drawn off frame measures 1:1 in the engine's contrast check,
@@ -227,7 +249,12 @@ def toasts(cv: Canvas, parent, items: Sequence[Toast], size: int = 28, gated: bo
         cv.keys(card, "x", slide + shake[1:], hold=False, local=False)
 
 
-@register("graphic", "toon-board-text", summary="Words in blue marker on the meeting room's whiteboard")
+@register(
+    "graphic",
+    "toon-board-text",
+    contract=tc.contract('toon-board-text'),
+    summary="Words in blue marker on the meeting room's whiteboard",
+)
 def board_text(
     cv: Canvas, parent, text: str, size: int = 40, start: float | None = None, end: float | None = None
 ) -> None:
@@ -257,7 +284,12 @@ def scale_keys(sizes: Sequence[tuple[float, float]], grow: float = GROW) -> list
     return keys
 
 
-@register("graphic", "toon-logo", summary="A sun logo on the whiteboard that grows to each asked size")
+@register(
+    "graphic",
+    "toon-logo",
+    contract=tc.contract('toon-logo'),
+    summary="A sun logo on the whiteboard that grows to each asked size",
+)
 def logo(
     cv: Canvas, parent, sizes: Sequence[tuple[float, float]] = ((0.0, 1.0),), shadow: tuple[float, float] | None = None
 ) -> None:
@@ -305,7 +337,12 @@ def logo(
     cv.keys(body, "scaleY", keys, hold=False, local=False)
 
 
-@register("graphic", "toon-badge", summary="A dark call badge under the captions: a red dot and who is on the line")
+@register(
+    "graphic",
+    "toon-badge",
+    contract=tc.contract('toon-badge'),
+    summary="A dark call badge under the captions: a red dot and who is on the line",
+)
 def badge(
     cv: Canvas, parent, text: str, start: float, end: float, measure: Callable[[str], float], size: int = 28
 ) -> None:

@@ -44,7 +44,9 @@ def test_every_existing_code_fence_is_preserved_in_its_task_or_history_owner():
         for owner in OWNERS
         for language, code in fences((DOCS / owner).read_text())
     )
-    assert actual == expected
+    # The migration snapshot pins legacy recipes; new, independently tested
+    # recipes may be added without rewriting that historical evidence.
+    assert actual >= expected
 
 
 @pytest.mark.parametrize(

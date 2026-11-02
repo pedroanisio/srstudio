@@ -4,7 +4,8 @@ opening at a given second. :func:`pile` is what comes out, rising over whoever i
 :func:`srstudio.toon_world.ledge` so the signature (ADR 0001) stays on top; :func:`tiny_drawer` sits on that ledge.
 :func:`whirl` spins a character into a shot and :func:`sparkles` says the room is spotless.
 
-Every measure is a reference screen pixel (:func:`srstudio.toon.fx`/``fy``), every key is on the composition clock.
+Every measure is a reference screen pixel (:func:`srstudio.toon.fx`/``fy``).
+Animation keys follow Canvas.local_time (composition by default). Visibility uses the parent timeline.
 """
 
 from __future__ import annotations
@@ -12,6 +13,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 
+from . import _toon_household_contracts as hc
 from . import checks
 from .canvas import Canvas
 from .registry import register
@@ -70,7 +72,7 @@ def _door(cv: Canvas, parent, x: float, y: float, w: float, h: float, at: float 
     return g
 
 
-@register("location", "toon-flat", summary="A shared flat's pale wall, spotless")
+@register("location", "toon-flat", contract=hc.contract('toon-flat'), summary="A shared flat's pale wall, spotless")
 def flat(cv: Canvas, parent) -> None:
     g = cv.group(parent, cv.uid("g"))
     paint = cv.grad("toon-flat-wall", [(0.0, WALL), (1.0, WALL_LOW)], (0, 0, 0, 1))
@@ -78,7 +80,12 @@ def flat(cv: Canvas, parent) -> None:
     cv.rect(g, fx(-10), fy(780), fh(612), fh(34), SKIRT, cv.ink, FINE_W / 2, radius=0)
 
 
-@register("prop", "toon-closet", summary="A closet door that bursts open on a dark inside")
+@register(
+    "prop",
+    "toon-closet",
+    contract=hc.contract('toon-closet'),
+    summary="A closet door that bursts open on a dark inside",
+)
 def closet(cv: Canvas, parent, at: float = 1.0) -> None:
     _opening(at, "a closet")
     g = cv.group(parent, cv.uid("g"))
@@ -89,7 +96,7 @@ def closet(cv: Canvas, parent, at: float = 1.0) -> None:
     cv.ellipse(leaf, fx(362), fy(530), fh(20), fh(20), KNOB, cv.ink, FINE_W / 2)
 
 
-@register("prop", "toon-oven", summary="An oven whose door drops open")
+@register("prop", "toon-oven", contract=hc.contract('toon-oven'), summary="An oven whose door drops open")
 def oven(cv: Canvas, parent, at: float = 1.0) -> None:
     _opening(at, "an oven")
     g = cv.group(parent, cv.uid("g"))
@@ -104,7 +111,12 @@ def oven(cv: Canvas, parent, at: float = 1.0) -> None:
     cv.keys(leaf, "scaleY", [(0.0, 1.0), (at, 1.0), (at + BURST, 0.08)], hold=False)
 
 
-@register("prop", "toon-plates", summary="Plates sliding out of an oven across the frame, one after the other")
+@register(
+    "prop",
+    "toon-plates",
+    contract=hc.contract('toon-plates'),
+    summary="Plates sliding out of an oven across the frame, one after the other",
+)
 def plates(cv: Canvas, parent, start: float = 0.0, count: int = 9, step: float = 0.1, end: float = 4.0) -> None:
     """``count`` plates run from the oven's mouth out of the frame's left, ``step`` seconds apart from ``start``."""
     if not (isinstance(count, int) and count > 0 and checks.number(start) and checks.number(step) and step > 0):
@@ -121,7 +133,12 @@ def plates(cv: Canvas, parent, start: float = 0.0, count: int = 9, step: float =
         cv.ellipse(g, fx(460), fy(676), fh(90), fh(38), PLATE, PLATE_RIM, FINE_W / 2)
 
 
-@register("prop", "toon-shower", summary="A shower curtain pulled back on what is behind it")
+@register(
+    "prop",
+    "toon-shower",
+    contract=hc.contract('toon-shower'),
+    summary="A shower curtain pulled back on what is behind it",
+)
 def shower(cv: Canvas, parent, at: float = 1.0) -> None:
     _opening(at, "a shower curtain")
     g = cv.group(parent, cv.uid("g"))
@@ -141,7 +158,12 @@ def shower(cv: Canvas, parent, at: float = 1.0) -> None:
     cv.keys(drape, "scaleX", [(0.0, 1.0), (at, 1.0), (at + 0.25, 0.12)], hold=False)
 
 
-@register("prop", "toon-front-door", summary="A flat's front door that opens on a hall stacked to the ceiling")
+@register(
+    "prop",
+    "toon-front-door",
+    contract=hc.contract('toon-front-door'),
+    summary="A flat's front door that opens on a hall stacked to the ceiling",
+)
 def front_door(cv: Canvas, parent, at: float = 1.0) -> None:
     _opening(at, "a front door")
     g = cv.group(parent, cv.uid("g"))
@@ -164,10 +186,15 @@ def _garment(cv: Canvas, g, x: float, y: float, size: float, colour: str, tilt: 
     _inked(cv, g, [(x + s * (u * c - v * n), y + s * (u * n + v * c)) for u, v in shirt], colour, FINE_W, 2)
 
 
-@register("prop", "toon-laundry-pile", summary="A heap of clothes that rises over whoever is in shot")
+@register(
+    "prop",
+    "toon-laundry-pile",
+    contract=hc.contract('toon-laundry-pile'),
+    summary="A heap of clothes that rises over whoever is in shot",
+)
 def pile(cv: Canvas, parent, top: float = 640.0, start: float | None = 0.5, end: float = 4.0) -> None:
     """The heap's top edge at reference ``top``: rising there over :data:`RISE` from ``start``, or there already
-    (``start`` None) until ``end``."""
+    (``start`` None). ``end`` validates the rise timing; it does not hide the heap."""
     if not (checks.number(top) and 200 <= top <= 900):
         raise ToonDataError(f"a pile's top stands between 200 and 900, got {top!r}")
     if start is not None and not (checks.number(start) and 0 <= start and start + RISE <= end):
@@ -180,7 +207,12 @@ def pile(cv: Canvas, parent, top: float = 640.0, start: float | None = 0.5, end:
         _garment(cv, g, x, top + y, size * 1.2, GARMENTS[colour], 0.9 * math.sin(i * 2.3))
 
 
-@register("prop", "toon-tiny-drawer", summary="A tiny chest on the counter whose top drawer slides out on one sock")
+@register(
+    "prop",
+    "toon-tiny-drawer",
+    contract=hc.contract('toon-tiny-drawer'),
+    summary="A tiny chest on the counter whose top drawer slides out on one sock",
+)
 def tiny_drawer(cv: Canvas, parent, at: float = 1.0, end: float = 4.0, x: float = 396.0, y: float = 801.0) -> None:
     """The chest stands on ``(x, y)`` (its bottom middle); the drawer opens at ``at`` and the sock rises from it."""
     _opening(at, "a tiny drawer")
@@ -205,7 +237,12 @@ def tiny_drawer(cv: Canvas, parent, at: float = 1.0, end: float = 4.0, x: float 
     cv.ellipse(drawer, fx(x - 7), fy(y - 104), fh(14), fh(14), KNOB, cv.ink, FINE_W / 2)
 
 
-@register("prop", "toon-whirl", summary="A spinning blur that a character whirls in on, gone at a given second")
+@register(
+    "prop",
+    "toon-whirl",
+    contract=hc.contract('toon-whirl'),
+    summary="A spinning blur that a character whirls in on, gone at a given second",
+)
 def whirl(
     cv: Canvas, parent, start: float = 0.0, end: float = 0.7, at: Point = (185.0, 640.0), travel: float = 300.0
 ) -> None:
@@ -225,7 +262,12 @@ def whirl(
     cv.ellipse(spin, cx + w * 0.02, cy - h * 0.3, w * 0.2, h * 0.6, WHIRL_B, cv.ink, FINE_W / 2)
 
 
-@register("prop", "toon-sparkles", summary="Four-pointed glints that twinkle on a clean room")
+@register(
+    "prop",
+    "toon-sparkles",
+    contract=hc.contract('toon-sparkles'),
+    summary="Four-pointed glints that twinkle on a clean room",
+)
 def sparkles(
     cv: Canvas, parent, start: float = 0.0, end: float = 2.0, at: Sequence[Point] = ((420, 400), (520, 560))
 ) -> None:

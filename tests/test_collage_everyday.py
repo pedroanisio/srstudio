@@ -223,6 +223,20 @@ def test_a_reach_left_alone_still_draws_what_was_published():
     assert specimens.fingerprint(body(unnamed)) == REACH_DRAWING
 
 
+def test_a_reach_past_straight_up_turns_the_short_way_round():
+    """Two hands either side of straight above the elbow are a few degrees apart, not most of a circle: an angle
+    keyed across the branch swung the arm down under the duvet and left the hand floating on its own."""
+    cv = canvas()
+    elbow = (654.0, 1740.0)
+    hands = {0.0: (640.0, 1570.0), 1.0: (712.0, 1338.0), 2.0: (625.0, 1480.0)}
+    collage_everyday.reach(cv, cv.comp, "deb", elbow, lambda t: hands[t], list(hands))
+    pivot = ET.fromstring(body(cv)).find("composition").findall("group")[0]
+    turn = next(a for a in pivot.findall("animate") if a.get("property") == "rotation")
+    angles = [float(k.get("value")) for k in turn.findall("key")]
+    assert len(angles) == 3
+    assert all(abs(b - a) < 25.0 for a, b in zip(angles, angles[1:], strict=False))
+
+
 def test_the_arm_on_the_other_side_carries_the_mirror_of_the_hand():
     left, right = canvas(), canvas()
     collage_everyday.arm(left, left.comp, "deb", SHOULDER, WRIST)
