@@ -1165,3 +1165,70 @@ Readout copy is literal. A nonempty desk-phone display or till readout needs
 an explicit positive lettering `size` and a bound font; discovery separates
 that size from prop dimensions. Text is not automatically fitted. Bank-card
 names likewise need a font, while the resume and receipt use drawn paths.
+
+## Everyday Collage props and sampled reaches
+
+The 22 `collage_everyday` builders declare their placement, sizes, copy,
+clocks and return ownership. Food, chips, thumbs, the shaker, magnifying
+glass and lasagna scale reference drawings; their size arguments are not
+exact silhouette bounds. Other props use literal dimensions. A cereal box,
+certificate or snapshot takes its top-left as placement input but returns
+a group centered on the drawing for rotation.
+
+The phone and battery insert return only the inner screen group, with its
+origin 26 pixels inside the frame. Adding screen content does not clip it,
+and moving that return leaves the frame behind. Keep a caller-owned parent
+when moving the whole phone. The bubble, clock, bag and bill display literal
+copy; most do not fit-check it. The flip card checks all side copy and times
+before drawing, using estimated glyph widths rather than font measurement.
+
+Clocks differ by builder. Flip-card turns and sampled reaches use project
+seconds regardless of `Canvas.local_time`. Router light/unplug cues and
+battery level/death cues use the Canvas clock. Gust and confetti have project
+keyframes plus lifetime groups on the containing timeline: place them in a
+project-aligned parent. They do not convert cue times for a later sequence
+shot. Confetti is seeded and deterministic; its reversal is a linear change
+of direction, not a gravity simulation.
+
+`collage-arm` also exposes the actual `shoulder`, `reach`, `eased`, `frames`
+and `chew` helpers as discovery operations. These are available directly
+from `collage_everyday`; discovery does not create a second calling API.
+
+<!-- collage-everyday-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, collage_everyday as paper, registry
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1920, fps='24', duration=3)
+cv = Canvas(scene, font_asset=None)
+whole_arm = cv.group(cv.comp, 'whole-arm')
+operations = registry.get('prop', 'collage-arm').describe()['contract']['operations']
+assert operations['reach']['arguments']['properties']['hand']['x-role'] == 'sampled-hand-position'
+
+shoulder = paper.shoulder('deb', side=1)
+times = paper.frames((0, 2), step=1 / 24)
+def hand_at(t):
+    return paper.eased(((0, 400), (2, 700)), t, 'sine-in-out'), 900
+
+holder = paper.reach(cv, whole_arm, 'deb', shoulder, hand_at, times, side=1)
+paper.chip(cv, holder, 0, 0, size=80)
+assert holder is not whole_arm
+```
+<!-- collage-everyday-discovery:end -->
+
+`shoulder()` is a reference in the fixed single-figure layout. Transform it
+with the figure when using another placement. `reach()` calls the position
+callback once per supplied time and returns an unmirrored hand holder, so a
+child prop shares hand translation without inheriting the hand artwork's
+mirror. Its sleeve pivot is a sibling; move or gate the common parent to
+affect the whole arm. Supply `side=-1` or `side=1` explicitly. Omitting it
+retains legacy artwork but records an anatomy fault for a drawn hand.
+
+This reach has one rotating, stretching sleeve segment. It does not solve
+an elbow, grip or body constraint. Sleeve angle, length and hand translation
+interpolate independently, so their meeting is authored at sample times;
+choose sufficiently dense samples and inspect the result. `frames()` takes
+a finite positive time step, while `eased()` samples ordered scalar keys
+with its two supported easings. `chew()` replaces viseme keys inside a span
+on a 0.12-second grid and preserves keys outside it.

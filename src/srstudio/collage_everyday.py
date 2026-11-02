@@ -2,9 +2,9 @@
 bills that bite, confetti that can turn back, and the bed and table fronts the seated busts sink into.
 
 The props are paper like the cast (ADR 0026): hand-cut edges, an ink line and a drop shadow, drawn in the style's own
-vocabulary from :mod:`srstudio.collage`. They hold no timing of their own but what a caller gives them on the project
-clock, so a recording that re-times the beats moves them with it. Lettering is kept to words large enough to read on
-a phone, and an invented product carries no brand.
+vocabulary from :mod:`srstudio.collage`. Motion keys use project seconds; router and battery visibility follow the
+Canvas clock. Gust and confetti lifetime groups belong in a project-aligned parent. Lettering is kept to words large
+enough to read on a phone, and an invented product carries no brand.
 """
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ import random
 from collections.abc import Callable, Sequence
 
 from . import anatomy, anatomy_ledger, checks, collage
+from ._collage_everyday_contracts import contract
 from .canvas import Canvas
 from .collage import (
     CX,
@@ -169,7 +170,10 @@ FOODS: dict[str, Callable[[Canvas, object], None]] = {"taco": _taco, "sushi": _s
 
 
 @register(
-    "prop", "collage-food", summary="A paper cut-out of a dish: a taco, sushi, a bowl of soup or a slice of pizza"
+    "prop",
+    "collage-food",
+    summary="A paper cut-out of a dish: a taco, sushi, a bowl of soup or a slice of pizza",
+    contract=contract('collage-food'),
 )
 def food(cv: Canvas, parent, kind: str, x: float, y: float, size: float = 240.0, tilt: float = 0.0) -> object:
     """The dish ``kind`` (:data:`FOODS`), about ``size`` wide, centred on ``x, y``, turned ``tilt`` degrees."""
@@ -182,7 +186,10 @@ def food(cv: Canvas, parent, kind: str, x: float, y: float, size: float = 240.0,
 
 
 @register(
-    "prop", "collage-lasagna", summary="A paper lasagna in its dish: layers of pasta, sauce and cheese, seen side on"
+    "prop",
+    "collage-lasagna",
+    summary="A paper lasagna in its dish: layers of pasta, sauce and cheese, seen side on",
+    contract=contract('collage-lasagna'),
 )
 def lasagna(cv: Canvas, parent, x: float = 540.0, y: float = 1400.0, w: float = 520.0, tilt: float = 0.0) -> object:
     """A whole lasagna ``w`` wide, centred on ``x, y``, turned ``tilt`` degrees: drawn large, its layers read at a
@@ -221,7 +228,12 @@ def _check_fits(text: str, w: float, h: float, size: float) -> None:
         raise EverydayError(f"{text!r} does not fit a {w} by {h} card at {size} px")
 
 
-@register("prop", "collage-flip-card", summary="A big paper card held up to be read, which flips to its other side")
+@register(
+    "prop",
+    "collage-flip-card",
+    summary="A big paper card held up to be read, which flips to its other side",
+    contract=contract('collage-flip-card'),
+)
 def flip_card(
     cv: Canvas,
     parent,
@@ -264,7 +276,12 @@ def flip_card(
     return g
 
 
-@register("prop", "collage-magnifying-glass", summary="A paper magnifying glass: a ring, a tinted lens and a handle")
+@register(
+    "prop",
+    "collage-magnifying-glass",
+    summary="A paper magnifying glass: a ring, a tinted lens and a handle",
+    contract=contract('collage-magnifying-glass'),
+)
 def magnifying_glass(
     cv: Canvas, parent, x: float = 540.0, y: float = 1100.0, size: float = 420.0, tilt: float = -30.0
 ) -> object:
@@ -298,6 +315,7 @@ def _light_spans(light: Sequence[tuple[float, str]]) -> list[tuple[str, float, f
     "prop",
     "collage-router",
     summary="A paper home router with two aerials, one big status light keyed on cue, and a cord that can be pulled",
+    contract=contract('collage-router'),
 )
 def router(
     cv: Canvas,
@@ -309,7 +327,7 @@ def router(
     light: Sequence[tuple[float, str]] = ((0.0, "green"),),
     unplugged: float | None = None,
 ) -> object:
-    """A router ``w`` wide centred on ``x, y``, its cord running right to a wall socket. ``light`` is ``(project second,
+    """A router ``w`` wide centred on ``x, y``, its cord running right to a wall socket. ``light`` is ``(Canvas second,
     state)`` from 0, a state one of :data:`LIGHTS`, big enough to read on a phone. From ``unplugged`` the plug hangs
     out of the socket; the light is the caller's to change."""
     spans = _light_spans(light)
@@ -347,7 +365,12 @@ def router(
 
 
 # -- a phone ----------------------------------------------------------------------------------------------------------
-@register("prop", "collage-phone", summary="A big paper phone, its screen a group the caller writes on")
+@register(
+    "prop",
+    "collage-phone",
+    summary="A big paper phone, its screen a group the caller writes on",
+    contract=contract('collage-phone'),
+)
 def phone(cv: Canvas, parent, x: float, y: float, w: float, h: float, screen: str = "#fffaf0", tilt: float = 0.0):
     """A phone ``w`` by ``h`` with its top-left at ``x, y``, turned ``tilt`` degrees about its centre; returns the
     screen's group, its origin at the screen's top-left, :data:`BEZEL` inside the frame."""
@@ -364,6 +387,7 @@ def phone(cv: Canvas, parent, x: float, y: float, w: float, h: float, screen: st
     "prop",
     "collage-battery-insert",
     summary="A phone filling the frame with its battery and percentage on it, red when low, then a dead black screen",
+    contract=contract('collage-battery-insert'),
 )
 def battery_insert(
     cv: Canvas,
@@ -377,7 +401,7 @@ def battery_insert(
     dead: float | None = None,
 ) -> object:
     """A phone ``w`` by ``h`` with its top-left at ``x, y``, the battery on its screen at each of ``levels`` (``(from,
-    percent)``, project seconds from 0); from ``dead`` the screen is black. Returns the screen's group."""
+    percent)``, Canvas seconds from 0); from ``dead`` the screen is black. Returns the screen's group."""
     if not levels or levels[0][0] != 0:
         raise EverydayError(f"a battery's level is known from second 0, got {levels!r}")
     times = [at for at, _ in levels]
@@ -408,7 +432,12 @@ def battery_insert(
     return screen
 
 
-@register("prop", "collage-bubble", summary="A paper message bubble with its tail, grey for theirs and green for mine")
+@register(
+    "prop",
+    "collage-bubble",
+    summary="A paper message bubble with its tail, grey for theirs and green for mine",
+    contract=contract('collage-bubble'),
+)
 def bubble(
     cv: Canvas, parent, text: str, x: float, y: float, w: float, h: float, *, size: float, mine: bool = False
 ) -> object:
@@ -423,7 +452,12 @@ def bubble(
     return g
 
 
-@register("prop", "collage-thumb", summary="A paper thumbs-up, the size of a message, drawn rather than typed")
+@register(
+    "prop",
+    "collage-thumb",
+    summary="A paper thumbs-up, the size of a message, drawn rather than typed",
+    contract=contract('collage-thumb'),
+)
 def thumb(cv: Canvas, parent, x: float, y: float, size: float = 170.0) -> object:
     """A thumbs-up ``size`` tall, centred on ``x, y``."""
     k = round(_size(size, "a thumb's size") / 170.0, 4)
@@ -438,7 +472,12 @@ def thumb(cv: Canvas, parent, x: float, y: float, size: float = 170.0) -> object
 
 
 # -- a clock ----------------------------------------------------------------------------------------------------------
-@register("prop", "collage-alarm-clock", summary="A paper bedside clock with lit red digits")
+@register(
+    "prop",
+    "collage-alarm-clock",
+    summary="A paper bedside clock with lit red digits",
+    contract=contract('collage-alarm-clock'),
+)
 def alarm_clock(cv: Canvas, parent, x: float, y: float, w: float, text: str) -> object:
     """A clock ``w`` wide with its top-left at ``x, y``, its digits showing ``text``."""
     h = _size(w, "a clock's width") * 0.5
@@ -450,7 +489,12 @@ def alarm_clock(cv: Canvas, parent, x: float, y: float, w: float, text: str) -> 
 
 
 # -- in bed, at table -------------------------------------------------------------------------------------------------
-@register("prop", "collage-cereal-box", summary="A paper cereal box with a bowl on its front and no brand")
+@register(
+    "prop",
+    "collage-cereal-box",
+    summary="A paper cereal box with a bowl on its front and no brand",
+    contract=contract('collage-cereal-box'),
+)
 def cereal_box(cv: Canvas, parent, x: float, y: float, w: float, h: float, tilt: float = 0.0) -> object:
     """A box ``w`` by ``h`` with its top-left at ``x, y``, turned ``tilt`` degrees about its centre."""
     _size(w, "a box's width")
@@ -464,7 +508,12 @@ def cereal_box(cv: Canvas, parent, x: float, y: float, w: float, h: float, tilt:
     return g
 
 
-@register("prop", "collage-duvet", summary="The front of a duvet, its folds in paper: the seated busts sink into it")
+@register(
+    "prop",
+    "collage-duvet",
+    summary="The front of a duvet, its folds in paper: the seated busts sink into it",
+    contract=contract('collage-duvet'),
+)
 def duvet(cv: Canvas, parent, top: float = BED_TOP, colour: str = "#51629e") -> object:
     """A duvet across the frame from ``top`` down: in a shot's ``front``, it hides where the busts end."""
     g = cv.group(parent, cv.uid("g"))
@@ -476,7 +525,10 @@ def duvet(cv: Canvas, parent, top: float = BED_TOP, colour: str = "#51629e") -> 
 
 
 @register(
-    "prop", "collage-tablecloth", summary="The near edge of a laid table: a paper cloth the seated busts sink into"
+    "prop",
+    "collage-tablecloth",
+    summary="The near edge of a laid table: a paper cloth the seated busts sink into",
+    contract=contract('collage-tablecloth'),
 )
 def tablecloth(cv: Canvas, parent, top: float = TABLE_TOP, colour: str = "#f4ecd8") -> object:
     """A table across the frame from ``top`` down, in a shot's ``front``."""
@@ -487,7 +539,12 @@ def tablecloth(cv: Canvas, parent, top: float = TABLE_TOP, colour: str = "#f4ecd
     return g
 
 
-@register("prop", "collage-salt-shaker", summary="A paper salt shaker with a dotted steel cap")
+@register(
+    "prop",
+    "collage-salt-shaker",
+    summary="A paper salt shaker with a dotted steel cap",
+    contract=contract('collage-salt-shaker'),
+)
 def salt_shaker(cv: Canvas, parent, x: float, y: float, size: float = 140.0) -> object:
     """A shaker ``size`` tall, its base centred on ``x, y``."""
     k = round(_size(size, "a shaker's size") / 140.0, 4)
@@ -501,7 +558,12 @@ def salt_shaker(cv: Canvas, parent, x: float, y: float, size: float = 140.0) -> 
 
 
 # -- chips ------------------------------------------------------------------------------------------------------------
-@register("prop", "collage-chip-bag", summary="A puffed paper chip bag with crimped ends and a label, no brand")
+@register(
+    "prop",
+    "collage-chip-bag",
+    summary="A puffed paper chip bag with crimped ends and a label, no brand",
+    contract=contract('collage-chip-bag'),
+)
 def chip_bag(
     cv: Canvas, parent, x: float, y: float, w: float, h: float, label: str, colour: str = "#e63946", *, size: float = 80
 ) -> object:
@@ -546,7 +608,12 @@ def _crumb(cv: Canvas, g) -> None:
 CHIPS: dict[str, Callable[[Canvas, object], None]] = {"whole": _whole, "half": _half, "crumb": _crumb}
 
 
-@register("prop", "collage-chip", summary="A paper potato chip: whole, broken in half, or the last crumb")
+@register(
+    "prop",
+    "collage-chip",
+    summary="A paper potato chip: whole, broken in half, or the last crumb",
+    contract=contract('collage-chip'),
+)
 def chip(cv: Canvas, parent, x: float, y: float, part: str = "whole", size: float = 210.0, tilt: float = 0.0) -> object:
     """The chip ``part`` (:data:`CHIPS`) centred on ``x, y``, scaled by ``size`` (a whole chip's width)."""
     if part not in CHIPS:
@@ -557,7 +624,12 @@ def chip(cv: Canvas, parent, x: float, y: float, part: str = "whole", size: floa
     return g
 
 
-@register("prop", "collage-certificate", summary="A paper certificate with a double border and a red seal")
+@register(
+    "prop",
+    "collage-certificate",
+    summary="A paper certificate with a double border and a red seal",
+    contract=contract('collage-certificate'),
+)
 def certificate(
     cv: Canvas, parent, text: str, x: float, y: float, w: float, h: float, *, size: float, tilt: float = 0.0
 ):
@@ -573,7 +645,12 @@ def certificate(
     return g
 
 
-@register("prop", "collage-snapshot", summary="A snapshot of a chip: a white-bordered print on a dark ground")
+@register(
+    "prop",
+    "collage-snapshot",
+    summary="A snapshot of a chip: a white-bordered print on a dark ground",
+    contract=contract('collage-snapshot'),
+)
 def snapshot(cv: Canvas, parent, x: float, y: float, w: float, tilt: float = 0.0) -> object:
     """A print ``w`` wide with its top-left at ``x, y``, turned ``tilt`` degrees, of one whole chip."""
     h = _size(w, "a print's width") * 1.16
@@ -584,7 +661,12 @@ def snapshot(cv: Canvas, parent, x: float, y: float, w: float, tilt: float = 0.0
     return g
 
 
-@register("prop", "collage-gust", summary="Paper-white lines of rushing air, streaming from a point towards another")
+@register(
+    "prop",
+    "collage-gust",
+    summary="Paper-white lines of rushing air, streaming from a point towards another",
+    contract=contract('collage-gust'),
+)
 def gust(cv: Canvas, parent, frm: Point, to: Point, start: float, end: float, *, lines: int = 5) -> object:
     """``lines`` strokes streaming from ``frm`` to ``to`` over and over from ``start`` to ``end``, project seconds."""
     if not (checks.number(start) and checks.number(end) and 0 <= start < end):
@@ -613,7 +695,12 @@ def gust(cv: Canvas, parent, frm: Point, to: Point, start: float, end: float, *,
 
 
 # -- payday -----------------------------------------------------------------------------------------------------------
-@register("prop", "collage-bill", summary="A paper bill with a jagged mouth that walks in and takes its bite")
+@register(
+    "prop",
+    "collage-bill",
+    summary="A paper bill with a jagged mouth that walks in and takes its bite",
+    contract=contract('collage-bill'),
+)
 def bill(
     cv: Canvas,
     parent,
@@ -649,7 +736,12 @@ def _piece_y(y0: float, speed: float, start: float, end: float, turn: float | No
     return [(start, y0), (turn, round(at_turn, 1)), (end, round(at_turn - 1.6 * speed * (end - turn), 1))]
 
 
-@register("prop", "collage-confetti", summary="Paper confetti in mid-fall, which can turn and fall back upwards")
+@register(
+    "prop",
+    "collage-confetti",
+    summary="Paper confetti in mid-fall, which can turn and fall back upwards",
+    contract=contract('collage-confetti'),
+)
 def confetti(
     cv: Canvas, parent, start: float, end: float, *, turn: float | None = None, count: int = 34, key: str = "confetti"
 ) -> object:
@@ -721,7 +813,6 @@ def _mirrored_hand(cv: Canvas, parent, look: Look, x: float, y: float) -> None:
     draw_shapes(cv, turned, _reaching(look, 0.0, 0.0))
 
 
-@register("prop", "collage-arm", summary="A character's arm on its own, sleeve and hand, for reaching past the pose")
 def arm(
     cv: Canvas,
     parent,
@@ -840,3 +931,12 @@ def chew(track: Sequence[tuple[float, str]], start: float, end: float) -> list[t
     out += [(round(start + i * CHEW / 2, 6), "open" if i % 2 == 0 else "closed") for i in range(n)]
     out.append((round(start + n * CHEW / 2, 6), "closed"))
     return sorted(out)
+
+
+# Register after the helpers so discovery binds their real callable contracts.
+arm = register(
+    "prop",
+    "collage-arm",
+    summary="A character's arm on its own, sleeve and hand, for reaching past the pose",
+    contract=contract("collage-arm", shoulder=shoulder, reach=reach, eased=eased, frames=frames, chew=chew),
+)(arm)
