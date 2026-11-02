@@ -14,6 +14,7 @@ from .stick import BROWS, EYES, MOUTHS, RigPose
 SCROLL = P(fields=(('speed', P(unit='frame pixels per second', minimum=0)), ('offset', PIXEL)))
 POSES = P(type=Mapping[str, Annotated[RigPose, POSE]])
 LOOK = P(unit='ratio', minimum=-1, maximum=1)
+KEY_BUDGET = P(unit='keys per track', minimum=2, maximum=20000, role='work-budget')
 FACE = P(
     fields=(
         ('eyes', P(enum=EYES)),
@@ -41,12 +42,14 @@ _RIDE = draw(
     ('amplitude', P(unit='frame pixels', minimum=0)),
     ('phase', P(unit='radians')),
     ('step', P(unit='seconds', role='sampling-interval')),
+    ('max_keys', KEY_BUDGET),
     handle=False,
     constraints=(
         'Mutates the existing node y animation about its current y; does not draw or return a new node.',
         'end and step are finite and positive, amplitude is finite and nonnegative; zero amplitude emits no keys.',
         'Two deterministic sine waves use the sample index, so changing step changes their temporal frequency.',
         'Keys interpolate linearly; the last sample is ceil(end/step)*step and can follow end. No visibility gate.',
+        'Over-budget, nonfinite or collapsed generated keys raise StickDataError before node mutation.',
         'phase offsets the first wave only; rebuilding from a later cut does not preserve the original '
         'phase automatically.',
     ),
@@ -135,6 +138,7 @@ _CONTRACTS = {
     'stick-windshield': draw(
         ('end', END),
         ('speed', P(unit='dashes per second', minimum=0)),
+        ('max_keys', KEY_BUDGET),
         handle=False,
         constraints=(
             FIXED,
@@ -142,8 +146,8 @@ _CONTRACTS = {
             'point, then resets.',
             'This is an authored 2D perspective effect, not camera motion. end bounds generated cycles, '
             'not scene visibility.',
-            'The final full cycle can end after end; each reset is separated by 0.001 seconds from the '
-            'shrink endpoint.',
+            'The final full cycle can end after end; each reset gap is min(0.001 seconds, half a cycle).',
+            'Over-budget, nonfinite or collapsed generated keys raise StickDataError before drawing.',
         ),
     ),
     'stick-windshield-dash': draw(

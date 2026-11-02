@@ -621,6 +621,14 @@ Its waves depend on sample index, so changing `step` changes temporal frequency;
 the last sample can follow `end`. These adapters do not promise phase-preserving
 cuts or physical suspension dynamics.
 
+`ride` and `windshield` accept `max_keys` (an integer from 2 to 20,000,
+default 20,000), limiting generated keys per animation track. Reduce duration
+or sampling rate when a plan exceeds the budget. Nonfinite values and times
+that collapse at serialization precision raise `StickDataError` before the
+call changes the scene. A parked windshield or zero-amplitude ride emits no
+motion keys. Windshield reset gaps are the smaller of 0.001 seconds and half
+a cycle, keeping fast representable cycles ordered.
+
 The mirror and mounted-phone returns have `x-role="partial-drawing"`. The mirror
 returns only its masked glass; the phone returns only its case. Use an outer
 parent when moving or hiding the complete drawing. A mirror callback receives

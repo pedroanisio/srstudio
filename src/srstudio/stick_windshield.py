@@ -13,11 +13,11 @@ faces sit above the word captions (:data:`srstudio.stick.WORD_Y`).
 
 from __future__ import annotations
 
-import math
 from collections.abc import Sequence
 
 from . import _stick_transport_contracts as tc
 from . import checks, signature
+from ._stick_motion import MAX_KEYS, check_motion_keys, cycle_count, key_budget
 from .canvas import Canvas
 from .registry import register
 from .stick import PLAIN, Gradient, Look, RigPose, StickDataError, _group, _seat, box, oval, paint, shape
@@ -120,21 +120,23 @@ def _pole(k: int, side: int) -> str:
     return f"M {x:.2f} {y + d:.2f} L {x:.2f} {y - 0.55 * d:.2f} M {x - side * 0.12 * d:.2f} {y - 0.48 * d:.2f} L {x:.2f} {y - 0.48 * d:.2f}"  # noqa: E501
 
 
-def _recede(cv: Canvas, node, end: float, speed: float) -> None:
-    """Shrink ``node`` about the vanishing point by :data:`RECEDE` once per dash, ``speed`` dashes a second, and
-    snap it back: the road behind runs away from the car without end."""
+def _recede_keys(end: float, speed: float, max_keys: int) -> list[tuple[float, float]]:
+    """Plan bounded shrinking/reset keys before any drawing is created."""
+    key_budget(max_keys)
     if not speed:
-        return
+        return []
+    count = cycle_count(end * speed, max_keys, keys_per_cycle=2)
     period = 1 / speed
+    reset_gap = min(0.001, period / 2)
     keys: list[tuple[float, float]] = []
-    for i in range(math.ceil(end * speed)):
-        keys += [(i * period, 1.0), ((i + 1) * period - 0.001, 1 / RECEDE)]
-    keys.append((math.ceil(end * speed) * period, 1.0))
-    cv.keys(node, "scaleX", keys, hold=False)
-    cv.keys(node, "scaleY", keys, hold=False)
+    for i in range(count):
+        keys += [(i * period, 1.0), ((i + 1) * period - reset_gap, 1 / RECEDE)]
+    keys.append((count * period, 1.0))
+    check_motion_keys(keys)
+    return keys
 
 
-def _road(cv: Canvas, parent, end: float, speed: float) -> None:
+def _road(cv: Canvas, parent, keys: list[tuple[float, float]]) -> None:
     """What the rear window shows: the sky, the fields, the road narrowing to the horizon, and its centre line and
     poles receding."""
     g = _group(cv, parent)
@@ -150,7 +152,9 @@ def _road(cv: Canvas, parent, end: float, speed: float) -> None:
         shape(cv, lines, _dash(k), "#f2efe6")
         for side in (-1, 1):
             shape(cv, lines, _pole(k, side), sw=max(1.0, 0.06 * NEAR * RECEDE**-k), stroke=cv.ink)
-    _recede(cv, lines, end, speed)
+    if keys:
+        cv.keys(lines, "scaleX", keys, hold=False)
+        cv.keys(lines, "scaleY", keys, hold=False)
 
 
 def _seat_back(cv: Canvas, parent, cx: float) -> None:
@@ -172,14 +176,16 @@ def _seat_back(cv: Canvas, parent, cx: float) -> None:
     contract=tc.contract('stick-windshield'),
     tags=("car", "interior", "front", "two-shot", "rear-window", "road"),
 )
-def windshield(cv: Canvas, parent, end: float, *, speed: float = 2.5) -> None:
+def windshield(cv: Canvas, parent, end: float, *, speed: float = 2.5, max_keys: int = MAX_KEYS) -> None:
     """The car from its hood, the back layer: the sky above the roof, the headliner with its mirror, the rear window
     with the road receding behind the car (``speed`` dashes of its centre line a second; 0 for a parked car), the
     rear seat and the two front seats at :data:`SEATS`. Pose a figure from :data:`FRONT` in each, then draw
-    :func:`dashboard` over them."""
+    :func:`dashboard` over them. ``max_keys`` bounds each scale track (2..20000); all generated keys are
+    checked for finite values and distinct times before drawing. Reset gaps are at most half a cycle."""
     _check_end(end, "windshield")
     if not (checks.number(speed) and speed >= 0):
         raise StickDataError(f"the road's speed must be a non-negative number of dashes a second, got {speed!r}")
+    keys = _recede_keys(end, speed, max_keys)
     s = cv
     sky = paint(s, Gradient("ws-sky", ((0, SKY_TOP), (1, SKY_LOW)), 0, 0, 0, 600))
     box(s, parent, 0, 0, s.width, 600, sky)
@@ -190,7 +196,7 @@ def windshield(cv: Canvas, parent, end: float, *, speed: float = 2.5) -> None:
     roof = paint(s, Gradient("ws-headliner", ((0, ROOF_LIGHT), (1, ROOF_SHADE)), 0, 584, 0, 720))
     box(s, parent, 0, 584, s.width, 136, roof)
     shape(s, parent, REAR_WINDOW, s.clear, 7, stroke=s.ink)
-    _road(s, parent, end, speed)
+    _road(s, parent, keys)
     shape(s, parent, REAR_WINDOW, sw=7, stroke=s.ink)
     rear = paint(s, Gradient("ws-rear-seat", ((0, SEAT_LIGHT), (1, SEAT_SHADE)), 0, 896, 0, 1000))
     shape(s, parent, "M 104 1000 L 112 914 Q 120 896 160 896 L 920 896 Q 960 896 968 914 L 976 1000 Z", rear, 4)

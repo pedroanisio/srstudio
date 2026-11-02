@@ -21,6 +21,7 @@ from functools import partial
 
 from . import _stick_transport_contracts as tc
 from . import checks, look, signature
+from ._stick_motion import MAX_KEYS, check_motion_keys, cycle_count, key_budget
 from .canvas import Canvas
 from .registry import register
 from .stick import (
@@ -466,17 +467,28 @@ def cockpit(
 
 
 @register("prop", "stick-ride", contract=tc.contract('stick-ride'), tags=("car", "motion", "suspension"))
-def ride(cv: Canvas, node, end: float, *, amplitude: float = 2.5, phase: float = 0.0, step: float = 1 / 12) -> None:
+def ride(
+    cv: Canvas,
+    node,
+    end: float,
+    *,
+    amplitude: float = 2.5,
+    phase: float = 0.0,
+    step: float = 1 / 12,
+    max_keys: int = MAX_KEYS,
+) -> None:
     """Bobs ``node`` up and down by up to ``amplitude`` px, as the road shakes the car: two incommensurate waves
     sampled at ``step`` (12 fps cartoon timing), shifted by ``phase`` radians so two nodes need not bob together,
-    the same every time."""
+    the same every time. ``max_keys`` bounds generated work (2..20000); unrepresentable or non-increasing
+    keys raise :class:`StickDataError` before changing the node."""
     numbers = (amplitude, phase, step, end)
     if not (all(checks.number(v) for v in numbers) and amplitude >= 0 and step > 0 and end > 0):
         raise StickDataError(f"ride needs amplitude >= 0, step > 0 and a positive end, got {amplitude}, {step}, {end}")
+    key_budget(max_keys)
     if amplitude == 0:
         return
     base = float(node.y or 0)
-    n = max(1, math.ceil(end / step))
+    n = cycle_count(end / step, max_keys)
     values = [
         (
             round(i * step, 4),
@@ -484,6 +496,7 @@ def ride(cv: Canvas, node, end: float, *, amplitude: float = 2.5, phase: float =
         )
         for i in range(n + 1)
     ]
+    check_motion_keys(values)
     cv.keys(node, "y", values, kind="linear")
 
 

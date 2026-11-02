@@ -913,6 +913,28 @@
   ],
   "findings": [
     {
+      "id": "SDK-P1-14",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Bound and preflight procedural transport motion keys",
+      "problem": "Finite ride and windshield inputs could overflow derived key counts or values, allocate unbounded key lists, collapse times at serialization precision, or put fast windshield reset keys before time zero. Windshield failures could leave partial geometry behind.",
+      "resolution": "Expose a max_keys budget of 2..20000 per track and reject excessive work before allocation. Check all generated values and serialized times before mutation. Windshield resets use min(0.001 seconds, half a cycle), preserving ordinary drawing output while supporting fast representable cycles.",
+      "verification": [
+        "tests/test_stick_motion_limits.py",
+        "tests/test_stick_car.py",
+        "tests/test_stick_windshield.py",
+        "tests/test_stick_transport_contracts.py",
+        "tests/data/stick-transport-contract-baseline.json"
+      ],
+      "acceptance": [
+        "Overflow, collapsed keys and exhausted budgets raise StickDataError before scene mutation",
+        "Invalid budgets reject booleans and non-integers; exact budgets pass and repaired retries match fresh drawings",
+        "Fast cycles shrink and reset correctly in real renderer evaluation at nonsequential sample times",
+        "Zero motion emits no keys; existing transport drawing baselines remain unchanged"
+      ],
+      "qualification": "Scoped to direct ride and windshield key generation. This does not establish global atomicity or work limits for every transport builder. The 20000-key hard ceiling bounds allocation; callers can set a lower budget. Larger plans must reduce duration or sampling rate rather than bypass the bound. Numeric timing evidence does not establish perceptual quality."
+    },
+    {
       "id": "SDK-P1-13",
       "priority": "P1",
       "status": "complete",
