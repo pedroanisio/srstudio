@@ -31,7 +31,9 @@ from . import (
     catalog_server,
     catalog_specimens,
     catalog_versions,
+    choreograph,
     craft,
+    dance,
     fonts,
     frames,
     interview,
@@ -215,6 +217,18 @@ def main(argv=None):
     beat.add_argument("--beats-per-bar", type=int, default=4)
     beat.add_argument("--near", type=float, default=120.0, help="the tempo to lean toward: settles double or half time")
     beat.add_argument("--json", action="store_true")
+    routine = sub.add_parser("choreograph", help="a dance routine for a recorded track, as a dance-routine document")
+    routine.add_argument("audio", type=Path, help="any file ffmpeg reads; its grid is measured as `srstudio beat` does")
+    routine.add_argument("--support", choices=choreograph.SUPPORTS, required=True, help="seated or standing")
+    routine.add_argument("--seed", type=int, required=True, help="the same seed gives the same routine")
+    routine.add_argument("--phrase-bars", type=int, default=8)
+    routine.add_argument("--transition-beats", type=float, default=2.0)
+    routine.add_argument("--max-repeat", type=int, default=2, help="phrases one move may run in a row")
+    routine.add_argument("--seconds", type=float, help="read only the first seconds")
+    routine.add_argument("--beats-per-bar", type=int, default=4)
+    routine.add_argument(
+        "--near", type=float, default=120.0, help="the tempo to lean toward: settles double or half time"
+    )
     split = sub.add_parser("arms", help="how an A/B test's releases split, and what keeps the split from being fair")
     split.add_argument("test", choices=releases.TESTS)
     split.add_argument("--order", type=Path, help="the delivery order: a file of slugs, one a line")
@@ -334,6 +348,8 @@ def main(argv=None):
         return _lip_proof(args)
     if args.cmd == "beat":
         return _beat(args)
+    if args.cmd == "choreograph":
+        return _choreograph(args)
     if args.cmd == "proof":
         return _proof(args)
     if args.cmd == "master":
@@ -629,6 +645,32 @@ def _beat(args: argparse.Namespace) -> int:
         print(f"{groove.bpm:g} BPM, {groove.beats_per_bar} beats to the bar, a bar opens at {groove.offset:g} s")
     if not read.sure:
         print(f"srstudio beat: only {read.bars:.1f} bars heard, the bars may open on another beat", file=sys.stderr)
+    return 0
+
+
+def _choreograph(args: argparse.Namespace) -> int:
+    try:
+        read = music.reading(args.audio, seconds=args.seconds, beats_per_bar=args.beats_per_bar, near=args.near)
+        made = choreograph.choreograph_track(
+            args.audio,
+            read.groove,
+            support=args.support,
+            seed=args.seed,
+            phrase_bars=args.phrase_bars,
+            seconds=args.seconds,
+            transition_beats=args.transition_beats,
+            max_repeat=args.max_repeat,
+        )
+    except (music.MusicError, dance.DanceError) as exc:
+        _error("choreograph", exc)
+        return 1
+    if not read.sure:
+        print(
+            f"srstudio choreograph: only {read.bars:.1f} bars heard, the bars may open on another beat", file=sys.stderr
+        )
+    groove = read.groove
+    print(f"srstudio choreograph: {groove.bpm:g} BPM, a bar opens at {groove.offset:g} s", file=sys.stderr)
+    print(dance.dump_routine(made), end="")
     return 0
 
 

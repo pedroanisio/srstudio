@@ -24,6 +24,7 @@ __all__ = [
     "ROUTINE_SCHEMA",
     "DanceDataError",
     "DanceSchemaError",
+    "dump_routine",
     "load_moves",
     "load_routine",
     "moves",
@@ -242,3 +243,31 @@ def parse_routine(text: str | bytes, library: Mapping[str, Move]) -> Routine:
 
 def load_routine(path: str | Path, library: Mapping[str, Move]) -> Routine:
     return parse_routine(_read(path), library)
+
+
+def dump_routine(routine: Routine) -> str:
+    """``routine`` as a ``srstudio.dance-routine/1.0.0`` document, its moves by name: :func:`parse_routine` on the
+    same library reads it back equal. A field at its default is left out."""
+    if not isinstance(routine, Routine):
+        raise DanceDataError(f"only a Routine is written, not {type(routine).__name__}", path="$")
+    entries = []
+    for e in routine.entries:
+        entry: dict[str, object] = {"bars": [e.start_bar, e.end_bar], "move": e.move.name}
+        if e.intensity != 1.0:
+            entry["intensity"] = e.intensity
+        if e.mirror:
+            entry["mirror"] = True
+        if e.transition_beats:
+            entry["transition_beats"] = e.transition_beats
+        if e.expression is not None:
+            entry["expression"] = e.expression
+        if e.hold:
+            entry["hold"] = dict(e.hold)
+        entries.append(entry)
+    document = {
+        "schema": ROUTINE_SCHEMA,
+        "track_bars": routine.track_bars,
+        "beats_per_bar": routine.beats_per_bar,
+        "entries": entries,
+    }
+    return json.dumps(document, indent=2, allow_nan=False) + "\n"
