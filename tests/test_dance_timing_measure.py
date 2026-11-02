@@ -202,3 +202,44 @@ def test_a_timing_target_outside_its_contract_is_refused(changes):
 
 def test_the_old_targets_hold_no_timing_and_still_read_the_seat_groove():
     assert dance.SEAT_GROOVE_BOB.attack is None and dance.SEAT_GROOVE_BOB.velocity is None
+
+
+# --- what the samples can tell: overtones above the estimate's noise and within the sampling bound -------------------
+
+
+def noisy(values, sigma, seed=3):
+    import random
+
+    rng = random.Random(seed)
+    return [v + rng.gauss(0.0, sigma) for v in values]
+
+
+def test_noise_is_no_overtone():
+    """A sine read through a pose estimator's scatter: overtones that only fit the scatter are dropped, so its
+    acceleration reads as the sine's and not as the noise's, and its timing is the sine's."""
+    sine = series(Pattern("chest.front_back", 0.3), fps=30)
+    clean = measure_dance(sine, 30, GROOVE, hit="max")
+    read = measure_dance(noisy(sine, 0.03), 30, GROOVE, hit="max")
+    assert clean.overtones == 1 and read.overtones <= 2  # a sine has none, and the scatter adds none
+    assert read.peak_acceleration == pytest.approx(clean.peak_acceleration, rel=0.15)
+    assert read.peak_speed_phase == pytest.approx(0.25, abs=0.03)
+
+
+def test_a_strike_above_the_noise_keeps_its_overtones():
+    strike = series(Pattern("chest.front_back", 0.3, waveform="curve", curve=whip()), fps=30)
+    clean = measure_dance(strike, 30, GROOVE, hit="max")
+    read = measure_dance(noisy(strike, 0.003), 30, GROOVE, hit="max")
+    assert clean.overtones == 7  # fifteen pictures a cycle, on the same fifteen places every cycle
+    assert read.overtones >= 5
+    assert profile_distance(read.velocity, clean.velocity) < 0.05
+    assert read.peak_speed_phase == pytest.approx(clean.peak_speed_phase, abs=0.02)
+
+
+def test_a_cycle_seen_at_few_places_keeps_only_the_overtones_its_widest_gap_allows():
+    """Sixteen pictures a cycle, every one on the same sixteen places: a gap of a sixteenth of the cycle holds at most
+    eight overtones, and the reading says so."""
+    groove = Groove(112.5)  # 16 pictures of 30 a second to a beat
+    move = Move("probe", "either", (Pattern("chest.front_back", 0.3, waveform="curve", curve=whip()),))
+    values = [f.value("chest.front_back") for f in frames(move, groove, 0.0, 8 * groove.beat, 30)]
+    read = measure_dance(values, 30, groove, hit="max", harmonics=24)
+    assert read.overtones <= 8
