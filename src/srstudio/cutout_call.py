@@ -70,12 +70,16 @@ def video_tile(
 ):
     """The picture's top left at (``x``, ``y``), ``width`` by ``height``. ``inside`` draws who is on the call in the
     tile's own units, (0, 0) at its top left; the frame goes on after, so a figure cut by the tile's edge stays cut."""
+    if not (checks.number(x) and checks.number(y)):
+        raise CutoutCallError(f"a tile's position needs finite numeric coordinates, got {x!r}, {y!r}")
     if not (checks.number(width) and width > 0 and checks.number(height) and height > 0):
         raise CutoutCallError(f"a tile has a positive size, got {width!r} by {height!r}")
-    if plate and (not plate.strip() or len(plate) > PLATE_CHARS):
+    if not isinstance(plate, str) or (plate and (not plate.strip() or len(plate) > PLATE_CHARS)):
         raise CutoutCallError(f"a plate has 1 to {PLATE_CHARS} characters, got {plate!r}")
     if inside is not None and not callable(inside):
         raise CutoutCallError(f"inside draws the tile's sitter and must be callable, got {inside!r}")
+    if plate:
+        cv.require_font("a video tile's name plate", CutoutCallError)
     ink = cv.ink
     g = cv.group(parent, id, x=x, y=y)
     cv.rect(g, 0, 0, width, height, TILE_WALL)
@@ -120,22 +124,29 @@ def desk_phone(
     """Centred on (``x``, ``y``), :data:`PHONE_WIDTH` by :data:`PHONE_HEIGHT` at scale 1. ``title`` tops the lock
     screen; ``lines`` (time, text) land under it and stay; ``buzzes`` shake it, (start, end) spans; given ``turns``, it
     lies face down until that time and turns over."""
+    if not (checks.number(x) and checks.number(y)):
+        raise CutoutCallError(f"a phone's position needs finite numeric coordinates, got {x!r}, {y!r}")
     if not (checks.number(scale) and scale > 0):
         raise CutoutCallError(f"scale must be a positive number, got {scale!r}")
     spans = _times(buzzes, "a buzz")
     if turns is not None and not (checks.number(turns) and turns >= 0):
         raise CutoutCallError(f"a phone turns over at a time, got {turns!r}")
-    if len(title) > PHONE_CHARS:
+    if not isinstance(title, str) or len(title) > PHONE_CHARS:
         raise CutoutCallError(f"a title has up to {PHONE_CHARS} characters, got {title!r}")
     if len(lines) > PHONE_LINES:
         raise CutoutCallError(f"a phone shows up to {PHONE_LINES} lines, got {lines!r}")
     last = 0.0
-    for at, text in lines:
+    for row in lines:
+        if not isinstance(row, tuple | list) or len(row) != 2:
+            raise CutoutCallError(f"a phone line is a (time, text) pair, got {row!r}")
+        at, text = row
         if not (checks.number(at) and at >= last):
             raise CutoutCallError(f"lines land in time order from zero or later, got {lines!r}")
         if not (isinstance(text, str) and text.strip() and len(text) <= PHONE_CHARS):
             raise CutoutCallError(f"a line has 1 to {PHONE_CHARS} characters, got {text!r}")
         last = at
+    if title or lines:
+        cv.require_font("a phone's screen copy", CutoutCallError)
     ink = cv.ink
     w, h = PHONE_WIDTH, PHONE_HEIGHT
     g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)

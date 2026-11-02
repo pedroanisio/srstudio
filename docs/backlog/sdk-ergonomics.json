@@ -1331,6 +1331,37 @@
   ],
   "findings": [
     {
+      "id": "SDK-P1-30",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Preflight call-prop placement, copy and font requirements",
+      "problem": "Invalid call-prop coordinates and malformed copy leaked lower-level errors; missing fonts could fail after geometry or a caller callback had run.",
+      "implementation": "Validate numeric positions and copy records and require fonts only for lettered props before any drawing or callback invocation.",
+      "evidence": [
+        "tests/test_call_prop_preflight.py",
+        "src/srstudio/cutout_call.py"
+      ],
+      "verification": {
+        "red": 14,
+        "initial_green": 2,
+        "new_tests": 16,
+        "selected_regressions": {
+          "passed": 80,
+          "skipped": 0
+        },
+        "unchanged_valid_drawings": 10,
+        "branch_inclusive_coverage_percent": 98.85057471264368,
+        "branch_coverage_percent": 100.0,
+        "coverage_scope": [
+          "src/srstudio/cutout_call.py"
+        ],
+        "ruff": "passed",
+        "format": "passed",
+        "mypy_source_files": 336,
+        "retained_artifacts": "../generated/sdk-call-prop-preflight/v1/"
+      }
+    },
+    {
       "id": "SDK-P1-29",
       "priority": "P1",
       "status": "complete",
