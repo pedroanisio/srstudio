@@ -187,9 +187,10 @@ The table gives each type its default. Only the rigid-object layer is built, and
 The first full proof is a short Toon clip containing a multicolored car turning under a moving camera, a rigged hand holding a prop, a figure crossing behind/in front of the car, a textured background, and protected information. It includes a held pose, a continuous pose/expression transition, a cut, changed key/fill/rim lighting, and a warm-cache rebuild. Test frontal, three-quarter, and profile views only for assets that explicitly support them; an unsupported view must demonstrate the refusal path.
 
 The [hybrid drawing candidate](docs/drawing-proof.md) supplies a runnable combined
-fixture and strict encode/pixel-review commands. Its explicit expression/depth
-cuts, frontal character, authored shadow mask, and candidate information layer
-do not yet satisfy the complete matrix below. It does not change style approval.
+fixture and strict encode/pixel-review commands. Authored face deformations now
+continue through the camera cut. Its depth replacement, frontal character,
+unbound shadow mark, and candidate information layer do not yet satisfy the
+complete matrix below. It does not change style approval.
 
 The thresholds below are acceptance targets, not reported measurements, except where ADR 0091 records one. That proof records its results and any approved style-specific replacement thresholds.
 

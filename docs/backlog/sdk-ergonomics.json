@@ -74,6 +74,19 @@
       "renderer": "engine 0.8.0; llvmpipe LLVM 19.1.7, Vulkan CPU adapter",
       "qualification": "A measured candidate, not the complete DRAWING proof or style approval. The initial cold raw-car pass predates vector/reporting refinements; its 14 PNGs exactly match the final candidate. Final source hashes are sealed separately. Selected full-size frames were inspected; full temporal visual review, complete pixel/continuity gates, shared drawn shading/receivers, approved information equivalence, whole-body support and authored emotion blends remain open. This was a targeted test selection, not a full-suite run."
     },
+    "hybrid_continuous_faces": {
+      "artifact": "../generated/drawing-hybrid-candidate/v2/verification.json",
+      "candidate": "../generated/drawing-hybrid-candidate/v2/candidate/scene.xml",
+      "review": "../generated/drawing-hybrid-candidate/v2/review/review.json",
+      "example_review_tests_passed": 23,
+      "real_engine_face_cut_regression_passed": 1,
+      "example_branch_coverage_percent": 84.72222222222223,
+      "strict_encode": {"passed": true, "width": 1080, "height": 1920, "fps": 24, "frames": 144},
+      "unique_car_views": 14,
+      "warm_invocations": 0,
+      "repeated_frame_and_information_pixels_identical": true,
+      "qualification": "Authored face blends are integrated into the actual hybrid candidate and retain their source clock across the camera cut. Reuses the unchanged version-1 car cache; no new cold timing claim. Full rendered continuity, body support, shared compiler/form/receiver integration and the complete DRAWING acceptance matrix remain open."
+    },
     "spatial_camera_tracks": {
       "implementation_commit": "7014396ba3834a9edccfe3b30e70a267bd6bf872",
       "targeted_tests_passed": 532,
@@ -2787,11 +2800,12 @@
           "Original six-second hybrid candidate with a multicolor turning car, moving camera, explicit camera/light cut, spatial hand/cup contact, frontal Bento behind/in front, world-coordinate ground texture and protected screen information",
           "Bounded cold render work and zero-invocation warm rebuilding, explicit candidate identities, source/font/schema hashes, and scoped process memory measurements",
           "Executable strict-encode and repeated-frame/information-pixel review commands; missing or changed pixel evidence and failed engine calls cannot produce a passing review report",
-          "TDD regressions for shared projection, initial held pose, reserved hand/cup bounds, fill-only path diagnostics and validation before plate work"
+          "TDD regressions for shared projection, initial held pose, reserved hand/cup bounds, fill-only path diagnostics and validation before plate work",
+          "Candidate version 2 integrates authored neutral/concerned/deadpan face deformations at 24 fps; the second transition retains its original clock through the camera cut. The full-size 144-frame strict encode, held/repeated-frame checks and protected information pixel checks pass without borrowing drawing approval"
         ],
         "remaining": [
           "Complete raster registration/contact, occlusion, palette and continuous-join measurements across the clip",
-          "Integrate the separately implemented authored face blends and world-anchored biped support into the hybrid candidate; it still declares expression and depth replacements as cuts",
+          "Integrate world-anchored biped support into the hybrid candidate and measure rendered face/pose continuity; its depth replacement remains a cut",
           "Integrate authored shared-light form fields with the actual rig poses, calibrate across backends, and adopt the implemented caster/receiver mask contract; the candidate still uses an unbound authored ground mark",
           "Approved information-layer equivalence, compatibility fingerprints and complete temporal visual review",
           "Operator approval of the completed proof before style adoption"
