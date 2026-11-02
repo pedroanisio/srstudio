@@ -1,0 +1,488 @@
+{
+ "schema": "srstudio.dance-style/1.0.0",
+ "name": "studio-hiphop",
+ "description": "The lead dancer of a hip-hop class recording the operator supplied on 2026-11-02: about 50 seconds, a handheld camera following her at the centre of the group, a song at about 122.7 beats a minute. Style statistics only; no frame or routine.",
+ "generated_by": {
+  "tool": "tools/dance_study.py",
+  "model": "Claude Opus 5.5 (claude-opus-5-5) in Claude Code"
+ },
+ "reference": {
+  "description": "The lead dancer of a hip-hop class recording the operator supplied on 2026-11-02: about 50 seconds, a handheld camera following her at the centre of the group, a song at about 122.7 beats a minute. Style statistics only; no frame or routine.",
+  "source_sha256": "223f395f296701ff4fe5f584e348f56f45397b38dcf51ecd5523f1e9fcebb994",
+  "estimator": "mediapipe-pose-landmarker-heavy",
+  "estimator_version": "1.2.0",
+  "model_sha256": "64437af838a65d18e5ba7a0d39b465540069bc8aae8308de3e318aad31fcbc7b",
+  "seconds": 50.233,
+  "frames": 1507,
+  "used": 1197,
+  "rejected": {
+   "lost": 214,
+   "low_confidence": 0,
+   "implausible": 25,
+   "jump": 71,
+   "arm": 187
+  },
+  "bpm": 122.65,
+  "beats_per_bar": 4,
+  "offset_s": 0.12
+ },
+ "channels": [
+  {
+   "name": "hips.bounce",
+   "unit": "head_radii",
+   "trust": "fair",
+   "why": "the hips' height over the lower ankle: depth errors on the feet and the camera's tilt shorten it",
+   "noise": 0.1324,
+   "level": [
+    6.2571,
+    7.5664
+   ],
+   "peak_to_peak": [
+    0.734,
+    1.5602
+   ],
+   "range": [
+    1.0483,
+    2.227
+   ],
+   "cycles_per_beat": [
+    0.4982,
+    0.6291
+   ],
+   "snap_ratio": [
+    0.3916,
+    1.0816
+   ],
+   "hit_offset": null,
+   "evidence": {
+    "frames": 757,
+    "windows": 13,
+    "read": 6,
+    "still": 0,
+    "locked": 0
+   }
+  },
+  {
+   "name": "knees.bend",
+   "unit": "rad",
+   "trust": "fair",
+   "why": "a 3D angle at the knee: depth on a bent leg is the estimator's guess",
+   "noise": 0.06901,
+   "level": [
+    0.4618,
+    1.0899
+   ],
+   "peak_to_peak": [
+    0.3704,
+    0.8986
+   ],
+   "range": [
+    0.5962,
+    1.0027
+   ],
+   "cycles_per_beat": [
+    0.5567,
+    1.1617
+   ],
+   "snap_ratio": [
+    0.2255,
+    1.7226
+   ],
+   "hit_offset": null,
+   "evidence": {
+    "frames": 725,
+    "windows": 13,
+    "read": 7,
+    "still": 0,
+    "locked": 0
+   }
+  },
+  {
+   "name": "torso.lean",
+   "unit": "rad",
+   "trust": "poor",
+   "why": "front-back lean against the camera's vertical, which tilts with it",
+   "noise": 0.05049,
+   "level": [
+    -0.1987,
+    0.2032
+   ],
+   "peak_to_peak": [
+    0.1565,
+    0.5052
+   ],
+   "range": [
+    0.2552,
+    0.5706
+   ],
+   "cycles_per_beat": [
+    0.3331,
+    0.6924
+   ],
+   "snap_ratio": [
+    0.4245,
+    2.5495
+   ],
+   "hit_offset": null,
+   "evidence": {
+    "frames": 1197,
+    "windows": 37,
+    "read": 23,
+    "still": 0,
+    "locked": 1
+   }
+  },
+  {
+   "name": "torso.roll",
+   "unit": "rad",
+   "trust": "poor",
+   "why": "side lean against the camera's vertical, which rolls with it",
+   "noise": 0.02828,
+   "level": [
+    -0.1405,
+    0.1113
+   ],
+   "peak_to_peak": [
+    0.1282,
+    0.3303
+   ],
+   "range": [
+    0.1764,
+    0.4235
+   ],
+   "cycles_per_beat": [
+    0.4349,
+    0.9986
+   ],
+   "snap_ratio": [
+    0.2576,
+    1.8301
+   ],
+   "hit_offset": [
+    0.129,
+    0.3233
+   ],
+   "evidence": {
+    "frames": 1197,
+    "windows": 37,
+    "read": 18,
+    "still": 0,
+    "locked": 5
+   }
+  },
+  {
+   "name": "torso.twist",
+   "unit": "rad",
+   "trust": "fair",
+   "why": "shoulders turned on the hips: needs depth, but no camera angle",
+   "noise": 0.03571,
+   "level": [
+    0.232,
+    0.5864
+   ],
+   "peak_to_peak": [
+    0.1921,
+    0.7359
+   ],
+   "range": [
+    0.2909,
+    0.7331
+   ],
+   "cycles_per_beat": [
+    0.4191,
+    0.7858
+   ],
+   "snap_ratio": [
+    0.2831,
+    0.8874
+   ],
+   "hit_offset": null,
+   "evidence": {
+    "frames": 1197,
+    "windows": 37,
+    "read": 16,
+    "still": 0,
+    "locked": 2
+   }
+  },
+  {
+   "name": "shoulders.tilt",
+   "unit": "rad",
+   "trust": "good",
+   "why": "shoulder line against the hip line, both in the picture's plane",
+   "noise": 0.03185,
+   "level": [
+    0.0366,
+    0.3522
+   ],
+   "peak_to_peak": [
+    0.2494,
+    0.4924
+   ],
+   "range": [
+    0.3369,
+    0.6136
+   ],
+   "cycles_per_beat": [
+    0.3219,
+    0.6872
+   ],
+   "snap_ratio": [
+    0.5392,
+    1.2749
+   ],
+   "hit_offset": null,
+   "evidence": {
+    "frames": 1197,
+    "windows": 37,
+    "read": 24,
+    "still": 0,
+    "locked": 3
+   }
+  },
+  {
+   "name": "head.bob",
+   "unit": "head_radii",
+   "trust": "good",
+   "why": "the head's height over the shoulders' middle",
+   "noise": 0.04339,
+   "level": [
+    0.8072,
+    1.2468
+   ],
+   "peak_to_peak": [
+    0.3113,
+    0.6668
+   ],
+   "range": [
+    0.4674,
+    0.7623
+   ],
+   "cycles_per_beat": [
+    0.2943,
+    0.7436
+   ],
+   "snap_ratio": [
+    0.7026,
+    2.4293
+   ],
+   "hit_offset": null,
+   "evidence": {
+    "frames": 1197,
+    "windows": 37,
+    "read": 11,
+    "still": 0,
+    "locked": 0
+   }
+  },
+  {
+   "name": "head.sway",
+   "unit": "head_radii",
+   "trust": "good",
+   "why": "the head along the shoulder line",
+   "noise": 0.08256,
+   "level": [
+    -0.29,
+    0.5361
+   ],
+   "peak_to_peak": [
+    0.4692,
+    1.4861
+   ],
+   "range": [
+    0.9244,
+    1.505
+   ],
+   "cycles_per_beat": [
+    0.2586,
+    0.5388
+   ],
+   "snap_ratio": [
+    0.673,
+    1.7616
+   ],
+   "hit_offset": null,
+   "evidence": {
+    "frames": 1197,
+    "windows": 37,
+    "read": 16,
+    "still": 0,
+    "locked": 2
+   }
+  },
+  {
+   "name": "arms.height",
+   "unit": "head_radii",
+   "trust": "good",
+   "why": "the wrists' height over the shoulders' middle; a hidden wrist leaves its frame out",
+   "noise": 0.13435,
+   "level": [
+    -3.0119,
+    0.2972
+   ],
+   "peak_to_peak": [
+    2.8629,
+    3.4003
+   ],
+   "range": [
+    4.3348,
+    7.1145
+   ],
+   "cycles_per_beat": null,
+   "snap_ratio": null,
+   "hit_offset": null,
+   "evidence": {
+    "frames": 657,
+    "windows": 6,
+    "read": 1,
+    "still": 0,
+    "locked": 0
+   }
+  },
+  {
+   "name": "arms.reach",
+   "unit": "ratio",
+   "trust": "fair",
+   "why": "shoulder to wrist over the arm's length: depth on a pointing arm",
+   "noise": 0.0148,
+   "level": [
+    0.7233,
+    0.9854
+   ],
+   "peak_to_peak": null,
+   "range": null,
+   "cycles_per_beat": null,
+   "snap_ratio": null,
+   "hit_offset": null,
+   "evidence": {
+    "frames": 579,
+    "windows": 0,
+    "read": 0,
+    "still": 0,
+    "locked": 0
+   }
+  },
+  {
+   "name": "hands.travel",
+   "unit": "head_radii_per_beat",
+   "trust": "fair",
+   "why": "the wrists' path around the hips each beat, a quarter beat at a time; noise lengthens it",
+   "noise": null,
+   "level": [
+    2.6706,
+    4.6717
+   ],
+   "peak_to_peak": null,
+   "range": null,
+   "cycles_per_beat": null,
+   "snap_ratio": null,
+   "hit_offset": null,
+   "evidence": {
+    "frames": 657,
+    "windows": 0,
+    "read": 0,
+    "still": 0,
+    "locked": 0
+   }
+  },
+  {
+   "name": "feet.travel",
+   "unit": "head_radii_per_beat",
+   "trust": "fair",
+   "why": "the ankles' path around the hips each beat, a quarter beat at a time: steps and kicks",
+   "noise": null,
+   "level": [
+    1.882,
+    3.382
+   ],
+   "peak_to_peak": null,
+   "range": null,
+   "cycles_per_beat": null,
+   "snap_ratio": null,
+   "hit_offset": null,
+   "evidence": {
+    "frames": 757,
+    "windows": 0,
+    "read": 0,
+    "still": 0,
+    "locked": 0
+   }
+  },
+  {
+   "name": "stance.width",
+   "unit": "head_radii",
+   "trust": "fair",
+   "why": "the ankles' distance across the floor",
+   "noise": 0.23552,
+   "level": [
+    3.0574,
+    7.1961
+   ],
+   "peak_to_peak": null,
+   "range": null,
+   "cycles_per_beat": null,
+   "snap_ratio": null,
+   "hit_offset": null,
+   "evidence": {
+    "frames": 757,
+    "windows": 0,
+    "read": 0,
+    "still": 0,
+    "locked": 0
+   }
+  }
+ ],
+ "lags": [
+  {
+   "lead": "hips",
+   "follow": "chest",
+   "beats": [
+    -0.035,
+    0.0354
+   ],
+   "evidence": {
+    "windows": 13,
+    "read": 13
+   }
+  },
+  {
+   "lead": "chest",
+   "follow": "head",
+   "beats": [
+    -0.0352,
+    0.0336
+   ],
+   "evidence": {
+    "windows": 13,
+    "read": 13
+   }
+  },
+  {
+   "lead": "hips",
+   "follow": "head",
+   "beats": [
+    -0.0353,
+    0.0344
+   ],
+   "evidence": {
+    "windows": 13,
+    "read": 13
+   }
+  },
+  {
+   "lead": "chest",
+   "follow": "hands",
+   "beats": null,
+   "evidence": {
+    "windows": 0,
+    "read": 0
+   }
+  }
+ ],
+ "unmeasured": [
+  {
+   "channel": "root.travel",
+   "why": "the hips' path on the floor: a camera that follows the dancer moves the picture with them, and the estimator's metres start at the hips, so no frame of reference stays on the floor"
+  }
+ ]
+}

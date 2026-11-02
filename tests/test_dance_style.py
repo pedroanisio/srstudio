@@ -152,3 +152,23 @@ def test_only_a_reading_is_checked_and_only_a_style_checks(bounce_style):
         dance_style.check({}, frames("bounce"), GROOVE, FPS)
     with pytest.raises(dance_style.DanceStyleError):
         dance_style.derive({}, name="x", description="x", reference=REFERENCE, generated_by=BY)
+
+
+def test_the_shipped_reference_style_loads_by_its_name():
+    shipped = dance_style.styles()
+    assert "studio-hiphop" in shipped
+    style = shipped["studio-hiphop"]
+    assert (
+        style.reference.used + sum(style.reference.rejected[k] for k in dance_style.REJECTS[:4])
+        <= style.reference.frames
+    )
+    assert "root.travel" in style.unmeasured and style.generated_by["tool"] == "tools/dance_study.py"
+
+
+def test_a_style_file_is_named_after_its_style(tmp_path, bounce_style):
+    (tmp_path / "bounce.json").write_text(dance_style.dump_style(bounce_style))
+    (tmp_path / "notes.txt").write_text("not a style")
+    assert list(dance_style.styles(tmp_path)) == ["bounce"]
+    (tmp_path / "other.json").write_text(dance_style.dump_style(bounce_style))
+    with pytest.raises(dance_style.StyleValueError, match="holds the style"):
+        dance_style.styles(tmp_path)

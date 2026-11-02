@@ -350,13 +350,16 @@ def load_style(path: str | Path) -> DanceStyle:
     return parse_style(raw)
 
 
-def styles() -> dict[str, DanceStyle]:
-    """The measured styles srstudio ships, by name."""
-    folder = resources.files("srstudio").joinpath("assets/dance/styles")
+def styles(folder: Path | None = None) -> dict[str, DanceStyle]:
+    """The measured styles in ``folder`` (the ones srstudio ships by default), by name; each file is named after its
+    style."""
+    where = resources.files("srstudio").joinpath("assets/dance/styles") if folder is None else folder
     found = {}
-    for item in sorted(folder.iterdir(), key=lambda i: i.name):
+    for item in sorted(where.iterdir(), key=lambda i: i.name):
         if item.name.endswith(".json"):
             style = parse_style(item.read_bytes())
+            if item.name != f"{style.name}.json":
+                raise StyleValueError(f"{item.name} holds the style {style.name!r}", path="name")
             found[style.name] = style
     return found
 
