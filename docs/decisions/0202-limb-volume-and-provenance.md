@@ -95,8 +95,10 @@ On that reference, these are the shares of found frames in which each twist is `
 | Forearms and hands | about 0 (the right forearm in 0.1%) |
 | Feet | 0 |
 
-The knuckle span measures 3.5 to 5.9 cm, under the 8.6 cm needed, so a forearm's roll cannot be told from this
-footage.
+The knuckle span, index to little finger in the world landmarks, is 3.7 cm on the left hand and 6.1 cm on the right
+at the median of the frames where both are visible. Nine frames in ten are under 5.3 cm (left) and 7.3 cm (right), and
+the right reaches the 8.6 cm needed in 0.7% of its frames, before its part along the bone is taken off. A forearm's
+roll cannot be told from this footage.
 
 ### The style record: `srstudio.dance-style/1.1.0`
 
