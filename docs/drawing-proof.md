@@ -71,6 +71,55 @@ watch the entire video separately.
 
 ## Contract boundaries
 
+### Shared world inputs
+
+[`drawing_world.world_scene`](../examples/drawing_world.py) provides the car,
+textured floor and receiver mask as a candidate-review timeline for the shared
+compiler. It retains one immutable car mesh and moves it with world transforms;
+the floor's 67 polygons carry actual spatial vertices. The shared camera owns
+their projection. The authored shadow ellipse names its caster, receiver,
+surface, anchors and directional key, and turns with the car. All four tire
+bottoms sit on the floor, correcting a 3 cm penetration in this new candidate.
+The ellipse is an authored mask, not a traced silhouette shadow.
+
+The plan retains the original fourteen held world views, camera cut and light
+changes. Its declared sample allowance accounts for the full 28 raw render jobs
+at 48 samples per pixel. Native source, XML and worker limits remain enforced.
+Planning performs no rendering or file writes. For example:
+
+```python
+from pathlib import Path
+from examples.drawing_world import world_scene
+from srstudio import scene_motion
+
+study = world_scene()
+result = scene_motion.emit_timeline(
+    study.timeline, study.vectors,
+    Path("../generated/drawing-world/cold"),
+    engine=Path("../generated/bin/scene-render"),
+    cache=Path("../generated/drawing-world/cache"),
+)
+print(result.work)
+```
+
+This world input is a component of the combined-proof migration. The original
+`drawing_proof` still builds its retained candidate through the legacy path;
+the figure, spatial hand, protected information and complete acceptance matrix
+have not yet moved into this world timeline. No existing drawing or approval
+changes. Run `pytest tests/test_drawing_world.py` with `SRSTUDIO_ENGINE` set to
+exercise numeric registration, transformed parents, tire contact, receiver
+failures and real-render cold/warm equivalence.
+
+The [world-component verification](../../generated/sdk-world-composition/v1/verification.json)
+records 2,828 projected landmarks across the fourteen full-size views, with a
+maximum coordinate residual below `1e-12` pixel. Its separate 216×384 render
+test uses four views: eight cold raw renders, zero warm invocations, identical
+compiled bundles, identical held/repeated pixels, and changed motion/cut pixels.
+These are component measurements, not full-size raster registration or approval
+of the complete animated proof.
+
+### Combined candidate
+
 The production composition compiler requires approved part versions. An explicit
 [candidate-review workflow](composition-preflight.md#review-a-new-candidate-drawing)
 now accepts independently named, content-pinned new geometry through the shared

@@ -2513,7 +2513,8 @@
           "Explicit spatial FormPath vertices retain parent transforms, shared camera projection, source clocks and screen-space strokes; geometry participates in source pins and timeline span identity, with bounded projected XML expansion and near-plane refusal",
           "Authored convex shadow masks name their caster, receiver surface, anchors and directional light; preflight proves plane containment, forward anchor projection, unique painter ordering and source-clock coverage, while bounded preparation refuses invisible or independently timed payloads before raster work",
           "Native spring, Catmull-Rom and default TCB vector channels retain source XML under conservative continuous envelopes and bounded carry chains; the actual hybrid figure has exact original-versus-compiled 1080x1920 pixels around a compiler cut inside its face transition",
-          "Oversized native timelines reuse geometry per layer when doing so reduces the bounded expansion estimate, retaining independent source clocks and painter order. The actual frontal figure with all fourteen camera-schedule spans emits 2430016 XML bytes without raising the eight-MiB cap; six full-size pixel comparisons preserve parent motion, windows and fractional source rate. Small output identities remain unchanged; lit/projected forms and raster replacements retain per-span values"
+          "Oversized native timelines reuse geometry per layer when doing so reduces the bounded expansion estimate, retaining independent source clocks and painter order. The actual frontal figure with all fourteen camera-schedule spans emits 2430016 XML bytes without raising the eight-MiB cap; six full-size pixel comparisons preserve parent motion, windows and fractional source rate. Small output identities remain unchanged; lit/projected forms and raster replacements retain per-span values",
+          "The hybrid world component now uses one immutable car mesh, 67 spatial floor polygons and a paired caster/receiver mask in a shared candidate-review timeline. Fourteen camera/light/car poses retain one source geometry; numeric registration covers 2828 full-size landmarks, transformed parents and all four tire contacts. Figure, hand and information integration remain open"
         ],
         "remaining": [
           "Cross-backend rendering evidence for the complete DRAWING.md contract",
@@ -2803,16 +2804,17 @@
           "Bounded cold render work and zero-invocation warm rebuilding, explicit candidate identities, source/font/schema hashes, and scoped process memory measurements",
           "Executable strict-encode and repeated-frame/information-pixel review commands; missing or changed pixel evidence and failed engine calls cannot produce a passing review report",
           "TDD regressions for shared projection, initial held pose, reserved hand/cup bounds, fill-only path diagnostics and validation before plate work",
-          "Candidate version 2 integrates authored neutral/concerned/deadpan face deformations at 24 fps; the second transition retains its original clock through the camera cut. The full-size 144-frame strict encode, held/repeated-frame checks and protected information pixel checks pass without borrowing drawing approval"
+          "Candidate version 2 integrates authored neutral/concerned/deadpan face deformations at 24 fps; the second transition retains its original clock through the camera cut. The full-size 144-frame strict encode, held/repeated-frame checks and protected information pixel checks pass without borrowing drawing approval",
+          "examples/drawing_world.py migrates the car, textured floor and authored shadow to the shared compiler with explicit candidate provenance. The receiver gate validates key-light anchor projection at every pose, and a -3 cm car placement puts the four tire bottoms on the floor. This component does not yet replace the combined legacy proof"
         ],
         "remaining": [
           "Complete raster registration/contact, occlusion, palette and continuous-join measurements across the clip",
           "Integrate world-anchored biped support into the hybrid candidate and measure rendered face/pose continuity; its depth replacement remains a cut",
-          "Integrate authored shared-light form fields with the actual rig poses, calibrate across backends, and adopt the implemented caster/receiver mask contract; the candidate still uses an unbound authored ground mark",
+          "Integrate authored shared-light form fields with the actual rig poses, calibrate across backends, and integrate the shared world component into the complete candidate; its standalone receiver mask is bound, while the legacy combined candidate still uses an unbound ground mark",
           "Approved information-layer equivalence, compatibility fingerprints and complete temporal visual review",
           "Operator approval of the completed proof before style adoption"
         ],
-        "verification": ["examples/drawing_proof.py", "examples/drawing_proof_review.py", "tests/test_drawing_proof_example.py", "tests/test_drawing_proof_review.py", "docs/drawing-proof.md"]
+        "verification": ["examples/drawing_world.py", "tests/test_drawing_world.py", "examples/drawing_proof.py", "examples/drawing_proof_review.py", "tests/test_drawing_proof_example.py", "tests/test_drawing_proof_review.py", "docs/drawing-proof.md"]
       },
       "evidence": ["DRAWING.md", "tests/test_drawing_document.py", "src/srstudio/proxy.py", "examples/car_vibe", "docs/decisions/0091-hybrid-drawing-is-the-default.md"],
       "change": "Build the documented opt-in adoption spike with moving camera and prop contacts, occlusion, shadow receivers, stable textures, emotional continuity, a cut and warm-cache evidence. Keep unsupported backend capabilities explicit.",
