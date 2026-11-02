@@ -1,4 +1,4 @@
-"""The pose-track reader (ADR 0200): a pose estimator's record is untrusted until it parses strictly and its numbers
+"""The pose-track reader (ADR 0203): a pose estimator's record is untrusted until it parses strictly and its numbers
 agree with each other. Every refusal is a typed error at a path."""
 
 import json

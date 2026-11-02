@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Follow one dancer through a video with a pose estimator and write the reading as one record srstudio reads
-(ADR 0200).
+(ADR 0203).
 
 The estimator is MediaPipe's Pose Landmarker (Apache-2.0, 33 BlazePose landmarks in the image and in metres). It runs
 in its own interpreter, so srstudio gains no dependency; build it once, as docs/authoring-dance.md says:

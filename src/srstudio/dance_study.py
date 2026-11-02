@@ -1,4 +1,4 @@
-"""How a body dances, measured the same way on a real dancer and on ours, so the two can be compared (ADR 0200).
+"""How a body dances, measured the same way on a real dancer and on ours, so the two can be compared (ADR 0203).
 
 A reference video is read by a pose estimator (``tools/pose_extract.py``) into a ``srstudio.pose-track/1.0.0``
 record; :func:`reference_body` turns the record into a :class:`BodyTrack`. One of our dances, any sequence of

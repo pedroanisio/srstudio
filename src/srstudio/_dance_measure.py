@@ -210,7 +210,7 @@ def measure_dance(
     The cost is bounded by ``MAX_SAMPLES``. A flat series, or one under two cycles, raises
     :class:`DanceMeasureError`: a series that does not hold a groove reads as no groove, never as a poor one.
 
-    With ``missing``, a NaN is a sample not seen, as a pose estimator leaves when it loses a dancer (ADR 0200). Nothing
+    With ``missing``, a NaN is a sample not seen, as a pose estimator leaves when it loses a dancer (ADR 0203). Nothing
     is filled in: the cycle is found on the series with the gaps at its mean, then fitted, and its shape read, on the
     samples present alone, and ``resolution`` counts the gaps they leave in the cycle."""
     if not isinstance(groove, Groove):
