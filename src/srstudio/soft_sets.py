@@ -212,10 +212,12 @@ def park(
     """The park: ``growth`` is (time, stage) rows from 0, a stage indexing the tree's :data:`TREES`, and the town
     rises with it; ``seated`` limits the bench to those spans (none: no bench); ``cast`` draws the cast between the
     set and the foreground planter. ``shots`` are rows from 0 in rising time: they cut in on everything but the
-    foreground, which holds the signature marks, and a single shot leaves the park as it was drawn."""
+    foreground, which holds the signature marks. A single shot holds its framing; the default leaves the park
+    as it was drawn."""
     rows = _stages("growth", growth, len(TREES))
+    framing = _framing(shots)
     whole = cv.group(parent, id)
-    g = _framed(cv, whole, f"{id}-room", shots) if len(shots) > 1 else whole
+    g = whole if len(shots) == 1 and shots[0] == Shot(0.0) else _framed(cv, whole, f"{id}-room", framing)
     sky = cv.grad("soft-park-sky", [(0.0, "#BFDDEE"), (0.62, "#EAF2E8"), (1.0, "#F6EBD6")], (0, 0, 0, 1))
     cv.rect(g, 0, 0, WIDTH, HORIZON + 8, sky)
     far = look.depth(cv, g, "soft-park-far", FAR_BLUR)
@@ -262,8 +264,9 @@ def bedroom(
     _rising("lights", [row.time for row in lights])
     if any(row.state not in LIGHTS for row in lights):
         raise SoftSetError(f"a light is one of {LIGHTS}, got {[row.state for row in lights]!r}")
+    framing = _framing(shots)
     g = cv.group(parent, id)
-    room = _framed(cv, g, f"{id}-room", shots)
+    room = _framed(cv, g, f"{id}-room", framing)
     cv.rect(room, 0, 0, WIDTH, HEIGHT, cv.grad("soft-bedroom-wall", [(0.0, "#E8DCC8"), (1.0, "#D9C7AE")], (0, 0, 0, 1)))
     far = look.depth(cv, room, "soft-bedroom-far", FAR_BLUR)
     cv.rect(far, 742, 118, 280, 420, "#BFDDEE", "#F5EEDF", 16, radius=8)  # the window, out of focus
@@ -308,8 +311,9 @@ def playroom(
         fine = all(checks.number(v) for v in dim) and dim.start >= 0 and dim.fade > 0
         if not fine or dim.end < dim.start + dim.fade:
             raise SoftSetError(f"a dim starts, fades and then ends, got {dim!r}")
+    framing = _framing(shots)
     g = cv.group(parent, id)
-    room = _framed(cv, g, f"{id}-room", shots)
+    room = _framed(cv, g, f"{id}-room", framing)
     wall = cv.grad("soft-playroom-wall", [(0.0, "#F4E6C9"), (1.0, "#EFD9B4")], (0, 0, 0, 1))
     cv.rect(room, -OVER, -OVER, WIDTH + 2 * OVER, 1660 + OVER, wall)  # a shot may frame past the room's edge
     floor = cv.grad("soft-playroom-floor", [(0.0, "#C79A6B"), (1.0, "#B3855A")], (0, 0, 0, 1))
@@ -356,20 +360,38 @@ def _rising(name: str, times: Sequence[float]) -> None:
         raise SoftSetError(f"{name} run from 0 in rising time, got {list(times)!r}")
 
 
-def _framed(cv: Canvas, parent, id: str, shots: Sequence[Shot]):
-    """A group in ``parent`` that holds each shot until the next: a shot cuts, it never moves."""
+def _framing(shots: Sequence[Shot]) -> dict[str, list[tuple[float, float]]]:
+    """Validate and resolve framing before a room allocates nodes or invokes its slots."""
     _rising("shots", [row.time for row in shots])
     if not all(checks.number(row.scale) and row.scale > 0 for row in shots):
         raise SoftSetError(f"a shot's scale is a positive number, got {[row.scale for row in shots]!r}")
+    if not all(checks.number(row.x) and checks.number(row.y) for row in shots):
+        raise SoftSetError("shots frame finite x and y coordinates, excluding booleans")
+    times = [round(float(row.time), 6) for row in shots]
+    if any(b <= a for a, b in zip(times, times[1:], strict=False)):
+        raise SoftSetError("shots need distinct rising times at six-decimal serialization precision")
+    values = {
+        "x": [(s.time, 540 - s.x * s.scale) for s in shots],
+        "y": [(s.time, 960 - s.y * s.scale) for s in shots],
+        "scaleX": [(s.time, s.scale) for s in shots],
+        "scaleY": [(s.time, s.scale) for s in shots],
+    }
+    if not all(checks.number(value) for keys in values.values() for _, value in keys):
+        raise SoftSetError("shots produce nonfinite frame transforms; reduce coordinates or scale")
+    return values
+
+
+def _framed(cv: Canvas, parent, id: str, framing: dict[str, list[tuple[float, float]]]):
+    """Emit validated static framing or held cuts without moving the room's foreground."""
     room = cv.group(parent, id)
-    if len(shots) > 1:
-        for prop, values in (
-            ("x", [(s.time, 540 - s.x * s.scale) for s in shots]),
-            ("y", [(s.time, 960 - s.y * s.scale) for s in shots]),
-            ("scaleX", [(s.time, s.scale) for s in shots]),
-            ("scaleY", [(s.time, s.scale) for s in shots]),
-        ):
+    if len(framing["x"]) > 1:
+        for prop, values in framing.items():
             cv.keys(room, prop, values)
+    else:
+        for prop, values in framing.items():
+            value = values[0][1]
+            if value != (1 if prop.startswith("scale") else 0):
+                setattr(room, prop, value)
     return room
 
 

@@ -17,7 +17,7 @@ from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
 from .soft_props import STAR_OFF, STAR_ON, STARS, _star
-from .soft_sets import FAR_BLUR, HEIGHT, INK_LINE, OVER, WIDTH, Shot, _framed
+from .soft_sets import FAR_BLUR, HEIGHT, INK_LINE, OVER, WIDTH, Shot, _framed, _framing
 
 __all__ = ["DOOR", "PRINT", "WALL_FOOT", "SoftFrontError", "front_room", "mug", "shelf", "star_card"]
 
@@ -48,6 +48,7 @@ def _sofa_end(cv: Canvas, parent, spans: Sequence[tuple[float, float]], id: str)
     """A whole sofa jammed across the hall on a slant, one arm and its cushions showing through the door."""
     x, y, w, h = DOOR
     g = cv.group(parent, id, x=x + w / 2 + 210, y=y + h - 190, rotation=-22)
+    cv.gate(g, spans)
     for foot in (-250, 250):
         cv.rect(g, foot - 18, 146, 36, 56, "#8A6242", cv.ink, INK_LINE, radius=6)
     cv.rect(g, -320, -170, 640, 330, FABRIC_SIDE, FABRIC_LINE, INK_LINE, radius=44)
@@ -87,10 +88,12 @@ def front_room(
     id: str = "soft-front-room",
 ):
     """The room: ``wedged`` spans show a sofa stuck in the hall, ``hall`` draws behind the wall, ``behind`` against it
-    and ``cast`` on the rug. ``shots`` cut in on everything but the shelf, the foreground that holds the marks."""
+    and ``cast`` on the rug. ``shots`` frame everything but the shelf, the foreground that holds the marks.
+    One shot holds its framing; multiple shots cut. ``wedged`` gates follow ``Canvas.local_time``."""
     _spans(wedged)
+    framing = _framing(shots)
     g = cv.group(parent, id)
-    room = _framed(cv, g, f"{id}-room", shots)
+    room = _framed(cv, g, f"{id}-room", framing)
     x, y, w, h = DOOR
     far = look.depth(cv, room, f"{id}-far", FAR_BLUR)
     cv.rect(far, x - 40, y - 40, w + 80, h + 80, "#CDB898")

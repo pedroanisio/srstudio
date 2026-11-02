@@ -53,6 +53,47 @@ A new style is a `Style` value, usually
 drawing conventions before the first character, or `blob.py`: a pose sheet); nothing in `Episode` is specific to a
 style.
 
+### Soft room framing and timed props
+
+`soft_sets.Shot(time, scale, x, y)` centers the supplied room point `(x, y)`
+at frame `(540, 960)`. One shot applies a static transform; multiple shots
+hold each framing until the next cut. The park, bedroom, playroom and front
+room apply framing to their room and cast while keeping their foreground
+planter, nightstand, toy crate or shelf fixed. The default shot preserves the
+original drawing.
+
+Shot times begin at zero and increase strictly. Coordinates and positive
+scales must be finite; derived transforms must remain finite, and cut times
+must remain distinct after rounding to six decimal places. Invalid framing
+raises `SoftSetError` before the builder changes the scene or calls a slot,
+so a corrected retry can use the same canvas.
+
+The front room's `wedged` intervals control when the sofa appears in the
+hallway. Intervals are ordered and nonoverlapping, include their start and
+exclude their end. These opacity gates and framing cuts follow
+`Canvas.local_time`: composition time by default, sequence-shot time when
+enabled. A local interval must be expressed relative to that shot's start.
+
+<!-- soft-room-framing:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, WARM, soft_front
+from srstudio.soft_sets import Shot
+
+scene = Scene(version='auto')
+scene.add_project(width=1080, height=1920, fps='30', duration=6)
+cv = Canvas(scene, WARM, font_asset=None)
+soft_front.front_room(
+    cv, cv.comp,
+    shots=(Shot(0, 1.4, 300, 900),),
+    wedged=((1, 2), (4, 5)),
+    cast=lambda parent: cv.group(parent, 'cast-origin', x=300, y=900),
+)
+room = next(g for g in scene.iter('group') if g.id == 'soft-front-room-room')
+assert (room.x, room.y, room.scaleX, room.scaleY) == (120, -300, 1.4, 1.4)
+```
+<!-- soft-room-framing:end -->
+
 ### Lip sync
 
 `Performance.mouth` and `Episode.perform(mouth=...)` use `(project second, pose)` sequences. The base actor's

@@ -58,6 +58,30 @@
     }
   },
   "review_verification": {
+    "soft_room_timing": {
+      "baseline_source_commit": "a05b0f17",
+      "behavior_regressions_red": 52,
+      "guide_regressions_red": 1,
+      "selected_regressions": {
+        "passed": 630,
+        "subtests_passed": 29,
+        "skipped": 0
+      },
+      "new_tests": 62,
+      "unchanged_default_and_multiple_shot_baselines": 8,
+      "real_engine_evaluation_cases": 6,
+      "full_resolution_random_access_pixel_cases": 1,
+      "branch_inclusive_coverage_percent": 99.2,
+      "coverage_scope": [
+        "src/srstudio/soft_front.py",
+        "src/srstudio/soft_sets.py"
+      ],
+      "ruff": "passed",
+      "format": "passed",
+      "mypy_source_files": 325,
+      "retained_artifacts": "../generated/sdk-soft-room-timing/v1/",
+      "qualification": "Soft room framing and visibility regressions. This is not whole-body, emotion-blend or complete DRAWING composition proof."
+    },
     "news_contracts": {
       "baseline_source_commit": "28724308",
       "missing_contract_and_guide_regressions_red": 65,
@@ -988,6 +1012,49 @@
     {"priority": "P2", "title": "Continuous transforms and explicit action chaining", "commit": "64efa1c7", "evidence": ["src/srstudio/limbs/transitions.py", "tests/test_action_chaining.py", "tests/test_continuous_tracks.py", "docs/catalog/limbs.md"], "qualification": "Joins match numerically estimated boundary velocities, preserve constraints and support random access. They do not promise acceleration continuity or perceptual preference."}
   ],
   "findings": [
+    {
+      "id": "SDK-P1-15",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Apply requested visibility intervals to the wedged sofa",
+      "problem": "soft_front.front_room validated wedged intervals but _sofa_end ignored them, leaving the sofa visible outside its requested spans.",
+      "resolution": "Gate the sofa group with the supplied intervals on the Canvas clock, preserving geometry and doorway occlusion.",
+      "verification": [
+        "tests/test_soft_room_timing.py",
+        "tests/test_soft_front.py",
+        "docs/authoring-styles.md#soft-room-framing-and-timed-props"
+      ],
+      "acceptance": [
+        "Sofa visibility follows all requested intervals with inclusive starts and exclusive ends",
+        "Composition and local sequence clocks agree with real-engine random-access evaluation",
+        "Full-resolution pixels disappear between spans and return identically when revisited, with no changes outside the doorway"
+      ],
+      "verification_summary": {
+        "evidence": "review_verification.soft_room_timing"
+      }
+    },
+    {
+      "id": "SDK-P1-16",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Honor single-shot Soft room framing and preflight all transforms",
+      "problem": "A single non-default Shot was silently ignored by four Soft room builders. The park bypassed single-shot validation entirely; other invalid framings could allocate nodes before failing. Nonfinite coordinates, transform overflow and cuts collapsing at serialized time precision were not consistently rejected.",
+      "resolution": "Resolve and validate framing before room mutation or slot callbacks. Apply one static shot or held multiple-shot keys to the room and cast while keeping the foreground fixed. Preserve default and existing multiple-shot drawing output.",
+      "verification": [
+        "tests/test_soft_room_timing.py",
+        "tests/data/soft-room-timing-baseline.json",
+        "tests/test_soft_sets.py",
+        "docs/authoring-styles.md#soft-room-framing-and-timed-props"
+      ],
+      "acceptance": [
+        "A single framing matches repeated identical shots in all four builders and real-engine evaluation",
+        "Invalid finite-range or serialized-time framing raises SoftSetError before scene or callback mutation",
+        "Corrected retries match fresh builds; eight default/multiple-shot baselines remain unchanged"
+      ],
+      "verification_summary": {
+        "evidence": "review_verification.soft_room_timing"
+      }
+    },
     {
       "id": "SDK-P1-14",
       "priority": "P1",
