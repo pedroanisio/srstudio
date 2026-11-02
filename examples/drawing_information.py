@@ -10,7 +10,7 @@ import hashlib
 import xml.etree.ElementTree as ET
 from dataclasses import replace
 
-from examples.drawing_hand import hand_scene
+from examples.drawing_attached import attached_scene
 from examples.drawing_proof import DURATION, SIZE, schedule
 from examples.drawing_world import WorldStudy
 from sr_core.scene import Scene
@@ -65,7 +65,7 @@ def information_source(*, size: tuple[int, int] = SIZE) -> tuple[c.AssetBinding,
 
 def complete_scene(*, fps: int = 12, size: tuple[int, int] = SIZE) -> WorldStudy:
     """Compose all candidate picture layers and native protected information."""
-    world = hand_scene(fps=fps, size=size)
+    world = attached_scene(fps=fps, size=size)
     timeline = world.timeline
     info, info_xml = information_source(size=size)
     clock = c.TemporalPolicy(0, DURATION)

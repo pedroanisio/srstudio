@@ -195,6 +195,36 @@ operator approval. This stage does not establish collision-free skin surfaces,
 the full-size contact/occlusion thresholds, character body support, character
 form lighting or approved information-layer equivalence.
 
+### Shoulder-attached candidate
+
+[`drawing_attached.attached_scene`](../examples/drawing_attached.py) replaces
+the isolated hand study in `complete_scene()`. It keeps the native face and head
+clock, declares the candidate's right arm as externally owned, and omits that
+native arm before drawing. The spatial sleeve follows Bento's actual shoulder,
+including native breath and lean. Its rigid placement preserves arm and digit
+dimensions. The cup follows the same placement while attached and holds its
+world pose before contact and after release.
+
+The 1.2-second contact onset lies between regular samples. It now joins the
+shared world schedule, so the camera, car, figure placement and hand geometry
+all use that exact event. Adding only a hand snapshot and figure key was
+insufficient: it turned the frontal figure toward an unsampled camera pose.
+Event input is bounded and validated before planning.
+
+The default plan has 67 intervals and 164 raw jobs. Each hand source snapshot
+declares storage for both prepared passes; actual preparation of every snapshot
+passes at both 2 and 12 fps. The timeline estimator distinguishes transient
+raster preparation nodes from emitted image references when the original
+estimate exceeds the node cap. The 500,000-node and 8-GiB caps remain unchanged.
+
+The [native-engine registration report](../../generated/sdk-attached-hand/v4/registration/verification.json)
+compares the projected native shoulder with the spatial sleeve in all 67
+intervals at 1080×1920. Its maximum axis residual is below 0.0032 pixel.
+This measures geometry registration, not raster contact masks. The body still
+needs world-anchored feet and steps, and the cup's world hold after release
+does not model physical support. Candidate geometry and palette still require
+the complete acceptance review.
+
 ### Native information in the combined scene
 
 [`drawing_information.complete_scene`](../examples/drawing_information.py)
@@ -206,7 +236,7 @@ and remains above every picture layer.
 The scene's native `background="#efe8df"` restores the original clear color
 without inserting an extra picture layer. This retains the original text-edge
 compositing path and adds no raw render jobs. At the default cadence, the
-complete layer plan retains the hand candidate's 160 raw jobs and the existing
+complete layer plan includes the attached candidate's 164 raw jobs and the existing
 node, memory and output limits.
 
 Use `complete_scene()` in the build snippet to include the background and

@@ -28,6 +28,11 @@ TONES = {
 }
 
 
+def hand_recipe() -> proxy.Recipe:
+    """The candidate's shared palette and deterministic conversion controls."""
+    return proxy.Recipe(TONES, oversample=1, soft_edge=0, grain_seed=17)
+
+
 def _face(model: clay.Model, material: str, points: tuple[Vec3, ...], normal: Vec3) -> None:
     vertices = np.array([hand_world(p) for p in points])
     facing = np.cross(vertices[1] - vertices[0], vertices[2] - vertices[0])
@@ -94,7 +99,7 @@ def hand_mesh(time: float) -> tuple[clay.Mesh, ...]:
     return model.meshes()
 
 
-def hand_scene(*, fps: int = 12, size: tuple[int, int] = SIZE) -> WorldStudy:
+def hand_scene(*, fps: int = 12, size: tuple[int, int] = SIZE, events: tuple[float, ...] = ()) -> WorldStudy:
     """Add a bounded, scene-lit hand/cup sequence to the complete picture world.
 
     The opening holds its 0.5-second pose; subsequent snapshots use the original
@@ -102,10 +107,10 @@ def hand_scene(*, fps: int = 12, size: tuple[int, int] = SIZE) -> WorldStudy:
     Each changed geometry/view needs two raw renders. Budgets account for that
     work explicitly, and unchanged geometry is content-addressed.
     """
-    frames = schedule(fps=fps, size=size)
-    world = figure_scene(fps=fps, size=size)
+    frames = schedule(fps=fps, size=size, events=events)
+    world = figure_scene(fps=fps, size=size, events=events)
     timeline = world.timeline
-    recipe = proxy.Recipe(TONES, oversample=1, soft_edge=0, grain_seed=17)
+    recipe = hand_recipe()
     snapshots: list[c.RasterFrame] = []
     vertices: list[np.ndarray] = []
     for frame in frames:
@@ -125,7 +130,9 @@ def hand_scene(*, fps: int = 12, size: tuple[int, int] = SIZE) -> WorldStudy:
         1,
         'proxy',
         bounds,
-        nodes=512,
+        # Preparation retains both light/ID scenes for every source snapshot;
+        # this is source metadata, not the image-reference count in the movie.
+        nodes=64 * len(snapshots),
         memory_bytes=64 * 1024**2 + size[0] * size[1] * (64 * len(TONES) + 512),
         plates=c.raster_jobs(
             sequence, width=size[0], height=size[1], memory_bytes=64 * 1024**2 + size[0] * size[1] * 64

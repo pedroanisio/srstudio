@@ -20,6 +20,7 @@ from srstudio import Canvas
 from srstudio import composition as c
 from srstudio import scene_motion as m
 from srstudio import toon_bento as bento
+from srstudio.acting import PerformancePlan
 from srstudio.limbs import Quaternion, Vec3
 from srstudio.toon import fx, fy
 
@@ -41,17 +42,19 @@ def world_root(time: float) -> Vec3:
     return Vec3(-110 + 150 * (time - 3) / 3, 0, 115)
 
 
-def figure_source() -> tuple[c.AssetBinding, c.VectorSource]:
+def figure_source(
+    *, performance: PerformancePlan | None = None, candidate: str = 'candidate.hybrid-world-figure'
+) -> tuple[c.AssetBinding, c.VectorSource]:
     """Build the complete performance once; retain its exact nested clocks and opacity."""
     scene = Scene(version='auto')
     scene.add_project(width=SIZE[0], height=SIZE[1], fps='24', duration=DURATION)
     canvas = Canvas(scene, font_asset=None)
-    figure_performance().window(0, DURATION).place(canvas, canvas.comp, id='figure')
+    (performance or figure_performance()).window(0, DURATION).place(canvas, canvas.comp, id='figure')
     source = c.VectorSource('figure', scene.to_bytes())
     forms = (c.FormSurface('figure', mode='ink'),)
     binding = c.AssetBinding(
         'figure',
-        'candidate.hybrid-world-figure',
+        candidate,
         1,
         'vector',
         c.Bounds((-10000, -10000, 0), (10000, 10000, 0)),
@@ -76,7 +79,7 @@ def _transform(frame: Sample) -> c.Transform:
     return c.Transform((origin.x, origin.y, origin.z), (math.degrees(pitch), math.degrees(yaw), 0), SCALE)
 
 
-def figure_scene(*, fps: int = 12, size: tuple[int, int] = SIZE) -> WorldStudy:
+def figure_scene(*, fps: int = 12, size: tuple[int, int] = SIZE, events: tuple[float, ...] = ()) -> WorldStudy:
     """Plan actual world placement and two painter windows of one native performance.
 
     The figure retains its frontal view while the camera moves. Its authored
@@ -84,10 +87,12 @@ def figure_scene(*, fps: int = 12, size: tuple[int, int] = SIZE) -> WorldStudy:
     solver. At three seconds the declared depth replacement changes its world
     position and painter pass, retaining source time. The camera cuts at four.
     """
-    world = world_scene(fps=fps, size=size)
+    world = world_scene(fps=fps, size=size, events=events)
     timeline = world.timeline
     binding, source = figure_source()
-    keys = tuple(m.TransformKey(frame.time, _transform(frame), 'hold') for frame in schedule(fps=fps, size=size))
+    keys = tuple(
+        m.TransformKey(frame.time, _transform(frame), 'hold') for frame in schedule(fps=fps, size=size, events=events)
+    )
     back = c.LayerSpec('figure-back', 'figure', 1, c.TemporalPolicy(0, 3, state='figure'), transform=keys[0].value)
     front = c.LayerSpec(
         'figure-front',

@@ -112,7 +112,7 @@ def _floor(size: tuple[int, int]) -> tuple[c.AssetBinding, c.VectorSource]:
     return _vector('floor', tuple(polygons), size)
 
 
-def world_scene(*, fps: int = 12, size: tuple[int, int] = SIZE) -> WorldStudy:
+def world_scene(*, fps: int = 12, size: tuple[int, int] = SIZE, events: tuple[float, ...] = ()) -> WorldStudy:
     """Plan the six-second world; perform no rendering, cache access or writes.
 
     All placements are centimeters with canonical +Z toward the reference
@@ -121,7 +121,7 @@ def world_scene(*, fps: int = 12, size: tuple[int, int] = SIZE) -> WorldStudy:
     camera/key/fill/rim cut at four seconds. The ellipse is an authored mask,
     not a physically traced silhouette shadow.
     """
-    scheduled = schedule(fps=fps, size=size)
+    scheduled = schedule(fps=fps, size=size, events=events)
     frames = tuple(
         frame
         for i, frame in enumerate(scheduled)

@@ -47,7 +47,7 @@ def test_complete_candidate_keeps_information_screen_owned_and_within_bounds(exa
     info = timeline.base.spec.layers[-1]
     assert (info.id, info.space, info.role) == ('information', 'screen', 'information')
     assert info.parent is None
-    assert timeline.cost.engine_invocations == 160
+    assert timeline.cost.engine_invocations == 164  # Includes the exact 1.2-second contact onset for hand and car.
     assert timeline.cost.nodes <= 500000
     assert timeline.cost.memory_bytes <= 8 * 1024**3
     for plan in timeline.samples:
