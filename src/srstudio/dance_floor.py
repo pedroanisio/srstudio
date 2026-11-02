@@ -40,7 +40,7 @@ from types import MappingProxyType
 from . import checks
 from . import skeleton as sk
 from ._dance_model import DanceError, Move, Routine
-from ._dance_phrase import Phrase, ease
+from ._dance_phrase import Floor, Phrase, ease
 from ._dance_sample import MAX_FRAMES, DanceFrame, sample
 from ._floor_body import (
     ball_of,
@@ -71,6 +71,9 @@ __all__ = [
     "MAX_JITTER_BEATS",
     "MAX_SIZE_VARIATION",
     "SCAN_PER_BEAT",
+    "STANCE_BEND",
+    "STANCE_TURNOUT",
+    "STANCE_WIDTH",
     "BalanceError",
     "BalanceFinding",
     "Dancer",
@@ -86,7 +89,9 @@ __all__ = [
     "ground",
     "perform",
     "plant",
+    "knee_bend",
     "seated",
+    "stance",
 ]
 
 SCAN_PER_BEAT = 48  # where a performance looks for plants: every sixteenth lands on this grid
@@ -101,6 +106,15 @@ MAX_JITTER_BEATS = 0.04
 MAX_SIZE_VARIATION = 0.06
 FORMATIONS = ("line", "wedge")
 MAX_FINDINGS = 256
+STANCE_WIDTH = 0.5  # hip heights between the ankles of the groove stance: a wide base
+STANCE_BEND = 0.55  # radians the knees bend in it, as a dance study measures a knee
+STANCE_TURNOUT = 0.25  # radians each foot's toes turn out
+MAX_STANCE_WIDTH = 1.0
+MAX_STANCE_BEND = 1.2
+MAX_STANCE_TURNOUT = 0.6
+STANCE_DROP = 0.7  # hip heights the stance's search may lower the hips; deeper than any bend it allows
+STANCE_HALVINGS = 40
+STANCE_REACH = 1e-4  # hip heights a stance's ankle may miss its spot
 
 
 class FloorError(DanceError):
@@ -546,6 +560,77 @@ def seated(profile: sk.SkeletonProfile) -> sk.SkeletonPose:
     return sk.SkeletonPose(Frame(rest.root.origin + Vec3(0.0, rise, 0.0), rest.root.rotation), folded.values)
 
 
+def knee_bend(profile: sk.SkeletonProfile, pose: sk.SkeletonPose) -> float:
+    """How far the knees bend in ``pose``, radians, both legs' mean: the turn of the shin off the line of the thigh,
+    measured from the hip, knee and ankle joints as a dance study measures a dancer's (0 for a straight leg)."""
+    world = sk.world(_check_profile(profile), pose)
+    bends = []
+    for side in legs(profile):
+        hip, knee = world[f"{side}_upper_leg"].origin, world[f"{side}_lower_leg"].origin
+        a, b = hip - knee, world[f"{side}_foot"].origin - knee
+        cos = (a.x * b.x + a.y * b.y + a.z * b.z) / max(a.length * b.length, 1e-12)
+        bends.append(math.pi - math.acos(max(-1.0, min(1.0, cos))))
+    return sum(bends) / len(bends) if bends else 0.0
+
+
+def stance(
+    profile: sk.SkeletonProfile,
+    *,
+    width: float = STANCE_WIDTH,
+    bend: float = STANCE_BEND,
+    turnout: float = STANCE_TURNOUT,
+    clamp: bool = False,
+) -> sk.SkeletonPose:
+    """A base pose for a groove: the ankles ``width`` hip heights apart across the floor, each foot flat and turned
+    out ``turnout`` radians, and the hips lowered until the knees bend ``bend`` radians (:func:`knee_bend`), the legs
+    solved by the leg solve. A dance from it keeps that base: its knees fold further as its hips drop."""
+    profile = _check_profile(profile)
+    for name, value, high in (
+        ("width", width, MAX_STANCE_WIDTH),
+        ("bend", bend, MAX_STANCE_BEND),
+        ("turnout", turnout, MAX_STANCE_TURNOUT),
+    ):
+        if not (checks.number(value) and 0 <= value <= high):
+            raise FloorError(f"{name} {value!r} lies in 0..{high}", path=name)
+    rest = sk.rest_pose(profile)
+    floor, height = floor_of(profile, rest), profile.pelvis_height
+    rest_world = sk.world(profile, rest)
+
+    ankles = {
+        side: Vec3(
+            rest.root.origin.x + (1.0 if side == "right" else -1.0) * width * height / 2,
+            floor - profile.length("ankle"),
+            rest_world[f"{side}_foot"].origin.z,
+        )
+        for side in legs(profile)
+    }
+
+    def at(drop: float, tally: Tally) -> sk.SkeletonPose:
+        root = Frame(rest.root.origin + Vec3(0.0, drop, 0.0), rest.root.rotation)
+        values = rest.as_dict()
+        for side, ankle in ankles.items():
+            values = lay(profile, values, root, side, ankle, (1.0 if side == "right" else -1.0) * turnout, tally, 0.0)
+        return sk.pose(profile, values, root=root)
+
+    low, high = 0.0, STANCE_DROP * height
+    for _ in range(STANCE_HALVINGS):  # the bend grows as the hips drop
+        middle = (low + high) / 2
+        if knee_bend(profile, at(middle, Tally(True))) < bend:
+            low = middle
+        else:
+            high = middle
+    tally = Tally(_check_flag(clamp, "clamp"))
+    pose = at(high, tally)
+    if tally.breach_count:
+        raise FloorLimitError(tuple(tally.breaches), tally.breach_count)
+    world = sk.world(profile, pose)
+    if any(world[f"{side}_foot"].origin.distance(ankle) > STANCE_REACH * height for side, ankle in ankles.items()):
+        raise FloorError(
+            f"knees bent {bend!r} do not reach feet {width!r} hip heights apart; bend them further", path="bend"
+        )
+    return pose
+
+
 # --- a dance performed on the floor -----------------------------------------------------------------------------
 
 
@@ -589,6 +674,7 @@ class Performance:
         margin_m: float | None,
     ) -> None:
         self.source, self.profile, self.groove, self.spot = source, profile, groove, spot
+        self.base = base if base is not None else sk.rest_pose(profile)
         self.delay_s, self.size = delay_s, size
         self.start_s = groove.offset + delay_s
         self.end_s = self.start_s + _length_beats(source) * groove.beat
@@ -644,6 +730,36 @@ class Performance:
                 raise FloorError(f"{count} frames exceed {MAX_FRAMES}", path="fps")
             self._frames[fps] = tuple(self.sample(self.start_s + n / fps) for n in range(count))
         return self._frames[fps]
+
+    def dance_frames(self, fps: int) -> tuple[DanceFrame, ...]:
+        """:meth:`frames` as ordinary dance frames: each solved pose (feet held, the weight over them, the legs
+        folded under the hips) as the deltas from this dancer's base, at the floor's centre. ``dance_pose(profile,
+        frame, base=base)`` gives the same body without the spot, so anything that reads frames (a style check, a
+        layer of lag and overshoot) reads the floor pass. The travel and turn are the frame's ``floor``; every rise
+        and shift of the hips is its root."""
+        spot, base = self.spot.frame(), self.base
+        height, radius = self.profile.pelvis_height, self.profile.head_radius
+        start = base.as_dict()
+        out = []
+        for solved in self.frames(fps):  # bounded by frames()
+            root = solved.pose.root
+            facing = base.root.rotation.inverse() * (spot.rotation.inverse() * root.rotation)
+            local = base.root.rotation.inverse().rotate(spot.inverse_point(root.origin) - base.root.origin)
+            values = solved.pose.as_dict()
+            delta = {key: values.get(key, 0.0) - start.get(key, 0.0) for key in values.keys() | start.keys()}
+            right, up, forward = (delta.pop(key, 0.0) for key in ("hips.right", "hips.up", "hips.forward"))
+            joints = {key: value for key, value in delta.items() if abs(value) > 1e-12}
+            out.append(
+                replace(
+                    self.frame(solved.time),
+                    time=solved.time,
+                    root=(right / radius, (up - local.y) / radius, forward / radius),
+                    joints=MappingProxyType(joints),
+                    planted=solved.planted,
+                    floor=Floor(local.x / height, local.z / height, 0.0, heading(facing)),
+                )
+            )
+        return tuple(out)
 
     def slip(self, fps: int) -> Slip:
         """How far planted feet slid, over the frames at ``fps`` and each plant's first and last moment: the ball

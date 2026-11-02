@@ -25,10 +25,13 @@ from srstudio.dance_floor import (
     ensemble,
     formation,
     ground,
+    knee_bend,
     perform,
     plant,
     seated,
+    stance,
 )
+from srstudio.dance_pose import dance_pose
 from srstudio.errors import SrstudioError
 from srstudio.music import Groove
 
@@ -256,6 +259,99 @@ def test_seated_puts_the_hips_at_the_knees_and_the_feet_on_the_floor(preset):
     world = sk.world(profile, pose)
     assert floor_of(profile, pose) == pytest.approx(floor_of(profile, sk.rest_pose(profile)), abs=1e-9)
     assert world["hips"].origin.y == pytest.approx(world["left_lower_leg"].origin.y, abs=0.05 * profile.stature)
+
+
+@pytest.mark.parametrize("preset", sk.PRESETS)
+def test_stance_stands_wide_on_bent_knees_with_the_feet_flat(preset):
+    profile = sk.preset(preset)
+    rest, pose = sk.rest_pose(profile), stance(profile)
+    world, height = sk.world(profile, pose), profile.pelvis_height
+    assert floor_of(profile, pose) == pytest.approx(floor_of(profile, rest), abs=1e-6)  # the same floor
+    for side in ("left", "right"):
+        foot = world[f"{side}_foot"].origin
+        assert foot.y + profile.length("ankle") == pytest.approx(floor_of(profile, rest), abs=1e-6)  # flat on it
+    across = world["right_foot"].origin.x - world["left_foot"].origin.x
+    assert across == pytest.approx(dance_floor.STANCE_WIDTH * height, rel=1e-3)
+    assert knee_bend(profile, pose) == pytest.approx(dance_floor.STANCE_BEND, abs=0.01)
+    assert world["hips"].origin.y > sk.world(profile, rest)["hips"].origin.y + 0.02 * height  # the hips sit lower
+    frames, com = sk.world(profile, pose), dance_floor.centre_of_mass(profile, pose)
+    assert inside(support(profile, frames, ("left", "right")), com) > 0
+    ahead = [world[f"{side}_foot"].rotation.rotate(sk.Vec3(0.0, 0.0, 1.0)).x for side in ("left", "right")]
+    assert ahead[0] < 0 < ahead[1]  # the toes turn out
+
+
+def test_stance_takes_its_width_and_bend():
+    profile = sk.preset("realistic")
+    narrow, deep = stance(profile, width=0.3, bend=0.3), stance(profile, width=0.6, bend=0.9, turnout=0.0)
+    assert knee_bend(profile, narrow) == pytest.approx(0.3, abs=0.01)
+    assert knee_bend(profile, deep) == pytest.approx(0.9, abs=0.01)
+    low = [sk.world(profile, p)["hips"].origin.y for p in (narrow, deep)]
+    assert low[1] > low[0]
+    assert knee_bend(profile, sk.rest_pose(profile)) == pytest.approx(0.0, abs=1e-6)
+
+
+@pytest.mark.parametrize(
+    "kwargs, match",
+    [
+        ({"width": -0.1}, "width"),
+        ({"width": 1.5}, "width"),
+        ({"width": "wide"}, "width"),
+        ({"bend": 1.6}, "bend"),
+        ({"turnout": 0.9}, "turnout"),
+    ],
+)
+def test_stance_refuses_a_shape_out_of_bounds(kwargs, match):
+    with pytest.raises(FloorError, match=match):
+        stance(sk.preset("realistic"), **kwargs)
+
+
+def test_stance_refuses_feet_straight_legs_cannot_reach():
+    with pytest.raises(FloorError, match="bend") as caught:
+        stance(sk.preset("realistic"), width=1.0, bend=0.0)  # straight legs do not reach feet that far apart
+    assert isinstance(caught.value, SrstudioError) and not isinstance(caught.value, FloorLimitError)
+
+
+def test_stance_refuses_a_foot_past_its_limits_unless_clamped():
+    profile = sk.preset("realistic")
+    with pytest.raises(FloorLimitError, match="pass their limits"):
+        stance(profile, width=1.0, bend=1.2)
+    assert knee_bend(profile, stance(profile, width=1.0, bend=1.2, clamp=True)) == pytest.approx(1.2, abs=0.01)
+
+
+SINK = Phrase("sink", 1, (Key(0.0, FEET), Key(4.0, FEET, floor=Floor(up=-0.1)), Key(7.5, FEET)))
+
+
+@pytest.mark.parametrize("preset", sk.PRESETS)
+@pytest.mark.parametrize("phrase, wide", [("turn-travel", False), ("sink", True)])
+def test_dance_frames_dance_the_floor_pass_through_dance_pose(preset, phrase, wide):
+    profile = sk.preset(preset)
+    base, spot = (stance(profile) if wide else sk.rest_pose(profile)), Spot(1.0, -0.5, 0.4)
+    source = SINK if phrase == "sink" else dance.phrases()[phrase]
+    run = perform(source, profile, CLASS, base=base if wide else None, spot=spot)
+    solved, danced = run.frames(10), run.dance_frames(10)
+    assert len(solved) == len(danced)
+    for floor, frame in zip(solved, danced, strict=True):
+        assert isinstance(frame, dance.DanceFrame) and frame.time == floor.time
+        assert frame.planted == floor.planted and frame.floor.up == 0.0
+        again = sk.world(profile, dance_pose(profile, frame, base=base).pose)
+        there = sk.world(profile, floor.pose)
+        for name in ("hips", "head", "left_foot", "right_foot", "left_hand", "right_lower_leg"):
+            moved = spot.frame().inverse_point(there[name].origin)
+            assert again[name].origin.distance(moved) < 1e-6  # the same body, at the centre of the floor
+
+
+def test_a_root_drop_folds_the_planted_legs_in_the_dance_frames():
+    profile = sk.preset("realistic")
+    run = perform(SINK, profile, CLASS)
+    frames = run.dance_frames(10)
+    low = min(frames, key=lambda f: f.root[1])
+    pose = dance_pose(profile, low).pose
+    assert knee_bend(profile, pose) > 0.3  # the knees fold under the hips
+    world = sk.world(profile, pose)
+    ankle = world["left_foot"].origin.y
+    rest = sk.world(profile, sk.rest_pose(profile))
+    assert ankle == pytest.approx(rest["left_foot"].origin.y, abs=1e-6)  # the feet stay on the floor
+    assert world["hips"].origin.y - rest["hips"].origin.y == pytest.approx(0.1 * profile.pelvis_height, rel=0.05)
 
 
 @pytest.mark.parametrize("frames, match", [([], "1..100000"), ("frames", "DanceFrame"), ([1, 2], "DanceFrame")])
