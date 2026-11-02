@@ -42,6 +42,7 @@ from . import (
     proof,
     registry,
     releases,
+    scopes,
     show,
     show_numbers,
     strict_gate,
@@ -186,6 +187,13 @@ def main(argv=None):
     )
     encoded.add_argument("--next", action="store_true", help="write beside a master already there, as <slug>-v2.mp4")
     encoded.add_argument("engine_args", nargs="*", help="after --: the engine's own, as -- --strict --hw software")
+    levels = sub.add_parser(
+        "scopes", help="a master's levels: illegal, out-of-gamut and oversaturated samples fail at 0 (ADR 0172)"
+    )
+    levels.add_argument("videos", type=Path, nargs="+", metavar="video")
+    levels.add_argument(
+        "--engine", type=Path, default=os.environ.get("SRSTUDIO_ENGINE") or shutil.which("scene-render")
+    )
     measured = sub.add_parser("proof", help="a master's measures (ffprobe, ebur128) and a sheet of frames to look at")
     measured.add_argument("video", type=Path)
     measured.add_argument("--at", type=float, action="append", default=[], help="a moment to look at, in seconds")
@@ -319,6 +327,8 @@ def main(argv=None):
         return _proof(args)
     if args.cmd == "master":
         return _master(args)
+    if args.cmd == "scopes":
+        return _scopes(args)
     if args.cmd == "arms":
         return _arms(args)
     if args.cmd == "parts":
@@ -637,6 +647,15 @@ def _master(args: argparse.Namespace) -> int:
     for path in done.paths:
         print(f"master: {path}")
     return done.returncode
+
+
+def _scopes(args: argparse.Namespace) -> int:
+    if args.engine is None:
+        print("srstudio scopes: set --engine or SRSTUDIO_ENGINE", file=sys.stderr)
+        return 2
+    said, status = scopes.lines(args.videos, args.engine)
+    print("\n".join(said))
+    return status
 
 
 def _lip_proof(args: argparse.Namespace) -> int:

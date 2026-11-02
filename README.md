@@ -266,6 +266,8 @@ The configured coverage gate is 80%. Some integration tests require additional l
 
 Every `render` and `encode` srstudio starts takes one machine-wide GPU lock, `/run/lock/srstudio-gpu.lock`. You can point it elsewhere with `SRSTUDIO_GPU_LOCK`. A job that waits longer than `SRSTUDIO_GPU_WAIT` seconds (900 by default) for another job's render stops with `GpuBusyError`, which names the holder's pid and command. To run a bare engine command by hand under the same lock, use `flock -w 900 /run/lock/srstudio-gpu.lock scene-render ...`. See [ADR 0171](docs/decisions/0171-one-gpu-job-at-a-time.md).
 
+`srstudio scopes <video>...` reads a master's levels with the engine's `scopes` (every fifth frame). It fails on illegal codes, out-of-gamut and oversaturated samples, with a limit of 0 for each, and reports clipping without judging it. It exits 1 on a finding and 2 when a master cannot be measured. `scopes.scope_defects` is the first-delivery check. It is not wired into delivery, because all 240 masters measured on 2026-11-01 carry illegal samples. See [ADR 0172](docs/decisions/0172-master-levels-check.md).
+
 ## Layout
 
 - [src/srstudio/](src/srstudio/) — library and CLI.
