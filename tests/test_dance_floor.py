@@ -8,9 +8,9 @@ from functools import cache
 
 import pytest
 
-from srstudio import dance, dance_floor
+from srstudio import body, dance, dance_floor
 from srstudio import skeleton as sk
-from srstudio._floor_body import ball_of, centre_of_mass, floor_of, hull, inside, sole, support, toes_offset
+from srstudio._floor_body import ball_of, centre_of_mass, floor_of, margin, sole, support, toes_offset
 from srstudio.dance import Entry, Floor, Key, Phrase, Routine
 from srstudio.dance_floor import (
     BalanceError,
@@ -50,23 +50,24 @@ def performed(name: str, preset: str) -> Performance:
     return run
 
 
-# --- the support polygon (a local stand-in for body's, ADR 0194) ---------------------------------------------------
+# --- the support polygon: body's public geometry -----------------------------------------------------------------
 
 
-def test_a_hull_keeps_the_corners_counter_clockwise_and_drops_the_rest():
-    square = hull([(0, 0), (1, 0), (1, 1), (0, 1), (0.5, 0.5), (0.5, 0.0)])
-    assert set(square) == {(0, 0), (1, 0), (1, 1), (0, 1)} and len(square) == 4
-    area = sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(square, (*square[1:], square[0]), strict=True))
-    assert area > 0  # counter-clockwise in (x, z)
-    assert hull([(0, 0), (1, 1)]) == ((0, 0), (1, 1))
-
-
-def test_inside_is_the_distance_to_the_nearest_edge_negative_outside():
-    square = hull([(0, 0), (1, 0), (1, 1), (0, 1)])
-    assert inside(square, sk.Vec3(0.5, 0.0, 0.5)) == pytest.approx(0.5)
-    assert inside(square, sk.Vec3(0.9, -3.0, 0.5)) == pytest.approx(0.1)  # height does not count
-    assert inside(square, sk.Vec3(1.2, 0.0, 0.5)) == pytest.approx(-0.2)
-    assert inside(((0, 0), (1, 0)), sk.Vec3()) == -math.inf  # a line holds nothing up
+def test_the_support_is_bodys_hull_of_bodys_footprints():
+    profile = sk.preset("realistic")
+    frames = sk.world(profile, sk.rest_pose(profile))
+    anatomy = sk.body_profile(profile)
+    corners = []
+    for side in ("left", "right"):
+        ankle = frames[f"{side}_foot"].origin
+        corners += body.support_footprint(sk.Frame(sk.Vec3(ankle.x, 0.0, ankle.z), sk.Quaternion()), anatomy)
+    expected = body.support_hull([(p.x, p.z) for p in corners])
+    found = support(profile, frames, ("left", "right"))
+    assert [c for p in found for c in p] == pytest.approx([c for p in expected for c in p])
+    point = sk.Vec3(0.0, -0.9, 0.0)
+    assert margin(expected, point) == body.support_margin(expected, point) > 0
+    with pytest.raises(body.BodyError):
+        support(profile, frames, ())  # no foot holds nothing up
 
 
 @pytest.mark.parametrize("preset", sk.PRESETS)
@@ -79,7 +80,7 @@ def test_a_standing_body_stands_inside_its_feet(preset):
     assert 0.3 * profile.stature < floor - com.y < 0.7 * profile.stature  # about the middle of the body
     both = support(profile, frames, ("left", "right"))
     one = support(profile, frames, ("left",))
-    assert inside(both, com) > max(0.0, inside(one, com))  # a stick's broad soles overlap, so one may hold it too
+    assert margin(both, com) > max(0.0, margin(one, com))  # a stick's broad soles overlap, so one may hold it too
     half, heel, toe = sole(profile)
     assert 0 < half and 0 < heel < toe  # a footprint on any profile, with toes or without
 
@@ -275,7 +276,7 @@ def test_stance_stands_wide_on_bent_knees_with_the_feet_flat(preset):
     assert knee_bend(profile, pose) == pytest.approx(dance_floor.STANCE_BEND, abs=0.01)
     assert world["hips"].origin.y > sk.world(profile, rest)["hips"].origin.y + 0.02 * height  # the hips sit lower
     frames, com = sk.world(profile, pose), dance_floor.centre_of_mass(profile, pose)
-    assert inside(support(profile, frames, ("left", "right")), com) > 0
+    assert margin(support(profile, frames, ("left", "right")), com) > 0
     ahead = [world[f"{side}_foot"].rotation.rotate(sk.Vec3(0.0, 0.0, 1.0)).x for side in ("left", "right")]
     assert ahead[0] < 0 < ahead[1]  # the toes turn out
 

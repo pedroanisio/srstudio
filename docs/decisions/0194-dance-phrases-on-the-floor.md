@@ -84,12 +84,11 @@ reports every frame whose centre of mass is less than `margin_m` (5 mm by defaul
 support of its planted feet as a `BalanceFinding`; `check` and `strict=True` refuse with `BalanceError`. A frame in the
 air or on a seat is not checked. A leg past its joint limits is refused with `FloorLimitError` unless `clamp`.
 
-**Local support polygon: a workaround.** The footprint is the skeleton's sole: a rectangle under each planted foot
-whose width and heel are the joint table's sole (srlocations' foot solid, 0.068 and 0.044 of the height) scaled with
-the character's foot, read through `sk.body_profile`, reaching to the toes' tip. The convex hull (monotone chain) and
-the distance inside it are written in `srstudio._floor_body`, with tests, because `srstudio.body` and
-`srstudio.limbs` are not this change's to edit and `body` does not yet offer its support polygon as public API. They
-are to be replaced by `body`'s public hull, margin and footprint once those exist; the request has been made.
+**Support from `body`.** The support is `body`'s public geometry: `support_footprint` under each planted ankle,
+turned the way the foot points, on the character's `sk.body_profile` (the joint table's sole, 0.068 and 0.044 of the
+height for width and heel, scaled with the foot), `support_hull` of those corners, and `support_margin` for how far the
+centre of mass stands inside. The centre of mass is this module's own: `body` offers a torso mass proxy, not a
+segment-weighted centre.
 
 **Ensemble.** `ensemble(source, dancers, groove, *, seed, variation)` gives each `Dancer(profile, spot, delay_beats,
 base)` its own performance from its `Spot(x, z, facing)`. A `random.Random(seed)` draws, dancer by dancer, a timing

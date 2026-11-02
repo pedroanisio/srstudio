@@ -5,10 +5,9 @@ Control of Human Movement*, 4th ed., table 4.1) at the middle of the bone, the t
 bones; a joint a character omits is left out and the rest renormalised. The shares are a person's, so on a cartoon with
 a large head they are an estimate.
 
-A planted foot's footprint is a rectangle on the floor under the foot, the skeleton's sole: the joint table's sole
-width and heel (srlocations' foot solid) scaled with the character's foot, to the toes' tip. The convex hull and the
-distance inside it are written here, not taken from ``body``: they stand in until ``body`` offers its support polygon
-as public API, and are to be replaced by it then (ADR 0194).
+A planted foot's footprint, the convex support of the planted feet and how far a point stands inside it are
+``body``'s public support geometry (``support_footprint``, ``support_hull``, ``support_margin``) on the character's
+``sk.body_profile``: the joint table's sole width and heel (srlocations' foot solid) scaled with its foot.
 """
 
 from __future__ import annotations
@@ -16,6 +15,7 @@ from __future__ import annotations
 import math
 from collections.abc import Iterable, Mapping
 
+from . import body
 from . import skeleton as sk
 from ._retarget_feet import has_leg, reach
 from ._retarget_pose import Tally
@@ -83,35 +83,10 @@ def body_of(profile: sk.SkeletonProfile, pose: sk.SkeletonPose) -> tuple[dict[st
     return frames, centre_of_mass(profile, frames, crown)
 
 
-def hull(points: Iterable[tuple[float, float]]) -> tuple[tuple[float, float], ...]:
-    """The convex hull of floor points, counter-clockwise in (x, z), by the monotone chain; collinear points dropped."""
-
-    def turn(o: tuple[float, float], a: tuple[float, float], b: tuple[float, float]) -> float:
-        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
-
-    ordered = sorted(set(points))
-    if len(ordered) < 3:
-        return tuple(ordered)
-    chain: list[tuple[float, float]] = []
-    for run in (ordered, ordered[::-1]):
-        side: list[tuple[float, float]] = []
-        for point in run:
-            while len(side) >= 2 and turn(side[-2], side[-1], point) <= 0:
-                side.pop()
-            side.append(point)
-        chain.extend(side[:-1])
-    return tuple(chain)
-
-
-def inside(polygon: tuple[tuple[float, float], ...], point: Vec3) -> float:
-    """How far ``point`` lies inside a counter-clockwise ``polygon`` on the floor, in metres: the least distance to an
-    edge's line, negative outside. A polygon of fewer than three corners holds nothing: minus infinity."""
-    if len(polygon) < 3:
-        return -math.inf
-    return min(
-        ((b[0] - a[0]) * (point.z - a[1]) - (b[1] - a[1]) * (point.x - a[0])) / math.hypot(b[0] - a[0], b[1] - a[1])
-        for a, b in zip(polygon, (*polygon[1:], polygon[0]), strict=True)
-    )
+def margin(polygon: tuple[tuple[float, float], ...], point: Vec3) -> float:
+    """How far ``point`` stands inside the support ``polygon`` on the floor, in metres, negative outside: body's
+    signed margin."""
+    return body.support_margin(polygon, point)
 
 
 def sole(profile: sk.SkeletonProfile) -> tuple[float, float, float]:
@@ -124,16 +99,15 @@ def sole(profile: sk.SkeletonProfile) -> tuple[float, float, float]:
 def support(
     profile: sk.SkeletonProfile, frames: Mapping[str, Frame], feet: Iterable[str]
 ) -> tuple[tuple[float, float], ...]:
-    """The convex footprint, on the floor's (x, z), of the named sides' feet as they stand in ``frames``."""
-    half, heel, toe = sole(profile)
-    drop = profile.length("ankle")
+    """The convex support, on the floor's (x, z), of the named sides' feet as they stand in ``frames``: body's
+    footprint under each ankle, turned the way the foot points, and body's hull of them."""
+    anatomy = sk.body_profile(profile)
     points: list[tuple[float, float]] = []
     for side in feet:
         foot = frames[f"{side}_foot"]
-        for x, z in ((-half, -heel), (half, -heel), (half, toe), (-half, toe)):
-            p = foot.point(Vec3(x, drop, z))
-            points.append((p.x, p.z))
-    return hull(points)
+        sole_frame = Frame(Vec3(foot.origin.x, 0.0, foot.origin.z), yaw(heading(foot.rotation)))
+        points.extend((p.x, p.z) for p in body.support_footprint(sole_frame, anatomy))
+    return body.support_hull(points)
 
 
 def toes_offset(profile: sk.SkeletonProfile, side: str) -> Vec3:

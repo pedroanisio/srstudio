@@ -48,9 +48,9 @@ from ._floor_body import (
     flat_ankle,
     floor_of,
     heading,
-    inside,
     lay,
     legs,
+    margin,
     sole,
     support,
     toes_offset,
@@ -393,7 +393,7 @@ class _Pass:
                 pose, _ = self.solve(frame, t, shift, Tally(True))
                 frames, com = body_of(self.profile, pose)
                 polygon = support(self.profile, frames, around)
-                if inside(polygon, com) >= aim:
+                if margin(polygon, com) >= aim:
                     break
                 goal = _toward(polygon, com, aim)
                 shift = shift + Vec3(goal[0] - com.x, 0.0, goal[1] - com.z)
@@ -424,7 +424,7 @@ class _Pass:
         feet = _sides(frame) & set(self.legs)
         found = None
         if frame.support == "feet" and feet:
-            found = inside(support(self.profile, frames, feet), com)
+            found = margin(support(self.profile, frames, feet), com)
         planted = frozenset(f"{side}_foot" for side in feet)
         return FloorFrame(t, pose, planted, frame.airborne, frame.support, com, found, dropped)
 
@@ -434,12 +434,12 @@ def _toward(polygon: tuple[tuple[float, float], ...], point: Vec3, aim: float) -
     itself when nothing does. Bisection, 30 halvings."""
     middle = (sum(p[0] for p in polygon) / len(polygon), sum(p[1] for p in polygon) / len(polygon))
     centre = Vec3(middle[0], 0.0, middle[1])
-    if inside(polygon, centre) < aim:
+    if margin(polygon, centre) < aim:
         return middle
     lo, hi = 0.0, 1.0
     for _ in range(30):
         mid = (lo + hi) / 2
-        if inside(polygon, point.lerp(centre, mid)) >= aim:
+        if margin(polygon, point.lerp(centre, mid)) >= aim:
             hi = mid
         else:
             lo = mid
