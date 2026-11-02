@@ -1,10 +1,10 @@
 """No bait on the send test: a reel earns a send, it never asks for one (ADR 0080).
 
-A reel is on the send test when its tags name who it is sent to and its send line, or when its claim names the brief
-``send-v1``, as a holdout's does: the holdout skips the test but not the rule. Every other reel is never read, so what
-was delivered stays as it went out. The gate reads what the library can see, the caption, the cover, the scene's text
-and the spoken captions, so it needs no engine. It matches the words, so a character's own line with these words is
-refused too: the phrase on screen reads as the ask, whoever says it.
+A reel is on the send test when its tags name who it is sent to and its send line, or when its claim names a brief of
+the test, ``send-v1`` or ``send-v2`` (:data:`BRIEFS`), as a holdout's does: the holdout skips the test but not the
+rule. Every other reel is never read, so what was delivered stays as it went out. The gate reads what the library can
+see, the caption, the cover, the scene's text and the spoken captions, so it needs no engine. It matches the words, so a
+character's own line with these words is refused too: the phrase on screen reads as the ask, whoever says it.
 """
 
 from __future__ import annotations
@@ -18,9 +18,10 @@ from . import craft, subtitles
 from .releases import Release
 from .social import Drift
 
-__all__ = ["BRIEF", "bait", "bait_drift", "on_test"]
+__all__ = ["BRIEF", "BRIEFS", "bait", "bait_drift", "on_test"]
 
 BRIEF = "send-v1"
+BRIEFS = frozenset({BRIEF, "send-v2"})  # every brief of the send test; send-v2 opens on the viewer's line
 _PHRASES = ("tag a friend", "tag someone", "send this to", "share this with", "send it to")
 _BAIT = re.compile(r"\b(" + "|".join(p.replace(" ", r"\s+") for p in _PHRASES) + r")\b", re.IGNORECASE)
 
@@ -33,7 +34,7 @@ def bait(text: str) -> list[str]:
 def on_test(release: Release, brief: str) -> bool:
     """Whether ``release``, whose claim names ``brief`` or nothing, is held to the send test's no-bait rule."""
     tags = release.tags
-    return brief == BRIEF or (tags is not None and bool(tags.send_to))
+    return brief in BRIEFS or (tags is not None and bool(tags.send_to))
 
 
 def _cover(release: Release) -> str:
