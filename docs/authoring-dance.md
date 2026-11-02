@@ -192,3 +192,61 @@ outside the presets. A routine for a cartoon clap still needs `intensity=2.0` se
 against the beat, and `resolution`. Build a `DanceTarget` for a dance you have measured, and treat `misses(reading)` as
 the test. Give it several bars: an estimate on two cycles moves with every sample. At 25 pictures a second a stroke
 reads to about one picture when the channel carries noise of five percent of its size.
+
+## Learn a style from a reference video
+
+The dance study ([ADR 0196](decisions/0196-dance-style-from-reference-video.md)) measures how a real dancer moves and
+holds our dances to it. It copies no routine: only style statistics on the beat grid reach the repository, as a
+`srstudio.dance-style/1.0.0` record of ranges. The footage, its frames and its per-frame landmarks stay under the
+workspace's `generated/` (`$WS/generated`, `$WS` the workspace that holds this checkout) on the machine that made
+them.
+
+1. Build the pose estimator's own interpreter once. It stays outside srstudio's dependencies:
+
+   ```sh
+   uv venv --python 3.12 $WS/generated/venvs/pose && chmod 700 $WS/generated/venvs/pose
+   uv pip install --python $WS/generated/venvs/pose/bin/python mediapipe==1.2.0
+   $WS/generated/venvs/pose/bin/python -I tools/pose_extract.py --fetch-models
+   ```
+
+   `--fetch-models` downloads the Pose Landmarker models (Apache-2.0) next to that interpreter and refuses a file
+   whose digest is not the one pinned in the tool.
+
+2. Extract the dancer: `$WS/generated/venvs/pose/bin/python -I tools/pose_extract.py VIDEO --out
+   $WS/generated/dance-study/NAME/pose-track.json` follows the most central large person, or `--pick 0.4,0.5` the one
+   nearest that point. A frame where the dancer cannot be told from a neighbour is written as lost, never guessed.
+3. Measure and check, in srstudio's own interpreter: `python tools/dance_study.py measure TRACK --audio VIDEO --name
+   NAME --description TEXT --out src/srstudio/assets/dance/styles/NAME.json`, then `python tools/dance_study.py check
+   STYLE --audio VIDEO --out $WS/generated/dance-study/NAME/findings.json` dances every standing preset and a choreographed
+   routine on the reference's grid and ranks what they miss. `page` writes the operator's local proof page.
+
+The same check runs on any `DanceFrame` sequence. Here a synthetic record stands in for the estimator's:
+
+<!-- dance-study:start -->
+```python
+from srstudio import dance, dance_style, pose_track
+from srstudio import dance_study as ds
+from srstudio.music import Groove
+
+groove = Groove(120)
+bounce = list(dance.frames(dance.moves()["bounce"], groove, 0.0, 4 * groove.bar, 15))
+track = pose_track.from_data(ds.pose_record(bounce, 15))  # what an estimator facing the dancer would write
+body = ds.reference_body(track)  # hips-relative, in head radii; refused frames are counted, never filled
+assert body.used == len(bounce) and sum(body.rejected.values()) == 0
+reference = dance_style.Reference(
+    "a synthetic bounce", track.source.sha256, track.estimator.name, track.estimator.version,
+    track.estimator.model_sha256, 8.0, len(bounce), body.used, dict(body.rejected), 120.0, 4, 0.0,
+)  # fmt: skip
+style = dance_style.derive(
+    ds.measure_style(body, groove), name="bounce-study", description="our bounce, measured back",
+    reference=reference, generated_by={"tool": "authoring-dance.md", "model": "none"},
+)  # fmt: skip
+assert dance_style.check(style, bounce, groove, 15).misses == ()
+arms = dance_style.check(style, list(dance.frames(dance.moves()["arm-pump"], groove, 0.0, 4 * groove.bar, 15)), groove, 15)
+assert arms.misses and arms.misses[0].severity >= arms.misses[-1].severity
+```
+<!-- dance-study:end -->
+
+Each miss names the channel, the measure, our value, the reference's range and the trust of the channel; the score is
+their summed severity. Read `torso.lean` and `torso.roll` lightly: a single camera reads depth poorly. A reference
+measures no travel across the floor: its camera follows the dancer and its estimator's metres start at the hips.
