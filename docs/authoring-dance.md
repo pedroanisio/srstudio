@@ -312,6 +312,48 @@ reads the same on the realistic, cartoon and stick skeletons: its hips' slide is
 head radius on all three. Its head runs ahead of its neck's lean, where the reel's head follows the neck; the ADR names
 why.
 
+## Dance with the whole body
+
+A move's `footwork` ([ADR 0205](decisions/0205-full-body-groove.md), moves 1.2) states what the feet do, in beats:
+each `Stroke` lifts a foot (`lift`), raises its heel or toes (`heel`, `toe`), steps or touches it to an offset in hip
+heights (`step`, `touch`), turns it on its ball (`pivot`) or brings it home (`return`); each `WeightKey` puts a share
+of the weight on the right foot. A foot is planted while it is flat and in no stroke, so the move's contacts come from
+its footwork. A foot off the floor carries no weight, and some foot stands flat at every moment: the move refuses
+footwork that would fall. `inward` brings both feet in from the base stance, and `settle` lets the hips arrive over
+the weight a little after the feet take it.
+
+A follower may read `WEIGHT` (-1 on the left foot, +1 on the right) or another follower, so the weight drives the
+pelvis and the chain above it a link at a time, each later than the one under it. On the floor, a foot of the
+footwork rides its goal: its leg is solved onto it, and a planted one the ankle cannot lay flat is reported or refused.
+`dance_groove.measure_groove` reads the result: whether the feet leave the floor, the weight travels, the pelvis turns
+and tilts, the torso turns against it, the chain runs up from the feet, the upper body moves on the hips, and whether
+the motion is smooth, the feet hold where they push, and a held heel or toe stays put. `dance_groove.GROOVE` is the
+target the new presets meet and the older ones do not:
+
+<!-- dance-groove:start -->
+```python
+from srstudio import dance, dance_floor
+from srstudio import skeleton as sk
+from srstudio.dance_groove import GROOVE, measure_groove
+from srstudio.music import Groove
+
+groove = Groove(120)
+move = dance.moves()["heel-rock"]
+print([(s.foot, s.start, s.kind) for s in move.footwork.strokes])  # the left heel on the and of one, ...
+
+profile = sk.preset("stick")
+routine = dance.Routine(2, (dance.Entry(0, 2, move),))
+run = dance_floor.perform(routine, profile, groove, base=dance_floor.stance(profile))
+reading = measure_groove(run)
+assert GROOVE.misses(reading) == ()
+print(round(reading.clearance, 2), round(reading.pelvis_yaw, 2), round(reading.counter, 2))  # 0.12 0.39 0.46
+```
+<!-- dance-groove:end -->
+
+The presets `two-step`, `heel-rock` and `twist-groove` dance this way; review them on the floor with
+`python tools/dance_views.py out.mp4 --moves two-step,heel-rock --floor --characters realistic@stance,cartoon@stance
+--bpm 120 --track song.wav --speed 0.25`, which plays the song from its first beat and slows picture and sound together.
+
 ## Learn a style from a reference video
 
 The dance study ([ADR 0203](decisions/0203-dance-style-from-reference-video.md)) measures how a real dancer moves and

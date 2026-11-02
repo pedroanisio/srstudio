@@ -522,7 +522,7 @@ def test_the_errors_share_one_base():
 def test_the_guides_recipes_run():
     guide = (Path(__file__).resolve().parents[1] / "docs" / "authoring-dance.md").read_text()
     recipes = [code for language, code in fences(guide) if language == "python"]
-    assert len(recipes) == 8
+    assert len(recipes) == 9
     for code in recipes:
         exec(compile(code, "authoring-dance.md", "exec"), {})
 
