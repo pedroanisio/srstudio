@@ -24,11 +24,11 @@
   "catalog_observation": {
     "parts": 734,
     "characters": 75,
-    "entries_with_explicit_part_contract": 692,
+    "entries_with_explicit_part_contract": 699,
     "all_default_characters_have_explicit_contracts": true,
     "noncharacter_parts": 659,
-    "noncharacter_parts_with_explicit_contracts": 617,
-    "source": "Fresh-process registry observation on 2026-11-02 after 33 Collage room, photo, clinic and interface contracts and three existing room helper operations. Baselines were captured from 6c0d45ee after the separately recorded preflight repairs. See review_verification.collage_context_contracts.",
+    "noncharacter_parts_with_explicit_contracts": 624,
+    "source": "Fresh-process registry observation on 2026-11-02 after seven Rafa prop and room contracts with the existing surface-finishing operation. Mesh baselines were captured from 9c40c172. See review_verification.rafa_prop_contracts.",
     "by_kind": {
       "character": {
         "registered": 75,
@@ -36,11 +36,11 @@
       },
       "prop": {
         "registered": 461,
-        "explicit_contracts": 440
+        "explicit_contracts": 445
       },
       "location": {
         "registered": 115,
-        "explicit_contracts": 101
+        "explicit_contracts": 103
       },
       "graphic": {
         "registered": 83,
@@ -58,6 +58,34 @@
     }
   },
   "review_verification": {
+    "rafa_prop_contracts": {
+      "baseline_source_commit": "9c40c172f227f44d6dcae2b8190e2ad2923d4fd1",
+      "missing_contract_and_guide_regressions_red": 17,
+      "initial_green": 6,
+      "new_tests": 23,
+      "new_explicit_contracts": 7,
+      "existing_helpers_exposed_as_operations": 1,
+      "unchanged_model_baselines": 7,
+      "unchanged_implementation_definitions": 40,
+      "selected_regressions": {
+        "passed": 1933,
+        "skipped": 0
+      },
+      "branch_inclusive_coverage_percent": 95.93054801953338,
+      "branch_coverage_percent": 91.85022026431719,
+      "coverage_scope": [
+        "src/srstudio/_rafa_prop_contracts.py",
+        "src/srstudio/clay.py",
+        "src/srstudio/contracts.py",
+        "src/srstudio/rafa.py",
+        "src/srstudio/registry.py"
+      ],
+      "ruff": "passed",
+      "format": "passed",
+      "mypy_source_files": 334,
+      "retained_artifacts": "../generated/sdk-rafa-prop-contracts/v1/",
+      "qualification": "Static 3D model mutation, no scene-handle or animation capability, material and print dependencies, actual finished(mesh) operation, prop frame transforms and absolute room plant frames. Original geometry and all top-level implementations remain unchanged. Broader open findings are not closed by this batch."
+    },
     "collage_context_contracts": {
       "baseline_source_commit": "6c0d45eee4c408ac53b5906ac224a992f85e51ce",
       "missing_contract_and_guide_regressions_red": 69,
@@ -1842,15 +1870,16 @@
           "srstudio.collage_odds",
           "srstudio.collage_photo",
           "srstudio.collage_article",
-          "srstudio.collage_forecast"
+          "srstudio.collage_forecast",
+          "srstudio.rafa"
         ],
         "additional_parts": [
           "toon-headset"
         ],
-        "new_contracts": 564,
-        "current_explicit_noncharacter_contracts": 617,
+        "new_contracts": 571,
+        "current_explicit_noncharacter_contracts": 624,
         "current_registered_noncharacters": 659,
-        "remaining_undeclared": 42,
+        "remaining_undeclared": 35,
         "evidence": [
           "tests/test_counter_store_contracts.py",
           "tests/data/counter-store-contract-baseline.json",
@@ -1933,9 +1962,13 @@
           "src/srstudio/_collage_context_contracts.py",
           "tests/test_collage_context_contracts.py",
           "tests/support/collage_context_contracts.py",
-          "tests/data/collage-context-contract-baseline.json"
+          "tests/data/collage-context-contract-baseline.json",
+          "src/srstudio/_rafa_prop_contracts.py",
+          "tests/test_rafa_prop_contracts.py",
+          "tests/support/rafa_prop_contracts.py",
+          "tests/data/rafa-prop-contract-baseline.json"
         ],
-        "qualification": "The full catalog expansion remains open. All 109 non-character builders in Stick-prefixed modules and all 158 in Toon-prefixed modules now declare authored contracts, alongside the completed Cutout families. These module counts do not include other families sharing their style names. Drawing baselines remain unchanged; specific correctness repairs are recorded separately as P1 findings. Host, Mind and Map kits now declare all 31 non-character builders. Both News kit versions now declare their 27 non-character builders. The five Soft scene, bedtime, closet and inbox modules add 18 declared builders. The Soft prop and odds modules add 32 declared builders, with effect limits, held versus linear motion, callback ownership and expression-clock qualifications. Blob now declares all 12 non-character builders and exposes eight existing layout helpers without inventing spatial attachments. All 19 Ink non-character builders now declare clocks, actual return scope, timed records and typed delegation targets while retaining explicitly open variadic envelopes. The Collage table and corner module adds 16 contracts with actual drawing origins, copy, fork/card limits, return ownership and project-clock animation. Everyday Collage adds 22 contracts and five real reach/sampling helper operations, with phone-screen ownership, mixed clock qualifications and explicit limits of sampled sleeve motion. Collage rooms, photos, clinic props and illustrated interfaces add 33 contracts and three actual room layout helpers, with sharp signature ownership, typed Place records, crop semantics and verified clocks. The 42 remaining non-character entries still require source review and executable semantic evidence."
+        "qualification": "The full catalog expansion remains open. All 109 non-character builders in Stick-prefixed modules and all 158 in Toon-prefixed modules now declare authored contracts, alongside the completed Cutout families. These module counts do not include other families sharing their style names. Drawing baselines remain unchanged; specific correctness repairs are recorded separately as P1 findings. Host, Mind and Map kits now declare all 31 non-character builders. Both News kit versions now declare their 27 non-character builders. The five Soft scene, bedtime, closet and inbox modules add 18 declared builders. The Soft prop and odds modules add 32 declared builders, with effect limits, held versus linear motion, callback ownership and expression-clock qualifications. Blob now declares all 12 non-character builders and exposes eight existing layout helpers without inventing spatial attachments. All 19 Ink non-character builders now declare clocks, actual return scope, timed records and typed delegation targets while retaining explicitly open variadic envelopes. The Collage table and corner module adds 16 contracts with actual drawing origins, copy, fork/card limits, return ownership and project-clock animation. Everyday Collage adds 22 contracts and five real reach/sampling helper operations, with phone-screen ownership, mixed clock qualifications and explicit limits of sampled sleeve motion. Collage rooms, photos, clinic props and illustrated interfaces add 33 contracts and three actual room layout helpers, with sharp signature ownership, typed Place records, crop semantics and verified clocks. Rafa adds seven model-mutation contracts and its actual mesh-finishing helper, with material/print dependencies and explicitly qualified room placement. The 35 remaining non-character entries still require source review and executable semantic evidence."
       },
       "evidence": [
         "src/srstudio/registry.py:contract_coverage",
