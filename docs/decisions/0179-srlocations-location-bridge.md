@@ -9,8 +9,9 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 
 ## Context
 
-Upcoming scripts stand our figures in 3D locations from srlocations, sets rebuilt from Pedro's photographs: an
-airliner economy row first, then a car's front seats (arc4d3's ruling in Slack, 1793611091.520519). A reel needs, per
+Upcoming scripts stand our figures in 3D locations from srlocations, elaborate places rebuilt from reference
+photographs: a starship bridge for Saga and a TV news studio study first, a supermarket once the cast can hold goods
+(arc4d3's rulings in Slack, 1793611720.082919 and 1793612340.312069, agreed with Pedro). A reel needs, per
 shot, the camera and where each mark lands in the frame: the feet's pixel, the pixels per metre there, and whether the
 mark is in frame. srlocations computes this in `framing.blocking` and `compiler.Projection`.
 
