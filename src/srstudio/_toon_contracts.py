@@ -45,6 +45,10 @@ COMPOSITION_CLOCK = (
     'Animation keys explicitly use the composition clock even when Canvas.local_time is True. '
     'Visibility start/end attributes still use their parent timeline.'
 )
+MIXED_CLOCK = (
+    'Animations in this builder use different clocks; consult each argument and constraint. '
+    'Visibility start/end attributes use their parent timeline.'
+)
 
 
 def point(description: str) -> P:
@@ -52,7 +56,9 @@ def point(description: str) -> P:
 
 
 def draw(
-    *parameters: tuple[str, P], constraints: tuple[str, ...] = (), clock: Literal['canvas', 'composition'] = 'canvas'
+    *parameters: tuple[str, P],
+    constraints: tuple[str, ...] = (),
+    clock: Literal['canvas', 'composition', 'mixed'] = 'canvas',
 ) -> PartContract:
     return PartContract(
         parameters=(('cv', P(type=Canvas)), ('parent', P(type=Composition | Group | Symbol)), *parameters),
@@ -61,7 +67,7 @@ def draw(
         constraints=(
             REFERENCE,
             'Draws 2D artwork; no world-space attachment, collision geometry or anatomical solver is supplied.',
-            COMPOSITION_CLOCK if clock == 'composition' else CANVAS_CLOCK,
+            {'canvas': CANVAS_CLOCK, 'composition': COMPOSITION_CLOCK, 'mixed': MIXED_CLOCK}[clock],
             *constraints,
         ),
     )

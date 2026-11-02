@@ -281,3 +281,20 @@ def test_the_command_reports_a_broken_setting(repo, capsys):
     path.write_text("nope", encoding="utf-8")
     assert cli.main(["enhance", "--scripts", str(path.parent)]) == 2
     assert "srstudio enhance:" in capsys.readouterr().err
+
+
+def test_check_names_a_bad_trailer_while_it_is_still_on_its_branch(repo, capsys):
+    git(repo, "checkout", "-q", "-b", "feat/next")
+    commit(repo, message(kind="framing"), REAL)
+    assert [row.kinds for row in auto_enhance.unsound(repo)] == [("framing",)]
+    assert cli.main(["enhance", "check", *scripts(repo)]) == 1
+    assert "Enhancement-Kind must be one of" in capsys.readouterr().out
+
+
+def test_check_passes_a_sound_trailer_and_leaves_develops_history_alone(repo):
+    commit(repo, message(slug="old-reel", kind="framing"), REAL)  # already landed, so no branch can fix it
+    git(repo, "checkout", "-q", "-b", "feat/next")
+    other = {"src/srstudio/other.py": "Y = 1\n", "tests/test_other.py": "def test_y():\n    assert True\n"}
+    commit(repo, message(), other)
+    assert auto_enhance.unsound(repo) == []
+    assert cli.main(["enhance", "check", *scripts(repo)]) == 0

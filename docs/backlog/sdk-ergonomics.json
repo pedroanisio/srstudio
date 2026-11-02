@@ -24,11 +24,11 @@
   "catalog_observation": {
     "parts": 726,
     "characters": 74,
-    "entries_with_explicit_part_contract": 344,
+    "entries_with_explicit_part_contract": 365,
     "all_default_characters_have_explicit_contracts": true,
     "noncharacter_parts": 652,
-    "noncharacter_parts_with_explicit_contracts": 270,
-    "source": "Fresh-process registry observation on 2026-11-01 after 15 Toon bed/ward/surgery declarations. Drawing baselines were captured from df5c4507. See review_verification.toon_care_contracts.",
+    "noncharacter_parts_with_explicit_contracts": 291,
+    "source": "Fresh-process registry observation on 2026-11-01 after 21 Toon traffic/dining/parlour/room declarations. All 151 registered non-characters in toon-prefixed modules now declare contracts. Drawing baselines were captured from b3e72f0a. See review_verification.toon_social_contracts.",
     "by_kind": {
       "character": {
         "registered": 74,
@@ -36,20 +36,98 @@
       },
       "prop": {
         "registered": 456,
-        "explicit_contracts": 213
+        "explicit_contracts": 228
       },
       "location": {
         "registered": 113,
-        "explicit_contracts": 37
+        "explicit_contracts": 43
       },
       "graphic": {
         "registered": 83,
         "explicit_contracts": 20
       }
     },
-    "qualification": "Fresh-process registry.entries() observation after the latest implemented contract batch. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates."
+    "qualification": "Fresh-process registry.entries() observation after the latest implemented contract batch. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates.",
+    "toon_module_noncharacters": {
+      "registered": 151,
+      "explicit_contracts": 151
+    }
   },
   "review_verification": {
+    "toon_social_contracts": {
+      "baseline_source_commit": "b3e72f0a",
+      "wheel_validation_regressions_red": {
+        "failed": 17
+      },
+      "composition_clock_regressions_red": {
+        "failed": 2,
+        "passed": 2
+      },
+      "initial_contract_tests_red": {
+        "failed": 31
+      },
+      "mixed_clock_declaration_red": {
+        "failed": 1
+      },
+      "documentation_recipe_red": {
+        "failed": 2
+      },
+      "final_engine_enabled_tests": {
+        "passed": 687,
+        "skipped": 0
+      },
+      "branch_inclusive_coverage_percent": {
+        "toon_social_contracts": 100,
+        "toon_contracts": 100,
+        "toon_cars": 97,
+        "toon_dinner": 82,
+        "toon_parlour": 99,
+        "toon_rooms": 98,
+        "contracts": 87,
+        "registry": 92,
+        "total": 93
+      },
+      "coverage_scope": "Social and common Toon metadata, four drawing modules, contracts.py and registry.py; unchanged 80% gate. Not a full-library suite run.",
+      "drawing_baseline_cases": 21,
+      "cue_return_baseline_cases": 2,
+      "unchanged_executable_definitions": 71,
+      "changed_executable_definitions": [
+        "toon_cars.loose_wheel",
+        "toon_cars.drive_past",
+        "toon_parlour.held"
+      ],
+      "metadata_factory_changes": [
+        "_toon_contracts.draw"
+      ],
+      "mypy_source_files": 294,
+      "rendered_room_regressions": 4,
+      "generated_episode_staging_checks": 1,
+      "guide_engine_evaluation_times": [
+        0.5,
+        1,
+        1.375,
+        1.75,
+        2.5,
+        3
+      ],
+      "guide_render_times": [
+        0.5,
+        2.5
+      ],
+      "guide_render_pixels": "Both 1080x1920 frames were visually inspected. The sampled character crop darkens in all RGB channels, while 500 full-width desk rows remain pixel-identical; see render-check.json.",
+      "retained_artifacts": "../generated/sdk-toon-social-contracts/v1/",
+      "qualification": "All 151 registered non-characters in toon-prefixed modules now have explicit contracts; catalog-wide expansion remains open. Captured drawings and cue returns are unchanged. Separate engine regressions verify wheel rolling at three scales and correct traffic/arm timing with local canvas mode enabled. Room pixel comparisons and numeric fade samples are scoped evidence, not encoded-video review or a perceptual preference score.",
+      "post_merge_integration": {
+        "head": "becb0ef4",
+        "passed": 201,
+        "skipped": 0,
+        "scope": "Fresh catalog observation, staging, generated-episode layer order, social contracts, executable discovery guides and authoring navigation. Mypy and Ruff also rerun successfully after the concurrent merge."
+      },
+      "engine": {
+        "version": "0.8.0",
+        "sha256": "90bf26f00439e3615206fa8c7ea4accea8cf5be009e188b60d7c5938ec4e0b4a"
+      }
+    },
     "toon_care_contracts": {
       "baseline_source_commit": "df5c4507",
       "drawer_light_regressions_red": {
@@ -715,6 +793,52 @@
   ],
   "findings": [
     {
+      "id": "SDK-P1-10",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Validate loose-wheel geometry before mutating a scene",
+      "problem": "The loose wheel bypassed the other car props scale check and emitted geometry before calculating travel. Invalid coordinates, scales, targets and overflowing times could leave partial drawings or raise raw schema/type/index failures.",
+      "resolution": "Check finite points, destination and positive scale, then precompute and validate converted geometry, radius, end time and rotation before adding any scene nodes. Valid rolling geometry and linear translation/rotation retain their original output.",
+      "evidence": [
+        "src/srstudio/toon_cars.py:loose_wheel"
+      ],
+      "verification": [
+        "tests/test_toon_cars.py:test_loose_wheel_refuses_invalid_or_unrepresentable_geometry_before_drawing",
+        "tests/test_toon_cars.py:test_engine_loose_wheel_travel_and_rotation_agree_at_interior_times",
+        "tests/data/toon-social-contract-baseline.json"
+      ],
+      "acceptance": [
+        "Invalid plans raise ToonDataError before scene mutation",
+        "Converted radius remains positive and derived keys finite",
+        "Engine samples confirm proportional travel and rotation at three scales",
+        "Captured default drawing baseline remains unchanged"
+      ]
+    },
+    {
+      "id": "SDK-P1-11",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Keep traffic crossings and held-cone swings on their authored clock",
+      "problem": "drive_past and held inherited Canvas.local_time despite documented composition cues. With local_time=True, their nonzero visibility starts delayed movement: a passing car missed its crossing cue and an arm held its first angle at the intended midpoint.",
+      "resolution": "Both animations explicitly use composition keys. Discovery distinguishes road canvas keys, traffic composition cues, tally parent visibility and mixed room lighting clocks.",
+      "evidence": [
+        "src/srstudio/toon_cars.py:drive_past",
+        "src/srstudio/toon_parlour.py:held",
+        "src/srstudio/_toon_social_contracts.py"
+      ],
+      "verification": [
+        "tests/test_toon_cars.py:test_passing_vehicle_crosses_at_its_cue_in_both_canvas_modes",
+        "tests/test_toon_parlour.py:test_held_cone_swing_follows_authored_times_with_nonzero_visibility_start",
+        "tests/test_toon_social_contracts.py:test_mixed_clock_builders_do_not_claim_all_keys_follow_one_clock"
+      ],
+      "acceptance": [
+        "Passing vehicle center reaches the frame center at its cue in either canvas mode",
+        "Held-cone arm reaches the eased midpoint at the authored time despite nonzero visibility start",
+        "Mixed-clock builders do not publish a conflicting blanket clock claim",
+        "Captured default drawing baselines remain unchanged"
+      ]
+    },
+    {
       "id": "SDK-P1-09",
       "priority": "P1",
       "status": "complete",
@@ -902,15 +1026,19 @@
           "srstudio.toon_laptop",
           "srstudio.toon_bed",
           "srstudio.toon_ward",
-          "srstudio.toon_surgery"
+          "srstudio.toon_surgery",
+          "srstudio.toon_cars",
+          "srstudio.toon_dinner",
+          "srstudio.toon_parlour",
+          "srstudio.toon_rooms"
         ],
         "additional_parts": [
           "toon-headset"
         ],
-        "new_contracts": 217,
-        "current_explicit_noncharacter_contracts": 270,
+        "new_contracts": 238,
+        "current_explicit_noncharacter_contracts": 291,
         "current_registered_noncharacters": 652,
-        "remaining_undeclared": 382,
+        "remaining_undeclared": 361,
         "evidence": [
           "tests/test_counter_store_contracts.py",
           "tests/data/counter-store-contract-baseline.json",
@@ -933,9 +1061,12 @@
           "src/srstudio/_toon_care_contracts.py",
           "tests/test_toon_care_contracts.py",
           "tests/data/toon-care-contract-baseline.json",
+          "src/srstudio/_toon_social_contracts.py",
+          "tests/test_toon_social_contracts.py",
+          "tests/data/toon-social-contract-baseline.json",
           "docs/authoring-discovery.md"
         ],
-        "qualification": "The full catalog expansion remains open. These families declare actual units, clocks, local slots, return records and capability limits. Captured baseline drawings remain unchanged; corrected cue and interpolation behavior is recorded separately in SDK-P1-06, SDK-P1-07, SDK-P1-08 and SDK-P1-09. Other families still require source review and executable semantic evidence."
+        "qualification": "The full catalog expansion remains open. All 151 registered non-characters in toon-prefixed modules now declare contracts. These and completed Cutout families declare actual units, clocks, local slots, return records and capability limits. Captured baseline drawings remain unchanged; corrected behavior is recorded separately in SDK-P1-06 through SDK-P1-11. Other families still require source review and executable semantic evidence."
       },
       "evidence": [
         "src/srstudio/registry.py:contract_coverage",
