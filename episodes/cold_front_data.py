@@ -42,11 +42,12 @@ NARRATION = (
 NOTE = "ElevenLabs premade voices Daniel, Jessica and Sarah at their natural pace; no reference-voice cloning."
 
 MAP = dict(x=590.0, y=560.0, w=450.0, h=640.0)
+ZOOM_MAP_Y = 775.0  # hung lower in the shot that crash zooms: the snap carries the map up, and it stops under the bug
 OVERLAY = "FIRST COLD NIGHT"
 CHYRON = dict(x=110.0, y=1660.0, w=860, h=130)
 OMAR_X = -130.0  # his side of the frame, the map on the other
 OMAR_HAND = (748.0, 1150.0)  # on the map's edge, where his eyes go when they go sideways
-OMAR_SCALES = (1.0, 1.0, 1.2, 1.32, 1.4)  # one per appearance of his: closer each time the forecast gets personal
+OMAR_SCALES = (1.0, 1.0, 1.2, 1.0, 1.4)  # one per appearance, closer as it gets personal; the fourth crash zooms
 DEB_X = -150.0  # her side of the frame, the phone on the other
 DEB_SCALES = {"insert": 1.0, "wide": 1.0, "close": 1.14}
 PHONE = dict(x=618.0, y=1130.0, w=372.0, h=640.0)  # in her hand, its screen toward us
@@ -63,7 +64,8 @@ INSERT_HAND_SCALE = 1.9  # the phone is up at the eye, so her hand is near as we
 INSERT_HAND = (936.0, 1632.0)
 INSERT_ELBOW = (1120.0, 2040.0)
 DUVET_TOP = 1600.0
-DUVET_UP = 80.0  # how far she pulls it up on the last word
+DUVET_UP = 55.0  # how far she pulls it up on the last word
+LAST_LINE_FOOT = 1522.0  # the foot of MYSELF. on the phone in her hand, in the shot's units: the pull stops under it
 DUVET_PULL = 0.42
 DUVET = "#7a6f9b"
 EVENING = "#2b2a55"
@@ -88,18 +90,20 @@ LINES = (
 BEATS, END = timed(
     LINES,
     (
-        (2.7, "omar", 0, "side", "flat", "free-right"),  # the arrow slides from frame one, his hand on the map
+        (1.4, "omar", (0, 0, "First frost tonight."), "side", "flat", "free-right"),  # the arrow slides from frame one
+        (1.3, "omar", (0, 3, "Exes are moving in."), "open", "flat", "free-right"),  # his eyes and a new card on "Exes"
         (0.9, "deb", 1, "open", "smile", "free-right"),  # at the TV, nothing to fear
         (1.95, "omar", 2, "side", "flat", "free-right", "reveal:clock"),  # held to the end of his caption
-        (0.866667, "deb", "", "side", "smile", "free-right", "buzz"),  # the cut lands at 9:00 with the first bubble
+        (1.0, "deb", "", "side", "smile", "free-right", "buzz"),  # the cut lands at 9:00 with the first bubble
         (1.0, "deb", 3, "side", "smile", "free-right", "reveal:cover"),  # back to her on Priya's first word
         (0.95, "deb", 4, "side", "smile", "free-right"),  # eyes on the phone
         (3.3, "omar", 5, "side", "flat", "free-right"),  # held to the end of his caption
-        (0.875, "deb", "", "side", "smile", "free-right", "buzz"),  # the cut lands with the bubble he just read out
+        (0.85, "deb", "", "side", "smile", "free-right", "buzz"),  # the cut lands with the bubble he just read out
         (0.85, "deb", 6, "sad", "smile", "free-right"),  # softly
-        (0.85, "omar", 7, "open", "flat", "down"),  # his eyes come off the map, to the lens
-        (0.42, "deb", "", "side", "smile", "free-right", "reveal:phone"),  # straight to the phone, and nothing yet
-        (0.85, "deb", "", "side", "smile", "free-right", "reveal:answer"),  # her thumb comes down: the green bubble
+        (0.85, "omar", 7, "open", "flat", "down", "zoom"),  # his eyes off the map, and the crash zoom on her name
+        (0.33, "deb", "", "side", "smile", "free-right", "reveal:phone"),  # straight to the phone, and nothing yet
+        (0.15, "deb", "", "side", "smile", "free-right", "reveal:answer"),  # her thumb comes down: the green bubble
+        (0.7, "deb", "", "side", "smile", "free-right", "sting"),  # and the two sagging notes under it
         (1.2, "omar", (9, 0, "He doesn't miss you."), "open", "flat", "down"),
         (0.6, "deb", (9, 4, "He's cold."), "open", "smile", "free-right", "reveal:duvet"),
     ),
@@ -119,7 +123,7 @@ def inserts(beats: Sequence[Beat]) -> list[tuple[float, float]]:
     next_line = next(b.start for b in beats if b.start > second and b.line is not None and b.word == 0)
     out = [(first, _at(beats, "cover")), (second, next_line)]
     answer = _at(beats, "answer")
-    out.append((_at(beats, "phone"), next(b.start for b in beats if b.start > answer)))
+    out.append((_at(beats, "phone"), next(b.start for b in beats if b.start > answer and b.line is not None)))
     if any(b <= a for a, b in out) or any(c[0] < p[1] for p, c in zip(out, out[1:], strict=False)):
         raise StagingError(f"{SLUG}: the inserts fell out of order on this recording: {out}")
     return out
@@ -194,7 +198,8 @@ def _news(shot) -> None:
     clock = (EIGHT_59, (0.0, collage_forecast.FOREVER)) if n == 1 else None  # closer, the frame would cut it
     slide = (0.0, ARROW_SLIDE) if n == 0 else None
     arrow = "EXES" if n < 3 else ""  # a close framing would cut the word
-    collage_forecast.weather_map(cv, shot.back, **MAP, arrow=arrow, slide=slide, clock=clock)
+    box = {**MAP, "y": ZOOM_MAP_Y} if OMAR_SCALES[n] == 1.0 and n > 1 else MAP
+    collage_forecast.weather_map(cv, shot.back, **box, arrow=arrow, slide=slide, clock=clock)
     if any(p["arms"] == "free-right" for p in app.poses):
         x, y = collage_everyday.shoulder("omar", 1)
         collage_everyday.arm(cv, shot.front, "omar", (x + OMAR_X, y), OMAR_HAND, side=1)
@@ -310,6 +315,7 @@ STAGING = Staging(
     dress=dress,
     cast=casting,
     bleed=True,
+    keep_signature=True,
     sounds=sounds,
     bitrate=BITRATE,
     keyframes=KEYFRAMES,

@@ -8,8 +8,9 @@ from pathlib import Path
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import Canvas, collage, flat_counter, sketch
+from srstudio import Canvas, collage, collage_sets, flat_counter, sketch
 from srstudio.canvas import Signature
+from srstudio.collage_sketch import ZOOM_SCALE
 from srstudio.errors import SrstudioError
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
@@ -88,6 +89,11 @@ def test_her_forearm_stays_in_sight_above_the_duvet_wherever_the_hand_is(data):
     assert all(where(t)[1] < over for t in times)
 
 
+def test_the_pulled_duvet_stops_under_the_last_line_on_the_phone(data):
+    highest = data.DUVET_TOP - data.DUVET_UP - 14  # the crest of the duvet's wave
+    assert highest >= data.LAST_LINE_FOOT
+
+
 def test_hey_is_covered_when_it_goes_and_was_up_long_enough_to_read(data):
     beats = data.SKETCH.beats
     where, _ = data._hand(beats)
@@ -106,6 +112,10 @@ def _starts(data):
     return said
 
 
+def _shot_of(data, beat):
+    return next(a for a in sketch.appearances(data.SKETCH.beats, data.SKETCH.end) if a.start <= beat.start < a.end)
+
+
 def test_the_short_arm_of_sp_length_holds(data):
     assert _starts(data)[9] + LAST_LINE <= 18.0
 
@@ -122,6 +132,34 @@ def test_the_cut_back_from_the_first_bubble_is_on_priyas_word_so_a_recording_can
     and left HEY under a text layer's shortest span. On the line's own beat the cut stays where the rows put it."""
     cover = next(b for b in data.BEATS if b.event == "reveal:cover")
     assert cover.line == 3 and cover.word == 0
+
+
+def test_the_premise_lands_by_the_hook_limit_on_its_own_card(data):
+    first, second = data.SKETCH.beats[:2]
+    assert (second.line, second.word) == (0, 3) and second.start <= 2.0  # "Exes", said at 1.40 s on the pinned take
+    assert second.caption == "Exes are moving in." and second.eyes != first.eyes  # and his eyes come to the lens
+
+
+def test_the_crash_zoom_is_on_her_name_and_snaps_from_the_wide_framing(data):
+    zoom = next(b for b in data.SKETCH.beats if b.event == "zoom")
+    assert zoom.line == 7
+    assert data.OMAR_SCALES[data._omar_shot(data.SKETCH.beats, data.SKETCH.end, _shot_of(data, zoom))] == 1.0
+
+
+def test_the_crash_zoom_leaves_the_map_under_the_show_bug(data):
+    """The snap pivots low to keep the signature in frame, which carries the map up: its top stays under the bug."""
+    shift = data.OMAR_X
+    face = collage.face(collage.LOOKS["omar"])
+    _, pivot = collage_sets.zoom_pivot(data.NEWS, (face[0] + shift, face[1]), ZOOM_SCALE, height=collage.CAPTION_TOP)
+    top = pivot + ZOOM_SCALE * (data.ZOOM_MAP_Y - pivot)
+    assert top >= 332  # the bottom of the bug's box
+
+
+def test_the_sting_follows_the_green_bubble_and_leaves_omar_his_line(data):
+    beats = data.SKETCH.beats
+    sting = next(b.start for b in beats if b.event == "sting")
+    opens, closes = data.inserts(beats)[2]
+    assert opens < data._at(beats, "answer") < sting < closes
 
 
 def test_every_insert_holds_past_a_text_layers_shortest_span(data):
