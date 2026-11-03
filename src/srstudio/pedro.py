@@ -22,7 +22,7 @@ import numpy as np
 
 from . import _character_contracts as cc
 from . import pedro_sculpt, pedro_wardrobe
-from .clay import Mesh, Model
+from .clay import Mesh, Model, first_caps
 from .errors import SrstudioError
 from .pedro_sculpt import lay, stream, strokes, tube
 from .plates import Material, Texture
@@ -398,6 +398,7 @@ def cap() -> tuple[Mesh, ...]:
         ),
     ),
 )
+@first_caps
 def body(m: Model) -> None:
     """Everything of him below the head: see :mod:`srstudio.pedro_wardrobe`."""
     pedro_wardrobe.body(m)

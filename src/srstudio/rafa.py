@@ -26,7 +26,7 @@ from . import _character_contracts as cc
 from . import anatomy, clay, rafa_skin
 from ._rafa_prop_contracts import contract as prop_contract
 from .anatomy import Facing, Fingers
-from .clay import Mesh, Model
+from .clay import Mesh, Model, first_caps
 from .errors import SrstudioError
 from .plates import Line, Material, Print, Texture
 from .registry import register
@@ -258,6 +258,7 @@ def _about_neck(m: Model):
     return m.at(x=-NECK[0], y=-NECK[1], z=-NECK[2])
 
 
+@first_caps
 def skull(m: Model, mood_name: str | None = None, shape: str = "rest") -> None:
     """His head with nothing on the face: skin, ears and hair. Given a mood and a mouth, the skin is pressed to seat
     that mouth (:func:`seat`): the corners sink, the fold beside them goes in, and an open mouth is a real hollow."""
@@ -283,6 +284,7 @@ def skull(m: Model, mood_name: str | None = None, shape: str = "rest") -> None:
             m.tube("hairlight", ((x - 13, -421, -30), (x - 8, -438, -26), (x + 7, -439, -9)), 0.85)
 
 
+@first_caps
 def eyes(m: Model, name: str, gaze: str = "ahead", lid: str = "open") -> None:
     """His eyes in mood ``name``, looking ``gaze``, under lids that are ``open``, ``half`` down or ``shut``. Open is
     the mood's own: heavy on a tired man, gone only in a meltdown."""
@@ -335,6 +337,7 @@ def _edge(m: Model, centre: rafa_skin.Point3, size: rafa_skin.Point3, share: flo
     m.ribbon("lash", path, (r * (0.45 + 0.55 * np.cos(a))).tolist())
 
 
+@first_caps
 def brows(m: Model, name: str) -> None:
     """His brows in mood ``name``: the left flat and the right arched in every mood, higher or lower with it."""
     with _about_neck(m):
@@ -460,6 +463,7 @@ def _crease(m: Model, x: float, y: float, side: float, rise: float, skin) -> Non
     m.ribbon("skinshade", np.stack((xs, ys, zs), axis=1), np.linspace(0.6, 0.2, 7).tolist(), sides=6)
 
 
+@first_caps
 def mouth(m: Model, name: str, shape: str = "rest") -> None:
     """His mouth in mood ``name``: ``rest``, the mood's own, or one of the talking shapes bent by the mood. It lies on
     the skin :func:`seat` pressed for it, so a mouth and its skull are always drawn together."""
@@ -525,6 +529,7 @@ def _hand(m: Model, x: float, y: float, z: float, hand: anatomy.Hand) -> None:
         ),
     ),
 )
+@first_caps
 def body(m: Model) -> None:
     """Everything of him below the head: he slouches, his hips sit a little off, the cardigan hangs open. A neck carries
     the head, and the shoulders have weight: a knit body, a turned-over collar, a placket, folds where wool bends."""
@@ -593,6 +598,7 @@ def _cardigan(m: Model) -> None:
     m.tube("tealdark", ((-37, -150, -19), (0, -148, -22), (37, -150, -19)), 1.4)
 
 
+@first_caps
 def reach(m: Model, wrist: rafa_skin.Point3) -> None:
     """His frame-right forearm, from the elbow out over the worktop to ``wrist``, its cuff at the end of it."""
     elbow = np.array((74.0, -246.0, -8.0))
@@ -604,6 +610,7 @@ def reach(m: Model, wrist: rafa_skin.Point3) -> None:
     m.ell("teallight", end + run, (11.5, 11.5, 3.0))
 
 
+@first_caps
 def hold(m: Model, x: float, y: float, z: float) -> None:
     """A hand closed round something upright at ``x, y, z``: palm behind, four fingers round the front, thumb over."""
     m.ell("flesh", (x + 7, y, z + 7), (8, 14, 7))
@@ -618,6 +625,7 @@ def hold(m: Model, x: float, y: float, z: float) -> None:
     m.ell("flesh", tip, (3.5, 3.5, 3.5))
 
 
+@first_caps
 def rest(m: Model, x: float, y: float, z: float) -> None:
     """A hand lying on the worktop at ``x, y, z`` with its fingers against what stands in front of it."""
     m.ell("flesh", (x, y - 6, z + 8), (13.5, 6.5, 12))
@@ -644,6 +652,7 @@ def finished(mesh: Mesh) -> Mesh:
 @register(
     "prop", "rafa-mug", summary="The denial mug: I'M GREAT. (I think)", contract=prop_contract('rafa-mug', finished)
 )
+@first_caps
 def mug(m: Model) -> None:
     """The denial mug: "I'M GREAT. (I think)". A rounded body, recessed coffee, a thin lip, one arched handle."""
     m.cylinder("glaze", (0, -23, 0), 22, 42)
@@ -672,6 +681,7 @@ def mug(m: Model) -> None:
     summary="His phone at 99+ unread: everyone needs something",
     contract=prop_contract('rafa-phone', finished),
 )
+@first_caps
 def phone(m: Model) -> None:
     """The 99+ phone: everyone needs something."""
     m.box("case", (0, -48, 0), (48, 96, 8), 6)
@@ -687,6 +697,7 @@ def phone(m: Model) -> None:
     summary="The bills folder: ADULT LIFE / PENDING",
     contract=prop_contract('rafa-bills', finished),
 )
+@first_caps
 def bills(m: Model) -> None:
     """The bills folder: "ADULT LIFE / PENDING". Being organized does not mean being paid."""
     m.box("rust", (0, -38, 0), (96, 73, 17), 4)
@@ -706,6 +717,7 @@ def bills(m: Model) -> None:
     summary="The personal lunch: RAFA / NOT COMMUNAL",
     contract=prop_contract('rafa-lunchbox', finished),
 )
+@first_caps
 def lunchbox(m: Model) -> None:
     """The personal lunch: "RAFA / NOT COMMUNAL". The office fridge has no laws."""
     m.box("navy", (0, -20, 0), (86, 35, 57), 9)
@@ -722,6 +734,7 @@ def lunchbox(m: Model) -> None:
     summary="The tote: JUST CAME FOR BREAD, and a receipt for $187.40",
     contract=prop_contract('rafa-tote', finished),
 )
+@first_caps
 def tote(m: Model) -> None:
     """The grocery tote: "JUST CAME FOR BREAD", $187.40. The bread, the greens and the receipt are part of it."""
     m.box("cream", (0, -44, 0), (90, 86, 40), 12)
@@ -781,6 +794,7 @@ def _window(m: Model, x: float, y: float, z: float, w: float, h: float) -> None:
     summary="His apartment kitchen in warm sage, terracotta and wood",
     contract=prop_contract('rafa-kitchen', finished),
 )
+@first_caps
 def kitchen(m: Model) -> None:
     """His apartment kitchen, warm sage, terracotta and wood. The recurring props are placed by the shot, not here."""
     m.box("oakdark", (0, 9, 75), (1120, 20, 900))
@@ -837,6 +851,7 @@ def kitchen(m: Model) -> None:
     summary="The office break room: cool cabinets, a shared fridge, a poster",
     contract=prop_contract('rafa-breakroom', finished),
 )
+@first_caps
 def breakroom(m: Model) -> None:
     """His office break room: cool cabinets, a tiled floor, a shared fridge and institutional optimism."""
     m.box("navy", (0, 10, 70), (1120, 20, 880))
@@ -902,6 +917,7 @@ def materials() -> dict[str, Material]:
     return {**MATERIALS, "skin": skin}
 
 
+@first_caps
 def counter(m: Model, top: str = "oak", front: str = "oakdark") -> None:
     """The worktop between him and the lens, as his kitchen or his break room has it: deep enough that it runs out of
     the bottom of the frame, and it hides where his legs go."""
@@ -911,6 +927,7 @@ def counter(m: Model, top: str = "oak", front: str = "oakdark") -> None:
         m.box(front, (-390 + i * 65, -248.1, -250), (0.8, 0.5, 386))
 
 
+@first_caps
 def near(m: Model, where: str) -> None:
     """What stands close to the lens on the worktop: the near edge of his room."""
     if where == "rafa-kitchen":
