@@ -7,6 +7,7 @@ import re
 import stat
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -784,3 +785,48 @@ def test_an_unknown_series_is_refused_with_scores_in_order(tool, world):
     with pytest.raises(SystemExit):
         tool.main(args(world, "--series", "sport", "--stage-only"))
     assert not (world / "generated/pilots").exists()
+
+
+# -- held keys: a new pilot's held changes show on their own frame (ADR 0216) ----------------------------------------
+def packaged(world: Path, slug: str, key: str) -> None:
+    """``slug``'s package holds a scene whose one drawing turns on at ``key`` seconds, held, at 24 frames a second."""
+    held = f'<key time="0" value="0"/><key time="{key}" value="1"/>'
+    scene = (
+        '<scene><project width="1080" height="1920" fps="24" duration="2"/><composition><group id="lamp">'
+        f'<animate property="opacity" defaultInterpolation="hold">{held}</animate></group></composition></scene>'
+    )
+    with zipfile.ZipFile(world / "in" / slug / "vpkg.zip", "w") as package:
+        package.writestr(f"project/{slug}.scene.xml", scene)
+
+
+def test_a_new_pilot_with_a_held_change_a_frame_late_is_refused(tool, world, monkeypatch, capsys):
+    packaged(world, "the-tell", "1.416667")  # round(34 / 24, 6): after frame 34
+    packaged(world, "second-pilot", repr(33.5 / 24))
+    monkeypatch.setattr(tool.outbox, "_run", Manifest(code=3))
+    assert tool.main(args(world, "--stage-only")) == 2
+    err = capsys.readouterr().err
+    assert "the-tell: held keys: 1 held changes show a frame late, on frames 34" in err and "second-pilot" not in err
+    assert not (world / "generated/pilots").exists()
+
+
+def test_a_pilot_already_on_drive_keeps_its_held_keys(tool, world, monkeypatch):
+    packaged(world, "the-tell", "1.416667")
+    packaged(world, "second-pilot", "1.416667")
+    text = json.dumps({"version": "1.0.0", "videos": {"the-tell": {}}})
+    monkeypatch.setattr(tool.outbox, "_run", Manifest(text))
+    with pytest.raises(tool.PilotError, match="second-pilot: held keys") as e:
+        tool.late(tool.bundles(world / "in", set()), "gdrive:srstudio/pilots/mind", "rclone")
+    assert "the-tell" not in str(e.value)
+
+
+def test_pilots_on_their_frames_never_read_drive(tool, world):
+    packaged(world, "the-tell", repr(33.5 / 24))
+    tool.late(tool.bundles(world / "in", set()), "gdrive:srstudio/pilots/mind", "not-rclone")
+
+
+def test_a_package_with_a_scene_the_gate_cannot_read_is_refused(tool, world, monkeypatch):
+    with zipfile.ZipFile(world / "in" / "the-tell" / "vpkg.zip", "w") as package:
+        package.writestr("project/the-tell.scene.xml", "<scene")
+    monkeypatch.setattr(tool.outbox, "_run", Manifest(code=3))
+    with pytest.raises(tool.PilotError, match="the-tell: held keys: not a scene document"):
+        tool.late(tool.bundles(world / "in", set()), "gdrive:srstudio/pilots/mind", "rclone")

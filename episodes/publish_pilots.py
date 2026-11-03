@@ -19,7 +19,8 @@ Anything in ``gdrive:srstudio/ready-to-publish`` can be posted to @okayville.tv,
 remote are the only ones it accepts, and a slug with a folder under another series' ``pilots/`` in this repository is
 refused. A new pilot of a comedy series needs ``comedy-author`` and ``comedy-reviewer`` in the frontmatter of its
 ``notes.md``, the lower at the floor or above (ADR 0064); a series in :data:`NOT_COMEDY` owes none. A new pilot of any
-series carries at most five hashtags in its ``ig.txt`` (ADR 0065). A refused run stages and uploads nothing and exits
+series carries at most five hashtags in its ``ig.txt`` (ADR 0065), and its package's scene no held change the engine
+shows a frame late (ADR 0216). A refused run stages and uploads nothing and exits
 2, as does a failed upload.
 """
 
@@ -30,9 +31,11 @@ import json
 import posixpath
 import re
 import sys
+import zipfile
 from pathlib import Path
 
-from srstudio import auto_enhance, comedy_floor, outbox, social
+from srstudio import auto_enhance, comedy_floor, held_gate, outbox, social
+from srstudio.frame_gates import FrameGateError
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import instagram_posts as posts  # noqa: E402
@@ -231,6 +234,32 @@ def overtagged(ready: list[outbox.Bundle], remote: str, rclone: str) -> None:
             raise PilotError(str(e)) from e
 
 
+def _late(package: Path, slug: str) -> str:
+    """Why the scene in ``slug``'s package shows a held change a frame late, or "": a package with no scene in it has
+    nothing to judge (:func:`srstudio.held_gate.late_defects`)."""
+    try:
+        with zipfile.ZipFile(package) as z:
+            document = z.read(f"project/{slug}.scene.xml")
+    except (zipfile.BadZipFile, KeyError):
+        return ""
+    try:
+        late = held_gate.late_changes(document)
+    except FrameGateError as e:
+        return f"held keys: {e}"
+    return held_gate.refusal(late) if late else ""
+
+
+def late(ready: list[outbox.Bundle], remote: str, rclone: str) -> None:
+    """Refuse a new pilot of any series whose scene shows a held change a frame late (ADR 0216); a pilot already on
+    Drive stays as it went out. Drive is read only for a pilot that has one, so a clean set needs no rclone."""
+    found = {p.name: why for p in ready if (why := _late(dict(zip(p.names, p.files, strict=True))[PACKAGE], p.name))}
+    if found:
+        on_drive = delivered(remote, rclone)
+        refused = [f"{slug}: {why}" for slug, why in found.items() if slug not in on_drive]
+        if refused:
+            raise PilotError("; ".join(refused))
+
+
 def left_behind(pilot: outbox.Bundle, root: Path) -> list[str]:
     """What is in the pilot's folder and not delivered, as ``slug/name``."""
     chosen = {f.name for f in pilot.files}
@@ -264,6 +293,7 @@ def main(argv: list[str] | None = None) -> int:
             for name in left_behind(pilot, source):
                 print(f"left behind: {name}")
         overtagged(ready, remote, args.rclone)
+        late(ready, remote, args.rclone)
         unfunny(ready, args.series, remote, args.rclone)
         unenhanced(ready, remote, args.rclone)
         stage.parent.mkdir(mode=0o700, parents=True, exist_ok=True)

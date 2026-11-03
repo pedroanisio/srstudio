@@ -49,6 +49,7 @@ from srstudio import (
     figure_gates,
     fonts,
     frame_gates,
+    held_gate,
     outbox,
     overlay_gate,
     registry,
@@ -190,9 +191,10 @@ def write_all(
     folders written. A video the caption gate refuses, a release that does not pin what it draws, or captions that
     print over each other, or a first delivery with no enhancement behind it (ADR 0056), under the comedy floor
     (ADR 0064), over the hashtag limit (ADR 0065), with bait on the send test (ADR 0080), refused by a frame gate
-    (ADR 0073), out of the show's look (ADR 0074), with a --strict finding not proven false (ADR 0078) or one the cast
-    bible refuses (ADR 0069), is a :class:`DeliveryError` before anything is written. A video in the manifest is past
-    all of these: what was published stays as it went out. A reel on the hold list (ADR 0140) is passed over, and
+    (ADR 0073), out of the show's look (ADR 0074), with a --strict finding not proven false (ADR 0078), with a held
+    change the engine shows a frame late (ADR 0216) or one the cast bible refuses (ADR 0069), is a
+    :class:`DeliveryError` before anything is written. A video in the manifest is past all of these: what was
+    published stays as it went out. A reel on the hold list (ADR 0140) is passed over, and
     naming one is a :class:`DeliveryError`."""
     stopped = {
         r.video_name: HELD[slug] for slug, r in RELEASES.items() if slug in HELD and r.video_name in (only or ())
@@ -228,6 +230,7 @@ def write_all(
             *frame_gates.signature_hidden(chosen, _beside(renders), first, engine),
             *figure_gates.figure_defects(chosen, _beside(renders), first, engine),
             *anatomy_gate.hand_defects(chosen, _beside(renders), first),
+            *held_gate.late_defects(chosen, _beside(renders), first),
             *anatomy_gate.body_defects(chosen, _beside(renders), first, engine),
             *show_gate.show_defects(
                 RELEASES,

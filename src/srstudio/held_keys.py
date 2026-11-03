@@ -25,7 +25,7 @@ from typing import Any
 from . import checks
 from .errors import SrstudioError
 
-__all__ = ["MAX_FPS", "SLACK", "HeldKeyError", "frame_of", "frame_time", "held_key", "project_fps"]
+__all__ = ["MAX_FPS", "SLACK", "HeldKeyError", "frame_count", "frame_of", "frame_time", "held_key", "project_fps"]
 
 MAX_FPS = 240  # frames a second: four times the fastest reel; a rate above it is a mistake, not a grid
 SLACK = 0.01  # of a frame: a time this close after a frame's sample time is that frame, written out with rounding
@@ -67,6 +67,33 @@ def frame_time(frame: int, fps: int | Fraction) -> float:
             remedy="Count frames from 0.",
         )
     return float(frame / _rate(fps))
+
+
+def _snap(rate: Fraction) -> float:
+    """The engine's ``Fps::snap``: a nanosecond, in frames, and never more than half a frame."""
+    return min(1e-9 * (rate.numerator / rate.denominator), 0.5)
+
+
+def _seconds(time: float, what: str) -> float:
+    if not checks.number(time) or time < 0:
+        raise HeldKeyError(
+            f"{what} is a finite second from 0, got {time!r}",
+            code="held_key.time",
+            path="time",
+            actual=time,
+            expected="a finite number >= 0",
+            remedy="Pass finite, non-negative seconds.",
+        )
+    return float(time)
+
+
+def frame_count(duration: float, fps: int | Fraction) -> int:
+    """The frames a reel of ``duration`` seconds renders, as the engine counts them (``Fps::frame_count``): up to the
+    frame that covers its end, or to the nearest frame when the end is within a nanosecond of one. At least one."""
+    rate, seconds = _rate(fps), _seconds(duration, "a running time")
+    f = seconds * rate.numerator / rate.denominator
+    count = round(f) if abs(f - round(f)) <= _snap(rate) else math.ceil(f)
+    return max(1, count)
 
 
 def frame_of(time: float, fps: int | Fraction) -> int:

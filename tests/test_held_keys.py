@@ -96,6 +96,26 @@ def test_frame_time_is_the_engines_own_division():
 
 
 @pytest.mark.parametrize(
+    ("duration", "fps", "count"),
+    [
+        (27.083333333333332, 24, 650),  # 649.9999999999999 frames: within a nanosecond of 650
+        (2.0, 30, 60),
+        (10.05, 30, 302),  # the last frame covers the half frame at the end
+        (1.0, Fraction(30000, 1001), 30),
+        (0.001, 30, 1),
+    ],
+)
+def test_frame_count_is_the_engines(duration, fps, count):
+    assert held_keys.frame_count(duration, fps) == count
+
+
+@pytest.mark.parametrize("duration", [-1.0, math.inf, math.nan])
+def test_a_running_time_off_the_clock_has_no_frames(duration):
+    with pytest.raises(held_keys.HeldKeyError, match="running time"):
+        held_keys.frame_count(duration, 30)
+
+
+@pytest.mark.parametrize(
     "time, fps",
     [(-0.1, 30), (math.nan, 30), (math.inf, 30), ("1", 30), (True, 30), (1.0, 0), (1.0, -30), (1.0, True),
      (1.0, math.nan), (1.0, 30.5), (1.0, 241)],

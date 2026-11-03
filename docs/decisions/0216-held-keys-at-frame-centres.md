@@ -80,7 +80,7 @@ should have shown):
 | `gloss-exit` (Gloss, 24 fps) | 556 | 5 |
 | `hold-the-door`, `good-you`, `did-you-pack` (Stick, 24 fps) | 472, 478, 650 | 3, 2, 2 |
 | `saga-free-tier` (Saga, 24 fps) | 666 | 1 |
-| `bin-day` (Stick, 24 fps) | 690 | 0 |
+| `bin-day` (Stick, 24 fps) | 690 | 0 (5 at a hundredth of a frame, below) |
 
 Built again as new reels, `did-you-pack` has no stalled frame and `penny-drop` none either (its only differences
 left are a 10 ms linear blink ramp that starts on a frame, which moves the instant 2 microseconds later by 0.15 px).
@@ -100,6 +100,37 @@ shot that starts between frames shows the change on the nearest frame, half a fr
 times, so a gate sampled the same rounded instants and saw each change on the frame the keys meant, not the one
 the render showed. It sends each time to its last digit, and `text_rules` reads at the engine's frame times
 `k / fps`.
+
+## The first-delivery gate
+
+The skill's line that every new reel sets `held_frames=True` is not a control: a reel built without it delivers.
+`srstudio.held_gate.late_changes` reads a scene alone, with no engine, and names every held change the engine shows
+a frame late. It places a sequence's shots end to end as the engine's `place_sequence` does, applies each group's and
+sequence's `timeOffset`/`timeScale` clock in the engine's float order, and reads each key on its time base. A change
+is meant for frame `k` when its written time is within a hundredth of a frame of its own timeline's grid and it lands
+within the same slack of `k / fps` in the reel; it is late when the engine's float time at frame `k`, on the change's
+own clock, is still below it. A change keyed between frames, as `held_frames=True` keys it, is meant for no frame and
+is never late; neither is a shot's change when the shot starts between the reel's frames. A normalized time base, a
+marker, a clock that stops or runs back and a layer's media clock over drawn nodes are refused, not passed.
+
+`instagram_posts.py deliver` refuses a release on its first delivery whose scene holds one, beside the other
+first-delivery gates (ADR 0078), and `publish_pilots.py` refuses a pilot not yet on Drive whose package scene holds
+one. A reel already delivered, or a pilot already on Drive, is not read: published reels are frozen.
+
+On the measured scenes the gate names the frames `scene-render eval` shows stalling, with two kinds of difference
+from the 2-microsecond probe of the table above, both checked with `eval`:
+
+- `bin-day` and `hold-the-door` swap poses at four-decimal times (`stick_door.shaking`), up to 0.0003 s after their
+  frame. The 2-microsecond probe passes them; probed a hundredth of a frame after each frame, `bin-day` stalls on
+  frames 4, 16, 28, 40 and 52 and `hold-the-door` on 4, 16, 28, 34, 40 and 151, the gate's frames plus 151, an
+  off-grid key (meant for no frame) the gate leaves out by design.
+- A late change on a node the frame does not show (`hold-the-door` frames 4 and 16) repeats nothing visible on that
+  frame; the gate refuses it anyway, since the scene's timing is what it checks.
+- Of `penny-drop`'s 84 probed frames, 326 and 398 are a linear blink ramp that starts on a frame, not a held change;
+  the gate names the other 82, and none on the reel rebuilt with `held_frames=True`.
+
+A `did-you-pack` rebuilt with `held_frames=False`, byte-identical to the published scene, is refused with "held keys:
+4 held changes show a frame late, on frames 34, 40"; rebuilt with `held_frames=True`, it passes.
 
 ## Consequences
 
