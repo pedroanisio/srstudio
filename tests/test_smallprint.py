@@ -490,3 +490,33 @@ def test_the_station_goes_round_while_the_page_is_up():
 def _contrast(a: str, b: str) -> float:
     hi, lo = sorted((_luminance(a), _luminance(b)), reverse=True)
     return (hi + 0.05) / (lo + 0.05)
+
+
+def caption_scene(held_frames: bool, starts: tuple[float, ...]) -> bytes:
+    """The caption bands of one line per start, a second each, on a reel that does or does not hold its frames."""
+    from types import SimpleNamespace
+
+    from srstudio import toon
+    from srstudio.layout import VERTICAL
+
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="30", duration=10.0)
+    cv = Canvas(scene, font_asset="fraunces", held_frames=held_frames)
+    spec = SimpleNamespace(safe_area=VERTICAL, width=1080, height=1920)
+    ep = SimpleNamespace(spec=spec, cv=cv, comp=cv.comp, native_captions=lambda cues, look, id: None)
+    lines = [toon.Line(f"{k}", "Not a chance.", at, at + 1.0) for k, at in enumerate(starts)]
+    sp.captions(ep, lines, lambda t, s: 0.52 * s * len(t))
+    return scene.to_bytes(layout="pretty")
+
+
+def test_a_caption_band_on_a_held_reel_shows_on_the_frame_its_line_starts():
+    from srstudio.held_gate import late_changes
+
+    starts = (2.0, 4.108, 6.367)  # 6.367 s is a hair after frame 191 (6.3667 s): written there, the engine shows 192
+    assert late_changes(caption_scene(True, starts)) == []
+
+
+def test_a_caption_band_on_a_reel_built_before_held_frames_keeps_its_times():
+    root = ET.fromstring(caption_scene(False, (6.367,)))
+    (band,) = [g for g in root.iter() if g.get("start") is not None]
+    assert (band.get("start"), band.get("end")) == ("6.367", "7.367")

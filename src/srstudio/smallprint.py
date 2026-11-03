@@ -46,6 +46,7 @@ from . import foley as synth
 from . import smallprint_kit as kit
 from .fonts import text_width
 from .head_motion import HeadPlan
+from .held_keys import held_key, project_fps
 from .layout import VERTICAL
 from .rafa_reel import Renders, cut
 from .sketch import Line, Sketch
@@ -931,8 +932,10 @@ PANELS: dict[str, Callable[..., None]] = {
 # -- the captions, the sounds, the episode --------------------------------------------------------------------------
 def captions(ep: Any, lines: Sequence[toon.Line], measure: Measure, words: Sequence[Any] = ()):
     """The engine's karaoke track on an ink band, in the safe area, under his chin in every framing. Returns the
-    bands' group and the track, both of which the cover leaves out."""
+    bands' group and the track, both of which the cover leaves out. On a reel that holds its frames (ADR 0216) a band
+    comes and goes half a frame before the frame its cue starts or ends on, as every other held change does there."""
     cues = host_kit.caption_cues(lines, words)
+    rate = project_fps(ep.cv.scene) if ep.cv.held_frames else None
     region = ep.spec.safe_area.region(ep.spec.width, ep.spec.height)
     top = region.y1 - CAPTION_LOOK.block
     tall = CAPTION_LOOK.size * CAPTION_LOOK.line_height
@@ -940,7 +943,8 @@ def captions(ep: Any, lines: Sequence[toon.Line], measure: Measure, words: Seque
     for cue in cues:
         rows = native.wrap(cue.text, CAPTION_LOOK.max_chars, CAPTION_LOOK.max_words)
         wide = max(measure(row, CAPTION_LOOK.size) for row in rows) + 2.0 * CAPTION_PAD
-        g = ep.cv.group(bands, ep.cv.uid("g"), start=cue.start, end=cue.end)
+        start, end = (cue.start, cue.end) if rate is None else (held_key(cue.start, rate), held_key(cue.end, rate))
+        g = ep.cv.group(bands, ep.cv.uid("g"), start=start, end=end)
         x = round((region.x0 + region.x1 - wide) / 2.0, 2)
         ep.cv.rect(g, x, top - 8.0, wide, len(rows) * tall + 2 * CAPTION_LOOK.stroke_width + 16.0, INK, radius=18.0)
     return bands, ep.native_captions(cues, look=CAPTION_LOOK, id="smallprint-captions")
