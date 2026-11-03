@@ -27,6 +27,7 @@ STAGING = Staging(
     loudness="-14",
     desk=toon_world.no_desk,
     camera=lens,
+    held_frames=True,  # queued, not posted: rebuilt so each held change shows on its own frame (ADR 0216)
 )
 ep = build(project_root(__file__), STAGING, set(sys.argv[2:]))
 if ep is not None:  # None: --init wrote the project files
