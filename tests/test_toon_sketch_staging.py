@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import TOON, camera, craft, look, parts, sketch, toon, toon_sketch, usage
+from srstudio import TOON, anatomy_ledger, camera, craft, figure_record, look, parts, sketch, toon, toon_sketch, usage
 from srstudio.layout import VERTICAL
 from srstudio.sketch import Beat, Line, Sketch, Speaker
 from srstudio.voice import Voice, VoiceSettings
@@ -75,6 +75,20 @@ def test_a_build_draws_the_pinned_version_or_the_default_and_records_it(pinned_f
     assert {"toon-bear": 2, "toon-fox": drew}.items() <= parts.read_record(tmp_path).items()
     expected = {1: "toon_cast", 2: "toon_inked"}[drew]
     assert sketch.drawer("fox", {"toon-fox": drew}).__module__ == f"srstudio.{expected}"
+
+
+def test_init_after_a_build_leaves_its_build_record_untouched(pinned_fonts, tmp_path):
+    """``srstudio build SLUG PROJECT --init`` refreshes the script on a built project; the parts, figures and anatomy
+    the build drew stay recorded byte for byte (the init draws nothing)."""
+    staging = silent(fox_sketch(), versions={"toon-fox": 2})
+    with usage.recorded(tmp_path):
+        built(tmp_path, staging, pinned_fonts)
+    names = (parts.RECORD, figure_record.RECORD, anatomy_ledger.RECORD)
+    before = {n: (tmp_path / n).read_bytes() for n in names if (tmp_path / n).is_file()}
+    assert parts.RECORD in before and before[parts.RECORD] != b""
+    with usage.recorded(tmp_path):
+        assert toon_sketch.build(tmp_path, staging, {"--init"}) is None
+    assert {n: (tmp_path / n).read_bytes() for n in names if (tmp_path / n).is_file()} == before
 
 
 def test_a_pin_changes_what_a_build_draws(pinned_fonts, tmp_path):

@@ -11,7 +11,18 @@ import xml.etree.ElementTree as ET
 
 import pytest
 
-from srstudio import Episode, EpisodeSpec, blob, drawing_events, figure_record, locations, parts, registry, specimens
+from srstudio import (
+    Episode,
+    EpisodeSpec,
+    anatomy_ledger,
+    blob,
+    drawing_events,
+    figure_record,
+    locations,
+    parts,
+    registry,
+    specimens,
+)
 from srstudio import usage as U
 from srstudio.releases import Release
 from srstudio.social import InstagramPost
@@ -378,6 +389,57 @@ def test_a_failed_build_leaves_no_record_of_an_older_one(tmp_path):
     with pytest.raises(RuntimeError), U.recorded(tmp_path):
         raise RuntimeError("the build stopped")
     assert parts.read_record(tmp_path) is None
+
+
+RECORDS = (parts.RECORD, figure_record.RECORD, anatomy_ledger.RECORD)
+
+
+def _records(project) -> dict[str, bytes | None]:
+    return {name: (project / name).read_bytes() if (project / name).is_file() else None for name in RECORDS}
+
+
+def test_a_run_that_only_writes_project_files_leaves_the_last_builds_records_as_they_were(tmp_path):
+    """``--init`` writes the script and the poses and draws nothing: what the last build drew stays recorded, for the
+    delivery gate to compare with the pins. Before, it was replaced by an empty record."""
+    parts.write_record(tmp_path, {"toon-fox": 2})
+    figure_record.write(tmp_path, [figure_record.Figure("fox", ("fox-1",))])
+    anatomy_ledger.write(tmp_path, [])
+    before = _records(tmp_path)
+    with U.recorded(tmp_path):
+        U.setup_only()
+    assert _records(tmp_path) == before
+    with pytest.raises(SystemExit), U.recorded(tmp_path):  # the way a script ends after --init
+        U.setup_only()
+        sys.exit(0)
+    assert _records(tmp_path) == before
+
+
+def test_a_setup_run_on_a_project_never_built_records_nothing(tmp_path):
+    with U.recorded(tmp_path):
+        U.setup_only()
+    assert _records(tmp_path) == dict.fromkeys(RECORDS)
+
+
+def test_a_setup_run_that_then_draws_is_a_build_and_records_what_it_drew(project, tmp_path):
+    parts.write_record(tmp_path, {"toon-fox": 2})
+    with U.recorded(tmp_path):
+        U.setup_only()
+        locations.reception(episode(project).cv, episode(project).comp)
+    drawn = parts.read_record(tmp_path)
+    assert drawn is not None and "reception" in drawn and "toon-fox" not in drawn
+
+
+def test_a_failed_setup_run_leaves_no_record_of_an_older_one(tmp_path):
+    parts.write_record(tmp_path, {"toon-fox": 2})
+    with pytest.raises(RuntimeError), U.recorded(tmp_path):
+        U.setup_only()
+        raise RuntimeError("the project files could not be written")
+    assert parts.read_record(tmp_path) is None
+
+
+def test_setup_only_outside_a_recorded_block_does_nothing(tmp_path):
+    U.setup_only()
+    assert _records(tmp_path) == dict.fromkeys(RECORDS)
 
 
 @pytest.mark.parametrize(("code", "recorded"), [(0, True), (None, True), (3, False)])

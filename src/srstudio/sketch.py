@@ -45,6 +45,7 @@ from . import (  # noqa: F401 - they register
     toon_inked,
     toon_lyra,
     toon_redrawn,
+    usage,
 )
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -499,8 +500,10 @@ def drawer_extras(
 
 def write_project(root: Path, sketch: Sketch, font: GoogleFont) -> None:
     """``script.json`` and ``assets/poses.json`` (the appearances) on the scripted timing, the font pinned under
-    ``assets/fonts``."""
+    ``assets/fonts``. It is setup, not a build (:func:`srstudio.usage.setup_only`): a recorded run that only writes
+    these keeps the record of what the project's last build drew."""
     check(sketch)
+    usage.setup_only()
     root = Path(root)
     (root / "assets").mkdir(parents=True, exist_ok=True)
     (root / "script.json").write_text(json.dumps(cues(sketch.beats, sketch.end, sketch.lines), indent=2) + "\n")
