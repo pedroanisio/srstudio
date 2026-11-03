@@ -32,7 +32,7 @@ RELEASE = Release(
         send_line="Tell your brother I can read that.",
     ),
     style="Collage",
-    video="big-font-v3",  # the keeper: v2 opened on a silent beat with no push, and had no zoom or sting
+    video="big-font-v4",  # the keeper: v3 showed held changes a frame late on frames 136 and 154 (ADR 0216)
     parts={
         "collage-arm": 1,
         "collage-big-type": 1,

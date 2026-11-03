@@ -307,6 +307,7 @@ STAGING = Staging(
     dress=dress,
     cast=casting,
     bleed=True,
+    held_frames=True,
     first_shot_push=PUSH,
     keep_signature=True,
     sounds=sounds,
