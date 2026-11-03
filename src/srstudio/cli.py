@@ -14,6 +14,7 @@ import os
 import runpy
 import shutil
 import sys
+from collections.abc import Mapping
 from contextlib import nullcontext
 from dataclasses import asdict
 from pathlib import Path
@@ -224,6 +225,11 @@ def main(argv=None):
     routine.add_argument("--phrase-bars", type=int, default=8)
     routine.add_argument("--transition-beats", type=float, default=2.0)
     routine.add_argument("--max-repeat", type=int, default=2, help="phrases one move may run in a row")
+    routine.add_argument(
+        "--library",
+        choices=dance.LIBRARIES,
+        help="a shipped library instead of the presets: its quieter half on low parts, its louder half on high ones",
+    )
     routine.add_argument("--seconds", type=float, help="read only the first seconds")
     routine.add_argument("--beats-per-bar", type=int, default=4)
     routine.add_argument(
@@ -648,8 +654,17 @@ def _beat(args: argparse.Namespace) -> int:
     return 0
 
 
+def _library_option(name: str | None) -> tuple[Mapping[str, dance.Move] | None, choreograph.Palette | None]:
+    """The choreographer's library and palette for ``--library``; the presets' defaults when None."""
+    if name is None:
+        return None, None
+    found = dance.library(name)
+    return found, choreograph.palette_of(found)
+
+
 def _choreograph(args: argparse.Namespace) -> int:
     try:
+        library, palette = _library_option(args.library)
         read = music.reading(args.audio, seconds=args.seconds, beats_per_bar=args.beats_per_bar, near=args.near)
         made = choreograph.choreograph_track(
             args.audio,
@@ -660,6 +675,8 @@ def _choreograph(args: argparse.Namespace) -> int:
             seconds=args.seconds,
             transition_beats=args.transition_beats,
             max_repeat=args.max_repeat,
+            library=library,
+            palette=palette,
         )
     except (music.MusicError, dance.DanceError) as exc:
         _error("choreograph", exc)

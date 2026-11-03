@@ -2,16 +2,16 @@
 
     python tools/dance_views.py OUT.mp4 [--moves a,b | --phrases a,b [--ensemble] [--formation line] [--canon 0.5]
         [--seed 0]] [--characters realistic,cartoon,stick] [--views front,left,top,three-quarter] [--bars-each 2]
-        [--bpm 129] [--fps 25] [--look volume|lines] [--floor] [--track song.wav] [--speed 0.25]
+        [--bpm 129] [--fps 25] [--look volume|lines] [--floor] [--track song.wav] [--speed 0.25] [--library moves]
 
-One row per character, one column per view. ``--moves`` dances each move for ``--bars-each`` bars in order (all
-presets by default) through ``dance_pose`` with limits clamped. ``--phrases`` dances counted phrases (ADR 0194) in
-order on a fixed floor, through ``dance_floor`` so the feet hold and the body stays over them, and the floor's grid
-stays put while the body travels and turns over it; ``--ensemble`` puts every character in one row, in a
-``--formation`` across the floor, each ``--canon`` beats after the one before, with the small seeded variation of
-``dance_floor.ensemble``. A character is a preset name or a path to a skeleton profile record, and ``@seated`` after it
-dances from :func:`dance_floor.seated` (``stick@seated``), ``@stance`` from :func:`dance_floor.stance`. The track is
-``music.render`` at the same tempo.
+One row per character, one column per view. ``--moves`` dances each move for ``--bars-each`` bars in order (all the
+``--library``'s moves by default, the presets unless it names another) through ``dance_pose`` with limits clamped.
+``--phrases`` dances counted phrases (ADR 0194) in order on a fixed floor, through ``dance_floor`` so the feet hold and
+the body stays over them, and the floor's grid stays put while the body travels and turns over it; ``--ensemble`` puts
+every character in one row, in a ``--formation`` across the floor, each ``--canon`` beats after the one before, with the
+small seeded variation of ``dance_floor.ensemble``. A character is a preset name or a path to a skeleton profile record,
+and ``@seated`` after it dances from :func:`dance_floor.seated` (``stick@seated``), ``@stance`` from
+:func:`dance_floor.stance`. The track is ``music.render`` at the same tempo.
 
 ``--floor`` dances ``--moves`` through ``dance_floor`` as phrases are, so footwork and held feet show: a move drawn
 without it is the pose alone, with no floor pass, no footwork and no lifted foot. ``--track`` plays a song instead of
@@ -177,18 +177,26 @@ def flat(view: str, point: sk.Vec3) -> tuple[float, float]:
     return across, point.y * math.cos(ABOVE) + toward * math.sin(ABOVE)
 
 
-def plan(moves: Sequence[str] | None, bars_each: int) -> Plan:
-    """Each move with its start and end bar, in order; every preset when ``moves`` is None."""
-    names = list(dance.moves()) if moves is None else list(moves)
-    known = dance.moves()
+def plan(moves: Sequence[str] | None, bars_each: int, library: str = "moves") -> Plan:
+    """Each move with its start and end bar, in order; every move of ``library`` when ``moves`` is None."""
+    known = moves_of(library)
+    names = list(known) if moves is None else list(moves)
     for name in names:
         if name not in known:
-            raise ViewsError(f"unknown move {name!r}; the presets are {', '.join(known)}")
+            raise ViewsError(f"unknown move {name!r}; the {library} library holds {', '.join(known)}")
     if bars_each < 1:
         raise ViewsError(f"bars per move must be at least 1, not {bars_each}")
     if not names or len(names) * bars_each > MAX_BARS:
         raise ViewsError(f"{len(names)} moves of {bars_each} bars: between 1 and {MAX_BARS} bars in all")
     return tuple((name, i * bars_each, (i + 1) * bars_each) for i, name in enumerate(names))
+
+
+def moves_of(library: str) -> Mapping[str, dance.Move]:
+    """A shipped library's moves, or a refusal naming the libraries there are."""
+    try:
+        return dance.library(library)
+    except dance.DanceDataError as error:
+        raise ViewsError(str(error)) from None
 
 
 def at_bar(moves: Plan, bar: float) -> tuple[str, int]:
@@ -255,10 +263,13 @@ def stage(
     return Stage(tuple(parts), rows)
 
 
-def floor_stage(sheet: Sheet, moves: Sequence[str] | None, groove: music.Groove, bars_each: int) -> Stage:
-    """The moves in order, ``bars_each`` bars each, performed through the floor pass by each row's character."""
-    parts = plan(moves, bars_each)
-    known = dance.moves()
+def floor_stage(
+    sheet: Sheet, moves: Sequence[str] | None, groove: music.Groove, bars_each: int, library: str = "moves"
+) -> Stage:
+    """The moves of ``library`` in order, ``bars_each`` bars each, performed through the floor pass by each row's
+    character."""
+    parts = plan(moves, bars_each, library)
+    known = moves_of(library)
     try:
         routine = dance.Routine(
             parts[-1][2],
@@ -582,10 +593,17 @@ def pose_image(
 
 
 def _moves_cells(
-    image: Image.Image, sheet: Sheet, moves: Plan, groove: music.Groove, t: float, font, look: str = "volume"
+    image: Image.Image,
+    sheet: Sheet,
+    moves: Plan,
+    groove: music.Groove,
+    t: float,
+    font,
+    look: str = "volume",
+    library: str = "moves",
 ) -> str:
     name, start = at_bar(moves, t / groove.at(1))
-    frame = dance.sample(dance.moves()[name], groove, t - groove.at(start))
+    frame = dance.sample(moves_of(library)[name], groove, t - groove.at(start))
     for row, cast in enumerate(sheet.cast):
         posed = dance_pose(cast.profile, frame, base=cast.base(), clamp=True).pose
         for col, view in enumerate(sheet.views):
@@ -635,9 +653,9 @@ def _stage_cells(
 
 
 def render_frame(
-    sheet: Sheet, show: Plan | Stage, groove: music.Groove, t: float, *, look: str = "volume"
+    sheet: Sheet, show: Plan | Stage, groove: music.Groove, t: float, *, look: str = "volume", library: str = "moves"
 ) -> Image.Image:
-    """The sheet at song time ``t``: moves from a plan, or phrases from a stage, in ``look``."""
+    """The sheet at song time ``t``: moves of ``library`` from a plan, or phrases from a stage, in ``look``."""
     _look(look)
     image = Image.new("RGB", sheet.size, BG)
     draw = ImageDraw.Draw(image)
@@ -645,7 +663,7 @@ def render_frame(
     if isinstance(show, Stage):
         title, bars = _stage_cells(image, sheet, show, groove, t, small, look), show.bars
     else:
-        title, bars = _moves_cells(image, sheet, show, groove, t, small, look), show[-1][2]
+        title, bars = _moves_cells(image, sheet, show, groove, t, small, look, library), show[-1][2]
     beat = t / groove.beat
     level = int(60 + 195 * max(0.0, 1 - (beat - math.floor(beat)) * 4))
     width, height = sheet.size
@@ -710,11 +728,15 @@ def write(
     speed: float = 1.0,
     ffmpeg: str = "ffmpeg",
     look: str = "volume",
+    library: str = "moves",
 ) -> Path:
-    """Render the views to ``out`` (H.264 with AAC, mode 600) and return it."""
+    """Render the views to ``out`` (H.264 with AAC, mode 600) and return it; ``library`` is the shipped library the
+    moves come from."""
     _look(look)
     if moves is not None and phrases is not None:
         raise ViewsError("draw moves or phrases, not both")
+    if phrases is not None and library != "moves":
+        raise ViewsError("phrases are the shipped phrases: --library is for --moves")
     if floor and phrases is not None:
         raise ViewsError("phrases are always on the floor: --floor is for --moves")
     if not SPEED_RANGE[0] <= speed <= SPEED_RANGE[1]:
@@ -733,10 +755,10 @@ def write(
         show = stage(sheet, phrases, groove, formation=formation, canon_beats=canon_beats, seed=seed)
         bars = show.bars + (1 if ensemble and canon_beats else 0)
     elif floor:
-        show = floor_stage(sheet, moves, groove, bars_each)
+        show = floor_stage(sheet, moves, groove, bars_each, library)
         bars = show.bars
     else:
-        show = plan(moves, bars_each)
+        show = plan(moves, bars_each, library)
         bars = show[-1][2]
     count = round(groove.at(bars) / speed * fps)
     width, height = sheet.size
@@ -782,7 +804,9 @@ def write(
             assert encoder.stdin is not None
             try:
                 for n in range(count):
-                    encoder.stdin.write(render_frame(sheet, show, groove, n * speed / fps, look=look).tobytes())
+                    encoder.stdin.write(
+                        render_frame(sheet, show, groove, n * speed / fps, look=look, library=library).tobytes()
+                    )
                 encoder.stdin.close()
             except BrokenPipeError:  # the encoder stopped reading; its exit status says why
                 pass
@@ -795,7 +819,7 @@ def write(
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("out", type=Path)
-    parser.add_argument("--moves", help="comma-separated preset moves; all presets when neither list is given")
+    parser.add_argument("--moves", help="comma-separated move names; the whole library when neither list is given")
     parser.add_argument("--phrases", help="comma-separated phrases, danced in order on a fixed floor")
     parser.add_argument(
         "--characters", default="realistic,cartoon,stick", help="presets or profile records; @seated or @stance"
@@ -812,6 +836,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--floor", action="store_true", help="dance --moves through the floor pass: footwork shows")
     parser.add_argument("--track", type=Path, help="a song to dance to; the json beside it may name phase_s")
     parser.add_argument("--speed", type=float, default=1.0, help="picture and sound together, 0.125..1")
+    parser.add_argument("--library", default="moves", help="the shipped library the moves come from")
     args = parser.parse_args(argv)
     try:
         written = write(
@@ -831,6 +856,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             floor=args.floor,
             track=args.track,
             speed=args.speed,
+            library=args.library,
         )
     except ViewsError as error:
         print(f"dance_views: {error}", file=sys.stderr)

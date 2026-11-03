@@ -43,6 +43,7 @@ __all__ = [
     "Palette",
     "choreograph",
     "choreograph_track",
+    "palette_of",
 ]
 
 EXPRESSIONS = ("eyes-closed", "smirk", "grin", "open-grin")
@@ -146,6 +147,31 @@ def _library(library: object) -> Mapping[str, Move | Phrase]:
 def _fits(danced: Move | Phrase, beats: int) -> bool:
     """A move fits any span; a phrase one it fills a whole number of times."""
     return isinstance(danced, Move) or beats % danced.beats == 0
+
+
+def energy(move: Move) -> float:
+    """How much a move moves: the sum of its patterns' amplitudes in size, radians and head radii alike."""
+    return sum(abs(p.amplitude) for p in move.patterns)
+
+
+def palette_of(
+    library: Mapping[str, Move], *, low_faces: tuple[str, ...] = LOW_FACES, high_faces: tuple[str, ...] = HIGH_FACES
+) -> Palette:
+    """A palette over a whole library: its moves ranked by :func:`energy`, the quieter half for ``low`` parts and
+    the louder half for ``high`` ones (the median move dances on both when the count is odd). A library of one
+    move draws it everywhere. A phrase has no single energy to rank, so a library holding one is refused."""
+    found = _library(library)
+    if not found:
+        raise ChoreographyError("a palette needs at least one move", path="library")
+    phrases = sorted(n for n, m in found.items() if not isinstance(m, Move))
+    if phrases:
+        raise ChoreographyError(f"a palette ranks moves; {phrases} are phrases", path="library", actual=phrases)
+    moves = {n: m for n, m in found.items() if isinstance(m, Move)}
+    ranked = sorted(moves, key=lambda n: (energy(moves[n]), n))
+    half = len(ranked) // 2
+    low = tuple(ranked[: max(1, len(ranked) - half)])
+    high = tuple(ranked[len(ranked) - half :]) or low
+    return Palette(low, high, low_faces, high_faces)
 
 
 def _pools(
