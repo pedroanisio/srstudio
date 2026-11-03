@@ -105,7 +105,7 @@ canon only when it is published.
 **The rig rule.** arc4d3, Slack 1793513568.110249, on Dev's red tie and the neck: "a recurring figure's base rig stays
 as published, and only clothes and props change per reel", and "a costume can change with the story". `srstudio.bible_rig`
 holds it as code. For a Stick figure the base rig is the `stick.Look` fields `hair`, `glasses` and `neck`: the silhouette
-of the head, the glasses, and whether the torso reaches the head. `tie`, `apron`, `cap` and `sunhat` are clothes and
+of the head, the glasses, and whether the torso reaches the head. `tie`, `apron`, `cap`, `sunhat` and `brows` are clothes and
 props, and a test holds the two lists against the dataclass so a new field has to be placed. Glasses are base rig
 because Noor's sheet says "The bun and the glasses: they are what tell her from Dev", and every take that names Dev, Noor
 or Gary keeps theirs.

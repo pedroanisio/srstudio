@@ -4,8 +4,9 @@ recurring figure's base rig stays as published, and only clothes and props chang
 
 For a Stick figure the base rig is what :class:`~srstudio.stick.Look` calls ``hair``, ``glasses`` and ``neck``: the
 silhouette of the head, the glasses that tell Noor from Dev, and whether the torso reaches the head. ``tie``, ``apron``,
-``cap`` and ``sunhat`` are clothes and props: "a costume can change with the story". A new field of ``Look`` has to be
-placed in one of the two lists, or the test that holds them against the dataclass fails.
+``cap`` and ``sunhat`` are clothes and props: "a costume can change with the story". ``brows`` goes with them: it is off
+only so a cap's band can sit where they go, and the head keeps its silhouette. A new field of ``Look`` has to be placed
+in one of the two lists, or the test that holds them against the dataclass fails.
 
 What the check can see. A reel is a script, and a figure carries no name. So :func:`drawn_looks` runs the reel's builder
 once in a copy of its project and records every look it draws, with the name the drawing gives away: the actor of the
@@ -54,7 +55,7 @@ __all__ = [
 
 REPO = Path(__file__).resolve().parent.parent.parent
 BASE_RIG = ("hair", "glasses", "neck")
-CLOTHES_AND_PROPS = ("tie", "apron", "cap", "sunhat")
+CLOTHES_AND_PROPS = ("tie", "apron", "cap", "sunhat", "brows")
 RULING = "a recurring figure's base rig stays as published, and only clothes and props change per reel."
 RULE = "base-rig-stays (arc4d3, Slack 1793513568.110249)"
 TIMEOUT = 300  # seconds: a builder runs for a few seconds; the bound is for one that does not return
