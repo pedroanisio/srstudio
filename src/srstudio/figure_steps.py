@@ -16,6 +16,11 @@ Two rules, each taken separately for the hip, the box's edges and the crown, wit
   while a snap inside a slide is still a sudden change of speed. A travel step whose previous step is not on screen
   has no change to judge and is counted as unjudged.
 
+A box edge the frame cuts (named in :attr:`FigureFrame.clipped`) is the frame's edge, not the figure's: a figure
+sliding in from past the frame holds its cut edge still and then lets it go, which reads as a snap in that edge's step
+although nothing drawn snaps. A change in step is therefore taken only over the box edges no frame of it cuts, both
+for the travel rule and for the dance's own change in step it is held to.
+
 A state change is always judged by the step rule, even between two travel states. Every frame past a limit is a
 :class:`StepFinding`, naming its rule and whether it crossed a state change.
 
@@ -85,7 +90,8 @@ def _name(value: object, name: str) -> str:
 @dataclass(frozen=True)
 class FigureFrame:
     """One figure on one frame, in frame pixels: ``box`` is (left, top, right, bottom) as drawn and clipped to the
-    frame, ``crown_y`` the top of the head, ``state`` what the figure is doing and ``shot`` the camera shot."""
+    frame, ``clipped`` which of those four edges the frame cut, ``crown_y`` the top of the head, ``state`` what the
+    figure is doing and ``shot`` the camera shot."""
 
     figure: str
     frame: int
@@ -94,6 +100,7 @@ class FigureFrame:
     hip_x: float
     box: tuple[float, float, float, float]
     crown_y: float
+    clipped: tuple[bool, bool, bool, bool] = (False, False, False, False)
 
     def __post_init__(self) -> None:
         _name(self.figure, "figure")
@@ -107,6 +114,9 @@ class FigureFrame:
         left, top, right, bottom = (_number(v, "box") for v in self.box)
         if right < left or bottom < top:
             raise FigureStepError(f"box must not be inverted, got {self.box!r}")
+        cut = self.clipped
+        if not isinstance(cut, (tuple, list)) or len(cut) != 4 or not all(isinstance(v, bool) for v in cut):
+            raise FigureStepError(f"clipped must be four booleans, left, top, right, bottom, got {cut!r}")
 
 
 @dataclass(frozen=True)
@@ -159,16 +169,19 @@ class StepReport:
 def parse(rows: Iterable[object]) -> tuple[FigureFrame, ...]:
     """Records from plain mappings, as a build writes them: a missing or an unknown field raises."""
     names = {f.name for f in fields(FigureFrame)}
+    optional = {"clipped"}
     out = []
     for row in rows:
         if not isinstance(row, Mapping):
             raise FigureStepError(f"a record must be a mapping, got {row!r}")
-        extra, missing = set(row) - names, names - set(row)
+        extra, missing = set(row) - names, names - optional - set(row)
         if extra or missing:
             raise FigureStepError(f"record fields: missing {sorted(missing)}, unknown {sorted(map(str, extra))}")
         fixed: dict[str, Any] = dict(row)
         if isinstance(fixed["box"], (list, tuple)):
             fixed["box"] = tuple(fixed["box"])
+        if isinstance(fixed.get("clipped"), list):
+            fixed["clipped"] = tuple(fixed["clipped"])
         out.append(FigureFrame(**fixed))
     return tuple(out)
 
@@ -185,8 +198,14 @@ def _size(d: dict[str, tuple[float, ...]]) -> dict[str, float]:
     return {m: max(abs(v) for v in d[m]) for m in MEASURES}
 
 
-def _change(d0: dict[str, tuple[float, ...]], d1: dict[str, tuple[float, ...]]) -> dict[str, float]:
-    return {m: max(abs(y - x) for x, y in zip(d0[m], d1[m], strict=True)) for m in MEASURES}
+def _change(
+    d0: dict[str, tuple[float, ...]], d1: dict[str, tuple[float, ...]], *frames: FigureFrame
+) -> dict[str, float]:
+    """The change in step from ``d0`` to ``d1``, the box over the edges none of ``frames`` cuts (0 with all cut)."""
+    out = {m: max(abs(y - x) for x, y in zip(d0[m], d1[m], strict=True)) for m in ("hip", "crown")}
+    drawn = [e for e in range(4) if not any(f.clipped[e] for f in frames)]
+    out["box"] = max((abs(d1["box"][e] - d0["box"][e]) for e in drawn), default=0.0)
+    return {m: out[m] for m in MEASURES}
 
 
 def _figure(figure: str, frames: list[FigureFrame]) -> FigureSteps:
@@ -219,7 +238,7 @@ def _figure(figure: str, frames: list[FigureFrame]) -> FigureSteps:
     normal: dict[str, float | None] = {m: max(s[m] for s in dancing) for m in MEASURES}
     limit = {m: NORMAL_STEP_LIMIT * float(normal[m] or 0.0) for m in MEASURES}
     changes = [
-        _change(p[2], q[2])
+        _change(p[2], q[2], p[0], p[1], q[1])
         for p, q in pairwise(pairs)
         if p[2] is not None and q[2] is not None and p[0].state == p[1].state == q[1].state == DANCE
     ]
@@ -231,15 +250,17 @@ def _figure(figure: str, frames: list[FigureFrame]) -> FigureSteps:
     }
     findings, unjudged = [], 0
     previous: dict[str, tuple[float, ...]] | None = None
+    before: FigureFrame | None = None  # the frame the previous step starts on
     for a, b, delta in pairs:
         if delta is None:
-            previous = None
+            previous = before = None
             continue
         if a.state == b.state and a.state in TRAVEL:
             if previous is None or normal_change[MEASURES[0]] is None:
                 unjudged += 1
             else:
-                change = _change(previous, delta)
+                assert before is not None
+                change = _change(previous, delta, before, a, b)
                 for m in MEASURES:
                     bound = float(limit_change[m] or 0.0)
                     if change[m] > bound + TIE:
@@ -249,7 +270,7 @@ def _figure(figure: str, frames: list[FigureFrame]) -> FigureSteps:
             for m in MEASURES:
                 if size[m] > limit[m] + TIE:
                     findings.append(StepFinding(figure, b.frame, m, size[m], limit[m], (a.state, b.state)))
-        previous = delta
+        previous, before = delta, a
     return FigureSteps(
         figure,
         len(frames),

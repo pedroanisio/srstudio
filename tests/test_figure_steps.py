@@ -254,3 +254,77 @@ def test_a_walk_to_stare_drawing_pop_at_an_aligned_hip_is_a_box_finding_and_its_
     walk += [drawn(5 + k, "walk", w) for k, w in enumerate(blended(110.0, 50.0, 12))]
     eased = walk + [drawn(n, "stare", 50.0) for n in range(17, 22)] + dance_(22)
     assert only(check(eased)).findings == ()
+
+
+# A box edge the frame cuts is the frame's edge, not the figure's: it has no drawn change in step.
+
+
+def entering(start: int, xs: list[float], state: str = "walk", *, flag: bool = True, edge: float = 1080.0):
+    """A figure 500 px wide sliding in from past the right edge: its box's right side is cut at ``edge`` for the first
+    four frames, then it clears the edge at speed."""
+    rows = []
+    for n, x in zip(range(start, start + len(xs)), xs, strict=True):
+        right = x + 250
+        cut = right > edge
+        rows.append(
+            FigureFrame(
+                figure="noor",
+                frame=n,
+                state=state,
+                shot=0,
+                hip_x=x,
+                box=(x - 250, 500.0, min(right, edge), 1400.0),
+                crown_y=500.0,
+                clipped=(False, False, cut and flag, False),
+            )
+        )
+    return rows
+
+
+def test_a_slide_whose_box_edge_leaves_the_frame_edge_passes_with_the_cut_named() -> None:
+    xs = ramp(12, 1250.0, 650.0, lambda u: 1 - (1 - u) ** 3)
+    steps = only(check(entering(0, xs) + wobble(12, 32, hip=650.0)))
+    assert [f for f in steps.findings if f.measure == "box" and f.rule == "travel"] == []
+
+
+def test_the_same_slide_with_the_cut_unnamed_reads_the_frame_edge_as_a_snap() -> None:
+    xs = ramp(12, 1250.0, 650.0, lambda u: 1 - (1 - u) ** 3)
+    steps = only(check(entering(0, xs, flag=False) + wobble(12, 32, hip=650.0)))
+    assert any(f.measure == "box" and f.rule == "travel" for f in steps.findings)
+
+
+def test_a_snap_in_an_edge_the_frame_does_not_cut_is_still_a_finding() -> None:
+    xs = ramp(12, 1250.0, 650.0, lambda u: 1 - (1 - u) ** 3)
+    rows = entering(0, xs)
+    k = 9
+    r = rows[k]
+    rows[k] = FigureFrame(
+        r.figure, r.frame, r.state, r.shot, r.hip_x, (r.box[0] - 80.0, *r.box[1:]), r.crown_y, r.clipped
+    )
+    steps = only(check(rows + wobble(12, 32, hip=650.0)))
+    assert ("box", k, "travel") in {(f.measure, f.frame, f.rule) for f in steps.findings}
+
+
+def test_a_cut_edge_inside_the_dance_does_not_loosen_its_change_in_step() -> None:
+    """A dancer at the frame's edge whose cut edge jumps as the cut comes and goes: the jump is the frame's."""
+    rows = []
+    for n in range(20):
+        x = 500.0 + (10.0 if n % 2 else 0.0)
+        cut = n % 4 == 0
+        right = 1080.0 if cut else x + 50
+        rows.append(
+            FigureFrame("noor", n, "dance", 0, x, (x - 50, 500.0, right, 1400.0), 500.0, (False, False, cut, False))
+        )
+    assert only(check(rows)).normal_change["box"] == pytest.approx(20.0)
+
+
+@pytest.mark.parametrize("clipped", [(True, False, False), (1, 0, 0, 0), "none", (False, False, None, False)])
+def test_a_malformed_cut_raises(clipped: object) -> None:
+    with pytest.raises(FigureStepError, match="clipped"):
+        FigureFrame("noor", 0, "dance", 0, 1.0, (0.0, 0.0, 2.0, 2.0), 0.0, clipped)  # type: ignore[arg-type]
+
+
+def test_parse_reads_the_cut_and_defaults_it_to_none_cut() -> None:
+    row = dict(figure="noor", frame=1, state="dance", shot=0, hip_x=1.0, box=[0.0, 0.0, 2.0, 2.0], crown_y=0.0)
+    assert parse([row])[0].clipped == (False, False, False, False)
+    assert parse([{**row, "clipped": [False, True, False, False]}])[0].clipped == (False, True, False, False)
