@@ -271,6 +271,15 @@ as the AIST++ and Bailando papers score dance generation: `points` is the body's
 (`body_points(profile, pose)` for each), `score` averages over the stops and `music_score` over the beats. It reads
 stops, not hits: a move that stops on the beat and between beats reads the same half a beat late.
 
+`srstudio.figure_steps.check(frames)` holds every figure of a run to its own dance: `frames` is one `FigureFrame` per
+figure per frame on screen (hip x, box, crown, state, shot), and a step between two frames past `NORMAL_STEP_LIMIT`
+(1.5) times the figure's largest step inside its dance span is a finding, per measure. It catches a figure that changes
+mode, from a stare to a dance, and lands somewhere else or at another size on the next frame, which no still shows.
+Inside a travel state (`TRAVEL`: walk, jog, exit) a figure covers ground faster than it dances, so there the change in
+step is judged instead, against 1.5 times the largest change in step inside the dance: a smooth slide passes, a
+one-frame jump in it fails. A change between two states, travel or not, is always judged by the step. A camera cut and a
+frame off screen are not steps; a figure with no dance span reports `no-dance-span` and is not clean.
+
 ## Put a 2D track on the shared skeleton
 
 A cleaned 2D track (`dancepose.motion.clean`, fifteen joints, no depth) reaches a drawn figure through the shared
