@@ -39,6 +39,7 @@ __all__ = [
     "ARMS",
     "EYES",
     "held",
+    "worn",
     "speaking",
     "MOUTHS",
     "POSES",
@@ -399,6 +400,36 @@ def _named(pose: Pose, name: str) -> Pose:
     return Pose(name, pose.head, pose.limbs, pose.front, pose.face)
 
 
+def _showing() -> Pose:
+    """Seated, both hands up in front of the chest with something small between them, held out to be looked at."""
+    sit = _sitting((-170, -112), (-150, -108))
+    arms = {
+        "arm_l": Stroke((-62, -205), (-92, -180), (-140, -200), (-160, -262), *ARM),
+        "arm_r": Stroke((-42, -198), (-72, -172), (-112, -192), (-132, -252), *ARM),
+    }
+    return Pose("sit-show", sit.head, {**sit.limbs, **arms}, sit.front, sit.face)
+
+
+def _glancing() -> Pose:
+    """Seated with the head turned back over the far shoulder, away from what the sit pose is facing."""
+    sit = _sitting((-170, -112), (-150, -108), head=(-8, -326), face=(30, 2))
+    return _named(sit, "sit-back")
+
+
+def _hugging() -> Pose:
+    """Standing, leaning in to the right with both arms across someone there; flip for the other one."""
+    return _pose(
+        "hug",
+        (30, -428),
+        front=ARMS,
+        face=(10, 2),
+        torso=seg((6, -326), (0, -215), *TORSO),
+        **_standing_legs(),
+        arm_l=Stroke((-58, -306), (-30, -270), (30, -270), (84, -292), *ARM),
+        arm_r=Stroke((58, -308), (100, -296), (150, -300), (190, -332), *ARM),
+    )
+
+
 def _raised(shoulder: Point, hand: Point, out: float) -> Stroke:
     """An arm raised from the shoulder, its elbow bowed ``out`` (negative bows to the left)."""
     return Stroke(shoulder, (shoulder[0] + out, shoulder[1] - 40), (hand[0] + out * 0.6, hand[1] + 50), hand, *ARM)
@@ -441,6 +472,9 @@ POSES: dict[str, Pose] = {
         _on_the_floor(),
         _phone_up("phone-a", (-112, -176), (-82, -168)),
         _phone_up("phone-b", (-106, -172), (-88, -176), head=(-36, -326)),  # a thumb working on it
+        _showing(),
+        _glancing(),
+        _hugging(),
         _pose(
             "clasp",
             (0, -432),
@@ -1122,6 +1156,19 @@ def held(cv: Canvas, parent, cues: Sequence[Cue], *, end: float, scale: float = 
     tips = [(d.pose.limbs["arm_l"].p3, d.pose.limbs["arm_r"].p3) for d in frames]
     cv.keys(g, "x", [(d.time, round(scale * (a[0] + b[0]) / 2, 3)) for d, (a, b) in zip(frames, tips, strict=True)])
     cv.keys(g, "y", [(d.time, round(scale * (a[1] + b[1]) / 2, 3)) for d, (a, b) in zip(frames, tips, strict=True)])
+    return g
+
+
+def worn(cv: Canvas, parent, cues: Sequence[Cue], *, end: float, scale: float = 1, fps: float = 15, id: str):
+    """A group on the head through ``cues``, drawing by drawing, for what a character wears: a scarf, a blanket.
+
+    Like :func:`held`, it uses the same cues, ``end``, ``scale`` and ``fps`` as the character it rides with and is
+    placed in the same parent. What it holds is drawn with its origin on the head's centre."""
+    checks.positive(scale, BlobError, f"what a blob wears needs a positive scale, got {scale!r}")
+    frames = drawings(cues, end=end, fps=fps)
+    g = cv.group(parent, id)
+    cv.keys(g, "x", [(d.time, round(scale * d.pose.head[0], 3)) for d in frames])
+    cv.keys(g, "y", [(d.time, round(scale * d.pose.head[1], 3)) for d in frames])
     return g
 
 

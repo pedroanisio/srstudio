@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from functools import partial
 from typing import Any
 
@@ -41,6 +42,7 @@ __all__ = [
     "MASKED",
     "VISEMES",
     "HEIGHT",
+    "Arm",
     "SagaError",
     "talk",
     "check_talk",
@@ -59,6 +61,8 @@ SAGA_MOUTH: PhonemeStyle = lipsync.SPEECH_MOUTH
 SKIN = {"deep": "#6b3f2a", "brown": "#b47a52", "fair": "#e8b896"}  # named looks, not per-episode overrides
 VISEMES = lipsync.VISEMES
 HEIGHT = 700  # head top above the feet at scale 1, frame pixels
+ARM_LENGTH = 170  # shoulder to wrist, px at scale 1
+ARM_STRETCH = (0.35, 1.5)  # what an arm may shorten or reach by before it stops reading as an arm
 INK_W = 6.0
 SHADE = 0.16  # opacity of the ink laid over a part's shadow side; the light comes from the upper left
 RIM = "#f2b84b"  # the gold rim light on a part's lit edge
@@ -205,8 +209,47 @@ def _legs(cv: Canvas, g, trousers: str, boots: str) -> None:
         cv.path(g, f"M{x - 2} -38 L{x + 30} -38", stroke="#ffffff", sw=4, opacity=0.25)
 
 
-def _arms(cv: Canvas, g, sleeve: str, hand: str, *, reach: float = 0) -> None:
-    for side in (-1, 1):
+@dataclass(frozen=True)
+class Arm:
+    """The arm on a character's own right of frame (the side it faces when flipped toward a partner), lifted off the
+    body and drawn over the head so a hand can reach a mouth or a table: ``keys`` are ``(second, swing, stretch)`` on
+    the shot's clock, ``swing`` in degrees from hanging (positive outward, 180 straight up), ``stretch`` of its length.
+    ``holds(cv, hand)`` draws what it carries into the hand's group, origin in the palm, the arm's direction +y."""
+
+    keys: tuple[tuple[float, float, float], ...]
+    holds: Callable[[Canvas, Any], None] | None = None
+
+    def __post_init__(self) -> None:
+        if not self.keys:
+            raise SagaError("an arm needs at least one key")
+        times = [k[0] for k in self.keys]
+        if not all(checks.number(v) for key in self.keys for v in key):
+            raise SagaError(f"an arm's keys must be finite numbers, got {self.keys}")
+        if times != sorted(set(times)) or times[0] < 0:
+            raise SagaError(f"an arm's seconds must rise from 0 or later, got {times}")
+        if not all(ARM_STRETCH[0] <= k[2] <= ARM_STRETCH[1] for k in self.keys):
+            raise SagaError(f"an arm's stretch stays in {ARM_STRETCH}, got {[k[2] for k in self.keys]}")
+
+
+def _lifted(cv: Canvas, g, arm: Arm, sleeve: str, hand: str) -> None:
+    """``arm`` from its shoulder, the sleeve stretched along it and the hand at its end."""
+    shoulder = cv.group(g, cv.uid("g"), x=112, y=-420)
+    cv.keys(shoulder, "rotation", [(t, -swing) for t, swing, _ in arm.keys], kind="sine-in-out")
+    length = cv.group(shoulder, cv.uid("g"))
+    cv.keys(length, "scaleY", [(t, stretch) for t, _, stretch in arm.keys], kind="sine-in-out")
+    d = f"M-26 0 L26 0 L30 {ARM_LENGTH} L-22 {ARM_LENGTH} Z"
+    cv.path(length, d, sleeve, cv.ink, INK_W)
+    cv.path(length, d, cv.ink, opacity=SHADE)
+    palm = cv.group(shoulder, cv.uid("g"))
+    cv.keys(palm, "y", [(t, round((ARM_LENGTH + 8) * stretch, 3)) for t, _, stretch in arm.keys], kind="sine-in-out")
+    if arm.holds is not None:
+        arm.holds(cv, palm)
+    cv.ellipse(palm, -26, -26, 52, 52, hand, cv.ink, INK_W)
+    cv.ellipse(palm, -14, -16, 18, 14, "#ffffff", opacity=0.3)
+
+
+def _arms(cv: Canvas, g, sleeve: str, hand: str, *, reach: float = 0, lifted: bool = False) -> None:
+    for side in (-1, 1) if not lifted else (-1,):
         x = 112 * side
         d = f"M{x - 26} -420 L{x + 26} -420 L{x + 30 + reach * side} -250 L{x - 22 + reach * side} -250 Z"
         cv.path(g, d, sleeve, cv.ink, INK_W)
@@ -226,7 +269,15 @@ def _arms(cv: Canvas, g, sleeve: str, hand: str, *, reach: float = 0) -> None:
     contract=cc.lit(VISEMES),
 )
 def gloom(
-    cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0, flip: bool = False, talk: Talk = (), end: float
+    cv: Canvas,
+    parent,
+    *,
+    at: tuple[float, float],
+    scale: float = 1.0,
+    flip: bool = False,
+    talk: Talk = (),
+    end: float,
+    arm: Arm | None = None,
 ):
     """Lord Gloom of the Directorate, feet at ``at``; his visor follows ``talk``."""
     rig.check_place(scale, end, SagaError)
@@ -240,7 +291,7 @@ def gloom(
     for i, colour in enumerate(("#ff3b30", "#f2b84b", "#5fd4ff")):
         cv.rect(g, -42 + i * 30, -370, 20, 14, colour, radius=3)
     cv.rect(g, -120, -230, 240, 30, "#2b2e3a", cv.ink, 4, radius=8)
-    _arms(cv, g, armour, "#22242e")
+    _arms(cv, g, armour, "#22242e", lifted=arm is not None)
     cv.path(g, "M-150 -440 Q0 -470 150 -440 L150 -410 L-150 -410 Z", edge, cv.ink, 4)
     head = cv.group(g, cv.uid("g"))
     cv.path(head, "M-96 -472 L-110 -640 Q0 -700 110 -640 L96 -472 Z", armour, cv.ink, INK_W)
@@ -251,6 +302,8 @@ def gloom(
     cv.rect(head, -80, -585, 160, 26, "#3a0d0d", cv.ink, 4, radius=8)
     _glow(cv, cv.rect(head, -74, -580, 148, 16, "#ff3b30", radius=6), talk)
     cv.path(head, "M-60 -520 L60 -520 L40 -490 L-40 -490 Z", "#22242e", cv.ink, 4)
+    if arm is not None:
+        _lifted(cv, g, arm, armour, "#22242e")
     return g
 
 
@@ -353,6 +406,8 @@ def _person(
     hair: Callable[[Any, str], None],
     clothes: Callable[[Any], None],
     face_extra: Callable[[Any], None] | None = None,
+    arm: Arm | None = None,
+    sleeve: str = "",
 ):
     rig.check_place(scale, end, SagaError)
     if skin not in SKIN.values():
@@ -374,6 +429,8 @@ def _person(
     if face_extra is not None:
         face_extra(head)
     _mouth(cv, head, 0, -502, 64, talk)
+    if arm is not None:
+        _lifted(cv, g, arm, sleeve, skin)
     return g
 
 
@@ -386,7 +443,15 @@ def _person(
     contract=cc.lit(VISEMES),
 )
 def juno(
-    cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0, flip: bool = False, talk: Talk = (), end: float
+    cv: Canvas,
+    parent,
+    *,
+    at: tuple[float, float],
+    scale: float = 1.0,
+    flip: bool = False,
+    talk: Talk = (),
+    end: float,
+    arm: Arm | None = None,
 ):
     """Juno, feet at ``at``, speaking ``talk``."""
     hair_c = "#1d1410"
@@ -404,10 +469,21 @@ def juno(
         cv.path(g, "M-40 -440 L0 -360 L40 -440", stroke=cv.ink, sw=4)
         cv.rect(g, -116, -250, 232, 34, "#6b4a2b", cv.ink, 4, radius=6)
         cv.rect(g, -18, -252, 36, 38, "#f2b84b", cv.ink, 3, radius=4)
-        _arms(cv, g, "#efe2c4", SKIN["deep"])
+        _arms(cv, g, "#efe2c4", SKIN["deep"], lifted=arm is not None)
 
     return _person(
-        cv, parent, at=at, scale=scale, flip=flip, talk=talk, end=end, skin=SKIN["deep"], hair=hair, clothes=clothes
+        cv,
+        parent,
+        at=at,
+        scale=scale,
+        flip=flip,
+        talk=talk,
+        end=end,
+        skin=SKIN["deep"],
+        hair=hair,
+        clothes=clothes,
+        arm=arm,
+        sleeve="#efe2c4",
     )
 
 
@@ -480,7 +556,15 @@ def rook(
     contract=cc.lit(VISEMES),
 )
 def mabel(
-    cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0, flip: bool = False, talk: Talk = (), end: float
+    cv: Canvas,
+    parent,
+    *,
+    at: tuple[float, float],
+    scale: float = 1.0,
+    flip: bool = False,
+    talk: Talk = (),
+    end: float,
+    arm: Arm | None = None,
 ):
     """Elder Mabel, feet at ``at``, cane in her near hand, speaking ``talk``."""
     white, robe = "#efefea", "#7a5a3a"
@@ -505,7 +589,7 @@ def mabel(
         cv.rect(g, -110, -260, 220, 26, "#3f2c1c", cv.ink, 4, radius=6)
         cv.line(g, 150, -270, 186, 0, "#8a5a2b", 14)
         cv.ellipse(g, 132, -296, 40, 34, "#8a5a2b", cv.ink, 4)
-        _arms(cv, g, robe, SKIN["brown"], reach=20)
+        _arms(cv, g, robe, SKIN["brown"], reach=20, lifted=arm is not None)
 
     def glasses(h) -> None:
         for dx in (-42, 42):
@@ -524,6 +608,8 @@ def mabel(
         hair=hair,
         clothes=clothes,
         face_extra=glasses,
+        arm=arm,
+        sleeve=robe,
     )
 
 

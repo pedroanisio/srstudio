@@ -93,6 +93,7 @@ SHELVES: dict[str, tuple[float, float]] = {
     "supermarket": (40.0, 330.0),
     "dining-room": (690.0, 330.0),
     "bus-stop": (40.0, 330.0),
+    "booth": (720.0, 300.0),
 }
 SHELF_DEPTH = 26.0
 
@@ -596,6 +597,29 @@ def bus_stop(cv: Canvas, parent) -> object:
     return g
 
 
+@register(
+    "location",
+    "collage-booth",
+    summary="A windowless call booth: foam tiles on three close walls, a ledge, the cactus on a small shelf",
+    contract=contract('collage-booth', signature_box=signature_box, marks_box=marks_box, zoom_pivot=zoom_pivot),
+)
+def booth(cv: Canvas, parent) -> object:
+    g = cv.group(parent, cv.uid("g"))
+    back = _backdrop(cv, g)
+    _wall(cv, back, "booth", "#514b5e", "#3a3644")
+    for row, y in enumerate(range(0, 1600, 150)):
+        for x in range(-75 if row % 2 else 0, 1080, 150):
+            cv.rect(back, x + 8, y + 8, 134, 134, "#5e5870", "#47425a", 3, radius=10)
+    for x, top, foot in ((0, 90, 150), (1080, 990, 930)):  # the two side walls, close enough to touch
+        cv.path(back, f"M{x} 0 L{top} 0 L{foot} 1620 L{x} 1620 Z", "#2e2a38", opacity=0.72)
+    cv.rect(
+        back, 0, 1620, cv.width, 300, cv.grad("collage-booth-ledge", [(0, "#6b5b4d"), (1, "#40362e")], (0, 0, 0, 1))
+    )
+    _finish(cv, back, lit=False)
+    _shelf(cv, g, "booth", "#7f5539")
+    return g
+
+
 SETS: dict[str, Callable[[Canvas, object], object]] = {
     "boardroom": boardroom,
     "meeting-room": meeting_room,
@@ -610,6 +634,7 @@ SETS: dict[str, Callable[[Canvas, object], object]] = {
     "supermarket": supermarket,
     "dining-room": dining_room,
     "bus-stop": bus_stop,
+    "booth": booth,
 }
 
 

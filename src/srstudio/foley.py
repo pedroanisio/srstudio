@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import math
 import random
+import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -21,7 +22,13 @@ from .errors import SrstudioError
 from .music import write_wav
 
 __all__ = [
+    "ALARM_HIGH",
+    "ALARM_LOW",
+    "FAR_BARK",
     "FoleyError",
+    "far_alarm",
+    "far_barks",
+    "hum",
     "typing_bursts",
     "taps",
     "keystrokes",
@@ -50,6 +57,12 @@ __all__ = [
     "CHOPPER",
     "GULL",
     "PLATES",
+    "DAWN_PHRASE",
+    "dawn",
+    "write_dawn",
+    "note_hz",
+    "piano",
+    "phrase",
     "BITE",
     "CHEW",
     "PAPER_CRUNCH",
@@ -556,6 +569,12 @@ CHOPPER = Burst(3.0, 520.0, attack=0.5, decay=4.0, tone_hz=48.0, tone_end_hz=48.
 GULL = Burst(0.5, 300.0, attack=0.02, decay=0.6, tone_hz=1450.0, tone_end_hz=880.0, tone=1.0, flutter_hz=17.0)
 SCRAPE = Burst(0.3, 1500.0, attack=0.02, decay=0.5, tone_hz=220.0, tone_end_hz=170.0, tone=0.25, flutter_hz=38.0)
 SWISH = Burst(0.6, 2600.0, attack=0.2, decay=0.6, tone_hz=300.0, tone_end_hz=900.0, tone=0.15)
+ALARM_HIGH = Burst(0.3, 500.0, attack=0.01, decay=2.0, tone_hz=900.0, tone_end_hz=900.0, tone=0.85)  # far: no low end
+ALARM_LOW = Burst(0.3, 500.0, attack=0.01, decay=2.0, tone_hz=720.0, tone_end_hz=720.0, tone=0.85)
+ALARM_STEP = 0.34
+FAR_BARK = Burst(0.2, 900.0, attack=0.005, decay=0.5, tone_hz=520.0, tone_end_hz=340.0, tone=0.6)
+BARK_STEP = 0.34
+HUM_HZ, HUM_FLAT = 100.0, 50.0  # mains hum, and a decay so slow it reads as flat
 PLATES = Burst(0.3, 9000.0, attack=0.001, decay=0.3, tone_hz=3100.0, tone_end_hz=2900.0, tone=0.35)
 KEYS = Burst(0.08, 8000.0, attack=0.001, decay=0.2, tone_hz=4300.0, tone_end_hz=3900.0, tone=0.3)
 BITE = Burst(0.1, 3200.0, attack=0.001, decay=0.3, tone_hz=210.0, tone_end_hz=120.0, tone=0.3)  # teeth through bread
@@ -580,6 +599,109 @@ GROWL = Burst(1.5, 240.0, attack=0.12, decay=1.1, tone_hz=88.0, tone_end_hz=190.
 GROWL_REPLY = Burst(0.9, 300.0, attack=0.08, decay=0.9, tone_hz=150.0, tone_end_hz=250.0, tone=0.6, flutter_hz=17.0)
 GROWL_SMALL = Burst(0.5, 260.0, attack=0.05, decay=0.7, tone_hz=210.0, tone_end_hz=140.0, tone=0.6, flutter_hz=21.0)
 GROWL_VAST = Burst(4.2, 180.0, attack=0.4, decay=1.6, tone_hz=62.0, tone_end_hz=36.0, tone=0.6, flutter_hz=8.0)
+
+
+_SEMITONE = {"C": -9, "D": -7, "E": -5, "F": -4, "G": -2, "A": 0, "B": 2}
+_NOTE = re.compile(r"([A-G])([#b]?)([0-8])")
+PIANO_RING = 2.2  # seconds a struck note rings on
+
+
+def note_hz(name: str) -> float:
+    """The equal-tempered pitch of a note named like ``A4``, ``F#3`` or ``Bb3``; A4 is 440 Hz."""
+    match = _NOTE.fullmatch(name)
+    if match is None:
+        raise FoleyError(f"{name!r} is not a note like A4, F#3 or Bb3")
+    letter, accidental, octave = match.groups()
+    shift = _SEMITONE[letter] + {"#": 1, "b": -1, "": 0}[accidental] + 12 * (int(octave) - 4)
+    return 440.0 * 2.0 ** (shift / 12)
+
+
+def piano(name: str, ring: float = PIANO_RING) -> Burst:
+    """One struck note, held for :func:`bursts`: the hammer's soft noise under a pitch that dies away."""
+    hz = note_hz(name)
+    return Burst(ring, 1800.0, attack=0.004, decay=0.28, tone_hz=hz, tone_end_hz=hz, tone=0.92)
+
+
+def phrase(notes: Sequence[str], start: float, step: float) -> dict[str, tuple[float, ...]]:
+    """When each note of a melody plays: ``notes`` from ``start``, one every ``step`` seconds, as ``{note: seconds}``,
+    one :func:`piano` burst per note."""
+    if not notes:
+        raise FoleyError("a phrase needs at least one note")
+    if not (checks.number(start) and start >= 0 and checks.number(step) and step > 0):
+        raise FoleyError(f"a phrase runs forward from a second >= 0, got start {start!r}, step {step!r}")
+    out: dict[str, tuple[float, ...]] = {}
+    for i, name in enumerate(notes):
+        note_hz(name)
+        out[name] = (*out.get(name, ()), round(start + i * step, 6))
+    return out
+
+
+DAWN_PHRASE = 0.9  # seconds at most of one bird's phrase
+DAWN_NOTES = (3, 6)  # the notes in a phrase, at least and at most
+DAWN_BAND = (2300.0, 4300.0)  # Hz a small bird sings in
+DAWN_NOTE = 0.09  # seconds of one note
+DAWN_GAP = 0.05  # seconds between two notes
+
+
+def dawn(times: Sequence[float], duration: float, rate: int = RATE, seed: int = 0, peak: float = PEAK) -> list[float]:
+    """A mono bed of ``duration`` seconds with one small bird's phrase at each of ``times``: morning, heard and not
+    seen. Each phrase draws its own notes from the seed, a few quick slides high up, so no two birds repeat, and the
+    bed is silent between phrases: list more times for a fuller dawn."""
+    if not times:
+        raise FoleyError("a dawn needs at least one bird")
+    if not (isinstance(rate, int) and rate >= MIN_RATE):
+        raise FoleyError(f"rate {rate} must be an integer of at least {MIN_RATE} Hz")
+    if not (checks.number(duration) and duration > 0 and all(0 <= t < duration for t in times)):
+        raise FoleyError(f"duration {duration} must hold every bird, got {list(times)}")
+    if not (checks.number(peak) and 0 < peak <= 1):
+        raise FoleyError(f"peak {peak} must be in 0..1")
+    out = [0.0] * int(round(duration * rate))
+    rng = random.Random(seed)
+    span = int(DAWN_NOTE * rate)
+    for at in sorted(times):
+        begin = int(at * rate)
+        for note in range(rng.randint(*DAWN_NOTES)):
+            start = begin + int(note * (DAWN_NOTE + DAWN_GAP) * rate)
+            high, low = rng.uniform(*DAWN_BAND), rng.uniform(*DAWN_BAND)
+            phase, level = 0.0, rng.uniform(0.55, 1.0)
+            for k in range(min(span, max(0, len(out) - start))):
+                u = k / span
+                phase += 2 * math.pi * (high + (low - high) * u) / rate
+                out[start + k] += level * math.sin(math.pi * u) * math.sin(phase)
+    top = max((abs(v) for v in out), default=0.0)
+    if top > 0:
+        out = [v * peak / top for v in out]
+    return out
+
+
+def write_dawn(path: Path, times: Sequence[float], duration: float, rate: int = RATE, seed: int = 0) -> Path:
+    """The bed of :func:`dawn`, written to ``path``."""
+    return write_wav(path, dawn(times, duration, rate, seed), rate)
+
+
+def hum(seconds: float) -> Burst:
+    """A room's low hum, a fridge or a mains transformer, flat for ``seconds`` and then cut dead: what a viewer only
+    notices when it stops."""
+    return Burst(seconds, 160.0, attack=0.05, decay=HUM_FLAT, tone_hz=HUM_HZ, tone_end_hz=HUM_HZ, tone=0.8)
+
+
+def far_alarm(start: float, seconds: float) -> dict[Burst, tuple[float, ...]]:
+    """When each of a far car alarm's two tones sounds over ``seconds`` from ``start``, as ``{tone: seconds}``: thin,
+    for :func:`bursts` at a low gain, each tone on its own track."""
+    if not (checks.number(start) and checks.number(seconds) and start >= 0):
+        raise FoleyError(f"an alarm runs from a second >= 0 for a number of seconds, got {start!r}, {seconds!r}")
+    count = int((seconds - ALARM_HIGH.seconds) / ALARM_STEP) + 1 if seconds >= ALARM_HIGH.seconds else 0
+    if count < 2:
+        raise FoleyError(f"an alarm needs both its tones, got {seconds!r} s")
+    rows = [round(start + i * ALARM_STEP, 6) for i in range(count)]
+    return {ALARM_HIGH: tuple(rows[0::2]), ALARM_LOW: tuple(rows[1::2])}
+
+
+def far_barks(start: float, count: int) -> tuple[float, ...]:
+    """A dog across town: ``count`` barks of :data:`FAR_BARK` from ``start``."""
+    if not (isinstance(count, int) and count > 0 and checks.number(start) and start >= 0):
+        raise FoleyError(f"a dog barks at least once from a second >= 0, got {count!r} at {start!r}")
+    return tuple(round(start + i * BARK_STEP, 6) for i in range(count))
 
 
 def bursts(

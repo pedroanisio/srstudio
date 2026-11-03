@@ -154,6 +154,11 @@ def test_a_reel_can_ask_for_its_own_loudness_and_otherwise_leaves_it_to_the_styl
     assert FakeEpisode.made[-1].spec.given.loudness is None
 
 
+def test_a_reel_asks_for_no_bed_with_a_boolean_or_is_refused():
+    with pytest.raises(SeriesError, match="bed must be True or False, got None"):
+        reel(bed=None)
+
+
 # -- the build --------------------------------------------------------------------------------------------------------
 class FakeEpisode:
     made: list = []
@@ -163,6 +168,7 @@ class FakeEpisode:
         self.takes = ("take-01", "take-02")
         self.hidden = ()
         self.posted = None
+        self.sounds = ()
         FakeEpisode.made.append(self)
 
     def hide_on_cover(self, *nodes):
@@ -224,6 +230,52 @@ def test_a_reel_asks_for_bleed_and_is_built_without_it_by_default(project):
     assert FakeEpisode.made[-1].spec.given.bleed is False
     series.build(reel(bleed=True), "unused.py", argv=["demo.py", str(project)])
     assert FakeEpisode.made[-1].spec.given.bleed is True
+
+
+def test_a_reel_masters_at_its_series_style_loudness_unless_it_names_its_own(project):
+    series.build(reel(), "unused.py", argv=["demo.py", str(project)])
+    assert FakeEpisode.made[-1].spec.given.loudness is None
+    series.build(reel(loudness="-14"), "unused.py", argv=["demo.py", str(project)])
+    assert FakeEpisode.made[-1].spec.given.loudness == "-14"
+
+
+def test_a_reels_foley_is_written_from_the_recorded_takes_before_the_staging_mixes(project):
+    seen = {}
+
+    def foley(recorded, root):
+        seen.update(takes=recorded, root=root)
+        return [("foley-ping", "assets/ping.wav", dict(start=1.0, gain="-6"))]
+
+    def staged(ep, stages, *, hook, font, look):
+        seen["sounds"] = ep.sounds
+        return {"hook": "h", "captions": "c"}
+
+    class Own(DemoReel):
+        series = dataclasses.replace(SERIES, stage=staged)
+
+    fields = {f.name: getattr(reel(), f.name) for f in dataclasses.fields(Reel)}
+    series.build(Own(**(fields | {"foley": foley})), "unused.py", argv=["demo.py", str(project)])
+    assert seen["takes"] == ("take-01", "take-02") and seen["root"] == project
+    assert seen["sounds"] == (("foley-ping", "assets/ping.wav", dict(start=1.0, gain="-6")),)
+
+
+def test_a_reel_without_foley_adds_no_sound(project):
+    series.build(reel(), "unused.py", argv=["demo.py", str(project)])
+    assert FakeEpisode.made[-1].sounds == ()
+
+
+@pytest.mark.parametrize(
+    "bad, why",
+    [
+        ([("id", "assets/a.wav")], "foley 0"),
+        ([("id", "assets/a.wav", {}), ("id", "assets/b.wav", {})], "foley 'id' twice"),
+        ([("", "assets/a.wav", {})], "foley 0"),
+        ([("id", "", {})], "foley 0"),
+    ],
+)
+def test_foley_that_is_not_a_list_of_named_files_is_refused(project, bad, why):
+    with pytest.raises(SeriesError, match=why):
+        series.build(reel(foley=lambda recorded, root: bad), "unused.py", argv=["demo.py", str(project)])
 
 
 def test_a_reel_can_encode_at_its_own_crf_over_the_series_output(project):

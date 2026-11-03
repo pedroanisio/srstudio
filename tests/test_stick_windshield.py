@@ -121,3 +121,41 @@ def test_the_phone_buzzes_in_its_mount_and_lies_face_down_from_its_time():
 def test_the_windshield_and_the_dashboard_refuse_what_they_cannot_show(call, match):
     with pytest.raises(StickDataError, match=match):
         call(canvas())
+
+
+def test_a_car_stopped_in_a_field_has_no_road_behind_it_and_the_default_keeps_its_road():
+    plain, field = canvas(), canvas()
+    stick_windshield.windshield(plain, plain.comp, 4.0, speed=0)
+    stick_windshield.windshield(field, field.comp, 4.0, speed=0, ground="field")
+    paths = lambda cv: [e.get("path") or "" for e in xml(cv).iter("shape")]  # noqa: E731
+    assert any(d.startswith("M 537.0 792") for d in paths(plain))
+    assert not any(d.startswith("M 537.0 792") for d in paths(field))
+
+
+@pytest.mark.parametrize(
+    ("kw", "match"), [(dict(ground="sea"), "ground"), (dict(ground="field", speed=1.0), "stopped")]
+)
+def test_a_ground_that_cannot_be_drawn_is_refused(kw, match):
+    cv = canvas()
+    with pytest.raises(stick.StickDataError, match=match):
+        stick_windshield.windshield(cv, cv.comp, 4.0, **kw)
+
+
+def dash_xml(**kw) -> str:
+    cv = canvas(signed=True)
+    stick_windshield.dashboard(cv, cv.comp, 2.0, **kw)
+    return ET.tostring(xml(cv), encoding="unicode")
+
+
+def test_a_reel_can_place_the_dashboard_marks_and_the_default_keeps_them():
+    moved = dict(cactus=0.5, code=(700.0, 1385.0, 13.0, "#d7dae0"))
+    assert dash_xml(cactus=0.3, code=(70, 1840, 9, stick_windshield.BODY_SHADE)) == dash_xml()
+    assert "#d7dae0" in dash_xml(**moved) and "#d7dae0" not in dash_xml()
+    assert dash_xml(cactus=0.5) != dash_xml()
+
+
+@pytest.mark.parametrize(("scale", "height"), [(0.0, 9.0), (0.3, 0.0), (float("nan"), 9.0)])
+def test_marks_of_no_size_are_refused(scale, height):
+    cv = canvas(signed=True)
+    with pytest.raises(StickDataError, match="marks"):
+        stick_windshield.dashboard(cv, cv.comp, 2.0, cactus=scale, code=(70.0, 1840.0, height, "#000000"))

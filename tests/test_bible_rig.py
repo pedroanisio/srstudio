@@ -125,7 +125,8 @@ def test_a_figure_the_reel_names_and_no_one_is_drawn_as_is_flagged():
 def test_one_broken_figure_is_one_finding_and_says_the_ruling():
     found = bible_rig.check("r", {"dev"}, [Drawn("dev", BaseRig("cowlick", False, True))])
     assert len(found) == 1
-    assert bible_rig.RULING in found[0].message and "Clothes and props are tie, apron, cap, sunhat." in found[0].message
+    assert bible_rig.RULING in found[0].message
+    assert "Clothes and props are tie, apron, cap, sunhat, brows." in found[0].message
 
 
 def test_clothes_and_props_change_per_reel_without_a_finding(tmp_path):
@@ -136,7 +137,7 @@ def test_clothes_and_props_change_per_reel_without_a_finding(tmp_path):
         "the-reel",
         """
         stick.check_look(stick.Look(tie="#aa0000", apron="#aa0000", cap="#aa0000", sunhat="#aa0000"))
-        stick.check_look(stick.Look(hair="bun", glasses=True, apron="#aa0000", cap="#aa0000"))
+        stick.check_look(stick.Look(hair="bun", glasses=True, apron="#aa0000", cap="#aa0000", brows=False))
         """,
     )
     assert bible_rig.check_release(release(recurring=("dev", "noor")), episodes, scripts) == []
@@ -303,6 +304,7 @@ FIELDS = {
     "apron": None,
     "cap": None,
     "sunhat": None,
+    "brows": True,
 }
 
 
@@ -380,7 +382,7 @@ def test_a_stick_release_that_keeps_every_base_rig_has_no_finding(tmp_path):
         "the-reel",
         """
         stick.check_look(stick.Look(hair="cowlick", tie="#aa0000"))
-        stick.check_look(stick.Look(hair="bun", glasses=True, apron="#aa0000", cap="#aa0000"))
+        stick.check_look(stick.Look(hair="bun", glasses=True, apron="#aa0000", cap="#aa0000", brows=False))
         stick.check_look(stick.Look(hair="spiky", neck=True))
         """,
     )

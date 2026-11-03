@@ -14232,6 +14232,1638 @@
           "rig": null
         }
       ]
+    },
+    "collage-wall-tv": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A flat wall TV whose clipped screen a reel fills. First drawn for on-this-day. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "f44f3be799d12a02ce603f04bd02e9c979f6782f8ff308e9f94e6ae03b0ff522",
+          "rig": null
+        }
+      ]
+    },
+    "collage-hard-hat": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A yellow builder's hard hat, for a head or a table. First drawn for on-this-day. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "803380a9b19dcc53d90ed76f1dafec885b07890a884cf806ffa2c6801d3212b8",
+          "rig": null
+        }
+      ]
+    },
+    "collage-kayak": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A red kayak with its cockpit. First drawn for on-this-day. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "bd2c5ab13455c65ada82a69b3c4cb802c1c7d4ba5eaa48cdfb614765a5a7bbe5",
+          "rig": null
+        }
+      ]
+    },
+    "collage-school-desk": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A child's school desk. First drawn for on-this-day. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e7cb9dcd0ea6476c66ad602b1c983a228c4d9eeebd3a326f3b101fe54fdcd96a",
+          "rig": null
+        }
+      ]
+    },
+    "collage-staircase": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A short flight of stairs with a handrail. First drawn for on-this-day. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d9a4f096545ec22d7e5a92569635f2a7d82bde418cc7e1a9da80aac28ee74da8",
+          "rig": null
+        }
+      ]
+    },
+    "collage-pay-envelope": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A sealed pay envelope with a stamp; refuses any figure on it. First drawn for exciting-opportunity. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0f41d20cfbfc5407af47f8b3ef6ca231691befca6381a327d0a48218a7d39374",
+          "rig": null
+        }
+      ]
+    },
+    "collage-headset": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A call-centre headset over a head. First drawn for exciting-opportunity. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ec22b7e0c7d2d50f191b9d880f62416d18000dd5310565f3c295fa8fece43c5b",
+          "rig": null
+        }
+      ]
+    },
+    "collage-desk-lamp": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "One bare lamp and its pool of light. First drawn for exciting-opportunity. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3b39916fd3690cf36b0bf6c3f3c20757f84a56380685f658393de52405eda112",
+          "rig": null
+        }
+      ]
+    },
+    "collage-dead-plant": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A dead plant in a pot. First drawn for exciting-opportunity. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c7d79f9aa6e544164a1a0d24579f889c3e684c745cc85278687316b441f967e2",
+          "rig": null
+        }
+      ]
+    },
+    "collage-cereal-bowl": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A bowl of cereal in milk. First drawn for exciting-opportunity. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d6842d92ccf26bb4142c0ee055851363c30894e6f853596948b2d2a09edf3c54",
+          "rig": null
+        }
+      ]
+    },
+    "collage-spoon": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A paper spoon. First drawn for exciting-opportunity. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e4327ac34bdac93db67c747a093d4bacca94a9e1e012f050977910245491e685",
+          "rig": null
+        }
+      ]
+    },
+    "collage-pen": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A ballpoint pen. First drawn for tell-us. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "93c7b303e0778aee0d39947b8a8145d875c2a7918bf5326f65bef1702c61261a",
+          "rig": null
+        }
+      ]
+    },
+    "collage-menu-card": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A tall closed restaurant menu, no brand. First drawn for no-pad. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4cb5774d1d47ac765676e55a2169e2b845e8b16fe654ffb427ba8beed0f00f0a",
+          "rig": null
+        }
+      ]
+    },
+    "collage-order-pad": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A waiter's spiral pad with an unreadable scrawl. First drawn for no-pad. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d9b9b622e57a948fb34b153072d50378db59a4eb701b1a8548054740b8d7923b",
+          "rig": null
+        }
+      ]
+    },
+    "collage-plate": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A plate with a steak, a salad or sauce. First drawn for no-pad. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3fb3e748858e036e5bb289007e33a8a79d867c0220af4b3ce132bb128ecd16eb",
+          "rig": null
+        }
+      ]
+    },
+    "collage-chair-back": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "The tall wooden back of a dining chair. First drawn for two-weeks. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "14821a002aeb8042334347bd13569c1d6e92c3a6a26e666f632217a98337ec14",
+          "rig": null
+        }
+      ]
+    },
+    "collage-wall-hole": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A rough hole in a wall: torn plaster, bare studs. First drawn for two-weeks. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a3c9658c62016498b2a5e6cbc3e55d5f072f8b4447f51997bb27931d0e01fe04",
+          "rig": null
+        }
+      ]
+    },
+    "collage-snowy-window": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A window pane full of winter, laid over a set's window. First drawn for two-weeks. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "8abaf28fea4bbda366e724087fe63463bff0a3d9239ad7811421070d4da2d4b0",
+          "rig": null
+        }
+      ]
+    },
+    "collage-toothbrush-mug": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A mug with one toothbrush in it. First drawn for two-weeks. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "94970a03b12989d18fd6ec7ba2e94f50b1cda4d3601820c62bbf815756b61443",
+          "rig": null
+        }
+      ]
+    },
+    "collage-napkin": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A white napkin tucked in at the collar. First drawn for two-weeks. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "11b35d085bd8db24e43686cc4ed87de5c3f4125d97297a723c283b6a6c414bb3",
+          "rig": null
+        }
+      ]
+    },
+    "toon-chat-phone": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "An invented chat window on a phone, which can show its back and buzz. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5e4da857625e79abce0967d06fd2022f8b4f54e1f4e9abdeaeaeeac7239619dc",
+          "rig": null
+        }
+      ]
+    },
+    "toon-chat-chip": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "One short line landing over a phone in a white chip. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2950c9287797bac1656827f873e816573d1bdc48a356c40e2f0fb967f03b2798",
+          "rig": null
+        }
+      ]
+    },
+    "stick-hall": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "Stick front hall from inside, the doorway open on a yard, picket fence and blurred houses; both marks on the shelf. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "f6ad6e3af798aaf0fec3fbf6aa2861a0d5f1bc1932dc1eb11b21446b40e891cf",
+          "rig": null
+        }
+      ]
+    },
+    "stick-front-door": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "Stick panelled front door hinged on the left jamb, swinging in through drawn frames. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "529fafe1931becc5a3f9d290933142280294a624a044affd302cb216226c4228",
+          "rig": null
+        }
+      ]
+    },
+    "stick-tow-truck": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "Stick generic unbranded tow truck from behind, reversing up the path, beacon turning, hook lowered on a cable. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "fe46482438c1d1f0ef8927703ec4f92a361d30353654583b568fe63bc8806b1c",
+          "rig": null
+        }
+      ]
+    },
+    "toon-necktie": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A striped necktie, held up by its knot and swinging, or worn on a chest. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "f48b67d34396b2d42babadeccd3c28c03c5a43f6d93496dd14c96ffd8d7a17f2",
+          "rig": null
+        }
+      ]
+    },
+    "toon-lanyard": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A company lanyard with an unlettered white card. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "44488e4ae9571bdbd263472eb9fe2c4fb7cec907857777b59b3afe14322bb646",
+          "rig": null
+        }
+      ]
+    },
+    "toon-laptop-lid": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "The back of a laptop lid on a desk, that shuts on cue. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "6c0b1509e9fccef290376df873358733d6f1ec034fe293f2df51382f828e19ee",
+          "rig": null
+        }
+      ]
+    },
+    "toon-notice": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "One short line from a system, on a white card under the desk's edge. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0e9c0f628b732ec4b871843ac60f18fdbcb0fc90b405fda1f6d289b36e5697ee",
+          "rig": null
+        }
+      ]
+    },
+    "toon-wall-sign": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A company's name on a wall plaque, in the set, read on a phone. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4fbdaa0c1121c6dfa0ca0849a5bf4e37e4e1dbd7daa7129768c70de55d023699",
+          "rig": null
+        }
+      ]
+    },
+    "toon-blind": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A slatted blind over the room's window, up or coming down on cue. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "55d32f11d45232202d93d8b96fbc2a2719c0febf071364174f2a4af7c9fae315",
+          "rig": null
+        }
+      ]
+    },
+    "toon-tissue-box": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A box of tissues on a desk. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "f02f9b43fe803c117f8972c507785d428119537c14d582ae4ec52f8a9cff06b0",
+          "rig": null
+        }
+      ]
+    },
+    "toon-sample-tray": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A shallow tray of little sample bars; one can leave on a given second. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c3d3734ac2dae28b9849aa7e6b367b35143244a8b7f0faab83f64fad90591399",
+          "rig": null
+        }
+      ]
+    },
+    "toon-paper": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A resume lying on a desk, its lines a scrawl. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "13b690de0e0ca3ef81bcbc9432be2a7f2ae050787b97c07638d510a936bd357a",
+          "rig": null
+        }
+      ]
+    },
+    "soft-den": {
+      "kind": "location",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A Soft living room with a keyed blind and a night pooled in a screen's blue. Generic and unbranded. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "87bbe7fbbba62934251ab5e6952b22d62e6a86f70fa58eb0c0877f8b93c6aad8",
+          "rig": null
+        }
+      ]
+    },
+    "soft-flats": {
+      "kind": "location",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "Two Soft homes side by side with one wall between them. Generic and unbranded. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e079c5ad22e4f57ef9c871ddfd5ee760338302eb0482ab057bb890507fa49017",
+          "rig": null
+        }
+      ]
+    },
+    "soft-restaurant": {
+      "kind": "location",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A plain restaurant door at dusk with a pavement that runs below the frame. Generic and unbranded. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a9c63a49dd88f97d1a9b6b1fd8aefd89bec40c34bea233232e26740fd958ed38",
+          "rig": null
+        }
+      ]
+    },
+    "soft-television": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A television with no face: voice bars and a one-digit countdown. Invented interface, no real app. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "6317911cc4b36c6e0f5058bbd7d6b846b08e52680c0eff38b09a320d3a543e0e",
+          "rig": null
+        }
+      ]
+    },
+    "soft-chip-bag": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "An unbranded foil chip bag. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "dbd3965e0c54a3111990b77e32dcc99b1519f561d2d697c73f81b05c975f90a9",
+          "rig": null
+        }
+      ]
+    },
+    "soft-chip": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "One chip. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "6ed6feff55a4267fa1f11c22e8a4b83294b9ea39d4b9cd2c7853872f2e069a2d",
+          "rig": null
+        }
+      ]
+    },
+    "soft-blanket": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A checked blanket worn on the shoulders. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "211398c4e21e3cb66209881028afbd5ffa8b79323309a082b63771797e3065f4",
+          "rig": null
+        }
+      ]
+    },
+    "soft-scarf": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A wound scarf. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2978e14631dc629524d5fe4ae43faf35f1f62a3e9e62d0e39fc59e89e63842d8",
+          "rig": null
+        }
+      ]
+    },
+    "soft-slippers": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A pair of fluffy slippers. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2ab91a3271df33317ce06f7aa2d7e715063ed8dbb3db2a490ce712b6e7dfa96b",
+          "rig": null
+        }
+      ]
+    },
+    "soft-hook-card": {
+      "kind": "graphic",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A white card with a few words, shown over a span. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "eb465ba000227485f59a23b3e8347b7a9a7fbe84035214b4d010c60ad57522a1",
+          "rig": null
+        }
+      ]
+    },
+    "hat-stack": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A column of seven generic hats, each landing on the last, that sways and topples as one; drawn in code, no brand. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "1f9349650776b9d375971a31e8a739711e1c63f9775144894d17085d7b983598",
+          "rig": null
+        }
+      ]
+    },
+    "tiny-hat": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A very small round hat for a grown head; drawn in code, no brand. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "b827ff414c935adaa9500924c9b7feec0e04a1e8d49fcb95ecd04304cdb9279c",
+          "rig": null
+        }
+      ]
+    },
+    "collage-booth": {
+      "kind": "location",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A windowless call booth, foam on close walls. First drawn for exciting-opportunity. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "306f6879396bdf79b6f076669a5f2198b3c3375b705d0d11e76e4ff5efd849af",
+          "rig": null
+        }
+      ]
+    },
+    "stick-rough-road": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "Stick view from the driver's seat, street, gravel or grass running at the camera, up to a wooden fence. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a987588558fc8e967f06d0e3339fb22ca6bf56f1188612fb9901d7f7a55356e0",
+          "rig": null
+        }
+      ]
+    },
+    "stick-nav-insert": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "Stick phone in its mount filling the frame: an invented map and one instruction, no real app copied. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "70278c8823031f357e7dff0c62a4737cfafb69c98d335a609540dda23735ad5f",
+          "rig": null
+        }
+      ]
+    },
+    "toon-night-cabin": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A car's cabin at night seen from the dash: roof, back window, seats. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7fb1e2cde501de8ee7418baf3ac977a1e2d81c06f4029f4ba0c79a6185576d1a",
+          "rig": null
+        }
+      ]
+    },
+    "toon-night-dash": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A dark dashboard in front of the seats, with the marks where a desk has them. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e3a330176ad26fc953e56ac3b2797db19bda96c066834fcd0e1a0f9c34ef1210",
+          "rig": null
+        }
+      ]
+    },
+    "toon-call-chip": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A dashboard call readout: a name and a running timer, dim until lit. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "65c9176a8d13fb3b4e3d53dba54fc4957ecdd864bec53332d6bee42d80392bfd",
+          "rig": null
+        }
+      ]
+    },
+    "collage-tissue-box": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A box of tissues, one standing up. First drawn for tell-us. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3d9f6ec16ff858ff16d2e74f47e43e8282431b346fc8343a2f46fe187946af7a",
+          "rig": null
+        }
+      ]
+    },
+    "collage-wall-clock": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A round wall clock whose hands point at the given time. First drawn for tell-us. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5645eb41859d6e7062ca80b26d509453c3d0682964d995931c300fe38fa80019",
+          "rig": null
+        }
+      ]
+    },
+    "toon-smoke-detector": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A smoke detector on the ceiling, in frame from the first second, its small light turning red on cue. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "bafcab087be5fd9f4b127afb4c56ab1d18cc66670daac73634d610fb12a1980a",
+          "rig": null
+        }
+      ]
+    },
+    "toon-folder": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A manila folder from above that opens on a photograph of an unmarked office block, ringed in red pen. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "f55d65142891d6e8351b305b958958dfa818f877c88943ea71573abd9ec72b67",
+          "rig": null
+        }
+      ]
+    },
+    "toon-cable-drawer": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A drawer in a counter's front, yanked open on a knot of cables. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "b7d4a1060c053511f6067fe7fb02655ddb44e21274f55456f79aec1483f37335",
+          "rig": null
+        }
+      ]
+    },
+    "toon-gray-cable": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "One gray cable with a plug, held at its top, that goes where it is moved. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "6eb5d73061d201293d7d486f427385c16e9e8133575c69156c5762b8bc36394e",
+          "rig": null
+        }
+      ]
+    },
+    "toon-kitchen-bin": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A plain gray kitchen bin in the foreground, open at the top. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d7cc86f3105c1fd205da2bae850fb528fa94bfef48438e914568716f49361e78",
+          "rig": null
+        }
+      ]
+    },
+    "toon-fridge-light": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A fridge door's lit display, that goes dark with the power. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "1f029ffd89c6a6b57fe4a6cbcb4b735311cb9fba1f497458c47b74e7845340bd",
+          "rig": null
+        }
+      ]
+    },
+    "toon-hill-window": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A window at night on a hill, whose street lights go out in a row. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "b154ee2ef95366085fa3bf44437a9657416db21d21bea15c9dcc96d7ecf6f0f2",
+          "rig": null
+        }
+      ]
+    },
+    "toon-laptop-screen": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A laptop's screen under the desk's edge, its draft changing, read on a phone. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7f18e1c2726925ef27df03210a3f16bbd2b329c5731b53e829307c0484e87936",
+          "rig": null
+        }
+      ]
+    },
+    "toon-stuck-notes": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "Crossed-out sticky notes piling up on a kitchen, one at a time. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "92ddcf47dee23c6d090d6166c6bc4ad6649110e2c72bb7509052112385f98d14",
+          "rig": null
+        }
+      ]
+    },
+    "toon-magnifier": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A magnifying glass with a brass ring and a wooden handle. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2a8d2128ee165212e42b1da9bd1718a676b8c4f5ca23d59322e6b7ffaf56cf3a",
+          "rig": null
+        }
+      ]
+    },
+    "toon-exclaim": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "An exclamation mark as a shape, at any size, with no font. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5c13bc908d2c764693291bbc6651654205b0d054c8cb33947be69f14ba9d932c",
+          "rig": null
+        }
+      ]
+    },
+    "toon-corkboard": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A corkboard that slides in, a mark pinned at its center and notes around it, no faces. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "309c4a2e1fd41685b78d974f31bcb01ae0e57a61cb8bf40175328c9def0da136",
+          "rig": null
+        }
+      ]
+    },
+    "recording-window": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "An invented recording window: a dark frame, a red dot and a countdown Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "549d1f26938b2c287afad666bfd6b1a8860c1e80e940d61a1b63878c530efa00",
+          "rig": null
+        }
+      ]
+    },
+    "meter-panel": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "Up to four labelled bars keyed to the reel's times Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0f9e74774c7510628e5d4278c8080064c1249f9d928f6f1b9e0cb054a27c3aa7",
+          "rig": null
+        }
+      ]
+    },
+    "face-box": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "Four corner marks round a tracked face Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ee3642e6d421d1707c8121af7e2e243bc3f3760ffac12d7ca8a9463849235ff5",
+          "rig": null
+        }
+      ]
+    },
+    "green-tick": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A green disc with a tick that pops in at its time Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "bfe9d0b585ee83111fe85907f4426618e6292aa951aaedae3d2bc434d9a607ed",
+          "rig": null
+        }
+      ]
+    },
+    "cereal-bowl": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A half-eaten bowl of cereal, side on Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "971d823c7d1ca9811a3044048a9f67c45d59775528de70ca7dfa0f01415bccfc",
+          "rig": null
+        }
+      ]
+    },
+    "spoon": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A plain spoon held at the grip Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "bec33707a990ab40cee76a0904348fd489de40ae84b07cde9ef777480d692fcc",
+          "rig": null
+        }
+      ]
+    },
+    "room-door": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A plain white room door that swings open onto the dark Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "26237a77c8c27edbb74edbfdf5eebb5b2e8d065ea4576ffa638e0e7535daf591",
+          "rig": null
+        }
+      ]
+    },
+    "stick-interview-room": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "Stick small office, door between two chairs, a window with the city out of focus, a plant and the desk's top. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "bda98357510806bf56edb4bd851323dfffbcd95db558e4a32ca3f803cfadc9fe",
+          "rig": null
+        }
+      ]
+    },
+    "stick-interview-desk": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "Stick desk's front with its marks; the bottom drawer stays shut or slides out to a pillow, a folded blanket and delivery menus. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7a689d03e610d735c71153fab8904683870e140f6239d99bf3e0a03852726130",
+          "rig": null
+        }
+      ]
+    },
+    "stick-desk-page": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "Stick sheet lying on a desk, printed side up or face down, a line ringed in red or none. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e706646bd10f1176815c30442f69d948950efcf82a4324c3a9cee9e42e59aba7",
+          "rig": null
+        }
+      ]
+    },
+    "stick-resume-insert": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "Stick resume filling the frame, generic lines and one heading ringed in red by hand; it names nobody. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a2f7d77e49730a644d26d3ad62a663bff03cb57d61db5e2c9a6d36afc2200dc7",
+          "rig": null
+        }
+      ]
+    },
+    "toon-climb-chair": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A kitchen chair seen from behind, its back hiding who stands on it from the waist down. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "19d131f27f833105b6d7e2e3e0126ebefda1b960bd5009808b3235fac11c6958",
+          "rig": null
+        }
+      ]
+    },
+    "toon-table-legs": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "Over a ledge's front: an apron, the wall and floor under it, and two legs, so the ledge reads as a table. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0799b5a5c49e2153b18d3235e20c1ee35399d2f0ee08b7328e4ab1cb511ca415",
+          "rig": null
+        }
+      ]
+    },
+    "toon-raised-phone": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A forearm in a character's colours holding a phone up, its signal bars on a clock. It never moves. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ab7709c16c041623ddfaeb1ec3c340368df9936cfc5b897964ba74a981a0a252",
+          "rig": null
+        }
+      ]
+    },
+    "toon-upload-chip": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "An upload's figure over its bar, in an invented interface; each reading held long enough to read. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "974defacd053af25fdf74024d5536945d22737659ed3ad6392c2117cf9c84bc9",
+          "rig": null
+        }
+      ]
+    },
+    "toon-sandwich-broom": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A broom held head up with a sandwich balanced on it, bitten at a second. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "34e4d66f739756433dad4ca709486732b686ce28061e9262c2ef7558b44efd9e",
+          "rig": null
+        }
+      ]
+    },
+    "saga-hut": {
+      "kind": "location",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A round clay desert hut with a porthole on two suns and a shelf. Generic and unbranded. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "efe5cc95db815b99d78f8bf2b8fef7292c39763994fbb107d8ed463278aff8bc",
+          "rig": null
+        }
+      ]
+    },
+    "saga-hut-table": {
+      "kind": "location",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "The clay table across the hut, in front of whoever sits at it. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "baa6017d680136ef839725e8d96562087d966117356829551d1931b71fa92571",
+          "rig": null
+        }
+      ]
+    },
+    "saga-returns": {
+      "kind": "location",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A bay with a window on the stars, a shelf and a returns sign. Generic and unbranded. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "772fcb0bb950567be6a50d7a9dd8995920be7fbae9e56255d76cd4bf91a1f04f",
+          "rig": null
+        }
+      ]
+    },
+    "saga-returns-desk": {
+      "kind": "location",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A plain returns desk with a small printer on it. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "cd47acaee98bc382d8fe78305969adcf64040f91645094fac662244227b0dda8",
+          "rig": null
+        }
+      ]
+    },
+    "saga-plate": {
+      "kind": "prop",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A plain plate seen from the table's edge. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "08324bd51f80b95f413f05961d8491c744c9b3ff1915b16376c9c452aab85ceb",
+          "rig": null
+        }
+      ]
+    },
+    "saga-cup": {
+      "kind": "prop",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A clay cup with no handle, tea running into it, a little steam after. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "804761b9f578b6e2ba82a956ddf40741299ae5ad071842f071c533db8ac6e218",
+          "rig": null
+        }
+      ]
+    },
+    "saga-ration-bar": {
+      "kind": "prop",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A foil ration bar, unbranded, one end bitten at. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a7618cd0ccf1aa5c983c724dc54a6b9cd99ca65c884976dd9f92d78e607f4c61",
+          "rig": null
+        }
+      ]
+    },
+    "saga-wince": {
+      "kind": "prop",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "Three red pain ticks at a jaw, shown in the spans it hurts. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a5ef73035c75481e9dd9c1f20c52cefdf46867494e6563db44b3a427d09f009a",
+          "rig": null
+        }
+      ]
+    },
+    "saga-tooth": {
+      "kind": "prop",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "One tooth that drops to where it lands, with a small bounce. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2c0003fcb9137a20635041ab6ad07e902a6aff5e8cf4f4e648b6f877c023246f",
+          "rig": null
+        }
+      ]
+    },
+    "saga-benefits": {
+      "kind": "prop",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A hologram of an invented benefits plan. Invented interface, no real app. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "f7fb0cf6bca77d76dd3e8fc240611e43b5c82aedd9541a7717ef9b03e2cbdabe",
+          "rig": null
+        }
+      ]
+    },
+    "saga-form": {
+      "kind": "prop",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A filled-in form with illegible lines, no readable data, and a pen on it. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5d2c9ce223c05dc0d57c571b06970a1b160abdda43b61ce47a8937454542b991",
+          "rig": null
+        }
+      ]
+    },
+    "saga-basket": {
+      "kind": "prop",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A wire basket holding a broken station plate with one hole through it. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "9fd45ff310cbe848c902289e4a5d4574583af98d196a6f2e38a5ab84e87f1cf9",
+          "rig": null
+        }
+      ]
+    },
+    "saga-coupon": {
+      "kind": "prop",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A tiny printed coupon with no readable text, on a track of its own. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ad1dd520e9fffa023344e063ffb7397cda3ad6427e9cb8eeaa01988618aba37d",
+          "rig": null
+        }
+      ]
+    },
+    "saga-dim": {
+      "kind": "prop",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "The room darkening over what is drawn before it, and coming back. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c9e617263ec06d28ef2ac49a98cc9e78e5693d2daa4d1958a06bfa47f5ab1651",
+          "rig": null
+        }
+      ]
     }
   }
 }

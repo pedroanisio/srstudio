@@ -26,7 +26,7 @@ scene. A series' own ``Reel`` subclass names its :class:`Series`::
 from __future__ import annotations
 
 import sys
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, ClassVar
@@ -46,6 +46,9 @@ MAX_CRF = 51  # the highest crf the h264 encoder takes
 
 class SeriesError(SrstudioError, ValueError):
     """A series or a reel the harness cannot record or build."""
+
+
+Foley = Callable[[Sequence[Any], Path], Iterable[tuple[str, str, dict]]]
 
 
 @dataclass(frozen=True)
@@ -96,9 +99,12 @@ class Reel:
     held_frames: bool = False  # held keys half a frame before their frame (ADR 0216): every new reel sets it
     bed: bool = True  # False: this reel goes without the series' music bed
     loudness: str | None = None  # None: the style's; the mix's integrated target, in LUFS
+    foley: Foley | None = None  # the sounds under the takes, written from the recording when the reel is built
     series: ClassVar[Series | None] = None
 
     def __post_init__(self) -> None:
+        if not isinstance(self.bed, bool):
+            raise SeriesError(f"reel {self.slug!r}: bed must be True or False, got {self.bed!r}")
         if self.crf is not None and not (
             isinstance(self.crf, str) and self.crf.isdigit() and self.crf.isascii() and 0 <= int(self.crf) <= MAX_CRF
         ):
@@ -166,6 +172,19 @@ def record(reel: Reel) -> int:
     return takes.main(reel.script())
 
 
+def _sounds(foley: Iterable[tuple[str, str, dict]]) -> tuple[tuple[str, str, dict], ...]:
+    """A reel's foley as checked ``(asset id, project path, track attributes)`` for :attr:`Episode.sounds`."""
+    sounds = tuple(foley)
+    seen: set[str] = set()
+    for i, sound in enumerate(sounds):
+        if len(sound) != 3 or not sound[0] or not sound[1] or not isinstance(sound[2], Mapping):
+            raise SeriesError(f"foley {i}: expected (asset id, project path, track attributes), got {sound!r}")
+        if sound[0] in seen:
+            raise SeriesError(f"foley {sound[0]!r} twice: every sound is its own asset")
+        seen.add(sound[0])
+    return sounds
+
+
 def build(reel: Reel, file: str, posts: Mapping[str, Any] | None = None, argv: Sequence[str] | None = None) -> Path:
     """Build ``reel`` from the recording in the project named on the command line (beside ``file`` without one)
     into ``<project>/<slug>.scene.xml``, with its Instagram post from ``posts`` when there is one. Scene and report
@@ -195,6 +214,8 @@ def build(reel: Reel, file: str, posts: Mapping[str, Any] | None = None, argv: S
     if ep.spec.font is None:
         raise SeriesError(f"reel {reel.slug!r}: the {s.style.name} style draws no text, so it has no caption font")
     font = (root / ep.spec.font).read_bytes()
+    if reel.foley is not None:
+        ep.sounds = _sounds(reel.foley(ep.takes, root))
     made = s.stage(ep, reel.stages(ep.takes), hook=reel.hook, font=font, look=reel.look())
     ep.hide_on_cover(made["hook"], made["captions"])
     if posts and reel.slug in posts:

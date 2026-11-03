@@ -13,6 +13,7 @@ import pytest
 
 from srstudio import takes
 from srstudio.compose import Chunk, Plan
+from srstudio.timeline import Timeline
 from srstudio.voice import RATE, Alignment, EffectClip, SpokenLine, Transcript, Voice, VoiceSettings, Word
 from support.takes import BED_PLAN, DEV, script
 
@@ -293,3 +294,43 @@ def test_a_script_names_its_own_caption_font_and_main_copies_that_one(tmp_path):
 def test_a_script_refuses_a_font_without_its_licence():
     with pytest.raises(takes.TakesError, match="font"):
         script(font=("PatrickHand-Regular.ttf",)).check()
+
+
+def test_a_rehearsal_writes_a_timeline_the_episode_can_load_with_no_client_and_no_consent(tmp_path):
+    fonts = tmp_path / "fonts"
+    fonts.mkdir()
+    for name in takes.FONT:
+        (fonts / name).write_bytes(b"x")
+    s = replace(script(), still=0.5)
+    project = tmp_path / "p"
+    assert takes.main(s, [str(project), "--rehearse", "--font", str(fonts)], env={}) == 0
+    tl = Timeline.load(project / "timeline.json")
+    data = json.loads((project / "timeline.json").read_text())
+    assert data["rehearsal"] is True and data["voices"] == {}
+    assert tl.takes[0].start == 0 and tl.duration == pytest.approx(sum(t.duration for t in tl.takes), abs=1 / 24)
+    for a, b in zip(tl.takes, tl.takes[1:], strict=False):
+        assert b.start == pytest.approx(a.start + a.duration)
+    first = tl.takes[0]
+    assert first.words[0]["start"] == pytest.approx(0.5)  # the still opening holds, as a recording's does
+    assert [w["text"] for w in first.words] == first.text.split()
+    for take, row in zip(tl.takes, data["items"], strict=True):
+        assert (project / row["audio"]).exists()
+        assert take.duration >= take.speech_duration
+
+
+def test_a_rehearsal_keeps_each_hold_and_never_replaces_a_recording(tmp_path):
+    s = script()
+    timeline = takes.rehearse(s, tmp_path)
+    by = {i["id"]: i for i in timeline["items"]}
+    for take in s.takes:
+        body = by[take.id]["speech_duration"] if not take.is_effect else take.longest
+        assert by[take.id]["duration"] == pytest.approx(round(body + take.hold, 6), abs=1 / 24)
+    (tmp_path / "timeline.json").write_text(json.dumps({"tts_engine": "ElevenLabs", "duration": 1.0, "items": []}))
+    with pytest.raises(takes.TakesError, match="recording"):
+        takes.rehearse(s, tmp_path)
+
+
+def test_a_rehearsal_checks_the_script_first(tmp_path):
+    with pytest.raises(takes.TakesError):
+        takes.rehearse(replace(script(), voices={}), tmp_path)
+    assert not (tmp_path / "timeline.json").exists()

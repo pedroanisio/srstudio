@@ -1460,7 +1460,103 @@
     "toon-mosquito": {"title": "Pernilongo em voo"},
     "toon-paper-insert": {"title": "Folha escrita à mão em close"},
     "toon-pipe": {"title": "Cano que pinga e estoura"},
-    "collage-full-glass": {"title": "Taça de vinho cheia"}
+    "collage-full-glass": {"title": "Taça de vinho cheia"},
+    "toon-sandwich-broom": {"title": "Sanduíche na vassoura"},
+    "toon-upload-chip": {"title": "Envio em andamento"},
+    "toon-raised-phone": {"title": "O braço do sinal"},
+    "toon-table-legs": {"title": "Pernas da mesa"},
+    "toon-climb-chair": {"title": "Cadeira de subir"},
+    "saga-dim": {"title": "Escurecer a sala"},
+    "saga-coupon": {"title": "Cupom"},
+    "saga-basket": {"title": "Cesto com estação quebrada"},
+    "saga-form": {"title": "Formulário"},
+    "saga-benefits": {"title": "Holograma de benefícios"},
+    "saga-tooth": {"title": "Dente"},
+    "saga-wince": {"title": "Traços de dor"},
+    "saga-ration-bar": {"title": "Barra de ração"},
+    "saga-cup": {"title": "Copo de barro"},
+    "saga-plate": {"title": "Prato"},
+    "saga-returns-desk": {"title": "Balcão de devoluções"},
+    "saga-returns": {"title": "Guichê de devoluções"},
+    "saga-hut-table": {"title": "Mesa da cabana"},
+    "saga-hut": {"title": "Cabana no deserto"},
+    "stick-resume-insert": {"title": "Currículo em tela cheia"},
+    "stick-desk-page": {"title": "Folha sobre a mesa"},
+    "stick-interview-desk": {"title": "Mesa com gaveta"},
+    "stick-interview-room": {"title": "Sala de entrevista"},
+    "room-door": {"title": "Porta do quarto"},
+    "spoon": {"title": "Colher"},
+    "cereal-bowl": {"title": "Tigela de cereal"},
+    "green-tick": {"title": "Visto verde"},
+    "face-box": {"title": "Marcas de rosto"},
+    "meter-panel": {"title": "Painel de medidores"},
+    "recording-window": {"title": "Janela de gravação"},
+    "toon-corkboard": {"title": "Quadro de cortiça"},
+    "toon-exclaim": {"title": "Ponto de exclamação"},
+    "toon-magnifier": {"title": "Lupa"},
+    "toon-stuck-notes": {"title": "Bilhetes riscados"},
+    "toon-laptop-screen": {"title": "Tela do laptop"},
+    "toon-hill-window": {"title": "Janela sobre o morro"},
+    "toon-fridge-light": {"title": "Luz da geladeira"},
+    "toon-kitchen-bin": {"title": "Lixeira da cozinha"},
+    "toon-gray-cable": {"title": "O cabo cinza"},
+    "toon-cable-drawer": {"title": "Gaveta de cabos"},
+    "toon-folder": {"title": "Pasta com fotografia"},
+    "toon-smoke-detector": {"title": "Detector no teto"},
+    "collage-wall-clock": {"title": "Relógio de parede de papel"},
+    "collage-tissue-box": {"title": "Lenços de papel"},
+    "toon-call-chip": {"title": "Chamada no painel"},
+    "toon-night-dash": {"title": "Painel escuro do carro"},
+    "toon-night-cabin": {"title": "Carro à noite, visto do painel"},
+    "stick-nav-insert": {"title": "Celular com o mapa"},
+    "stick-rough-road": {"title": "Estrada que acaba no pasto"},
+    "collage-booth": {"title": "Cabine sem janela"},
+    "tiny-hat": {"title": "Chapéu minúsculo"},
+    "hat-stack": {"title": "Pilha de chapéus"},
+    "soft-hook-card": {"title": "Cartão de gancho"},
+    "soft-slippers": {"title": "Pantufas"},
+    "soft-scarf": {"title": "Cachecol"},
+    "soft-blanket": {"title": "Cobertor"},
+    "soft-chip": {"title": "Uma batata"},
+    "soft-chip-bag": {"title": "Saco de batatas"},
+    "soft-television": {"title": "Televisão sem rosto"},
+    "soft-restaurant": {"title": "Porta de restaurante ao anoitecer"},
+    "soft-flats": {"title": "Duas casas cortadas ao meio"},
+    "soft-den": {"title": "Sala com persiana"},
+    "toon-paper": {"title": "Currículo na mesa"},
+    "toon-sample-tray": {"title": "Bandeja de amostras"},
+    "toon-tissue-box": {"title": "Caixa de lenços"},
+    "toon-blind": {"title": "Persiana"},
+    "toon-wall-sign": {"title": "Placa de empresa na parede"},
+    "toon-notice": {"title": "Aviso do sistema"},
+    "toon-laptop-lid": {"title": "Tampa do laptop"},
+    "toon-lanyard": {"title": "Crachá de empresa"},
+    "toon-necktie": {"title": "Gravata"},
+    "stick-tow-truck": {"title": "Guincho de ré"},
+    "stick-front-door": {"title": "Porta da frente de madeira"},
+    "stick-hall": {"title": "Hall de entrada, com o quintal pela porta"},
+    "toon-chat-chip": {"title": "Selo sobre o celular"},
+    "toon-chat-phone": {"title": "Celular da conversa"},
+    "collage-napkin": {"title": "Guardanapo no colarinho"},
+    "collage-toothbrush-mug": {"title": "Caneca com escova"},
+    "collage-snowy-window": {"title": "Janela com neve"},
+    "collage-wall-hole": {"title": "Buraco na parede"},
+    "collage-chair-back": {"title": "Encosto de cadeira"},
+    "collage-plate": {"title": "Prato de papel"},
+    "collage-order-pad": {"title": "Bloco de pedidos"},
+    "collage-menu-card": {"title": "Cardapio fechado"},
+    "collage-pen": {"title": "Caneta de papel"},
+    "collage-spoon": {"title": "Colher de papel"},
+    "collage-cereal-bowl": {"title": "Cereal na tigela"},
+    "collage-dead-plant": {"title": "Planta morta"},
+    "collage-desk-lamp": {"title": "Abajur de haste"},
+    "collage-headset": {"title": "Headset de atendimento"},
+    "collage-pay-envelope": {"title": "Envelope de pagamento lacrado"},
+    "collage-staircase": {"title": "Escada de papel"},
+    "collage-school-desk": {"title": "Carteira escolar"},
+    "collage-kayak": {"title": "Caiaque de papel"},
+    "collage-hard-hat": {"title": "Capacete de obra"},
+    "collage-wall-tv": {"title": "TV de parede de papel"}
   },
   "gallery": [
     {
@@ -9305,6 +9401,531 @@
         "at": 9.0
       },
       "text": "Uma caixinha inventada, sem letras nem marca, com um anel coral que só acende enquanto ela fala (November First)."
+    },
+    {
+      "section": "props",
+      "name": "Sala em casa: TV, filme e cereal",
+      "parts": [
+        "collage-wall-tv",
+        "collage-hard-hat",
+        "collage-kayak",
+        "collage-school-desk",
+        "collage-staircase",
+        "collage-cereal-bowl",
+        "collage-spoon"
+      ],
+      "shot": {
+        "episode": "on-this-day",
+        "at": 4.0
+      },
+      "text": "A TV de parede recorta o que o reel desenha na tela: um filme de fotos escala do caiaque à escada."
+    },
+    {
+      "section": "props",
+      "name": "Cabine sem janela",
+      "parts": [
+        "collage-pay-envelope",
+        "collage-headset",
+        "collage-desk-lamp",
+        "collage-dead-plant"
+      ],
+      "shot": {
+        "episode": "exciting-opportunity",
+        "at": 20.0
+      },
+      "text": "Um abajur, uma planta morta, o headset e o envelope lacrado: nenhum número à vista."
+    },
+    {
+      "section": "props",
+      "name": "A entrevista",
+      "parts": [
+        "collage-pen",
+        "collage-tissue-box",
+        "collage-wall-clock"
+      ],
+      "shot": {
+        "episode": "tell-us",
+        "at": 5.0
+      },
+      "text": "A caneta que desce quando a entrevista vira terapia."
+    },
+    {
+      "section": "props",
+      "name": "Dia 400",
+      "parts": [
+        "collage-chair-back",
+        "collage-wall-hole",
+        "collage-snowy-window",
+        "collage-toothbrush-mug",
+        "collage-napkin"
+      ],
+      "shot": {
+        "episode": "two-weeks",
+        "at": 12.0
+      },
+      "text": "O buraco não muda; a janela, a escova na caneca e a cadeira mudam."
+    },
+    {
+      "section": "props",
+      "name": "Pedido sem bloco",
+      "parts": [
+        "collage-menu-card",
+        "collage-order-pad",
+        "collage-plate"
+      ],
+      "shot": {
+        "episode": "no-pad",
+        "at": 8.0
+      },
+      "text": "Cardápio fechado, pratos que chegam um a um e o bloco que só aparece no fim."
+    },
+    {
+      "section": "props",
+      "name": "O celular que dá razão aos dois",
+      "parts": [
+        "toon-chat-phone",
+        "toon-chat-chip"
+      ],
+      "shot": {
+        "episode": "absolutely-right",
+        "at": 25.5
+      },
+      "text": "A janela de conversa inventada, com o selo que chega por cima."
+    },
+    {
+      "section": "locations",
+      "name": "Hall de entrada",
+      "parts": [
+        "stick-hall",
+        "stick-front-door"
+      ],
+      "shot": {
+        "episode": "pay-in-four",
+        "at": 5.0
+      },
+      "text": "O hall visto de dentro, a porta aberta para o quintal, a cerca e as casas do outro lado."
+    },
+    {
+      "section": "props",
+      "name": "Guincho de ré",
+      "parts": [
+        "stick-tow-truck"
+      ],
+      "shot": {
+        "episode": "pay-in-four",
+        "at": 16.5
+      },
+      "text": "Um guincho sem marca, de costas, que entra de ré pelo caminho e baixa o gancho ao lado de quem está na porta."
+    },
+    {
+      "section": "props",
+      "name": "Gravata e crachá",
+      "parts": [
+        "toon-necktie",
+        "toon-lanyard"
+      ],
+      "shot": {
+        "episode": "firm-handshake",
+        "at": 10.2
+      },
+      "text": "Uma gravata segurada pelo nó, ou vestida, e um crachá sem letras."
+    },
+    {
+      "section": "props",
+      "name": "Laptop e aviso do sistema",
+      "parts": [
+        "toon-laptop-lid",
+        "toon-notice"
+      ],
+      "shot": {
+        "episode": "firm-handshake",
+        "at": 15.0
+      },
+      "text": "A tampa do laptop que fecha no tempo certo e o aviso de uma linha sob a borda da mesa."
+    },
+    {
+      "section": "props",
+      "name": "Sala de entrevista",
+      "parts": [
+        "toon-wall-sign",
+        "toon-blind"
+      ],
+      "shot": {
+        "episode": "since-i-was-six",
+        "at": 10.6
+      },
+      "text": "A placa da empresa na parede e a persiana que desce."
+    },
+    {
+      "section": "props",
+      "name": "Sobre a mesa da entrevista",
+      "parts": [
+        "toon-tissue-box",
+        "toon-sample-tray",
+        "toon-paper"
+      ],
+      "shot": {
+        "episode": "since-i-was-six",
+        "at": 30.4
+      },
+      "text": "A caixa de lenços, a bandeja de amostras e o currículo."
+    },
+    {
+      "section": "locations",
+      "name": "Sala com persiana e televisão",
+      "parts": [
+        "soft-den",
+        "soft-television",
+        "soft-chip-bag",
+        "soft-chip"
+      ],
+      "shot": {
+        "episode": "still-watching",
+        "at": 7.0
+      },
+      "text": "Uma sala cuja hora do dia é parte do cenário: a persiana sobe, a noite sai. A televisão não tem rosto, só barras de voz e uma contagem."
+    },
+    {
+      "section": "locations",
+      "name": "Duas casas e um cobertor",
+      "parts": [
+        "soft-flats",
+        "soft-blanket",
+        "soft-hook-card"
+      ],
+      "shot": {
+        "episode": "still-on",
+        "at": 3.0
+      },
+      "text": "Duas casas lado a lado com uma parede entre elas, e o mesmo cobertor nos dois sofás."
+    },
+    {
+      "section": "locations",
+      "name": "Porta de restaurante",
+      "parts": [
+        "soft-restaurant",
+        "soft-scarf",
+        "soft-slippers"
+      ],
+      "shot": {
+        "episode": "still-on",
+        "at": 16.0
+      },
+      "text": "A calçada corre abaixo do quadro: a câmera desce e encontra as pantufas."
+    },
+    {
+      "section": "props",
+      "name": "Pilha de chapéus",
+      "parts": [
+        "hat-stack",
+        "tiny-hat"
+      ],
+      "shot": {
+        "episode": "many-hats",
+        "at": 13.0
+      },
+      "text": "Cada chapéu pousa sobre o anterior com um pequeno achatamento, e a pilha balança e cai inteira. Quando sai do quadro, sobra o menor de todos."
+    },
+    {
+      "section": "locations",
+      "name": "Cabine de telemarketing",
+      "parts": [
+        "collage-booth"
+      ],
+      "shot": {
+        "episode": "exciting-opportunity",
+        "at": 20.0
+      },
+      "text": "Espuma nas paredes, nenhuma janela: de onde o recrutador liga."
+    },
+    {
+      "section": "locations",
+      "name": "Estrada que acaba no pasto",
+      "parts": [
+        "stick-rough-road"
+      ],
+      "shot": {
+        "episode": "in-two-hundred",
+        "at": 9.5
+      },
+      "text": "Da visão do motorista, o asfalto vira cascalho, o cascalho vira grama e a grama acaba numa cerca."
+    },
+    {
+      "section": "props",
+      "name": "Celular com o mapa",
+      "parts": [
+        "stick-nav-insert"
+      ],
+      "shot": {
+        "episode": "in-two-hundred",
+        "at": 15.0
+      },
+      "text": "O celular no suporte, em tela cheia: um mapa inventado e uma instrução grande o bastante para ler."
+    },
+    {
+      "section": "locations",
+      "name": "Carro à noite",
+      "parts": [
+        "toon-night-cabin",
+        "toon-night-dash"
+      ],
+      "shot": {
+        "episode": "who-names",
+        "at": 19.5
+      },
+      "text": "A cabine vista do painel, com os dois bancos da frente e a janela de trás."
+    },
+    {
+      "section": "props",
+      "name": "Chamada que ninguém desligou",
+      "parts": [
+        "toon-call-chip"
+      ],
+      "shot": {
+        "episode": "who-names",
+        "at": 19.5
+      },
+      "text": "O cronômetro corre apagado no painel e só acende quando alguém olha."
+    },
+    {
+      "section": "props",
+      "name": "Pasta e fotografia",
+      "parts": [
+        "toon-folder"
+      ],
+      "shot": {
+        "episode": "new-challenges",
+        "at": 21.5
+      },
+      "text": "Uma pasta vista de cima que abre sobre a foto de um prédio sem nome."
+    },
+    {
+      "section": "props",
+      "name": "A gaveta dos quarenta cabos",
+      "parts": [
+        "toon-cable-drawer",
+        "toon-gray-cable",
+        "toon-kitchen-bin",
+        "toon-fridge-light"
+      ],
+      "shot": {
+        "episode": "the-drawer",
+        "at": 10.3
+      },
+      "text": "A gaveta aberta num puxão, o cabo que ninguém sabe para que serve, a lixeira e a luz da geladeira."
+    },
+    {
+      "section": "locations",
+      "name": "O morro apagando",
+      "parts": [
+        "toon-hill-window"
+      ],
+      "shot": {
+        "episode": "the-drawer",
+        "at": 17.4
+      },
+      "text": "A janela da cozinha à noite, com os postes apagando em fila morro abaixo."
+    },
+    {
+      "section": "props",
+      "name": "Rascunho e bilhetes",
+      "parts": [
+        "toon-laptop-screen",
+        "toon-stuck-notes"
+      ],
+      "shot": {
+        "episode": "following-up",
+        "at": 13.0
+      },
+      "text": "A tela com o rascunho em mudança e os bilhetes riscados que se acumulam."
+    },
+    {
+      "section": "props",
+      "name": "Lupa e ponto de exclamação",
+      "parts": [
+        "toon-magnifier",
+        "toon-exclaim"
+      ],
+      "shot": {
+        "episode": "following-up",
+        "at": 22.0
+      },
+      "text": "A lupa sobre a tela e o ponto de exclamação desenhado como forma."
+    },
+    {
+      "section": "props",
+      "name": "Quadro de cortiça",
+      "parts": [
+        "toon-corkboard"
+      ],
+      "shot": {
+        "episode": "following-up",
+        "at": 29.3
+      },
+      "text": "O quadro que entra pelo lado, sem rostos, com a marca no centro."
+    },
+    {
+      "section": "props",
+      "name": "Janela de gravação",
+      "parts": [
+        "recording-window",
+        "meter-panel",
+        "face-box",
+        "green-tick"
+      ],
+      "shot": {
+        "episode": "one-way-video",
+        "at": 21.5
+      },
+      "text": "Uma janela de entrevista por vídeo inventada: ponto vermelho, contagem regressiva, barras que medem o sorriso e cantos que seguem um rosto."
+    },
+    {
+      "section": "props",
+      "name": "Cereal e porta",
+      "parts": [
+        "cereal-bowl",
+        "spoon",
+        "room-door"
+      ],
+      "shot": {
+        "episode": "one-way-video",
+        "at": 14.0
+      },
+      "text": "A porta abre atrás do candidato e entra alguém com uma tigela de cereal, que nunca é posta de lado."
+    },
+    {
+      "section": "props",
+      "name": "Gaveta de baixo",
+      "parts": [
+        "stick-interview-desk"
+      ],
+      "shot": {
+        "episode": "consulting",
+        "at": 21.0
+      },
+      "text": "A mesa de frente; a gaveta de baixo desliza e mostra o travesseiro, a coberta dobrada e os cardápios."
+    },
+    {
+      "section": "props",
+      "name": "Folha sobre a mesa",
+      "parts": [
+        "stick-desk-page"
+      ],
+      "shot": {
+        "episode": "consulting",
+        "at": 24.0
+      },
+      "text": "Uma folha na mesa, virada para cima ou para baixo, com uma linha marcada de vermelho."
+    },
+    {
+      "section": "props",
+      "name": "Currículo em tela cheia",
+      "parts": [
+        "stick-resume-insert"
+      ],
+      "shot": {
+        "episode": "consulting",
+        "at": 17.2
+      },
+      "text": "O currículo enche o quadro: linhas genéricas, um título, e uma palavra circulada à mão em vermelho."
+    },
+    {
+      "section": "locations",
+      "name": "Sala da entrevista de emprego",
+      "parts": [
+        "stick-interview-room"
+      ],
+      "shot": {
+        "episode": "consulting",
+        "at": 14.5
+      },
+      "text": "Uma sala pequena: a porta entre as duas cadeiras, a janela com a cidade fora de foco e a mesa no meio."
+    },
+    {
+      "section": "props",
+      "name": "Detector de fumaça no teto",
+      "parts": [
+        "toon-smoke-detector"
+      ],
+      "shot": {
+        "episode": "new-challenges",
+        "at": 28.4
+      },
+      "text": "O detector no teto, com a luz que fica vermelha no último instante."
+    },
+    {
+      "section": "locations",
+      "name": "Cabana no deserto",
+      "parts": [
+        "saga-hut",
+        "saga-hut-table",
+        "saga-plate",
+        "saga-cup",
+        "saga-ration-bar"
+      ],
+      "shot": {
+        "episode": "dental-plan",
+        "at": 0.45
+      },
+      "text": "Uma cabana redonda de barro com a janela nos dois sóis. A mesa fica à frente de quem senta, e a barra de ração está lá desde o primeiro quadro."
+    },
+    {
+      "section": "props",
+      "name": "Dente, holograma e formulário",
+      "parts": [
+        "saga-tooth",
+        "saga-benefits",
+        "saga-form",
+        "saga-wince"
+      ],
+      "shot": {
+        "episode": "dental-plan",
+        "at": 21.6
+      },
+      "text": "O plano de benefícios guardado como foto de formatura, e um dente que cai no prato com um quique. O formulário chega logo depois, deslizando pela mesa."
+    },
+    {
+      "section": "locations",
+      "name": "Guichê de devoluções",
+      "parts": [
+        "saga-returns",
+        "saga-returns-desk",
+        "saga-basket"
+      ],
+      "shot": {
+        "episode": "store-credit",
+        "at": 27.2
+      },
+      "text": "Um guichê simples numa estação espacial, com a fila, a janela nas estrelas e um cesto onde cabe uma estação quebrada."
+    },
+    {
+      "section": "props",
+      "name": "Cupom e sala escura",
+      "parts": [
+        "saga-coupon",
+        "saga-dim"
+      ],
+      "shot": {
+        "episode": "store-credit",
+        "at": 24.1
+      },
+      "text": "Um cupom minúsculo que atravessa o buraco, e uma sala que escurece sobre tudo o que já foi desenhado e depois volta."
+    },
+    {
+      "section": "props",
+      "name": "Um sinal, uma cadeira, uma mesa",
+      "parts": [
+        "toon-climb-chair",
+        "toon-table-legs",
+        "toon-raised-phone",
+        "toon-upload-chip",
+        "toon-sandwich-broom"
+      ],
+      "shot": {
+        "episode": "one-bar",
+        "at": 7.1
+      },
+      "text": "O único ponto da casa com sinal: um braço que não desce, a cadeira sobre a mesa, o envio que anda devagar e o almoço entregue de vassoura."
     }
   ]
 }

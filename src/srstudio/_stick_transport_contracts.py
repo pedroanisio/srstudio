@@ -138,12 +138,14 @@ _CONTRACTS = {
     'stick-windshield': draw(
         ('end', END),
         ('speed', P(unit='dashes per second', minimum=0)),
+        ('ground', P(enum=('road', 'field'))),
         ('max_keys', KEY_BUDGET),
         handle=False,
         constraints=(
             FIXED,
             'speed=0 parks the road. Positive speed shrinks road dashes and poles about the vanishing '
             'point, then resets.',
+            'ground="field" draws two wheel tracks in the grass instead of the road and refuses a nonzero speed.',
             'This is an authored 2D perspective effect, not camera motion. end bounds generated cycles, '
             'not scene visibility.',
             'The final full cycle can end after end; each reset gap is min(0.001 seconds, half a cycle).',
@@ -155,6 +157,7 @@ _CONTRACTS = {
         ('buzz', P(items=TIME)),
         ('down', TIME),
         ('code', P(prefix_items=(PIXEL, PIXEL, PIXEL, P(description='Signature color.')))),
+        ('cactus', SCALE),
         handle=False,
         constraints=(
             FIXED,
@@ -164,7 +167,8 @@ _CONTRACTS = {
             'outer parent clips them.',
             'down switches between separate mounted and face-down drawings with held opacity; it is not '
             'an interpolated handoff.',
-            'code is (x,y,height,color) for the signature on the hood. No scene handle is returned.',
+            'code is (x,y,height,color) for the signature on the hood; cactus scales the dashboard cactus. '
+            'Both sizes are positive. No scene handle is returned.',
         ),
     ),
     'stick-gate': draw(

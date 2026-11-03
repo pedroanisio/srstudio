@@ -145,6 +145,33 @@ def test_an_explicit_level_wins_over_the_style(project):
     assert (master.get("loudness"), master.get("truePeak")) == ("-14", "-1")
 
 
+def test_an_episodes_sounds_join_the_mix_of_its_takes_or_clips(project, tmp_path):
+    root = clips_project(project, tmp_path)
+    write_wav(root / "assets" / "ping.wav", [0.2] * 4800)
+    ep = Episode(spec(root))
+    ep.sounds = (("ping", "assets/ping.wav", {"start": 0.5, "gain": "-6"}),)
+    ep.audio()
+    ping = [t for t in mix_of(ep).iter("audioTrack") if t.get("id") == "track-ping"]
+    assert [t.get("asset") for t in ping] == ["ping"]
+
+
+def test_sounds_on_a_project_that_takes_no_extra_tracks_are_refused(project):
+    ep = Episode(spec(project))
+    ep.sounds = (("ping", "assets/ping.wav", {}),)
+    with pytest.raises(TypeError, match="sounds"):
+        ep.audio()
+
+
+def test_a_spec_masters_at_its_own_level_over_the_style_and_a_call_over_the_spec(project):
+    def level(ep, **kw):
+        ep.audio(**kw)
+        return mix_of(ep).find("master").get("loudness")
+
+    assert level(Episode(spec(project))) == "-16"
+    assert level(Episode(spec(project, loudness="-14"))) == "-14"
+    assert level(Episode(spec(project, loudness="-14")), loudness="-20") == "-20"
+
+
 def test_the_music_ducks_under_every_spoken_track_when_asked(project, tmp_path):
     root = clips_project(project, tmp_path)
     ep = Episode(spec(root, style=SOFT, font=None))

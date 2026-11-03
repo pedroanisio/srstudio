@@ -240,9 +240,12 @@ def test_the_style_value(tmp_path):
         "stick_gym",
         "stick_holiday",
         "stick_home",
+        "stick_interview",
         "stick_odds",
         "stick_office",
+        "stick_porch",
         "stick_roadtrip",
+        "stick_satnav",
         "stick_school",
         "stick_shop",
         "stick_street",
@@ -296,6 +299,15 @@ def test_the_style_value(tmp_path):
         "stick-card",
         "stick-call",
         "stick-words",
+        "stick-hall",
+        "stick-front-door",
+        "stick-tow-truck",
+        "stick-rough-road",
+        "stick-nav-insert",
+        "stick-interview-room",
+        "stick-interview-desk",
+        "stick-desk-page",
+        "stick-resume-insert",
         "stick-car",
         "stick-car-seat",
         "stick-laptop",
@@ -473,6 +485,21 @@ def test_every_seated_pose_and_face_draws():
                 face = stick.Face(eyes, brows, "smirk", (-1, 1))
                 stick.rig(cv, cv.comp, [stick.RigKey(0, name, face)], 1.0)
                 assert len(list(xml(cv).iter("shape"))) > 10
+
+
+def test_a_look_without_brows_draws_no_brows_and_the_default_keeps_them():
+    def shapes(look):
+        cv = canvas()
+        stick.rig(cv, cv.comp, [stick.RigKey(0, "type-a", stick.Face())], 1.0, look=look)
+        return len(list(xml(cv).iter("shape")))
+
+    assert stick.Look().brows is True
+    assert shapes(stick.Look(brows=False)) == shapes(stick.Look()) - 2
+
+
+def test_brows_must_be_true_or_false():
+    with pytest.raises(stick.StickDataError, match="brows must be true or false"):
+        stick.check_look(stick.Look(brows="none"))
 
 
 def test_a_card_can_be_narrowed_to_stay_clear_of_the_bug_and_the_default_keeps_its_width():

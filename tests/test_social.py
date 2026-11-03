@@ -1081,9 +1081,14 @@ def test_a_toon_reel_outside_the_sketch_builder_stays_on_version_one():
 ON_THE_FLOOR = Scores(15, 14)
 
 
+def plain_post(posts):
+    """A shipped post that is not on the show's cover, whose number would hold another release to the ledger."""
+    return next(p for p in posts.POSTS.values() if not isinstance(p.thumbnail, ShowCover))
+
+
 def unpinned_release(posts, monkeypatch, tmp_path) -> Path:
     """The shipped delivery with one release added that pins nothing, and nothing else to compare."""
-    post = next(iter(posts.POSTS.values()))
+    post = plain_post(posts)
     monkeypatch.setattr(posts, "RELEASES", {"new-reel": Release("new-reel", post, video="New_Reel")})
     monkeypatch.setattr(posts, "items", lambda *a, **kw: {})
     monkeypatch.setattr(posts, "font_file", lambda folder: tmp_path / "font.ttf")
@@ -1127,7 +1132,7 @@ def test_delivering_one_video_answers_only_for_its_own_pins(monkeypatch, tmp_pat
 def test_the_deliver_gate_refuses_a_stale_video_whose_build_left_no_record(monkeypatch, tmp_path):
     posts = shipped_posts()
     renders = unpinned_release(posts, monkeypatch, tmp_path)
-    post = next(iter(posts.POSTS.values()))
+    post = plain_post(posts)
     monkeypatch.setattr(posts, "RELEASES", {"new-reel": Release("new-reel", post, video="New_Reel", parts={})})
     monkeypatch.setattr(posts, "check_delivery", lambda *a, **kw: [Drift("New_Reel", "never delivered")])
     with pytest.raises(DeliveryError, match="New_Reel: no record of what its build drew"):
@@ -1137,7 +1142,7 @@ def test_the_deliver_gate_refuses_a_stale_video_whose_build_left_no_record(monke
 def test_the_deliver_gate_leaves_a_current_published_video_with_no_record_alone(monkeypatch, tmp_path):
     posts = shipped_posts()
     renders = unpinned_release(posts, monkeypatch, tmp_path)
-    post = next(iter(posts.POSTS.values()))
+    post = plain_post(posts)
     monkeypatch.setattr(posts, "RELEASES", {"new-reel": Release("new-reel", post, video="New_Reel", parts={})})
     monkeypatch.setattr(posts, "publish", lambda *a, **kw: [])
     assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine") == []
@@ -1146,7 +1151,7 @@ def test_the_deliver_gate_leaves_a_current_published_video_with_no_record_alone(
 def test_an_unreadable_manifest_means_every_video_is_being_delivered(monkeypatch, tmp_path):
     posts = shipped_posts()
     renders = unpinned_release(posts, monkeypatch, tmp_path)
-    post = next(iter(posts.POSTS.values()))
+    post = plain_post(posts)
     monkeypatch.setattr(posts, "RELEASES", {"new-reel": Release("new-reel", post, video="New_Reel", parts={})})
     monkeypatch.setattr(posts, "check_delivery", lambda *a, **kw: [Drift("*", "unreadable")])
     with pytest.raises(DeliveryError, match="New_Reel: no record of what its build drew"):
@@ -1155,7 +1160,7 @@ def test_an_unreadable_manifest_means_every_video_is_being_delivered(monkeypatch
 
 def _new_reel(posts, monkeypatch, tmp_path, repo, comedy=ON_THE_FLOOR, hashtags=("#everydaylife",)):
     renders = unpinned_release(posts, monkeypatch, tmp_path)
-    post = replace(next(iter(posts.POSTS.values())), hashtags=hashtags)
+    post = replace(plain_post(posts), hashtags=hashtags)
     release = Release("new-reel", post, video="New_Reel", parts={}, comedy=comedy)
     monkeypatch.setattr(posts, "RELEASES", {"new-reel": release})
     monkeypatch.setattr(posts, "REPO", repo)

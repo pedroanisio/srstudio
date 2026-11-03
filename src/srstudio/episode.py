@@ -486,6 +486,7 @@ class Episode:
             held_frames=spec.held_frames,
         )
         self._mix: AudioMix | None = None
+        self.sounds: tuple[tuple[str, str, dict], ...] = ()  # plain files every audio() adds, shaped as its ``extra``
         self._cover_hidden: list[tuple[str, str, str]] = []  # (id, property, value) overridden in the cover variant
         self._show_stamped = False  # the show bug (ADR 0074) is drawn once, however many times this finishes
         self._cover_written = 0
@@ -854,7 +855,8 @@ class Episode:
 
         * ``narration``: a verified ``narration.json`` (:func:`srstudio.narration.narration_cues`), one
           ``vo-NN`` asset and ``vo-track-NN`` track per cue; used when given, whatever else the project holds.
-        * clips: :meth:`generated_audio`; ``extra`` adds plain files as ``(asset id, path, track attributes)``.
+        * clips: :meth:`generated_audio`; ``extra`` adds plain files as ``(asset id, path, track attributes)``,
+          and so does :attr:`sounds`, for a builder that sets them before its stage mixes.
         * takes: :meth:`take_audio` for every take, with ``take(take)`` as its track attributes, then ``extra``.
         * mixed: :meth:`audio_mix` on ``track_id``.
 
@@ -876,6 +878,9 @@ class Episode:
         if given - allowed:
             unknown = ", ".join(f"{k}=" for k in sorted(given - allowed))
             raise EpisodeArgumentError(f"a {source} project takes no {unknown}")
+        if self.sounds and "extra" not in allowed:
+            raise EpisodeArgumentError(f"a {source} project takes no sounds; {len(self.sounds)} set")
+        extra = (*extra, *self.sounds)
         style = self.spec.style.mix
         loud, peak = loudness or self.spec.loudness or style.loudness, true_peak or style.true_peak
         if source == "silent":
