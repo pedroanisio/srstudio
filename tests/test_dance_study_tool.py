@@ -92,6 +92,15 @@ def test_nothing_but_a_style_is_written_inside_the_repository(tmp_path):
     assert tool.private(ROOT / "src" / "srstudio" / "assets" / "dance" / "styles" / "x.json").name == "x.json"
 
 
+def test_a_repeated_frame_draws_the_picture_it_repeats_not_a_lost_dancer():
+    """A 1.1.0 track's repeated frame holds no landmarks because its picture is the last one again (ADR 0204): the
+    skeleton video shows that picture's skeleton, never the "perdido" of a dancer not found."""
+    repeats = pt.from_data(record(8, lost=(5,), repeat=(2, 3, 6)))
+    shown = tool.shown_frames(repeats)
+    assert [shown[i].index for i in range(8)] == [0, 1, 1, 1, 4, 5, 5, 7]
+    assert shown[2].found and not shown[6].found  # a repeat of a lost picture is still lost
+
+
 def test_a_skeleton_is_drawn_and_a_lost_frame_says_so(track):
     found = tool.skeleton_frame(track.frames[0], 200, 240)
     assert found.shape == (240, 200, 3) and found.max() > 100
@@ -112,6 +121,20 @@ def test_the_page_is_portuguese_standalone_and_names_what_it_cannot_measure(styl
         assert name in text
     bare = tool.page(style, findings, footage=None, views=None, closest="bounce")
     assert "não foi gerado" in bare
+
+
+def test_the_page_states_a_missing_provenance_as_missing(style, findings):
+    """A record older than 1.2 stated no provenance: the page says so, and shows the trust its misses weigh by."""
+    data = json.loads(dance_style.dump_style(style))
+    data["schema"] = "srstudio.dance-style/1.1.0"
+    for channel in data["channels"]:
+        del channel["provenance"], channel["confidence"]
+    old = dance_style.parse_style(json.dumps(data))
+    text = tool.page(old, findings, footage=None, views=None, closest="bounce")
+    assert text.count("não registrada") == len(old.channels) and "estimado em 3D" not in text.split("<table")[1]
+    misses = tool.check_all(old, GROOVE, bars=4, fps=15)["candidates"][0]["misses"]
+    trust = {c.name: c.trust for c in old.channels}
+    assert misses and all(m["confidence"] == trust.get(m["channel"], "fair") for m in misses)
 
 
 # --- provenance on the skeleton (ADR 0202) --------------------------------------------------------------------------

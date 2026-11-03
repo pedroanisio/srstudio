@@ -4,18 +4,28 @@ our dances misses (ADR 0203).
 :func:`derive` turns a :class:`dance_study.StyleReading` of a reference into a :class:`DanceStyle`. Each channel's
 targets are ranges, never single numbers: the middle half of the reference's windows (25th to 75th percentile),
 widened by the estimate's own noise, and left out (None) where the reference gave too little evidence. The record is
-``srstudio.dance-style/1.1.0``, strict JSON, and holds only these numbers: no frame, landmark or time of the reference.
+``srstudio.dance-style/1.2.0``, strict JSON, and holds only these numbers: no frame, landmark or time of the reference.
 
-Each channel carries the provenance of what it reads (ADR 0202) and the ``confidence`` that provenance allows: a
-channel read from the estimator's 3D estimate (``estimated-3d``) is held at most ``fair`` whatever its ``trust``
-(:data:`CONFIDENCE_CAP`), and a miss weighs by that confidence. An ``unobserved`` channel is never a target: it has no
-ranges, the record refuses one that has, and it is listed under ``unmeasured``. A ``1.0.0`` record, written before
-provenance, reads with each channel's provenance from :data:`dance_study.CHANNEL` and the confidence it allows.
+1.1 added a gesture's timing (ADR 0204): per channel, ranges for the place of its fastest moment, its attack and
+release in beats and its peak acceleration, and the mean velocity profile of one cycle with how far a dance's may lie
+from it. They stand only on windows whose curve holds more than a sine, the profile only where those windows agree on
+it, and the frames that repeated a picture are counted as refused (``repeat``).
+
+1.2 adds each channel's provenance (ADR 0202) and the ``confidence`` that provenance allows: a channel read from the
+estimator's 3D estimate (``estimated-3d``) is held at most ``fair`` whatever its ``trust`` (:data:`CONFIDENCE_CAP`),
+and a miss weighs by that confidence. An ``unobserved`` channel is never a target: it has no ranges, the record refuses
+one that has, and it is listed under ``unmeasured``.
+
+Older records read with their own meaning. A 1.0 record has no timing, no ``repeat`` refusals and no ``timed``
+windows; neither a 1.0 nor a 1.1 record stated a provenance, so their channels read with ``provenance`` and
+``confidence`` None (missing, never filled in from today's channel table) and their misses weigh by ``trust``, as they
+did when written. Such a record is never written back as 1.2: it would claim a provenance it never stated. A channel
+the table now calls unobserved stays unobserved: an older record that holds a range on one is refused.
 
 :func:`check` samples nothing itself: it takes any sequence of :class:`dance.DanceFrame` (a move, a routine, a
 phrase), measures it on a preset skeleton with the same code as the reference, and returns :meth:`DanceStyle.misses`,
-ranked by how much each matters: the channel's trust, the measure's weight, and how far outside the range it falls
-against the range's width.
+ranked by how much each matters: the channel's confidence (its trust, in a record older than 1.2), the measure's
+weight, and how far outside the range it falls against the range's width.
 """
 
 from __future__ import annotations
@@ -30,6 +40,7 @@ from pathlib import Path
 
 from . import pose_track as pt
 from . import skeleton as sk
+from ._dance_measure import PROFILE_POINTS, profile_distance
 from ._dance_model import DanceError
 from ._dance_sample import DanceFrame
 from .dance_study import (
@@ -51,6 +62,8 @@ __all__ = [
     "CONFIDENCE_CAP",
     "IMPORTANCE",
     "SCHEMA",
+    "SCHEMAS",
+    "TIMING",
     "TRUST",
     "ChannelTarget",
     "DanceStyle",
@@ -70,8 +83,8 @@ __all__ = [
     "styles",
 ]
 
-SCHEMA = "srstudio.dance-style/1.1.0"
-LEGACY_SCHEMA = "srstudio.dance-style/1.0.0"  # before provenance: read, never written
+SCHEMA = "srstudio.dance-style/1.2.0"
+SCHEMAS = ("srstudio.dance-style/1.0.0", "srstudio.dance-style/1.1.0", SCHEMA)  # oldest first
 MAX_BYTES = 1_000_000
 TRUST = {"good": 1.0, "fair": 0.6, "poor": 0.25}
 CONFIDENCE_CAP = {pt.MEASURED_2D: "good", pt.ESTIMATED_3D: "fair"}  # the most a channel of each provenance is held
@@ -83,10 +96,29 @@ IMPORTANCE = {
     "cycles_per_beat": 0.7,
     "hit_offset": 0.6,
     "snap_ratio": 0.5,
+    "peak_speed_phase": 0.5,
+    "attack": 0.5,
+    "release": 0.5,
+    "peak_acceleration": 0.4,
+    "profile_distance": 0.6,
 }
 MEASURES = ("level", "peak_to_peak", "range", "cycles_per_beat", "snap_ratio", "hit_offset")
+TIMING = ("peak_speed_phase", "attack", "release", "peak_acceleration")
+TARGETS = (*MEASURES, *TIMING, "velocity", "profile_distance")  # every field a channel can be checked against
+PROFILE_AGREE = 0.15  # windows whose velocity profiles lie further than this from their mean do not agree on one
+ACCELERATION_WIDEN = 0.25  # a share of the middle peak acceleration: it is the fit's second derivative, the noisiest
 FLOOR = {"head_radii": 0.05, "rad": 0.03, "ratio": 0.03, "head_radii_per_beat": 0.1}
-MEASURE_FLOOR = {"cycles_per_beat": 0.05, "snap_ratio": 0.1, "hit_offset": 0.03, "lag": 0.03}
+MEASURE_FLOOR = {
+    "cycles_per_beat": 0.05,
+    "snap_ratio": 0.1,
+    "hit_offset": 0.03,
+    "lag": 0.03,
+    "peak_speed_phase": 0.03,
+    "attack": 0.03,
+    "release": 0.03,
+    "peak_acceleration": 1.0,
+    "profile_distance": 0.03,
+}
 MAX_SEVERITY_GAP = 4.0  # a miss four widths out counts no more than one far further out
 MIN_FRAMES = 30
 CYCLE_WIDEN = 0.05
@@ -94,7 +126,8 @@ SNAP_WIDEN = 0.1  # a share of the middle snap ratio
 NAME = re.compile(r"[a-z][a-z0-9-]{0,63}")
 DIGEST = re.compile(r"[0-9a-f]{64}")
 TEXT = re.compile(r"[^\x00-\x1f\x7f]{1,600}")
-REJECTS = ("lost", "low_confidence", "implausible", "jump", "arm")
+REJECTS = ("lost", "low_confidence", "implausible", "jump", "arm", "repeat")
+WHOLE_FRAME = ("lost", "low_confidence", "implausible", "jump", "repeat")  # an arm left out leaves its frame in use
 Range = tuple[float, float]
 
 
@@ -138,8 +171,14 @@ class ChannelTarget:
     """A channel's ranges: ``level`` (its value), ``peak_to_peak`` (the groove's size), ``range`` (how far it travels in
     a window), ``cycles_per_beat``, ``snap_ratio`` (rise over fall) and ``hit_offset`` (beats from the beat); None
     where the reference could not say. ``evidence`` is how many frames and windows the ranges stand on.
-    ``provenance`` is what the channel reads; ``confidence``, the lower of ``trust`` and what the provenance allows, is
-    what its misses weigh by, and None for an ``unobserved`` channel, which holds no range."""
+
+    The gesture's timing (1.1): ``peak_speed_phase`` (a share of the cycle from the hit, either way round the seam),
+    ``attack`` and ``release`` in beats, ``peak_acceleration`` in amplitudes per beat squared; ``velocity`` the mean
+    one-cycle velocity profile and ``profile_distance`` how far from it a dance's may lie.
+
+    ``provenance`` is what the channel reads (1.2); ``confidence``, the lower of ``trust`` and what the provenance
+    allows, is what its misses weigh by, and None for an ``unobserved`` channel, which holds no range. Both are None
+    on a channel read from a record written before 1.2, which never stated them: :attr:`held` is then its ``trust``."""
 
     name: str
     unit: str
@@ -153,10 +192,25 @@ class ChannelTarget:
     snap_ratio: Range | None
     hit_offset: Range | None
     evidence: Mapping[str, int]
-    provenance: str = pt.ESTIMATED_3D
+    peak_speed_phase: Range | None = None
+    attack: Range | None = None
+    release: Range | None = None
+    peak_acceleration: Range | None = None
+    velocity: tuple[float, ...] | None = None
+    profile_distance: Range | None = None
+    provenance: str | None = None
     confidence: str | None = None
 
     def __post_init__(self) -> None:
+        if self.provenance is None:  # an older record's channel: no provenance stated, so no confidence either
+            if self.trust not in TRUST:
+                raise StyleValueError(f"{self.name} trust is one of {list(TRUST)}", path=f"{self.name}.trust")
+            if self.confidence is not None:
+                raise StyleValueError(
+                    f"{self.name} states no provenance: it holds no confidence, not {self.confidence!r}",
+                    path=f"{self.name}.confidence",
+                )
+            return
         if self.provenance not in pt.PROVENANCES:
             raise StyleValueError(
                 f"{self.name} provenance is one of {list(pt.PROVENANCES)}, not {self.provenance!r}",
@@ -165,7 +219,7 @@ class ChannelTarget:
         if self.trust not in TRUST:
             raise StyleValueError(f"{self.name} trust is one of {list(TRUST)}", path=f"{self.name}.trust")
         if self.provenance == pt.UNOBSERVED:
-            held = [m for m in MEASURES if getattr(self, m) is not None]
+            held = [m for m in TARGETS if getattr(self, m) is not None]
             if held or self.confidence is not None:
                 raise StyleValueError(
                     f"{self.name} is unobserved: it cannot be a target, and holds no range or confidence ({held})",
@@ -181,6 +235,12 @@ class ChannelTarget:
                 f"{CONFIDENCE_CAP[self.provenance]!r} for {self.provenance}, not {self.confidence!r}",
                 path=f"{self.name}.confidence",
             )
+
+    @property
+    def held(self) -> str | None:
+        """The level its misses weigh by: the confidence, or the trust of a record that stated no provenance; None for
+        an unobserved channel, which is no target."""
+        return self.trust if self.provenance is None else self.confidence
 
 
 def held_confidence(trust: str, provenance: str) -> str:
@@ -232,17 +292,24 @@ class DanceStyle:
             raise DanceStyleError("a style checks a dance_study.StyleReading", path="reading")
         out = []
         for target in self.channels:
-            if target.confidence is None:  # unobserved: no target
+            held = target.held
+            if held is None:  # unobserved: no target
                 continue
             ours = reading.channels[target.name]
-            for measure in MEASURES:
+            for measure in MEASURES + TIMING:
                 span = getattr(target, measure)
                 if span is not None:
-                    out.extend(_miss(target.name, measure, target.unit, target.confidence, span, _ours(ours, measure)))
+                    found = _ours(ours, measure)
+                    if measure == "peak_speed_phase" and found is not None:
+                        found = _round(found, span)
+                    out.extend(_miss(target.name, measure, target.unit, held, span, found))
+            if target.velocity is not None and target.profile_distance is not None:
+                away = profile_distance(ours.velocity, target.velocity) if ours.velocity else None
+                out.extend(_miss(target.name, "profile_distance", "", held, target.profile_distance, away))
         for lag in self.lags:
             if lag.beats is not None:
-                found = reading.lags[lag.key].beats
-                out.extend(_miss(lag.key, "lag", "beats", "fair", lag.beats, found.p50 if found else None))
+                lagged = reading.lags[lag.key].beats
+                out.extend(_miss(lag.key, "lag", "beats", "fair", lag.beats, lagged.p50 if lagged else None))
         return tuple(sorted(out, key=lambda m: (-m.severity, m.channel, m.measure)))
 
 
@@ -251,12 +318,22 @@ def _ours(reading: ChannelReading, measure: str) -> float | None:
     return None if found is None else found.p50
 
 
+def _round(phase: float, span: Range) -> float:
+    """The place ``phase`` reads as, whole cycles away, that lies nearest ``span``: a cycle has no seam."""
+    middle = (span[0] + span[1]) / 2
+    return phase + round(middle - phase)
+
+
 def _miss(name: str, measure: str, unit: str, trust: str, span: Range, ours: float | None) -> list[StyleMiss]:
     low, high = span
     weight = TRUST[trust] * IMPORTANCE["lag" if measure == "lag" else measure]
     shown = unit if measure in ("level", "peak_to_peak", "range") else {"lag": "beats"}.get(measure, "")
     if ours is None:
         words = f"{name} {measure}: ours shows no steady cycle; the reference reads {low:.3f}..{high:.3f} {shown}"
+        if measure in (*TIMING, "profile_distance"):
+            words = (
+                f"{name} {measure}: ours holds no more than a sine; the reference reads {low:.3f}..{high:.3f} {shown}"
+            )
         return [StyleMiss(name, measure, None, low, high, round(weight, 4), trust, words.rstrip())]
     if low <= ours <= high:
         return []
@@ -264,9 +341,17 @@ def _miss(name: str, measure: str, unit: str, trust: str, span: Range, ours: flo
     floor = MEASURE_FLOOR.get(measure, FLOOR.get(unit, 0.05))
     width = max(high - low, 0.25 * abs(low + high) / 2, floor)
     severity = weight * min(MAX_SEVERITY_GAP, gap / width)
-    way = {"hit_offset": ("early", "late"), "lag": ("early", "late")}.get(measure, ("small", "big"))
+    way = {
+        "hit_offset": ("early", "late"),
+        "lag": ("early", "late"),
+        "peak_speed_phase": ("early", "late"),
+        "attack": ("quick", "slow"),
+        "release": ("quick", "slow"),
+    }.get(measure, ("small", "big"))
     word = way[0] if ours < low else way[1]
     words = f"{name} {measure} too {word}: ours {ours:.3f}, the reference {low:.3f}..{high:.3f} {shown}"
+    if measure == "profile_distance":
+        words = f"{name} velocity profile unlike the reference's: {ours:.3f} from its mean, at most {high:.3f}"
     return [StyleMiss(name, measure, ours, low, high, round(severity, 4), trust, words.rstrip())]
 
 
@@ -282,18 +367,43 @@ def _span(spread: Spread | None, widen: float, enough: bool, floor: float | None
     return (math.floor(low * 1e4) / 1e4, math.ceil(high * 1e4) / 1e4)  # outward, so rounding never narrows it
 
 
+_TimingTargets = tuple[Range | None, Range | None, Range | None, Range | None, tuple[float, ...] | None, Range | None]
+
+
+def _timing_targets(reading: ChannelReading, frame_beats: float) -> _TimingTargets:
+    """The timing ranges, on ``MIN_WINDOWS`` windows that read more than a sine, and the mean velocity profile with how
+    far from it a dance's may lie, only where those windows agree on it. Only a channel of ``good`` trust, read in
+    the picture's own plane, holds them: a timing read through the estimator's depth guess carries that guess's
+    jitter in its second derivative."""
+    timed = reading.timed >= MIN_WINDOWS and CHANNEL[reading.name].trust == "good"
+    acceleration = reading.peak_acceleration.p50 * ACCELERATION_WIDEN if reading.peak_acceleration else 0.0
+    cycle_frame = frame_beats * (reading.cycles_per_beat.p50 if reading.cycles_per_beat else 1.0)
+    agreed = reading.profile_spread if timed and reading.velocity else None
+    if agreed is not None and agreed.p75 > PROFILE_AGREE:
+        agreed = None
+    return (
+        _span(reading.peak_speed_phase, cycle_frame / 2, timed, None),
+        _span(reading.attack, frame_beats / 2, timed),
+        _span(reading.release, frame_beats / 2, timed),
+        _span(reading.peak_acceleration, acceleration, timed),
+        None if agreed is None else tuple(round(v, 4) for v in reading.velocity),
+        None if agreed is None else (0.0, math.ceil((agreed.p90 + PROFILE_AGREE) * 1e4) / 1e4),
+    )
+
+
 def _channel_target(reading: ChannelReading, frame_beats: float) -> ChannelTarget:
     chan = CHANNEL[reading.name]
     if chan.provenance == pt.UNOBSERVED:  # never a target: no range, whatever the reading says
-        counts = {"frames": reading.frames, "windows": reading.windows, "read": 0, "still": 0, "locked": 0}
+        counts = {"frames": reading.frames, "windows": reading.windows, "read": 0, "still": 0, "locked": 0, "timed": 0}
         return ChannelTarget(
             reading.name, reading.unit, chan.trust, chan.why, None, None, None, None, None, None, None, counts,
-            pt.UNOBSERVED,
+            provenance=pt.UNOBSERVED,
         )  # fmt: skip
     # Sizes widen by twice the reading's noise, and by at least half the unit's floor: a difference smaller than the
     # floor does not show, and a range narrower than it would fail on the record's own rounding.
     widen = max(2 * (reading.noise or 0.0), FLOOR[reading.unit] / 2)
     grooves = reading.read >= MIN_WINDOWS
+    strokes = reading.timed >= MIN_WINDOWS  # a sine's rise is its fall: only windows timed read a snap
     signed = reading.name in ("torso.lean", "torso.roll", "torso.twist", "shoulders.tilt", "head.sway", "arms.height")
     snap = reading.snap_ratio.p50 * SNAP_WIDEN if reading.snap_ratio else 0.0
     return ChannelTarget(
@@ -306,7 +416,7 @@ def _channel_target(reading: ChannelReading, frame_beats: float) -> ChannelTarge
         _span(reading.peak_to_peak, widen, reading.windows >= MIN_WINDOWS),
         _span(reading.range, widen, reading.windows >= MIN_WINDOWS),
         _span(reading.cycles_per_beat, CYCLE_WIDEN, grooves, 0.01),
-        _span(reading.snap_ratio, snap, grooves, 0.01),
+        _span(reading.snap_ratio, snap, strokes, 0.01),
         _span(reading.hit_offset, frame_beats / 2, reading.locked >= MIN_WINDOWS, None),
         {
             "frames": reading.frames,
@@ -314,8 +424,10 @@ def _channel_target(reading: ChannelReading, frame_beats: float) -> ChannelTarge
             "read": reading.read,
             "still": reading.still,
             "locked": reading.locked,
+            "timed": reading.timed,
         },
-        chan.provenance,
+        *_timing_targets(reading, frame_beats),
+        provenance=chan.provenance,
     )
 
 
@@ -355,7 +467,14 @@ def _range_data(span: Range | None) -> list[float] | None:
 
 
 def dump_style(style: DanceStyle) -> str:
-    """The style as its strict JSON record."""
+    """The style as its strict JSON record, of the current schema."""
+    unstated = [c.name for c in style.channels if c.provenance is None]
+    if unstated:
+        raise StyleValueError(
+            f"{unstated} state no provenance (a record older than {SCHEMA}): written as {SCHEMA} they would claim one;"
+            " derive the style again from its reference",
+            path="channels",
+        )
     ref = style.reference
     data = {
         "schema": SCHEMA,
@@ -385,7 +504,9 @@ def dump_style(style: DanceStyle) -> str:
                 "confidence": c.confidence,
                 "why": c.why,
                 "noise": c.noise,
-                **{m: _range_data(getattr(c, m)) for m in MEASURES},
+                **{m: _range_data(getattr(c, m)) for m in MEASURES + TIMING},
+                "velocity": None if c.velocity is None else list(c.velocity),
+                "profile_distance": _range_data(c.profile_distance),
                 "evidence": dict(c.evidence),
             }
             for c in style.channels
@@ -433,13 +554,14 @@ def parse_style(text: str | bytes) -> DanceStyle:
     top = _fields(
         data, "record", ("schema", "name", "description", "generated_by", "reference", "channels", "lags", "unmeasured")
     )
-    if top["schema"] not in (SCHEMA, LEGACY_SCHEMA):
+    if top["schema"] not in SCHEMAS:
         kind = StyleSchemaError if isinstance(top["schema"], str) else StyleFormatError
-        raise kind(f"schema is {SCHEMA} (or {LEGACY_SCHEMA}), not {top['schema']!r}", path="schema")
-    legacy = top["schema"] == LEGACY_SCHEMA
+        raise kind(f"schema is one of {list(SCHEMAS)}, not {top['schema']!r}", path="schema")
+    timing = top["schema"] != SCHEMAS[0]
+    stated = top["schema"] == SCHEMA  # provenance and confidence: 1.2 on
     generated = _fields(top["generated_by"], "generated_by", ("tool", "model"))
     items = _list(top["channels"], "channels", 64)
-    channels = tuple(_channel(item, f"channels[{i}]", legacy) for i, item in enumerate(items))
+    channels = tuple(_channel(item, f"channels[{i}]", timing, stated) for i, item in enumerate(items))
     if [c.name for c in channels] != list(CHANNEL):
         raise StyleValueError(f"channels are {list(CHANNEL)}, in that order", path="channels")
     lags = tuple(_lag(item, f"lags[{i}]") for i, item in enumerate(_list(top["lags"], "lags", 16)))
@@ -458,7 +580,7 @@ def parse_style(text: str | bytes) -> DanceStyle:
             "tool": _text(generated["tool"], "generated_by.tool"),
             "model": _text(generated["model"], "generated_by.model"),
         },
-        _reference(top["reference"]),
+        _reference(top["reference"], timing),
         channels,
         lags,
         unmeasured,
@@ -473,6 +595,11 @@ LIMITS = {  # what each measure can be: (low, high)
     "snap_ratio": (0.0, 100.0),
     "hit_offset": (-1.0, 1.0),
     "lag": (-1.0, 1.0),
+    "peak_speed_phase": (-1.0, 2.0),  # a share of the cycle, either side of its seam
+    "attack": (0.0, 16.0),
+    "release": (0.0, 16.0),
+    "peak_acceleration": (0.0, 1e6),
+    "profile_distance": (0.0, 2.0),
 }
 LEVEL_LIMITS = {
     "head_radii": (-50.0, 50.0),
@@ -482,14 +609,17 @@ LEVEL_LIMITS = {
 }
 
 
-def _reference(value: object) -> Reference:
+def _reference(value: object, timing: bool) -> Reference:
     keys = tuple(f.name for f in fields(Reference))
     ref = _fields(value, "reference", keys)
-    rejected = _fields(ref["rejected"], "reference.rejected", REJECTS)
+    reasons = REJECTS if timing else REJECTS[:-1]
+    rejected = _fields(ref["rejected"], "reference.rejected", reasons)
     frames = _int(ref["frames"], "reference.frames", 1, 10_000_000)
     used = _int(ref["used"], "reference.used", 0, frames)
-    counts = {k: _int(rejected[k], f"reference.rejected.{k}", 0, frames) for k in REJECTS}
-    if used + sum(counts[k] for k in REJECTS[:4]) > frames:  # an arm left out leaves its frame in use
+    counts = {k: _int(rejected[k], f"reference.rejected.{k}", 0, frames) for k in reasons} | (
+        {} if timing else {"repeat": 0}
+    )
+    if used + sum(counts[k] for k in WHOLE_FRAME) > frames:
         raise StyleValueError("used and refused frames add up to more than the reference holds", path="reference")
     return Reference(
         _text(ref["description"], "reference.description"),
@@ -507,10 +637,10 @@ def _reference(value: object) -> Reference:
     )
 
 
-def _channel(value: object, path: str, legacy: bool = False) -> ChannelTarget:
-    added = () if legacy else ("provenance", "confidence")
+def _channel(value: object, path: str, timing: bool, stated: bool) -> ChannelTarget:
+    added = ("provenance", "confidence") if stated else ()
     keys = ("name", "unit", "trust", *added, "why", "noise", *MEASURES, "evidence")
-    entry = _fields(value, path, keys)
+    entry = _fields(value, path, keys + ((*TIMING, "velocity", "profile_distance") if timing else ()))
     name = _text(entry["name"], f"{path}.name", NAME_DOTTED)
     if name not in CHANNEL:
         raise StyleValueError(f"{path} names no channel: {name!r}", path=f"{path}.name")
@@ -519,21 +649,34 @@ def _channel(value: object, path: str, legacy: bool = False) -> ChannelTarget:
         raise StyleValueError(f"{name} is measured in {chan.unit}, not {entry['unit']!r}", path=f"{path}.unit")
     if entry["trust"] not in TRUST:
         raise StyleValueError(f"{path}.trust is one of {list(TRUST)}", path=f"{path}.trust")
-    evidence = _fields(entry["evidence"], f"{path}.evidence", ("frames", "windows", "read", "still", "locked"))
-    counts = {k: _int(v, f"{path}.evidence.{k}", 0, 10_000_000) for k, v in evidence.items()}
+    counted = ("frames", "windows", "read", "still", "locked") + (("timed",) if timing else ())
+    evidence = _fields(entry["evidence"], f"{path}.evidence", counted)
+    counts = {k: _int(v, f"{path}.evidence.{k}", 0, 10_000_000) for k, v in evidence.items()} | (
+        {} if timing else {"timed": 0}
+    )
     if counts["read"] + counts["still"] > counts["windows"] or counts["locked"] > counts["read"]:
         raise StyleValueError(f"{path}.evidence counts more windows read than it has", path=f"{path}.evidence")
+    if counts["timed"] > counts["read"]:
+        raise StyleValueError(f"{path}.evidence has more windows timed than read", path=f"{path}.evidence")
     spans = {}
-    for m in MEASURES:
+    for m in MEASURES + (TIMING + ("profile_distance",) if timing else ()):
         limits = LEVEL_LIMITS[chan.unit] if m == "level" else LIMITS[m]
         spans[m] = _range(entry[m], f"{path}.{m}", limits)
-    if not chan.groove and any(spans[m] is not None for m in MEASURES[1:]):
+    velocity = _profile(entry["velocity"], f"{path}.velocity") if timing else None
+    if (velocity is None) != (spans.get("profile_distance") is None):
+        raise StyleValueError(f"{path}: velocity and profile_distance are given together", path=path)
+    if not chan.groove and (any(spans[m] is not None for m in spans if m != "level") or velocity is not None):
         raise StyleValueError(f"{name} is read as a level, never as a groove", path=path)
     noise = None if entry["noise"] is None else _number(entry["noise"], f"{path}.noise", 0.0, 100.0)
-    provenance = chan.provenance if legacy else entry["provenance"]
-    if provenance != chan.provenance:
+    provenance, confidence = (entry["provenance"], entry["confidence"]) if stated else (None, None)
+    if not stated and chan.provenance == pt.UNOBSERVED:
+        held = [m for m in spans if spans[m] is not None] + (["velocity"] if velocity is not None else [])
+        if held:
+            raise StyleValueError(f"{name} is unobserved: an older record cannot make it a target ({held})", path=path)
+    if stated and provenance != chan.provenance:
         raise StyleValueError(f"{name} reads {chan.provenance} data: its provenance is not {provenance!r}", path=path)
-    confidence = None if legacy else entry["confidence"]
+    if stated and provenance != pt.UNOBSERVED and confidence is None:
+        raise StyleValueError(f"{path}.confidence is missing: {name} is observed", path=f"{path}.confidence")
     if confidence is not None and confidence not in TRUST:
         raise StyleValueError(f"{path}.confidence is one of {list(TRUST)} or null", path=f"{path}.confidence")
     return ChannelTarget(
@@ -549,9 +692,24 @@ def _channel(value: object, path: str, legacy: bool = False) -> ChannelTarget:
         spans["snap_ratio"],
         spans["hit_offset"],
         counts,
-        str(provenance),
+        spans.get("peak_speed_phase"),
+        spans.get("attack"),
+        spans.get("release"),
+        spans.get("peak_acceleration"),
+        velocity,
+        spans.get("profile_distance"),
+        None if provenance is None else str(provenance),
         None if confidence is None else str(confidence),
     )
+
+
+def _profile(value: object, path: str) -> tuple[float, ...] | None:
+    if value is None:
+        return None
+    points = _list(value, path, PROFILE_POINTS)
+    if len(points) != PROFILE_POINTS:
+        raise StyleFormatError(f"{path} is {PROFILE_POINTS} numbers", path=path)
+    return tuple(_number(v, path, -1.0, 1.0) for v in points)
 
 
 def _lag(value: object, path: str) -> LagTarget:

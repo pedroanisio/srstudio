@@ -136,7 +136,7 @@ def measure(track: pt.PoseTrack, groove: music.Groove, *, name: str, description
         seconds=round(len(track.frames) / track.fps, 3),
         frames=len(track.frames),
         used=body.used,
-        rejected=dict(body.rejected),
+        rejected=dict(body.rejected) | {"repeat": body.repeats},
         bpm=groove.bpm,
         beats_per_bar=groove.beats_per_bar,
         offset_s=groove.offset,
@@ -181,7 +181,9 @@ def check_all(
                         "low": m.low,
                         "high": m.high,
                         "severity": m.severity,
-                        "confidence": m.trust,  # the trust the channel's provenance holds it at (ADR 0202)
+                        # what the miss weighs by: the confidence the channel's provenance holds it at (ADR 0202), or
+                        # its trust in a record older than 1.2, which stated no provenance
+                        "confidence": m.trust,
                         "words": m.words,
                     }
                     for m in found.misses
@@ -395,6 +397,18 @@ def _px(point: Sequence[float], width: int, height: int) -> tuple[int, int]:
     return int(round(point[0] * width)), int(round(point[1] * height))
 
 
+def shown_frames(track: pt.PoseTrack) -> dict[int, pt.PoseFrame]:
+    """The frame drawn for each frame index: a frame that repeats the last distinct picture (ADR 0204) draws that
+    picture's frame, since it holds no landmarks of its own and its dancer was not lost."""
+    out: dict[int, pt.PoseFrame] = {}
+    last: pt.PoseFrame | None = None
+    for frame in track.frames:
+        if not frame.repeat or last is None:
+            last = frame
+        out[frame.index] = last
+    return out
+
+
 def skeleton_video(track: pt.PoseTrack, video: Path, out: Path) -> Path:  # pragma: no cover - ffmpeg and the footage
     """The footage beside the dancer's skeleton, with the footage's sound."""
     capture = cv2.VideoCapture(str(video))
@@ -408,7 +422,7 @@ def skeleton_video(track: pt.PoseTrack, video: Path, out: Path) -> Path:  # prag
     ]  # fmt: skip
     encoder = subprocess.Popen(command, stdin=subprocess.PIPE)
     assert encoder.stdin is not None
-    frames = {f.index: f for f in track.frames}
+    frames = shown_frames(track)
     index = 0
     while True:
         ok, bgr = capture.read()
@@ -447,6 +461,7 @@ PROVENANCE_PT = {
     pt.ESTIMATED_3D: "estimado em 3D",
     pt.UNOBSERVED: "não observado",
 }
+UNSTATED_PT = "não registrada (registro anterior à versão 1.2)"
 MEASURE_PT = {
     "level": "valor típico",
     "peak_to_peak": "tamanho do balanço",
@@ -455,6 +470,11 @@ MEASURE_PT = {
     "snap_ratio": "subida/descida",
     "hit_offset": "acento antes(−)/depois(+) da batida",
     "lag": "atraso",
+    "peak_speed_phase": "momento mais rápido (fração do ciclo depois do acento)",
+    "attack": "chegada ao acento (batidas)",
+    "release": "saída do acento (batidas)",
+    "peak_acceleration": "aceleração máxima (amplitudes por batida²)",
+    "profile_distance": "diferença do perfil de velocidade",
 }
 
 
@@ -474,6 +494,15 @@ def _span(span: tuple[float, float] | None, unit: str = "") -> str:
     return f"{_num(span[0])} a {_num(span[1])}"
 
 
+def _gesture(c: dance_style.ChannelTarget) -> str:
+    """The channel's gesture timing in words, or how many windows read more than a sine when too few did."""
+    timed = c.evidence.get("timed", 0)
+    if c.attack is None or c.release is None:
+        return f"sem dados suficientes ({timed} janelas com mais que um seno)"
+    profile = "perfil medido" if c.velocity is not None else "janelas discordam do perfil"
+    return f"chegada {_span(c.attack)}, saída {_span(c.release)} batidas; {profile} ({timed} janelas)"
+
+
 def page(style: dance_style.DanceStyle, findings: dict, *, footage: str | None, views: str | None, closest: str) -> str:
     """The proof page, standalone HTML in Portuguese."""
     e = html.escape
@@ -484,8 +513,8 @@ def page(style: dance_style.DanceStyle, findings: dict, *, footage: str | None, 
         rows.append(
             "<tr>"
             f"<td><b>{e(c.name)}</b><br><small>{e(LABELS[c.name])}</small></td>"
-            f"<td>{PROVENANCE_PT[c.provenance]}</td>"
-            f"<td>{'—' if c.confidence is None else TRUST_PT[c.confidence]}</td>"
+            f"<td>{UNSTATED_PT if c.provenance is None else PROVENANCE_PT[c.provenance]}</td>"
+            f"<td>{'—' if c.held is None else TRUST_PT[c.held]}</td>"
             f"<td>{_span(c.level, unit)}</td>"
             f"<td>{_span(c.peak_to_peak, unit)}</td>"
             f"<td>{_span(c.cycles_per_beat)}</td>"
@@ -493,6 +522,7 @@ def page(style: dance_style.DanceStyle, findings: dict, *, footage: str | None, 
             f"<td>{_span(c.snap_ratio)}</td>"
             f"<td>{_num(c.noise, unit)}</td>"
             f"<td>{c.evidence['read']}/{c.evidence['windows']}</td>"
+            f"<td>{_gesture(c)}</td>"
             "</tr>"
         )
     lags = "".join(
@@ -569,7 +599,7 @@ medida; o que vem da estimativa 3D fica no máximo em “média”, e uma falta 
 <div class="table"><table>
 <tr><th>Canal</th><th>Origem</th><th>Confiança</th><th>Valor típico</th><th>Tamanho do balanço</th>
 <th>Ciclos por batida</th><th>Acento (batidas)</th><th>Subida/descida</th><th>Ruído por quadro</th>
-<th>Janelas lidas</th></tr>
+<th>Janelas lidas</th><th>Tempo do gesto</th></tr>
 {"".join(rows)}
 </table></div>
 <h3>Atrasos em cadeia (quanto uma parte se mexe depois da outra, em batidas)</h3>
@@ -604,7 +634,7 @@ _UNMEASURED_PT = {
 
 def _explain(miss: dict) -> str:
     low, high, ours = miss["low"], miss["high"], miss["ours_median"]
-    unit = "rad" if miss["channel"] in _RAD else ""
+    unit = "rad" if miss["channel"] in _RAD and miss["measure"] in ("level", "peak_to_peak", "range") else ""
     parts = []
     if miss["below"]:
         parts.append(f"{miss['below']} abaixo")

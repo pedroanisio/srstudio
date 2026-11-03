@@ -100,21 +100,31 @@ at the median of the frames where both are visible. Nine frames in ten are under
 the right reaches the 8.6 cm needed in 0.7% of its frames, before its part along the bone is taken off. A forearm's
 roll cannot be told from this footage.
 
-### The style record: `srstudio.dance-style/1.1.0`
+### The style record: `srstudio.dance-style/1.2.0`
 
-Each `dance_study.CHANNEL` states the `provenance` of what it reads. Each channel of a style record carries that
-provenance and the `confidence` it is held at:
+Each `dance_study.CHANNEL` states the `provenance` of what it reads. The style record's 1.2 minor adds, to the gesture
+timing of 1.1 ([ADR 0204](0204-gesture-timing.md)), that provenance and the `confidence` each channel is held at:
 
 - the confidence is the lower of the channel's trust and `CONFIDENCE_CAP[provenance]`;
 - for `measured-2d` the cap is `good`, and for `estimated-3d` it is `fair`;
-- a miss weighs by the confidence, not the trust.
+- a miss weighs by the confidence, not the trust, the timing misses of 1.1 included.
 
 An `unobserved` channel is never a target. `derive` gives it no ranges and lists it under `unmeasured`.
 `ChannelTarget` refuses one that holds a range or a confidence, and `parse_style` refuses a record whose provenance
-or confidence disagrees with the channel. A `1.0.0` record, written before provenance, still reads: its provenance
-comes from the channel table and its confidence from the cap. A `1.0.0` record that carries either field is refused
-as malformed. Today every channel reads the world landmarks, so all thirteen are `estimated-3d`, and
-`shoulders.tilt`, `head.bob`, `head.sway`, `arms.height` and `stance.width` drop from `good` to `fair`.
+or confidence disagrees with the channel, or that leaves an observed channel's confidence out.
+
+Today every channel reads the world landmarks, so all thirteen are `estimated-3d`, and `shoulders.tilt`, `head.bob`,
+`head.sway`, `arms.height` and `stance.width` drop from `good` to `fair`. The timing ranges stand only on channels of
+`good` trust; held at `fair`, their misses weigh as an estimate's do.
+
+Records of `1.0.0` and `1.1.0` still read, each with its own meaning. They stated no provenance, so each channel reads
+with `provenance` and `confidence` None: the field is missing, and the reader says so rather than filling it from
+today's channel table. `ChannelTarget.held`, the level a miss weighs by, is then the channel's trust, as it was when the
+record was written. A record of either minor that carries either field is refused as malformed, and `dump_style`
+refuses to write a style without provenance as 1.2, since that record would claim a provenance it never stated. A
+channel the table calls `unobserved` stays so: an older record holding a range on one is refused. The shipped
+`studio-hiphop` record was re-measured from its track as 1.2.0; its numbers are those of 1.1.0, with each channel's
+provenance and confidence added.
 
 ### The study overlay
 
@@ -133,10 +143,13 @@ A legend in the frame says so, in Portuguese. The page's style table shows each 
   the drawing would then show the prior as if the footage had shown it. The overlay shows what is unknown.
 - **One confidence per record.** The provenance differs channel by channel and bone by bone; one number would hide
   exactly the twists that are never seen.
-- **Rewriting the shipped `studio-hiphop` record to 1.1.0.** Reading 1.0.0 as legacy gives the same numbers without
-  touching a record another branch is editing; a re-measure writes 1.1.0.
-- **Refusing 1.0.0 records.** The provenance a 1.0.0 record lacks is fixed by the channel table, so nothing is
-  guessed when it is filled in. Refusing it would break shipped data for no gain in correctness.
+- **Filling an older record's provenance from the channel table.** The table says what a channel reads today, not
+  what the record's author stated; filled in, an older record would weigh its misses at a confidence it never held
+  and could be written back as 1.2 with a claim nobody made. Missing is stated as missing.
+- **Refusing 1.0.0 and 1.1.0 records.** Each still means what it meant when written, so reading it with that meaning
+  costs no correctness; refusing would break every record written before 1.2.
+- **Two style bumps, one per branch.** Timing and provenance were each written as 1.1.0 on their own branches. One
+  1.1.0 holding either set of fields would be ambiguous, so timing keeps 1.1.0 and provenance is 1.2.0.
 - **Drawing the volume in the render engine.** The review tool needs only flat primitives, and a renderer-independent
   model can be tested exactly: a stripe's offset, a silhouette's width and a cap's near arc are numbers.
 - **A true (non-mirrored) front view.** The review tool's planes have always been mirror views. Their layout is kept,
