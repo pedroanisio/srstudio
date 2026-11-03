@@ -39,6 +39,16 @@ verified output images. Existing composition IPC stays at 16 MiB. The 8 MiB
 source/input/output limits and hard worker memory/deadline controls remain in
 force. The protocol contains no executable callbacks or caller-selected imports.
 
+When every earlier layout exceeds the expansion allowance, reused native ink
+gets a tighter namespace bound: serialize its verified source after portable
+font paths and the layout's longest ID prefix have been applied. This counts
+actual reference expansion instead of charging every anonymous shape or native
+key another 256 bytes. Spatial paths and lit forms retain their conservative
+projection bounds; layer/placement overhead, memory and final output checks
+remain enforced. Previously fitting layouts retain their bytes. Increasing the
+eight-MiB limit or simplifying authored contours to accommodate a namespace
+overestimate was rejected.
+
 The [executable guide](../composition-preflight.md#emit-a-scene-timeline),
 [emission tests](../../tests/test_scene_timeline_emission.py) and
 [protocol tests](../../tests/test_scene_timeline_protocol.py) cover this adapter.

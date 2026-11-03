@@ -15,6 +15,14 @@ def sequence(backend='plates'):
     return c.RasterSequence('host', 2, (c.RasterFrame(0, first), c.RasterFrame(0.5, second), c.RasterFrame(1.5, first)))
 
 
+def held_sequence(backend='plates', count=240):
+    """Many held snapshots alternating two looks over the same geometry, within the two-second source."""
+    item = sequence(backend)
+    looks = (item.frames[0].source, item.frames[1].source)
+    frames = tuple(c.RasterFrame(index / 120, looks[index % 2]) for index in range(count))
+    return replace(item, frames=frames)
+
+
 def plan_for(source):
     base = plate_plan()
     backend = 'plates' if isinstance(source.frames[0].source, c.PlateSource) else 'proxy'

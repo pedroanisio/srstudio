@@ -105,6 +105,20 @@ def select(timeline: m.SceneTimeline, vectors: dict[str, c.PreparedVector], maxi
         bound = compact_count(reduced)
         if fits(bound):
             return Layout(shared, runs)
+        # Native ink keeps its complete payload: only local IDs/references and
+        # portable resource paths change. Measure those edits once per asset
+        # instead of charging 256 extra bytes for every anonymous shape/key.
+        # Use the longest possible prefix in this layout, including nonshared
+        # placements of the same source. Earlier fitting layouts stay unchanged.
+        prefix = f'c{len(layers) - 1}_s{len(timeline.spans) - 1}'
+        for name in {layers[layer].asset for layer in shared}:
+            asset = vectors[name]
+            source = text_assets.portable(ET.fromstring(asset.xml), asset.fonts)
+            text_assets.scope(source, prefix)
+            weights[name] = len(ET.tostring(source))
+        bound = compact_count(reduced)
+        if fits(bound):
+            return Layout(shared, runs)
     raise c._fail('budget.expansion', bound, 'bounded timeline XML and working storage', 'composition.budget')
 
 

@@ -12,14 +12,14 @@ from . import composition as c
 from ._composition_runtime import _call
 
 
-def encode(source: c.ProxySource) -> dict:
+def encode(source: c.ProxySource, table: pw.BufferTable | None = None) -> dict:
     payload.validate_source(source)
-    return {'geometry': pw.source_encode(payload.sources(source)[0]), 'recipe': asdict(source.recipe)}
+    return {'geometry': pw.source_encode(payload.sources(source)[0], table), 'recipe': asdict(source.recipe)}
 
 
-def decode(value: object) -> c.ProxySource:
+def decode(value: object, table: pw.BufferTable | None = None) -> c.ProxySource:
     data = wire.fields(value, {'geometry', 'recipe'})
-    geometry = pw.source_decode(data['geometry'])
+    geometry = pw.source_decode(data['geometry'], table)
     source = c.ProxySource(
         geometry.id, geometry.meshes, wire.record(c.ProxyRecipe, data['recipe']), geometry.meters_per_unit
     )
@@ -45,14 +45,20 @@ def prepare_proxy(plan: c.ValidatedScenePlan, layer: str, source: c.ProxySource)
 
 
 def prepared_decode(
-    response: dict, plan: c.ValidatedScenePlan, layer: str, source: c.ProxySource, *, sequence: bool = False
+    response: dict,
+    plan: c.ValidatedScenePlan,
+    layer: str,
+    source: c.ProxySource,
+    *,
+    sequence: bool = False,
+    table: pw.BufferTable | None = None,
 ) -> c.PreparedProxy:
     binding, view, sources = payload.context(plan, layer, source, sequence=sequence)
     wire.fields(response, {'schema', 'status', 'passes', 'digest'})
     if type(response['passes']) is not list or len(response['passes']) != len(sources):
         raise wire.fail(None, 'exactly the required light/ID pass evidence')
     passes = tuple(
-        pw.prepared_decode(raw, plan, layer, part, view=pass_view)
+        pw.prepared_decode(raw, plan, layer, part, view=pass_view, table=table)
         for raw, part, pass_view in zip(response['passes'], sources, payload.views(view, len(sources)), strict=True)
     )
     asset = c.PreparedProxy(binding, source, layer, plan.digest, passes, '')

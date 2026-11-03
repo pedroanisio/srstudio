@@ -19,6 +19,7 @@ from srstudio import clay, plates, proxy
 from srstudio import composition as c
 from srstudio import scene_motion as m
 from srstudio.limbs import Vec3
+from srstudio.limbs.motion import Motion
 
 TONES = {
     'skin': ('#855840', '#bc855b', '#efb879', '#ffdea5'),
@@ -44,18 +45,19 @@ def _face(model: clay.Model, material: str, points: tuple[Vec3, ...], normal: Ve
     model.surface(material, vertices, np.tile(facing, (len(points), 1)), triangles)
 
 
-def hand_mesh(time: float) -> tuple[clay.Mesh, ...]:
+def hand_mesh(time: float, *, motion: Motion | None = None) -> tuple[clay.Mesh, ...]:
     """Sample anatomy and the actual cup track, with an explicit opening hold.
 
     Round eight-sided tapered tubes follow every arm and digit joint. A closed
     palm prism uses the rig's palm corners and thickness; the cup retains the
     authored face vertices and gains a bottom. No independent hand/prop clocks
-    or camera-specific coordinates enter the geometry.
+    or camera-specific coordinates enter the geometry. ``motion`` defaults to
+    the shared carry; a candidate may retime it on the same clock.
     """
     if type(time) not in (int, float) or not 0 <= time <= DURATION:
         raise ValueError('hand time must lie in 0..6 seconds')
     time = max(0.5, time)
-    motion = carry_motion()
+    motion = motion or carry_motion()
     pose = motion.sample(time)
     model = clay.Model()
     width = motion.arm.width

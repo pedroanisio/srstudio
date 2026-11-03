@@ -39,11 +39,18 @@ def validate_source(source: c.RasterSequence) -> int:
         raise fail('frames', 'RasterFrame records')
     times(tuple(frame.time for frame in source.frames), source.duration)
     kind, units, oversample, total = type(source.frames[0].source), None, None, 0
+    seen: set[bytes] = set()
     for index, frame in enumerate(source.frames):
         item = frame.source
         if type(item) not in (c.PlateSource, c.ProxySource) or type(item) is not kind:
             raise fail('backend', 'one supported source backend throughout the timeline')
         total += pw.validate_source(item) if isinstance(item, c.PlateSource) else proxy.validate_source(item)
+        # The payload carries each distinct mesh buffer once (a content-addressed
+        # table), so a buffer repeated by a held snapshot is counted once too.
+        for buffer in _buffers(item):
+            if buffer in seen:
+                total -= len(buffer)
+            seen.add(buffer)
         if index == 0:
             units = item.meters_per_unit
             oversample = item.recipe.oversample if isinstance(item, c.ProxySource) else None
@@ -54,6 +61,20 @@ def validate_source(source: c.RasterSequence) -> int:
         if total > pw.MAX_BYTES:
             raise fail('buffers', 'at most eight MiB of combined timeline inputs')
     return total
+
+
+def _buffers(source: c.PlateSource | c.ProxySource) -> tuple[bytes, ...]:
+    return tuple(
+        buffer
+        for mesh in source.meshes
+        for buffer in (mesh.vertices, mesh.normals, mesh.triangles, mesh.uvs)
+        if buffer is not None
+    )
+
+
+def geometry_bytes(source: c.PlateSource | c.ProxySource) -> int:
+    """Mesh buffer bytes of one snapshot, as its own validation counts them."""
+    return sum(map(len, _buffers(source)))
 
 
 def frame_digest(source: c.PlateSource | c.ProxySource) -> str:
