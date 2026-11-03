@@ -2,7 +2,6 @@
   "schema_version": "1.0.0",
   "about": "Decision record numbers held for work on a branch. A record may take a reserved number only under the reserved name; take the next number that is neither on develop nor listed here. Remove a row once its record is on develop.",
   "reservations": [
-    {"number": "0212", "name": "fein-moves-transcribed", "owner": "worskpace-fein-moves", "reserved": "2026-11-02"},
-    {"number": "0214", "name": "dance-2d-skeleton-bridge", "owner": "worskpace-db", "reserved": "2026-11-02"}
+    {"number": "0212", "name": "fein-moves-transcribed", "owner": "worskpace-fein-moves", "reserved": "2026-11-02"}
   ]
 }

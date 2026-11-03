@@ -67,7 +67,9 @@ A `SkeletonProfile` says how one character differs from the canon, as data:
 The derivation keeps the mannequin's shares: one scale fits the stated height once the factors and the head are
 applied, so the crown lands exactly at `height_m`; `lengths_m` then replaces single segments. Three presets ship:
 `realistic` (1.75 m, human hands, arms at the sides), `cartoon` (1.0 m, head about a third of the height, short legs,
-three-finger hands) and `stick` (1.6 m, mitten hands, no eyes, jaw or toes).
+three-finger hands) and `stick` (1.6 m before its `lengths_m`, mitten hands, no eyes, jaw or toes). The stick's torso, arm and leg
+bones are the Stick cast's as `stick.rig` draws them at its 92 px head: a 333 px torso and bones of 155 px in the arm and
+255 px in the leg, so it stands 1.33 m.
 
 ### The pose
 

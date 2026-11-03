@@ -173,9 +173,10 @@ class MotionSource:
     """What the record was made from. A location module (``kind`` "module") has its ``name`` and ``version`` from the
     module, the SHA-256 of its file and the ``figure`` the motion is of; a BVH take (``kind`` "bvh") has its file's
     name and SHA-256, the bones srlocations did not know (``unknown_bones``) and the controls it held at their range in
-    some frame (``clamped_controls``)."""
+    some frame (``clamped_controls``); a clip lifted in memory from a 2D track (``kind`` "lifted", never read from a
+    record) has the lift's name and the SHA-256 of the points it was lifted from."""
 
-    kind: Literal["module", "bvh"]
+    kind: Literal["module", "bvh", "lifted"]
     name: str
     version: str | None
     digest: str

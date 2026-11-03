@@ -19,7 +19,7 @@ STAND = mb.load(DATA / "stand-wave-crossed-30fps.json")
 REAL = sk.preset("realistic")
 TOON = sk.preset("cartoon")
 STICK = sk.preset("stick")
-SLIP_BOUND_M = 1e-3  # a millimetre. Measured: cartoon 4.27 mm free, 0.45 mm held; stick 8.63 mm free, 0.05 mm held
+SLIP_BOUND_M = 1e-3  # a millimetre. Measured: cartoon 4.27 mm free, 0.45 mm held; stick 0.73 mm free, 0.10 mm held
 
 
 @functools.cache
@@ -71,10 +71,14 @@ def test_a_threshold_out_of_range_is_refused(height, speed, path):
 
 
 @pytest.mark.parametrize("profile", [TOON, STICK], ids=["cartoon", "stick"])
-def test_a_planted_foot_slides_without_the_lock_and_stays_put_with_it(profile):
+def test_a_planted_foot_slides_less_with_the_lock_and_stays_put(profile):
+    """The stick's legs, two 255 px bones as its cast draws them, keep nearly the walk's proportions, so even free its
+    foot slips under the bound; the lock still takes most of it away."""
     free, held = done(profile, False), done(profile)
-    assert rt.foot_slip(profile, free.poses, free.plants) > SLIP_BOUND_M
-    assert rt.foot_slip(profile, held.poses, held.plants) < SLIP_BOUND_M
+    slip, kept = rt.foot_slip(profile, free.poses, free.plants), rt.foot_slip(profile, held.poses, held.plants)
+    assert kept < SLIP_BOUND_M and kept < slip / 4
+    if profile is TOON:
+        assert slip > SLIP_BOUND_M
     assert free.locks == () and len(held.locks) == len(held.plants)
     assert all(lock.worst_miss_m < SLIP_BOUND_M for lock in held.locks)
 

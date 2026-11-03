@@ -435,3 +435,40 @@ many windows the timing stands on ([ADR 0204](decisions/0204-gesture-timing.md))
 as the AIST++ and Bailando papers score dance generation: `points` is the body's positions per frame
 (`body_points(profile, pose)` for each), `score` averages over the stops and `music_score` over the beats. It reads
 stops, not hits: a move that stops on the beat and between beats reads the same half a beat late.
+
+`srstudio.figure_steps.check(frames)` holds every figure of a run to its own dance: `frames` is one `FigureFrame` per
+figure per frame on screen (hip x, box, crown, state, shot), and a step between two frames past `NORMAL_STEP_LIMIT`
+(1.5) times the figure's largest step inside its dance span is a finding, per measure. It catches a figure that changes
+mode, from a stare to a dance, and lands somewhere else or at another size on the next frame, which no still shows.
+Inside a travel state (`TRAVEL`: walk, jog, exit) a figure covers ground faster than it dances, so there the change in
+step is judged instead, against 1.5 times the largest change in step inside the dance: a smooth slide passes, a
+one-frame jump in it fails. A change between two states, travel or not, is always judged by the step. A camera cut and a
+frame off screen are not steps; a figure with no dance span reports `no-dance-span` and is not clean.
+
+Contact shadows and pair clearance are standing gates on every multi-character dance (arc4d3, Slack 1793669089.710129):
+
+- `srstudio.contact_shadows.check(feet)` reads one `FootShadow` per foot per frame on screen. Each record holds the
+  foot's lift and ankle-to-toe midpoint, and the shadow drawn for it. Every foot within `PLANTED_LIFT` (12 px) of the
+  floor must have a shadow centred within `CENTRE_SHARE` (a quarter) of its width from that midpoint. This holds in
+  every state (walk, stare, dance, exit), so a figure cannot float outside its dance.
+- `srstudio.pair_clearance.check(figures, declared)` reads one `FigureBones` per figure per frame on screen: the drawn
+  strokes as segments in frame px, the head disc and the stroke's half width, from the pose that frame shows after
+  the scene's key-time rounding. For every pair of figures on a frame it measures the bone distance (centre line to
+  centre line, less both half widths) and the box gap. Any frame where two figures' bones meet is a finding, unless
+  `declared` covers that pair and frame. Declarations come only from `contacts(rows)`, a typed list of
+  `{"figures", "first", "last"}`, so no contact is allowed without one. `rig_bones(pose)` gives a Stick pose's
+  strokes. The box gap is reported and never judged: wide stances overlap their boxes long before their feet meet.
+- `srstudio.jog_fit.fit_jog(ref, bob)` fits the Stick jog to a figure's drawn body. Both drawings stand on the
+  reference's longer leg, and the crown moves between them by exactly `bob`. Fitting each leg to its own foreshortened
+  length used to make the bob depend on the reference: legs of 403 and 420 px doubled it. Choose `bob` under the
+  figure's travel limit in `figure_steps`.
+
+## Put a 2D track on the shared skeleton
+
+A cleaned 2D track (`dancepose.motion.clean`, fifteen joints, no depth) reaches a drawn figure through the shared
+skeleton ([ADR 0214](decisions/0214-dance-2d-skeleton-bridge.md)). `pose_clean.load(path)` reads it as untrusted data;
+`pose_lift.lift(track.points(), track.fps)` lifts it onto the 55-joint mannequin by named rules (depth from
+foreshortening, a common lean per bone, hinges in the bones' plane); `pose_lift.contacts(points, lifted)` finds the
+plants against a local floor; `pose_lift.foot_headings(points, plants)` says which way each foot points, from the hip
+line's width and the knees' bow, and faces the camera where the picture gives no direction. The record stays on the
+machine that made it; tests build their own tracks.

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stick Dance Proof</title>
+<style>
+:root { --bg:#f6f2ec; --surface:#fffdf9; --fg:#2a2622; --muted:#6b635a; --line:#e3dbd0; --chip:#ece5da; --on:#2f6fb5; --on-fg:#fff; }
+@media (prefers-color-scheme: dark) { :root { --bg:#1b1916; --surface:#24211d; --fg:#eee8df; --muted:#a9a094; --line:#3a352f; --chip:#322d28; --on:#7fb2ec; --on-fg:#13202e; color-scheme:dark; } }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; padding:28px 16px 48px; }
+main { max-width:1100px; margin:0 auto; display:grid; gap:24px; }
+h1 { margin:0; font-size:1.8rem; line-height:1.2; } h2 { margin:0 0 8px; font-size:1.2rem; }
+p { margin:0; } .muted { color:var(--muted); }
+section { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; min-width:0; }
+.clip { display:grid; grid-template-columns:minmax(0,360px) minmax(0,1fr); gap:20px; align-items:start; }
+video { width:100%; aspect-ratio:9/16; background:#000; border-radius:10px; display:block; }
+video.wide { aspect-ratio:auto; margin-bottom:8px; }
+.segs { display:flex; flex-wrap:wrap; gap:6px; }
+.segs button { font:inherit; font-size:.8rem; border:0; border-radius:999px; padding:4px 10px; background:var(--chip); color:var(--fg); cursor:pointer; }
+.segs button[aria-current="true"] { background:var(--on); color:var(--on-fg); }
+.scroll { overflow-x:auto; }
+table { border-collapse:collapse; font-size:.9rem; min-width:620px; }
+th, td { text-align:left; padding:6px 10px; border-top:1px solid var(--line); vertical-align:top; font-variant-numeric:tabular-nums; }
+ul { margin:0; padding-left:1.1em; display:grid; gap:4px; }
+@media (max-width:720px) { .clip { grid-template-columns:minmax(0,1fr); } }
+</style></head><body><main>
+<header><h1>Stick figures dance</h1>
+<p class="muted">Rendered by the engine at reel size, 25 pictures a second, over a synthesised track at 129 beats a minute. Turn the sound on: the drop should land on the kick. Nothing is merged until you approve.</p></header>
+<section class="clip"><video id="v" src="./$clip" controls playsinline preload="metadata"></video>
+<div>$views_figure<div class="segs" id="segs"></div>
+<h2 style="margin-top:16px">What to judge</h2><ul>
+<li>$limbs</li>
+<li>Car: the whole body drops on every beat and snaps sideways with the drop, then eases back.</li>
+<li>Car: the heads never tilt or turn inside a beat; faces and the driver's head turn change only where a phrase starts (bars 3 and 5).</li>
+<li>Car, bars 5 to 8: the passenger's raised arm rides her body with no lag and does not take the shrug, and her hand stays inside the windshield.</li>
+<li>Standing: the figure stands on the floor in front of the desk, clear of the furniture: its strokes stay between x $room_left and $room_right, right of the near desk leg's edge at $near_leg and inside the frame, and its feet stand at y $feet_floor, in front of the desk legs' feet at $desk_floor.</li>
+<li>Standing: both feet stay on their marks through bob, sway and arm-pump; in step-touch a foot leaves the floor only between its contacts (highest at y $feet_low).</li>
+<li>Standing: the moves blend over one beat at each change; the figure has the cast's proportions (a 333 px torso, 155 px arm bones and 255 px leg bones), drawn at 0.95 of the cast's size a step behind where it stands in the room's other shots.</li>
+</ul></div></section>
+<section><h2>Groove, measured against the reference</h2>
+<p class="muted">Each cell is the measured value, with the target from the reference reel under it. Bob in head radii (92 px); the drawn sway is read on the hips and the engine's on the head, which seat-groove carries the same way. "Drawn" reads the projected joints; "engine frames" reads the centre of the skin-coloured pixels in frames the engine rendered of the car shot's first $frames pictures, each friend's head read in its own half of the frame. One picture is 40 ms. Read pooled, the two heads' shared centre lands its sway extreme $pooled ms from the beat, while each head alone lands within $alone ms: the pooled centre moves with how many pixels of each head read as skin, and a change of a few pixels in one head moves it by a share of the 450 px between the two heads. That is a property of the read, not of the drawing.</p>
+<div class="scroll"><table><tr><th></th><th>Cycles a beat</th><th>Onto the hit</th><th>Away</th><th>Peak to peak</th><th>Hit</th></tr>$rows</table></div>
+<p class="muted" style="margin-top:8px">Passenger's raised hand, bars 6 to 8: $hand_cycles cycles a beat, $hand_p2p head radius peak to peak against her head's $head_p2p, low point $hand_offset ms from the beat. In the reference the raised hand moved 0.32 against the head's 0.50. Seat-groove's shoulder drop turned the whole raised arm, so the hand moved 0.70 against the head's 0.38; the adapter now fades the shoulder channels on an arm held past horizontal, so the raised hand rides the body and moves as the head does.</p></section>
+<section><h2>Standing moves</h2><p class="muted">No reference was measured for these moves, so there is no target: each is read on the channel it moves most, over its two bars, the blend from the move before included. A sway or step-touch loop spans several beats, and its hit is that move's own.</p><ul>$solo<li>Farthest a planted foot was short of its mark: $reach px.</li></ul></section>
+</main><script>
+const S=$marks;
+const v=document.getElementById("v"),box=document.getElementById("segs");
+const bs=S.map(s=>{const b=document.createElement("button");b.type="button";b.textContent=s.start.toFixed(1)+"s "+s.label;
+b.addEventListener("click",()=>{v.currentTime=s.start+0.02;v.play().catch(()=>{});});box.appendChild(b);return b;});
+v.addEventListener("timeupdate",()=>{let k=0;S.forEach((s,i)=>{if(v.currentTime>=s.start)k=i;});bs.forEach((b,i)=>b.setAttribute("aria-current",String(i===k)));});
+</script></body></html>

@@ -118,9 +118,11 @@ def test_a_mirrored_gesture_is_the_gesture_seen_in_a_mirror(name):
 
 
 # clap: the hands meet in front of the chest on the beat and part between beats. The cartoon's arms are short against
-# its shoulders, so at the angles where the realistic and stick hands meet its hands stop short; at intensity 2 they
-# meet too.
-CLAP_MEET = {"realistic": 0.1, "stick": 0.3, "cartoon": 0.9}
+# its shoulders, so at the angles where the realistic hands meet its hands stop short; at intensity 2 they meet too.
+# The stick has its cast's arms, two bones of 155 px on a 92 px head (3.37 head radii against the realistic's 5.53),
+# from shoulders as wide as the realistic's in head radii: at intensity 1 its hands cross by 0.44 head radius, and at
+# three quarters they meet.
+CLAP_MEET = {"realistic": 0.1, "cartoon": 0.9}
 
 
 @pytest.mark.parametrize("character", sk.PRESETS)
@@ -130,15 +132,32 @@ def test_clap_hands_meet_in_front_on_the_beat_and_part_between(character):
     for beat in (0, 1, 2):
         pose = posed(profile, move, beat)
         left, right = hand_tip(profile, pose, "left"), hand_tip(profile, pose, "right")
-        assert sum((a - b) ** 2 for a, b in zip(left, right, strict=True)) ** 0.5 / r < CLAP_MEET[character]
+        if character in CLAP_MEET:
+            assert sum((a - b) ** 2 for a, b in zip(left, right, strict=True)) ** 0.5 / r < CLAP_MEET[character]
         assert left[2] / r > 1.0 and right[2] / r > 1.0  # in front of the body
         assert above(profile, left[1], shoulder(profile, pose, "left")[1]) < 0  # below the shoulders: chest height
         apart = posed(profile, move, beat + 0.65)  # the far extreme of a sine with snap 0.35
         gap = hand_tip(profile, apart, "right")[0] - hand_tip(profile, apart, "left")[0]
         assert gap / r > 2.5
+    if character in CLAP_MEET:
+        for step in range(STEPS):
+            pose = posed(profile, move, step / STEPS)
+            assert hand_tip(profile, pose, "left")[0] / r < 0.15  # a hand never passes the middle by more than this
+
+
+def test_a_stick_crosses_its_hands_at_intensity_one_and_claps_shut_at_three_quarters():
+    profile = PROFILES["stick"]
+    r = radius(profile)
+    pose = posed(profile, MOVES["clap"], 0.0)
+    left, right = hand_tip(profile, pose, "left"), hand_tip(profile, pose, "right")
+    assert (left[0] - right[0]) / r == pytest.approx(0.44, abs=0.01)
+    routine = dance.Routine(1, (dance.Entry(0, 1, MOVES["clap"], intensity=0.75),))
     for step in range(STEPS):
-        pose = posed(profile, move, step / STEPS)
-        assert hand_tip(profile, pose, "left")[0] / r < 0.15  # a hand never passes the middle by more than this
+        pose = posed(profile, routine, step / STEPS)
+        left, right = hand_tip(profile, pose, "left"), hand_tip(profile, pose, "right")
+        if step == 0:
+            assert sum((a - b) ** 2 for a, b in zip(left, right, strict=True)) ** 0.5 / r < 0.1
+        assert left[0] / r < 0.15
 
 
 def test_a_cartoon_claps_shut_at_intensity_two():
@@ -149,7 +168,10 @@ def test_a_cartoon_claps_shut_at_intensity_two():
     assert abs(right[0] - left[0]) / radius(profile) < 0.15
 
 
-# point-up: the right arm points up and out on one, the left on two, held between.
+# point-up: the right arm points up and out on one, the left on two, held between. How far past the crown a hand can
+# point depends on the arm: the cartoon's arms are shorter than its head is tall, so it cannot reach past its crown,
+# and the stick's shoulder sits 2.83 head radii under its crown on an arm of 3.37, so its tip clears the crown by 0.74.
+PAST_CROWN = {"realistic": 1.0, "stick": 0.7}
 
 
 @pytest.mark.parametrize("character", sk.PRESETS)
@@ -161,8 +183,8 @@ def test_point_up_points_above_the_head_and_out_on_its_beat(character, beat, up,
         pose = posed(profile, MOVES["point-up"], at)
         tip = hand_tip(profile, pose, up)
         assert above(profile, tip[1], crown(profile, pose) + r) > 0.3  # above the middle of the head
-        if character != "cartoon":  # its arms are shorter than its head is tall: it cannot reach past its crown
-            assert above(profile, tip[1], crown(profile, pose)) > 1.0
+        if character in PAST_CROWN:
+            assert above(profile, tip[1], crown(profile, pose)) > PAST_CROWN[character]
         outward = (tip[0] - shoulder(profile, pose, up)[0]) * (1 if up == "right" else -1)
         assert outward / r > 0.5  # a diagonal: out past its own shoulder
         low = hand_tip(profile, pose, down)
@@ -251,8 +273,8 @@ def test_hands_up_holds_both_hands_over_the_head(character):
     for side in SIDES:
         y = hand_tip(profile, pose, side)[1]
         assert above(profile, y, crown(profile, pose) + radius(profile)) > 0.5
-        if character != "cartoon":
-            assert above(profile, y, crown(profile, pose)) > 1.5
+        if character in PAST_CROWN:  # 1.19 head radii on the stick, as far as its arms reach
+            assert above(profile, y, crown(profile, pose)) > {"realistic": 1.5, "stick": 1.1}[character]
 
 
 def test_hands_up_is_held_as_bias_pairs():
