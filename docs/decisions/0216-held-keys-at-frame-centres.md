@@ -131,6 +131,10 @@ from the 2-microsecond probe of the table above, both checked with `eval`:
   frame; the gate refuses it anyway, since the scene's timing is what it checks.
 - Of `penny-drop`'s 84 probed frames, 326 and 398 are a linear blink ramp that starts on a frame, not a held change;
   the gate names the other 82, and none on the reel rebuilt with `held_frames=True`.
+- The gate reads a node's own opacity, not what covers it, so its count is an upper bound on frames a viewer sees.
+  `big-font` v3 holds late page switches on frames 136 and 154 inside a phone that the full-frame "HE CAN'T" insert
+  covers; rebuilt with `held_frames=True` as `big-font-v4`, its master is byte-identical to v3's. A rebuild that
+  clears the gate costs nothing where the late change was never shown.
 
 A `did-you-pack` rebuilt with `held_frames=False`, byte-identical to the published scene, is refused with "held keys:
 4 held changes show a frame late, on frames 34, 40"; rebuilt with `held_frames=True`, it passes.
