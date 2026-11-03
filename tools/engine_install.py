@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """Install a scene-render engine from its published image, and optionally make it the one in use (ADR 0224).
 
-    python3 tools/engine_install.py 0.9.0 [--activate] [--image pedroanisio/scene-render] [--bin-dir DIR]
+    python tools/engine_install.py 0.9.0 [--activate] [--image pedroanisio/scene-render] [--bin-dir DIR]
 
 Pulls ``IMAGE:VERSION``, copies the engine and its commit out of a stopped container, and installs them at
 ``BIN_DIR/scene-render-vVERSION`` only after the binary reports VERSION, its commit is the commit of the tag vVERSION in
-the image's source repository, and it renders a smoke scene on this machine. ``engine.json`` beside it records the
-image digest. An installed version is never replaced by another image. ``--activate`` points ``BIN_DIR/scene-render``,
-the engine every srstudio tool, gate and unit runs, at the installed version in one rename; the previous version stays
-for a switch back. The engine then runs on the host, with no container per call.
+the image's source repository, and it renders a smoke scene on this machine, holding the GPU lock like any render.
+``engine.json`` beside it records the image digest. Run it with the Python that has srstudio installed. An installed
+version is never replaced by another image. ``--activate`` points ``BIN_DIR/scene-render``, the engine every srstudio
+tool, gate and unit runs, at the installed version in one rename; the previous version stays for a switch back. The
+engine then runs on the host, with no container per call.
 """
 
 from __future__ import annotations
@@ -23,6 +24,8 @@ import sys
 import tempfile
 from collections.abc import Callable, Sequence
 from pathlib import Path
+
+from srstudio import gpu
 
 DEFAULT_IMAGE = "pedroanisio/scene-render"
 LINK = "scene-render"
@@ -104,7 +107,8 @@ def _check(run: Run, stage: Path, version: str, tag_commit: str) -> str:
     scene, png = stage / "smoke.scene.xml", stage / "smoke.png"
     scene.write_text(SMOKE)
     try:
-        _call(run, [engine, "render", scene, "-o", png, "--strict"], "the smoke render")
+        with gpu.held():  # the smoke render opens the GPU like any render, so it waits its turn (ADR 0171)
+            _call(run, [engine, "render", scene, "-o", png, "--strict"], "the smoke render")
     except EngineInstallError as e:
         raise EngineInstallError(f"the smoke render failed on this machine: {e}") from None
     if not png.is_file():
