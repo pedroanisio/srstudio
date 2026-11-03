@@ -13,6 +13,13 @@ the misses all of them share. ``page`` writes a standalone page in Portuguese fo
 dancer's extracted skeleton, the style in plain numbers, the ranking, and the three-plane views of the closest preset.
 The page and its videos show a real person: they stay under the workspace's ``generated/`` (directory 700, files 600)
 on this machine and are never committed or published.
+
+The skeleton draws what the footage measured apart from what the estimator inferred (ADR 0202): a bone between two
+landmarks the estimator saw is a solid line (``measured-2d``); a bone twist the world landmarks hold is a translucent
+band in the side's colour with a stripe along the direction it was read from, solid on the half toward the camera and
+dashed on the far half (``estimated-3d``); a twist they cannot hold is a grey band with no stripe (``unobserved``); a
+legend says so in the frame. The world landmarks' x and y run as the picture's (``pose_track.AXES``), so their
+directions place the stripe on the picture.
 """
 
 from __future__ import annotations
@@ -24,12 +31,15 @@ import math
 import os
 import subprocess
 import sys
+import unicodedata
 from collections import defaultdict
 from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
 
 import cv2
 import numpy as np
+from PIL import Image, ImageDraw, ImageFont
 
 from srstudio import choreograph, dance, dance_style, music
 from srstudio import dance_study as ds
@@ -54,8 +64,25 @@ BONES_2D = (
     ("left_ankle", "left_foot_index"),
     ("right_ankle", "right_foot_index"),
 )
+# BGR, as OpenCV draws: the dancer's left orange, her right blue.
 LEFT, RIGHT, MID, FAINT = (60, 170, 255), (255, 170, 60), (235, 235, 235), (90, 90, 90)
+GREY, STRIPE, BACKGROUND = (128, 128, 128), (255, 255, 255), 24
+TRUNK = (150, 210, 90)  # the torso's and the head's estimated twist: a colour of its own, never the grey of unobserved
+LEGEND_FONT = "dm-sans-700.ttf"  # in SRSTUDIO_FONTS, the pinned fonts: it has Portuguese's accents
 SEEN = 0.5
+BAND_ALPHA = 0.35  # how much a twist band covers the ground under it
+# A band's half width as a share of the torso's length in the picture (hips' centre to shoulders' centre): about the
+# body's own half widths on a standing adult, enough to read a stripe on.
+HALF = {"spine": 0.30, "head": 0.16}
+LIMB_HALF = 0.09
+STRIPE_SPAN = (0.15, 0.85)  # the stripe runs along this share of its bone, clear of the joints
+DASH_PX = (10, 7)
+LEGEND_PT = {
+    pt.MEASURED_2D: "linha cheia: posição medida na imagem (2D)",
+    pt.ESTIMATED_3D: "faixa colorida e listra: giro estimado em 3D (listra cheia na frente, tracejada atrás)",
+    pt.UNOBSERVED: "faixa cinza sem listra: giro não observado",
+    "hidden": "linha cinza fina: ponto mal visto",
+}
 
 
 class StudyError(RuntimeError):
@@ -109,7 +136,7 @@ def measure(track: pt.PoseTrack, groove: music.Groove, *, name: str, description
         seconds=round(len(track.frames) / track.fps, 3),
         frames=len(track.frames),
         used=body.used,
-        rejected=dict(body.rejected),
+        rejected=dict(body.rejected) | {"repeat": body.repeats},
         bpm=groove.bpm,
         beats_per_bar=groove.beats_per_bar,
         offset_s=groove.offset,
@@ -154,7 +181,9 @@ def check_all(
                         "low": m.low,
                         "high": m.high,
                         "severity": m.severity,
-                        "trust": m.trust,
+                        # what the miss weighs by: the confidence the channel's provenance holds it at (ADR 0202), or
+                        # its trust in a record older than 1.2, which stated no provenance
+                        "confidence": m.trust,
                         "words": m.words,
                     }
                     for m in found.misses
@@ -188,7 +217,7 @@ def shared(results: Sequence[dict]) -> list[dict]:
                 "low": misses[0]["low"],
                 "high": misses[0]["high"],
                 "ours_median": None if not ours else round(float(np.median(ours)), 4),
-                "trust": misses[0]["trust"],
+                "confidence": misses[0]["confidence"],
                 "weight": round(sum(m["severity"] for m in misses) / max(1, len(results)), 4),
             }
         )
@@ -198,12 +227,146 @@ def shared(results: Sequence[dict]) -> list[dict]:
 # --- the page ------------------------------------------------------------------------------------------------------
 
 
+Point = tuple[float, float]
+
+
+@dataclass(frozen=True)
+class Band:
+    """One bone's twist as drawn: its axis ``start`` to ``end`` and ``half`` width, pixels; the twist's provenance;
+    the stripe (None unless ``estimated-3d``) and whether it is on the half toward the camera."""
+
+    bone: str
+    provenance: str
+    start: Point
+    end: Point
+    half: float
+    colour: tuple[int, int, int]
+    stripe: tuple[Point, Point] | None
+    near: bool | None
+
+
+def twist_bands(frame: pt.PoseFrame, width: int, height: int) -> tuple[Band, ...]:
+    """Each bone twist of a found frame, placed on a ``width`` by ``height`` picture with its provenance
+    (``pose_track.frame_provenance``). The neck is left out: it shares the head's axis, and its twist is never
+    observed. A bone shorter than a pixel in the picture has no band."""
+    picture = frame.image
+    if picture is None:
+        return ()
+    held = pt.frame_provenance(picture, frame.world)
+    index = {name: i for i, name in enumerate(pt.LANDMARKS)}
+
+    def mean(rows: Sequence[Sequence[float]], names: tuple[str, ...], axes: int) -> tuple[float, ...]:
+        return tuple(sum(rows[index[n]][k] for n in names) / len(names) for k in range(axes))
+
+    def px(names: tuple[str, ...]) -> Point:
+        x, y = mean(picture, names, 2)
+        return x * width, y * height
+
+    hips, shoulders = px(("left_hip", "right_hip")), px(("left_shoulder", "right_shoulder"))
+    torso = math.dist(hips, shoulders)
+    out = []
+    for rule in pt.TWIST_RULES:
+        if rule.bone == "neck":
+            continue
+        start, end = px(rule.axis[0]), px(rule.axis[1])
+        length = math.dist(start, end)
+        if length < 1.0:
+            continue
+        half = max(3.0, HALF.get(rule.bone, LIMB_HALF) * torso)
+        provenance = held.twists[rule.bone].provenance
+        colour = _side_colour(rule.bone) if provenance == pt.ESTIMATED_3D else GREY
+        stripe, near = None, None
+        if provenance == pt.ESTIMATED_3D and frame.world is not None and rule.across is not None:
+            a0, a1 = mean(frame.world, rule.axis[0], 3), mean(frame.world, rule.axis[1], 3)
+            c0, c1 = mean(frame.world, rule.across[0], 3), mean(frame.world, rule.across[1], 3)
+            axis = np.subtract(a1, a0) / np.linalg.norm(np.subtract(a1, a0))
+            across = np.subtract(c1, c0)
+            across = across - axis * float(across @ axis)
+            across = across / np.linalg.norm(across)  # estimated-3d: its part across the bone is well above noise
+            normal = (-(end[1] - start[1]) / length, (end[0] - start[0]) / length)
+            shift = half * float(across[0] * normal[0] + across[1] * normal[1])
+            ends = [(start[0] + (end[0] - start[0]) * f, start[1] + (end[1] - start[1]) * f) for f in STRIPE_SPAN]
+            stripe = (
+                (ends[0][0] + normal[0] * shift, ends[0][1] + normal[1] * shift),
+                (ends[1][0] + normal[0] * shift, ends[1][1] + normal[1] * shift),
+            )
+            near = bool(across[2] <= 0.0)  # the world's z runs away from the camera
+        out.append(Band(rule.bone, provenance, start, end, half, colour, stripe, near))
+    return tuple(out)
+
+
+def _side_colour(bone: str) -> tuple[int, int, int]:
+    return LEFT if bone.startswith("left") else RIGHT if bone.startswith("right") else TRUNK
+
+
+def _legend_font(size: int) -> tuple[ImageFont.ImageFont | ImageFont.FreeTypeFont, bool]:
+    """The legend's font and whether it has the accents: the pinned font when ``SRSTUDIO_FONTS`` names its folder,
+    else Pillow's own, which has none, so the words lose theirs rather than show empty boxes."""
+    folder = os.environ.get("SRSTUDIO_FONTS")
+    if folder and (Path(folder) / LEGEND_FONT).is_file():
+        return ImageFont.truetype(str(Path(folder) / LEGEND_FONT), size), True
+    return ImageFont.load_default(size=size), False
+
+
+def _plain_words(words: str) -> str:
+    return "".join(c for c in unicodedata.normalize("NFKD", words) if not unicodedata.combining(c))
+
+
+def legend_height(height: int) -> int:
+    """The strip the legend takes at the bottom of a ``height`` frame, pixels."""
+    return len(LEGEND_PT) * _legend_size(height) * 3 // 2 + _legend_size(height)
+
+
+def _legend_size(height: int) -> int:
+    return max(11, height // 52)
+
+
+def _dashed(canvas: np.ndarray, a: Point, b: Point, colour: tuple[int, int, int], thickness: int) -> None:
+    length = math.dist(a, b)
+    on, off = DASH_PX
+    at = 0.0
+    while at < length:
+        stop = min(length, at + on)
+        p = (a[0] + (b[0] - a[0]) * at / length, a[1] + (b[1] - a[1]) * at / length)
+        q = (a[0] + (b[0] - a[0]) * stop / length, a[1] + (b[1] - a[1]) * stop / length)
+        cv2.line(canvas, _px_abs(p), _px_abs(q), colour, thickness, cv2.LINE_AA)
+        at = stop + off
+
+
+def _px_abs(point: Point) -> tuple[int, int]:
+    return int(round(point[0])), int(round(point[1]))
+
+
+def _legend(canvas: np.ndarray) -> np.ndarray:
+    height, width = canvas.shape[:2]
+    size = _legend_size(height)
+    top = height - legend_height(height)
+    picture = Image.fromarray(np.ascontiguousarray(canvas[:, :, ::-1]))
+    draw = ImageDraw.Draw(picture)
+    draw.rectangle((0, top, width, height), fill=(BACKGROUND,) * 3)
+    font, accents = _legend_font(size)
+    swatch = {pt.MEASURED_2D: MID, pt.ESTIMATED_3D: TRUNK, pt.UNOBSERVED: GREY, "hidden": FAINT}
+    for row, (key, words) in enumerate(LEGEND_PT.items()):
+        y = top + size // 2 + row * size * 3 // 2
+        b, g, r = swatch[key]
+        draw.rectangle((size // 2, y + size // 4, size * 2, y + size * 3 // 4), fill=(r, g, b))
+        draw.text((size * 5 // 2, y), words if accents else _plain_words(words), fill=STRIPE, font=font)
+    return np.asarray(picture)[:, :, ::-1].copy()
+
+
 def skeleton_frame(frame: pt.PoseFrame, width: int, height: int) -> np.ndarray:
-    """The dancer's skeleton drawn on a dark frame (BGR); a lost frame says so."""
-    canvas = np.full((height, width, 3), 24, np.uint8)
+    """The dancer's skeleton drawn on a dark frame (BGR), each bone twist by its provenance and a legend saying how;
+    a lost frame says so."""
+    canvas = np.full((height, width, 3), BACKGROUND, np.uint8)
     if frame.image is None:
         cv2.putText(canvas, "perdido", (16, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.0, FAINT, 2, cv2.LINE_AA)
         return canvas
+    bands = twist_bands(frame, width, height)
+    cover = canvas.copy()
+    for band in bands:
+        thick = max(1, int(round(2 * band.half)))
+        cv2.line(cover, _px_abs(band.start), _px_abs(band.end), band.colour, thick, cv2.LINE_8)
+    canvas = cv2.addWeighted(cover, BAND_ALPHA, canvas, 1 - BAND_ALPHA, 0.0)
     at = {name: frame.image[i] for i, name in enumerate(pt.LANDMARKS)}
     for a, b in BONES_2D:
         pa, pb = at[a], at[b]
@@ -221,11 +384,29 @@ def skeleton_frame(frame: pt.PoseFrame, width: int, height: int) -> np.ndarray:
     head = ((ears[0][0] + ears[1][0]) / 2, (ears[0][1] + ears[1][1]) / 2)
     radius = max(6, int(abs(ears[0][0] - ears[1][0]) * width * 0.8))
     cv2.circle(canvas, _px(head, width, height), radius, MID, 3, cv2.LINE_AA)
-    return canvas
+    for band in bands:
+        if band.stripe is not None:
+            if band.near:
+                cv2.line(canvas, _px_abs(band.stripe[0]), _px_abs(band.stripe[1]), STRIPE, 3, cv2.LINE_AA)
+            else:
+                _dashed(canvas, band.stripe[0], band.stripe[1], STRIPE, 2)
+    return _legend(canvas)
 
 
 def _px(point: Sequence[float], width: int, height: int) -> tuple[int, int]:
     return int(round(point[0] * width)), int(round(point[1] * height))
+
+
+def shown_frames(track: pt.PoseTrack) -> dict[int, pt.PoseFrame]:
+    """The frame drawn for each frame index: a frame that repeats the last distinct picture (ADR 0204) draws that
+    picture's frame, since it holds no landmarks of its own and its dancer was not lost."""
+    out: dict[int, pt.PoseFrame] = {}
+    last: pt.PoseFrame | None = None
+    for frame in track.frames:
+        if not frame.repeat or last is None:
+            last = frame
+        out[frame.index] = last
+    return out
 
 
 def skeleton_video(track: pt.PoseTrack, video: Path, out: Path) -> Path:  # pragma: no cover - ffmpeg and the footage
@@ -241,7 +422,7 @@ def skeleton_video(track: pt.PoseTrack, video: Path, out: Path) -> Path:  # prag
     ]  # fmt: skip
     encoder = subprocess.Popen(command, stdin=subprocess.PIPE)
     assert encoder.stdin is not None
-    frames = {f.index: f for f in track.frames}
+    frames = shown_frames(track)
     index = 0
     while True:
         ok, bgr = capture.read()
@@ -275,6 +456,12 @@ LABELS = {
 }
 UNITS = {"head_radii": "raios de cabeça", "rad": "graus", "ratio": "", "head_radii_per_beat": "raios de cabeça/batida"}
 TRUST_PT = {"good": "boa", "fair": "média", "poor": "fraca"}
+PROVENANCE_PT = {
+    pt.MEASURED_2D: "medido na imagem (2D)",
+    pt.ESTIMATED_3D: "estimado em 3D",
+    pt.UNOBSERVED: "não observado",
+}
+UNSTATED_PT = "não registrada (registro anterior à versão 1.2)"
 MEASURE_PT = {
     "level": "valor típico",
     "peak_to_peak": "tamanho do balanço",
@@ -283,6 +470,11 @@ MEASURE_PT = {
     "snap_ratio": "subida/descida",
     "hit_offset": "acento antes(−)/depois(+) da batida",
     "lag": "atraso",
+    "peak_speed_phase": "momento mais rápido (fração do ciclo depois do acento)",
+    "attack": "chegada ao acento (batidas)",
+    "release": "saída do acento (batidas)",
+    "peak_acceleration": "aceleração máxima (amplitudes por batida²)",
+    "profile_distance": "diferença do perfil de velocidade",
 }
 
 
@@ -302,6 +494,15 @@ def _span(span: tuple[float, float] | None, unit: str = "") -> str:
     return f"{_num(span[0])} a {_num(span[1])}"
 
 
+def _gesture(c: dance_style.ChannelTarget) -> str:
+    """The channel's gesture timing in words, or how many windows read more than a sine when too few did."""
+    timed = c.evidence.get("timed", 0)
+    if c.attack is None or c.release is None:
+        return f"sem dados suficientes ({timed} janelas com mais que um seno)"
+    profile = "perfil medido" if c.velocity is not None else "janelas discordam do perfil"
+    return f"chegada {_span(c.attack)}, saída {_span(c.release)} batidas; {profile} ({timed} janelas)"
+
+
 def page(style: dance_style.DanceStyle, findings: dict, *, footage: str | None, views: str | None, closest: str) -> str:
     """The proof page, standalone HTML in Portuguese."""
     e = html.escape
@@ -312,7 +513,8 @@ def page(style: dance_style.DanceStyle, findings: dict, *, footage: str | None, 
         rows.append(
             "<tr>"
             f"<td><b>{e(c.name)}</b><br><small>{e(LABELS[c.name])}</small></td>"
-            f"<td>{TRUST_PT[c.trust]}</td>"
+            f"<td>{UNSTATED_PT if c.provenance is None else PROVENANCE_PT[c.provenance]}</td>"
+            f"<td>{'—' if c.held is None else TRUST_PT[c.held]}</td>"
             f"<td>{_span(c.level, unit)}</td>"
             f"<td>{_span(c.peak_to_peak, unit)}</td>"
             f"<td>{_span(c.cycles_per_beat)}</td>"
@@ -320,6 +522,7 @@ def page(style: dance_style.DanceStyle, findings: dict, *, footage: str | None, 
             f"<td>{_span(c.snap_ratio)}</td>"
             f"<td>{_num(c.noise, unit)}</td>"
             f"<td>{c.evidence['read']}/{c.evidence['windows']}</td>"
+            f"<td>{_gesture(c)}</td>"
             "</tr>"
         )
     lags = "".join(
@@ -335,7 +538,7 @@ def page(style: dance_style.DanceStyle, findings: dict, *, footage: str | None, 
     misses = "".join(
         f"<tr><td>{e(m['channel'])}</td><td>{MEASURE_PT[m['measure']]}</td>"
         f"<td>{m['missed_by']} de {m['of']}</td>"
-        f"<td>{_explain(m)}</td><td>{TRUST_PT[m['trust']]}</td><td>{_num(m['weight'])}</td></tr>"
+        f"<td>{_explain(m)}</td><td>{TRUST_PT[m['confidence']]}</td><td>{_num(m['weight'])}</td></tr>"
         for m in findings["shared"][:15]
     )
     unmeasured = "".join(f"<li><b>{e(k)}</b>: {e(_UNMEASURED_PT.get(k, v))}</li>" for k, v in style.unmeasured.items())
@@ -370,9 +573,15 @@ esqueleto quadro a quadro.</p>
 
 <h2>1. A gravação e o esqueleto extraído</h2>
 <p>À esquerda, a gravação. À direita, o esqueleto da dançarina do centro, como o estimador de pose
-({e(ref.estimator)} {e(ref.estimator_version)}) o leu. Laranja é o lado direito dela, azul o esquerdo,
+({e(ref.estimator)} {e(ref.estimator_version)}) o leu. Azul é o lado direito dela, laranja o esquerdo,
 cinza o que ele viu com pouca confiança; “perdido” é um quadro em que a dançarina não foi encontrada
 com segurança.</p>
+<p>O esqueleto separa o que a imagem mede do que o estimador deduz. A posição de cada ponto na imagem é
+medida (linha cheia). O giro de um osso em torno do próprio eixo não aparece na imagem: quando os pontos
+em volta permitem, o estimador o deduz em 3D (faixa colorida com uma listra na direção de onde o giro foi
+lido, cheia quando essa direção aponta para a câmera e tracejada quando aponta para longe; verde no
+tronco e na cabeça); quando não
+permitem, o giro fica não observado (faixa cinza, sem listra). A legenda no pé do quadro repete isso.</p>
 {video}
 <p class="muted">{ref.frames} quadros ({_num(ref.seconds)} s). Usados: {ref.used}. Recusados:
 {rejected["lost"]} perdidos ou trocados por outra pessoa, {rejected["low_confidence"]} com quadril ou
@@ -384,12 +593,13 @@ preenchido: cada medida usa só os quadros vistos.</p>
 <p>Música a {_num(ref.bpm)} batidas por minuto, compasso de {ref.beats_per_bar}. Tamanhos em
 <b>raios de cabeça</b> de um corpo de proporções reais (medidos pelo tronco, então a distância da câmera
 não conta); ângulos em graus. Cada medida é uma faixa: a metade do meio das janelas de 8 tempos,
-alargada pelo ruído da estimativa. “Confiança” diz o quanto a câmera e a profundidade podem enganar
-aquela medida.</p>
+alargada pelo ruído da estimativa. “Origem” diz de onde a medida vem: da posição medida na imagem ou da
+estimativa 3D do estimador. “Confiança” diz o quanto a câmera e a profundidade podem enganar aquela
+medida; o que vem da estimativa 3D fica no máximo em “média”, e uma falta pesa conforme essa confiança.</p>
 <div class="table"><table>
-<tr><th>Canal</th><th>Confiança</th><th>Valor típico</th><th>Tamanho do balanço</th>
+<tr><th>Canal</th><th>Origem</th><th>Confiança</th><th>Valor típico</th><th>Tamanho do balanço</th>
 <th>Ciclos por batida</th><th>Acento (batidas)</th><th>Subida/descida</th><th>Ruído por quadro</th>
-<th>Janelas lidas</th></tr>
+<th>Janelas lidas</th><th>Tempo do gesto</th></tr>
 {"".join(rows)}
 </table></div>
 <h3>Atrasos em cadeia (quanto uma parte se mexe depois da outra, em batidas)</h3>
@@ -424,7 +634,7 @@ _UNMEASURED_PT = {
 
 def _explain(miss: dict) -> str:
     low, high, ours = miss["low"], miss["high"], miss["ours_median"]
-    unit = "rad" if miss["channel"] in _RAD else ""
+    unit = "rad" if miss["channel"] in _RAD and miss["measure"] in ("level", "peak_to_peak", "range") else ""
     parts = []
     if miss["below"]:
         parts.append(f"{miss['below']} abaixo")

@@ -16,16 +16,20 @@ planted feet planted, is the skeleton's and :mod:`srstudio.dance_floor`'s job.
 
 from __future__ import annotations
 
+from ._dance_curve import CurveError
 from ._dance_measure import (
+    PROFILE_POINTS,
     SEAT_GROOVE_BOB,
     SEAT_GROOVE_SWAY,
     DanceMeasureError,
     DanceReading,
     DanceTarget,
     measure_dance,
+    profile_distance,
 )
 from ._dance_model import (
     CHAINS,
+    CURVE_POINTS,
     FEET,
     JOINTS,
     ROOT,
@@ -33,6 +37,7 @@ from ._dance_model import (
     TARGETS,
     WAVEFORMS,
     Contact,
+    Curve,
     DanceError,
     Entry,
     Move,
@@ -66,6 +71,7 @@ from ._dance_song import SongMap, SongMapError, SongPart, song_map
 
 __all__ = [
     "CHAINS",
+    "CURVE_POINTS",
     "EASES",
     "FEET",
     "HIT_SHARE",
@@ -74,6 +80,7 @@ __all__ = [
     "MAX_FRAMES",
     "MOVES_SCHEMA",
     "PHRASES_SCHEMA",
+    "PROFILE_POINTS",
     "ROOT",
     "ROUTINE_SCHEMA",
     "SEAT_GROOVE_BOB",
@@ -82,6 +89,8 @@ __all__ = [
     "TARGETS",
     "WAVEFORMS",
     "Contact",
+    "Curve",
+    "CurveError",
     "DanceDataError",
     "DanceError",
     "DanceFrame",
@@ -120,6 +129,7 @@ __all__ = [
     "parse_phrases",
     "parse_routine",
     "phrases",
+    "profile_distance",
     "sample",
     "song_map",
     "wave",

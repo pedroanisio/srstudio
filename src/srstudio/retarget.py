@@ -12,6 +12,10 @@ proportions, and moves the clip's beats onto a song's:
     dance = retarget.perform(clip, toon, beat)
     dance.pose(beat.start_s + 1.0)                    # the pose at a second of the song
 
+A performance plays each control and the hips' place between frames through a cubic spline with its velocity and
+acceleration continuous, and its beat map eases its rate between beats, so a gesture keeps its timing and acceleration
+on the song's clock (ADR 0204); ``to_pose`` at a time, a single moment, slerps between the frames either side.
+
 Values are absolute turns from the T-stance, the skeleton's zero, so a profile's ``rest`` is not added. A control the
 clip turns past the profile's limits is refused with every such value listed, unless ``clamp=True`` holds it at the
 limit and the report counts it. A joint the profile omits is dropped and reported; no kept joint is moved by that.
@@ -40,6 +44,7 @@ from ._retarget_feet import LockPlan, check_plants, lock
 from ._retarget_feet import Plant as Plant
 from ._retarget_feet import foot_slip as foot_slip
 from ._retarget_feet import plants as plants
+from ._retarget_play import Tracks
 from ._retarget_pose import MAX_LISTED as MAX_LISTED
 from ._retarget_pose import RESIDUAL_FLOOR as RESIDUAL_FLOOR
 from ._retarget_pose import Clamp as Clamp
@@ -48,6 +53,7 @@ from ._retarget_pose import Residual as Residual
 from ._retarget_pose import RetargetReport as RetargetReport
 from ._retarget_pose import (
     Tally,
+    Turns,
     check_clip,
     check_profile,
     frame_turns,
@@ -242,8 +248,9 @@ class Performance:
         self.clamp, self.lock_feet = clamp, lock_feet
         self._scale = root_scale(clip, profile)
         tally = Tally(clamp)
-        self._values, free = _free(clip, profile, self._scale, tally)
+        _, free = _free(clip, profile, self._scale, tally)
         tally.refuse()
+        self._tracks = Tracks.read(clip, profile, self._scale)
         self.plants = plants(clip) if planted is None else check_plants(planted, clip)
         self._plan = LockPlan.build(profile, free, self.plants) if lock_feet else LockPlan(())
 
@@ -257,10 +264,9 @@ class Performance:
 
     def _pose(self, song_s: float, tally: Tally) -> sk.SkeletonPose:
         moment = self.beats.clip_time(song_s)
-        index, _ = locate(self.clip, moment)
-        turns = turns_at(self.clip, moment)
-        values = solve(self.profile, turns, self._scale, tally, self._values[index])
-        root = root_frame(turns, self._scale)
+        index, share = locate(self.clip, moment)
+        values = self._tracks.controls(self.profile, index, share, moment, tally)
+        root = root_frame(Turns(moment, self._tracks.place(index, share), {}), self._scale)
         if self.lock_feet:
             values, _ = lock(self.profile, self._plan, values, root, moment, tally)
         return posed(self.profile, values, root)
@@ -302,7 +308,8 @@ def perform(
     planted: tuple[Plant, ...] | None = None,
 ) -> Performance:
     """``clip`` on ``profile`` on the song clock of ``beats``: every frame is read once here, and refused here if a
-    control passes its limits without ``clamp``; each later sample slerps between the frames either side."""
+    control passes its limits without ``clamp``; each later sample plays every control between the frames either side on
+    its spline (ADR 0204)."""
     clip, profile = check_clip(clip), check_profile(profile)
     if not isinstance(beats, BeatMap):
         raise RetargetInputError("expected a BeatMap from beat_map", path="beats", actual=type(beats).__name__)

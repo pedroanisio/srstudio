@@ -2,7 +2,7 @@
 
     python tools/dance_views.py OUT.mp4 [--moves a,b | --phrases a,b [--ensemble] [--formation line] [--canon 0.5]
         [--seed 0]] [--characters realistic,cartoon,stick] [--views front,left,top,three-quarter] [--bars-each 2]
-        [--bpm 129] [--fps 25]
+        [--bpm 129] [--fps 25] [--look volume|lines]
 
 One row per character, one column per view. ``--moves`` dances each move for ``--bars-each`` bars in order (all
 presets by default) through ``dance_pose`` with limits clamped. ``--phrases`` dances counted phrases (ADR 0194) in
@@ -15,8 +15,16 @@ dances from :func:`dance_floor.seated` (``stick@seated``), ``@stance`` from :fun
 
 Axes are the skeleton's: x right, y down, z anatomical forward. ``front`` draws (x, y); ``left``, seen from the
 character's left side, draws (z, y), so the character faces screen right; ``top``, seen from above, draws (x, z), so its
-front points down the screen and a tick on the head shows where the head faces; ``three-quarter`` looks from a front
-corner and a little above. It draws bones only: no style, no face. A planted foot is marked on the floor.
+front points down the screen; ``three-quarter`` looks from a front corner and a little above. Front, left and top are
+mirror views, as a studio mirror shows a dancer, with depth taken toward the named side (``skeleton.FRONT``, ``LEFT``,
+``TOP``); each view is a ``skeleton.View`` (:data:`SK_VIEWS`). It draws the skeleton only: no style, no face. A planted
+foot is marked on the floor.
+
+``--look volume`` (the default) draws ``skeleton.figure`` (ADR 0202): each bone as a tapered volume, nearest last, its
+outline and its end caps' rims solid where seen and dashed behind the limb, its axis dash-dot, a stripe along its front
+that rolls round it with a twist (dashed once it is on the far side), a tick on its side, the chest's normal, the
+pelvis' front, each palm's normal and the head's facing. ``--look lines`` draws each bone as a line between joints, with
+a tick on the head from above where it faces: the drawing before ADR 0202, so the two can be compared.
 """
 
 from __future__ import annotations
@@ -53,6 +61,20 @@ ABOVE = math.radians(20)  # and looks down this much
 SKIP = frozenset({"left_eye", "right_eye", "jaw"})
 COLOURS = {"torso": (235, 235, 235), "head": (235, 235, 235), "arm": (255, 170, 60), "leg": (90, 170, 255)}
 BG, GRID, MUTED, INK, PLANT = (24, 26, 32), (52, 56, 66), (170, 174, 182), (235, 235, 235), (110, 220, 140)
+STRIPE, CHEST, PALM = (255, 80, 160), (255, 220, 80), (120, 235, 150)
+MARKER_COLOURS = {
+    "chest-normal": CHEST,
+    "pelvis-front": CHEST,
+    "palm-left": PALM,
+    "palm-right": PALM,
+    "head-facing": INK,
+}
+STROKES = {"outline": 2, "near": 2, "far": 1, "axis": 1, "stripe": 3, "marker": 3, "head": 3}
+FILL = 0.28  # a piece's fill: this share of its colour over the background
+DASH, DASH_DOT = (6.0, 4.0), (9.0, 3.0, 2.0, 3.0)
+DETAIL_PX = 2.0  # a piece thinner than this on screen, and every finger bone, draws its outline only
+LOOKS = ("volume", "lines")
+MAX_ZOOM = 4
 JOINTS = {joint.name: joint for joint in sk.JOINTS}
 Plan = tuple[tuple[str, int, int], ...]
 Point = Callable[[sk.Vec3], tuple[float, float]]
@@ -60,6 +82,15 @@ Point = Callable[[sk.Vec3], tuple[float, float]]
 
 class ViewsError(ValueError):
     """Settings the views cannot be drawn from."""
+
+
+def _three_quarter() -> sk.View:
+    """The three-quarter camera as a skeleton view: ``CORNER`` round toward the dancer's right, ``ABOVE`` down."""
+    c, s, a, b = math.cos(CORNER), math.sin(CORNER), math.sin(ABOVE), math.cos(ABOVE)
+    return sk.View("three-quarter", sk.Vec3(c, 0.0, s), sk.Vec3(-s * a, b, c * a), sk.Vec3(-s * b, -a, c * b))
+
+
+SK_VIEWS = {**sk.VIEWS, "three-quarter": _three_quarter()}  # what the volume look projects through, per view
 
 
 @dataclass(frozen=True)
@@ -225,24 +256,37 @@ class Camera:
     y0: float
     scale: float
     floor_y: float
+    size: int = CELL  # the cell's side in pixels: ``CELL`` times the zoom
+
+    @property
+    def zoom(self) -> float:
+        return self.size / CELL
 
     @property
     def base(self) -> float:
         """The screen line through the floor's middle."""
         if self.view == "top":
-            return self.y0 + CELL / 2
-        return self.y0 + CELL - (64 if self.view == "three-quarter" else 24)
+            return self.y0 + self.size / 2
+        return self.y0 + self.size - (64 if self.view == "three-quarter" else 24) * self.zoom
+
+    def place(self, u: float, v: float) -> tuple[float, float]:
+        """A point's two screen axes, in metres, as a pixel."""
+        if self.view == "top":
+            return self.x0 + self.size / 2 + u * self.scale, self.base + v * self.scale
+        _, ground = flat(self.view, sk.Vec3(0.0, self.floor_y, 0.0))
+        return self.x0 + self.size / 2 + u * self.scale, self.base + (v - ground) * self.scale
 
     def point(self, p: sk.Vec3) -> tuple[float, float]:
-        u, v = flat(self.view, p)
-        if self.view == "top":
-            return self.x0 + CELL / 2 + u * self.scale, self.base + v * self.scale
-        _, ground = flat(self.view, sk.Vec3(0.0, self.floor_y, 0.0))
-        return self.x0 + CELL / 2 + u * self.scale, self.base + (v - ground) * self.scale
+        return self.place(*flat(self.view, p))
 
 
 def _rest_floor(profile: sk.SkeletonProfile) -> float:
     return max(frame.origin.y for frame in sk.world(profile, sk.rest_pose(profile)).values())
+
+
+def _cell_camera(profile: sk.SkeletonProfile, view: str) -> Camera:
+    """The camera of one cell drawn in its own picture, whose corner is the cell's corner."""
+    return Camera(view, 0, 0, FIGURE_PX / profile.stature, _rest_floor(profile))
 
 
 def _camera(sheet: Sheet, profile: sk.SkeletonProfile, view: str, row: int, col: int) -> Camera:
@@ -265,25 +309,34 @@ def screen(
     return [camera.point(world[name].origin) for name in names]
 
 
+def cell_points(
+    profile: sk.SkeletonProfile, posed: sk.SkeletonPose, view: str, names: Sequence[str]
+) -> list[tuple[float, float]]:
+    """Where the named joints land in the first cell of :func:`pose_image`."""
+    camera = Camera(view, 0, TOP_BAR, FIGURE_PX / profile.stature, _rest_floor(profile))
+    world = sk.world(profile, posed)
+    return [camera.point(world[name].origin) for name in names]
+
+
 def _frame_cell(draw: ImageDraw.ImageDraw, camera: Camera, label: str, font: ImageFont.ImageFont) -> None:
-    x0, y0 = camera.x0, camera.y0
-    draw.rectangle([x0, y0, x0 + CELL - 1, y0 + CELL - 1], outline=GRID)
+    x0, y0, size = camera.x0, camera.y0, camera.size
+    draw.rectangle([x0, y0, x0 + size - 1, y0 + size - 1], outline=GRID)
     draw.text((x0 + 12, y0 + 10), label, fill=MUTED, font=font)
 
 
 def _floor(draw: ImageDraw.ImageDraw, camera: Camera, step: float | None) -> None:
     """The floor: a cross on the middle from above, a ground line from the side, and a grid every ``step`` metres
     that stays put while the dancers move over it (None: just the line or the cross)."""
-    x0, y0 = camera.x0, camera.y0
+    x0, y0, size = camera.x0, camera.y0, camera.size
     if camera.view == "top":
-        cx, cy = x0 + CELL / 2, y0 + CELL / 2
+        cx, cy = x0 + size / 2, y0 + size / 2
         draw.line([(cx - 8, cy), (cx + 8, cy)], fill=GRID)
         draw.line([(cx, cy - 8), (cx, cy + 8)], fill=GRID)
     elif camera.view != "three-quarter":
-        draw.line([(x0 + 20, camera.base), (x0 + CELL - 20, camera.base)], fill=GRID, width=2)
+        draw.line([(x0 + 20, camera.base), (x0 + size - 20, camera.base)], fill=GRID, width=2)
     if step is None:
         return
-    reach = int((CELL / 2) / (step * camera.scale)) + 1
+    reach = int((size / 2) / (step * camera.scale)) + 1
     span = reach * step
     for n in range(-reach, reach + 1):
         if camera.view in ("top", "three-quarter"):
@@ -293,13 +346,105 @@ def _floor(draw: ImageDraw.ImageDraw, camera: Camera, step: float | None) -> Non
             ):
                 draw.line([_clip(camera.point(a)), _clip(camera.point(b))], fill=GRID, width=1)
         else:
-            u = camera.x0 + CELL / 2 + n * step * camera.scale
-            if x0 + 20 <= u <= x0 + CELL - 20:
+            u = camera.x0 + size / 2 + n * step * camera.scale
+            if x0 + 20 <= u <= x0 + size - 20:
                 draw.line([(u, camera.base), (u, camera.base + 8)], fill=GRID, width=2)
 
 
 def _clip(p: tuple[float, float]) -> tuple[float, float]:
     return max(-1e4, min(1e4, p[0])), max(-1e4, min(1e4, p[1]))
+
+
+def _pattern(
+    draw: ImageDraw.ImageDraw,
+    points: Sequence[tuple[float, float]],
+    fill: tuple[int, int, int],
+    width: int,
+    pattern: tuple[float, ...],
+) -> None:
+    """A polyline drawn in ``pattern``: lengths in pixels, alternately drawn and skipped, carried across corners."""
+    index, left, on = 0, pattern[0], True
+    for (ax, ay), (bx, by) in zip(points, points[1:], strict=False):
+        length = math.hypot(bx - ax, by - ay)
+        done = 0.0
+        while done < length:
+            step = min(left, length - done)
+            if on:
+                t0, t1 = done / length, (done + step) / length
+                draw.line([(ax + (bx - ax) * t0, ay + (by - ay) * t0), (ax + (bx - ax) * t1, ay + (by - ay) * t1)],
+                          fill=fill, width=width)  # fmt: skip
+            done += step
+            left -= step
+            if left <= 1e-9:
+                index = (index + 1) % len(pattern)
+                left, on = pattern[index], not on
+
+
+def _stroke(
+    draw: ImageDraw.ImageDraw,
+    points: Sequence[tuple[float, float]],
+    fill: tuple[int, int, int],
+    near: bool,
+    width: int,
+    dash: tuple[float, ...] = DASH,
+) -> None:
+    """Solid when ``near``, dashed (and a pixel thinner) when behind."""
+    if near:
+        draw.line(list(points), fill=fill, width=width, joint="curve")
+    else:
+        _pattern(draw, points, fill, max(1, width - 1), dash)
+
+
+def _dim(colour: tuple[int, int, int]) -> tuple[int, int, int]:
+    r, g, b = (round(c * FILL + back * (1 - FILL)) for c, back in zip(colour, BG, strict=True))
+    return r, g, b
+
+
+def _arrow(
+    draw: ImageDraw.ImageDraw, foot: tuple[float, float], tip: tuple[float, float], fill: tuple[int, int, int]
+) -> None:
+    length = math.hypot(tip[0] - foot[0], tip[1] - foot[1])
+    if length < 4:
+        return
+    ux, uy = (tip[0] - foot[0]) / length, (tip[1] - foot[1]) / length
+    back = (tip[0] - ux * 9, tip[1] - uy * 9)
+    draw.polygon([tip, (back[0] - uy * 5, back[1] + ux * 5), (back[0] + uy * 5, back[1] - ux * 5)], fill=fill)
+
+
+def _volume(draw: ImageDraw.ImageDraw, camera: Camera, profile: sk.SkeletonProfile, posed: sk.SkeletonPose) -> None:
+    """``skeleton.figure`` in the camera's view (ADR 0202), far pieces first."""
+    zoom = camera.zoom
+    width = {name: max(1, round(px * zoom)) for name, px in STROKES.items()}
+    dash = tuple(d * zoom for d in DASH)
+    figure = sk.figure(profile, posed, SK_VIEWS[camera.view])
+
+    def px(points: Sequence[tuple[float, float]]) -> list[tuple[float, float]]:
+        return [camera.place(u, v) for u, v in points]
+
+    for piece in figure.pieces:
+        colour = INK if piece.kind == "head" else COLOURS[piece.region]
+        outline = px(piece.silhouette)
+        if len(outline) >= 3:
+            draw.polygon(outline, fill=_dim(colour))
+            draw.line([*outline, outline[0]], fill=colour, width=width["head" if piece.kind == "head" else "outline"])
+        if piece.kind != "digit" and min(min(pair) for pair in piece.radii) * camera.scale >= DETAIL_PX:
+            for cap in piece.caps:
+                for arc in cap.far:
+                    _pattern(draw, px(arc), colour, width["far"], dash)
+                for arc in cap.near:
+                    draw.line(px(arc), fill=colour, width=width["near"])
+            if piece.kind != "head":
+                _pattern(draw, px(piece.centreline), MUTED, width["axis"], tuple(d * zoom for d in DASH_DOT))
+            for stroke in piece.stripe:
+                _stroke(draw, px(stroke.points), STRIPE, stroke.near, width["stripe"], dash)
+            if piece.tick is not None:
+                _stroke(draw, px(piece.tick.points), STRIPE, piece.tick.near, width["far"] + max(1, round(zoom)), dash)
+        for marker in piece.markers:
+            fill = MARKER_COLOURS[marker.name]
+            foot, tip = px(marker.points)
+            _stroke(draw, (foot, tip), fill, marker.near, width["marker"], dash)
+            if marker.kind == "arrow" and marker.near:
+                _arrow(draw, foot, tip, fill)
 
 
 def _figure(
@@ -308,6 +453,7 @@ def _figure(
     profile: sk.SkeletonProfile,
     posed: sk.SkeletonPose,
     planted: frozenset[str] = frozenset(),
+    look: str = "volume",
 ) -> None:
     world = sk.world(profile, posed)
     view = camera.view
@@ -316,6 +462,10 @@ def _figure(
             ankle = world[f"{side}_foot"].origin
             x, y = camera.point(sk.Vec3(ankle.x, camera.floor_y, ankle.z))
             draw.ellipse([x - 5, y - 3, x + 5, y + 3], fill=PLANT)
+    if look == "volume":
+        _volume(draw, camera, profile, posed)
+        return
+    zoom = max(1, round(camera.zoom))
     order = sorted(world, key=lambda name: -world[name].origin.y) if view == "top" else list(world)
     for name in order:
         parent = JOINTS[name].parent
@@ -324,7 +474,7 @@ def _figure(
             draw.line(
                 [camera.point(world[parent].origin), camera.point(world[name].origin)],
                 fill=COLOURS[JOINTS[name].region],
-                width=2 if finger else 5,
+                width=(2 if finger else 5) * zoom,
             )
     radius = profile.proportions.head_radius_m * camera.scale
     head = camera.point(world["head"].origin)
@@ -335,31 +485,70 @@ def _figure(
         draw.line(
             [middle, (middle[0] + facing.x / length * radius * 1.5, middle[1] + facing.z / length * radius * 1.5)],
             fill=INK,
-            width=3,
+            width=3 * zoom,
         )
     else:
         top = camera.point(sk.tips(profile, posed)["head"])
         middle = ((head[0] + top[0]) / 2, (head[1] + top[1]) / 2)
-    draw.ellipse([middle[0] - radius, middle[1] - radius, middle[0] + radius, middle[1] + radius], outline=INK, width=3)
+    draw.ellipse(
+        [middle[0] - radius, middle[1] - radius, middle[0] + radius, middle[1] + radius], outline=INK, width=3 * zoom
+    )
 
 
-def _cell_image() -> tuple[Image.Image, ImageDraw.ImageDraw]:
+def _cell_image(size: int = CELL) -> tuple[Image.Image, ImageDraw.ImageDraw]:
     """One cell drawn on its own, so a floor grid or a long arm never reaches into the cell beside it."""
-    cell = Image.new("RGB", (CELL, CELL), BG)
+    cell = Image.new("RGB", (size, size), BG)
     return cell, ImageDraw.Draw(cell)
 
 
-def _moves_cells(image: Image.Image, sheet: Sheet, moves: Plan, groove: music.Groove, t: float, font) -> str:
+def _look(look: str) -> str:
+    if look not in LOOKS:
+        raise ViewsError(f"unknown look {look!r}; the looks are {', '.join(LOOKS)}")
+    return look
+
+
+def pose_image(
+    profile: sk.SkeletonProfile,
+    posed: sk.SkeletonPose,
+    views: Sequence[str] = DEFAULT_VIEWS,
+    *,
+    look: str = "volume",
+    zoom: int = 1,
+) -> Image.Image:
+    """One pose of any profile, one cell per view, ``zoom`` times the sheet's size, with no title or count: for proofs
+    and tests."""
+    _look(look)
+    if type(zoom) is not int or not 1 <= zoom <= MAX_ZOOM:
+        raise ViewsError(f"zoom is a whole number in 1..{MAX_ZOOM}, not {zoom!r}")
+    for view in views:
+        if view not in VIEWS:
+            raise ViewsError(f"unknown view {view!r}; the views are {', '.join(VIEWS)}")
+    size = CELL * zoom
+    image = Image.new("RGB", (len(views) * size, TOP_BAR + size), BG)
+    font = ImageFont.load_default(size=20)
+    for col, view in enumerate(views):
+        camera = Camera(view, 0, 0, FIGURE_PX * zoom / profile.stature, _rest_floor(profile), size)
+        cell, draw = _cell_image(size)
+        _frame_cell(draw, camera, f"{profile.name} · {view}", font)
+        _floor(draw, camera, None)
+        _figure(draw, camera, profile, posed, look=look)
+        image.paste(cell, (col * size, TOP_BAR))
+    return image
+
+
+def _moves_cells(
+    image: Image.Image, sheet: Sheet, moves: Plan, groove: music.Groove, t: float, font, look: str = "volume"
+) -> str:
     name, start = at_bar(moves, t / groove.at(1))
     frame = dance.sample(dance.moves()[name], groove, t - groove.at(start))
     for row, cast in enumerate(sheet.cast):
         posed = dance_pose(cast.profile, frame, base=cast.base(), clamp=True).pose
         for col, view in enumerate(sheet.views):
-            camera = _camera(sheet, cast.profile, view, 0, 0)
+            camera = _cell_camera(cast.profile, view)
             cell, draw = _cell_image()
             _frame_cell(draw, camera, f"{cast.label} · {view}", font)
             _floor(draw, camera, None)
-            _figure(draw, camera, cast.profile, posed)
+            _figure(draw, camera, cast.profile, posed, look=look)
             image.paste(cell, (col * CELL, TOP_BAR + row * CELL))
     return name
 
@@ -375,7 +564,9 @@ def _depth(view: str, p: sk.Vec3) -> float:
     return p.z * math.cos(CORNER) - p.x * math.sin(CORNER)
 
 
-def _stage_cells(image: Image.Image, sheet: Sheet, show: Stage, groove: music.Groove, t: float, font) -> str:
+def _stage_cells(
+    image: Image.Image, sheet: Sheet, show: Stage, groove: music.Groove, t: float, font, look: str = "volume"
+) -> str:
     name, start = at_bar(show.parts, t / groove.at(1))
     for row, runs in enumerate(show.rows):
         profiles = [r.profile for r in runs]
@@ -391,22 +582,25 @@ def _stage_cells(image: Image.Image, sheet: Sheet, show: Stage, groove: music.Gr
             _floor(draw, camera, step)
             _frame_cell(draw, camera, f"{label} · {view}", font)
             for run, found in sorted(posed, key=lambda item: _depth(view, item[1].pose.root.origin)):
-                _figure(draw, camera, run.profile, found.pose, found.planted)
+                _figure(draw, camera, run.profile, found.pose, found.planted, look)
             image.paste(cell, (col * CELL, TOP_BAR + row * CELL))
     beat = t / groove.beat - start * groove.beats_per_bar
     count = dance.count_of(min(127.75, math.floor(max(0.0, beat) * 4) / 4))
     return f"{name}  {count}"
 
 
-def render_frame(sheet: Sheet, show: Plan | Stage, groove: music.Groove, t: float) -> Image.Image:
-    """The sheet at song time ``t``: moves from a plan, or phrases from a stage."""
+def render_frame(
+    sheet: Sheet, show: Plan | Stage, groove: music.Groove, t: float, *, look: str = "volume"
+) -> Image.Image:
+    """The sheet at song time ``t``: moves from a plan, or phrases from a stage, in ``look``."""
+    _look(look)
     image = Image.new("RGB", sheet.size, BG)
     draw = ImageDraw.Draw(image)
     small, big = ImageFont.load_default(size=20), ImageFont.load_default(size=30)
     if isinstance(show, Stage):
-        title, bars = _stage_cells(image, sheet, show, groove, t, small), show.bars
+        title, bars = _stage_cells(image, sheet, show, groove, t, small, look), show.bars
     else:
-        title, bars = _moves_cells(image, sheet, show, groove, t, small), show[-1][2]
+        title, bars = _moves_cells(image, sheet, show, groove, t, small, look), show[-1][2]
     beat = t / groove.beat
     level = int(60 + 195 * max(0.0, 1 - (beat - math.floor(beat)) * 4))
     width, height = sheet.size
@@ -439,8 +633,10 @@ def write(
     canon_beats: float = 0.0,
     seed: int = 0,
     ffmpeg: str = "ffmpeg",
+    look: str = "volume",
 ) -> Path:
     """Render the views to ``out`` (H.264 with AAC, mode 600) and return it."""
+    _look(look)
     if moves is not None and phrases is not None:
         raise ViewsError("draw moves or phrases, not both")
     if ensemble and phrases is None:
@@ -497,7 +693,7 @@ def write(
             assert encoder.stdin is not None
             try:
                 for n in range(count):
-                    encoder.stdin.write(render_frame(sheet, show, groove, n / fps).tobytes())
+                    encoder.stdin.write(render_frame(sheet, show, groove, n / fps, look=look).tobytes())
                 encoder.stdin.close()
             except BrokenPipeError:  # the encoder stopped reading; its exit status says why
                 pass
@@ -523,6 +719,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--formation", default="line", choices=dance_floor.FORMATIONS)
     parser.add_argument("--canon", type=float, default=0.0, help="beats each dancer comes in after the one before")
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--look", default="volume", help="volume (ADR 0202) or lines, the drawing before it")
     args = parser.parse_args(argv)
     try:
         written = write(
@@ -538,6 +735,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             formation=args.formation,
             canon_beats=args.canon,
             seed=args.seed,
+            look=args.look,
         )
     except ViewsError as error:
         print(f"dance_views: {error}", file=sys.stderr)

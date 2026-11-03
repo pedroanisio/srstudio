@@ -15,6 +15,7 @@ REMEDIES = {
     "skeleton.mismatch": "Feed a pose whose geometry was made for this profile, such as one from its own to_* bridge.",
     "skeleton.support": "Plant at least one foot flat on the ground plane y=0, or name only feet that are planted.",
     "skeleton.ill-posed": "Bend the limb or give the missing direction; the conversion has no unique answer here.",
+    "skeleton.view": "Give an orthonormal View (or an orthographic limbs Camera) and the profile's own pose.",
 }
 
 

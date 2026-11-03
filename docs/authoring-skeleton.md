@@ -81,3 +81,19 @@ sk.SkeletonProfile(
 | `to_hand_pose(profile, pose, side)` | `from_hand_pose(profile, base, side, hand)` | The hand's frame and every digit joint; `hand_profile` gives limbs this hand kind; `wrist_control` turns limbs' arm frame into this hand. |
 
 A record whose geometry is not this character's is refused with `skeleton.mismatch` rather than bent to fit.
+
+## Drawing with volume
+
+`sk.figure(profile, pose, view)` turns a posed skeleton into drawing primitives that show a bone's turn about its own
+axis, which a line between two joints cannot show ([ADR 0202](decisions/0202-limb-volume-and-provenance.md)):
+
+- each bone's silhouette (a tapered section with radii from `sk.RADII`, `sk.FLAT` and `sk.TORSO`);
+- its end caps, split into the near arc and the far arc;
+- its centreline;
+- a stripe on its anterior reference, solid on the near half and dashed on the far half;
+- a lateral tick;
+- markers for the chest normal, the pelvis front, the palms and the head's facing.
+
+Pieces come in painter's order. A `sk.View` is three orthonormal axes. `sk.FRONT`, `sk.LEFT` and `sk.TOP` are the
+review tool's mirror views, and `sk.view_from_camera` takes a limbs orthographic camera. `unobserved=` names the twists
+to draw without a stripe. `tools/dance_views.py` draws this by default; `--look lines` draws the old lines.

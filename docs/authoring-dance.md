@@ -105,9 +105,14 @@ A pattern hits `+amplitude` once a cycle, `phase` beats after the grid's beat. A
 sign picks the direction of the hit, and it is in radians on a joint or head radii on the root. `snap` is the fraction
 of the cycle spent striking onto the hit.
 
+A gesture with its own timing uses the `curve` waveform (moves 1.1, [ADR 0204](decisions/0204-gesture-timing.md)):
+`curve` lists 8 to 64 samples of one cycle, evenly spaced from the hit, the first `1` and the lowest `-1`, and the
+pattern has no `snap`. The samples are played through a periodic cubic spline, so the gesture's speed and acceleration
+stay continuous, the loop's seam included. The head nod below eases out of the hit and strikes back onto it.
+
 ```json
 {
-  "schema": "srstudio.dance-moves/1.0.0",
+  "schema": "srstudio.dance-moves/1.1.0",
   "moves": [
     {
       "name": "chest-pop",
@@ -118,8 +123,9 @@ of the cycle spent striking onto the hit.
       "patterns": [
         {"target": "chest.front_back", "waveform": "sine", "cycles": 0.5, "per": "beat",
          "phase": 1, "amplitude": -0.12, "snap": 0.25},
-        {"target": "head.nod_down_up", "waveform": "sine", "cycles": 0.5, "per": "beat",
-         "phase": 1, "amplitude": -0.05, "snap": 0.25}
+        {"target": "head.nod_down_up", "waveform": "curve", "cycles": 0.5, "per": "beat",
+         "phase": 1, "amplitude": -0.05,
+         "curve": [1, 0.966, 0.866, 0.707, 0.5, 0.259, 0, -0.259, -0.5, -0.707, -0.866, -0.966, -1, -0.707, 0, 0.707]}
       ]
     }
   ]
@@ -267,7 +273,7 @@ reads to about one picture when the channel carries noise of five percent of its
 
 The dance study ([ADR 0203](decisions/0203-dance-style-from-reference-video.md)) measures how a real dancer moves and
 holds our dances to it. It copies no routine: only style statistics on the beat grid reach the repository, as a
-`srstudio.dance-style/1.0.0` record of ranges. The footage, its frames and its per-frame landmarks stay under the
+`srstudio.dance-style/1.2.0` record of ranges. The footage, its frames and its per-frame landmarks stay under the
 workspace's `generated/` (`$WS/generated`, `$WS` the workspace that holds this checkout) on the machine that made
 them.
 
@@ -284,7 +290,9 @@ them.
 
 2. Extract the dancer: `$WS/generated/venvs/pose/bin/python -I tools/pose_extract.py VIDEO --out
    $WS/generated/dance-study/NAME/pose-track.json` follows the most central large person, or `--pick 0.4,0.5` the one
-   nearest that point. A frame where the dancer cannot be told from a neighbour is written as lost, never guessed.
+   nearest that point. A frame where the dancer cannot be told from a neighbour is written as lost, never guessed. A
+   picture that repeats the last distinct one, as a screen recording writes them, is written as a repeat and measured
+   as not seen ([ADR 0204](decisions/0204-gesture-timing.md)).
 3. Measure and check, in srstudio's own interpreter: `python tools/dance_study.py measure TRACK --audio VIDEO --name
    NAME --description TEXT --out src/srstudio/assets/dance/styles/NAME.json`, then `python tools/dance_study.py check
    STYLE --audio VIDEO --out $WS/generated/dance-study/NAME/findings.json` dances every standing preset and a choreographed
@@ -305,7 +313,8 @@ body = ds.reference_body(track)  # hips-relative, in head radii; refused frames 
 assert body.used == len(bounce) and sum(body.rejected.values()) == 0
 reference = dance_style.Reference(
     "a synthetic bounce", track.source.sha256, track.estimator.name, track.estimator.version,
-    track.estimator.model_sha256, 8.0, len(bounce), body.used, dict(body.rejected), 120.0, 4, 0.0,
+    track.estimator.model_sha256, 8.0, len(bounce), body.used,
+    dict(body.rejected) | {"repeat": body.repeats}, 120.0, 4, 0.0,  # a repeated picture counts as refused
 )  # fmt: skip
 style = dance_style.derive(
     ds.measure_style(body, groove), name="bounce-study", description="our bounce, measured back",
@@ -317,6 +326,27 @@ assert arms.misses and arms.misses[0].severity >= arms.misses[-1].severity
 ```
 <!-- dance-study:end -->
 
-Each miss names the channel, the measure, our value, the reference's range and the trust of the channel; the score is
-their summed severity. Read `torso.lean` and `torso.roll` lightly: a single camera reads depth poorly. A reference
-measures no travel across the floor: its camera follows the dancer and its estimator's metres start at the hips.
+Each miss names the channel, the measure, our value, the reference's range and the confidence the channel is held at;
+the score is their summed severity. Each channel states the provenance of what it reads
+([ADR 0202](decisions/0202-limb-volume-and-provenance.md)):
+
+- `measured-2d` is a place in the picture;
+- `estimated-3d` is the estimator's depth, world metres or a rotation derived from them, held at most `fair`;
+- `unobserved` is never a target.
+
+`pose_track.frame_provenance` says which bone twists a frame determines. A forearm's roll needs the knuckles to span
+more than the landmarks' noise, and a single camera rarely gives that. `1.0.0` and `1.1.0` records, written before
+provenance, read with `provenance` and `confidence` None, stated as missing, and their misses weigh by trust as
+before. Read `torso.lean` and `torso.roll` lightly: a single camera reads depth poorly. A reference measures no travel
+across the floor: its camera follows the dancer and its estimator's metres start at the hips.
+
+A style also holds each channel's gesture timing (since `srstudio.dance-style/1.1.0`): where in the cycle it is
+fastest, its attack and release in beats, its peak acceleration, and its mean velocity profile. A window counts toward
+them only when its curve holds more than a sine above the estimate's noise, and the profile only when those windows
+agree, so a noisy reference gives fewer of these ranges than of the others. `ChannelTarget.evidence["timed"]` says how
+many windows the timing stands on ([ADR 0204](decisions/0204-gesture-timing.md)).
+
+`srstudio.dance_beats.beat_alignment(points, fps, groove)` scores how well a take's stops land on the groove's beats,
+as the AIST++ and Bailando papers score dance generation: `points` is the body's positions per frame
+(`body_points(profile, pose)` for each), `score` averages over the stops and `music_score` over the beats. It reads
+stops, not hits: a move that stops on the beat and between beats reads the same half a beat late.

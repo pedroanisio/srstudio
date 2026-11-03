@@ -1,10 +1,14 @@
-"""Strict readers for the dance data: ``srstudio.dance-moves/1.0.0``, ``srstudio.dance-routine/1.0.0`` and
+"""Strict readers for the dance data: ``srstudio.dance-moves/1.1.0``, ``srstudio.dance-routine/1.0.0`` and
 ``srstudio.dance-phrases/1.0.0`` (ADR 0194).
 
 Text is untrusted until it parses: one JSON object of at most ``MAX_BYTES`` (no NaN or Infinity, no repeated key), no
 unknown or missing field, no wrong type (a boolean is not a number, a float is not a bar), no number that is not finite,
 at most ``MAX_MOVES`` moves and ``MAX_PHRASES`` phrases. The typed model then checks what the schema cannot say
 (ADR 0186).
+
+Moves 1.1 adds the ``curve`` waveform (ADR 0204): a pattern with ``"waveform": "curve"`` carries ``curve``, its
+cycle's samples, and no ``snap``; every other pattern carries ``snap`` and no ``curve``. A 1.0 document is read as it
+always was, and a ``curve`` in one is an unknown field.
 """
 
 from __future__ import annotations
@@ -19,7 +23,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import TypeVar
 
-from ._dance_model import Contact, DanceError, Entry, Move, Pattern, Routine
+from ._dance_model import CURVE_POINTS, Contact, DanceError, Entry, Move, Pattern, Routine
 from ._dance_phrase import MAX_KEYS, Floor, Key, Phrase, beat_of
 
 __all__ = [
@@ -39,7 +43,7 @@ __all__ = [
     "phrases",
 ]
 
-MOVES_SCHEMA = "srstudio.dance-moves/1.0.0"
+MOVES_SCHEMA = "srstudio.dance-moves/1.1.0"
 ROUTINE_SCHEMA = "srstudio.dance-routine/1.0.0"
 PHRASES_SCHEMA = "srstudio.dance-phrases/1.0.0"
 MAX_BYTES = 1_000_000
@@ -158,15 +162,22 @@ def _built(path: str, build: Callable[[], _T]) -> _T:
         raise type(error)(f"{path}: {error}", code="dance.value", path=path) from error
 
 
-_PATTERN = ("target", "amplitude", "cycles", "per", "phase", "waveform", "snap")
+_PATTERN = ("target", "amplitude", "cycles", "per", "phase", "waveform")
+_OPTIONAL = ("swing", "intensity", "bias")
 _NUMERIC = frozenset({"amplitude", "cycles", "phase", "snap", "swing", "intensity", "bias"})
 
 
-def _pattern(value: object, path: str) -> Pattern:
-    p = _fields(value, path, _PATTERN, ("swing", "intensity", "bias"))
+def _pattern(value: object, path: str, minor: int) -> Pattern:
+    curved = isinstance(value, dict) and value.get("waveform") == "curve" and minor >= 1
+    shape = ("curve",) if curved else ("snap",)
+    p = _fields(value, path, _PATTERN + shape, _OPTIONAL)
     numbers = {k: _number(v, f"{path}.{k}") for k, v in p.items() if k in _NUMERIC}
     target, per, waveform = (_text(p[k], f"{path}.{k}") for k in ("target", "per", "waveform"))
-    return _built(path, lambda: Pattern(target=target, per=per, waveform=waveform, **numbers))
+    samples: tuple[float, ...] = ()
+    if curved:
+        items = _list(p["curve"], f"{path}.curve", CURVE_POINTS[1])
+        samples = tuple(_number(v, f"{path}.curve[{i}]") for i, v in enumerate(items))
+    return _built(path, lambda: Pattern(target=target, per=per, waveform=waveform, curve=samples, **numbers))
 
 
 def _contact(value: object, path: str) -> Contact:
@@ -176,12 +187,12 @@ def _contact(value: object, path: str) -> Contact:
     return _built(path, lambda: Contact(foot, start, end))
 
 
-def _move(value: object, path: str) -> Move:
+def _move(value: object, path: str, minor: int) -> Move:
     m = _fields(value, path, ("name", "support", "patterns"), ("description", "loop_beats", "lags", "contacts"))
     name, support = _text(m["name"], f"{path}.name"), _text(m["support"], f"{path}.support")
     description = _text(m.get("description", ""), f"{path}.description")
     patterns = tuple(
-        _pattern(p, f"{path}.patterns[{i}]") for i, p in enumerate(_list(m["patterns"], f"{path}.patterns", 128))
+        _pattern(p, f"{path}.patterns[{i}]", minor) for i, p in enumerate(_list(m["patterns"], f"{path}.patterns", 128))
     )
     loop = _number(m.get("loop_beats", 1.0), f"{path}.loop_beats")
     lags = _pairs(m.get("lags", {}), f"{path}.lags", 16)
@@ -195,9 +206,10 @@ def parse_moves(text: str | bytes) -> Mapping[str, Move]:
     """The moves of a ``srstudio.dance-moves/1.x`` document, by name in file order."""
     top = _document(text, MOVES_SCHEMA)
     _fields(top, "$", ("schema", "moves"), ("generated_by",))
+    minor = int(str(top["schema"]).split("/")[1].split(".")[1])
     out: dict[str, Move] = {}
     for i, item in enumerate(_list(top["moves"], "$.moves", MAX_MOVES)):
-        move = _move(item, f"$.moves[{i}]")
+        move = _move(item, f"$.moves[{i}]", minor)
         if move.name in out:
             raise DanceDataError(f"$.moves[{i}]: move {move.name!r} is named twice", path=f"$.moves[{i}].name")
         out[move.name] = move

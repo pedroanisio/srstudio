@@ -1,7 +1,7 @@
 """How a body dances, measured the same way on a real dancer and on ours, so the two can be compared (ADR 0203).
 
-A reference video is read by a pose estimator (``tools/pose_extract.py``) into a ``srstudio.pose-track/1.0.0``
-record; :func:`reference_body` turns the record into a :class:`BodyTrack`. One of our dances, any sequence of
+A reference video is read by a pose estimator (``tools/pose_extract.py``) into a ``srstudio.pose-track`` record;
+:func:`reference_body` turns the record into a :class:`BodyTrack`. One of our dances, any sequence of
 :class:`dance.DanceFrame` (a move, a routine, a phrase) sampled on a preset skeleton, becomes one with
 :func:`dance_body`. :func:`measure_style` measures either on a song's beat grid with the same code, and
 :mod:`srstudio.dance_style` turns a reference's measures into targets and lists what one of ours misses.
@@ -16,8 +16,10 @@ The estimator is a model, so its frames are untrusted. A frame is refused, and c
 dancer was lost, when a hip or a shoulder is seen with too little confidence, when a bone of the legs or the torso is
 far from its own length in the rest of the clip, and when a point jumps further in one frame than a body can move. An
 arm whose bone is far from its length is left out of that frame, which is counted under ``arm``, and a point seen with
-too little confidence is left out of the channels that use it in that frame. Nothing is filled in: each channel is
-measured on the runs of frames where it is seen.
+too little confidence is left out of the channels that use it in that frame. A frame whose picture repeats the last
+distinct one is no observation and is not seen either (ADR 0204): read as one, it is a moment of zero speed and then a
+double step. The jump check spans the repeats, by the real time between the two distinct pictures. Nothing is filled
+in: each channel is measured on the runs of frames where it is seen, at their real times.
 
 Each channel is read in windows of :data:`WINDOW_BEATS` beats, every :data:`HOP_BEATS`: the groove of the window by
 :func:`dance.measure_dance` (its size, cycles per beat, snap and hit against the beat), and the window's range. A
@@ -31,7 +33,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import cache
 from types import MappingProxyType
 
@@ -40,7 +42,7 @@ import numpy as np
 from . import checks
 from . import pose_track as pt
 from . import skeleton as sk
-from ._dance_measure import DanceMeasureError, DanceReading, measure_dance
+from ._dance_measure import DanceMeasureError, DanceReading, measure_dance, profile_distance
 from ._dance_model import DanceError
 from ._dance_sample import DanceFrame
 from .dance_pose import dance_pose
@@ -157,7 +159,9 @@ def _xyz(v: sk.Vec3) -> np.ndarray:
 @dataclass(frozen=True, eq=False)
 class BodyTrack:
     """``points`` (frames x 13 x 3) in head radii from the hips' middle, skeleton axes; ``seen`` (frames x 13) which
-    are usable; ``start`` the first frame's second; ``rejected`` how many frames were refused, by reason."""
+    are usable; ``start`` the first frame's second; ``rejected`` how many frames were refused, by reason; ``repeated``
+    (frames) which frames repeated the last distinct picture and so were no observation (ADR 0204), none if left empty.
+    A repeated frame is never seen, and it is no lost dancer either: windows and paths are read across it."""
 
     fps: int
     start: float
@@ -165,6 +169,7 @@ class BodyTrack:
     seen: np.ndarray
     rejected: Mapping[str, int]
     source: str
+    repeated: np.ndarray = field(default_factory=lambda: np.zeros(0, bool))
 
     def __post_init__(self) -> None:
         _bad(type(self.fps) is not int or not 1 <= self.fps <= 240, f"fps {self.fps!r} is a whole number", "fps")
@@ -173,6 +178,22 @@ class BodyTrack:
         _bad(self.points.shape != (n, len(POINTS), 3) or n < 1, "points are frames x 13 x 3", "points")
         _bad(self.seen.shape != (n, len(POINTS)) or self.seen.dtype != bool, "seen is frames x 13 of bool", "seen")
         _bad(not np.isfinite(self.points[self.seen]).all(), "a seen point is a finite place", "points")
+        if isinstance(self.repeated, np.ndarray) and self.repeated.shape == (0,):
+            object.__setattr__(self, "repeated", np.zeros(n, bool))
+        repeated = self.repeated
+        _bad(
+            not isinstance(repeated, np.ndarray) or repeated.shape != (n,) or repeated.dtype != bool,
+            "repeated is one bool a frame",
+            "repeated",
+        )
+        _bad(
+            bool((self.seen[repeated]).any()), "a repeated frame is no observation: none of its points is seen", "seen"
+        )
+
+    @property
+    def repeats(self) -> int:
+        """How many frames repeated the last distinct picture."""
+        return int(self.repeated.sum())
 
     @property
     def frames(self) -> int:
@@ -197,8 +218,11 @@ def reference_body(track: pt.PoseTrack, *, min_visibility: float = MIN_VISIBILIT
     points = np.full((n, len(POINTS), 3), np.nan)
     seen = np.zeros((n, len(POINTS)), bool)
     rejected = {"lost": 0, "low_confidence": 0, "implausible": 0, "jump": 0, "arm": 0}
+    repeated = np.array([frame.repeat for frame in track.frames], bool)
     index = {name: i for i, name in enumerate(pt.LANDMARKS)}
     for f, frame in enumerate(track.frames):
+        if frame.repeat:
+            continue
         if frame.world is None or frame.image is None:
             rejected["lost"] += 1
             continue
@@ -218,6 +242,8 @@ def reference_body(track: pt.PoseTrack, *, min_visibility: float = MIN_VISIBILIT
     medians = {bone: _median_length(points, seen, bone) for bone in BONES}
     last = None
     for f in range(n):
+        if repeated[f]:  # no new picture: the last distinct one still stands, a frame further back
+            continue
         if not seen[f].any():
             last = None
             continue
@@ -230,17 +256,17 @@ def reference_body(track: pt.PoseTrack, *, min_visibility: float = MIN_VISIBILIT
             rejected["arm"] += 1
             for side in {name.split("_")[0] for name in broken}:
                 seen[f, [_AT[p] for p in ARM_POINTS if p.startswith(side)]] = False
-        if last is not None and last == f - 1:
+        if last is not None and repeated[last + 1 : f].all():  # the last distinct picture, however many repeats ago
             both = seen[f] & seen[last]
             step = np.linalg.norm(points[f, both] - points[last, both], axis=1)
-            if both.any() and float(step.max()) > MAX_STEP * 30 / fps:
+            if both.any() and float(step.max()) > MAX_STEP * 30 / fps * (f - last):
                 rejected["jump"] += 1
                 seen[f] = False
                 last = None
                 continue
         last = f
     points[~seen] = np.nan
-    return BodyTrack(fps, track.frames[0].time_s, points, seen, MappingProxyType(rejected), "reference")
+    return BodyTrack(fps, track.frames[0].time_s, points, seen, MappingProxyType(rejected), "reference", repeated)
 
 
 def _mid(points: np.ndarray, a: str, b: str) -> np.ndarray:
@@ -323,7 +349,9 @@ def dance_body(
 @dataclass(frozen=True)
 class Channel:
     """A measure of the body in every frame: its ``unit``, how far a monocular estimate with a moving camera can be
-    trusted on it (``good``, ``fair`` or ``poor``) and why, the points it reads, and whether it is read as a groove."""
+    trusted on it (``good``, ``fair`` or ``poor``) and why, the points it reads, whether it is read as a groove, and the
+    ``provenance`` of what it reads (ADR 0202). Every channel here reads the estimator's world landmarks, so every one
+    is ``estimated-3d``, even one whose quantity lies in the picture's plane."""
 
     name: str
     unit: str
@@ -331,6 +359,7 @@ class Channel:
     why: str
     points: tuple[str, ...]
     groove: bool = True
+    provenance: str = pt.ESTIMATED_3D
 
 
 _LEGS = ("left_hip", "right_hip", "left_knee", "right_knee", "left_ankle", "right_ankle")
@@ -528,13 +557,34 @@ class Spread:
         return cls(p10, p25, p50, p75, p90, len(x))
 
 
+def circular_spread(phases: Sequence[float] | np.ndarray) -> Spread | None:
+    """Percentiles of places in a cycle (shares of it), read round the cycle: each place is taken within half a cycle
+    of the places' circular mean, so a cluster across the seam is one cluster, and the band is turned whole cycles
+    until its median lies in ``[0, 1)``. Its ends may then lie outside it."""
+    x = np.asarray(phases, float)
+    x = x[np.isfinite(x)]
+    if not len(x):
+        return None
+    turn = 2 * np.pi * x
+    centre = math.atan2(float(np.sin(turn).mean()), float(np.cos(turn).mean())) / (2 * np.pi)
+    near = centre + (x - centre + 0.5) % 1.0 - 0.5
+    return Spread.of(near - math.floor(float(np.median(near))))
+
+
 @dataclass(frozen=True)
 class ChannelReading:
     """A channel over a track: ``level`` its value across frames; ``noise`` the frame-to-frame jitter a smooth motion
     would not have (an upper bound on the estimate's own error, per frame); windows in all, ``read`` holding a groove,
     ``still`` not moving; across read and still windows the groove's ``peak_to_peak``, and across read windows its
-    ``cycles_per_beat``, ``snap_ratio`` and, on windows ``locked`` to a half, one or two cycles a beat,
-    ``hit_offset`` in beats; ``range`` the 5th to 95th percentile span of each window."""
+    ``cycles_per_beat``, across timed ones (below) its ``snap_ratio``, and, on windows ``locked`` to a half, one or two
+    cycles a beat,
+    ``hit_offset`` in beats; ``range`` the 5th to 95th percentile span of each window.
+
+    The gesture's timing (ADR 0204): ``overtones`` each read window's curve holds; ``timed`` the read windows whose
+    curve holds more than a sine (two overtones or more), and across them ``peak_speed_phase`` (read round the cycle),
+    ``attack`` and ``release`` in beats, ``peak_acceleration`` in amplitudes per beat squared; ``velocity`` and
+    ``shape`` the mean of their one-cycle profiles from the hit, and ``profile_spread`` each one's distance from the
+    mean velocity profile. A window read as a sine has a sine's timing whatever the dancer did: it counts for none."""
 
     name: str
     unit: str
@@ -551,6 +601,15 @@ class ChannelReading:
     cycles_per_beat: Spread | None
     snap_ratio: Spread | None
     hit_offset: Spread | None
+    overtones: Spread | None = None
+    timed: int = 0
+    peak_speed_phase: Spread | None = None
+    attack: Spread | None = None
+    release: Spread | None = None
+    peak_acceleration: Spread | None = None
+    velocity: tuple[float, ...] = ()
+    shape: tuple[float, ...] = ()
+    profile_spread: Spread | None = None
 
 
 @dataclass(frozen=True)
@@ -595,13 +654,18 @@ def _noise(values: np.ndarray, runs: list[tuple[int, int]]) -> float | None:
     return float(1.4826 * np.median(np.abs(residual - np.median(residual))) / _SMOOTH_GAIN)
 
 
-def _windows(valid: np.ndarray, size: int, hop: int, gap: int) -> list[tuple[int, int]]:
-    """The [start, end) windows of ``size`` frames, every ``hop``, that see at least ``MIN_COVERAGE`` of their frames
-    and leave no gap longer than ``gap`` frames."""
+def _windows(valid: np.ndarray, repeated: np.ndarray, size: int, hop: int, gap: int) -> list[tuple[int, int]]:
+    """The [start, end) windows of ``size`` frames, every ``hop``, that see at least ``MIN_COVERAGE`` of their
+    distinct pictures and leave no gap between seen frames longer than ``gap`` frames. A repeated picture is neither
+    seen nor lost: it leaves the coverage alone and lengthens the gap it falls in."""
     out = []
     for i in range(0, len(valid) - size + 1, hop):
-        here = valid[i : i + size]
-        if here.mean() >= MIN_COVERAGE and max((b - a for a, b in _runs(~here)), default=0) <= gap:
+        here, pictures = valid[i : i + size], size - int(repeated[i : i + size].sum())
+        if (
+            pictures
+            and here.sum() >= MIN_COVERAGE * pictures
+            and max((b - a for a, b in _runs(~here)), default=0) <= gap
+        ):
             out.append((i, i + size))
     return out
 
@@ -639,7 +703,7 @@ def _channel(track: BodyTrack, groove: Groove, chan: Channel, size: int, hop: in
     noise = _noise(values, runs)
     if not chan.groove:
         return ChannelReading(chan.name, chan.unit, chan.trust, int(valid.sum()), level, noise, *(0,) * 4, *(None,) * 5)
-    windows = _windows(valid, size, hop, gap)
+    windows = _windows(valid, track.repeated, size, hop, gap)
     readings, ptp, spans, still = _groove(values, windows, track, groove)
     locked = [r for r in readings if _locked(r.cycles_per_beat)]
     return ChannelReading(
@@ -656,33 +720,83 @@ def _channel(track: BodyTrack, groove: Groove, chan: Channel, size: int, hop: in
         Spread.of(ptp),
         Spread.of(spans),
         Spread.of([r.cycles_per_beat for r in readings]),
-        Spread.of([r.snap_ratio for r in readings]),
+        Spread.of([r.snap_ratio for r in readings if r.overtones >= 2]),
         Spread.of([r.hit_offset for r in locked]),
+        *_timing(readings, groove),
+    )
+
+
+_Timing = tuple[
+    Spread | None,
+    int,
+    Spread | None,
+    Spread | None,
+    Spread | None,
+    Spread | None,
+    tuple[float, ...],
+    tuple[float, ...],
+    Spread | None,
+]
+
+
+def _timing(readings: list[DanceReading], groove: Groove) -> _Timing:
+    """The timing fields of a channel's reading, from its read windows."""
+    timed = [r for r in readings if r.overtones >= 2]
+    overtones = Spread.of([r.overtones for r in readings])
+    phases = [r.peak_speed_phase for r in timed if r.peak_speed_phase is not None]
+    attacks = [r.attack / groove.beat for r in timed if r.attack is not None]
+    releases = [r.release / groove.beat for r in timed if r.release is not None]
+    accelerations = [r.peak_acceleration for r in timed if r.peak_acceleration is not None]
+    if not timed:
+        return overtones, 0, None, None, None, None, (), (), None
+    velocity = np.mean([r.velocity for r in timed], axis=0)
+    shape = np.mean([r.shape for r in timed], axis=0)
+    mean = tuple(float(v) for v in velocity)
+    return (
+        overtones,
+        len(timed),
+        circular_spread(phases),
+        Spread.of(attacks),
+        Spread.of(releases),
+        Spread.of(accelerations),
+        mean,
+        tuple(float(v) for v in shape),
+        Spread.of([profile_distance(r.velocity, mean) for r in timed]),
     )
 
 
 def _travel(track: BodyTrack, groove: Groove, chan: Channel) -> ChannelReading:
-    """Path length around the hips per beat, the place read every quarter beat between frames, both sides averaged."""
+    """Path length around the hips per beat, the place read every quarter beat between the seen frames of a run, both
+    sides averaged. Repeated pictures do not end a run while the distinct pictures on either side of them lie within
+    the quarter beat the path is read at: the path is no finer than that anyway."""
     ends = [p for p in chan.points if p.endswith(("wrist", "ankle"))]
     valid = track.seen[:, [_AT[p] for p in chan.points]].all(axis=1)
     quarter = groove.beat / 4 * track.fps  # frames
     per_beat = []
-    for a, b in _runs(valid):
-        marks = np.arange(a, b - 1, quarter)
-        if len(marks) < 5:
-            continue
-        frames = np.arange(a, b)
-        steps = []
-        for end in ends:
-            rel = track.points[a:b, _AT[end]] - _mid(track.points[a:b], "left_hip", "right_hip")
-            place = np.stack([np.interp(marks, frames, rel[:, k]) for k in range(3)], axis=1)
-            steps.append(np.linalg.norm(np.diff(place, axis=0), axis=1))
-        step = np.mean(steps, axis=0)
-        whole = len(step) // 4 * 4
-        per_beat.extend(step[:whole].reshape(-1, 4).sum(axis=1).tolist())
+    for a, b in _runs(valid | track.repeated):
+        seen = np.arange(a, b)[valid[a:b]]
+        for frames in np.split(seen, np.nonzero(np.diff(seen) > quarter)[0] + 1):
+            if len(frames):
+                per_beat.extend(_path(track, ends, frames, quarter))
     return ChannelReading(
         chan.name, chan.unit, chan.trust, int(valid.sum()), Spread.of(per_beat), None, *(0,) * 4, *(None,) * 5
     )
+
+
+def _path(track: BodyTrack, ends: list[str], frames: np.ndarray, quarter: float) -> list[float]:
+    """The path per whole beat of ``ends`` around the hips over the seen ``frames`` of one run."""
+    a, b = int(frames[0]), int(frames[-1]) + 1
+    marks = np.arange(a, b - 1, quarter)
+    if len(marks) < 5:
+        return []
+    steps = []
+    for end in ends:
+        rel = track.points[frames, _AT[end]] - _mid(track.points[frames], "left_hip", "right_hip")
+        place = np.stack([np.interp(marks, frames, rel[:, k]) for k in range(3)], axis=1)
+        steps.append(np.linalg.norm(np.diff(place, axis=0), axis=1))
+    step = np.mean(steps, axis=0)
+    whole = len(step) // 4 * 4
+    return [float(v) for v in step[:whole].reshape(-1, 4).sum(axis=1)]
 
 
 def _lag(track: BodyTrack, groove: Groove, lead: str, follow: str, size: int, hop: int, gap: int) -> LagReading:
@@ -694,7 +808,7 @@ def _lag(track: BodyTrack, groove: Groove, lead: str, follow: str, size: int, ho
     reach = max(1, round(0.5 * groove.beat * track.fps))
     shifts = np.arange(-reach, reach + 1)
     lags, peaks = [], []
-    windows = _windows(valid, size, hop, gap)
+    windows = _windows(valid, track.repeated, size, hop, gap)
     for a, b in windows:
         x, y = np.diff(heights[lead][a:b]), np.diff(heights[follow][a:b])
         both = valid[a : b - 1] & valid[a + 1 : b]
@@ -749,7 +863,7 @@ def pose_record(
     source: str = "0" * 64,
     clamp: bool = True,
 ) -> dict:
-    """A ``srstudio.pose-track/1.0.0`` record of one of our dances as a perfect estimator facing the dancer would write
+    """A ``srstudio.pose-track`` record of one of our dances as a perfect estimator facing the dancer would write
     it: the study's round trip, and a record for tests and recipes that holds no real person. Landmarks the skeleton
     does not place (eyes, mouth, fingers, heels, toes) are put on the nearest point it does."""
     track = dance_body(frames, fps, profile=profile, clamp=clamp)
@@ -785,6 +899,7 @@ def pose_record(
                 "box": [0.25, 0.1, 0.75, 0.9],
                 "position": 0.0,
                 "appearance": 0.0,
+                "repeat": False,
             }
         )
     return {

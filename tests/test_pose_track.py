@@ -8,7 +8,7 @@ import pytest
 
 from srstudio import pose_track as pt
 from srstudio.errors import SrstudioError
-from support.pose_records import edited, record
+from support.pose_records import edited, image, record, world
 
 
 def test_a_synthetic_record_reads_back_with_its_landmarks_in_order():
@@ -137,3 +137,148 @@ def test_a_record_starting_mid_video_keeps_its_clock():
     data["subject"]["first_frame"] = 100
     track = pt.from_data(data)
     assert track.frames[0].index == 100 and math.isclose(track.frames[0].time_s, 100 / 30)
+
+
+# --- provenance (ADR 0202): measured in the picture, estimated in depth, or not observed at all -------------------
+
+AT = {name: i for i, name in enumerate(pt.LANDMARKS)}
+
+
+def _posed(**moved):
+    """The synthetic figure's world landmarks, some moved (metres, estimator axes), and its image landmarks."""
+    rows = [list(row) for row in world(0.0)]
+    for name, place in moved.items():
+        rows[AT[name]] = list(place)
+    frame = pt.from_data(_with(record(1), rows)).frames[0]
+    assert frame.image is not None and frame.world is not None
+    return frame.image, frame.world
+
+
+def _with(data, rows):
+    data["frames"][0]["world"] = rows
+    data["frames"][0]["image"] = image(rows)
+    return data
+
+
+def test_a_track_with_only_image_landmarks_observes_no_twist():
+    picture, _ = _posed()
+    found = pt.frame_provenance(picture, None)
+    assert {t.provenance for t in found.twists.values()} == {pt.UNOBSERVED}
+    assert set(found.twists) == {rule.bone for rule in pt.TWIST_RULES}
+    assert "depth" in found.twists["right_lower_arm"].why
+    knee = found.landmarks[AT["left_knee"]]
+    assert (knee.image_xy, knee.image_depth, knee.world) == (pt.MEASURED_2D, pt.ESTIMATED_3D, pt.UNOBSERVED)
+
+
+def test_with_world_landmarks_a_twist_is_estimated_only_where_a_landmark_lies_across_its_bone():
+    picture, rows = _posed()
+    found = pt.frame_provenance(picture, rows)
+    # The figure's shoulders and ears lie across the trunk and the neck: the torso's turn and the head's are read.
+    assert found.twists["spine"].provenance == pt.ESTIMATED_3D
+    assert found.twists["head"].provenance == pt.ESTIMATED_3D
+    # Its arms and legs hang nearly straight and its hand and foot landmarks sit on the wrist and the ankle.
+    for bone in ("right_upper_arm", "right_lower_arm", "right_upper_leg", "right_foot", "right_hand"):
+        assert found.twists[bone].provenance == pt.UNOBSERVED, bone
+    # A shin's roll and the ankle's own twist move the foot alike, and the neck's and the head's turn the face alike.
+    shin = found.twists["right_lower_leg"]
+    assert shin.provenance == pt.UNOBSERVED and "ankle" in shin.why
+    assert found.twists["neck"].provenance == pt.UNOBSERVED
+    knee = found.landmarks[AT["left_knee"]]
+    assert knee.world == pt.ESTIMATED_3D and knee.visibility == 0.95
+
+
+def test_bending_the_elbow_past_the_measured_threshold_makes_the_upper_arm_twist_readable():
+    needed = pt.SPAN_FACTOR * pt.NOISE_M
+    assert needed == pytest.approx(math.sqrt(2) * 0.035 / math.tan(math.radians(30)))
+    shoulder, elbow = (-0.2, -0.5, 0.0), (-0.2, -0.22, 0.0)  # the upper arm straight down, 0.28 m
+
+    def forearm(across):
+        picture, rows = _posed(right_shoulder=shoulder, right_elbow=elbow, right_wrist=(-0.2, -0.02, -across))
+        return pt.frame_provenance(picture, rows).twists["right_upper_arm"]
+
+    short, enough = forearm(needed * 0.95), forearm(needed * 1.05)
+    assert short.provenance == pt.UNOBSERVED and short.perpendicular_m == pytest.approx(needed * 0.95)
+    assert enough.provenance == pt.ESTIMATED_3D and enough.needed_m == pytest.approx(needed)
+
+
+def test_a_hidden_landmark_leaves_its_point_and_twist_unobserved():
+    picture, rows = _posed()
+    hidden = [list(row) for row in picture]
+    hidden[AT["left_shoulder"]][3] = 0.1
+    found = pt.frame_provenance(tuple(tuple(r) for r in hidden), rows)
+    shoulder = found.landmarks[AT["left_shoulder"]]
+    assert (shoulder.image_xy, shoulder.image_depth, shoulder.world) == (pt.UNOBSERVED,) * 3
+    assert found.twists["spine"].provenance == pt.UNOBSERVED and "hidden" in found.twists["spine"].why
+
+
+def test_a_lost_frame_observes_nothing():
+    found = pt.frame_provenance(None, None)
+    assert {lm.image_xy for lm in found.landmarks} == {pt.UNOBSERVED}
+    assert {t.provenance for t in found.twists.values()} == {pt.UNOBSERVED}
+
+
+def test_the_noise_of_a_track_is_its_landmarks_jitter():
+    still = pt.from_data(record(30))
+    assert pt.track_noise(still) == 0.0
+    shaky = record(30)
+    for i, frame in enumerate(shaky["frames"]):
+        frame["world"][AT["left_wrist"]][2] += 0.01 * (-1) ** i
+    assert pt.track_noise(pt.from_data(shaky)) > 0.0
+
+
+@pytest.mark.parametrize(
+    ("picture", "rows", "error", "words"),
+    [
+        ("image", None, pt.RecordFormatError, "image"),
+        (((0.5, 0.5, 0.0, 1.0, 1.0),) * 3, None, pt.RecordFormatError, "33"),
+        (((0.5, 0.5, 0.0, 1.0, math.nan),) * 33, None, pt.RecordFormatError, "finite"),
+        (((0.5, 0.5, 0.0, 2.0, 1.0),) * 33, None, pt.RecordValueError, "lies in"),
+        (None, ((0.0, 0.0, 0.0),) * 33, pt.RecordValueError, "visibility"),
+        (((0.5, 0.5, 0.0, 1.0, 1.0),) * 33, ((0.0, 0.0),) * 33, pt.RecordFormatError, "3 numbers"),
+    ],
+)
+def test_malformed_landmarks_are_refused_before_provenance(picture, rows, error, words):
+    with pytest.raises(error, match=words):
+        pt.frame_provenance(picture, rows)
+
+
+def test_bad_settings_are_refused():
+    picture, rows = _posed()
+    with pytest.raises(pt.RecordValueError, match="min_visibility"):
+        pt.frame_provenance(picture, rows, min_visibility=1.5)
+    with pytest.raises(pt.RecordValueError, match="noise_m"):
+        pt.frame_provenance(picture, rows, noise_m=0.0)
+
+
+# --- 1.1.0: a repeated picture is no new observation (ADR 0204) ------------------------------------------------------
+
+
+def test_a_1_1_record_says_which_frames_repeat_the_last_picture():
+    track = pt.from_data(record(12, repeat=(2, 3, 7)))
+    assert track.schema_version == "1.1.0" and pt.SCHEMA_VERSION == "1.1.0"
+    assert track.repeats == 3 and [f.index for f in track.frames if f.repeat] == [2, 3, 7]
+    assert not track.frames[2].found and track.frames[2].world is None and track.found == 9
+    assert pt.from_data(record(12)).repeats == 0  # a 1.0 record: every frame its own picture
+
+
+@pytest.mark.parametrize(
+    ("data", "error", "words"),
+    [
+        (edited(record(6), "frames.2.repeat", False), pt.RecordFormatError, "unknown field"),  # not in 1.0
+        (edited(record(6, repeat=()), "frames.2.repeat", ...), pt.RecordFormatError, "lacks field"),
+        (edited(record(6, repeat=()), "frames.2.repeat", 1), pt.RecordFormatError, "true or false"),
+        (edited(record(6, repeat=()), "frames.2.repeat", "yes"), pt.RecordFormatError, "true or false"),
+        (edited(record(6, repeat=()), "frames.2.repeat", True), pt.RecordValueError, "holds no landmarks"),
+        (edited(record(6, repeat=(3,)), "frames.0.repeat", True), pt.RecordValueError, "holds no landmarks"),
+    ],
+)
+def test_a_repeat_flag_outside_its_contract_is_refused(data, error, words):
+    with pytest.raises(error, match=words):
+        pt.from_data(data)
+
+
+def test_the_first_frame_cannot_repeat_a_picture_before_it():
+    data = record(6, repeat=(0,))
+    data["subject"]["first_frame"] = 1
+    with pytest.raises(pt.RecordValueError, match="first frame has no picture before it"):
+        pt.from_data(data)

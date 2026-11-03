@@ -1,13 +1,16 @@
-"""tools/dance_views.py: front, left and top orthographic views of dances on the shared skeleton, for review."""
+"""tools/dance_views.py: orthographic views of dances on the shared skeleton, for review: moves and phrases (ADR 0194)
+in the volume look (ADR 0202) or as lines."""
 
 import importlib.util
 import json
+import math
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+from PIL import ImageChops
 
 from srstudio import dance, dance_floor, music
 from srstudio import skeleton as sk
@@ -61,6 +64,25 @@ def test_a_raised_arm_draws_above_the_head_in_the_front_view():
     posed = sk.add(profile, sk.rest_pose(profile), {"right_upper_arm.down_up": 2.5}, clamp=True)
     hand, head = views.screen(sheet, profile, posed, "front", row=0, col=0, names=("right_hand", "head"))
     assert hand[1] < head[1]
+
+
+@pytest.mark.parametrize("look", views.LOOKS)
+def test_a_move_cell_is_the_whole_pose_where_the_screen_says(look):
+    """Each cell of the moves sheet draws in its own picture: its corner is the picture's corner, so the feet and the
+    cell's own frame are inside it, and the joints land where ``screen`` puts them."""
+    sheet = views.Sheet(("realistic",), ("front", "left"))
+    profile = sk.preset("realistic")
+    t = 0.4
+    frame = dance.sample(dance.moves()["bob"], GROOVE, t)
+    posed = views.dance_pose(profile, frame, base=sk.rest_pose(profile), clamp=True).pose
+    image = views.render_frame(sheet, views.plan(["bob"], 1), GROOVE, t, look=look)
+    alone = views.pose_image(profile, posed, sheet.views, look=look)
+    cells = (0, views.TOP_BAR, 2 * views.CELL, views.TOP_BAR + views.CELL)
+    assert ImageChops.difference(image.crop(cells), alone.crop(cells)).getbbox() is None
+    for col, view in enumerate(sheet.views):
+        (foot,) = views.screen(sheet, profile, posed, view, row=0, col=col, names=("right_foot",))
+        assert views.TOP_BAR < foot[1] < views.TOP_BAR + views.CELL
+        assert image.getpixel((round(foot[0]), round(foot[1]))) != views.BG
 
 
 @pytest.mark.parametrize(
@@ -138,6 +160,69 @@ def test_the_tool_writes_a_video_with_sound(tmp_path):
     )
     assert sorted(probe.stdout.split()) == ["audio", "video"]
     assert oct(out.stat().st_mode & 0o777) == "0o600"
+
+
+# --- the volume look (ADR 0202) -------------------------------------------------------------------------------------
+
+# Hands with no fingers, so nothing but the forearm's own drawing could show its roll.
+PLAIN = sk.SkeletonProfile("plain", sk.preset("realistic").proportions, hands=("none", "none"))
+
+
+def _twisted(turn):
+    return sk.add(PLAIN, sk.pose(PLAIN), {"right_lower_arm.twist_in_out": turn})
+
+
+def test_the_line_look_cannot_show_a_forearm_twist_and_the_volume_look_can():
+    plain, twisted = _twisted(0.0), _twisted(math.pi / 2)
+    lines = [views.pose_image(PLAIN, p, ("front",), look="lines").tobytes() for p in (plain, twisted)]
+    assert lines[0] == lines[1]
+    volume = [views.pose_image(PLAIN, p, ("front",), look="volume") for p in (plain, twisted)]
+    changed = ImageChops.difference(volume[0], volume[1]).getbbox()
+    assert changed is not None
+    # Nothing on the body's side of the elbow changes: the roll shows on the forearm and the hand it carries. The
+    # margin is half the widest stroke the look draws, rounded up.
+    (elbow,) = views.cell_points(PLAIN, plain, "front", ("right_lower_arm",))
+    assert changed[0] >= elbow[0] - math.ceil(max(views.STROKES.values()) / 2)
+
+
+def test_the_volume_look_is_the_default_and_a_look_must_be_known(tmp_path):
+    sheet = views.Sheet(("stick",), ("front",))
+    plan = views.plan(["bob"], 1)
+    default = views.render_frame(sheet, plan, GROOVE, 0.2)
+    assert default.tobytes() == views.render_frame(sheet, plan, GROOVE, 0.2, look="volume").tobytes()
+    assert default.tobytes() != views.render_frame(sheet, plan, GROOVE, 0.2, look="lines").tobytes()
+    with pytest.raises(views.ViewsError, match="unknown look"):
+        views.write(tmp_path / "out.mp4", look="clay", **TINY)
+    with pytest.raises(views.ViewsError, match="unknown look"):
+        views.pose_image(PLAIN, _twisted(0.0), ("front",), look="clay")
+
+
+@pytest.mark.parametrize("view", views.VIEWS)
+def test_the_volume_look_draws_every_view_on_the_axes_the_lines_use(view):
+    """The three-quarter view (ADR 0194) is a skeleton view too: the volume model projects each point where ``flat``
+    puts it, so both looks put a joint on the same pixel."""
+    for point in (sk.Vec3(1.0, 2.0, 3.0), sk.Vec3(-0.3, 0.8, -1.1)):
+        assert views.SK_VIEWS[view].flat(point) == pytest.approx(views.flat(view, point))
+    profile = sk.preset("realistic")
+    posed = sk.add(profile, sk.rest_pose(profile), {"right_upper_arm.down_up": 1.2}, clamp=True)
+    (wrist,) = views.cell_points(profile, posed, view, ("right_hand",))
+    for look in views.LOOKS:
+        image = views.pose_image(profile, posed, (view,), look=look)
+        x, y = round(wrist[0]), round(wrist[1])
+        box = image.crop((x - 4, y - 4, x + 5, y + 5))
+        assert any(box.getpixel((i, j)) != views.BG for i in range(9) for j in range(9)), (view, look)
+
+
+def test_a_zoomed_pose_image_is_the_same_drawing_larger():
+    profile = sk.preset("stick")
+    posed = sk.rest_pose(profile)
+    one, two = (views.pose_image(profile, posed, ("front", "three-quarter"), zoom=z) for z in (1, 2))
+    assert two.size == (2 * views.CELL * 2, views.TOP_BAR + 2 * views.CELL)
+    assert one.size == (2 * views.CELL, views.TOP_BAR + views.CELL)
+    with pytest.raises(views.ViewsError, match="zoom"):
+        views.pose_image(profile, posed, ("front",), zoom=5)
+    with pytest.raises(views.ViewsError, match="unknown view"):
+        views.pose_image(profile, posed, ("back",))
 
 
 # --- phrases on a fixed floor, an ensemble, characters beyond the presets (ADR 0194) --------------------------------

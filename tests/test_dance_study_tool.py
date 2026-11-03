@@ -1,7 +1,9 @@
 """The dance-study runner (ADR 0203) on synthetic records: it measures a style from a pose track, checks our standing
 presets against it with the misses they share ranked, refuses to write anything but a style record inside the
-repository, writes its private outputs 700/600, and draws the skeleton and the page without the footage."""
+repository, writes its private outputs 700/600, and draws the skeleton and the page without the footage. The skeleton
+draws each bone twist by its provenance (ADR 0202)."""
 
+import dataclasses
 import importlib.util
 import json
 import stat
@@ -68,7 +70,7 @@ def test_every_standing_preset_is_checked_and_the_shared_misses_are_ranked(findi
 def test_shared_misses_count_each_way():
     def miss(ours, severity=1.0):
         return {"channel": "head.bob", "measure": "level", "ours": ours, "low": 1.0, "high": 2.0, "severity": severity,
-                "trust": "good", "words": "w"}  # fmt: skip
+                "confidence": "good", "words": "w"}  # fmt: skip
 
     results = [{"misses": [miss(0.5)]}, {"misses": [miss(3.0)]}, {"misses": [miss(None, 2.0)]}, {"misses": []}]
     (only,) = tool.shared(results)
@@ -90,6 +92,15 @@ def test_nothing_but_a_style_is_written_inside_the_repository(tmp_path):
     assert tool.private(ROOT / "src" / "srstudio" / "assets" / "dance" / "styles" / "x.json").name == "x.json"
 
 
+def test_a_repeated_frame_draws_the_picture_it_repeats_not_a_lost_dancer():
+    """A 1.1.0 track's repeated frame holds no landmarks because its picture is the last one again (ADR 0204): the
+    skeleton video shows that picture's skeleton, never the "perdido" of a dancer not found."""
+    repeats = pt.from_data(record(8, lost=(5,), repeat=(2, 3, 6)))
+    shown = tool.shown_frames(repeats)
+    assert [shown[i].index for i in range(8)] == [0, 1, 1, 1, 4, 5, 5, 7]
+    assert shown[2].found and not shown[6].found  # a repeat of a lost picture is still lost
+
+
 def test_a_skeleton_is_drawn_and_a_lost_frame_says_so(track):
     found = tool.skeleton_frame(track.frames[0], 200, 240)
     assert found.shape == (240, 200, 3) and found.max() > 100
@@ -102,7 +113,100 @@ def test_the_page_is_portuguese_standalone_and_names_what_it_cannot_measure(styl
     assert text.startswith("<!doctype html>") and 'lang="pt-BR"' in text
     assert "não publique" in text and "skeleton.mp4" in text and "views.mp4" in text
     assert "root.travel" in text and "<script" not in text and "http" not in text
+    assert "estimado em 3D" in text and "não observado" in text  # each channel's provenance, and the overlay's
+    # The words name the colours the skeleton is drawn in (BGR): the right side blue, the left orange.
+    assert "Azul é o lado direito dela, laranja o esquerdo" in text
+    assert tool.RIGHT[0] > tool.RIGHT[2] and tool.LEFT[2] > tool.LEFT[0]
     for name in tool.LABELS:
         assert name in text
     bare = tool.page(style, findings, footage=None, views=None, closest="bounce")
     assert "não foi gerado" in bare
+
+
+def test_the_page_states_a_missing_provenance_as_missing(style, findings):
+    """A record older than 1.2 stated no provenance: the page says so, and shows the trust its misses weigh by."""
+    data = json.loads(dance_style.dump_style(style))
+    data["schema"] = "srstudio.dance-style/1.1.0"
+    for channel in data["channels"]:
+        del channel["provenance"], channel["confidence"]
+    old = dance_style.parse_style(json.dumps(data))
+    text = tool.page(old, findings, footage=None, views=None, closest="bounce")
+    assert text.count("não registrada") == len(old.channels) and "estimado em 3D" not in text.split("<table")[1]
+    misses = tool.check_all(old, GROOVE, bars=4, fps=15)["candidates"][0]["misses"]
+    trust = {c.name: c.trust for c in old.channels}
+    assert misses and all(m["confidence"] == trust.get(m["channel"], "fair") for m in misses)
+
+
+# --- provenance on the skeleton (ADR 0202) --------------------------------------------------------------------------
+
+W, H = 760, 776  # the synthetic record's frame
+
+
+def _shoulders_along_the_line_of_sight(frame, z):
+    """``frame`` with the world shoulder line turned a quarter: the left shoulder ``z`` metres away from the camera,
+    the right as far toward it. The picture is left as it was, so only the estimate changes."""
+    rows = [list(r) for r in frame.world]
+    rows[pt.LANDMARKS.index("left_shoulder")] = [0.0, -0.5, z]
+    rows[pt.LANDMARKS.index("right_shoulder")] = [0.0, -0.5, -z]
+    return dataclasses.replace(frame, world=tuple(tuple(r) for r in rows))
+
+
+def _offset(band):
+    """The stripe's signed distance from the band's axis, pixels, along the band's normal."""
+    (sx, sy), (ex, ey) = band.start, band.end
+    length = ((ex - sx) ** 2 + (ey - sy) ** 2) ** 0.5
+    normal = (-(ey - sy) / length, (ex - sx) / length)
+    mid = ((band.stripe[0][0] + band.stripe[1][0]) / 2 - sx, (band.stripe[0][1] + band.stripe[1][1]) / 2 - sy)
+    return mid[0] * normal[0] + mid[1] * normal[1]
+
+
+def test_an_estimated_twist_moves_its_stripe_while_the_measured_bone_stays(track):
+    facing = {b.bone: b for b in tool.twist_bands(track.frames[0], W, H)}
+    spine = facing["spine"]
+    assert spine.provenance == pt.ESTIMATED_3D and spine.stripe is not None and spine.near
+    # Facing the camera the shoulder line lies in the picture: the stripe sits on the band's edge.
+    assert abs(_offset(spine)) == pytest.approx(spine.half, rel=1e-9)
+    away = {b.bone: b for b in tool.twist_bands(_shoulders_along_the_line_of_sight(track.frames[0], 0.2), W, H)}
+    toward = {b.bone: b for b in tool.twist_bands(_shoulders_along_the_line_of_sight(track.frames[0], -0.2), W, H)}
+    for turned in (away["spine"], toward["spine"]):
+        # A quarter turn puts the shoulder line along the line of sight: the stripe crosses to the axis.
+        assert turned.provenance == pt.ESTIMATED_3D and _offset(turned) == pytest.approx(0.0, abs=1e-9)
+        assert (turned.start, turned.end, turned.half) == (spine.start, spine.end, spine.half)
+    # Which way it turned is the estimate's depth: the left shoulder's side away is drawn behind (dashed).
+    assert away["spine"].near is False and toward["spine"].near is True
+
+
+def test_a_twist_the_landmarks_cannot_hold_is_grey_with_no_stripe(track):
+    bands = {b.bone: b for b in tool.twist_bands(track.frames[0], W, H)}
+    # Every rule's bone but the neck, which shares the head's axis, and those the synthetic figure folds to a point
+    # (its hands and feet sit on the wrist and the ankle).
+    drawn_bones = {"spine", "head", "left_upper_arm", "right_lower_arm", "left_upper_leg", "right_lower_leg"}
+    assert drawn_bones <= set(bands) <= {r.bone for r in pt.TWIST_RULES} - {"neck"}
+    for bone in ("left_lower_leg", "right_lower_leg", "left_upper_arm"):  # never; straight arm along its bone
+        assert bands[bone].provenance == pt.UNOBSERVED and bands[bone].stripe is None and bands[bone].near is None
+    picture_only = dataclasses.replace(track.frames[0], world=None)
+    assert all(b.provenance == pt.UNOBSERVED and b.stripe is None for b in tool.twist_bands(picture_only, W, H))
+    drawn = tool.skeleton_frame(picture_only, W, H)
+    assert drawn.shape == (H, W, 3) and drawn.max() > 100
+
+
+def test_the_skeleton_draws_each_provenance_its_own_way_with_a_legend(track):
+    frame = track.frames[0]
+    bands = {b.bone: b for b in tool.twist_bands(frame, W, H)}
+    drawn = tool.skeleton_frame(frame, W, H)
+    spine = bands["spine"]
+    assert spine.stripe is not None
+    mid = [round((a + b) / 2) for a, b in zip(*spine.stripe, strict=True)]
+    assert tuple(drawn[mid[1], mid[0]]) == tool.STRIPE  # a near stripe is solid
+    shin = bands["right_lower_leg"]
+    (sx, sy), (ex, ey) = shin.start, shin.end
+    length = ((ex - sx) ** 2 + (ey - sy) ** 2) ** 0.5
+    inside = (
+        round((sx + ex) / 2 - (ey - sy) / length * shin.half * 0.7),
+        round((sy + ey) / 2 + (ex - sx) / length * shin.half * 0.7),
+    )
+    blue, green, red = (int(v) for v in drawn[inside[1], inside[0]])
+    assert blue == green == red > tool.BACKGROUND  # grey, over the dark ground
+    assert set(tool.LEGEND_PT) == set(pt.PROVENANCES) | {"hidden"}
+    legend = drawn[H - tool.legend_height(H) :, :]
+    assert legend.max() > 200  # the legend's words
