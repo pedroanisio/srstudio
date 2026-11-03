@@ -2,7 +2,7 @@
 generated-by: Claude Code (Claude Opus 5.5)
 ---
 
-# ADR 0225: Static checks stay in the gate
+# ADR 0225: Static checks stay in the gate, and the library's rules are tested in the library
 
 - Status: accepted (2026-11-03, the orchestrator's refactor item after a defect reached develop past the gate)
 - Back to the [library README](../../README.md)
@@ -20,6 +20,11 @@ the table listed it, its 10.08 s pushed `tests/test_gpu.py` past the file bound,
 smoke render in `tools/engine_install.py` outside `gpu.held()` then reached develop: the one check written to catch
 it had been moved out of the gate by one noisy number.
 
+The split into two repositories (ADR 0220) also left tests of the library in the episodes repository, where the
+library's gate never runs them: `cli._anatomy_frames`, `collage._arms`, `news_inked._mouths`, `toon_rooms._level`
+and `blob._side_part` had no test here, and neither had the safe-area rules of ADR 0218 (the overlay check's typed
+error, the builders' declarations, the closed lists and the first-delivery gate).
+
 ## Decision
 
 - **`@pytest.mark.static` pins a test to the gate.** It says the test reads source or data and runs no engine, takes
@@ -35,6 +40,14 @@ it had been moved out of the gate by one noisy number.
   for test-module imports, the decision-record citation scan, the rclone road scan and the skeleton's import
   boundary. `tests/test_tiers.py` reads each pin from the source, so removing one fails a test.
 - A pinned test still counts against the gate's budget, and a gate over budget still names its slowest tests.
+- **A test that exercises library code and reads no reel, episode or pilot lives in this repository.** Moved here:
+  the safe-area rules (`tests/test_safe_area_required.py`, scanning `src`, `examples` and `tools` of this checkout),
+  the build command's frame checks (`tests/test_cli_anatomy_frames.py`), the News anchors' faces on the skin
+  (`tests/test_news_head_skin.py`), and one test each for Collage arms, Bo's hairline and a frozen Toon room light.
+  The episodes repository keeps the half that reads its own code: its delivery roads call the gates, and its scene
+  builders declare a safe area.
+- A moved test arrives without a full-tier measurement. The two moved News tests measured over the bound on the run
+  that moved them carry `slow` so they do not enter the gate unmeasured; the rest measured under it.
 
 ## Rejected
 
@@ -42,5 +55,7 @@ it had been moved out of the gate by one noisy number.
   by one run; a test whose job is to guard the gate should not depend on the next run's load at all.
 - **Exempt every test that asks for no engine.** Most of the measured slow tests run no engine and are slow for real
   (geometry solves, document builds); they belong in the full tier.
+- **Leave the library's tests in the episodes repository and run its suite in the library's gate.** It needs a
+  checkout of the other repository at a matching commit, and the library's gate would fail on reels' changes.
 - **Edit the table by hand to drop the scan.** The next full run writes it back (ADR 0221: the table is never written
   by hand).

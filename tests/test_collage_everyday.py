@@ -3,6 +3,7 @@ caller's project clock."""
 
 import re
 import xml.etree.ElementTree as ET
+from types import SimpleNamespace
 
 import pytest
 from sr_core.scene import Scene
@@ -505,3 +506,27 @@ def test_a_battery_insert_refuses_a_death_off_the_clock(dead):
     cv = canvas()
     with pytest.raises(EverydayError):
         collage_everyday.battery_insert(cv, cv.comp, dead=dead)
+
+
+# Moved from the episodes repository (ADR 0225): the arms a Collage look draws, read from the library alone.
+def test_the_free_pose_leaves_the_screen_left_arm_to_the_scene() -> None:
+    look = collage.LOOKS["rosa"]
+    assert "free" in collage.ARMS
+    under, over = collage._arms(look, "free")
+    both, _ = collage._arms(look, "down")
+    assert len(under) * 2 == len(both) and not over
+    assert under == both[len(under) :]  # the arm that stays is the screen-right one of "down", to the shape
+
+
+def test_an_upper_arm_has_no_hand_on_it(monkeypatch: pytest.MonkeyPatch) -> None:
+    class Canvas:
+        uid = staticmethod(lambda _: "g")
+        group = staticmethod(lambda parent, name: SimpleNamespace(id=name))
+        limbs: dict[object, object] = {}
+
+    counts: list[int] = []
+    monkeypatch.setattr(collage_everyday, "draw_shapes", lambda cv, parent, shapes: counts.append(len(shapes)))
+    points = (336.0, 1390.0), (262.0, 1590.0)
+    collage_everyday.arm(Canvas, None, "rosa", *points, side=-1)  # type: ignore[arg-type]
+    collage_everyday.arm(Canvas, None, "rosa", *points, hand=False, side=-1)  # type: ignore[arg-type]
+    assert 0 < counts[1] < counts[0]

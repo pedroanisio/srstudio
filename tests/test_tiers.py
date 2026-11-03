@@ -181,6 +181,8 @@ PINNED = (
     "tests/test_decisions.py::test_every_cited_decision_record_exists",
     "tests/test_no_real_rclone.py::test_every_road_to_rclone_is_guarded",
     "tests/test_skeleton_bridges.py::test_the_skeleton_reaches_body_only_through_its_public_module",
+    "tests/test_safe_area_required.py::test_no_library_builder_passes_an_undeclared_safe_area",
+    "tests/test_safe_area_required.py::test_every_scene_written_outside_episode_declares_one_or_is_listed_as_never_delivered",
 )
 
 

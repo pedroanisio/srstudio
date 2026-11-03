@@ -1,6 +1,8 @@
 """Toon past the desk: the sofa that carries the signature anywhere, the plain ledge, the outdoor sets, and what
 moves in a shot (the arm, the gull, the Zs). Every part refuses data it cannot draw."""
 
+import json
+import subprocess
 import xml.etree.ElementTree as ET
 
 import pytest
@@ -284,3 +286,23 @@ def test_a_chair_and_a_porch_draw():
     toon_world.hall_chair(cv, cv.group(cv.comp, "g"))
     toon_world.porch(cv, cv.group(cv.comp, "g"))
     assert len(list(drawn(cv).iter())) > 20
+
+
+def test_a_frozen_room_light_level_does_not_change(tmp_path, scene_render):
+    """Moved from the episodes repository (ADR 0225): a light level drawn on a frozen canvas keeps its first value."""
+    cv = canvas(signed=True)
+    with cv.frozen():
+        group = toon_rooms._level(cv, cv.comp, [(0, 0.0, "hold"), (0.5, 1.0, "hold")])
+    path = tmp_path / "level.scene.xml"
+    path.write_bytes(cv.scene.to_bytes())
+    values = []
+    for time in (0, 1):
+        output = subprocess.run(
+            [str(scene_render), "eval", str(path), "--time", str(time), "--json"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        nodes = json.loads(output.stdout)["result"]["nodes"]
+        values.append(next(n["opacity"] for n in nodes if n["id"] == group.id))
+    assert values == pytest.approx([0, 0])
