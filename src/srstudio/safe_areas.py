@@ -222,6 +222,7 @@ UNDELIVERED: tuple[Undelivered, ...] = (
     Undelivered("examples/limbs_quality.py", "example", "an SDK example rendered for its readers, never posted"),
     Undelivered("examples/sdk_showreel.py", "example", "an SDK example rendered for its readers, never posted"),
     Undelivered("examples/target_gaze.py", "example", "an SDK example rendered for its readers, never posted"),
+    Undelivered("examples/toon_dance.py", "proof", "a dance proof clip for the operator's review, never posted"),
     Undelivered("src/srstudio/_acting_compile.py", "proof", "an acting score compiled for review, never posted"),
     Undelivered("src/srstudio/_benchmark_fixtures.py", "fixture", "a benchmark's input, never rendered for anyone"),
     Undelivered("src/srstudio/bible_diagram.py", "catalog", "a diagram page of the cast bible"),
