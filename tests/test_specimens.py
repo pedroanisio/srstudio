@@ -20,6 +20,14 @@ APPROVED = [
 ]
 
 
+RECORDED = [  # a character version that records a drawing and is not approved, so check() does not hold it
+    (name, v.number)
+    for name, p in parts.load().items()
+    for v in p.versions
+    if p.kind == "character" and not p.refused and v.drawing and v.status != "approved"
+]
+
+
 def drawn() -> bytes:
     scene = Scene(version="auto")
     scene.add_project(width=1080, height=1920, fps="24", duration=2.0, background="#ffffff")
@@ -136,6 +144,30 @@ def test_a_gradient_is_digested_where_a_fill_uses_it():
 @pytest.mark.parametrize(("name", "number"), APPROVED, ids=[f"{n}@{v}" for n, v in APPROVED])
 def test_an_approved_drawing_never_changes(name, number):
     specimens.check(name, number)
+
+
+@pytest.mark.parametrize(("name", "number"), RECORDED, ids=[f"{n}@{v}" for n, v in RECORDED])
+def test_a_proposed_drawing_is_what_its_record_holds(name, number):
+    specimens.check_record(name, number)
+
+
+def test_a_proposed_record_that_is_not_its_drawing_fails_and_says_to_record_it(monkeypatch):
+    name, number = RECORDED[0]
+    monkeypatch.setattr(specimens, "digest", lambda *a, **k: "b" * 64)
+    with pytest.raises(specimens.StaleRecordError, match=rf"{name} version {number} is proposed.*parts --digest"):
+        specimens.check_record(name, number)
+
+
+def test_an_approved_record_is_checked_as_approved(monkeypatch):
+    monkeypatch.setattr(specimens, "digest", lambda *a, **k: "b" * 64)
+    with pytest.raises(DrawingChangedError, match=r"toon-bear version 1 .*add a version"):
+        specimens.check_record("toon-bear", 1)
+
+
+def test_a_version_with_no_drawing_has_no_record_to_check(monkeypatch):
+    blank = next((n, v.number) for n, p in parts.load().items() for v in p.versions if not v.drawing and not p.refused)
+    monkeypatch.setattr(specimens, "digest", lambda *a, **k: pytest.fail("a blank record was digested"))
+    specimens.check_record(*blank)
 
 
 def test_a_changed_approved_drawing_fails_and_says_to_add_a_version(monkeypatch):

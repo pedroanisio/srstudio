@@ -793,10 +793,16 @@ def digest(name: str, number: int, episodes: Path) -> str:
 
 
 def check(plan_: Plan) -> None:
-    """Raises :class:`srstudio.specimens.DrawingChangedError` when an approved part no longer draws what it did."""
+    """Raises :class:`srstudio.specimens.DrawingChangedError` when an approved part no longer draws what it did, and
+    :class:`srstudio.specimens.StaleRecordError` when any other version's record is not what its code draws."""
     name, _, number = plan_.entry.name.partition("@")
     version = parts.get(name).version(int(number or 1))
-    if version.status == "approved" and specimens.fingerprint(plan_.document) != version.drawing:
+    if not version.drawing:
+        return  # a version still being drawn records nothing to compare
+    actual = specimens.fingerprint(plan_.document)
+    if actual != version.drawing and version.status != "approved":
+        raise specimens.stale(name, version.number, actual, version.drawing)
+    if actual != version.drawing:
         raise specimens.DrawingChangedError(
             f"{name} version {version.number} is approved and immutable, and it no longer draws what was approved. "
             f"Restore its drawing and add a version: an approved look is never revised in place"

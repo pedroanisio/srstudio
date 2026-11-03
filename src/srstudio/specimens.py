@@ -64,12 +64,15 @@ __all__ = [
     "WEAR",
     "DrawingChangedError",
     "SpecimenError",
+    "StaleRecordError",
     "check",
+    "check_record",
     "check_rig",
     "digest",
     "fingerprint",
     "load_parts",
     "rig_digest",
+    "stale",
 ]
 
 PLACE = frozenset({"x", "y", "scaleX", "scaleY", "rotation", "opacity", "anchorX", "anchorY", "start", "end"})
@@ -115,6 +118,19 @@ class SpecimenError(SrstudioError, ValueError):
 
 class DrawingChangedError(SrstudioError, ValueError):
     """An approved version no longer draws what was approved."""
+
+
+class StaleRecordError(SrstudioError, ValueError):
+    """A version that is not approved records a drawing its code does not draw: the record was taken from a draft."""
+
+
+def stale(name: str, number: int, actual: str, recorded: str) -> StaleRecordError:
+    """The error for a version ``name``@``number`` that draws ``actual`` while its record holds ``recorded``."""
+    return StaleRecordError(
+        f"{name} version {number} is proposed, and its record holds {recorded[:12]}... while its code draws "
+        f"{actual[:12]}...: a record taken from a draft reaches approval unchecked. Record what the code draws "
+        f"with `srstudio parts --digest {parts.part_name(name, number)}` and look at the specimen before asking"
+    )
 
 
 # The fixed kinds of a specimen: the vocabulary as it stood when versions began, kept here so growing it moves nothing.
@@ -508,6 +524,21 @@ def check(name: str, number: int = 1, *, episodes: Path | None = None) -> None:
         raise SpecimenError(f"{name} version {number}: registered builder changed during specimen check; retry")
     entry._verified_builder = builder
     entry._verified_drawing = version.drawing
+
+
+def check_record(name: str, number: int = 1, *, episodes: Path | None = None) -> None:
+    """Verify that a version's record holds what its code draws, whatever its status: an approved one as
+    :func:`check` does, any other with :class:`StaleRecordError`. A version still being drawn records no drawing,
+    and has nothing to compare."""
+    version = parts.get(name).version(number)
+    if version.status == "approved":
+        check(name, number, episodes=episodes)
+        return
+    if not version.drawing:
+        return
+    actual = digest(name, number) if episodes is None else digest(name, number, episodes=episodes)
+    if actual != version.drawing:
+        raise stale(name, number, actual, version.drawing)
 
 
 def rig_digest(name: str, number: int = 1) -> str:
