@@ -336,6 +336,7 @@ NOT_A_HAND: Final = MappingProxyType(
         "saga-hook": "the Handbook, by name",
         "saga-hut": "the word is 'warm': a hut",
         "slat-wall": "the word 'palm' is not in it: a wall",
+        "smallprint-bowl": "a bowl: the fingers in it are Rafa's own, posed by rafa.reach and rafa.rest",
         "soft-beach-call": "a palm tree",
         "soft-bowling-ball": "finger holes",
         "soft-briefcase": "a case's handle",
