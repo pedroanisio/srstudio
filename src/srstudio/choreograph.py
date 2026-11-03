@@ -8,6 +8,9 @@ moves, a standing one ``feet`` and ``either``. A move runs for at most ``max_rep
 is danced mirrored. Each entry crossfades in over ``transition_beats`` (a phrase shorter than that takes its own
 length), and holds one face from the level's palette of :data:`EXPRESSIONS`.
 
+A library may hold counted :class:`dance.Phrase` choreography beside moves (ADR 0194). A phrase is danced standing,
+and is drawn only for a song phrase it fills a whole number of times, so a routine never cuts one off mid-count.
+
 The choice is a ``random.Random(seed)`` draw over the palette in its written order, so a seed and a song give the
 same routine every time. Every loop runs over the song's phrases, which are bounded before the first draw.
 """
@@ -23,6 +26,7 @@ from pathlib import Path
 from . import checks
 from ._dance_model import MAX_ENTRIES, MAX_TRACK_BARS, DanceError, Entry, Move, Routine
 from ._dance_parse import moves as preset_moves
+from ._dance_phrase import Phrase
 from ._dance_song import SongMap, song_map
 from .music import Groove
 
@@ -132,14 +136,21 @@ def _phrases(song: object) -> tuple[SongMap, list[tuple[int, int, str]]]:
     return song, [(bar, min(bar + size, bars), level) for bar, level in zip(range(0, bars, size), levels, strict=True)]
 
 
-def _library(library: object) -> Mapping[str, Move]:
+def _library(library: object) -> Mapping[str, Move | Phrase]:
     found = preset_moves() if library is None else library
-    if not (isinstance(found, Mapping) and all(isinstance(m, Move) for m in found.values())):
-        raise ChoreographyError("the library is a mapping of names to dance.Move", path="library")
+    if not (isinstance(found, Mapping) and all(isinstance(m, (Move, Phrase)) for m in found.values())):
+        raise ChoreographyError("the library is a mapping of names to dance.Move or dance.Phrase", path="library")
     return found
 
 
-def _pools(palette: Palette, library: Mapping[str, Move], support: str, levels: set[str]) -> dict[str, tuple[str, ...]]:
+def _fits(danced: Move | Phrase, beats: int) -> bool:
+    """A move fits any span; a phrase one it fills a whole number of times."""
+    return isinstance(danced, Move) or beats % danced.beats == 0
+
+
+def _pools(
+    palette: Palette, library: Mapping[str, Move | Phrase], support: str, levels: set[str]
+) -> dict[str, tuple[str, ...]]:
     pools = {}
     for level in sorted(levels):
         names = palette.pool(level)
@@ -176,7 +187,7 @@ def choreograph(
     transition_beats: float = 2.0,
     max_repeat: int = 2,
     palette: Palette | None = None,
-    library: Mapping[str, Move] | None = None,
+    library: Mapping[str, Move | Phrase] | None = None,
 ) -> Routine:
     """A routine over ``song``: one entry per phrase, its move drawn by the phrase's level from ``palette`` (the
     defaults when None) among ``library``'s moves (the presets when None) that ``support`` (``seat`` or ``feet``)
@@ -194,10 +205,12 @@ def choreograph(
     entries: list[Entry] = []
     last, run = "", 0
     for start, end, level in phrases:
-        candidates = [n for n in pools[level] if not (n == last and run >= max_repeat)]
+        beats = (end - start) * per_bar
+        candidates = [n for n in pools[level] if not (n == last and run >= max_repeat) and _fits(moves[n], beats)]
         if not candidates:
             raise ChoreographyError(
-                f"bar {start}: the {level} pool {pools[level]} would repeat {last!r} past max_repeat={max_repeat}",
+                f"bar {start}: the {level} pool {pools[level]} has nothing that fills {beats} beats without "
+                f"repeating {last!r} past max_repeat={max_repeat}",
                 path="palette",
             )
         name = rng.choice(candidates)
@@ -224,7 +237,7 @@ def choreograph_track(
     transition_beats: float = 2.0,
     max_repeat: int = 2,
     palette: Palette | None = None,
-    library: Mapping[str, Move] | None = None,
+    library: Mapping[str, Move | Phrase] | None = None,
 ) -> Routine:
     """:func:`choreograph` on :func:`dance.song_map` of a recorded track on ``groove``."""
     song = song_map(path, groove, phrase_bars=phrase_bars, change_db=change_db, seconds=seconds, ffmpeg=ffmpeg)

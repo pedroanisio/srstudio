@@ -12,10 +12,14 @@ import math
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
+from typing import TYPE_CHECKING
 
 from . import checks
 from ._dance_curve import MAX_POINTS, MIN_POINTS, Curve
 from ._dance_errors import DanceError, MoveError, RoutineError
+
+if TYPE_CHECKING:
+    from ._dance_phrase import Phrase
 
 __all__ = [
     "CHAINS",
@@ -371,9 +375,18 @@ class Move:
         return Move(self.name, self.support, tuple(patterns), self.loop_beats, lags, contacts, self.description)
 
 
+def _phrase_type() -> type:
+    from ._dance_phrase import Phrase  # the phrase model reads this module's targets, so it is imported on use
+
+    return Phrase
+
+
 @dataclass(frozen=True)
 class Entry:
-    """A move danced over bars ``start_bar``..``end_bar`` (end excluded), with the face held for the phrase.
+    """A move or a phrase danced over bars ``start_bar``..``end_bar`` (end excluded), with the face held for the phrase.
+
+    A :class:`Phrase` (ADR 0194) is danced from its first count, as many times in a row as the entry holds it; each
+    time starts where the last left the body on the floor.
 
     ``transition_beats`` crossfade the move's parameters in from the entry that ends where this one starts, or from
     rest; ``hold`` is a held pose (a head turn, say) added to the move and crossfaded the same way. ``mirror`` turns the
@@ -381,7 +394,7 @@ class Entry:
 
     start_bar: int
     end_bar: int
-    move: Move
+    move: Move | Phrase
     intensity: float = 1.0
     mirror: bool = False
     transition_beats: float = 0.0
@@ -394,8 +407,8 @@ class Entry:
                 raise RoutineError(f"bar {value!r} is a whole bar in 0..{MAX_TRACK_BARS}", path="bars", actual=value)
         if self.end_bar <= self.start_bar:
             raise RoutineError(f"entry {self.start_bar}..{self.end_bar} ends after it starts", path="bars")
-        if not isinstance(self.move, Move):
-            raise RoutineError(f"entry {self.start_bar}..{self.end_bar} dances a Move", path="move")
+        if not isinstance(self.move, (Move, _phrase_type())):
+            raise RoutineError(f"entry {self.start_bar}..{self.end_bar} dances a Move or a Phrase", path="move")
         _within(self.intensity, 0, 2, "intensity", RoutineError)
         if type(self.mirror) is not bool:
             raise RoutineError(f"mirror {self.mirror!r} is true or false", path="mirror")
@@ -412,7 +425,7 @@ class Entry:
             bound = _bound(item[0])
             _within(item[1], -bound, bound, f"hold {item[0]}", RoutineError)
 
-    def danced(self) -> Move:
+    def danced(self) -> Move | Phrase:
         return self.move.mirror() if self.mirror else self.move
 
 
@@ -443,7 +456,13 @@ class Routine:
                 raise RoutineError(
                     f"entries[{i}] ends at bar {e.end_bar}, past the track's {self.track_bars}", path="entries"
                 )
-            if e.transition_beats > (e.end_bar - e.start_bar) * self.beats_per_bar:
+            beats = (e.end_bar - e.start_bar) * self.beats_per_bar
+            if not isinstance(e.move, Move) and beats % e.move.beats:
+                raise RoutineError(
+                    f"entries[{i}] holds {beats} beats, not a whole number of {e.move.name}'s {e.move.beats}",
+                    path="entries",
+                )
+            if e.transition_beats > beats:
                 raise RoutineError(
                     f"entries[{i}]'s transition of {e.transition_beats:g} beats is longer than the entry",
                     path="transition_beats",

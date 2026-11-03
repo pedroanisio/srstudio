@@ -233,6 +233,46 @@ def test_an_overlay_is_drawn_once_over_every_shot_and_under_the_captions(pinned_
     assert [n for n in xml.iter() if n.get("id") == "over-every-shot"]
 
 
+def test_an_opening_line_is_drawn_over_every_shot_until_the_first_line_ends_and_kept_off_the_cover(
+    pinned_fonts, tmp_path
+):
+    seen = []
+
+    def opening(cv, parent, said, measure):
+        seen.append((parent, said, measure("x", 10.0)))
+        return cv.group(parent, "the-opening-line")
+
+    st = replace(silent(stage_sketch()), opening=opening)
+    ep, xml = built(tmp_path, st, pinned_fonts)
+    assert len(seen) == 1
+    parent, said, width = seen[0]
+    assert parent is ep.comp and width > 0
+    assert said == sketch.line_spans(st.sketch)[0][1]  # silent: where the next line starts on the scripted clock
+    comp = xml.find("composition")
+    assert "the-opening-line" in [g.get("id") for g in comp.findall("group")]  # never inside a shot or its camera
+    assert "the-opening-line" in [node for node, _, _ in ep._cover_hidden]
+
+
+def test_no_opening_line_draws_nothing():
+    assert toon_sketch.Staging.opening is None
+
+
+def test_the_first_line_ends_where_its_take_stops_speaking(tmp_path):
+    sk = stage_sketch()
+    letters = tuple("She is still typing.")
+    starts = tuple(0.05 * i for i in range(len(letters)))
+    takes = [
+        sketch.Take("01", "bear", 0.3, 1.6, sketch.Alignment(letters, starts, tuple(s + 0.05 for s in starts))),
+        sketch.Take("02", "rabbit", 3.0, 0.8, sketch.Alignment(tuple("Pepperoni."), (0.0,) * 10, (0.1,) * 10)),
+    ]
+    sketch.write_speech(tmp_path, takes, END)
+    assert sketch.first_line_end(tmp_path, sk, voiced=True) == pytest.approx(0.3 + 0.05 * len(letters))
+    assert sketch.first_line_end(tmp_path, sk, voiced=False) == sketch.line_spans(sk)[0][1]
+    sketch.write_speech(tmp_path, [], END)
+    with pytest.raises(sketch.SketchError, match="no first line"):
+        sketch.first_line_end(tmp_path, sk, voiced=True)
+
+
 def test_a_dress_is_handed_the_mouths_of_the_recording_only_when_there_is_one(pinned_fonts, tmp_path):
     seen = []
     st = replace(silent(stage_sketch()), dress=lambda shot: seen.append(shot.mouths))

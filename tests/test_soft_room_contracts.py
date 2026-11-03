@@ -35,7 +35,7 @@ def group(cv, name):
 
 
 @pytest.mark.parametrize('part', ENTRIES, ids=lambda e: e.name)
-def test_soft_scene_contracts_preserve_all_eighteen_drawings_and_group_returns(part):
+def test_soft_scene_contracts_preserve_all_nineteen_drawings_and_group_returns(part):
     assert part.contract is not None
     cv, result = drawing(part)
     fixture = json.loads(Path('tests/data/soft-room-contract-baseline.json').read_text())
@@ -50,7 +50,7 @@ def test_soft_scene_contracts_preserve_all_eighteen_drawings_and_group_returns(p
 
 
 def test_every_selected_soft_module_is_exercised():
-    assert len(ENTRIES) == 18
+    assert len(ENTRIES) == 19
 
 
 @pytest.mark.parametrize(
@@ -175,6 +175,7 @@ def test_inbox_named_records_use_canvas_time_and_scroll_uses_local_drawing_pixel
         'soft-mail-screen',
         'soft-mail-list',
         'soft-call-screen',
+        'soft-battery-screen',
         'soft-star-card',
     ],
 )

@@ -62,6 +62,8 @@ def _graph(value: object, count: list[int], depth: int = 0) -> None:
     if isinstance(value, c._Record):
         value.__post_init__()
         for f in fields(value):
+            if f.name == 'background' and getattr(value, f.name) is None:
+                continue  # An unused optional clear color adds no legacy record visits.
             _graph(getattr(value, f.name), count, depth + 1)
     elif isinstance(value, tuple):
         for item in value:
@@ -335,6 +337,8 @@ def preflight(
     if any(type(binding) is not c.AssetBinding for binding in bindings):
         raise c._fail('bindings', None, 'AssetBinding records')
     _graph((spec, bindings), [0])
+    if spec.background is not None and not re.fullmatch(r'#[0-9a-fA-F]{6}', spec.background):
+        raise c._fail('background', spec.background, 'an opaque #RRGGBB project color or null', 'composition.color')
     if spec.width % 2 or spec.height % 2 or Fraction(spec.fps.numerator, spec.fps.denominator) > 120:
         raise c._fail('scene.frame', (spec.width, spec.height, asdict(spec.fps)), 'even dimensions and fps <= 120')
     if spec.style.revision != style_revision(spec.style.name):

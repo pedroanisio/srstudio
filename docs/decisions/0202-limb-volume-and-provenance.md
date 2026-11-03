@@ -115,7 +115,10 @@ or confidence disagrees with the channel, or that leaves an observed channel's c
 
 Today every channel reads the world landmarks, so all thirteen are `estimated-3d`, and `shoulders.tilt`, `head.bob`,
 `head.sway`, `arms.height` and `stance.width` drop from `good` to `fair`. The timing ranges stand only on channels of
-`good` trust; held at `fair`, their misses weigh as an estimate's do.
+`good` trust; held at `fair`, their misses weigh as an estimate's do. Provenance names the data a channel is computed
+from, not the plane its quantity lies in: `shoulders.tilt` measures an angle in the picture's plane, and ADR 0204 calls
+such a channel "read in the picture's own plane", but it is computed from the world landmarks, so it is
+`estimated-3d`.
 
 Records of `1.0.0` and `1.1.0` still read, each with its own meaning. They stated no provenance, so each channel reads
 with `provenance` and `confidence` None: the field is missing, and the reader says so rather than filling it from

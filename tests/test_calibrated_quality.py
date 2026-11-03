@@ -9,7 +9,7 @@ from sr_core.scene import Scene
 
 from srstudio import Canvas
 from srstudio.limbs import HUMAN, ArmProfile, Vec3
-from srstudio.limbs.calibration import get_preset, list_presets, measure_reference, reference_cases
+from srstudio.limbs.calibration import CALIBRATED_HAND, get_preset, list_presets, measure_reference, reference_cases
 from srstudio.limbs.compile import compile_motion
 from srstudio.limbs.errors import LimbError
 from srstudio.limbs.motion import Action, Motion, Target
@@ -98,7 +98,10 @@ def test_time_compression_trips_all_calibrated_derivative_gates_and_refuses_emis
 def test_reach_gate_catches_explicitly_clamped_unreachable_motion(name):
     profile = get_preset(name)
     motion = Motion(
-        ArmProfile(), HUMAN, (Action('reach', duration=4, target=Target(Vec3(4, 0, 0))),), reach_policy='clamp'
+        ArmProfile(),
+        CALIBRATED_HAND,
+        (Action('reach', duration=4, target=Target(Vec3(4, 0, 0))),),
+        reach_policy='clamp',
     )
     cv = canvas()
     result = compile_motion(
@@ -149,7 +152,7 @@ def test_compilation_rechecks_scope_when_options_are_reused(backend, change):
     if change == 'rate':
         options = replace(options, fps=12)
     elif change == 'hand':
-        source = replace(source, hand=replace(HUMAN, palm_width=0.9))
+        source = replace(source, hand=replace(CALIBRATED_HAND, palm_width=0.9))
     elif change == 'anatomy':
         source = replace(source, arm=replace(source.arm, upper=1.5))
     else:
@@ -224,3 +227,17 @@ def test_scope_refuses_malformed_python_anatomy_with_a_repairable_error(field):
     assert caught.value.code == 'quality.scope'
     assert caught.value.to_dict()['path'] == field
     assert caught.value.to_dict()['remedy']
+
+
+@pytest.mark.parametrize('name', IDS)
+def test_presets_keep_the_hand_they_were_measured_with(name):
+    # ADR 0089 fixes anatomy per version: HUMAN's later three-segment thumb must not change the 1.0.0 corpus.
+    assert CALIBRATED_HAND.name == 'human'
+    assert CALIBRATED_HAND.digits[0].lengths == (0.17, 0.13)
+    assert {case.motion.hand for case in reference_cases(name)} == {CALIBRATED_HAND}
+    preset = get_preset(name)
+    preset.options_for(Motion(ArmProfile(), CALIBRATED_HAND), style=preset.style, fps=24)
+    with pytest.raises(LimbError) as caught:
+        preset.options_for(Motion(ArmProfile(), HUMAN), style=preset.style, fps=24)
+    assert caught.value.code == 'quality.scope'
+    assert caught.value.to_dict()['path'] == 'hand'

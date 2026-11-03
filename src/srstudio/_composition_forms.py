@@ -89,14 +89,36 @@ def verify(root: ET.Element, binding: c.AssetBinding) -> None:
     if not binding.forms:
         return
     validate(binding.forms, binding)
-    shapes = {node.get('id'): node for node in root.iter('shape')}
-    if set(shapes) != {surface.node for surface in binding.forms} or root.find('assets/text') is not None:
-        raise fail(
-            'one explicit diffuse or ink field for every shape, with native information kept in a separate layer'
-        )
-    for surface in binding.forms:
-        if surface.mode == 'diffuse' and not _COLOR.fullmatch(shapes[surface.node].get('fill', '')):
-            raise fail('a solid #RRGGBB fill on diffuse shapes; keep gradients and outlines in explicit ink fields')
+    if root.find('assets/text') is not None:
+        raise fail('native information kept in a separate layer')
+    fields = {surface.node: surface for surface in binding.forms}
+    found: set[str] = set()
+
+    def visit(node: ET.Element, inherited: c.FormSurface | None = None) -> int:
+        field = fields.get(node.get('id', ''))
+        if field is not None:
+            if inherited is not None:
+                raise fail('exactly one field owner per shape; nested or shape overrides of an ink group are ambiguous')
+            found.add(field.node)
+            if node.tag == 'group' and (field.mode != 'ink' or field.path is not None):
+                raise fail('only native ink fields without spatial paths on groups; diffuse fields name shapes')
+        owner = field or inherited
+        if node.tag == 'shape':
+            if owner is None:
+                raise fail('one explicit diffuse or ink owner for every shape, directly or through an ink group')
+            if owner.mode == 'diffuse' and not _COLOR.fullmatch(node.get('fill', '')):
+                raise fail('a solid #RRGGBB fill on diffuse shapes; keep gradients and outlines in explicit ink fields')
+            return 1
+        count = sum(visit(child, owner) for child in node if child.tag in ('shape', 'group'))
+        if field is not None and count == 0:
+            raise fail('nonempty native ink groups owning at least one shape')
+        return count
+
+    composition = root.find('composition')
+    assert composition is not None  # Closed source preparation verified the tree.
+    visit(composition)
+    if found != fields.keys():
+        raise fail('fields naming existing shapes or nonempty native ink groups')
     paths.verify(root, binding)
 
 

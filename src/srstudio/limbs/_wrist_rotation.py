@@ -13,10 +13,13 @@ def _near(angle: float, reference: float, limits: tuple[float, float]) -> float:
     high = math.floor((limits[1] - angle + 1e-10) / math.tau)
     if low <= high:
         turn = max(low, min(high, turn))
-    result = angle + turn * math.tau
-    # Only absorb floating-point noise at the boundary, never a physically different rotation.
-    if limits[0] - 1e-10 <= result <= limits[1] + 1e-10:
-        result = max(limits[0], min(limits[1], result))
+    # Without a turn the principal angle is returned as it is: adding 0 * tau would rewrite -0.0 as 0.0.
+    result = angle + turn * math.tau if turn else angle
+    # Only absorb floating-point noise just outside a boundary, never a physically different rotation.
+    if limits[0] - 1e-10 <= result < limits[0]:
+        result = limits[0]
+    elif limits[1] < result <= limits[1] + 1e-10:
+        result = limits[1]
     return result
 
 

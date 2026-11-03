@@ -17,6 +17,7 @@ from . import plates
 from . import scene_motion as m
 from ._composition_forms import resolved as form_lighting
 from ._composition_paths import expansion_bytes as path_expansion
+from ._composition_plate_view import _from_validated_plan
 from ._composition_preflight import _digest, _graph, _pose_key
 from ._composition_review import check_source
 
@@ -131,16 +132,32 @@ def _events(
             for span in clock:
                 add(span.start)
                 add(span.end)
-    count = [0]
+    count, motion_count = [0], [0]
     _graph((base.spec, base.bindings, motion), count)
+    _graph(motion, motion_count)
+    count[0] -= motion_count[0]
+    sampling = 0
+    for keys in groups:
+        if not keys:
+            continue
+        values = []
+        for key in keys:
+            size = [0]
+            _graph(key.value, size)
+            values.append(size[0])
+        # _sample scans key times and selects/interpolates one typed value.
+        # It does not recursively validate the complete motion tree per view.
+        sampling += len(keys) + max(values)
     raster_layers = [layer for layer in spec.layers if layer.asset in sources]
     source_records = sum(
         len(sources[layer.asset].frames) + sum(len(group) for group in sources[layer.asset].raw)
         for layer in raster_layers
     )
-    # Each view bridge revalidates the complete manifest. Include those visits
-    # and every source snapshot in the expansion bound before evaluating views.
-    visits = len(events) * (count[0] * (1 + len(raster_layers)) + source_records)
+    # Each distinct scene receives full preflight once. Its internal bridges
+    # reuse that result while visiting layers/bindings and eight bounds corners;
+    # every source snapshot is still checked against every resolved view.
+    bridges = len(raster_layers) * (len(spec.layers) + len(base.bindings) + 8)
+    visits = motion_count[0] + len(events) * (count[0] + sampling + bridges + source_records)
     if visits > m.MAX_TIMELINE_RECORDS:
         raise m._fail('records', f'at most {m.MAX_TIMELINE_RECORDS} planned record visits')
     return tuple(sorted(events)), schedules
@@ -154,7 +171,7 @@ def _views(plan: c.ValidatedScenePlan, sources: dict[str, _Source]) -> dict[str,
             continue
         info = sources[layer.asset]
         binding = bindings[layer.asset]
-        view = c.plate_view(plan, layer.id, meters_per_unit=info.frames[0].meters_per_unit)
+        view = _from_validated_plan(plan, layer.id, meters_per_unit=info.frames[0].meters_per_unit)
         oversample = info.frames[0].recipe.oversample if isinstance(info.frames[0], c.ProxySource) else 1
         view = replace(view, width=view.width * oversample, height=view.height * oversample)
         if max(view.width, view.height) > 8192:
@@ -299,6 +316,22 @@ def plan_scene(
         previous_forms = form_state
     layer_assets = {layer.id: assets[layer.asset] for layer in spec.layers}
     nodes = 16 + sum(layer_assets[name].nodes + 8 for span in spans for name in span.layers)
+    if nodes > spec.budget.max_nodes:
+        # Raster preparation is transient; output contains image references,
+        # not another copy of every mesh/ID-pass node at every interval. Keep
+        # the previous estimate/identity when it fits. The tighter bound still
+        # reserves all base preparation plus every native vector copy and the
+        # image asset, placement groups and window wrappers for each raster.
+        nodes = min(
+            nodes,
+            base.cost.nodes
+            + 16
+            + sum(
+                (layer_assets[name].nodes if layer_assets[name].backend == 'vector' else 0) + 8
+                for span in spans
+                for name in span.layers
+            ),
+        )
     retained_pixels = sum(
         8 * max(job.width * job.height for job in layer_assets[item.layer].plates) + 4096
         for span in spans

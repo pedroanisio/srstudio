@@ -1,8 +1,10 @@
-"""Strict readers for the dance data: ``srstudio.dance-moves/1.1.0`` and ``srstudio.dance-routine/1.0.0``.
+"""Strict readers for the dance data: ``srstudio.dance-moves/1.1.0``, ``srstudio.dance-routine/1.0.0`` and
+``srstudio.dance-phrases/1.0.0`` (ADR 0194).
 
 Text is untrusted until it parses: one JSON object of at most ``MAX_BYTES`` (no NaN or Infinity, no repeated key), no
 unknown or missing field, no wrong type (a boolean is not a number, a float is not a bar), no number that is not finite,
-and at most ``MAX_MOVES`` moves. The typed model then checks what the schema cannot say (ADR 0186).
+at most ``MAX_MOVES`` moves and ``MAX_PHRASES`` phrases. The typed model then checks what the schema cannot say
+(ADR 0186).
 
 Moves 1.1 adds the ``curve`` waveform (ADR 0204): a pattern with ``"waveform": "curve"`` carries ``curve``, its
 cycle's samples, and no ``snap``; every other pattern carries ``snap`` and no ``curve``. A 1.0 document is read as it
@@ -22,25 +24,32 @@ from types import MappingProxyType
 from typing import TypeVar
 
 from ._dance_model import CURVE_POINTS, Contact, DanceError, Entry, Move, Pattern, Routine
+from ._dance_phrase import MAX_KEYS, Floor, Key, Phrase, beat_of
 
 __all__ = [
     "MOVES_SCHEMA",
+    "PHRASES_SCHEMA",
     "ROUTINE_SCHEMA",
     "DanceDataError",
     "DanceSchemaError",
     "dump_routine",
     "load_moves",
+    "load_phrases",
     "load_routine",
     "moves",
     "parse_moves",
+    "parse_phrases",
     "parse_routine",
+    "phrases",
 ]
 
 MOVES_SCHEMA = "srstudio.dance-moves/1.1.0"
 ROUTINE_SCHEMA = "srstudio.dance-routine/1.0.0"
+PHRASES_SCHEMA = "srstudio.dance-phrases/1.0.0"
 MAX_BYTES = 1_000_000
 MAX_MOVES = 256
-_SCHEMA = re.compile(r"(srstudio\.dance-(?:moves|routine))/(\d+)\.(\d+)\.(\d+)\Z")
+MAX_PHRASES = 64
+_SCHEMA = re.compile(r"(srstudio\.dance-(?:moves|routine|phrases))/(\d+)\.(\d+)\.(\d+)\Z")
 _T = TypeVar("_T")
 
 
@@ -78,7 +87,9 @@ def _document(text: str | bytes, schema: str) -> dict[str, object]:
         data = json.loads(text, parse_constant=_no_constant, object_pairs_hook=_unique)
     except (json.JSONDecodeError, RecursionError) as error:
         raise DanceDataError(f"dance data is one JSON object: {error}", code="dance.json", path="$") from None
-    top = _fields(data, "$", ("schema",), ("generated_by", "moves", "track_bars", "beats_per_bar", "entries"))
+    top = _fields(
+        data, "$", ("schema",), ("generated_by", "moves", "phrases", "track_bars", "beats_per_bar", "entries")
+    )
     found = _SCHEMA.match(top["schema"]) if isinstance(top["schema"], str) else None
     if not found or found.group(1) != schema.split("/")[0]:
         raise DanceSchemaError(f"$.schema {top['schema']!r} is not {schema}", code="dance.schema", path="$.schema")
@@ -225,7 +236,7 @@ def moves() -> Mapping[str, Move]:
     return parse_moves(files("srstudio").joinpath("assets/dance/moves.json").read_bytes())
 
 
-def _entry(value: object, path: str, library: Mapping[str, Move]) -> Entry:
+def _entry(value: object, path: str, library: Mapping[str, Move | Phrase]) -> Entry:
     e = _fields(value, path, ("bars", "move"), ("intensity", "mirror", "transition_beats", "expression", "hold"))
     bars = _list(e["bars"], f"{path}.bars", 2)
     if len(bars) != 2:
@@ -242,8 +253,8 @@ def _entry(value: object, path: str, library: Mapping[str, Move]) -> Entry:
     return _built(path, lambda: Entry(start, end, library[name], intensity, mirror, transition, expression, hold))
 
 
-def parse_routine(text: str | bytes, library: Mapping[str, Move]) -> Routine:
-    """A ``srstudio.dance-routine/1.x`` document, its moves looked up by name in ``library``."""
+def parse_routine(text: str | bytes, library: Mapping[str, Move | Phrase]) -> Routine:
+    """A ``srstudio.dance-routine/1.x`` document, its moves and phrases looked up by name in ``library``."""
     top = _document(text, ROUTINE_SCHEMA)
     _fields(top, "$", ("schema", "track_bars", "entries"), ("generated_by", "beats_per_bar"))
     bars = _whole(top["track_bars"], "$.track_bars")
@@ -253,7 +264,7 @@ def parse_routine(text: str | bytes, library: Mapping[str, Move]) -> Routine:
     return _built("$", lambda: Routine(bars, entries, per_bar))
 
 
-def load_routine(path: str | Path, library: Mapping[str, Move]) -> Routine:
+def load_routine(path: str | Path, library: Mapping[str, Move | Phrase]) -> Routine:
     return parse_routine(_read(path), library)
 
 
@@ -283,3 +294,66 @@ def dump_routine(routine: Routine) -> str:
         "entries": entries,
     }
     return json.dumps(document, indent=2, allow_nan=False) + "\n"
+
+
+_FLOOR = ("right", "forward", "up", "turn")
+
+
+def _contacts(value: object, path: str) -> frozenset[str]:
+    feet = [_text(foot, f"{path}[{i}]") for i, foot in enumerate(_list(value, path, 2))]
+    if len(set(feet)) != len(feet):
+        raise DanceDataError(f"{path} names a foot once", path=path, actual=feet)
+    return frozenset(feet)
+
+
+def _key(value: object, path: str, before: Floor) -> Key:
+    k = _fields(value, path, ("count", "contacts"), ("pose", "ease", "floor", "airborne", "expression"))
+    count = _text(k["count"], f"{path}.count")
+    contacts = _contacts(k["contacts"], f"{path}.contacts")
+    pose = _pairs(k.get("pose", {}), f"{path}.pose", 128)
+    kind = _text(k.get("ease", "smooth"), f"{path}.ease")
+    given = _fields(k.get("floor", {}), f"{path}.floor", (), _FLOOR)
+    floor = {
+        name: _number(given[name], f"{path}.floor.{name}") if name in given else getattr(before, name)
+        for name in _FLOOR
+    }
+    airborne = _flag(k.get("airborne", False), f"{path}.airborne")
+    face = _text(k["expression"], f"{path}.expression") if "expression" in k else None
+    return _built(path, lambda: Key(beat_of(count), contacts, pose, kind, Floor(**floor), airborne, face))
+
+
+def _phrase(value: object, path: str) -> Phrase:
+    p = _fields(value, path, ("name", "eights", "keys"), ("description",))
+    name = _text(p["name"], f"{path}.name")
+    eights = _whole(p["eights"], f"{path}.eights")
+    description = _text(p.get("description", ""), f"{path}.description")
+    keys: list[Key] = []
+    for i, item in enumerate(_list(p["keys"], f"{path}.keys", MAX_KEYS)):
+        keys.append(_key(item, f"{path}.keys[{i}]", keys[-1].floor if keys else Floor()))
+    return _built(path, lambda: Phrase(name, eights, tuple(keys), description))
+
+
+def parse_phrases(text: str | bytes) -> Mapping[str, Phrase]:
+    """The phrases of a ``srstudio.dance-phrases/1.x`` document, by name in file order. A key's ``floor`` holds the
+    channels the key before set wherever it leaves one out: the body stays where it was taken."""
+    top = _document(text, PHRASES_SCHEMA)
+    _fields(top, "$", ("schema", "phrases"), ("generated_by",))
+    out: dict[str, Phrase] = {}
+    for i, item in enumerate(_list(top["phrases"], "$.phrases", MAX_PHRASES)):
+        phrase = _phrase(item, f"$.phrases[{i}]")
+        if phrase.name in out:
+            raise DanceDataError(f"$.phrases[{i}]: phrase {phrase.name!r} is named twice", path=f"$.phrases[{i}].name")
+        out[phrase.name] = phrase
+    if not out:
+        raise DanceDataError("$.phrases holds at least one phrase", path="$.phrases")
+    return MappingProxyType(out)
+
+
+def load_phrases(path: str | Path) -> Mapping[str, Phrase]:
+    return parse_phrases(_read(path))
+
+
+@cache
+def phrases() -> Mapping[str, Phrase]:
+    """The shipped phrases, from ``assets/dance/phrases.json``."""
+    return parse_phrases(files("srstudio").joinpath("assets/dance/phrases.json").read_bytes())

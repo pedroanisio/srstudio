@@ -266,3 +266,35 @@ def test_text_width_refuses_a_font_without_its_metric_tables():
             data[at : at + 4] = b"xxxx"
     with pytest.raises(FontError, match="no 'hmtx' table"):
         fonts.text_width(bytes(data), "a", 40)
+
+
+def test_word_gaps_measure_the_background_left_between_two_outlined_words():
+    data = BOLD.read_bytes()
+    bare = fonts.word_gaps(data, "get the\nride now", 58)
+    assert [(g.left, g.right) for g in bare] == [("get", "the"), ("ride", "now")]  # never across a line break
+    space = fonts.text_width(data, " ", 58)
+    assert all(0 < g.px < space + 0.25 * 58 for g in bare)  # the space, and the two letters' bearings
+    outlined = fonts.word_gaps(data, "get the\nride now", 58, outline=7)
+    assert [g.px for g in outlined] == pytest.approx([g.px - 14 for g in bare])  # the outline reaches in from both
+    wide = fonts.word_gaps(data, "get  the", 58, outline=7)
+    assert wide[0].px == pytest.approx(outlined[0].px + space)
+    assert fonts.word_gaps(data, "Since", 58) == [] and fonts.word_gaps(data, "", 58) == []
+
+
+def test_word_gaps_follow_the_ink_of_the_letters_either_side():
+    data = BOLD.read_bytes()
+    (round_o,) = fonts.word_gaps(data, "x o", 58)
+    (hooked_j,) = fonts.word_gaps(data, "x j", 58)  # the j's tail hangs left of its advance
+    assert hooked_j.px < round_o.px
+    assert fonts.word_gaps(data, "x o", 116)[0].px == pytest.approx(2 * round_o.px)
+
+
+def test_word_gaps_refuse_a_font_without_outlines_to_measure():
+    data = bytearray(BOLD.read_bytes())
+    n = struct.unpack(">H", data[4:6])[0]
+    for i in range(n):
+        at = 12 + 16 * i
+        if bytes(data[at : at + 4]) == b"glyf":
+            data[at : at + 4] = b"xxxx"
+    with pytest.raises(FontError, match="no 'glyf' table"):
+        fonts.word_gaps(bytes(data), "a b", 40)

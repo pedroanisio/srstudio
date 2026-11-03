@@ -321,7 +321,10 @@ profile retain zero defaults for unavailable measurements; those zeros are not p
 
 `srstudio.limbs.calibration.list_presets()` describes two frozen numeric regression envelopes:
 `toon-human-conversation/1.0.0` and `gloss-human-deliberate/1.0.0`. Both apply to the unchanged
-`ArmProfile()` and `HUMAN` hand at exactly 24 Hz, with the named style adapter. Mirrored sides and shoulder
+`ArmProfile()` and `calibration.CALIBRATED_HAND` at exactly 24 Hz, with the named style adapter.
+`CALIBRATED_HAND` is the human hand the envelopes were measured with, with its two-segment thumb; the current
+`HUMAN`, whose thumb has three segments, is outside their scope until a new version is measured and reviewed
+([ADR 0213](../decisions/0213-calibration-keeps-its-measured-hand.md)). Mirrored sides and shoulder
 translation are allowed. Arm lengths, width, joint limits and hand anatomy must match; these are canonical
 human-arm studies, not calibrated profiles for every Toon or Gloss character. Camera scale affects the drawing,
 while limits use world units and seconds, with radians for angular quantities.
@@ -335,15 +338,15 @@ residual has a separate `1e-6` tolerance. The headroom is a regression policy, n
 ```python
 from sr_core.scene import Scene
 from srstudio import Canvas
-from srstudio.limbs import HUMAN, ArmProfile, Camera
-from srstudio.limbs.calibration import get_preset
+from srstudio.limbs import ArmProfile, Camera
+from srstudio.limbs.calibration import CALIBRATED_HAND, get_preset
 from srstudio.limbs.compile import compile_motion
 from srstudio.limbs.motion import Action, Motion
 
 scene = Scene(version="auto")
 scene.add_project(width=1280, height=720, fps="24", duration=2)
 cv = Canvas(scene, width=1280, height=720, font_asset=None)
-motion = Motion(ArmProfile(), HUMAN, (Action("point", duration=2),))
+motion = Motion(ArmProfile(), CALIBRATED_HAND, (Action("point", duration=2),))
 preset = get_preset("toon-human-conversation/1.0.0")
 compiled = compile_motion(
     cv, cv.comp, motion, id="calibrated-point", style="toon", backend="baked",
@@ -771,3 +774,6 @@ The simplified `MITTEN` and `THREE_FINGER` presets retain their two-segment thum
 Persisted hand profiles carry their own lengths: loading a previously saved two-segment HUMAN hand preserves its
 anatomy and playback. To retain that topology in new Python authoring, supply a custom `HandProfile` with the
 previous thumb lengths `(0.17, 0.13)`. No loader silently inserts a joint or drops an authored angle.
+The 1.0.0 calibrated presets keep the two-segment hand they were measured with, `calibration.CALIBRATED_HAND`,
+and refuse the three-segment `HUMAN` with `quality.scope`
+([ADR 0213](../decisions/0213-calibration-keeps-its-measured-hand.md)).

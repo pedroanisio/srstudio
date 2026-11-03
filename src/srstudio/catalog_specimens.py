@@ -310,6 +310,7 @@ RECIPES: dict[str, Recipe] = {
     "collage-chart": Recipe(part(300, 700, 480, 360, (0.2, 0.5, 1.0))),
     "collage-food": Recipe(part("taco", 540, 960, 400)),
     "collage-phone": Recipe(part(380, 680, 320, 560)),
+    "collage-big-type": Recipe(part(380, 680, 320, 560, pages=((0.0, "GARY LOOKS"),))),
     "collage-article": Recipe(part(190, 480, 700, 960, "LOCAL MAN HAS NOT CALLED HIS MOTHER")),
     "collage-bubble": Recipe(part("Dear Son.", 240, 860, 600, 200, size=64)),
     "collage-alarm-clock": Recipe(part(300, 840, 480, "11:40")),
@@ -392,6 +393,9 @@ RECIPES: dict[str, Recipe] = {
     "stick-snow-cap": Recipe(part(540, 960, 2)),
     "stick-marathon": Recipe(part(SECONDS)),
     "stick-coffee-counter": Recipe(part()),
+    "stick-light-string": Recipe(part(140, 800, 940, 800, SECONDS, on=0.5)),
+    "stick-worktop": Recipe(part(140, 940, 800)),
+    "stick-smart-speaker": Recipe(part(540, 1100, scale=2.0, glow=((0.5, SECONDS),))),
     "stick-side-car": Recipe(part()),
     "stick-suitcases": Recipe(part(540, 960)),
     "stick-top-car": Recipe(part()),
@@ -644,6 +648,7 @@ RECIPES: dict[str, Recipe] = {
     "soft-mail-screen": Recipe(part(540.0, 960.0, scale=3.0)),
     "soft-mail-list": Recipe(part(540.0, 960.0, marked=2, scale=3.0)),
     "soft-call-screen": Recipe(part(540.0, 960.0, scale=3.0)),
+    "soft-battery-screen": Recipe(part(540.0, 960.0, scale=3.0)),
 }  # fmt: skip
 RECIPES.update(  # a kit's second version takes the same arguments, so it takes the same recipe
     {

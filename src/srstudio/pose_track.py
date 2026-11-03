@@ -2,7 +2,7 @@
 
 A pose estimator is a model, so what it writes is wrong some of the time: it loses the dancer, jumps to a neighbour,
 guesses an occluded wrist, or folds a leg. ``tools/pose_extract.py`` runs the estimator in its own interpreter and
-writes one JSON record, ``srstudio.pose-track/1.0.0``; this module reads that record and nothing else:
+writes one JSON record, ``srstudio.pose-track/1.1.0``; this module reads that record and nothing else:
 
     track = pose_track.load("generated/dance-study/<name>/pose-track.json")
     track.frames[30].world[pose_track.LANDMARKS.index("left_knee")]   # metres from the hips' centre
@@ -12,7 +12,8 @@ A screen recording repeats pictures: a 30 fps capture of a video played at a low
 picture again. A repeated picture is no new observation of the dancer; read as one it is a moment of zero speed and
 then a double step, which fakes acceleration spikes and moves the fastest moment. From ``1.1.0`` each frame says
 whether its picture repeats the last distinct one (``repeat``); a repeated frame carries its clock and no landmarks,
-and the study counts it as not seen (ADR 0204). A ``1.0.0`` record reads as before, every frame its own picture.
+and the study counts it as not seen (ADR 0204). A record written before ``1.1.0`` reads as before, every frame its own
+picture.
 
 The record is refused with a typed error when it is not one strict JSON object of this schema (an unknown or missing
 field, a wrong type, a number that is not finite, a repeated key), when its schema major is another, and when its

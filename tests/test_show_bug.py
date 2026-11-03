@@ -176,3 +176,38 @@ def test_a_build_by_slug_stamps_a_show_release_and_only_it(tmp_path, monkeypatch
         (root / "script.json").write_text(json.dumps([{"start": 0, "end": 1, "text": "hi"}]))
         assert cli.main(["build", "--scripts", str(scripts), slug, str(root)]) == 0
         assert (root / f"{slug}.scene.xml").read_text().count('id="show-bug-212"') == count
+
+
+# -- the bug's clearance: a caption or a text pill keeps CLEAR pixels off it -------------------------------------------
+@pytest.mark.parametrize(
+    "box",
+    [
+        (52.0, 334.0, 1028.0, 440.0),  # big-font's long pill at 16.20 s: 2 px under the bug, across its width
+        (155.74, 334.0, 924.3, 429.0),  # 2 px under it and 1.7 px left of it: corners count
+        (100.0, 300.0, 930.0, 400.0),  # over it
+        (950.0, 200.0, 1000.0, 260.0),  # 10 px above it
+    ],
+)
+def test_a_box_within_the_clearance_of_the_bug_is_not_clear(box):
+    assert not show.clear_of_bug(box)
+
+
+@pytest.mark.parametrize(
+    "box",
+    [
+        (100.0, 334.0, show.BUG_BOX[0] - show.CLEAR, 440.0),  # exactly CLEAR to its left
+        (100.0, show.BUG_BOX[3] + show.CLEAR, 1040.0, 500.0),  # exactly CLEAR under it
+        (100.0, 100.0, 1040.0, show.BUG_BOX[1] - show.CLEAR),  # exactly CLEAR above it
+    ],
+)
+def test_a_box_the_clearance_away_on_one_side_is_clear(box):
+    assert show.clear_of_bug(box)
+
+
+def test_the_widest_centred_box_that_clears_the_bug():
+    assert show.CLEAR == 12.0
+    left = show.BUG_BOX[0] - show.CLEAR
+    assert show.widest_clear(334.0, 440.0, 540.0) == 2 * (left - 540.0)
+    assert show.clear_of_bug((540.0 - show.widest_clear(334.0, 440.0, 540.0) / 2, 334.0, left, 440.0))
+    assert show.widest_clear(show.BUG_BOX[3] + show.CLEAR, 500.0, 540.0) == float("inf")
+    assert show.widest_clear(100.0, show.BUG_BOX[1] - show.CLEAR, 540.0) == float("inf")
