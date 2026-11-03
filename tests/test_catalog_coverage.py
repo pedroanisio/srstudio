@@ -76,6 +76,7 @@ NO_EPISODE = [
     "toon-starlight-terrace",
     "toon-take-a-number",
     "toon-telescope",
+    "toon-tv-browse",  # its reel, #213 grown-on-me, is held until its rebuild (ADR 0140)
     "wire-car",
     "wire-jet",
 ]

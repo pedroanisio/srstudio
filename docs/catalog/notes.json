@@ -9194,18 +9194,6 @@
     },
     {
       "section": "props",
-      "name": "Lista de filmes na TV",
-      "parts": [
-        "toon-tv-browse"
-      ],
-      "shot": {
-        "episode": "grown-on-me",
-        "at": 2.8
-      },
-      "text": "Um filme em foco, um relógio no canto e uma fileira de capas sem título: a noite inteira escolhendo, nenhum serviço de verdade."
-    },
-    {
-      "section": "props",
       "name": "Controle remoto na pata",
       "parts": [
         "toon-remote"
