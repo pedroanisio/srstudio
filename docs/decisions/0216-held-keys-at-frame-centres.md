@@ -4,7 +4,8 @@ generated-by: Claude Code (Claude Opus 5.5)
 
 # ADR 0216: A held change is keyed half a frame before its frame
 
-- Status: proposed (2026-11-02, amended 2026-11-03)
+- Status: proposed (2026-11-02, amended 2026-11-03; a held key on a shot's clock amended by
+  [ADR 0223](0223-held-keys-on-the-reels-frames.md))
 - Back to the [library README](../../README.md)
 
 ## Context
@@ -93,8 +94,8 @@ project's rate, and of two changes one frame would show it keeps the later. Inte
 `EpisodeSpec.held_frames` hands it to the canvas, and `toon_sketch.Staging`, `collage_sketch.Staging`,
 `series.Reel`, `rafa_show.Show`, `smallprint.Show` and `stick_reel.spec` carry it, `False` by default as `bleed` is:
 every new reel sets it, and a reel already built keeps its keys, so its scene rebuilds byte for byte. A key on a
-shot's local clock is placed on that clock's frames, which are the reel's frames when the shot starts on one; a
-shot that starts between frames shows the change on the nearest frame, half a frame early at most.
+shot's local clock is placed through the shot's start on the reel's frames (ADR 0223): keyed on the clock's own
+frames, a change in a shot that starts between the reel's frames shows up to a whole frame early or late.
 
 `framegraph.evaluate` sent its times to the engine as `{time:.6f}`, and `text_rules` read its frames at six-decimal
 times, so a gate sampled the same rounded instants and saw each change on the frame the keys meant, not the one
@@ -109,8 +110,10 @@ a frame late. It places a sequence's shots end to end as the engine's `place_seq
 sequence's `timeOffset`/`timeScale` clock in the engine's float order, and reads each key on its time base. A change
 is meant for frame `k` when its written time is within a hundredth of a frame of its own timeline's grid and it lands
 within the same slack of `k / fps` in the reel; it is late when the engine's float time at frame `k`, on the change's
-own clock, is still below it. A change keyed between frames, as `held_frames=True` keys it, is meant for no frame and
-is never late; neither is a shot's change when the shot starts between the reel's frames. A change written off its
+own clock, is still below it. A change keyed between frames is meant for no frame and is
+never late; neither is a change keyed on a shot's own frames when the shot starts between the reel's frames. One
+keyed half a frame before a frame of its own clock, as `held_frames=True` keys it, must land half a frame before a
+reel frame, or the gate refuses it as keyed on a shot's frames (ADR 0223). A change written off its
 own grid whose time, added to where its shot starts, is a frame's time to a millionth of a frame is meant for that
 frame: `saga-friday-deploy`'s shot 5 starts at 8.715 s and blinks at 1.91 s on its own clock, 10.625 s in all, frame
 255 at 24 fps, and the engine reads frame 255 at local 1.9099999999999984 and shows the blink on frame 256. A normalized time base, a

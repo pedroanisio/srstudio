@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from fractions import Fraction
 from pathlib import Path
 
 import pytest
@@ -140,6 +141,47 @@ def test_a_cut_just_after_its_frame_is_late_on_both_sides():
     shots = box("a", end="1.033334") + box("b", end="0.9125")
     late = held_gate.late_changes(scene(f'<sequence id="shots">{shots}</sequence>'))
     assert sorted((x.frame, x.node, x.what) for x in late) == [(31, "a", "end 1.033334"), (31, "b", "start 1.033334")]
+
+
+# -- a held key on its shot's frames, not the reel's (ADR 0223) ---------------------------------------------------
+def shot_between_frames(key: str, fps: str = "24", lead: str = "4.613271") -> bytes:
+    shots = box("a", end=lead) + box("b", held([key], base="local"), end="3")
+    return scene(f'<sequence id="shots">{shots}</sequence>', fps=fps, duration="8")
+
+
+def test_a_held_key_on_its_shots_frames_in_a_shot_between_frames_is_refused():
+    """cant-afford-to-save as a held_frames canvas keyed it on the shot's clock: shot b starts at 4.613271 s, frame
+    110.72 at 24 fps, and its cut, at 2.255875 s on its clock (reel frame 164.86, shown on 165), was keyed half a frame
+    before the shot's frame 55, at reel frame 165.22: the reel shows it on frame 166, a whole frame late."""
+    late = held_gate.late_changes(shot_between_frames(repr(54.5 / 24)))
+    assert [(x.frame, x.node, x.why) for x in late] == [(166, "b", "shot grid")]
+    assert "keyed on its shot's frames" in str(late[0])
+
+
+@pytest.mark.parametrize("fps", ["24", "30000/1001"])
+def test_a_held_key_half_a_frame_before_a_reel_frame_is_on_time(fps):
+    """The same cut keyed half a frame before reel frame 165, through the shot's start, as a placed canvas keys it."""
+    rate = Fraction(fps)
+    key = Fraction(329, 2) / rate - Fraction(4.613271)
+    assert held_gate.late_changes(shot_between_frames(repr(float(key)), fps)) == []
+
+
+def test_a_held_key_on_its_shots_frames_at_a_ratio_frame_rate_is_refused():
+    rate = Fraction(30000, 1001)
+    late = held_gate.late_changes(shot_between_frames(repr(float(Fraction(109, 2) / rate)), "30000/1001"))
+    assert [x.why for x in late] == ["shot grid"]
+
+
+def test_a_shot_on_the_reels_frames_keeps_its_own_half_frames():
+    """A shot that starts on a reel frame shares the reel's grid: its half-frame keys are the reel's."""
+    assert held_gate.late_changes(shot_between_frames(repr(54.5 / 24), lead=repr(110 / 24))) == []
+
+
+def test_a_first_delivery_keyed_on_its_shots_frames_is_refused(tmp_path):
+    project(tmp_path, "moved", shot_between_frames(repr(54.5 / 24)))
+    drift = held_gate.late_defects({"moved": release("moved")}, tmp_path, {"moved": "moved-video"})
+    assert [d.name for d in drift] == ["moved-video"]
+    assert "keyed on a shot's frames" in drift[0].reason and "frames 166" in drift[0].reason
 
 
 # -- what the gate cannot read --------------------------------------------------------------------------------------
