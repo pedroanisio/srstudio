@@ -66,6 +66,22 @@ def test_the_cut_meant_for_frame_165_stays_on_frame_165():
     assert (Fraction(cut) + Fraction(4.613271)) * 24 == pytest.approx(164.5, abs=1e-9)
 
 
+def test_a_change_just_after_a_reel_frame_stays_on_the_next_frame():
+    """saga-take-home: shot 9 starts at 9.20025 s and blinks 1.05 s into it, 10.25025 s in the reel, a quarter of a
+    millisecond (0.006 of a frame) after frame 246, so the published scene shows it on 247. That is a time after the
+    frame, not a frame time rounded up: it stays on 247. Only a sum within float noise of a frame is that frame:
+    saga-friday-deploy's 8.715 + 1.91 is 10.625 s, frame 255 at 24 fps, which the engine reached a hair late."""
+    rate = Fraction(24)
+    cv, shot = sequenced("24", 9.20025)
+    after = cv.gate(cv.group(shot, "after"), [(0, 1.05)])
+    cv2, shot2 = sequenced("24", 8.715)
+    noise = cv2.gate(cv2.group(shot2, "noise"), [(0, 1.91)])
+    cv.place_held()
+    cv2.place_held()
+    assert shown_on(changes(after)[1][0], 9.20025, rate) == 247
+    assert shown_on(changes(noise)[1][0], 8.715, rate) == 255
+
+
 @pytest.mark.parametrize("fps", ["24", "30", "30000/1001"])
 @pytest.mark.parametrize("between", [0.1, 0.5, 0.72, 0.99])
 def test_a_shot_that_starts_between_frames_shows_each_change_on_its_own_frame(fps, between):

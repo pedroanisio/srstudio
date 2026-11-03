@@ -40,10 +40,17 @@ A held change is keyed through its node's clock on the reel, not on the clock's 
   `timeScale` clocks. The gate reads the live `sr_core` elements through an adapter, so the canvas and the gate share
   one model of the engine's timing.
 - `Clock.held(time, rate, local)` takes a change meant for `time` on the node's channel to the reel, finds the first
-  reel frame at or after it (`held_keys.frame_of`'s slack), and gives the channel time that is half a frame before
-  that frame, in exact fractions. A change at 0 stays at 0, and no key goes before the channel's 0. A start within a
-  millionth of a frame of a reel frame, with no clock above it, is that frame, so a shot on the reel's frames keys
-  exactly as `Canvas.keys` already keyed it.
+  reel frame at or after it, and gives the channel time that is half a frame before that frame, in exact fractions.
+  A change at 0 stays at 0, and no key goes before the channel's 0. A start within a millionth of a frame of a reel
+  frame, with no clock above it, is that frame, so a shot on the reel's frames keys exactly as `Canvas.keys` already
+  keyed it, `held_keys.frame_of`'s hundredth-of-a-frame slack included.
+- On a channel that starts between the reel's frames, only float noise (a millionth of a frame, the gate's own
+  tolerance for a sum of written times) reads a time after a frame as that frame. `saga-take-home`'s shot 9 starts
+  at 9.20025 s and blinks 1.05 s into it, 10.25025 s in the reel, 0.006 of a frame after frame 246: the published
+  scene shows it on 247, and so does the rebuild. With the hundredth-of-a-frame slack it moved to 246, as did changes
+  in `saga-exit-interview` (frame 522), `saga-take-home` (246, 258, 270, 289) and `saga-friday-deploy` (114) that the
+  gate never called late. The slack is for a frame time rounded to six or four decimals; a time a shot's start
+  pushes a few thousandths of a frame past a reel frame is after it.
 - `Canvas` records each held animate it writes on a `held_frames` canvas (not inside `frozen()`), with the times it
   was asked for and the keys as written. `Canvas.place_held()` re-keys each of them through `clocks()`; of two
   changes one frame shows, the later stays. An animate removed or rewritten since the canvas wrote it is left alone,
@@ -60,6 +67,8 @@ keyed on a shot's frames, not the reel's, and show a frame early or late, on fra
 gate stands.
 
 `tests/test_held_local_clock.py` covers the `cant-afford-to-save` cut (meant for 164.86, shown on 165, stays on 165),
+the `saga-take-home` blink 0.006 of a frame after frame 246 staying on 247 beside `saga-friday-deploy`'s float-noise
+blink moving to 255,
 shots that start 0.1, 0.5, 0.72 and 0.99 of a frame past a reel frame at 24, 30 and 30000/1001 fps with changes a
 twentieth of a frame after, well after and a hundredth before a frame, a shot on the reel's frames keeping its bytes,
 idempotence, rewritten and removed animates, `Episode.finish`, and the engine itself (`scene-render eval`) showing
@@ -71,6 +80,9 @@ refusal of a change keyed on a shot's frames at 24 fps and 30000/1001, and its p
 - Place each key in `Canvas.keys`, through the node's parents at the time of the call. A shot's start in a
   sequence depends on every shot before it and on the lengths of later-drawn siblings, so it is not known until the
   scene is drawn, and walking parents needs the private `_owner` pointer of `sr_core`.
+- Read a time up to a hundredth of a frame after a reel frame as that frame on every channel. It moves changes the
+  gate never called late, each a frame earlier than the published reel shows them, so a rebuild changes frames
+  beyond the defect it fixes.
 - Fix only the gate. The five queued reels would then be refused with no way to build them clean.
 - Snap each shot's start to a reel frame. That moves the cut between shots off the voice take it follows and
   changes every scene with a shot between frames, published ones included.

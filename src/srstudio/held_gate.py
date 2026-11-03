@@ -335,15 +335,16 @@ class Clock:
     start: float
     chain: tuple[tuple[float, float, float], ...] = ()
 
-    def _start(self, rate: Fraction) -> Fraction:
-        """The node's start, exactly; on the composition clock, a start within float noise of a frame is that frame,
-        so a shot that starts on a reel frame keys exactly as its own clock's frames do."""
+    def _start(self, rate: Fraction) -> tuple[Fraction, bool]:
+        """The node's start, exactly, and whether its own clock runs on the reel's frames: on the composition clock,
+        a start within float noise of a frame is that frame, so a shot that starts on a reel frame keys exactly as
+        its own clock's frames do."""
         start = Fraction(self.start)
         if not self.chain:
             frame = round(start * rate)
             if abs(start * rate - frame) <= _NOISE:
-                return frame / rate
-        return start
+                return frame / rate, True
+        return start, False
 
     def _reel(self, t: Fraction) -> Fraction:
         for origin, offset, scale in reversed(self.chain):
@@ -359,13 +360,17 @@ class Clock:
 
     def held(self, time: float, rate: Fraction, local: bool) -> float:
         """The time, on this node's channel, to key a held change meant to show from ``time`` on it: half a frame
-        before the first reel frame at or after it (:func:`srstudio.held_keys.frame_of` on the reel), never before
-        the channel's 0. A change at 0 keys at 0."""
+        before the first reel frame at or after it, never before the channel's 0. A change at 0 keys at 0.
+
+        On a channel that runs on the reel's frames a time up to :data:`~srstudio.held_keys.SLACK` after a frame is
+        that frame, a rounded frame time, as :func:`srstudio.held_keys.frame_of` reads it. On one that starts between
+        them only float noise is: a time that lands a few thousandths of a frame after a reel frame is after it, and
+        the engine has always shown it on the next frame, the frame it stays on."""
         if time == 0:
             return 0.0
-        start = self._start(rate) if local else Fraction(0)
+        start, on_frames = self._start(rate) if local else (Fraction(0), not self.chain)
         reel = self._reel(Fraction(time) + start)
-        frame = max(0, math.ceil(reel * rate - Fraction(SLACK)))
+        frame = max(0, math.ceil(reel * rate - (Fraction(SLACK) if on_frames else _NOISE)))
         target = Fraction(2 * frame - 1, 2) / rate if frame else Fraction(0)
         return max(0.0, float(self._own(target) - start))
 
