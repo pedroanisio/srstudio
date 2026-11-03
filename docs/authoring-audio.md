@@ -46,6 +46,12 @@ The generated-asset path uses `srstudio.generated.Generated` and
 pins when binding clips to `Episode.generated_audio()`. A repaired request or a
 changed seed is an explicit new generation attempt, not an automatic recovery loop.
 
+A reel cut to a supplied recording, a sound we did not record (a trend audio), uses
+`srstudio.supplied` (ADR 0227): `recorder(sketch, sha256, credit, doc)` decodes the
+pinned file bit-exact, reads its words once (cached), checks the reading against
+the sketch's lines with typed refusals, and writes one whole-file narration item with
+the voiced beats, speech and mouths the narrated Toon build reads.
+
 ## Keep captions and animation on the audio clock
 
 `narration.words_from_alignment` and `phones_from_alignment` return timings relative
