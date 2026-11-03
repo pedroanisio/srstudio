@@ -58,11 +58,17 @@ from sofa_room_study import Room, centroid  # noqa: E402
 
 os.umask(0o077)  # generated outputs are private: folders 700, files 600
 
-CLIPS = {"1-two-shot": (0, 111), "2-close-ups": (111, cs.ROOM_FRAMES)}
+ROOM_FRAMES = 191  # the study's span of it-autoplayed: 0 to 7.917 s, the two-shot, her close-up and his
+CLIPS = {"1-two-shot": (0, 111), "2-close-ups": (111, ROOM_FRAMES)}
 STILLS = {"gasp": 4, "two-shot": 60, "jump": 92, "wow": 106, "close-up-mae": 130, "close-up-bruno": 170}
 PUSH_STILLS = (0, 54, 109)
 BASE_LEVEL = 0.05  # engine centimetres: a base vertex lies this close to the figure's lowest point
 FLAT_TAKES = {"two": (0, 110), "mae": (111, 159), "bruno": (160, 190)}
+
+
+def take_of(frame: int) -> str:
+    """The camera of ``frame`` in the study's span."""
+    return next(name for name, (first, last) in FLAT_TAKES.items() if first <= frame <= last)
 
 
 def underside_facing(meshes, eye: np.ndarray) -> int:
@@ -82,11 +88,11 @@ def underside_facing(meshes, eye: np.ndarray) -> int:
 def clay_base(performance: pf.Performance, places: dict, room: Room, push: bool) -> dict:
     """Over every frame: the base's gap above the cushion's top (metres, below 0 pressed in), frames off the cushion,
     and underside vertices turned to the camera."""
-    count = cs.PUSH_FRAMES if push else cs.ROOM_FRAMES
+    count = cs.PUSH_FRAMES if push else ROOM_FRAMES
     gaps: dict[str, list[float]] = {"mae": [], "bruno": []}
     facing: dict[str, int] = {"mae": 0, "bruno": 0}
     for n in range(count):
-        lens = cs.lens_of(room, "two", n) if push else cs.lens_of(room, cs.take_of(n))
+        lens = cs.lens_of(room, "two", n) if push else cs.lens_of(room, take_of(n))
         eye = np.array(lens.position, float)
         for who in ("mae", "bruno"):
             rig = cs.RIGS[who]
@@ -151,7 +157,7 @@ def flat_base(project: Path, room: Room) -> dict:
     """The cards' base check, as room_compare runs it, on the card side's own measuring renders."""
     plates = project / "plates"
     fronts = {take: alpha(plates / lounge.plate(take, "front")) for take in FLAT_TAKES}
-    masks = [alpha(project / "cast-room" / f"{frame:04d}.png") for frame in range(cs.ROOM_FRAMES)]
+    masks = [alpha(project / "cast-room" / f"{frame:04d}.png") for frame in range(ROOM_FRAMES)]
     out = {}
     for take, (first, last) in FLAT_TAKES.items():
         count, seats = last + 1 - first, room.takes[take]["rigs"]
@@ -164,10 +170,10 @@ def flat_base(project: Path, room: Room) -> dict:
 
 def splits_of(room: Room, places: dict, push: bool) -> list[float]:
     """Each frame's column halfway between the two clay figures' seats."""
-    count = cs.PUSH_FRAMES if push else cs.ROOM_FRAMES
+    count = cs.PUSH_FRAMES if push else ROOM_FRAMES
     out = []
     for n in range(count):
-        lens = cs.lens_of(room, "two", n) if push else cs.lens_of(room, cs.take_of(n))
+        lens = cs.lens_of(room, "two", n) if push else cs.lens_of(room, take_of(n))
         xs = cr.project([places["mae"].at, places["bruno"].at], lens)[:, 0]
         out.append(float(xs.mean()))
     return out
@@ -180,7 +186,7 @@ def arm_chains(performance: pf.Performance) -> dict:
         rig = cs.RIGS[who]
         fig = cs.figure_of(who)
         stray, highest = 0.0, {chain.side: np.inf for chain in fig.arms}
-        for n in range(cs.ROOM_FRAMES):
+        for n in range(ROOM_FRAMES):
             targets = cr.arm_targets(fig, performance.at(who, n))
             for chain in fig.arms:
                 joints = cf.reach(chain, targets[chain.side])
@@ -342,7 +348,7 @@ def _darkest_line(p: np.ndarray, k: np.ndarray, at: tuple[float, float], half: i
 def neck_seam(project: Path, round1: Path | None, room: Room, places: dict, frame: int = 60) -> dict:
     """Each figure's darkest line across the neck on the two-shot's frame ``frame`` (both figures at rest there), this
     round and round 1, searched 60 reference pixels either side of the neck's middle."""
-    lens = cs.lens_of(room, cs.take_of(frame))
+    lens = cs.lens_of(room, take_of(frame))
     found: dict[str, dict] = {}
     for label, root in (("round_2", project), ("round_1", round1)):
         if root is None:
@@ -423,12 +429,12 @@ def main(argv: list[str]) -> None:
 
     renders = {
         kind: json.loads((project / "clay" / f"render-{kind}-0-{count - 1}.json").read_text())
-        for kind, count in (("room", cs.ROOM_FRAMES), ("push", cs.PUSH_FRAMES))
+        for kind, count in (("room", ROOM_FRAMES), ("push", cs.PUSH_FRAMES))
     }
     rest = {who: cr.posed(who, cs.RIGS[who], cs.figure_of(who), performance.at(who, 0), places[who])
             for who in ("mae", "bruno")}  # fmt: skip
     measures = dict(
-        spans=dict(room_frames=cs.ROOM_FRAMES, push_frames=cs.PUSH_FRAMES, fps=pf.FPS, takes=cs.TAKES),
+        spans=dict(room_frames=ROOM_FRAMES, push_frames=cs.PUSH_FRAMES, fps=pf.FPS, takes=FLAT_TAKES),
         variants={variant: f"{variant}/" for variant in VARIANTS},
         base_cover=dict(
             flat=flat_base(project, room),

@@ -75,6 +75,20 @@ _CONTRACTS = {
         clock='composition',
         constraints=(FONT, 'Fixed reference menu geometry; no footprint-placement checks. Label and heading must fit.'),
     ),
+    'toon-tv-browse': group(
+        ('clock', P(description='The corner clock, H:MM or HH:MM on a 24-hour day.')),
+        ('measure', MEASURE),
+        ('title', P(description='The focused film, lettered under a still row; None for a browsing row.')),
+        ('runtime', P(description="The focused film's running time; only with a title.")),
+        ('steps', P(items=COMP_TIME, description='Seconds the row steps one tile left, rising, 0.15 s apart.')),
+        ('id', ID),
+        clock='composition',
+        constraints=(
+            FONT,
+            'Fixed reference menu geometry; no footprint-placement checks. Heading, clock, title and time must fit.',
+            'A title and steps are exclusive: a browsing row letters no title.',
+        ),
+    ),
     'toon-remote': group(
         ('at', point('Remote center.')),
         ('scale', SCALE),

@@ -77,6 +77,62 @@ def test_check_never_looks_at_a_published_reel_even_when_it_disagrees(world, cap
     assert "0 unpublished releases" in capsys.readouterr().out
 
 
+VOICE = "Voice('x', 'id', 'Brian - Deep'), VoiceSettings(0.5, 0.5, 0.0)"
+SCRIPTED = f"""
+from srstudio.sketch import Sketch, Speaker
+from srstudio.voice import Voice, VoiceSettings
+
+SKETCH = Sketch("new-reel", "t", (Speaker("trailer", {VOICE}), Speaker("rex", {VOICE})), (), (), 1.0)
+"""
+RECORDED = f"""
+from srstudio.takes import Script, Take
+from srstudio.voice import Voice, VoiceSettings
+
+voice, settings = {VOICE}
+SCRIPT = Script("t", 1, {{"narrator": voice, "host": voice}}, {{"narrator": settings, "host": settings}},
+                (Take("a", "host", "Hi.", 0.2),), "")
+"""
+
+
+def test_check_flags_a_speaker_the_script_declares_before_the_reel_is_recorded(world, capsys):
+    """A speaker key the episode modules declare is checked at authoring time, with no project recorded yet:
+    names of the bible and its roles pass, anything else is an unknown name."""
+    base, found, tmp = world
+    found["new-reel"] = release("new-reel")  # no tags, and no project under episodes/
+    scripts = tmp / "scripts"
+    scripts.mkdir()
+    (scripts / "new_reel_data.py").write_text(SCRIPTED)
+    (scripts / "new_reel_audio.py").write_text(RECORDED)
+    assert bible_cli.run(parse(*base, "check", "--scripts", str(scripts))) == 1
+    out = capsys.readouterr().out
+    assert "new-reel: unknown-name: 'trailer' is not a character of the bible" in out
+    assert "new-reel: unknown-name: 'host' is not a character of the bible" in out
+    assert "'rex'" not in out and "'narrator'" not in out  # a character of the bible and one of its roles
+    (scripts / "new_reel_data.py").write_text(SCRIPTED.replace('"trailer"', '"narrator"'))
+    (scripts / "new_reel_audio.py").unlink()
+    assert bible_cli.run(parse(*base, "check", "--scripts", str(scripts))) == 0
+
+
+@pytest.mark.parametrize(
+    ("body", "said"),
+    [
+        ("raise RuntimeError('half written')", "half written"),
+        ("print('SPEAKERS [\"rex\"]')", "2 speaker lists"),
+        ("import sys\nsys.exit(0)", "0 speaker lists"),
+    ],
+)
+def test_check_that_cannot_read_a_scripts_speakers_exits_2(world, capsys, body, said):
+    """A script that fails, forges a speaker list or stops the reader is no pass: the check could not run."""
+    base, found, tmp = world
+    found["new-reel"] = release("new-reel")
+    scripts = tmp / "scripts"
+    scripts.mkdir()
+    (scripts / "new_reel_data.py").write_text(body + "\n")
+    assert bible_cli.run(parse(*base, "check", "--scripts", str(scripts))) == 2
+    err = capsys.readouterr().err
+    assert "new-reel" in err and said in err
+
+
 def test_check_reads_a_brief_and_wants_its_cast_line(world, capsys):
     base, _, tmp = world
     good, bad = tmp / "good.md", tmp / "bad.md"

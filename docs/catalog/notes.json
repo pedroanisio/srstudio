@@ -1299,6 +1299,7 @@
     "video-tile": {"title": "Janela de chamada"},
     "toon-remote": {"title": "Controle remoto"},
     "toon-tv-menu": {"title": "Menu de TV"},
+    "toon-tv-browse": {"title": "Lista de filmes na TV"},
     "stick-receipt": {"title": "Nota comprida"},
     "stick-box": {"title": "Caixa de entrega"},
     "trial-tag": {"title": "Crachá de teste"},
@@ -9094,6 +9095,18 @@
         "at": 21.2
       },
       "text": "A prova contra ele: uma linha só, uma porta, a barra quase cheia, e nenhum aplicativo de verdade."
+    },
+    {
+      "section": "props",
+      "name": "Lista de filmes na TV",
+      "parts": [
+        "toon-tv-browse"
+      ],
+      "shot": {
+        "episode": "grown-on-me",
+        "at": 2.8
+      },
+      "text": "Um filme em foco, um relógio no canto e uma fileira de capas sem título: a noite inteira escolhendo, nenhum serviço de verdade."
     },
     {
       "section": "props",

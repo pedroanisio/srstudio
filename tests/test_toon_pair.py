@@ -72,6 +72,34 @@ def test_a_beat_without_an_act_is_refused() -> None:
         toon_pair.poses_of(BEATS, ACTS[:3], 0.0, 6.0)
 
 
+@pytest.mark.parametrize(
+    ("eyes", "mouth", "arms", "wear", "word"),
+    [
+        ("wide", "smile", "desk", (), "mouth"),  # grown-on-me's typo, which reached the build before
+        ("glare", "flat", "desk", (), "eyes"),
+        ("wide", "flat", "wave", (), "arms"),
+        ("wide", "flat", "desk", ("hat",), "wear"),
+        ("", "flat", "desk", (), "eyes"),
+        (None, "flat", "desk", (), "eyes"),
+    ],
+)
+def test_an_act_names_only_expressions_the_rigs_have(eyes, mouth, arms, wear, word) -> None:
+    with pytest.raises(ToonDataError, match=word):
+        Act(eyes, mouth, arms, wear)
+
+
+def test_an_act_keeps_every_expression_the_rigs_have() -> None:
+    from srstudio import toon
+
+    for eyes in toon.EYES:
+        assert Act(eyes, "flat", "desk").eyes == eyes
+    for mouth in toon.MOUTHS:
+        assert Act("wide", mouth, "desk").mouth == mouth
+    for arms in toon.ARMS:
+        assert Act("wide", "flat", arms).arms == arms
+    assert Act("wide", "flat", "desk", toon.WEAR).wear == toon.WEAR
+
+
 def test_a_second_character_stands_at_its_seat_with_its_lips_and_its_head() -> None:
     track = [(0.1, "open"), (0.4, "closed")]
     s = shot(mouths={"rabbit": track})

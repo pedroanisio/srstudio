@@ -1,6 +1,9 @@
-"""What Mae and Bruno do on every frame of the span, read from the reel's own staging and sampled the way its drawing
-is keyed: the pose of the beat, the head plan's channels, the gaze, the blink, the viseme heard, the gasp, the jump and
-his late hands.
+"""What Mae and Bruno do on every frame of the span, read from the staging of the reel the pipeline is bound to
+(:func:`sofa_room_study.bind`) and sampled the way its drawing is keyed: the pose of the beat, the head plan's
+channels, the gaze, the blink, the viseme heard, and the reel's own moves. A reel that keys the clay itself gives
+``clay_keys(beats, who)`` (the whole figure's lift and tilt and the head's turn across, on the sketch's clock) and
+``clay_holds(beats, who, t)`` (what a paw holds); it-autoplayed, which does not, moves it with its gasp, its jump and
+his late hands and his pat (:func:`body_motion`, :func:`late_hands`, :func:`pat_hand`).
 
 The reel draws one character per close-up; the clay keeps both on the sofa, so the one the close-up leaves out is
 sampled from the same shot with the same functions: their acts, their head plan from what was said, their own lip track.
@@ -19,10 +22,11 @@ from typing import Any
 
 from srstudio.scripting import at
 
-SCHEMA = "clay-sofa.performance/1.1.0"
+SCHEMA = "clay-sofa.performance/1.2.0"
 FPS = 24
 CHARACTERS = {"rabbit": "mae", "bear": "bruno"}
-SHOT_OF = {"hamster": "two", "goat": "mae", "sloth": "bruno"}  # the reel's shot names, as it_autoplayed_data has them
+SHOTS = ("two", "mae", "bruno", "menu")  # the cameras on the room, and the TV's full-frame menu that no camera sees
+HOLDS = ("", "remote", "remote-up")  # what a paw holds: nothing, the remote, the remote raised to click
 
 
 class PerformanceError(ValueError):
@@ -61,6 +65,7 @@ class Frame:
     idle_y: float
     face_x: float
     arms: tuple[Arm, ...]
+    holds: str = ""  # what its outer paw holds: one of HOLDS
 
 
 @dataclass(frozen=True)
@@ -73,6 +78,10 @@ class Performance:
 
     def at(self, who: str, frame: int) -> Frame:
         return self.cast[who][frame]
+
+    def rendered(self) -> list[int]:
+        """The frames a camera on the room sees: every frame but the menu's, which the reel draws whole."""
+        return [n for n in range(self.frames) if self.shot(n) != "menu"]
 
     def shot(self, frame: int) -> str:
         t = frame / self.fps
@@ -103,8 +112,8 @@ class Performance:
         if not (isinstance(shots, list) and shots):
             raise PerformanceError("a performance names its shots")
         for row in shots:
-            if not (isinstance(row, dict) and set(row) == {"name", "start", "end"} and row["name"] in SHOT_OF.values()):
-                raise PerformanceError(f"a shot is name, start and end, its name one of {sorted(SHOT_OF.values())}")
+            if not (isinstance(row, dict) and set(row) == {"name", "start", "end"} and row["name"] in SHOTS):
+                raise PerformanceError(f"a shot is name, start and end, its name one of {sorted(SHOTS)}")
             if not (_number(row["start"]) and _number(row["end"]) and 0 <= row["start"] < row["end"]):
                 raise PerformanceError(f"shot {row['name']} runs from {row['start']} to {row['end']}")
         if set(data["cast"]) != set(CHARACTERS.values()):
@@ -141,6 +150,8 @@ def _frame(row: Any, what: str) -> Frame:
         raise PerformanceError(f"{what}: eyes {row['eyes']!r}, mouth {row['mouth']!r} are not the rig's")
     if row["gaze"] not in ("ahead", "left", "right", "up") or not isinstance(row["blink"], bool):
         raise PerformanceError(f"{what}: gaze {row['gaze']!r}, blink {row['blink']!r}")
+    if row["holds"] not in HOLDS:
+        raise PerformanceError(f"{what}: holds {row['holds']!r} is not one of {HOLDS}")
     if row["pose_arms"] not in POSE_ARMS:
         raise PerformanceError(f"{what}: arms {row['pose_arms']!r} is not one of {POSE_ARMS}")
     for name, bound in LIMITS.items():
@@ -162,15 +173,6 @@ def _frame(row: Any, what: str) -> Frame:
 
 
 # --- capture ----------------------------------------------------------------------------------------------------------
-
-
-@dataclass
-class _Call:
-    shot: Any
-    who: str
-    at: tuple[float, float]
-    scale: float
-    mirror: bool
 
 
 def _state(keys: dict[str, list[tuple[float, int]]], t: float, default: str) -> str:
@@ -197,13 +199,28 @@ class Prepared:
     mouths: tuple
 
 
+def shot_names(reel) -> dict[str, str]:
+    """The reel's shot names (the ``who`` its beats give each shot) as the room's cameras: its two-shot and its two
+    close-ups, and its full-frame menu when it has one."""
+    names = {reel.TWO: "two", reel.MAE_C: "mae", reel.BRUNO_C: "bruno"}
+    if hasattr(reel, "MENU"):
+        names[reel.MENU] = "menu"
+    return names
+
+
+def acts_of(reel, beats) -> dict[str, tuple]:
+    """The acts for ``beats``: a reel with two endings picks those of the sketch the beats were placed from."""
+    return reel.acts_of_beats(beats) if hasattr(reel, "acts_of_beats") else reel.ACTS
+
+
 def prepare(reel, shot, who: str) -> Prepared:
     from srstudio import head_motion, sketch, toon, toon_pair, toon_rigs
     from srstudio.toon_head import CHANNELS, _bake_spring
 
     app = shot.app
     rig = toon_rigs.rig_of(sketch.part_of(who), shot.versions)
-    poses = toon.parse_poses(toon_pair.poses_of(shot.beats, reel.ACTS[who], app.start, app.end), f"{who} {app.start}")
+    acts = acts_of(reel, shot.beats)[who]
+    poses = toon.parse_poses(toon_pair.poses_of(shot.beats, acts, app.start, app.end), f"{who} {app.start}")
     said = shot.said()
     own = [speech for by, speech in said if by == who]
     heard = [speech for by, speech in said if by != who]
@@ -312,60 +329,82 @@ def pat_hand(reel, pat: float, start: float, end: float, t: float) -> tuple[Arm,
     return (Arm(local, _eased(reel.pat_swing(pat), t, "cubic-out"), length, 52.0),)
 
 
-def capture(root: Path, frames: int) -> Performance:
-    """Build the reel's flat control in ``root`` with its figure calls recorded, and sample both characters on every
-    frame of ``frames`` from the shots recorded."""
+def gesture(reel, beats, who: str, t: float, name: str, frame_px: float, span: tuple[float, float] = (0.0, 0.0)):
+    """``who``'s moves at ``t`` on shot ``name``: the whole figure's lift (its reference pixels) and tilt, the head's
+    turn across (reference pixels added to the plan's ``face_x``), the arms the reel raises and what the outer paw
+    holds. A reel's own keys move the clay on every camera, since both stay on the sofa for all of them; without
+    them, it-autoplayed's gasp and jump on the two-shot, his late hands, and the pat in his close-up (``span`` is that
+    shot's start and end)."""
+    if hasattr(reel, "clay_keys"):
+        keys = reel.clay_keys(beats, who)
+        lift = _eased(keys["lift"], t, "sine-out") / frame_px
+        return (
+            lift,
+            _eased(keys["tilt"], t, "sine-out"),
+            _eased(keys["face"], t, "sine-in-out"),
+            (),
+            reel.clay_holds(beats, who, t),
+        )
+    lift, tilt = body_motion(reel, beats, who, t, name, frame_px)
+    arms: tuple[Arm, ...] = ()
+    if who == "bruno":
+        arms = late_hands(reel, beats, t)
+        pat = at(beats, "pat") if name == "bruno" else None
+        if pat is not None and span[0] <= pat < span[1]:
+            arms = (*arms, *pat_hand(reel, pat, span[0], span[1], t))
+    return lift, tilt, 0.0, arms, ""
+
+
+def capture(root: Path, frames: int | None = None) -> Performance:
+    """Build the reel's flat control in ``root`` with every shot it dresses recorded, and sample both characters on
+    every frame of ``frames`` (the whole reel when ``None``) from those shots."""
+    from dataclasses import replace as replaced
+
     import sofa_room_study as study
 
-    from srstudio import toon, toon_pair
+    from srstudio import toon
     from srstudio.toon_sketch import build
 
     reel = study.reel
-    calls: list[_Call] = []
-    original = toon_pair.figure
+    names = shot_names(reel)
+    dressed: list[Any] = []
+    staging, _ = study.staging_of(root, {"--control"})
 
-    def recorded(shot, parent, who, at, acts, *, scale=1.0, mirror=False, moving=True):
-        calls.append(_Call(shot, who, tuple(at), scale, mirror))
-        return original(shot, parent, who, at, acts, scale=scale, mirror=mirror, moving=moving)
+    def recorded(shot) -> None:
+        dressed.append(shot)
+        staging.dress(shot)
 
-    toon_pair.figure = recorded
-    try:
-        staging, _ = study.staging_of(root, {"--control"})
-        build(root, staging, {"--voice"})
-    finally:
-        toon_pair.figure = original
+    build(root, replaced(staging, dress=recorded), {"--voice"})
+    whole = max((s.app.end for s in dressed), default=0.0)
+    frames = math.ceil(whole * FPS - 1e-9) if frames is None else frames
     end = frames / FPS
     shots: dict[float, Any] = {}
-    for call in calls:
-        if call.shot.app.start < end and call.shot.app.who in SHOT_OF:
-            shots.setdefault(call.shot.app.start, call.shot)
+    for shot in dressed:
+        if shot.app.start < end and shot.app.who in names:
+            shots.setdefault(shot.app.start, shot)
     ordered = [shots[k] for k in sorted(shots)]
     if not ordered or ordered[0].app.start != 0.0:
         raise PerformanceError("the build drew no shot from the span's start")
-    rows = [dict(name=SHOT_OF[s.app.who], start=s.app.start, end=s.app.end) for s in ordered]
+    rows = [dict(name=names[s.app.who], start=s.app.start, end=s.app.end) for s in ordered]
     frame_px = toon.SCALE * reel.PAIR_SCALE
     cast: dict[str, list[Frame]] = {name: [] for name in CHARACTERS.values()}
     prepared = {(id(s), part): prepare(reel, s, part) for s in ordered for part in CHARACTERS}
     for n in range(frames):
         t = n / FPS
         shot = next((s for s in ordered if s.app.start - 1e-9 <= t < s.app.end - 1e-9), ordered[-1])
-        name = SHOT_OF[shot.app.who]
+        name = names[shot.app.who]
         for part, who in CHARACTERS.items():
             values = sample(prepared[id(shot), part], t)
-            lift, tilt = body_motion(reel, shot.beats, who, t, name, frame_px)
-            arms: tuple[Arm, ...] = ()
-            if who == "bruno":
-                arms = late_hands(reel, shot.beats, t)
-                pat = at(shot.beats, "pat") if name == "bruno" else None
-                if pat is not None and shot.app.start <= pat < shot.app.end:
-                    arms = (*arms, *pat_hand(reel, pat, shot.app.start, shot.app.end, t))
-            cast[who].append(Frame(**values, lift=lift, tilt=tilt, arms=arms))
+            span = (shot.app.start, shot.app.end)
+            lift, tilt, face, arms, holds = gesture(reel, shot.beats, who, t, name, frame_px, span)
+            values["face_x"] += face
+            cast[who].append(Frame(**values, lift=lift, tilt=tilt, arms=arms, holds=holds))
     return Performance(SCHEMA, FPS, frames, rows, cast)
 
 
 def main(argv: list[str]) -> None:
     root, out = Path(argv[1]).resolve(), Path(argv[2]).resolve()
-    frames = int(argv[3]) if len(argv) > 3 else 191
+    frames = int(argv[3]) if len(argv) > 3 else None
     performance = capture(root, frames)
     performance.dump(out)
     Performance.load(out)  # what was written reads back under the same rules

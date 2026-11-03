@@ -41,6 +41,9 @@ def add_parser(sub: argparse._SubParsersAction) -> None:
     check = actions.add_parser("check", help="check the unpublished releases and any brief against the bible")
     check.add_argument("--brief", type=Path, action="append", default=[], help="a brief or script with a Cast: line")
     check.add_argument("--only", nargs="+", default=[], help="these release slugs alone")
+    check.add_argument(
+        "--scripts", type=Path, default=REPO / "episodes", help="the folder of the reels' episode modules"
+    )
     rig = actions.add_parser(
         "rig", help="hold each Stick reel's drawn looks to the base rig its figures were published with"
     )
@@ -120,7 +123,10 @@ def _run(args: argparse.Namespace) -> int:
             s: r for s, r in found.items() if s not in published and (not args.only or s in args.only)
         }  # a published reel is frozen: never checked
         findings = {
-            s: bible_check.check_release(loaded, r, episodes, characters=characters) for s, r in pending.items()
+            s: bible_check.check_release(
+                loaded, r, episodes, characters=characters, scripted=bible_check.scripted_speakers(r, args.scripts)
+            )
+            for s, r in pending.items()
         }
         for brief in args.brief:
             try:

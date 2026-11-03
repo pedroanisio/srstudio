@@ -62,10 +62,31 @@ DROP = 88.6  # two-shot px from the reel's seat line down to its rigs' base: the
 SUNK = (
     12.0  # screen px of the base under the seat's line, on every camera and frame: the cut's ink and a bust's corners
 )
-RIGS = {  # each rig: who draws it, where the two-shot and the close-up stand it, and whether it is mirrored
-    "mae": ("rabbit", reel.MAE_AT, reel.MAE_CLOSE, True),
-    "bruno": ("bear", reel.BRUNO_AT, reel.BRUNO_CLOSE, False),
-}
+
+
+def rigs_of(module) -> dict[str, tuple]:
+    """Each rig of ``module``: who draws it, where the two-shot and the close-up stand it, and whether it is
+    mirrored."""
+    return {
+        "mae": ("rabbit", module.MAE_AT, module.MAE_CLOSE, True),
+        "bruno": ("bear", module.BRUNO_AT, module.BRUNO_CLOSE, False),
+    }
+
+
+RIGS = rigs_of(reel)
+
+
+def bind(module) -> None:
+    """Draw ``module``'s reel from here on: a reel of Mae and Bruno on this sofa that names its shots ``TWO``,
+    ``MAE_C`` and ``BRUNO_C`` and stands them at it-autoplayed's places, which the room's plates were drawn for."""
+    global reel, RIGS
+    places = ("MAE_AT", "BRUNO_AT", "PAIR_SCALE", "MAE_CLOSE", "BRUNO_CLOSE")
+    moved = [name for name in places if getattr(module, name) != getattr(reel, name)]
+    if moved:
+        raise PlateError(f"{module.SLUG} moves {moved} off the places the room's plates were drawn for")
+    reel, RIGS = module, rigs_of(module)
+
+
 CACTUS, CODE = 0.7, 14  # the marks' size on the two-shot; another camera scales them by its own metres
 
 
@@ -315,6 +336,11 @@ def dots(sets: Sets, first: Path):
     return draw
 
 
+def sketch_of(root: Path):
+    """The sketch the project under ``root`` holds: the reel's, or the ending its recording says when it has two."""
+    return reel.sketch_for(root) if hasattr(reel, "sketch_for") else reel.SKETCH
+
+
 def staging_of(root: Path, flags: set[str]) -> tuple[Staging, str]:
     moving = "--push" in flags or "--marks" in flags
     room = None if "--control" in flags else Room.load(root / "plates" / "room.json")
@@ -345,7 +371,7 @@ def staging_of(root: Path, flags: set[str]) -> tuple[Staging, str]:
         in_the_room(sets)
         name = "sofa-push" if moving else SLUG
     staging = Staging(
-        sketch=replace(reel.SKETCH, slug=SLUG, title="Sofa Room"),
+        sketch=replace(sketch_of(root), slug=SLUG, title="Sofa Room"),
         seed=reel.SEED,
         description="A study: one 3D lounge, several cameras and a moving one, never a release.",
         accessibility=reel.ACCESSIBILITY,

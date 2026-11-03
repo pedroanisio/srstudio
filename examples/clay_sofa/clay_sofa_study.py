@@ -1,25 +1,30 @@
 #!/usr/bin/env python3
-"""The clay look study: Mae and Bruno as clay figures seated in the sofa room, against the flat cards.
+"""Mae and Bruno as clay figures seated in the sofa room: the clay look study on it-autoplayed, and the pipeline of a
+clay reel on the same sofa (grown-on-me), which reads that reel's own staging.
 
-    python clay_sofa_study.py perform PROJECT           # → PROJECT/clay/performance.json, from the reel's own staging
-    python clay_sofa_study.py render PROJECT [--push]   # → PROJECT/clay/room/ and room-ink/ (or push/, push-ink/):
-                                                        # every frame's composite, plain and with the room's line
+    python clay_sofa_study.py perform PROJECT [--reel MODULE]          # → PROJECT/clay/performance.json, from the
+                                                                       # reel's own staging, every frame of it
+    python clay_sofa_study.py render PROJECT [--push] [--reel MODULE]  # → PROJECT/clay/room/ and room-ink/ (or
+                                                                       # push/, push-ink/): every frame a camera on
+                                                                       # the room sees, plain and with the room's line
     python clay_sofa_study.py scene PROJECT [--push] [--ink]  # → PROJECT/clay-room[-ink].scene.xml, clay-push[-ink]
 
-PROJECT is the recorded project of it-autoplayed with the room's plates (examples/paintover_proof/lounge_plates.py and
-plate_fronts.py) under plates/, and under clean-plates/ the same room drawn without the soft shadows lounge_plates lays
-under each card (lounge_plates.py and plate_fronts.py as of a0892384, the commit before sitting() came in): the clay
-casts its own shadows, so its back plates come from there. Only the seat strips differ between the two sets. The
-reel's own staging draws every shot, its captions, its glow and the marks; this script takes the cards out and puts
-in their place, frame by frame, the room's back plate with the clay figures on it (:mod:`clay_room`). Both figures
-stay on the sofa for every camera, so a close-up shows the other one's edge. The front plate's seat strip is not laid
-over the clay: a card needs the seat's edge to hide its base, the clay sits on the seat. Its arm is: the flat has the
-sofa's arm in front of Bruno's right side.
+MODULE is the reel's data module under episodes/ (it_autoplayed_data unless named): the reel's shot names, its places,
+its acts and its moves (:mod:`performance`) all come from it; a reel's own build makes its master from these frames
+(:func:`episode_staging`). PROJECT is the recorded project of the reel with the room's plates
+(examples/paintover_proof/lounge_plates.py and plate_fronts.py) under plates/, and under clean-plates/ the same room
+drawn without the soft shadows lounge_plates lays under each card (lounge_plates.py and plate_fronts.py as of a0892384,
+the commit before sitting() came in): the clay casts its own shadows, so its back plates come from there. Only the seat
+strips differ between the two sets. The reel's own staging draws every shot, its captions, its glow and the marks; this
+script takes the cards out and puts in their place, frame by frame, the room's back plate with the clay figures on it
+(:mod:`clay_room`). Both figures stay on the sofa for every camera, so a close-up shows the other one's edge. The front
+plate's seat strip is not laid over the clay: a card needs the seat's edge to hide its base, the clay sits on the seat.
+Its arm is: the flat has the sofa's arm in front of Bruno's right side.
 
 Known differences from the flat, for the operator's eye, are in :data:`KNOWN_DIFFERENCES`.
 
-A look study for the operator's decision on Mae and Bruno, never a release: it declares no post and no part, and stays
-out of episodes/ so nothing ships it.
+On it-autoplayed this is a look study, never a release: it declares no post and no part. A clay reel declares its own
+post and parts and ships from its own episode script, which builds through :func:`episode_staging`.
 """
 
 from __future__ import annotations
@@ -35,6 +40,8 @@ from types import SimpleNamespace
 HERE = Path(__file__).resolve().parent
 sys.path[:0] = [str(HERE), str(HERE.parent / "paintover_proof"), str(HERE.parent.parent / "episodes")]
 
+import importlib  # noqa: E402
+
 import _lounge_set as lounge  # noqa: E402
 import clay_anatomy as ca  # noqa: E402
 import clay_figure as cf  # noqa: E402
@@ -47,7 +54,7 @@ from shapely import contains_xy  # noqa: E402
 
 import it_autoplayed_data as reel  # noqa: E402
 from instagram_posts import PINS, POSTS  # noqa: E402
-from srstudio import look, show, toon, toon_bed, toon_pair, toon_redrawn, toon_world  # noqa: E402
+from srstudio import look, show, toon, toon_bed, toon_everyday, toon_pair, toon_redrawn, toon_world  # noqa: E402
 from srstudio.plates import Material  # noqa: E402
 from srstudio.styles import TOON  # noqa: E402
 from srstudio.thumbnail import ShowCover  # noqa: E402
@@ -57,22 +64,33 @@ os.umask(0o077)  # generated outputs are private: folders 700, files 600
 
 SLUG = "clay-sofa"
 CLEAN = "clean-plates"  # the room's plates drawn without the cards' seat shadows: the clay casts its own
-ROOM_FRAMES = 191  # 0 to 7.917 s, as the room's encode renders them: the two-shot, her close-up and his
 PUSH_FRAMES = lounge.PUSH_FRAMES + 1  # the push's 110 cameras, and the two-shot's last frame on the last of them
-TAKES = {"two": (0, 110), "mae": (111, 159), "bruno": (160, 190)}
+real_everyday = toon_everyday  # the library's, which the clay staging stands a reel's flat remote in for
 RIGS = {"mae": toon_redrawn.RABBIT_RIG, "bruno": toon_redrawn.BEAR_RIG}
 PALETTE = TOON.palettes[0]  # the reel's canvas: its ink and white paint the clay's faces
 OWNERS = {"mae": "rabbit", "bruno": "bear"}  # the characters' parts, as the anatomy ledger names them
 
 
-def frames_of(start: float, end: float) -> tuple[int, int]:
-    """The first and last frame a shot from ``start`` to ``end`` seconds shows: those whose time falls inside it."""
+def bind(module) -> None:
+    """Draw ``module``'s reel from here on, here and in the sofa room's staging."""
+    global reel
+    study.bind(module)
+    reel = module
+
+
+def reel_of(name: str):
+    """The reel data module ``name`` under episodes/."""
+    try:
+        return importlib.import_module(name)
+    except ImportError as error:
+        raise SystemExit(f"no reel module {name!r} under episodes/: {error}") from error
+
+
+def frames_of(start: float, end: float, count: int) -> tuple[int, int]:
+    """The first and last frame a shot from ``start`` to ``end`` seconds shows, of the ``count`` the performance has:
+    those whose time falls inside it."""
     fps = lounge.PUSH_FPS
-    return math.ceil(start * fps - 1e-9), min(math.ceil(end * fps - 1e-9) - 1, ROOM_FRAMES - 1)
-
-
-def take_of(frame: int) -> str:
-    return next(name for name, (first, last) in TAKES.items() if first <= frame <= last)
+    return math.ceil(start * fps - 1e-9), min(math.ceil(end * fps - 1e-9) - 1, count - 1)
 
 
 def lens_of(room: study.Room, take: str, frame: int | None = None) -> cr.Camera:
@@ -193,29 +211,32 @@ def clay_root(root: Path) -> Path:
     return root / "clay"
 
 
-def render(root: Path, push: bool, frames: range | None = None) -> dict:
-    """Every frame's four passes and its composite, plain and inked with the room's line; and on every frame the hands
-    each figure draws, counted by the anatomy rule (ADR 0174). Returns what the engine spent and, per frame, where its
-    passes are and what was counted."""
+def render(root: Path, push: bool, frames: range | list[int] | None = None) -> dict:
+    """Every frame's four passes and its composite, plain and inked with the room's line, on every frame a camera on
+    the room sees (the menu's are the reel's own drawing); and on every frame the hands each figure draws, counted by
+    the anatomy rule (ADR 0174). Returns what the engine spent and, per frame, where its passes are and what was
+    counted."""
     cf.use_palette(PALETTE.ink, PALETTE.white)
     room = study.Room.load(root / "plates" / "room.json")
     performance = pf.Performance.load(clay_root(root) / "performance.json")
     places = seats(room, performance)
     kind = "push" if push else "room"
-    count = PUSH_FRAMES if push else ROOM_FRAMES
+    seen = range(PUSH_FRAMES) if push else performance.rendered()
     cache = clay_root(root) / "cache"
     spent = cr.Spent.new()
     index = {}
-    for n in frames if frames is not None else range(count):
+    for n in frames if frames is not None else seen:
         if push:
             still = min(n, lounge.PUSH_FRAMES - 1)
             lens = lens_of(room, "two", n)
             back, front = lounge.push_plate(still, "back"), lounge.push_plate(still, "front")
         else:
-            take = take_of(n)
+            take = performance.shot(n)
+            if take == "menu":
+                raise cr.RenderError(f"frame {n} is the menu's: no camera on the room sees it")
             lens, back, front = lens_of(room, take), lounge.plate(take, "back"), lounge.plate(take, "front")
         parts, materials = figures_at(performance, n, places)
-        if not push and take_of(n) == "two":
+        if not push and take == "two":
             framed(parts, lens, n)
         p, k, b, i = cr.passes(parts, materials, lens, cache, spent)
         picture, _ = cr.composite(cr.rgba(root / CLEAN / back), cr.rgba(p), cr.rgba(k), cr.rgba(b))
@@ -251,10 +272,11 @@ def _lowest(meshes) -> dict[str, float]:
 class ClaySets(study.Sets):
     """The room's sets with the clay composites where the back plate was, and no front plate over them."""
 
-    def __init__(self, room: study.Room, moving: bool, root: Path, ink: bool = False):
+    def __init__(self, room: study.Room, moving: bool, root: Path, ink: bool = False, count: int = 0):
         super().__init__(room, moving)
         self.root = root
         self.ink = ink
+        self.count = count  # the frames the performance has
 
     def composites(self, cv, parent, kind: str, first: int, last: int, start: float, end: float) -> None:
         folder = f"{kind}-ink" if self.ink else kind
@@ -275,7 +297,7 @@ class ClaySets(study.Sets):
         cv, app = shot.cv, shot.app
         self.stage(shot)
         far = look.depth(cv, shot.back, "sofa-room-far", reel.FAR_BLUR, overscan=True)
-        first, last = frames_of(app.start, app.end)
+        first, last = frames_of(app.start, app.end, self.count)
         if self.push_shot:
             self.frames(cv, far, "far", app.end)
             self.composites(cv, shot.back, "push", first, min(last, PUSH_FRAMES - 1), app.start, app.end)
@@ -304,14 +326,42 @@ def _no_arm(cv, parent, *args, **kwargs):
     return cv.group(parent, cv.uid("g"))
 
 
+class StandIns:
+    """What :func:`stand_ins` took out of a reel module, to put back."""
+
+    def __init__(self, module, saved: dict):
+        self.module, self.saved = module, saved
+
+    def restore(self) -> None:
+        for name, value in self.saved.items():
+            setattr(self.module, name, value)
+
+
+def stand_ins(module, sets: ClaySets | None = None) -> StandIns:
+    """The reel's modules stood in for by just what its staging calls of them: the cards out, the flat arms out, the
+    flat remote out (the clay holds its own), and the TV's menu kept; with ``sets``, the room's plates and the clay's
+    composites in place of its room and its sofa."""
+    names = ("_room", "toon_world", "toon_pair", "toon_bed", "toon_everyday")
+    saved = {name: getattr(module, name) for name in names if hasattr(module, name)}
+    if sets is not None:
+        module._room = sets.backdrop
+        module.toon_world = SimpleNamespace(sofa=sets.sofa)
+    module.toon_pair = SimpleNamespace(figure=_nothing, aim=toon_pair.aim)
+    module.toon_bed = SimpleNamespace(swung_arm=_no_arm, ARM_WIDTH=toon_bed.ARM_WIDTH)
+    if "toon_everyday" in saved:
+        kept = {name: getattr(real_everyday, name) for name in dir(real_everyday) if not name.startswith("__")}
+        module.toon_everyday = SimpleNamespace(**{**kept, "remote": _no_arm})
+    return StandIns(module, saved)
+
+
+def _count(root: Path) -> int:
+    return pf.Performance.load(clay_root(root) / "performance.json").frames
+
+
 def staging_of(root: Path, push: bool, ink: bool = False) -> tuple[Staging, str]:
     room = study.Room.load(root / "plates" / "room.json")
-    sets = ClaySets(room, push, root, ink)
-    reel._room = sets.backdrop
-    # the reel's modules stood in for by just what its staging calls of them
-    reel.toon_world = SimpleNamespace(sofa=sets.sofa)  # type: ignore[assignment]
-    reel.toon_pair = SimpleNamespace(figure=_nothing, aim=toon_pair.aim)  # type: ignore[assignment]  # the cards out
-    reel.toon_bed = SimpleNamespace(swung_arm=_no_arm, ARM_WIDTH=toon_bed.ARM_WIDTH)  # type: ignore[assignment]
+    sets = ClaySets(room, push, root, ink, _count(root))
+    stand_ins(reel, sets)
     name = ("clay-push" if push else "clay-room") + ("-ink" if ink else "")
     staging = Staging(
         sketch=replace(reel.SKETCH, slug=SLUG, title="Clay Sofa"),
@@ -334,6 +384,16 @@ def staging_of(root: Path, push: bool, ink: bool = False) -> tuple[Staging, str]
     return staging, name
 
 
+def episode_staging(root: Path, sketch, **reel_staging) -> Staging:
+    """The bound reel's own staging, ``sketch`` (one of its endings) drawn in clay: its cards and flat arms out, the
+    room's plates and the clay composites under ``root``/clay/room in their place, no line round the clay.
+    ``reel_staging`` is the rest of the reel's own :class:`Staging` (description, captions, overlay, versions...)."""
+    room = study.Room.load(root / "plates" / "room.json")
+    sets = ClaySets(room, False, root, False, _count(root))
+    stand_ins(reel, sets)
+    return Staging(sketch=sketch, dress=reel.dress, desk=toon_world.no_desk, bare=reel.BARE, **reel_staging)
+
+
 def scene(root: Path, push: bool, ink: bool = False) -> Path:
     reel.validate(reel.SKETCH)
     staging, name = staging_of(root, push, ink)
@@ -352,12 +412,19 @@ def scene(root: Path, push: bool, ink: bool = False) -> Path:
 def main(argv: list[str]) -> None:
     if len(argv) < 3 or argv[1] not in ("perform", "render", "scene"):
         raise SystemExit(__doc__)
-    command, root, flags = argv[1], Path(argv[2]).resolve(), set(argv[3:])
+    command, root, rest = argv[1], Path(argv[2]).resolve(), list(argv[3:])
+    if "--reel" in rest:
+        at = rest.index("--reel")
+        if at + 1 >= len(rest) or command == "scene":
+            raise SystemExit("--reel names a reel's data module, for perform and render")
+        bind(reel_of(rest[at + 1]))
+        del rest[at : at + 2]
+    flags = set(rest)
     if flags - {"--push", "--ink"} or ("--ink" in flags and command != "scene"):
         raise SystemExit("the flags are --push, and --ink for a scene")
     clay_root(root).mkdir(exist_ok=True)
     if command == "perform":
-        performance = pf.capture(root, ROOM_FRAMES)
+        performance = pf.capture(root)
         performance.dump(clay_root(root) / "performance.json")
         pf.Performance.load(clay_root(root) / "performance.json")
     elif command == "render":
