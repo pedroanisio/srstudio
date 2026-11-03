@@ -237,6 +237,22 @@ def test_an_arm_tapers_into_the_body_and_is_widest_toward_the_paw():
     assert across(line[-1], line[-4]) > t.arm * 0.9  # a full forearm at the wrist
 
 
+def test_an_arm_placed_by_its_caller_is_drawn_as_a_posed_arm_is():
+    t = torso()
+    layers, at, way = t.limb(DESK, PAW, "#888888", "#444444")
+    assert t.drawn(t.arm_path(DESK), at, "#888888", "#444444") == (layers, at, way)
+    with pytest.raises(ToonDataError, match="at least one more point"):
+        t.drawn([DESK[0]], PAW, "#888888", "#444444")
+
+
+def test_a_caller_may_say_how_the_arm_tapers():
+    t = torso()
+    even, _, _ = t.drawn(t.arm_path(DESK), PAW, "#888888", "#444444", brush.EVEN)
+    tapered, _, _ = t.drawn(t.arm_path(DESK), PAW, "#888888", "#444444")
+    assert even[0] != tapered[0] and even[1] != tapered[1]  # the ink and the coat follow the taper
+    assert even[2] == tapered[2]  # the shade under the forearm keeps its own
+
+
 @pytest.mark.parametrize("build", BUILDS)
 def test_arm_lines_ink_an_arm_over_the_body_and_never_along_the_flank(build):
     t = torso(build)
