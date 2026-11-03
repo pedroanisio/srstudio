@@ -68,17 +68,30 @@ def pytest_addoption(parser):
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "slow: runs in the full tier only, not in the five-minute gate (ADR 0221)")
+    config.addinivalue_line(
+        "markers", "static: a static check, no engine, GPU or render; stays in the gate whatever it measured (ADR 0225)"
+    )
     if config.getoption("--write-tiers"):
         _TIERS.watch_gpu()
 
 
 def pytest_collection_modifyitems(config, items):
-    """Mark ``slow`` every test that asks for the engine or that the measured table lists (ADR 0221)."""
+    """Mark ``slow`` every test that asks for the engine or that the measured table lists (ADR 0221), except a test
+    pinned to the gate as ``static`` (ADR 0225)."""
     measured = tiers.load()
     heavy = tiers.heavy_files(measured)
     for item in items:
-        if tiers.full(item.nodeid, set(getattr(item, "fixturenames", ())), measured, heavy):
+        fixtures = set(getattr(item, "fixturenames", ()))
+        try:
+            slow = tiers.full(item.nodeid, fixtures, measured, heavy, static=_static(item))
+        except tiers.StaticPinError as e:
+            raise pytest.UsageError(str(e)) from e
+        if slow:
             item.add_marker(pytest.mark.slow)
+
+
+def _static(item) -> bool:
+    return item.get_closest_marker("static") is not None
 
 
 def pytest_deselected(items):
@@ -94,13 +107,16 @@ def pytest_runtest_protocol(item, nextitem):
 def pytest_runtest_makereport(item, call):
     if call.when == "teardown" and item.config.getoption("--write-tiers"):
         item.user_properties.append(("tiers.gpu", _TIERS.gpu))
+        item.user_properties.append(("tiers.static", _static(item)))
     yield
 
 
 def pytest_runtest_logreport(report):
     _TIERS.seconds[report.nodeid] = _TIERS.seconds.get(report.nodeid, 0.0) + report.duration
     if report.when == "teardown":
-        _TIERS.gpu_of[report.nodeid] = dict(report.user_properties).get("tiers.gpu", False)
+        said = dict(report.user_properties)
+        _TIERS.gpu_of[report.nodeid] = said.get("tiers.gpu", False)
+        _TIERS.static_of[report.nodeid] = said.get("tiers.static", False)
 
 
 def pytest_sessionfinish(session, exitstatus):
@@ -114,8 +130,15 @@ def pytest_sessionfinish(session, exitstatus):
         or session.config.getoption("markexpr")
     ):
         raise pytest.UsageError("--write-tiers needs a passing run of the whole suite, nothing deselected")
-    runs = {node: tiers.Run(seconds, _TIERS.gpu_of.get(node, False)) for node, seconds in _TIERS.seconds.items()}
-    Path(path).write_text(tiers.render(runs))
+    runs = {
+        node: tiers.Run(seconds, _TIERS.gpu_of.get(node, False), _TIERS.static_of.get(node, False))
+        for node, seconds in _TIERS.seconds.items()
+    }
+    try:
+        table = tiers.render(runs)
+    except tiers.StaticPinError as e:
+        raise pytest.UsageError(str(e)) from e
+    Path(path).write_text(table)
 
 
 class _Tiers:
@@ -126,6 +149,7 @@ class _Tiers:
         self.deselected = 0
         self.seconds: dict[str, float] = {}
         self.gpu_of: dict[str, bool] = {}
+        self.static_of: dict[str, bool] = {}
 
     def watch_gpu(self) -> None:
         taken = gpu._take

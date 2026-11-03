@@ -229,6 +229,7 @@ def _sources() -> list[Path]:
     return sorted([*library.glob("*.py"), *tools.glob("*.py")])
 
 
+@pytest.mark.static  # a source scan: its time is the processor's (ADR 0225)
 def test_every_engine_call_that_uses_the_gpu_takes_the_lock():
     """A control that can fail: a new ``render`` or ``encode`` call outside the lock fails here."""
     seen, missing = [], []
