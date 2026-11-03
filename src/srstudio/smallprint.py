@@ -895,14 +895,17 @@ def wall_orbit(cv, g, first: float, last: float, measure: Measure) -> None:
 
 
 def wall_colour(cv, g, first: float, last: float, measure: Measure) -> None:
-    """Why it hides: a piece of the wall and a heap of the dirt beside it, the same colour, and a lens sweeping the
-    land where the wall runs."""
+    """Why it hides: a piece of the wall and a heap of the dirt beside it, nearly one colour, with an approximately
+    equal sign between them (similar in colour and texture, NASA, 2005), and a lens sweeping the land where the wall
+    runs."""
     sheet(cv, g)
     cv.rect(g, 140, 400, 260, 150, WALLSTONE, stroke=INK, sw=5.0)
     for k in range(5):
         cv.rect(g, 150 + k * 52, 360, 32, 44, WALLSTONE, stroke=INK, sw=4.0)
     cv.path(g, "M620 550 Q760 330 900 550 Z", fill=LAND, stroke=INK, sw=5.0)
-    label(cv, g, "=", 440, 400, 140, 130, 110.0, STAMP, "center")
+    nearly = cv.group(g, cv.uid("sp-nearly"))
+    for y in (446.0, 490.0):  # two waves, not two bars: the wall is like the dirt, not the dirt
+        cv.path(nearly, f"M470 {y} C494 {y - 26} 522 {y + 26} 546 {y}", fill="#00000000", stroke=STAMP, sw=12.0)
     label(cv, g, "wall", 140, 580, 260, 70, 52.0, INK, "center")
     label(cv, g, "dirt", 620, 580, 280, 70, 52.0, INK, "center")
     cv.rect(g, 80, 720, 920, 180, LAND, stroke=INK, sw=5.0, radius=12.0)

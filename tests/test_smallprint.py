@@ -482,6 +482,19 @@ def test_the_wall_is_drawn_in_nearly_the_land_s_own_colour(name):
     assert _contrast(sp.WALLSTONE, sp.LAND) < 1.3
 
 
+def test_the_wall_and_the_dirt_are_nearly_alike_and_never_drawn_as_one():
+    """NASA (2005) says the wall's materials are similar in colour and texture to the dirt: the page says nearly, with
+    an approximately-equal sign drawn as two waves, and keeps two earths a reader can tell apart."""
+    root = panel_root("wall-colour")
+    words = [t.get("text") or "" for t in root.iter() if t.tag.endswith("text")]
+    assert "=" not in "".join(words), "an equals sign says the wall is the dirt"
+    (nearly,) = groups(root, "sp-nearly")
+    waves = [e for e in nearly.iter() if e.get("shape") == "path"]
+    assert len(waves) == 2 and all(w.get("stroke") == sp.STAMP for w in waves)
+    assert all(" C" in w.get("path") or " Q" in w.get("path") or " S" in w.get("path") for w in waves), "waves"
+    assert 1.05 < _contrast(sp.WALLSTONE, sp.LAND) < 1.3, "two earths, close but not one colour"
+
+
 def test_the_station_goes_round_while_the_page_is_up():
     (station,) = groups(panel_root("wall-orbit"), "sp-station")
     assert len(laps(station)) >= 1 and max(t for t, _ in keyed(station, "x")) >= 7.0
