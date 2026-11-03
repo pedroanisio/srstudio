@@ -243,6 +243,12 @@ def test_voiced_speech_round_trips_and_bad_files_are_refused(tmp_path):
     takes = [sketch.Take("01", "dog", 0.5, 1.0, Alignment(("a", "b"), (0.0, 0.2), (0.2, 0.4)))]
     sketch.write_speech(tmp_path, takes, 9.0)
     assert sketch.load_speech(tmp_path / "voiced" / "speech.json") == (takes, 9.0)
+    whole = Alignment(("a", "b", "c"), (0.3, 0.5, 2.0), (0.5, 0.7, 2.2))  # "c" falls after the cut
+    cut = [sketch.kept_take("01", "dog", whole, 0.50000012, 0.3, 1.0)]
+    assert cut[0].at == 0.5 and cut[0].said == sketch.Said(0.50000012, 0.3, whole)
+    sketch.write_speech(tmp_path, cut, 9.0)
+    assert sketch.load_speech(tmp_path / "voiced" / "speech.json") == (cut, 9.0)
+    said = json.loads((tmp_path / "voiced" / "speech.json").read_text())["takes"][0]["said"]
 
     def doc(end=9.0, **change) -> str:
         return json.dumps({"end": end, "takes": [good | change]})
@@ -274,6 +280,18 @@ def test_voiced_speech_round_trips_and_bad_files_are_refused(tmp_path):
         (doc(ends=[0.2, 0.1]), "inside the take"),
         (json.dumps({"end": 9, "takes": [good, second]}), "time order"),
         (json.dumps({"end": 9, "takes": [good, good | {"at": 1.0}]}), "twice"),
+        (doc(said=[]), "said"),
+        (doc(said=said | {"pitch": 1}), "said"),
+        (doc(said=said | {"at": 0.4}), "said at"),
+        (doc(said=said | {"at": True}), "said at"),
+        (doc(said=said | {"clip_in": -0.1}), "clip_in"),
+        (doc(said=said | {"clip_in": "0"}), "clip_in"),
+        (doc(said=said | {"characters": ["a", 2, "c"]}), "said characters"),
+        (doc(said=said | {"starts": [0.0, 0.3]}), "said letter"),
+        (doc(said=said | {"starts": [0.5, 0.3, 2.0]}), "said letter"),
+        (doc(said=said | {"ends": [0.5, 0.2, 2.2]}), "said letter"),
+        (doc(said=said | {"clip_in": 0.25}), "kept letters"),
+        (doc(said=said | {"characters": ["a", "d", "c"]}), "kept letters"),
     ):
         path.write_text(text)
         with pytest.raises(sketch.SketchError, match=match):
@@ -530,16 +548,40 @@ def test_placing_again_with_a_mouth_reads_the_lips_again_from_the_recording(tmp_
     takes, _ = sketch.load_speech(voiced / "speech.json", SK.cast)
     (voiced / "mouths.json").write_text(json.dumps({"end": 1.0, "mouths": {}}))
     sketch.place_again(SK, tmp_path, mouth=SPEECH_MOUTH)
-    mouths, _ = sketch.load_mouths(voiced / "mouths.json", SK.cast)
-    expected: dict[str, list] = {}
-    for take in takes:
-        if take.who in SK.cast.lip_synced:
-            states = sketch.visemes(take.alignment, take.at, 0.0, take.kept, style=SPEECH_MOUTH)
-            sketch.extend_track(expected.setdefault(take.who, []), states, take.id)
-    assert expected and {who: list(map(tuple, track)) for who, track in mouths.items()} == expected
+    fresh = tmp_path / "fresh"
+    sketch.record(SK, fresh, FakeClient(fresh), confirm=confirm_stub, conform_clip=copy_clip, mouth=SPEECH_MOUTH)
+    assert any(t.who in SK.cast.lip_synced for t in takes)
+    assert (voiced / "mouths.json").read_bytes() == (fresh / "voiced" / "mouths.json").read_bytes()
     assert (voiced / "speech.json").read_bytes() == speech
     again = [b["start"] for b in json.loads((voiced / "beats.json").read_text())["beats"]]
     assert again == pytest.approx([b["start"] for b in json.loads(beats)["beats"]], abs=2e-6)
+
+
+def test_placing_again_reads_the_lips_on_the_grid_the_record_read_them_on(tmp_path):
+    """The record samples a take's letters from the start of the whole take; a re-placement samples the same letters
+    from the same second, so with nothing changed it writes the record's lips byte for byte."""
+    sketch.record(SK, tmp_path, FakeClient(tmp_path), confirm=confirm_stub, conform_clip=copy_clip)
+    mouths = (tmp_path / "voiced" / "mouths.json").read_bytes()
+    takes, _ = sketch.load_speech(tmp_path / "voiced" / "speech.json", SK.cast)
+    assert any(t.said is not None and t.said.clip_in > 0 for t in takes)  # a trimmed take: the grid moves with it
+    sketch.place_again(SK, tmp_path, mouth=sketch.MOUTH_STYLE)
+    assert (tmp_path / "voiced" / "mouths.json").read_bytes() == mouths
+
+
+def test_placing_again_refuses_to_read_lips_from_a_recording_that_kept_only_the_cut(tmp_path):
+    """A recording made before the whole take was kept cannot be sampled on the record's grid: record it again (the
+    cache makes that free) rather than draw lips half a frame off."""
+    sketch.record(SK, tmp_path, FakeClient(tmp_path), confirm=confirm_stub, conform_clip=copy_clip)
+    path = tmp_path / "voiced" / "speech.json"
+    data = json.loads(path.read_text())
+    for take in data["takes"]:
+        del take["said"]
+    path.write_text(json.dumps(data))
+    mouths = (tmp_path / "voiced" / "mouths.json").read_bytes()
+    with pytest.raises(sketch.SketchError, match="record again"):
+        sketch.place_again(SK, tmp_path, mouth=sketch.MOUTH_STYLE)
+    assert (tmp_path / "voiced" / "mouths.json").read_bytes() == mouths
+    sketch.place_again(SK, tmp_path)  # beats alone need only the kept letters
 
 
 def test_placing_again_carries_a_changed_cue_to_the_voiced_build(tmp_path):

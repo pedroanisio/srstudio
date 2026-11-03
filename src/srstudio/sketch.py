@@ -45,6 +45,7 @@ from . import (  # noqa: F401 - they register
     toon_inked,
     toon_lyra,
     toon_redrawn,
+    usage,
 )
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -65,6 +66,7 @@ __all__ = [
     "Appearance",
     "Recorded",
     "Take",
+    "Said",
     "Cast",
     "TOON_CAST",
     "CHARACTERS",
@@ -76,6 +78,7 @@ __all__ = [
     "line_spans",
     "typing_bursts",
     "place",
+    "lips",
     "draw_cast",
     "write_project",
     "place_again",
@@ -136,6 +139,7 @@ BEAT_FIELDS = ("start", "who", "caption", "eyes", "mouth", "arms", "line", "word
 VISEME_RATE = 12  # viseme samples per second of speech
 MOUTH_STYLE = soundtrack.PhonemeStyle(rate=VISEME_RATE, round_letters="ouw")
 _TAKE_FIELDS = frozenset(("id", "who", "at", "kept", "characters", "starts", "ends"))
+_SAID_FIELDS = frozenset(("at", "clip_in", "characters", "starts", "ends"))
 VISEME_OF = {
     "closed": "closed",
     "open": "open",
@@ -499,8 +503,10 @@ def drawer_extras(
 
 def write_project(root: Path, sketch: Sketch, font: GoogleFont) -> None:
     """``script.json`` and ``assets/poses.json`` (the appearances) on the scripted timing, the font pinned under
-    ``assets/fonts``."""
+    ``assets/fonts``. It is setup, not a build (:func:`srstudio.usage.setup_only`): a recorded run that only writes
+    these keeps the record of what the project's last build drew."""
     check(sketch)
+    usage.setup_only()
     root = Path(root)
     (root / "assets").mkdir(parents=True, exist_ok=True)
     (root / "script.json").write_text(json.dumps(cues(sketch.beats, sketch.end, sketch.lines), indent=2) + "\n")
@@ -667,19 +673,46 @@ def _appearance_data(beats: Sequence[Beat], end: float) -> list[dict]:
 
 # -- recording --------------------------------------------------------------------------------------------------------
 @dataclass(frozen=True)
+class Said:
+    """The whole take a kept take was cut from, as its lips were read: every letter on the clock of the take as said,
+    the cut at ``clip_in`` and the unrounded project second ``at`` the cut was placed at. The record samples the
+    visemes from these, so a re-placement that keeps them lands its lips on the record's grid (see :func:`lips`)."""
+
+    at: float
+    clip_in: float
+    alignment: Alignment
+
+
+@dataclass(frozen=True)
 class Take:
     """One line as the project plays it: ``audio/vo-<id>.wav`` starts at project second ``at`` and lasts ``kept``, said
-    by the character ``who`` (``None`` for a voice off screen), its letters timed from the start of that file."""
+    by the character ``who`` (``None`` for a voice off screen), its letters timed from the start of that file. ``said``
+    is the whole take it was cut from; a recording made before it was kept has ``None``."""
 
     id: str
     who: str | None
     at: float
     kept: float
     alignment: Alignment
+    said: Said | None = None
 
 
 def kept_take(id: str, who: str | None, alignment: Alignment, at: float, clip_in: float, kept: float) -> Take:
-    """The take cut from ``clip_in`` for ``kept`` seconds: the letters that start inside the cut, timed from it."""
+    """The take cut from ``clip_in`` for ``kept`` seconds and placed at project second ``at``: the letters that start
+    inside the cut, timed from it, at ``at`` rounded to the microsecond, and the whole take kept as :class:`Said`."""
+    return Take(id, who, round(at, 6), kept, _cut_letters(alignment, clip_in, kept), Said(at, clip_in, alignment))
+
+
+def lips(take: Take, *, style: soundtrack.PhonemeStyle = MOUTH_STYLE) -> list[tuple[float, str]]:
+    """The viseme states of ``take`` (:func:`visemes`) sampled from the whole take it was cut from, on the grid the
+    record sampled it on. A take with no :class:`Said` is a :class:`SketchError`: its kept letters alone would sample
+    a grid shifted by the cut, so the lips would land up to half a frame off the record's."""
+    if take.said is None:
+        raise SketchError(f"take {take.id}: voiced/speech.json keeps only the cut letters, not the take: record again")
+    return visemes(take.said.alignment, take.said.at, take.said.clip_in, take.kept, style=style)
+
+
+def _cut_letters(alignment: Alignment, clip_in: float, kept: float) -> Alignment:
     timed = [
         (c, max(0.0, a - clip_in), max(0.0, min(kept, b - clip_in)))
         for c, a, b in zip(alignment.characters, alignment.starts, alignment.ends, strict=True)
@@ -687,7 +720,7 @@ def kept_take(id: str, who: str | None, alignment: Alignment, at: float, clip_in
     ]
     letters = tuple(c for c, _, _ in timed)
     starts = tuple(round(a, 6) for _, a, _ in timed)
-    return Take(id, who, at, kept, Alignment(letters, starts, tuple(round(b, 6) for _, _, b in timed)))
+    return Alignment(letters, starts, tuple(round(b, 6) for _, _, b in timed))
 
 
 def write_speech(root: Path, takes: Sequence[Take], end: float) -> None:
@@ -697,6 +730,9 @@ def write_speech(root: Path, takes: Sequence[Take], end: float) -> None:
     data = [
         {"id": t.id, "who": t.who, "at": t.at, "kept": t.kept, "characters": list(t.alignment.characters),
          "starts": list(t.alignment.starts), "ends": list(t.alignment.ends)}
+        | ({} if t.said is None else {"said": {"at": t.said.at, "clip_in": t.said.clip_in,
+            "characters": list(t.said.alignment.characters), "starts": list(t.said.alignment.starts),
+            "ends": list(t.said.alignment.ends)}})
         for t in takes
     ]  # fmt: skip
     (folder / "speech.json").write_text(json.dumps({"end": end, "takes": data}, indent=2) + "\n")
@@ -704,8 +740,8 @@ def write_speech(root: Path, takes: Sequence[Take], end: float) -> None:
 
 def _take_data(path: Path, i: int, data: Any, end: float, cast: Cast) -> Take:
     where = f"{path} take {i}"
-    if not (isinstance(data, dict) and set(data) == _TAKE_FIELDS):
-        raise SketchError(f"{where}: expected exactly the fields {sorted(_TAKE_FIELDS)}")
+    if not (isinstance(data, dict) and set(data) - {"said"} == _TAKE_FIELDS):
+        raise SketchError(f"{where}: expected exactly the fields {sorted(_TAKE_FIELDS)}, and said if kept")
     take, who, at, kept = data["id"], data["who"], data["at"], data["kept"]
     letters, starts, ends = data["characters"], data["starts"], data["ends"]
     if not (isinstance(take, str) and re.fullmatch(r"\d{2,}", take)):
@@ -729,7 +765,35 @@ def _take_data(path: Path, i: int, data: Any, end: float, cast: Cast) -> Take:
     ):
         raise SketchError(f"{where}: every letter ends after it starts, inside the take")
     alignment = Alignment(tuple(letters), tuple(float(t) for t in starts), tuple(float(t) for t in ends))
-    return Take(take, who, float(at), float(kept), alignment)
+    said = _said_data(where, data["said"], float(at), float(kept), alignment) if "said" in data else None
+    return Take(take, who, float(at), float(kept), alignment, said)
+
+
+def _said_data(where: str, data: Any, at: float, kept: float, cut: Alignment) -> Said:
+    """The whole take of a kept take, refused unless it is typed, places the take where ``at`` says and cuts from it
+    exactly the kept letters ``cut``: lips read from a take that is not the one kept would be the wrong mouth."""
+    if not (isinstance(data, dict) and set(data) == _SAID_FIELDS):
+        raise SketchError(f"{where}: said must have exactly the fields {sorted(_SAID_FIELDS)}")
+    said_at, clip_in, letters, starts, ends = (data[k] for k in ("at", "clip_in", "characters", "starts", "ends"))
+    if not (checks.number(said_at) and said_at >= 0 and round(said_at, 6) == at):
+        raise SketchError(f"{where}: said at must be the take's second before rounding")
+    if not (checks.number(clip_in) and clip_in >= 0):
+        raise SketchError(f"{where}: said clip_in must be a second >= 0")
+    if not (isinstance(letters, list) and all(isinstance(c, str) for c in letters)):
+        raise SketchError(f"{where}: said characters must be a list of strings")
+    if not (
+        isinstance(starts, list)
+        and isinstance(ends, list)
+        and len(starts) == len(ends) == len(letters)
+        and all(checks.number(t) and t >= 0 for t in [*starts, *ends])
+        and all(a <= b for a, b in zip(starts, starts[1:], strict=False))
+        and all(a <= b for a, b in zip(starts, ends, strict=True))
+    ):
+        raise SketchError(f"{where}: said letter times must be seconds that rise, each ending after it starts")
+    whole = Alignment(tuple(letters), tuple(float(t) for t in starts), tuple(float(t) for t in ends))
+    if _cut_letters(whole, float(clip_in), kept) != cut:
+        raise SketchError(f"{where}: said does not cut to the kept letters at clip_in {clip_in}")
+    return Said(float(said_at), float(clip_in), whole)
 
 
 def load_speech(path: Path, cast: Cast = TOON_CAST) -> tuple[list[Take], float]:
@@ -845,6 +909,7 @@ def record(
         takes.append((spoken, trim_speech(spoken.wav, lead=SPEECH_LEAD, tail=SPEECH_TAIL)))
     placed, needed = _placed(sketch.lines, plan, [trim.clip_out - trim.clip_in for _, trim in takes])
     items, heard, failures, word_starts, kept_takes = [], [], [], [], []
+    spans: list[tuple[float, float]] = []  # each kept take's start and end, as place_again reads them back
     lip_synced = sketch.cast.lip_synced
     mouths: Mouths = {s.character: [] for s in sketch.speakers if s.character is not None and s.character in lip_synced}
     for line, slot, (spoken, trim), at in zip(sketch.lines, plan, takes, placed, strict=True):
@@ -859,7 +924,7 @@ def record(
             failures.append(f"line {slot.id} ({line.speaker}): {exc}")
             continue
         dst = audio / f"vo-{slot.id}.wav"
-        kept = round(at.kept, 6)
+        start, kept = round(at.start, 6), round(at.kept, 6)  # as voiced/speech.json keeps them: see place_again
         colour = {"effect": PHONE_SPEAKER} if line.phone else {}
         conform_clip(
             spoken.wav,
@@ -871,18 +936,21 @@ def record(
             ffmpeg,
             **colour,
         )
-        word_starts.append([round(at.start + max(0.0, a - trim.clip_in), 6) for _, a, _ in words_of(spoken.alignment)])
+        word_starts.append(
+            [round(start + round(max(0.0, a - trim.clip_in), 6), 6) for _, a, _ in words_of(spoken.alignment)]
+        )  # summed from the rounded values place_again reads back, so both place a beat on the same microsecond
+        spans.append((start, start + kept))
         played = speakers[line.speaker].character
-        kept_takes.append(kept_take(slot.id, played, spoken.alignment, round(at.start, 6), trim.clip_in, kept))
+        kept_takes.append(kept_take(slot.id, played, spoken.alignment, at.start, trim.clip_in, kept))
         if played is not None and played in mouths:
-            extend_track(mouths[played], visemes(spoken.alignment, at.start, trim.clip_in, kept, style=mouth), slot.id)
+            extend_track(mouths[played], lips(kept_takes[-1], style=mouth), slot.id)  # as place_again reads them
         items.append(
             {
                 "id": slot.id,
                 "text": line.text,
                 "phase": "line",
                 "caption_start": slot.start,
-                "start": round(at.start, 6),
+                "start": start,
                 "duration": kept,
                 "speech_duration": round(trim.clip_out - trim.clip_in, 6),
                 "speed": speakers[line.speaker].settings.speed,
@@ -897,19 +965,20 @@ def record(
     (root / "voice-transcript.json").write_text(json.dumps({"lines": heard, "passed": not failures}, indent=2) + "\n")
     if failures:
         raise SketchError("speech check failed:\n" + "\n".join(failures))
-    beats = place(sketch, word_starts, [p.end for p in placed])
+    beats = place(sketch, word_starts, [b for _, b in spans])
     end = round(max(needed, beats[-1].start + sketch.tail), 6)
     write_voiced(root, beats, end, sketch.lines, mouths)
     write_speech(root, kept_takes, end)
-    return Recorded(items, beats, end, [(p.start, p.end) for p in placed], voices, heard)
+    return Recorded(items, beats, end, spans, voices, heard)
 
 
 def place_again(sketch: Sketch, root: Path, *, mouth: soundtrack.PhonemeStyle | None = None) -> list[Beat]:
     """The beats moved once more onto the recording already under ``root``, for a change of cues that needs no voice:
     the lines' timed letters come from ``voiced/speech.json``, nothing is asked or written but the placed beats and
     what follows from them (``voiced/beats.json``, ``script.json``, ``poses.json``). The audio stays as it was.
-    With ``mouth``, the viseme tracks are read again from those letters with it and ``voiced/mouths.json`` rewritten,
-    so a fix to the lip reading reaches a recorded reel without a take paid for twice.
+    With ``mouth``, the viseme tracks are read again with it from the whole takes kept there (:func:`lips`, on the
+    record's sampling grid) and ``voiced/mouths.json`` rewritten, so a fix to the lip reading reaches a recorded reel
+    without a take paid for twice; a recording that kept only the cut letters is refused (record it again).
     :class:`SketchError` when the recording is of other lines, or ends before the beats do."""
     check(sketch)
     root = Path(root)
@@ -926,8 +995,7 @@ def place_again(sketch: Sketch, root: Path, *, mouth: soundtrack.PhonemeStyle | 
         mouths = {s.character: [] for s in sketch.speakers if s.character is not None and s.character in lip_synced}
         for take in takes:
             if take.who is not None and take.who in mouths:
-                states = visemes(take.alignment, take.at, 0.0, take.kept, style=mouth)
-                extend_track(mouths[take.who], states, take.id)
+                extend_track(mouths[take.who], lips(take, style=mouth), take.id)
     write_voiced(root, beats, end, sketch.lines, mouths)
     return beats
 

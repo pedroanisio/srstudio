@@ -81,29 +81,54 @@ def trace(figures: list[figure_record.Figure] | None = None) -> Iterator[set[str
         yield used
 
 
+_setup: ContextVar[list[bool] | None] = ContextVar("srstudio_usage_setup", default=None)
+RECORDS = (parts.RECORD, figure_record.RECORD, anatomy_ledger.RECORD)  # what a build leaves in its project
+
+
+def setup_only() -> None:
+    """Say the running script writes project files and builds no scene (a builder's ``--init``). In a
+    :func:`recorded` block that then draws nothing, the records the last build left stay as they were: an empty
+    record would say the project draws nothing, and delivery compares the record with the release's pins.
+    Outside a recorded block it does nothing."""
+    said = _setup.get()
+    if said is not None:
+        said.append(True)
+
+
 @contextmanager
 def recorded(project: Path) -> Iterator[None]:
     """Trace the build in the block and leave what it drew in ``project``, for the delivery gates
     (:func:`srstudio.parts.write_record`, :func:`srstudio.figure_record.write`, :func:`srstudio.anatomy_ledger.write`).
-    A build that fails leaves no record: an older one would no longer say what the project holds."""
-    (Path(project) / parts.RECORD).unlink(missing_ok=True)
-    (Path(project) / figure_record.RECORD).unlink(missing_ok=True)
-    (Path(project) / anatomy_ledger.RECORD).unlink(missing_ok=True)
+    A build that fails leaves no record: an older one would no longer say what the project holds. A block that
+    called :func:`setup_only` and drew nothing puts back the records it found, byte for byte."""
+    project = Path(project)
+    kept = {name: (project / name).read_bytes() for name in RECORDS if (project / name).is_file()}
+    for name in RECORDS:
+        (project / name).unlink(missing_ok=True)  # removed while the block runs: a build killed midway leaves none
     figures: list[figure_record.Figure] = []
+    said: list[bool] = []
 
     def write(used: set[str]) -> None:
+        if said and not used and not figures and not build.notes and not build.limbs:
+            for name, data in kept.items():  # a setup run: the last build's records stand
+                (project / name).write_bytes(data)
+            return
         parts.write_record(project, parts.drawn(used))
         figure_record.write(project, figures)
         anatomy_ledger.write(project, build.notes, build.limbs)
 
-    with trace(figures) as used, anatomy_ledger.recording() as build:
-        try:
-            yield
-        except SystemExit as stop:
-            if stop.code in (None, 0):
-                write(used)
-            raise
-        write(used)
+    token = _setup.set(said)
+    try:
+        with trace(figures) as used, anatomy_ledger.recording() as build:
+            try:
+                yield
+            except SystemExit as stop:
+                if stop.code in (None, 0):
+                    write(used)
+                raise
+            write(used)
+    finally:
+        _setup.reset(token)
 
 
 def _probe_here(script: Path, project: Path, args: Sequence[str], out: Path) -> None:
