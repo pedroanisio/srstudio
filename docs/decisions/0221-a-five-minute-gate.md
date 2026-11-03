@@ -22,7 +22,7 @@ many workers there are.
 - **What is slow is decided by code, not by hand.** `tests/conftest.py` marks a test `slow` when it asks for the
   engine (the `scene_render` fixture), or when `tests/tiers.json` lists it. A full-tier run writes that table
   (`pytest --write-tiers PATH`, which `tools/gate.sh --full` passes): every test it measured over two seconds, setup
-  and teardown included, or saw take the GPU lock. A file whose listed tests add up past 30 s leaves whole: a cache
+  and teardown included, or saw take the GPU lock. A file whose listed tests add up past 10 s leaves whole: a cache
   its tests share charges its cost to whichever test runs first in a worker, a different one each run. The first gate
   run on this table showed it: the dance-floor routine, measured under one test, was paid by another (70 s), and the
   run stopped over budget with 2,497 tests left. The writer refuses a failing run or one that deselected tests, and
@@ -37,7 +37,8 @@ many workers there are.
   budget and says which test; the full tier's table then moves it.
 - The first table came from a passing full run on 2026-11-03 (23,822 tests, 95.11 % branch coverage, 2,615 s on
   twelve workers): 1,011 tests measured slow, 163 of them for the GPU. With the tests that ask for the engine and the
-  75 files over the file bound, the gate leaves out 4,863 tests and runs 18,960.
+  114 files over the file bound, the gate leaves out 6,544 tests and runs the rest. The bound was 30 s at
+  first; at load 31 on twelve cores, from other sessions' renders, the gate then ran 309 s, so it moved to 10 s.
 - `pytest-xdist` joins the `test` extra. It replaces a parallel runner the project would otherwise write: process
   workers, load balancing and the merging of results and coverage.
 

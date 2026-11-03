@@ -17,7 +17,7 @@ from pathlib import Path
 
 SCHEMA = "1.0.0"
 BOUND = 2.0  # seconds: a gate test above it, on a loaded twelve-worker run, leaves the gate
-FILE_BOUND = 30.0  # seconds: a file whose measured slow tests add up past it leaves the gate whole
+FILE_BOUND = 10.0  # seconds: a file whose measured slow tests add up past it leaves the gate whole
 TABLE = Path(__file__).with_name("tiers.json")
 ENGINE_FIXTURES = frozenset({"scene_render"})
 
