@@ -268,12 +268,22 @@ pickup pose, and `check_cuts` refuses any carry held across a declared cut.
 With the shared timing, the held cup moved 64 cm in world space at the cut.
 Each rigid paw drawing takes its solved sole's yaw, so the toes follow the
 solver's forward axis in every shot. A tilted sole raises an error.
-The [full-size feet review](../../generated/sdk-bento-body/v5/index.html)
+The [full-size feet review](../../generated/sdk-bento-body/v8/index.html)
 renders the body component at 14 times, covering both painter windows, both
 steps and both sides of the camera cut. In all 28 paw observations, the
-rendered paw fill covers at least 76.3% of the outline projected from the
-held pose, with no stray paw pixels. The same paw turned 45 degrees fails that
-check in every frame.
+rendered paw fill covers at least 76.27% of the outline projected from the
+held pose (a margin of at least 1.28 points over the 75% threshold), with no
+stray paw pixels. Two controls must fail the same fit in every observation:
+the paw turned 45 degrees fails by at least 2.34 points, and the paw reversed
+(turned 180 degrees) by at least 2.28 points. The review records each
+control's signed margin to both thresholds.
+
+This evidence has two limits. Every solved sole in this motion has yaw 0, so
+the frames show feet facing the camera and never a turned foot. The paw is a
+flat front-view card, so a heel-to-toe reflection through its plane projects
+identically and no frame can show it. Because the paw is nearly symmetric,
+the reversed control's coverage passes the threshold in some observations;
+its stray-pixel margin is the only thing that rejects it.
 
 `tests/test_drawing_body_support.py` exercises support, planted sole positions,
 bone lengths, native pelvis registration, source preparation and full-size
@@ -322,9 +332,21 @@ lists. The sequence payload now carries each distinct buffer once, and the cap
 counts that payload: the hand measures 1,090,592 bytes and the complete scene
 6,681,566. [`test_drawing_source_budget`](../tests/test_drawing_source_budget.py)
 runs the compiler's own source check on this plan. The cap value, snapshot
-identities and render-job keys are unchanged. Passing the source check is not
-a completed compile: the rendered full-size images must also fit the bundle's
-eight-MiB image and file limits.
+identities and render-job keys are unchanged.
+
+Sequence preparation had the same defect one step later: its reply inlined
+every mesh resource for every pass of every snapshot, so the 12-fps hand
+counted 8,843,680 bytes against the same cap (467,520 of prepared XML and
+8,376,160 of resources that are 2,267,126 bytes in 232 distinct files). The
+reply now carries each distinct resource once in a verified table, and the
+bound counts that. At 6 fps, where both versions compile, the hand-only scene
+renders all 144 decoded 1080×1920 frames pixel-identical before and after, and
+a warm rebuild against the pre-change cache makes no engine call. At 12 fps
+the plan digest and all 162 raster job keys are identical before and after.
+
+Passing the source and preparation checks is not a completed compile: the
+rendered full-size images must also fit the bundle's eight-MiB image and file
+limits.
 
 Use `complete_scene()` in the build snippet to include the background and
 information. This reproduces the existing candidate layout; that layout itself
