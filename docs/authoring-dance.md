@@ -280,6 +280,17 @@ step is judged instead, against 1.5 times the largest change in step inside the 
 one-frame jump in it fails. A change between two states, travel or not, is always judged by the step. A camera cut and a
 frame off screen are not steps; a figure with no dance span reports `no-dance-span` and is not clean.
 
+Two more checks are standing gates on every multi-character dance (arc4d3, Slack 1793669089.710129):
+
+- `srstudio.contact_shadows.check(feet)` reads one `FootShadow` per foot per frame on screen. Each record holds the
+  foot's lift and ankle-to-toe midpoint, and the shadow drawn for it. Every foot within `PLANTED_LIFT` (12 px) of the
+  floor must have a shadow centred within `CENTRE_SHARE` (a quarter) of its width from that midpoint. This holds in
+  every state (walk, stare, dance, exit), so a figure cannot float outside its dance.
+- `srstudio.jog_fit.fit_jog(ref, bob)` fits the Stick jog to a figure's drawn body. Both drawings stand on the
+  reference's longer leg, and the crown moves between them by exactly `bob`. Fitting each leg to its own foreshortened
+  length used to make the bob depend on the reference: legs of 403 and 420 px doubled it. Choose `bob` under the
+  figure's travel limit in `figure_steps`.
+
 ## Put a 2D track on the shared skeleton
 
 A cleaned 2D track (`dancepose.motion.clean`, fifteen joints, no depth) reaches a drawn figure through the shared
