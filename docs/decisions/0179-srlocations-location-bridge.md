@@ -53,7 +53,9 @@ marks and bytes are bounded. `LocationRecord.placement`, `in_frame` and `Camera.
 ### The pin
 
 `location_bridge.SRLOCATIONS_COMMIT` is the one pin: srlocations main `2742fd4` when this was decided, `4ae2278` from
-2026-11-02, then `be0aabc` the same day (starship-bridge 2.0.0, news-studio 1.1.0). The exporter:
+2026-11-02, then `be0aabc` the same day (starship-bridge 2.0.0, news-studio 1.1.0), then `9db12ca` on 2026-11-03
+(the tall night-park plates: park-night 1.0.0, with news-studio 2.0.0 and starship-bridge 2.1.0 on the way). `9db12ca`
+is a commit of srlocations' local main that is not yet pushed to its origin. The exporter:
 
 1. refuses a repository that does not hold the pinned commit;
 2. writes that commit's `srlocations/` and `catalog/` from git's object store to

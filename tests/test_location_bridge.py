@@ -34,10 +34,11 @@ def first_mark(data: dict, shot: str = "down-the-aisle", mark: str = "aisle") ->
 # --- the record as recorded ---------------------------------------------------------------------------------------
 
 
-def test_the_pin_is_the_srlocations_commit_with_the_reworked_bridge_and_studio():
-    """be0aabc holds starship-bridge 2.0.0 and news-studio 1.1.0, reworked to arc4d3's rulings and the News palette;
-    their 1.0.0, the park and the airliner are as 4ae2278 had them."""
-    assert lb.SRLOCATIONS_COMMIT == "be0aabced115e4e885adba380c72f2f63f80959c"
+def test_the_pin_is_the_srlocations_commit_with_the_tall_night_park_plates():
+    """9db12ca renders the night park's plates 3200 px tall and holds park-night 1.0.0, news-studio 2.0.0 (no
+    from-the-desk shot) and starship-bridge 2.1.0, which be0aabc lacked; every catalog version be0aabc had, the park
+    1.0.0 and the airliner 1.0.1 among them, is unchanged."""
+    assert lb.SRLOCATIONS_COMMIT == "9db12ca0408e62426a5a5e982676bea07568acdd"
 
 
 def test_the_fixture_is_a_record_of_the_pinned_srlocations():

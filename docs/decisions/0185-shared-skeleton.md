@@ -27,8 +27,11 @@ rotations on it with forward kinematics, and bridges to the records `body` and `
 
 `src/srstudio/assets/skeleton/humanoid.json` is srlocations' mannequin, read once at srlocations commit
 `4ae2278214de6e704d8dcbab8f293b6a47438483` and converted to srstudio's axes. Its `srlocations_commit` follows
-`location_bridge.SRLOCATIONS_COMMIT` when a pin move leaves srlocations' mannequin, `interchange` and stock mannequin
-unchanged (`be0aabc` did):
+`location_bridge.SRLOCATIONS_COMMIT` when a pin move leaves srlocations' joint table unchanged: every joint's name,
+parent, offset, rest, solid and controls with their limits and signs, and the forward kinematics that place them.
+`be0aabc` left srlocations' mannequin and `interchange` untouched. `9db12ca` changed both (balance, walk paths, Mixamo
+names, `JOINTS_VERSION` 1.0.0, a corrected hands-on-hips pose) but not the table, whose digest srlocations' own test
+holds at `88629dcb422eb384`:
 
 | Field | Holds |
 |---|---|

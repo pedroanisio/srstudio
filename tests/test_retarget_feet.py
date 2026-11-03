@@ -49,9 +49,11 @@ def test_the_default_thresholds_sit_inside_a_band_that_finds_the_same_plants():
 
 
 def test_loose_thresholds_would_plant_a_rising_heel():
+    # Since srlocations 9db12ca a rising foot pivots on its ball, so the ankle moves faster than 1 m/s on frames 21
+    # to 24 (41 to 44 on the left) and the loose pair finds the rise from frame 25 (45) on.
     loose = {(p.side, p.first, p.last) for p in rt.plants(WALK, height_m=0.1, speed_m_s=1.0)}
-    assert {("right", 23, 28), ("left", 43, 48)} <= loose
-    assert not {("right", 23, 28), ("left", 43, 48)} & {(p.side, p.first, p.last) for p in rt.plants(WALK)}
+    assert {("right", 25, 28), ("left", 45, 48)} <= loose
+    assert not {("right", 25, 28), ("left", 45, 48)} & {(p.side, p.first, p.last) for p in rt.plants(WALK)}
 
 
 @pytest.mark.parametrize(

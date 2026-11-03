@@ -20,14 +20,14 @@ def table():
 
 def test_the_table_records_its_schema_and_its_source():
     assert sk.JOINT_TABLE.schema == "srstudio.skeleton-joints/1.1.0"
-    assert sk.JOINT_TABLE.srlocations_commit == "be0aabced115e4e885adba380c72f2f63f80959c"
+    assert sk.JOINT_TABLE.srlocations_commit == "9db12ca0408e62426a5a5e982676bea07568acdd"
     assert sk.JOINT_TABLE.reference_height_m == 1.75
     assert len(sk.JOINTS) == 55
     assert sum(len(j.dofs) for j in sk.JOINTS) == 103
 
 
 def test_the_table_carries_the_sole_of_the_mannequins_foot():
-    # srlocations stock/mannequin.py at be0aabc: the foot's solid sits at (0, -0.014, 0.03) with radii (0.034, 0.024,
+    # srlocations stock/mannequin.py at 9db12ca: the foot's solid sits at (0, -0.014, 0.03) with radii (0.034, 0.024,
     # 0.074), as shares of the height; its width across and its reach behind the ankle are the sole's.
     assert sk.JOINT_TABLE.sole_width == pytest.approx(2 * 0.034)
     assert sk.JOINT_TABLE.sole_heel == pytest.approx(0.074 - 0.03)
