@@ -2,6 +2,7 @@
 in the volume look (ADR 0202) or as lines."""
 
 import importlib.util
+import itertools
 import json
 import math
 import shutil
@@ -345,3 +346,105 @@ def test_main_writes_an_ensemble_of_phrases(tmp_path, capsys):
     ]
     assert views.main(argv) == 0
     assert capsys.readouterr().out.strip() == str(out) and out.stat().st_size > 0
+
+
+# --- moves on the floor, a song and a slower look (ADR 0205) --------------------------------------------------------
+
+
+def test_a_floor_stage_dances_the_moves_footwork_on_the_floor():
+    sheet = views.Sheet(("stick@stance",), ("front",))
+    show = views.floor_stage(sheet, ["two-step"], CLASS, 1)
+    assert show.parts == (("two-step", 0, 1),) and show.bars == 1
+    run = show.rows[0][0]
+    profile = sheet.cast[0].profile
+    soles = [sk.world(profile, run.pose(run.start_s + k * CLASS.beat / 8))["left_foot"].origin.y for k in range(32)]
+    assert max(soles) - min(soles) > 0.02  # the left foot leaves the floor: a pose alone never lifts it
+    assert views.render_frame(sheet, show, CLASS, 0.3).size == sheet.size
+
+
+def test_a_track_starts_at_its_first_beat(tmp_path):
+    song = tmp_path / "song.wav"
+    song.write_bytes(b"RIFF")
+    assert views.track_phase(song) == 0.0
+    (tmp_path / "song.json").write_text(json.dumps({"tempo": {"bpm": 120.0, "phase_s": 0.0187}}))
+    assert views.track_phase(song) == pytest.approx(0.0187)
+    (tmp_path / "song.json").write_text(json.dumps({"phase_s": 1.5}))
+    assert views.track_phase(song) == 1.5
+
+
+@pytest.mark.parametrize(
+    "side, match", [("{", "json"), ('{"phase_s": -1}', "phase_s"), ('{"phase_s": true}', "phase_s")]
+)
+def test_a_track_whose_first_beat_cannot_be_read_is_refused(tmp_path, side, match):
+    song = tmp_path / "song.wav"
+    song.write_bytes(b"RIFF")
+    (tmp_path / "song.json").write_text(side)
+    with pytest.raises(views.ViewsError, match=match):
+        views.track_phase(song)
+    with pytest.raises(views.ViewsError, match="no track"):
+        views.track_phase(tmp_path / "none.wav")
+
+
+@pytest.mark.parametrize("speed, chain", [(1.0, "atempo=1"), (0.5, "atempo=0.5"), (0.25, "atempo=0.5,atempo=0.5")])
+def test_a_slower_sound_chains_the_filter_ffmpeg_allows(speed, chain):
+    assert views.atempo(speed) == chain
+
+
+@pytest.mark.parametrize(
+    "kw, match",
+    [({"speed": 0.1}, "speed"), ({"speed": 1.5}, "speed"), ({"phrases": ["groove-step"], "floor": True}, "floor")],
+)
+def test_bad_floor_settings_are_refused(tmp_path, kw, match):
+    with pytest.raises(views.ViewsError, match=match):
+        views.write(tmp_path / "out.mp4", **kw)
+
+
+@pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="ffmpeg is not installed")
+def test_a_slow_look_at_the_floor_lasts_longer_and_plays_the_song(tmp_path):
+    song = music.write_wav(tmp_path / "song.wav", music.render(CLASS, [music.Section(0, 2)]), 48000)
+    out = views.write(
+        tmp_path / "slow.mp4",
+        moves=["heel-rock"],
+        characters=("stick@stance",),
+        views=("top",),
+        bars_each=1,
+        fps=4,
+        bpm=122.65,
+        floor=True,
+        track=song,
+        speed=0.5,
+    )
+    probe = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-select_streams",
+            "v",
+            "-count_frames",
+            "-show_entries",
+            "stream=nb_read_frames",
+            "-of",
+            "csv=p=0",
+            str(out),
+        ],  # fmt: skip
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert int(probe.stdout.strip()) == round(CLASS.at(1) / 0.5 * 4)
+
+
+def test_the_top_view_draws_the_hips_over_the_shoulders_and_turns_them():
+    sheet = views.Sheet(("realistic",), ("top",))
+    profile = sk.preset("realistic")
+
+    def pelvis_pixels(pose):
+        image, draw = views._cell_image()
+        camera = views._camera(sheet, profile, "top", 0, 0)
+        views._figure(draw, camera, profile, pose)
+        return {xy for xy in itertools.product(range(views.CELL), repeat=2) if image.getpixel(xy) == views.PELVIS}
+
+    still = pelvis_pixels(sk.rest_pose(profile))
+    turned = pelvis_pixels(sk.add(profile, sk.rest_pose(profile), {"hips.twist_left_right": 0.3}, clamp=True))
+    assert still and turned and still != turned

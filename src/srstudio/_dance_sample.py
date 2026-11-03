@@ -9,7 +9,21 @@ from functools import lru_cache
 from types import MappingProxyType
 
 from . import checks
-from ._dance_model import FEET, ROOT, DanceError, Entry, Move, Pattern, Routine, RoutineError, chain
+from ._dance_footwork import Steps
+from ._dance_model import (
+    FEET,
+    ROOT,
+    WEIGHT,
+    DanceError,
+    Entry,
+    Follow,
+    Move,
+    Pattern,
+    Routine,
+    RoutineError,
+    chain,
+    spring,
+)
 from ._dance_phrase import Floor, Phrase, moment
 from .music import Groove
 
@@ -18,6 +32,7 @@ __all__ = ["MAX_FRAMES", "MAX_FPS", "DanceFrame", "frames", "sample"]
 MAX_FRAMES = 100_000  # an hour at 25 pictures a second is 90,000
 MAX_FPS = 240
 STILL = Floor()  # where a dance that never travels keeps the body
+CHAIN_TAPS = 96  # places a follower down a chain reads its source at: the springs' joint response, binned
 
 
 @dataclass(frozen=True)
@@ -26,7 +41,8 @@ class DanceFrame:
     ``"joint.dof"`` delta in radians, the face held for the phrase, the feet meant to stay planted, how the body is
     held up (``seat``, ``feet`` or ``either``), and the move danced (None at rest). ``floor`` is where a phrase has
     carried the body (ADR 0194), in hip heights and radians, on top of the root's head radii; ``airborne`` is a
-    standing body with no foot down, in a jump."""
+    standing body with no foot down, in a jump. ``steps`` is a move's footwork (ADR 0205): where each foot goes and
+    where the weight is, which the floor pass solves the legs to; None when the dance has no footwork."""
 
     time: float
     root: tuple[float, float, float]
@@ -37,6 +53,7 @@ class DanceFrame:
     move: str | None
     floor: Floor = STILL
     airborne: bool = False
+    steps: Steps | None = None
 
     def value(self, target: str) -> float:
         """A canonical target's value in this frame; a target the dance does not move reads zero."""
@@ -64,6 +81,49 @@ def _voice(move: Move, p: Pattern, scale: float, beat: float, per_bar: int) -> f
     return _value(p, move.lag(chain(p.target)), beat, per_bar, scale * p.intensity * p.amplitude, p.bias, p.snap)
 
 
+def _bin(taps: list[tuple[float, float]]) -> tuple[tuple[float, float], ...]:
+    """``taps`` gathered into ``CHAIN_TAPS`` bins of equal span, each at its weights' mean place: bounded work."""
+    low, high = min(t for t, _ in taps), max(t for t, _ in taps)
+    width = (high - low) / CHAIN_TAPS or 1.0
+    sums = [[0.0, 0.0] for _ in range(CHAIN_TAPS)]
+    for t, w in taps:
+        cell = sums[min(CHAIN_TAPS - 1, int((t - low) / width))]
+        cell[0] += t * w
+        cell[1] += w
+    return tuple((tw / w, w) for tw, w in sums if w != 0)
+
+
+@lru_cache(maxsize=256)
+def _response(links: tuple[Follow, ...]) -> tuple[float, float, tuple[tuple[float, float], ...]]:
+    """A chain of followers as one: its gain, its lag and its springs' joint response (beats back, weight). One link
+    is its own spring; each further link convolves its spring in and bins the result to ``CHAIN_TAPS``."""
+    gain = math.prod(f.gain for f in links)
+    lag = sum(f.lag for f in links)
+    taps: tuple[tuple[float, float], ...] = spring(links[0].frequency, links[0].damping)
+    for f in links[1:]:  # bounded by MAX_CHAIN
+        taps = _bin([(a + b, u * v) for a, u in taps for b, v in spring(f.frequency, f.damping)])
+    return gain, lag, taps
+
+
+def _followers(move: Move, scale: float, beat: float, per_bar: int) -> dict[str, float]:
+    """Each follower of ``move``: the gains down its chain times the pattern or the weight it rides, read through the
+    chain's springs and lags. A follower of a pattern alone reads it through its spring ``lag`` beats late."""
+    sources = {p.target: p for p in move.patterns}
+    out = {}
+    for f in move.follows:
+        links = move.links(f.target)
+        gain, lag, taps = _response(links)
+        origin = links[-1].source
+        late = beat - lag
+        if origin == WEIGHT:
+            heard = sum(w * scale * move.weight(late - back) for back, w in taps)
+        else:
+            p = sources[origin]
+            heard = sum(w * _voice(move, p, scale, late - back, per_bar) for back, w in taps)
+        out[f.target] = gain * heard
+    return out
+
+
 def _mix(
     old: tuple[Move, float] | None, new: tuple[Move, float], k: float, beat: float, per_bar: int
 ) -> dict[str, float]:
@@ -88,6 +148,11 @@ def _mix(
         if b:
             value += k * _voice(new[0], b, new[1], beat, per_bar)
         out[target] = value
+    weighted = ((1 - k, old), (k, new)) if old else ((k, new),)
+    for weight, (move, scale) in weighted:
+        if weight > 0:
+            for target, value in _followers(move, scale, beat, per_bar).items():
+                out[target] = out.get(target, 0.0) + weight * value
     return out
 
 
@@ -100,10 +165,11 @@ def _frame(
     move: str | None,
     floor: Floor = STILL,
     airborne: bool = False,
+    steps: Steps | None = None,
 ) -> DanceFrame:
     root = (values.get(ROOT[0], 0.0), values.get(ROOT[1], 0.0), values.get(ROOT[2], 0.0))
     joints = {k: v for k, v in sorted(values.items()) if k not in ROOT}
-    return DanceFrame(t, root, MappingProxyType(joints), expression, planted, support, move, floor, airborne)
+    return DanceFrame(t, root, MappingProxyType(joints), expression, planted, support, move, floor, airborne, steps)
 
 
 def _smooth(x: float) -> float:
@@ -119,6 +185,7 @@ class _Part:
     planted: frozenset[str]
     airborne: bool
     face: str | None
+    steps: Steps | None = None
 
 
 def _flat(floor: Floor) -> Floor:
@@ -145,7 +212,7 @@ def _part(entry: Entry, start: Floor, beat: float, per_bar: int) -> _Part:
     danced = entry.danced()
     if isinstance(danced, Move):
         values = _mix(None, (danced, entry.intensity), 1.0, beat, per_bar)
-        return _Part(values, start, danced.planted(beat), False, None)
+        return _Part(values, start, danced.planted(beat), False, None, danced.steps(beat))
     into = beat - entry.start_bar * per_bar
     times = (entry.end_bar - entry.start_bar) * per_bar // danced.beats
     done = min(max(0, math.floor(into / danced.beats)), times - 1)
@@ -201,9 +268,13 @@ def _routine(routine: Routine, groove: Groove, t: float) -> DanceFrame:
         planted, airborne = ours.planted, ours.airborne
     else:
         planted, airborne = (theirs.planted, theirs.airborne) if theirs else (rest, False)
+    steps = ours.steps
+    before_steps = theirs.steps if theirs else None
+    if k < 1 and (steps is not None or before_steps is not None):  # footwork eases in from home, or out to it
+        steps = (before_steps or Steps()).mix(steps, k)
     face = entry.expression if entry.expression is not None else ours.face
     name = entry.move.name
-    return _frame(t, values, face, planted, routine.support, name, floor, airborne)
+    return _frame(t, values, face, planted, routine.support, name, floor, airborne, steps)
 
 
 def _danced(entry: Entry | None) -> tuple[Move, float] | None:
@@ -234,7 +305,8 @@ def sample(source: Move | Phrase | Routine, groove: Groove, t: float) -> DanceFr
     if not isinstance(source, Move):
         raise DanceError(f"only a Move, a Phrase or a Routine is danced, not {type(source).__name__}", path="source")
     values = _mix(None, (source, 1.0), 1.0, beat, groove.beats_per_bar)
-    return _frame(float(t), values, None, source.planted(beat), source.support, source.name)
+    planted = source.planted(beat)
+    return _frame(float(t), values, None, planted, source.support, source.name, steps=source.steps(beat))
 
 
 def frames(

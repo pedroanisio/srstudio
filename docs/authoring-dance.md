@@ -116,7 +116,7 @@ stay continuous, the loop's seam included. The head nod below eases out of the h
   "moves": [
     {
       "name": "chest-pop",
-      "description": "The chest pops forward on two and four.",
+      "description": "The chest pops forward on two and four; the neck gives after it and settles.",
       "support": "either",
       "loop_beats": 2,
       "lags": {"head": 0.1},
@@ -126,11 +126,21 @@ stay continuous, the loop's seam included. The head nod below eases out of the h
         {"target": "head.nod_down_up", "waveform": "curve", "cycles": 0.5, "per": "beat",
          "phase": 1, "amplitude": -0.05,
          "curve": [1, 0.966, 0.866, 0.707, 0.5, 0.259, 0, -0.259, -0.5, -0.707, -0.866, -0.966, -1, -0.707, 0, 0.707]}
+      ],
+      "follow": [
+        {"target": "neck.nod_down_up", "source": "chest.front_back", "gain": 0.4,
+         "lag": 0.05, "frequency": 3, "damping": 0.5}
       ]
     }
   ]
 }
 ```
+
+A `follow` entry (moves 1.1, [ADR 0201](decisions/0201-dance-swing.md)) makes a joint ride a pattern's target late:
+`gain` times the source, in the follower's units per the source's, read `lag` beats late through a damped spring of
+`frequency` cycles per beat and `damping`. Under a damping of 1 the follower overshoots and settles, the follow-through
+that keeps a move from looking dry; `damping * frequency` is at least 0.3, so a spring settles within two beats. A
+follower moves only a joint no pattern moves, and follows a pattern, never another follower.
 
 `support` is `seat`, `feet` or `either`. A `feet` move declares `contacts` so that a foot is planted at every moment of
 its loop. `parse_moves` and `load_moves` refuse anything outside the schema; the [ADR](decisions/0186-dance-moves-on-the-beat.md)
@@ -268,6 +278,81 @@ and add `--ensemble --canon 0.5` for every character in one row.
 against the beat, and `resolution`. Build a `DanceTarget` for a dance you have measured, and treat `misses(reading)` as
 the test. Give it several bars: an estimate on two cycles moves with every sample. At 25 pictures a second a stroke
 reads to about one picture when the channel carries noise of five percent of its size.
+
+## Check a swing
+
+A groove can land on every beat and still look dry: a head that travels in straight strokes, eases each one evenly and
+stops dead. `dance_pose.body_series` reads what a dance shows on a character facing the camera, frame by frame: the
+head's centre across and up in head radii, its roll and the neck's lean. `measure_swing` reads the head's `path` (its
+`shape`, `openness`, the `lead` of the sideways motion over the vertical and their `ratio`), the neck's `lean`, the head's
+`lag` after it, its sideways `rebound` and its `roll`. `SEAT_GROOVE_SWING` holds the seat-groove to the car reel it was
+measured from:
+
+<!-- dance-swing:start -->
+```python
+from srstudio import dance
+from srstudio import skeleton as sk
+from srstudio.dance_pose import body_series
+from srstudio.music import Groove
+
+groove = Groove(129)
+move = dance.moves()["seat-groove"]
+lean = move.follows[0]
+print(lean.target, lean.source, lean.gain, lean.lag)  # neck.tilt_left_right root.right 2.3 0.32
+
+body = body_series(sk.preset("cartoon"), dance.frames(move, groove, 0.0, 16 * groove.beat, 50))
+reading = dance.measure_swing(body.across, body.up, body.roll, body.lean, 50, groove)
+assert dance.SEAT_GROOVE_SWING.misses(reading) == ()
+assert reading.path.shape == "loop" and reading.rebound > 0.01  # an open curve, and a stroke that follows through
+```
+<!-- dance-swing:end -->
+
+`body_series` refuses a pose past a joint's limit, so it also checks that the swing fits the character. The seat-groove
+reads the same on the realistic, cartoon and stick skeletons: its hips' slide is in head radii and its neck is half a
+head radius on all three. Its head runs ahead of its neck's lean, where the reel's head follows the neck; the ADR names
+why.
+
+## Dance with the whole body
+
+A move's `footwork` ([ADR 0205](decisions/0205-full-body-groove.md), moves 1.2) states what the feet do, in beats:
+each `Stroke` lifts a foot (`lift`), raises its heel or toes (`heel`, `toe`), steps or touches it to an offset in hip
+heights (`step`, `touch`), turns it on its ball (`pivot`) or brings it home (`return`); each `WeightKey` puts a share
+of the weight on the right foot. A foot is planted while it is flat and in no stroke, so the move's contacts come from
+its footwork. A foot off the floor carries no weight, and some foot stands flat at every moment: the move refuses
+footwork that would fall. `inward` brings both feet in from the base stance, and `settle` lets the hips arrive over
+the weight a little after the feet take it.
+
+A follower may read `WEIGHT` (-1 on the left foot, +1 on the right) or another follower, so the weight drives the
+pelvis and the chain above it a link at a time, each later than the one under it. On the floor, a foot of the
+footwork rides its goal: its leg is solved onto it, and a planted one the ankle cannot lay flat is reported or refused.
+`dance_groove.measure_groove` reads the result: whether the feet leave the floor, the weight travels, the pelvis turns
+and tilts, the torso turns against it, the chain runs up from the feet, the upper body moves on the hips, and whether
+the motion is smooth, the feet hold where they push, and a held heel or toe stays put. `dance_groove.GROOVE` is the
+target the new presets meet and the older ones do not:
+
+<!-- dance-groove:start -->
+```python
+from srstudio import dance, dance_floor
+from srstudio import skeleton as sk
+from srstudio.dance_groove import GROOVE, measure_groove
+from srstudio.music import Groove
+
+groove = Groove(120)
+move = dance.moves()["heel-rock"]
+print([(s.foot, s.start, s.kind) for s in move.footwork.strokes])  # the left heel on the and of one, ...
+
+profile = sk.preset("stick")
+routine = dance.Routine(2, (dance.Entry(0, 2, move),))
+run = dance_floor.perform(routine, profile, groove, base=dance_floor.stance(profile))
+reading = measure_groove(run)
+assert GROOVE.misses(reading) == ()
+print(round(reading.clearance, 2), round(reading.pelvis_yaw, 2), round(reading.counter, 2))  # 0.12 0.39 0.46
+```
+<!-- dance-groove:end -->
+
+The presets `two-step`, `heel-rock` and `twist-groove` dance this way; review them on the floor with
+`python tools/dance_views.py out.mp4 --moves two-step,heel-rock --floor --characters realistic@stance,cartoon@stance
+--bpm 120 --track song.wav --speed 0.25`, which plays the song from its first beat and slows picture and sound together.
 
 ## Learn a style from a reference video
 

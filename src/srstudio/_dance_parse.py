@@ -1,4 +1,4 @@
-"""Strict readers for the dance data: ``srstudio.dance-moves/1.1.0``, ``srstudio.dance-routine/1.0.0`` and
+"""Strict readers for the dance data: ``srstudio.dance-moves/1.2.0``, ``srstudio.dance-routine/1.0.0`` and
 ``srstudio.dance-phrases/1.0.0`` (ADR 0194).
 
 Text is untrusted until it parses: one JSON object of at most ``MAX_BYTES`` (no NaN or Infinity, no repeated key), no
@@ -6,9 +6,16 @@ unknown or missing field, no wrong type (a boolean is not a number, a float is n
 at most ``MAX_MOVES`` moves and ``MAX_PHRASES`` phrases. The typed model then checks what the schema cannot say
 (ADR 0186).
 
-Moves 1.1 adds the ``curve`` waveform (ADR 0204): a pattern with ``"waveform": "curve"`` carries ``curve``, its
-cycle's samples, and no ``snap``; every other pattern carries ``snap`` and no ``curve``. A 1.0 document is read as it
-always was, and a ``curve`` in one is an unknown field.
+Moves 1.1 adds two things, read under one minor: the ``curve`` waveform (ADR 0204), whose pattern carries ``curve``,
+its cycle's samples, and no ``snap`` while every other pattern carries ``snap`` and no ``curve``; and a move's
+``follow`` list, joints that follow another channel late through a spring (ADR 0201). A 1.0 document reads as it
+always did, and a ``curve`` or a ``follow`` in one is an unknown field, since neither existed in 1.0.
+
+Moves 1.2 adds a move's ``footwork`` (ADR 0205): ``strokes``, each a ``foot``, ``from`` and ``beats``, a ``kind`` and,
+as the kind takes them, ``to`` (right and forward in hip heights), ``height``, ``pitch`` and ``turn``; ``weight`` keys,
+each a ``beat`` and the ``right`` foot's share; and optional ``shift``, ``inward`` and ``settle``. A move with footwork
+writes no contacts. 1.2 also lets a follower follow another follower or ``weight``; a 1.1 document that does is
+refused, and one that names ``footwork`` meets an unknown field.
 """
 
 from __future__ import annotations
@@ -23,7 +30,8 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import TypeVar
 
-from ._dance_model import CURVE_POINTS, Contact, DanceError, Entry, Move, Pattern, Routine
+from ._dance_footwork import MAX_STROKES, MAX_WEIGHT_KEYS, Footwork, Stroke, WeightKey
+from ._dance_model import CURVE_POINTS, MAX_FOLLOWS, Contact, DanceError, Entry, Follow, Move, Pattern, Routine
 from ._dance_phrase import MAX_KEYS, Floor, Key, Phrase, beat_of
 
 __all__ = [
@@ -43,7 +51,7 @@ __all__ = [
     "phrases",
 ]
 
-MOVES_SCHEMA = "srstudio.dance-moves/1.1.0"
+MOVES_SCHEMA = "srstudio.dance-moves/1.2.0"
 ROUTINE_SCHEMA = "srstudio.dance-routine/1.0.0"
 PHRASES_SCHEMA = "srstudio.dance-phrases/1.0.0"
 MAX_BYTES = 1_000_000
@@ -187,8 +195,58 @@ def _contact(value: object, path: str) -> Contact:
     return _built(path, lambda: Contact(foot, start, end))
 
 
+_FOLLOW = ("target", "source", "gain")
+_SPRING = ("lag", "frequency", "damping")
+
+
+def _follow(value: object, path: str) -> Follow:
+    f = _fields(value, path, _FOLLOW, _SPRING)
+    target, source = _text(f["target"], f"{path}.target"), _text(f["source"], f"{path}.source")
+    numbers = {k: _number(v, f"{path}.{k}") for k, v in f.items() if k in ("gain", *_SPRING)}
+    return _built(path, lambda: Follow(target=target, source=source, **numbers))
+
+
+def _stroke(value: object, path: str) -> Stroke:
+    f = _fields(value, path, ("foot", "from", "beats", "kind"), ("to", "height", "pitch", "turn"))
+    foot, kind = _text(f["foot"], f"{path}.foot"), _text(f["kind"], f"{path}.kind")
+    start, beats = _number(f["from"], f"{path}.from"), _number(f["beats"], f"{path}.beats")
+    to = None
+    if "to" in f:
+        pair = _list(f["to"], f"{path}.to", 2)
+        if len(pair) != 2:
+            raise DanceDataError(f"{path}.to is [right, forward] in hip heights", path=f"{path}.to")
+        to = (_number(pair[0], f"{path}.to[0]"), _number(pair[1], f"{path}.to[1]"))
+    height = _number(f.get("height", 0.0), f"{path}.height")
+    pitch = _number(f.get("pitch", 0.0), f"{path}.pitch")
+    turn = _number(f["turn"], f"{path}.turn") if "turn" in f else None
+    return _built(path, lambda: Stroke(foot, start, beats, kind, to, height, pitch, turn))
+
+
+def _weight_key(value: object, path: str) -> WeightKey:
+    k = _fields(value, path, ("beat", "right"))
+    beat, right = _number(k["beat"], f"{path}.beat"), _number(k["right"], f"{path}.right")
+    return _built(path, lambda: WeightKey(beat, right))
+
+
+def _footwork(value: object, path: str) -> Footwork:
+    f = _fields(value, path, ("strokes", "weight"), ("shift", "inward", "settle"))
+    strokes = tuple(
+        _stroke(s, f"{path}.strokes[{i}]") for i, s in enumerate(_list(f["strokes"], f"{path}.strokes", MAX_STROKES))
+    )
+    weight = tuple(
+        _weight_key(k, f"{path}.weight[{i}]")
+        for i, k in enumerate(_list(f["weight"], f"{path}.weight", MAX_WEIGHT_KEYS))
+    )
+    shift = _number(f.get("shift", 1.0), f"{path}.shift")
+    inward = _number(f.get("inward", 0.0), f"{path}.inward")
+    settle = _number(f.get("settle", 0.0), f"{path}.settle")
+    return _built(path, lambda: Footwork(strokes, weight, shift, inward, settle))
+
+
 def _move(value: object, path: str, minor: int) -> Move:
-    m = _fields(value, path, ("name", "support", "patterns"), ("description", "loop_beats", "lags", "contacts"))
+    optional = ("description", "loop_beats", "lags", "contacts") + (("follow",) if minor >= 1 else ())
+    optional += ("footwork",) if minor >= 2 else ()
+    m = _fields(value, path, ("name", "support", "patterns"), optional)
     name, support = _text(m["name"], f"{path}.name"), _text(m["support"], f"{path}.support")
     description = _text(m.get("description", ""), f"{path}.description")
     patterns = tuple(
@@ -199,11 +257,26 @@ def _move(value: object, path: str, minor: int) -> Move:
     contacts = tuple(
         _contact(c, f"{path}.contacts[{i}]") for i, c in enumerate(_list(m.get("contacts", []), f"{path}.contacts", 16))
     )
-    return _built(path, lambda: Move(name, support, patterns, loop, lags, contacts, description))
+    follows = tuple(
+        _follow(f, f"{path}.follow[{i}]")
+        for i, f in enumerate(_list(m.get("follow", []), f"{path}.follow", MAX_FOLLOWS))
+    )
+    moved = {p.target for p in patterns}
+    for i, f in enumerate(follows):
+        if minor < 2 and f.source not in moved:
+            raise DanceDataError(
+                f"{path}.follow[{i}] follows {f.source!r}, which no pattern moves; a follower follows another "
+                "follower or the weight from moves 1.2",
+                code="dance.schema",
+                path=f"{path}.follow[{i}].source",
+            )
+    footwork = _footwork(m["footwork"], f"{path}.footwork") if "footwork" in m else None
+    return _built(path, lambda: Move(name, support, patterns, loop, lags, contacts, description, follows, footwork))
 
 
 def parse_moves(text: str | bytes) -> Mapping[str, Move]:
-    """The moves of a ``srstudio.dance-moves/1.x`` document, by name in file order."""
+    """The moves of a ``srstudio.dance-moves/1.x`` document, by name in file order. A move's ``follow`` list needs
+    minor 1 or later; its ``footwork``, and a follower of a follower or of the weight, minor 2."""
     top = _document(text, MOVES_SCHEMA)
     _fields(top, "$", ("schema", "moves"), ("generated_by",))
     minor = int(str(top["schema"]).split("/")[1].split(".")[1])

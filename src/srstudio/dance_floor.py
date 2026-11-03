@@ -16,6 +16,14 @@ turned the way it pointed; from then its ball stays on that spot. When the body 
 The leg is solved onto it by ``retarget``'s leg solve. In the ``BLEND_S`` either side of a plant the foot eases from
 its free path onto the spot and back, so it never jumps, and a free foot never goes through the floor.
 
+**Footwork.** A frame with ``steps`` (a move's footwork, ADR 0205) says where each foot goes. A foot that is not
+planted is released from its hold and its leg is solved, by the same leg solve, to its goal: offset from where the
+base stands it, in hip heights along the way the body faces, lifted off the floor, turned on its ball, and pitched
+about the ball (the heel up, the toes bent back to stay on the floor) or about the heel (the toes up). The ball, or the
+heel, stays on its spot while the foot pitches about it. The hips follow the feet's middle and lean toward the loaded
+foot by the footwork's ``shift`` of the way, so the weight moves over the standing foot before the other lifts; the
+balance pass then corrects what that misses.
+
 **Balance.** The hips shift on the floor so that the centre of mass stands over the feet that carry the body. At
 each key (a phrase's keys, and each change of the planted feet) the least shift is solved that puts the centre of
 mass ``aim`` inside the support of the feet planted on both sides of the key, and between keys the shift moves on the
@@ -39,6 +47,7 @@ from types import MappingProxyType
 
 from . import checks
 from . import skeleton as sk
+from ._dance_footwork import FootGoal, Steps
 from ._dance_model import DanceError, Move, Routine
 from ._dance_phrase import Floor, Phrase, ease
 from ._dance_sample import MAX_FRAMES, DanceFrame, sample
@@ -59,8 +68,8 @@ from ._floor_body import (
 from ._retarget_errors import LimitBreach
 from ._retarget_feet import BLEND_S, reach
 from ._retarget_pose import Tally
-from .dance_pose import dance_pose
-from .limbs.math3d import Frame, Vec3
+from .dance_pose import dance_pose, on_floor
+from .limbs.math3d import Frame, Quaternion, Vec3
 from .music import Groove
 
 __all__ = [
@@ -95,11 +104,13 @@ __all__ = [
 ]
 
 SCAN_PER_BEAT = 48  # where a performance looks for plants: every sixteenth lands on this grid
+FOOTWORK_KEY = SCAN_PER_BEAT // 4  # scan steps between balance keys of footwork: a key every sixteenth note
 SHIFT_PASSES = 8  # each pass moves the hips by what the centre of mass misses; legs carry about a third back
 AIM_SHARE = 0.25  # the shift aims this share of a foot's width inside the support, past the margin
 MAX_SHIFT = 0.5  # hip heights the balance may shift the hips
 REACH_SHARE = 0.995  # a held leg straightens to this share of its length before the hips sink
 MAX_SINK = 0.3  # hip heights the hips may sink to keep a held foot in reach
+SINK_RAMP = 0.04  # hip heights over which a footwork sink eases in: about the bounce of a groove
 EPSILON_S = 1e-6
 EDGE_HALVINGS = 64  # bisection steps that find where a plant starts or ends between two scan steps
 MAX_DANCERS = 16
@@ -107,6 +118,8 @@ MAX_JITTER_BEATS = 0.04
 MAX_SIZE_VARIATION = 0.06
 FORMATIONS = ("line", "wedge")
 MAX_FINDINGS = 256
+BALL_SHARE = 0.67  # a toeless foot's ball sits this share of the way to its toe: the realistic preset's toes joint
+ACROSS = Vec3(1.0, 0.0, 0.0)  # a foot pitches about its own right
 STANCE_WIDTH = 0.5  # hip heights between the ankles of the groove stance: a wide base
 STANCE_BEND = 0.55  # radians the knees bend in it, as a dance study measures a knee
 STANCE_TURNOUT = 0.25  # radians each foot's toes turn out
@@ -261,6 +274,7 @@ class _Pass:
             for side in self.legs
         }
         self.floor_y = floor_of(profile, base)
+        self.home = self._home()
         self.holds = self._holds(scan)
         self.keys: list[_Key] = []
         self.shifts: list[Vec3] = []
@@ -283,11 +297,18 @@ class _Pass:
                 t0 = scan[first][0] if first == 0 else self._edge(side, scan[first - 1][0], scan[first][0])
                 t1 = scan[i][0] if i + 1 == len(scan) else self._edge(side, scan[i + 1][0], scan[i][0])
                 frame = self.frame_at(t0)
-                free = sk.world(self.profile, self._free(frame, Vec3())[0])
-                ball = ball_of(self.profile, free, side)
-                out[side].append(
-                    _Hold(side, t0, t1, (ball.x, ball.z), heading(free[f"{side}_foot"].rotation), frame.floor.turn)
-                )
+                if frame.steps is not None:  # footwork lands a foot on its goal's spot
+                    carried = on_floor(self.profile, self.base, frame.floor).root
+                    goal = frame.steps.goal(side)
+                    _, facing = self._spot(side, goal, carried)
+                    ankle = self.goal_place(side, FootGoal(goal.right, goal.forward, 0.0, goal.turn), carried)[0]
+                    ball = ankle + yaw(facing).rotate(toes_offset(self.profile, side))
+                    spot = (ball.x, ball.z)
+                else:
+                    free = sk.world(self.profile, self._free(frame, Vec3(), Tally(True), t0)[0])
+                    ball = ball_of(self.profile, free, side)
+                    spot, facing = (ball.x, ball.z), heading(free[f"{side}_foot"].rotation)
+                out[side].append(_Hold(side, t0, t1, spot, facing, frame.floor.turn))
                 i += 1
         return out
 
@@ -325,20 +346,124 @@ class _Pass:
 
     # --- one pose -------------------------------------------------------------------------------------------------
 
-    def _free(self, frame: DanceFrame, shift: Vec3) -> tuple[sk.SkeletonPose, frozenset[str]]:
+    def _free(self, frame: DanceFrame, shift: Vec3, tally: Tally, t: float) -> tuple[sk.SkeletonPose, frozenset[str]]:
+        """The frame danced from the base, the hips shifted by ``shift`` and by the footwork's weight, and each foot
+        with a goal solved onto it."""
         danced = dance_pose(self.profile, frame, base=self.base, clamp=self.clamp)
         root = danced.pose.root
-        return sk.SkeletonPose(Frame(root.origin + shift, root.rotation), danced.pose.values), danced.dropped
+        steps = frame.steps
+        if steps is None:
+            return sk.SkeletonPose(Frame(root.origin + shift, root.rotation), danced.pose.values), danced.dropped
+        carried = on_floor(self.profile, self.base, frame.floor).root
+        root = Frame(root.origin + shift + self._lean(steps, carried), root.rotation)
+        values = danced.pose.as_dict()
+        for side in self.legs:
+            values = self._step(values, root, side, steps.goal(side), carried, tally, t)
+        return sk.pose(self.profile, values, root=root), danced.dropped
+
+    # --- footwork -------------------------------------------------------------------------------------------------
+
+    def _home(self) -> dict[str, tuple[Vec3, float]]:
+        """Where each ball stands in the base, in the base root's frame, and the foot's heading on the root's."""
+        world, root = sk.world(self.profile, self.base), self.base.root
+        out = {}
+        for side in self.legs:
+            foot = world[f"{side}_foot"]
+            ball = foot.origin + foot.rotation.rotate(self._ball(side))
+            local = root.rotation.inverse().rotate(ball - root.origin)
+            out[side] = (local, heading(world[f"{side}_foot"].rotation) - heading(root.rotation))
+        return out
+
+    def _spot(self, side: str, goal: FootGoal, carried: Frame) -> tuple[tuple[float, float], float]:
+        """Where a goal puts the ball on the floor (x, z) and which way the foot heads."""
+        local, turn = self.home[side]
+        facing = heading(carried.rotation)
+        home = carried.origin + carried.rotation.rotate(local)
+        step = yaw(facing).rotate(Vec3(goal.right, 0.0, goal.forward) * self.profile.pelvis_height)
+        return (home.x + step.x, home.z + step.z), facing + turn + goal.turn
+
+    def _lean(self, steps: Steps, carried: Frame) -> Vec3:
+        """How far the hips move on the floor for the feet: with the feet's middle, then toward the loaded foot by
+        the footwork's ``shift`` of the way from that middle."""
+        if len(self.legs) < 2:
+            return Vec3()
+        (lx, lz), _ = self._spot("left", steps.left, carried)
+        (rx, rz), _ = self._spot("right", steps.right, carried)
+        (hx, hz), _ = self._spot("left", FootGoal(), carried)
+        (gx, gz), _ = self._spot("right", FootGoal(), carried)
+        middle = Vec3((lx + rx) / 2 - (hx + gx) / 2, 0.0, (lz + rz) / 2 - (hz + gz) / 2)
+        loaded = Vec3((steps.settled - 0.5) * (rx - lx), 0.0, (steps.settled - 0.5) * (rz - lz))
+        return middle + loaded * steps.shift
+
+    def _ball(self, side: str) -> Vec3:
+        """The ball a footwork foot turns and rises about, in the foot's frame, level with the ankle: the toes' joint,
+        or on a foot without toes the point ``BALL_SHARE`` of the way to its toe, so a pivot turns the foot about
+        the same point its heel rises about."""
+        if self.profile.has(f"{side}_toes"):
+            toes = toes_offset(self.profile, side)
+            return Vec3(toes.x, 0.0, toes.z)
+        return Vec3(0.0, 0.0, BALL_SHARE * sole(self.profile)[2])
+
+    def _pivot(self, side: str, pivot: str) -> Vec3:
+        """The point a foot pitches about, in the foot's frame (y down): the toes' joint, which stays put while the
+        toes bend back flat; on a foot without toes, the sole under its ball; or the sole under the heel."""
+        drop = self.profile.length("ankle")
+        if pivot == "heel":
+            return Vec3(0.0, drop, -sole(self.profile)[1])
+        if self.profile.has(f"{side}_toes"):
+            return toes_offset(self.profile, side)
+        return Vec3(0.0, drop, BALL_SHARE * sole(self.profile)[2])
+
+    def goal_place(self, side: str, goal: FootGoal, carried: Frame) -> tuple[Vec3, Quaternion]:
+        """The ankle's place and the foot's turn in the world for ``goal``."""
+        (x, z), facing = self._spot(side, goal, carried)
+        back = yaw(facing).rotate(self._ball(side))
+        flat = Vec3(x - back.x, self.floor_y - self.profile.length("ankle"), z - back.z)
+        point = self._pivot(side, goal.pivot)
+        contact = flat + yaw(facing).rotate(point)
+        turn = yaw(facing) * Quaternion.axis_angle(ACROSS, -goal.signed)
+        ankle = contact - turn.rotate(point)
+        return Vec3(ankle.x, ankle.y - goal.up * self.profile.pelvis_height, ankle.z), turn
+
+    def _step(
+        self,
+        values: Mapping[str, float],
+        root: Frame,
+        side: str,
+        goal: FootGoal,
+        carried: Frame,
+        tally: Tally,
+        t: float,
+    ) -> dict[str, float]:
+        """``values`` with one leg solved onto its goal; on the ball, the toes bend back to stay on the floor. A foot
+        off its plant takes the nearest turn its ankle allows; a planted foot, the hip and the knee are held to their
+        limits as any leg is, through ``tally``, so a planted foot the ankle cannot lay flat is reported or refused."""
+        ankle, turn = self.goal_place(side, goal, carried)
+        own = Tally(True)
+        out = reach(self.profile, values, root, side, ankle, own, t, turn=turn)
+        for key, (_, worst, _) in own.clamps.items():  # bounded by the leg's controls
+            if goal.planted or not key.startswith(f"{side}_foot."):
+                low, high = self.profile.limits_of(key)
+                tally.hold(key, out[key] + (worst if out[key] >= high else -worst), (low, high), t)
+        toes = f"{side}_toes.up_down"
+        if self.profile.has(f"{side}_toes"):
+            out[toes] = -goal.pitch if goal.pivot == "ball" else 0.0
+        return out
 
     def solve(self, frame: DanceFrame, t: float, shift: Vec3, tally: Tally) -> tuple[sk.SkeletonPose, frozenset[str]]:
         """The pose at ``t``: the free pose shifted, each held foot solved onto its spot, each free foot over the
         floor."""
-        free, dropped = self._free(frame, shift)
+        free, dropped = self._free(frame, shift, tally, t)
         values, root = free.as_dict(), free.root
         world = sk.world(self.profile, free)
         standing = _sides(frame)
         held: dict[str, tuple[Vec3, float, float]] = {}
+        steps = frame.steps
+        carried = on_floor(self.profile, self.base, frame.floor).root if steps is not None else root
+        goals = {} if steps is None else {s: steps.goal(s) for s in self.legs}
         for side in self.legs:
+            if side in goals:
+                continue  # a foot of the footwork rides its goal: on the floor, the spot its hold keeps
             found = self._hold(side, t)
             if found is not None and (found[1] < 1 or side in standing):
                 hold, weight = found
@@ -346,7 +471,11 @@ class _Pass:
                 foot = world[f"{side}_foot"]
                 target = ankle if weight >= 1 else self._above(foot.origin.lerp(ankle, weight), foot, world, side)
                 held[side] = (target, turned, weight)
-        drop = self._sink(world, held)
+        reached = dict(held) | {  # every foot of the footwork keeps the hips where it can land: its spot below
+            s: (self.goal_place(s, FootGoal(g.right, g.forward, 0.0, g.turn), carried)[0], 0.0, 1.0)
+            for s, g in goals.items()
+        }
+        drop = self._sink(world, reached, smooth=bool(goals))
         if drop > 0:
             root = Frame(root.origin + Vec3(0.0, drop, 0.0), root.rotation)
             world = sk.world(self.profile, sk.pose(self.profile, values, root=root))
@@ -360,22 +489,31 @@ class _Pass:
                 turn = foot.rotation.slerp(yaw(turned), weight)
                 values = reach(self.profile, values, root, side, target, tally, t, turn=turn)
                 continue
+            if side in goals:
+                if drop > 0:
+                    values = self._step(values, root, side, goals[side], carried, tally, t)
+                continue
             above = self._above(foot.origin, foot, world, side)
             if above.y < foot.origin.y - 1e-12:
                 values = reach(self.profile, values, root, side, above, tally, t)
         return sk.pose(self.profile, values, root=root), dropped
 
-    def _sink(self, world: Mapping[str, Frame], held: Mapping[str, tuple[Vec3, float, float]]) -> float:
+    def _sink(
+        self, world: Mapping[str, Frame], held: Mapping[str, tuple[Vec3, float, float]], *, smooth: bool = False
+    ) -> float:
         """How far the hips sink (metres, y down) so every held foot's ankle is within ``REACH_SHARE`` of its leg's
         full length, as a dancer bends the standing knee rather than drag the far foot; at most ``MAX_SINK`` hip
-        heights."""
+        heights. ``smooth`` (footwork) takes each maximum on a ramp ``SINK_RAMP`` hip heights wide that is smooth to
+        the acceleration and never under the hard one, so the hips do not jolt where a foot's reach starts to bind."""
         drop = 0.0
+        width = SINK_RAMP * self.profile.pelvis_height
         for side, (target, _, _) in held.items():
             hip = world[f"{side}_upper_leg"].origin
             full = REACH_SHARE * self.reach_m[side]
             across = math.hypot(target.x - hip.x, target.z - hip.z)
             below = math.sqrt(full * full - across * across) if across < full else 0.0
-            drop = max(drop, target.y - below - hip.y)
+            need = target.y - below - hip.y
+            drop = drop + _ramp(need - drop, width) if smooth else max(drop, need)
         return min(drop, MAX_SINK * self.profile.pelvis_height)
 
     def _above(self, target: Vec3, foot: Frame, world: Mapping[str, Frame], side: str) -> Vec3:
@@ -459,6 +597,17 @@ class _Pass:
             found = margin(held[0], com)
         planted = frozenset(f"{side}_foot" for side in feet)
         return FloorFrame(t, pose, planted, frame.airborne, frame.support, com, found, dropped)
+
+
+def _ramp(x: float, width: float) -> float:
+    """``max(0, x)`` eased over ``width``: 0 under ``-width / 2``, ``x`` over ``width / 2``, and between them a
+    quartic whose first and second derivatives meet both lines', and which never falls under ``max(0, x)``."""
+    u = x / width + 0.5
+    if u <= 0:
+        return 0.0
+    if u >= 1:
+        return x
+    return width * (u**3 - u**4 / 2)
 
 
 def _toward(polygon: tuple[tuple[float, float], ...], point: Vec3, aim: float) -> tuple[float, float]:
@@ -716,7 +865,12 @@ class Performance:
             raise FloorError(f"{count} scan steps exceed {MAX_FRAMES}; shorten the dance", path="source")
         scan = [(self.start_s + n * step, self.frame(self.start_s + n * step)) for n in range(count)]
         keys = [(self.start_s + beat * groove.beat, kind) for beat, kind in _key_beats(source)]
+        for n in range(0, count, FOOTWORK_KEY):  # footwork moves the weight smoothly: its balance is kept on a grid
+            if scan[n][1].steps is not None:
+                keys.append((scan[n][0], "smooth"))
         for (t0, f0), (t1, f1) in zip(scan, scan[1:], strict=False):
+            if f0.steps is not None or f1.steps is not None:
+                continue
             if _sides(f0) != _sides(f1) and not any(t0 - step - EPSILON_S <= t <= t1 + EPSILON_S for t, _ in keys):
                 keys += [(t0, "smooth"), (t1, "smooth")]
         self.margin_m = _margin(profile, margin_m)
@@ -789,6 +943,7 @@ class Performance:
                     joints=MappingProxyType(joints),
                     planted=solved.planted,
                     floor=Floor(local.x / height, local.z / height, 0.0, heading(facing)),
+                    steps=None,
                 )
             )
         return tuple(out)

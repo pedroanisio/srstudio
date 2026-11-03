@@ -4,10 +4,16 @@ A target is ``"<joint>.<dof>"`` on the 55 joints of srlocations' mannequin, in r
 body's translation in head radii. A dof named ``a_b`` reads negative toward ``a`` and positive toward ``b``; a
 single-word dof (``stretch``, ``close``, ``stretched``, ``spread``) reads positive toward that word. The skeleton
 that turns these deltas into a pose owns any other convention (ADR 0186).
+
+A :class:`Follow` makes one target ride another like a damped spring, late and overshooting a little: the overlapping
+action, follow-through and lean that give a move its swing (ADR 0201). A follower may follow another follower, so a
+chain of them carries a motion up the body link by link, each a little later; or the weight, where a move's
+:class:`Footwork` puts it (ADR 0205).
 """
 
 from __future__ import annotations
 
+import functools
 import math
 import re
 from collections.abc import Mapping
@@ -17,6 +23,7 @@ from typing import TYPE_CHECKING
 from . import checks
 from ._dance_curve import MAX_POINTS, MIN_POINTS, Curve
 from ._dance_errors import DanceError, MoveError, RoutineError
+from ._dance_footwork import Footwork, Steps
 
 if TYPE_CHECKING:
     from ._dance_phrase import Phrase
@@ -26,14 +33,18 @@ __all__ = [
     "CURVE_POINTS",
     "FEET",
     "JOINTS",
+    "MAX_CHAIN",
     "ROOT",
     "SUPPORTS",
     "TARGETS",
     "WAVEFORMS",
+    "WEIGHT",
     "Contact",
     "Curve",
     "DanceError",
     "Entry",
+    "Follow",
+    "Footwork",
     "Move",
     "MoveError",
     "Pattern",
@@ -41,11 +52,19 @@ __all__ = [
     "RoutineError",
     "chain",
     "mirrored",
+    "spring",
     "wave",
 ]
 
 MAX_PATTERNS = 128
 MAX_CONTACTS = 16
+MAX_FOLLOWS = 32
+MAX_CHAIN = 8  # followers in a row from a pattern or the weight: a chain from the feet to the head is seven links
+WEIGHT = "weight"  # a follower's source: where the footwork puts the weight, -1 all on the left, +1 all on the right
+MAX_GAIN = 8.0  # a follower moves at most this many of its own units per unit of its source
+SPRING_TAPS = 48  # places a follower reads its source at: the cost of one follower on one frame
+SPRING_SPAN = 2.0  # beats a spring remembers at most
+MIN_SETTLE = 0.3  # damping times frequency: a spring settles to under 3 % within its span
 MAX_ENTRIES = 512
 MAX_TRACK_BARS = 4096
 MAX_ROOT = 4.0  # head radii a pattern may move the root, either way
@@ -179,6 +198,74 @@ def _bound(target: str) -> float:
     return MAX_ROOT if target in ROOT else MAX_TURN
 
 
+@functools.cache
+def spring(frequency: float, damping: float) -> tuple[tuple[float, float], ...]:
+    """A damped spring's response, as (beats back, weight) pairs that sum to 1: a follower is the weighted sum of its
+    source read that many beats back. ``frequency`` is the spring's own, in cycles per beat; under 1, ``damping``
+    overshoots and rings, settling as ``exp(-damping * 2 pi * frequency * beats)``. The span ends when that falls
+    under 1 %, or at ``SPRING_SPAN`` beats, and holds ``SPRING_TAPS`` places: bounded work, no state carried between
+    frames."""
+    _within(frequency, 0.5, 8, "spring frequency")
+    _within(damping, 0.1, 2, "spring damping")
+    if damping * frequency < MIN_SETTLE - TOLERANCE:
+        raise MoveError(
+            f"a spring of damping {damping:g} at {frequency:g} cycles per beat rings past its span; damping times "
+            f"frequency is at least {MIN_SETTLE}",
+            code="dance.spring",
+            path="damping",
+        )
+    w0 = 2 * math.pi * frequency
+    span = min(SPRING_SPAN, math.log(100) / (damping * w0))
+    step = span / SPRING_TAPS
+    taps = []
+    for i in range(SPRING_TAPS):
+        t = (i + 0.5) * step
+        if damping < 1:
+            shape = math.sin(w0 * math.sqrt(1 - damping * damping) * t)
+        elif damping == 1:
+            shape = w0 * t
+        else:
+            shape = math.sinh(w0 * math.sqrt(damping * damping - 1) * t)
+        taps.append((t, math.exp(-damping * w0 * t) * shape))
+    total = sum(h for _, h in taps)
+    return tuple((t, h / total) for t, h in taps)
+
+
+@dataclass(frozen=True)
+class Follow:
+    """``target`` follows ``source`` in the same move: ``gain`` times the source, read ``lag`` beats late through a
+    :func:`spring` of ``frequency`` cycles per beat and ``damping``. The source is a pattern's target, another
+    follower's target (a chain: hips, spine, chest, neck, head, each after the one before), or :data:`WEIGHT`, the
+    footwork's weight from -1 on the left foot to +1 on the right. The gain carries the units, radians per head radius
+    when a joint follows the root and radians per unit of weight when it follows the weight, so one follower can lean
+    a trunk into the body's sway or roll a head back against its trunk's lean."""
+
+    target: str
+    source: str
+    gain: float
+    lag: float = 0.0
+    frequency: float = 3.0
+    damping: float = 0.6
+
+    def __post_init__(self) -> None:
+        chain(self.target)
+        if self.source != WEIGHT:
+            chain(self.source)
+        if self.target == self.source:
+            raise MoveError(f"{self.target} follows itself", path="source", actual=self.source)
+        _within(self.gain, -MAX_GAIN, MAX_GAIN, "gain")
+        if self.gain == 0:
+            raise MoveError(f"{self.target}: a follower with no gain does not move", path="gain")
+        _within(self.lag, 0, 1, "follow lag")
+        spring(float(self.frequency), float(self.damping))
+
+    def mirror(self) -> Follow:
+        """The follower danced the other way round: both ends mirrored, and the gain's sign turned with theirs."""
+        target, turned = mirrored(self.target, 1.0)
+        source, also = (WEIGHT, -1.0) if self.source == WEIGHT else mirrored(self.source, 1.0)
+        return Follow(target, source, self.gain * turned * also, self.lag, self.frequency, self.damping)
+
+
 @dataclass(frozen=True)
 class Pattern:
     """One channel's motion: ``bias + intensity * amplitude * wave(...)``, hitting ``+amplitude`` every cycle.
@@ -285,9 +372,12 @@ class Move:
     lags: tuple[tuple[str, float], ...] = ()
     contacts: tuple[Contact, ...] = ()
     description: str = ""
+    follows: tuple[Follow, ...] = ()
+    footwork: Footwork | None = None
 
     def __post_init__(self) -> None:
         _name(self.name, "move name", MoveError)
+        self._footwork()
         if self.support not in SUPPORTS:
             raise MoveError(f"support {self.support!r} is one of {SUPPORTS}", path="support", actual=self.support)
         if not (isinstance(self.description, str) and len(self.description) <= 512):
@@ -301,7 +391,8 @@ class Move:
             raise MoveError(f"{self.name}: a target has one pattern", path="patterns")
         _within(self.loop_beats, 0.25, 64, "loop_beats")
         _lags(self.lags)
-        self._support(targets)
+        self._follows(targets)
+        self._support(targets + [f.target for f in self.follows])
         for p in self.patterns:
             turns = p.cycles * self.loop_beats
             if p.per == "beat" and abs(turns - round(turns)) > TOLERANCE:
@@ -310,6 +401,56 @@ class Move:
                     "a loop holds whole cycles",
                     path="loop_beats",
                 )
+
+    def _footwork(self) -> None:
+        """A move with footwork stands on it: its contacts are the footwork's, derived here, never written."""
+        if self.footwork is None:
+            return
+        if not isinstance(self.footwork, Footwork):
+            raise MoveError(f"{self.name}: footwork is a Footwork", path="footwork")
+        if self.support != "feet":
+            raise MoveError(f"{self.name}: only a standing move has footwork", path="footwork")
+        if self.contacts != ():
+            raise MoveError(f"{self.name}: a move with footwork takes its contacts from it", path="contacts")
+        _within(self.loop_beats, 0.25, 64, "loop_beats")
+        self.footwork.check(self.loop_beats, self.name)
+        derived = tuple(Contact(foot, start, end) for foot, start, end in self.footwork.contacts(self.loop_beats))
+        object.__setattr__(self, "contacts", derived)
+
+    def _follows(self, targets: list[str]) -> None:
+        if not (isinstance(self.follows, tuple) and len(self.follows) <= MAX_FOLLOWS):
+            raise MoveError(f"{self.name}: a move holds at most {MAX_FOLLOWS} followers in a tuple", path="follows")
+        if not all(isinstance(f, Follow) for f in self.follows):
+            raise MoveError(f"{self.name}: every follower is a Follow", path="follows")
+        followed = [f.target for f in self.follows]
+        for f in self.follows:
+            if f.source == WEIGHT and self.footwork is None:
+                raise MoveError(
+                    f"{self.name}: {f.target} follows the weight, and the move has no footwork", path="follows"
+                )
+            if f.source != WEIGHT and f.source not in targets and f.source not in followed:
+                raise MoveError(f"{self.name}: {f.target} follows {f.source}, which nothing moves", path="follows")
+            if f.target in targets or followed.count(f.target) > 1:
+                raise MoveError(f"{self.name}: {f.target} is moved by one pattern or one follower", path="follows")
+        for f in self.follows:
+            self.links(f.target)
+
+    def links(self, target: str) -> tuple[Follow, ...]:
+        """The followers from ``target``'s back to the pattern or the weight it rides, nearest first: a chain of at
+        most ``MAX_CHAIN``, refused when it runs round in a loop."""
+        by_target = {f.target: f for f in self.follows}
+        out: list[Follow] = []
+        here = target
+        while here in by_target:  # bounded: a chain longer than MAX_CHAIN is refused below
+            out.append(by_target[here])
+            here = by_target[here].source
+            if len(out) > MAX_CHAIN or here == target:
+                raise MoveError(
+                    f"{self.name}: {target} rides a chain of followers longer than {MAX_CHAIN} or round in a loop",
+                    code="dance.chain",
+                    path="follows",
+                )
+        return tuple(out)
 
     def _support(self, targets: list[str]) -> None:
         chains = {chain(t) for t in targets}
@@ -359,7 +500,8 @@ class Move:
     def held(self) -> tuple[tuple[str, float], ...]:
         """The pose a move that never moves holds, as an :attr:`Entry.hold`: each pattern's bias by target. A move
         with a moving pattern is refused, because a hold has no beat to move on (ADR 0192)."""
-        moving = [p.target for p in self.patterns if p.amplitude != 0]
+        moving = [p.target for p in self.patterns if p.amplitude != 0] + [f.target for f in self.follows]
+        moving += ["footwork"] if self.footwork is not None else []
         if moving:
             raise MoveError(f"{self.name}: {moving} move, so the move is no held pose", path="patterns", actual=moving)
         return tuple((p.target, p.bias) for p in self.patterns)
@@ -371,8 +513,27 @@ class Move:
             target, amplitude = mirrored(p.target, p.amplitude)
             patterns.append(replace(p, target=target, amplitude=amplitude, bias=mirrored(p.target, p.bias)[1]))
         lags = tuple((_swap(name), beats) for name, beats in self.lags)
+        follows = tuple(f.mirror() for f in self.follows)
+        if self.footwork is not None:
+            footwork = self.footwork.mirror()
+            return Move(
+                self.name, self.support, tuple(patterns), self.loop_beats, lags, (), self.description, follows, footwork
+            )
         contacts = tuple(Contact(_swap(c.foot), c.start, c.end) for c in self.contacts)
-        return Move(self.name, self.support, tuple(patterns), self.loop_beats, lags, contacts, self.description)
+        return Move(
+            self.name, self.support, tuple(patterns), self.loop_beats, lags, contacts, self.description, follows
+        )
+
+    def steps(self, beat: float) -> Steps | None:
+        """The footwork at ``beat`` of the grid: each foot's goal and where the weight is; None without footwork."""
+        return None if self.footwork is None else self.footwork.at(beat, self.loop_beats)
+
+    def weight(self, beat: float) -> float:
+        """The :data:`WEIGHT` source at ``beat``: where the hips stand, the footwork's ``settle`` after its plan; -1
+        over the left foot, +1 over the right, 0 without footwork."""
+        if self.footwork is None:
+            return 0.0
+        return 2 * self.footwork.share(beat - self.footwork.settle, self.loop_beats) - 1
 
 
 def _phrase_type() -> type:
