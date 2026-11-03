@@ -91,6 +91,7 @@ def test_a_sole_flat_within_the_tolerance_stands_where_it_lies():
     assert shown.support_margin == pytest.approx(exact.support_margin, abs=1e-6)
 
 
+@pytest.mark.static  # a source scan: its time is the processor's (ADR 0225)
 def test_the_skeleton_reaches_body_only_through_its_public_module():
     package = Path(__file__).parents[1] / "src/srstudio/skeleton"
     for source in sorted(package.glob("*.py")):

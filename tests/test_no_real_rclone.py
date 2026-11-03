@@ -56,6 +56,7 @@ def test_a_child_process_finds_the_stand_in_and_not_rclone():
     assert "a test reached rclone" in done.stderr
 
 
+@pytest.mark.static  # a source scan: its time is the processor's (ADR 0225)
 def test_every_road_to_rclone_is_guarded():
     """A new module that names rclone has to come through ``outbox._run``, or be added here with a guard of its own."""
     named = {

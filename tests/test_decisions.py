@@ -54,6 +54,7 @@ def _sources() -> list[Path]:
     return sorted(p for top in ("src",) for p in (ROOT / top).rglob("*.py"))
 
 
+@pytest.mark.static  # a source scan: its time is the processor's (ADR 0225)
 def test_every_cited_decision_record_exists():
     names = {p.name for p in DECISIONS.glob("*.md")}
     missing = {

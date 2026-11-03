@@ -6,6 +6,8 @@ module.
 import ast
 from pathlib import Path
 
+import pytest
+
 TESTS = Path(__file__).resolve().parent
 
 
@@ -23,6 +25,7 @@ def _test_imports(source: str) -> list[str]:
     return found
 
 
+@pytest.mark.static  # a source scan: its time is the processor's (ADR 0225)
 def test_no_module_under_tests_imports_a_test_module():
     offenders = {
         f"{path.relative_to(TESTS)}: {name}"

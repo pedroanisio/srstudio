@@ -1,5 +1,6 @@
 """What a blob wears rides its head, drawing by drawing, as what it holds rides its hands."""
 
+import re
 import xml.etree.ElementTree as ET
 
 import pytest
@@ -42,3 +43,14 @@ def test_a_worn_group_refuses_a_scale_it_cannot_map(scale):
     cv = canvas()
     with pytest.raises(blob.BlobError):
         blob.worn(cv, cv.comp, CUES, end=2.0, scale=scale, id="scarf-at")
+
+
+def test_bos_hairline_climbs_from_above_the_ear_on_the_parted_side():
+    """Moved from the episodes repository (ADR 0225): Bo's side part draws no edge down the cheek."""
+    cv = canvas()
+    g = cv.group(cv.comp, "hair")
+    blob._side_part(cv, g, blob.HEAD)
+    (d,) = [e.get("path") for e in ET.fromstring(cv.scene.to_bytes()).iter() if e.get("shape") == "path"]
+    points = [tuple(map(float, p.split())) for p in re.findall(r"-?[\d.]+ -?[\d.]+", d)]
+    parted = [(x, y) for x, y in points if x > 0]
+    assert parted and max(y for _, y in parted) < -0.15 * blob.HEAD  # no edge dropping down the cheek
