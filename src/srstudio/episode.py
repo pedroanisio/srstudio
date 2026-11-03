@@ -378,6 +378,7 @@ class EpisodeSpec:
     namer: Callable[[str], str] | None = FROM_STYLE  # id scheme for anonymous nodes (default prefix-0001)
     local_time: bool = FROM_STYLE  # animations on the shot clock (sequence styles)
     safe_area: SafeArea | None = None  # declared and made the project's; the engine enforces it (SA01)
+    held_frames: bool = False
     # -- the signature marks (docs/decisions/0001-signature.md) ----------------------------------
     signature: bool = True  # False only for packages older than the convention
     signature_code: str = "SR-1028"  # project-wide; changing it is a decision, not a per-episode choice
@@ -476,6 +477,7 @@ class Episode:
             namer=spec.namer.fresh() if isinstance(spec.namer, _StyleNamer) else spec.namer,
             local_time=spec.local_time,
             signature=Signature(spec.signature_code) if spec.signature else None,
+            held_frames=spec.held_frames,
         )
         self._mix: AudioMix | None = None
         self._cover_hidden: list[tuple[str, str, str]] = []  # (id, property, value) overridden in the cover variant

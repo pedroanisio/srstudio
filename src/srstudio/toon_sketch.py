@@ -139,6 +139,7 @@ class Staging:
     """``(cv, parent, beats, end, measure)`` draws what stays over every shot, under the captions and out of the
     camera's reach, from the beats the build placed: a show's graphics."""
     safe_area: SafeArea | None = None  # declared on the project, for a show that keeps its text inside one
+    held_frames: bool = False
 
 
 def figure_group(cv: Canvas, parent, framing: tuple[float, float] | None):
@@ -249,6 +250,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
             language="en-US",
             output=staging.output,
             safe_area=staging.safe_area,
+            held_frames=staging.held_frames,
             output_options=dict(
                 codec="h264",
                 container="mp4",

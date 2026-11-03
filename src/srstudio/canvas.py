@@ -18,6 +18,7 @@ from sr_core.scene import Scene
 from . import checks
 from ._counter import Counter
 from .errors import SrstudioError
+from .held_keys import held_key, project_fps
 from .native import NativeError
 
 CLEAR = "#00000000"
@@ -114,6 +115,7 @@ class Canvas:
         namer: Callable[[str], str] | None = None,
         local_time: bool = False,
         signature: Signature | None = None,
+        held_frames: bool = False,
     ):
         self.scene = scene
         self.palette = palette
@@ -123,6 +125,8 @@ class Canvas:
         self.namer = namer
         self.local_time = local_time  # animations default to timeBase="local" (shot sequences)
         self.signature = signature  # None: an unsigned build (srstudio.signature draws nothing)
+        self.held_frames = held_frames
+        self._held_rate = None
         self._sig_ids: dict[str, int] = {}
         self._assets = None
         self._paints = None
@@ -410,9 +414,16 @@ class Canvas:
         kw = {"property": prop, "defaultInterpolation": kind or ("hold" if hold else "linear")}
         if self.local_time if local is None else local:
             kw["timeBase"] = "local"
+        if self.held_frames and kw["defaultInterpolation"] == "hold":
+            if self._held_rate is None:
+                self._held_rate = project_fps(self.scene)
+            shown = {held_key(float(t), self._held_rate): value for t, value in ordered}
+            timed = sorted(shown.items(), key=lambda kv: kv[0])
+        else:
+            timed = [(round(float(t), 6), value) for t, value in ordered]
         a = node.add_animate(**kw)
-        for t, value in ordered:
-            a.add_key(time=round(float(t), 6), value=str(value))
+        for t, value in timed:
+            a.add_key(time=t, value=str(value))
         return a
 
     @contextmanager
