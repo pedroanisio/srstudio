@@ -24,7 +24,7 @@ from .anatomy import Side
 from .anatomy_ledger import ARM_THIRD, BUST_OPEN, HAND_COUNT, Exemption, ExemptionError, Limb, Note
 from .figure_gates import cut_of, figures_on
 from .figure_record import Figure
-from .frame_gates import FrameGateError, _duration, sample_times
+from .frame_gates import FrameGateError, _duration, _fps, sample_times
 from .framegraph import Drawing, Frame, FrameGraphError
 from .releases import Release
 from .social import Drift
@@ -183,7 +183,7 @@ def _frames(scene: Path, engine: str | Path, figures: Sequence[Figure], limbs: S
     bodies = {node for figure in figures for node in figure.ids}
     scene_hands = [limb for limb in limbs if limb.id not in bodies]  # a pose's own hands are the count's alone
     found: dict[tuple[str, str], str] = {}
-    for frame in framegraph.evaluate(engine, scene, sample_times(_duration(document))):
+    for frame in framegraph.evaluate(engine, scene, sample_times(_duration(document), fps=_fps(document))):
         for part, members in figures_on(frame, busts):
             if open_bust(frame, members, drawn):
                 found.setdefault((BUST_OPEN, part), f"it stops at the waist in the open at {frame.time:g} s")

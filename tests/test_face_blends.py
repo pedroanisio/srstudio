@@ -44,7 +44,7 @@ def test_grid_stays_on_performance_zero_with_offgrid_launch_and_cut():
     rig = acting.bento_blends().head_rig
     frames = authored.prepare(rig, poses(), 3)
     assert frames[0].start == 1.01
-    assert frames[1].start == round(13 / 12, 6)
+    assert frames[1].start == 12.5 / 12  # frame 13 keyed half a frame before it (ADR 0216)
     assert frames[-1].end == 2
     sliced = list(segments(frames, 1.12, 1.9))
     assert sliced[0][0] == 1.12

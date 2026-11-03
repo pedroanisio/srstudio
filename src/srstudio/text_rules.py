@@ -25,6 +25,7 @@ import re
 import subprocess
 import xml.etree.ElementTree as ET
 from collections.abc import Iterable, Iterator, Mapping
+from fractions import Fraction
 from importlib import resources
 from pathlib import Path
 from typing import NamedTuple
@@ -192,7 +193,7 @@ def around(found: Iterable[Run], fps: float, step: float) -> list[float]:
     for run in found:
         if run.last - run.first < MINIMUM:
             for edge, sign in ((run.first, -1), (run.last, 1)):
-                times |= {round(edge + sign * i / fps, 6) for i in range(1, round(step * fps) + 2)}
+                times |= {(round(edge * fps) + sign * i) / fps for i in range(1, round(step * fps) + 2)}
     return sorted(t for t in times if t >= 0)
 
 
@@ -237,8 +238,8 @@ def timing_notes(scene: Path, engine: str | Path) -> list[Note]:
     fps = float(project.get("fps", "24"))
     drawn = framegraph.drawings(document)
     duration = frame_gates._duration(document)
-    times = {round(round(t * fps) / fps, 6) for t in frame_gates.sample_times(duration, SCAN)}
-    times |= {round((round(t * fps) + 1) / fps, 6) for t in _beats(root) if t + 1.0 / fps < duration}
+    times = set(frame_gates.sample_times(duration, SCAN, fps=Fraction(project.get("fps", "24"))))  # frame times
+    times |= {(round(t * fps) + 1) / fps for t in _beats(root) if t + 1.0 / fps < duration}
     frames = list(framegraph.evaluate(engine, scene, sorted(times)))
     closer = [t for t in around(runs(frames, drawn, fps), fps, SCAN) if t not in times and t < duration]
     frames += list(framegraph.evaluate(engine, scene, closer))

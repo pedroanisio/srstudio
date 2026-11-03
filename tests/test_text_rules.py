@@ -284,7 +284,8 @@ def test_a_text_that_had_its_time_may_come_back_for_a_beat():
 
 def test_the_frames_around_a_short_run_are_read_to_the_frame():
     times = text_rules.around([Run("HELLO", 1.0, 1.25)], 24.0, 0.25)
-    assert round(1.0 - 1 / 24, 6) in times and round(1.25 + 1 / 24, 6) in times
+    assert 23 / 24 in times and 31 / 24 in times
+    assert all(t == round(t * 24) / 24 for t in times)  # the engine's frame times, not rounded seconds
     assert min(times) >= 1.0 - 0.3 and max(times) <= 1.25 + 0.3
 
 

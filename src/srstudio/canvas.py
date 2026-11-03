@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
+from fractions import Fraction
 from typing import Any, Literal
 
 from sr_core.scene import Animate, Scene, SchemaValueError
@@ -19,6 +20,7 @@ from . import checks, drawing_events
 from ._counter import Counter
 from ._transaction import scene_transaction
 from .errors import SrstudioError, _brief
+from .held_keys import held_key, project_fps
 from .native import NativeError
 
 CLEAR = "#00000000"
@@ -151,6 +153,7 @@ class Canvas:
         local_time: bool = False,
         signature: Signature | None = None,
         bleed: bool = False,
+        held_frames: bool = False,
     ):
         self.scene = scene
         self.palette = palette
@@ -161,6 +164,10 @@ class Canvas:
         self.local_time = local_time  # animations default to timeBase="local" (shot sequences)
         self.signature = signature  # None: an unsigned build (srstudio.signature draws nothing)
         self.bleed = bleed  # far planes blurred past the frame's edge (srstudio.look.sheet); False as published
+        # held keys half a frame before the frame that first shows them (ADR 0216); False keeps the published
+        # round(t, 6), which lands a change on a frame time one frame late whenever the rounding goes up
+        self.held_frames = held_frames
+        self._held_rate: Fraction | None = None  # the project's frame rate, read at the first held key
         self._sig_ids: dict[str, int] = {}
         self._assets = None
         self._paints = None
@@ -449,6 +456,8 @@ class Canvas:
 
         ``kind`` names any schema interpolation (``sine-in-out``, ``cubic-out``...) and overrides ``hold``;
         ``local`` puts the keys on the shot's clock (``timeBase="local"``), default from the canvas.
+        On a ``held_frames`` canvas a held key lands half a project frame before the first frame at or after its
+        time (:func:`srstudio.held_keys.held_key`), and of two changes that frame would show, the later stays.
         The complete animation is built off-scene; invalid input leaves the scene unchanged."""
         if not isinstance(values, Sequence) or isinstance(values, (str, bytes)):
             raise CanvasError(
@@ -502,9 +511,17 @@ class Canvas:
         kw: dict[str, Any] = {"property": prop, "defaultInterpolation": kind or ("hold" if hold else "linear")}
         if self.local_time if local is None else local:
             kw["timeBase"] = "local"
+        if self.held_frames and kw["defaultInterpolation"] == "hold":
+            if self._held_rate is None:
+                self._held_rate = project_fps(self.scene)
+            rate = self._held_rate
+            shown = {held_key(float(t), rate): value for t, value in ordered}  # the later of one frame's changes
+            timed = sorted(shown.items(), key=lambda kv: kv[0])
+        else:
+            timed = [(round(float(t), 6), value) for t, value in ordered]
         a = Animate(**kw)
-        for t, value in ordered:
-            a.add_key(time=round(float(t), 6), value=str(value))
+        for t, value in timed:
+            a.add_key(time=t, value=str(value))
         if self._frozen:
             value = _at_zero(ordered, hold and kind is None, prop)
             if prop == "visible" and node in self._frozen_hidden:

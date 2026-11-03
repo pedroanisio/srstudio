@@ -389,3 +389,9 @@ def test_a_staging_that_asks_its_captions_to_clear_the_bug_keeps_every_pill_off_
     assert not all(show.clear_of_bug(box) for box in pills(base))
     asked = pills(replace(base, clear_bug=True))
     assert asked and all(show.clear_of_bug(box) for box in asked)
+
+
+def test_a_staging_asks_for_held_frames_and_is_built_without_it_by_default(pinned_fonts, tmp_path):
+    """A delivered Collage reel keeps its six-decimal keys; a new one keys its held changes between frames."""
+    assert built(tmp_path / "off", staging(), pinned_fonts).cv.held_frames is False
+    assert built(tmp_path / "on", replace(staging(), held_frames=True), pinned_fonts).cv.held_frames is True

@@ -110,3 +110,15 @@ def test_the_show_hands_its_bleed_to_the_staging(monkeypatch, tmp_path):
     env = {"SRSTUDIO_ENGINE": "e", "SRSTUDIO_RENDERS": str(tmp_path), "SRSTUDIO_FONTS": str(tmp_path)}
     rafa_show.run(SHOWS[0], ["show", str(tmp_path), "--init"], env)
     assert seen[0].bleed is True
+
+
+def test_the_show_hands_its_held_frames_to_the_staging(monkeypatch, tmp_path):
+    """Delivered shows keep their six-decimal keys; a new one asks for held_frames (ADR 0216)."""
+    from dataclasses import replace
+
+    seen = []
+    monkeypatch.setattr(rafa_show, "build", lambda root, staging, flags: seen.append(staging))
+    env = {"SRSTUDIO_ENGINE": "e", "SRSTUDIO_RENDERS": str(tmp_path), "SRSTUDIO_FONTS": str(tmp_path)}
+    rafa_show.run(SHOWS[0], ["show", str(tmp_path), "--init"], env)
+    rafa_show.run(replace(SHOWS[0], held_frames=True), ["show", str(tmp_path), "--init"], env)
+    assert [staging.held_frames for staging in seen] == [False, True]

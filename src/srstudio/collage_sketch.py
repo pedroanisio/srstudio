@@ -258,6 +258,7 @@ class Staging:
     # the backdrop's blur reaches the frame's edge (srstudio.look.sheet): every new reel sets it; False keeps the pale
     # rim every reel built so far was drawn with, which is frozen with them
     bleed: bool = False
+    held_frames: bool = False  # held keys half a frame before their frame (ADR 0216): every new reel sets it
     # the seconds the first shot holds still (the sp-hook_motion test's arm a, ADR 0036): that shot draws no grain,
     # and ``opening`` draws its cast keying nothing; 0 opens like any other shot
     still: float = 0.0
@@ -437,6 +438,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
             seed=staging.seed,
             style=COLLAGE,
             bleed=staging.bleed,
+            held_frames=staging.held_frames,
             dialogue="voiced/script.json" if voiced else "script.json",
             language="en-US",
             output_options=dict(

@@ -167,7 +167,8 @@ pass `target_gaze=target` to `ToonClip` or `toon_head.figure`.
 For a rig supporting only named directions, call `gaze.named_gaze(plan,
 gaze.NamedGazeMapping(states, max_error))` explicitly. Supply states supported by the
 destination rig and an error allowance in eye radii. This returns held **eye** keys
-only; it does not transfer head follow. `toon_head.gaze_capabilities(rig)` describes
+only, each half a frame (of the plan's `fps`) before the frame that first shows it
+([ADR 0216](decisions/0216-held-keys-at-frame-centres.md)); it does not transfer head follow. `toon_head.gaze_capabilities(rig)` describes
 the drawing mapping and emission budget. Existing drawing paths are unchanged when
 no target is supplied.
 
@@ -419,7 +420,10 @@ Declare directed `FacePose` pairs and return `FaceLayers` with reference-pixel
 cubic geometry and `ink`, `white`, `#RRGGBB` or `#RRGGBBAA` colors. Preflight checks
 endpoint equivalence against the bound rig and validates emitted geometry. Tracks
 allow at most 1,000 held frames and 2,000,000 coordinates (including endpoint
-checks), with 1–120 samples/second and a 600-second performance limit. Untrusted
+checks), with 1–120 samples/second and a 600-second performance limit. Each held
+frame is drawn at its own time and keyed half a frame before it
+([ADR 0216](decisions/0216-held-keys-at-frame-centres.md)), so set the track's `fps`
+to the project's frame rate. Untrusted
 data never supplies Python callbacks; a driver is a trusted runtime binding.
 
 Run the five-second face/body study and its cut variant:

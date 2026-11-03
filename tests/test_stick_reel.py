@@ -131,3 +131,10 @@ def test_a_camera_that_cannot_land_a_point_is_refused(camera):
 
 def test_the_clear_card_ends_at_the_bug_box():
     assert (1080 + stick_reel.CARD_CLEAR) / 2 <= stick_reel.BUG_BOX[0]
+
+
+def test_a_new_reel_asks_for_held_frames_and_a_built_one_keeps_its_keys():
+    """A delivered reel rebuilds byte for byte; a new one keys its held changes between frames (ADR 0216)."""
+    args = ("/tmp/x", "hold-the-door", "R10", "Hold the Door", "A door.", 1)
+    assert stick_reel.spec(*args).held_frames is False
+    assert stick_reel.spec(*args, held_frames=True).held_frames is True

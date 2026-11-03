@@ -93,6 +93,7 @@ class Reel:
     still: float = 0.0  # seconds the opening holds still before the first take (sp-hook_motion arm A)
     crf: str | None = None  # None: the series' crf; a longer reel can ask for a higher one to stay under a size cap
     bleed: bool = False  # far planes blurred past the frame's edge (srstudio.look.sheet): every new reel sets it
+    held_frames: bool = False  # held keys half a frame before their frame (ADR 0216): every new reel sets it
     bed: bool = True  # False: this reel goes without the series' music bed
     loudness: str | None = None  # None: the style's; the mix's integrated target, in LUFS
     series: ClassVar[Series | None] = None
@@ -187,6 +188,7 @@ def build(reel: Reel, file: str, posts: Mapping[str, Any] | None = None, argv: S
             safe_area=s.safe_area,
             accessibility=dict(description=reel.accessible),
             bleed=reel.bleed,
+            held_frames=reel.held_frames,
             loudness=reel.loudness,
         )
     )

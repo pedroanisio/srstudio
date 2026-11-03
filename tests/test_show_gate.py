@@ -285,7 +285,7 @@ def test_a_numbered_reel_built_without_its_record_is_refused(tmp_path):
 def test_a_gate_that_cannot_run_the_engine_stops_the_delivery(tmp_path):
     project = tmp_path / "good-reel"
     project.mkdir()
-    scene = '<scene><project duration="1"/><composition><group id="show-bug-212"/></composition>'
+    scene = '<scene><project fps="24" duration="1"/><composition><group id="show-bug-212"/></composition>'
     rule = f'<parameters><variant id="cover"><override target="{BUG}"/></variant></parameters></scene>'
     (project / "good-reel.scene.xml").write_text(scene + rule)
     (project / "figures.json").write_text('{"schema": "1.0.0", "figures": []}')

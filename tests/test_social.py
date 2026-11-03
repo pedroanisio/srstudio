@@ -1396,6 +1396,35 @@ def test_a_first_delivery_with_a_clean_report_delivers(monkeypatch, tmp_path):
     ]
 
 
+def _held_reel(posts, monkeypatch, tmp_path, key):
+    """A new reel past every other gate whose one drawing turns on at ``key`` seconds, held (ADR 0216)."""
+    renders = _reported_reel(posts, monkeypatch, tmp_path, [])
+    monkeypatch.setattr(posts.strict_gate, "strict_defects", lambda *a, **kw: [])
+    held = f'<key time="0" value="0"/><key time="{key}" value="1"/>'
+    scene = (
+        '<scene><project width="1080" height="1920" fps="24" duration="2"/><composition><group id="lamp">'
+        f'<animate property="opacity" defaultInterpolation="hold">{held}</animate></group></composition></scene>'
+    )
+    (tmp_path / "episodes" / "new-reel" / "new-reel.scene.xml").write_text(scene)
+    return renders
+
+
+def test_a_first_delivery_with_a_held_change_a_frame_late_is_refused_before_it_writes(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _held_reel(posts, monkeypatch, tmp_path, "1.416667")  # round(34 / 24, 6): after frame 34
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
+    with pytest.raises(frame_gates.FrameGateError, match="New_Reel: held keys: 1 held changes show a frame late"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+
+
+def test_a_first_delivery_keyed_half_a_frame_early_delivers(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _held_reel(posts, monkeypatch, tmp_path, repr(33.5 / 24))
+    assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"]) == [
+        "written"
+    ]
+
+
 def test_a_published_reel_with_a_strict_finding_stays_as_it_went_out(monkeypatch, tmp_path):
     """Delivered reels carry findings, and published content is frozen: the gate is for first deliveries alone."""
     posts = shipped_posts()

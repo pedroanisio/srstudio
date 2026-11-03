@@ -328,3 +328,19 @@ def test_a_move_keys_the_body_of_that_character_on_every_shot_of_theirs(pinned_f
     _, still = built(tmp_path / "still", silent(sk), pinned_fonts)
     assert set(calls) == {"bear"}
     assert ET.tostring(moved).count(b"rotation") > ET.tostring(still).count(b"rotation")
+
+
+def test_a_staging_asks_for_held_frames_and_is_built_without_it_by_default(pinned_fonts, tmp_path):
+    """Held changes of a new reel sit between frames; a delivered reel keeps its six-decimal keys (ADR 0216)."""
+    sk = Sketch("held-test", "Held test", SPEAKERS, LINES, STILL, END)
+    off, _ = built(tmp_path / "off", silent(sk), pinned_fonts)
+    on, xml = built(tmp_path / "on", replace(silent(sk), held_frames=True), pinned_fonts)
+    assert off.cv.held_frames is False and on.cv.held_frames is True
+    fps = float(xml.find("project").get("fps"))
+    held = [
+        float(key.get("time"))
+        for animate in xml.iter("animate")
+        if animate.get("defaultInterpolation") == "hold"
+        for key in animate.iter("key")
+    ]
+    assert held and [t for t in held if t > 0 and abs(t * fps - round(t * fps)) < 0.25] == []

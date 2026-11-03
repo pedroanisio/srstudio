@@ -129,7 +129,10 @@ must explicitly map its anatomy and shoulder frames without retaining duplicate
 legacy legs. No drawing approval transfers from another character.
 
 Drawing holds poses at 1–120 fps on the source grid and includes exact contact
-boundaries. Cuts reuse those samples instead of restarting a step. The complete
+boundaries. Each drawing is keyed half a project frame before the first frame that
+shows it ([ADR 0216](decisions/0216-held-keys-at-frame-centres.md)), so a rounded
+or offset key time never repeats the previous drawing; the canvas's project must
+state its frame rate. Cuts reuse those samples instead of restarting a step. The complete
 source is revalidated and projected before mutation, with limits of 1,000 frames
 and 100,000 nodes. A short window still retains its complete source clock and
 counts the full source toward those budgets. Invalid style, camera, projection,

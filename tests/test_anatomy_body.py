@@ -278,7 +278,7 @@ def built(tmp_path):
     release = Release("a-b", POST, video="The_Video")
     project = tmp_path / "ep" / "a-b"
     project.mkdir(parents=True)
-    (project / release.scene_file).write_bytes(b"<scene/>")
+    (project / release.scene_file).write_bytes(b'<scene><project fps="24" duration="1"/></scene>')
     return {"a-b": release}, tmp_path / "ep", project
 
 
