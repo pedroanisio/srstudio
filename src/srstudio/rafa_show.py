@@ -13,7 +13,7 @@ All LLM output must be treated as untrusted and validated explicitly.
 from __future__ import annotations
 
 import os
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from functools import cached_property, lru_cache, partial
 from pathlib import Path
@@ -260,16 +260,12 @@ def audio_main(show: Show, doc: str | None, foley_of: Callable[..., list[dict]])
     return recorder(show.sketch, SEED, NOTE, doc, mouth=MOUTH, validate=show.validate_sketch, foley_of=foley_of)
 
 
-def run(show: Show, argv: Sequence[str], env=os.environ) -> None:
+def run(show: Show, argv: Sequence[str], env: Mapping[str, str] = os.environ) -> None:
     """``python3 <episode>.py PROJECT [--init | --voice]``: the episode's project files, or its master."""
     show.validate_sketch()
     root = Path(argv[1]).resolve()
     voiced = "--voice" in argv
-    renders = Renders(
-        Path(env["SRSTUDIO_ENGINE"]),
-        Path(env.get("SRSTUDIO_PLATES", Path(env["SRSTUDIO_RENDERS"]).parent / "plates")),
-        Path(env["SRSTUDIO_FONTS"]),
-    )
+    renders = Renders.from_env(env)
 
     @lru_cache(maxsize=1)
     def plan_of(end: float):

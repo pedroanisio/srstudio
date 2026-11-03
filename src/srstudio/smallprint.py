@@ -1004,11 +1004,7 @@ def run(show: Show, argv: Sequence[str], env: Mapping[str, str] = os.environ) ->
     show.validate_sketch()
     root = Path(argv[1]).resolve()
     voiced = "--voice" in argv
-    renders = Renders(
-        Path(env["SRSTUDIO_ENGINE"]),
-        Path(env.get("SRSTUDIO_PLATES", Path(env["SRSTUDIO_RENDERS"]).parent / "plates")),
-        Path(env["SRSTUDIO_FONTS"]),
-    )
+    renders = Renders.from_env(env)
 
     @lru_cache(maxsize=1)
     def plan_of(end: float) -> HeadPlan:

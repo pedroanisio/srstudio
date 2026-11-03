@@ -8,7 +8,7 @@ worktop is a foreground plate per prop, gated to its beats, and :func:`insert` l
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -16,6 +16,7 @@ from typing import Any
 from . import camera, clay, host_kit, plates, rafa, rafa_host
 from .errors import SrstudioError
 from .head_motion import HeadPlan
+from .layout import find_engine
 from .plates import Camera, Placed, Plate
 
 __all__ = [
@@ -71,6 +72,23 @@ class Renders:
     engine: Path
     cache: Path
     fonts: Path
+
+    @classmethod
+    def from_env(cls, env: Mapping[str, str]) -> Renders:
+        """A reel's renders as its ``run`` reads them from ``env``: the engine that
+        :func:`~srstudio.layout.find_engine` finds (none, or no such file, is its ``LayoutError``), the plate cache at
+        ``SRSTUDIO_PLATES``, else ``plates`` beside ``SRSTUDIO_RENDERS``, and the fonts at ``SRSTUDIO_FONTS``. A missing
+        setting is a :class:`RafaReelError` that names it."""
+        engine = find_engine(env=env)
+        if not env.get("SRSTUDIO_FONTS"):
+            raise RafaReelError("set SRSTUDIO_FONTS to the folder of the installed fonts")
+        if env.get("SRSTUDIO_PLATES"):
+            cache = Path(env["SRSTUDIO_PLATES"])
+        elif env.get("SRSTUDIO_RENDERS"):
+            cache = Path(env["SRSTUDIO_RENDERS"]).parent / "plates"
+        else:
+            raise RafaReelError("set SRSTUDIO_RENDERS or SRSTUDIO_PLATES: the plates render into a cache")
+        return cls(engine, cache, Path(env["SRSTUDIO_FONTS"]))
 
     def plate(self, plate: Plate) -> Path:
         return plates.render(plate, engine=self.engine, cache=self.cache, fonts=self.fonts)
