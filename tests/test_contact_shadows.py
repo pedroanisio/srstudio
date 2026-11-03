@@ -19,10 +19,15 @@ def foot(
     lift: float = 0.0,
     mid: float = 500.0,
     shadow: float | None = 500.0,
-    width: float = 60.0,
-    opacity: float = 0.38,
+    width: float | None = None,
+    opacity: float | None = None,
+    base: float = 60.0,
     who: str = "noor",
 ) -> FootShadow:
+    """A foot whose shadow, unless told otherwise, is the size the rule gives for its lift."""
+    rule_width, rule_opacity = cs.shadow_size(lift, base)
+    width = rule_width if width is None else width
+    opacity = rule_opacity if opacity is None else opacity
     return FootShadow(
         figure=who,
         frame=n,
@@ -33,6 +38,7 @@ def foot(
         shadow_x=shadow,
         shadow_width=None if shadow is None else width,
         shadow_opacity=None if shadow is None else opacity,
+        base_width=base,
     )
 
 
@@ -45,9 +51,16 @@ def only(report: cs.ShadowReport) -> cs.FigureShadows:
     return report.figures[0]
 
 
-def test_the_planted_lift_and_centre_share_are_named_constants() -> None:
+def test_the_planted_lift_and_the_tolerances_are_named_constants() -> None:
     assert cs.PLANTED_LIFT == 12.0
-    assert cs.CENTRE_SHARE == 0.25
+    assert cs.CENTRE_TOL == 1.0
+    assert (cs.WIDTH_TOL, cs.OPACITY_TOL) == (0.02, 0.01)
+
+
+def test_the_size_rule_shrinks_and_fades_a_shadow_as_its_foot_lifts() -> None:
+    assert cs.shadow_size(0.0, 80.0) == pytest.approx((80.0, 0.38))
+    assert cs.shadow_size(130.0, 80.0) == pytest.approx((80.0 * (1 - 130 / 400), 0.38 * 0.5))
+    assert cs.shadow_size(1000.0, 80.0) == pytest.approx((80.0 * 0.4, 0.38 * 0.15))
 
 
 def test_shadows_under_every_planted_foot_pass() -> None:
@@ -93,14 +106,48 @@ def test_a_foot_at_the_planted_lift_is_planted() -> None:
 
 
 def test_a_shadow_off_the_ankle_to_toe_midpoint_is_a_finding() -> None:
-    rows = feet(0, 4) + [foot(4, side=0, shadow=500.0 + 0.25 * 60.0 + 1.0)]
+    rows = feet(0, 4) + [foot(4, side=0, shadow=500.0 + 16.0)]
     found = only(check(rows)).findings
     assert [(f.frame, f.side, f.kind) for f in found] == [(4, 0, "off-centre")]
     assert found[0].detail == pytest.approx(16.0)
 
 
-def test_a_shadow_within_a_quarter_of_its_width_is_centred() -> None:
-    assert check(feet(0, 4) + [foot(4, side=0, shadow=500.0 + 0.25 * 60.0)]).clean
+def test_a_shadow_within_the_centre_tolerance_is_centred_and_past_it_is_not() -> None:
+    assert check(feet(0, 4) + [foot(4, side=0, shadow=500.0 + cs.CENTRE_TOL)]).clean
+    assert not check(feet(0, 4) + [foot(4, side=0, shadow=500.0 + cs.CENTRE_TOL + 0.5)]).clean
+
+
+def test_a_planted_foot_under_a_lifted_foot_s_shadow_is_a_size_finding() -> None:
+    """The swap lag: the planted foot keeps, for a frame, the small faint shadow its raised drawing had."""
+    small_width, faint = cs.shadow_size(90.0, 60.0)
+    rows = feet(0, 4) + [foot(4, side=0, width=small_width, opacity=faint)]
+    assert [(f.frame, f.kind) for f in only(check(rows)).findings] == [(4, "size")]
+
+
+def test_a_lifted_foot_with_a_planted_size_shadow_is_a_size_finding() -> None:
+    rows = feet(0, 4) + [foot(4, side=1, lift=90.0, width=60.0, opacity=0.38)]
+    assert [(f.frame, f.side, f.kind) for f in only(check(rows)).findings] == [(4, 1, "size")]
+
+
+def test_a_lifted_foot_s_shadow_is_held_to_its_centre_too() -> None:
+    rows = feet(0, 4) + [foot(4, side=1, lift=90.0, shadow=540.0)]
+    assert [(f.side, f.kind) for f in only(check(rows)).findings] == [(1, "off-centre")]
+
+
+def test_a_lifted_foot_with_its_shadow_drawn_by_the_rule_passes() -> None:
+    assert check(feet(0, 4) + [foot(4, side=1, lift=90.0)]).clean
+
+
+@pytest.mark.parametrize(("dw", "dop"), [(0.03, 0.0), (0.0, 0.015)])
+def test_a_size_off_by_more_than_the_tolerance_is_a_finding(dw: float, dop: float) -> None:
+    width, opacity = cs.shadow_size(0.0, 60.0)
+    rows = feet(0, 4) + [foot(4, side=0, width=width * (1 + dw), opacity=opacity + dop)]
+    assert [f.kind for f in only(check(rows)).findings] == ["size"]
+
+
+def test_a_size_within_the_tolerance_passes() -> None:
+    width, opacity = cs.shadow_size(0.0, 60.0)
+    assert check(feet(0, 4) + [foot(4, side=0, width=width * 1.019, opacity=opacity + 0.009)]).clean
 
 
 @pytest.mark.parametrize(("width", "opacity"), [(0.0, 0.38), (60.0, 0.0)])
@@ -147,6 +194,8 @@ def test_the_error_is_a_library_error() -> None:
         dict(shadow_width=-1.0),
         dict(shadow_opacity=1.5),
         dict(shadow_x=None),
+        dict(base_width=0.0),
+        dict(base_width=math.nan),
     ],
 )
 def test_a_malformed_record_raises(bad: dict[str, object]) -> None:
@@ -160,6 +209,7 @@ def test_a_malformed_record_raises(bad: dict[str, object]) -> None:
         shadow_x=500.0,
         shadow_width=60.0,
         shadow_opacity=0.38,
+        base_width=60.0,
     )
     fields.update(bad)
     with pytest.raises(ShadowCheckError):
@@ -167,7 +217,7 @@ def test_a_malformed_record_raises(bad: dict[str, object]) -> None:
 
 
 def test_a_shadow_is_all_three_fields_or_none() -> None:
-    no_shadow = FootShadow("noor", 0, "dance", 0, 0.0, 500.0, None, None, None)
+    no_shadow = FootShadow("noor", 0, "dance", 0, 0.0, 500.0, None, None, None, 60.0)
     assert [f.kind for f in only(check([no_shadow])).findings] == ["missing"]
 
 
@@ -182,6 +232,7 @@ def test_parse_refuses_a_missing_or_unknown_field_and_a_row_that_is_no_mapping()
         shadow_x=500.0,
         shadow_width=60.0,
         shadow_opacity=0.38,
+        base_width=60.0,
     )
     assert parse([row]) == (FootShadow(**row),)  # type: ignore[arg-type]
     with pytest.raises(ShadowCheckError):

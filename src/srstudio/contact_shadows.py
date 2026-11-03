@@ -7,11 +7,14 @@ figure is on screen, as the build drew it, and holds every state to one rule:
 
 - a foot within :data:`PLANTED_LIFT` px of the floor (in the figure's own drawing px) is planted, and a planted foot
   has a shadow: one with a width and an opacity above 0;
-- the shadow sits under the foot: its centre is within :data:`CENTRE_SHARE` of its own width from the midpoint of the
-  drawn ankle -> toe.
+- every shadow drawn, planted foot or lifted, sits under its own foot on its own frame: its centre is within
+  :data:`CENTRE_TOL` px of the midpoint of the drawn ankle -> toe;
+- and is the size :func:`shadow_size` gives for that foot's lift on that frame: its width within :data:`WIDTH_TOL` of
+  the rule's, its opacity within :data:`OPACITY_TOL`.
 
-A lifted foot needs no shadow; when it has one, how it shrinks is the build's to draw. Each miss is a
-:class:`ShadowFinding`, ``missing`` or ``off-centre``, and the run is clean only with none.
+A shadow that lags its drawing by a frame, as at a jog's swap where the planted foot keeps for one frame the small
+faint shadow of the foot that was raised, fails the last two. A lifted foot needs no shadow. Each miss is a
+:class:`ShadowFinding`, ``missing``, ``off-centre`` or ``size``, and the run is clean only with none.
 
 A standing gate on every multi-character dance (arc4d3, Slack 1793669089.710129): a contact shadow under each planted
 foot, every figure, every state.
@@ -27,10 +30,13 @@ from typing import Any
 from .errors import SrstudioError
 
 __all__ = [
-    "CENTRE_SHARE",
+    "CENTRE_TOL",
     "MISSING",
     "OFF_CENTRE",
+    "OPACITY_TOL",
     "PLANTED_LIFT",
+    "SIZE",
+    "WIDTH_TOL",
     "FigureShadows",
     "FootShadow",
     "ShadowCheckError",
@@ -38,12 +44,28 @@ __all__ = [
     "ShadowReport",
     "check",
     "parse",
+    "shadow_size",
 ]
 
 PLANTED_LIFT = 12.0  # drawing px above the floor: a foot this low stands on it
-CENTRE_SHARE = 0.25  # of the shadow's width: how far its centre may sit from the foot's ankle -> toe midpoint
+CENTRE_TOL = 1.0  # drawing px: how far a shadow's centre may sit from its foot's ankle -> toe midpoint
+WIDTH_TOL = 0.02  # of the rule's width
+OPACITY_TOL = 0.01  # opacity, absolute
+PEAK_OPACITY = 0.38  # a planted foot's shadow
+FADE_LIFT, FADE_FLOOR = 260.0, 0.15  # opacity falls linearly to FADE_FLOOR of the peak by this lift
+SHRINK_LIFT, SHRINK_FLOOR = 400.0, 0.4  # width falls linearly to SHRINK_FLOOR of the base by this lift
 MISSING = "missing"
 OFF_CENTRE = "off-centre"
+SIZE = "size"
+
+
+def shadow_size(lift: float, base_width: float) -> tuple[float, float]:
+    """(width, opacity) of the shadow under a foot ``lift`` px above the floor whose shadow is ``base_width`` wide when
+    planted: it narrows and fades as the foot lifts, never below a floor."""
+    return (
+        base_width * max(SHRINK_FLOOR, 1 - lift / SHRINK_LIFT),
+        PEAK_OPACITY * max(FADE_FLOOR, 1 - lift / FADE_LIFT),
+    )
 
 
 class ShadowCheckError(SrstudioError, ValueError):
@@ -62,7 +84,8 @@ def _number(value: object, name: str, *, low: float | None = None, high: float |
 class FootShadow:
     """One foot of one figure on one frame: ``side`` 0 or 1, ``lift`` its height above the floor and ``mid_x`` the
     midpoint of its drawn ankle -> toe, in the figure's drawing px; ``shadow_x``, ``shadow_width`` and
-    ``shadow_opacity`` the shadow drawn for it, all three ``None`` when none is drawn."""
+    ``shadow_opacity`` the shadow drawn for it, all three ``None`` when none is drawn; ``base_width`` the width this
+    foot's shadow has planted, as drawn (its foot's drawn length and margin)."""
 
     figure: str
     frame: int
@@ -73,6 +96,7 @@ class FootShadow:
     shadow_x: float | None
     shadow_width: float | None
     shadow_opacity: float | None
+    base_width: float
 
     def __post_init__(self) -> None:
         for name in ("figure", "state"):
@@ -85,6 +109,8 @@ class FootShadow:
             raise ShadowCheckError(f"side must be 0 or 1, got {self.side!r}")
         _number(self.lift, "lift", low=0.0)
         _number(self.mid_x, "mid_x")
+        if _number(self.base_width, "base_width", low=0.0) <= 0:
+            raise ShadowCheckError(f"base_width must be above 0, got {self.base_width!r}")
         shadow = (self.shadow_x, self.shadow_width, self.shadow_opacity)
         if all(v is None for v in shadow):
             return
@@ -97,8 +123,9 @@ class FootShadow:
 
 @dataclass(frozen=True)
 class ShadowFinding:
-    """A planted foot without its shadow: ``kind`` is :data:`MISSING`, or :data:`OFF_CENTRE` with ``detail`` the
-    distance in px from the shadow's centre to the foot's midpoint."""
+    """A foot without its shadow: ``kind`` is :data:`MISSING` (a planted foot with none), :data:`OFF_CENTRE` with
+    ``detail`` the distance in px from the shadow's centre to the foot's midpoint, or :data:`SIZE` with ``detail`` the
+    larger of the width's relative and the opacity's absolute miss."""
 
     figure: str
     frame: int
@@ -141,16 +168,27 @@ def parse(rows: Iterable[object]) -> tuple[FootShadow, ...]:
 
 
 def _judge(f: FootShadow) -> ShadowFinding | None:
-    if f.shadow_x is None or not f.shadow_width or not f.shadow_opacity:
-        return ShadowFinding(f.figure, f.frame, f.side, f.state, MISSING)
+    planted = f.lift <= PLANTED_LIFT
+    if (
+        f.shadow_x is None
+        or f.shadow_width is None
+        or f.shadow_opacity is None
+        or not f.shadow_width
+        or not f.shadow_opacity
+    ):
+        return ShadowFinding(f.figure, f.frame, f.side, f.state, MISSING) if planted else None
     off = abs(f.shadow_x - f.mid_x)
-    if off > CENTRE_SHARE * f.shadow_width + 1e-9:
+    if off > CENTRE_TOL + 1e-9:
         return ShadowFinding(f.figure, f.frame, f.side, f.state, OFF_CENTRE, off)
+    width, opacity = shadow_size(f.lift, f.base_width)
+    miss_w, miss_o = abs(f.shadow_width - width) / width, abs(f.shadow_opacity - opacity)
+    if miss_w > WIDTH_TOL + 1e-9 or miss_o > OPACITY_TOL + 1e-9:
+        return ShadowFinding(f.figure, f.frame, f.side, f.state, SIZE, max(miss_w, miss_o))
     return None
 
 
 def check(feet: Iterable[FootShadow]) -> ShadowReport:
-    """Hold every planted foot of every figure to its shadow, whatever order the records come in."""
+    """Hold every foot of every figure to its shadow, whatever order the records come in."""
     by_figure: dict[str, list[FootShadow]] = {}
     seen: set[tuple[str, int, int]] = set()
     for record in feet:
@@ -165,6 +203,6 @@ def check(feet: Iterable[FootShadow]) -> ShadowReport:
     for name in sorted(by_figure):
         rows = sorted(by_figure[name], key=lambda f: (f.frame, f.side))
         planted = [f for f in rows if f.lift <= PLANTED_LIFT]
-        found = tuple(x for x in map(_judge, planted) if x is not None)
+        found = tuple(x for x in map(_judge, rows) if x is not None)
         figures.append(FigureShadows(name, len(rows), len(planted), found))
     return ShadowReport(tuple(figures))
