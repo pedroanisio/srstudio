@@ -157,3 +157,21 @@ def test_main_installs_and_reports_the_engine(tmp_path, capsys):
 def test_main_names_the_failure_and_exits_one(tmp_path, capsys):
     assert engine_install.main(["0.9.0", "--bin-dir", str(tmp_path)], run=Docker(smoke_code=1)) == 1
     assert "smoke render failed" in capsys.readouterr().err
+
+
+def test_the_smoke_render_holds_the_gpu_lock(tmp_path, monkeypatch):
+    """The smoke render opens the GPU like any render, so it runs inside ``gpu.held()`` (ADR 0171)."""
+    from srstudio import gpu
+
+    lock = tmp_path / "gpu.lock"
+    monkeypatch.setenv(gpu.LOCK_ENV, str(lock))
+    docker, holding = Docker(), []
+
+    def run(argv, **kwargs):
+        if str(argv[0]).endswith("/scene-render") and argv[1] == "render":
+            holding.append([h.pid for h in gpu.holders(lock) if not h.waiting])
+        return docker(argv, **kwargs)
+
+    engine_install.install("0.9.0", bin_dir=tmp_path / "bin", run=run)
+
+    assert holding == [[os.getpid()]]
