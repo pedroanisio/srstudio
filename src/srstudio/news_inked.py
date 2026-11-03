@@ -39,6 +39,7 @@ from . import (
 from .brush import Point
 from .canvas import Canvas
 from .head_motion import Channel, HeadPlan
+from .layout import Box, SafeArea
 from .news_head import GUS_MOTION, GUS_MOTION_3, VERA_MOTION, VERA_MOTION_3, AnchorRig
 from .news_kit import (
     BUG_H,
@@ -66,7 +67,6 @@ from .news_kit import (
     TANGERINE_DARK,
     TEXT_LEFT,
     TEXT_RIGHT,
-    TEXT_WIDE,
     TICKER_SPEED,
     VERA_FACE,
     Act,
@@ -110,6 +110,7 @@ __all__ = [
     "NEAR_BLUR",
     "NECK_Y",
     "Pin",
+    "TEXT_RIGHT_LEAST",
     "TICKER_H",
     "TICKER_Y",
     "TWO_SHOT",
@@ -131,6 +132,7 @@ __all__ = [
     "perform",
     "phone_insert",
     "route_insert",
+    "safe_box",
     "sign",
     "source_card",
     "stage",
@@ -1898,18 +1900,51 @@ def _tag_wide(measure: Measure) -> float:
     return measure("PARODY", 40.0) + 44.0
 
 
+TEXT_RIGHT_LEAST = TEXT_LEFT + 640.0  # the narrowest column the lower-third and the card still read in
+
+
+def safe_box(cv: Canvas, safe: SafeArea | None) -> Box | None:
+    """The region ``safe`` leaves on ``cv``'s frame, which the show's words keep inside (ADR 0222), or None for a
+    scene that declares none: the reels delivered before ADR 0218, drawn to :data:`TEXT_RIGHT` as they went out.
+    An area the kit's column cannot keep to is refused, never clamped."""
+    if safe is None:
+        return None
+    if not isinstance(safe, SafeArea):
+        raise NewsKitError(f"safe must be a layout.SafeArea or None, not {safe!r}")
+    box = safe.region(cv.width, cv.height)
+    if box.x0 > TEXT_LEFT + 0.5 or min(box.x1, TEXT_RIGHT) < TEXT_RIGHT_LEAST:
+        raise NewsKitError(
+            f"safe area {safe.id} leaves x {box.x0:g}..{box.x1:g}: the show's words need {TEXT_LEFT:g} on the left "
+            f"and at least {TEXT_RIGHT_LEAST:g} on the right"
+        )
+    return box
+
+
+def _right(box: Box | None) -> float:
+    """The right edge of the show's words: a whole pixel inside the area, since a text box's width is rounded."""
+    return TEXT_RIGHT if box is None else min(TEXT_RIGHT, math.floor(box.x1) - 1.0)
+
+
 @register(
     "graphic",
     "news-parody-tag@2",
     contract=dc.contract('news-parody-tag@2'),
     summary="The PARODY tag on the top row's chip, on a whole fictional reel",
 )
-def parody_tag(cv: Canvas, parent, start: float, end: float, measure: Measure, id: str = "news-parody-tag") -> None:
-    """PARODY in butter on plum, top right, opposite the show's name."""
+def parody_tag(
+    cv: Canvas,
+    parent,
+    start: float,
+    end: float,
+    measure: Measure,
+    id: str = "news-parody-tag",
+    safe: SafeArea | None = None,
+) -> None:
+    """PARODY in butter on plum, top right, opposite the show's name, inside ``safe`` when the scene declares it."""
     _span(start, end, "the PARODY tag")
     g = cv.group(parent, id, start=start, end=end)
     wide = _tag_wide(measure)
-    x = TEXT_RIGHT - wide
+    x = _right(safe_box(cv, safe)) - wide
     _chip(cv, g, x, wide, PLUM_DEEP, BUTTER)
     _text(cv, g, "PARODY", x, BUG_Y, wide, BUG_H, 40, BUTTER, "center")
 
@@ -2032,15 +2067,25 @@ def source_card(
     measure: Measure,
     id: str = "news-source-card",
     beside_tag: bool = False,
+    safe: SafeArea | None = None,
 ) -> None:
     """The card rises over the desk at ``start``, large enough to read the headline; at ``small`` it goes and the
     outlet and date stand on the top row until ``end``, at its right, or with ``beside_tag`` just left of the PARODY
-    tag, which keeps the corner. The headline is the outlet's, word for word."""
+    tag, which keeps the corner. The headline is the outlet's, word for word. With ``safe`` its words keep inside the
+    declared area on every frame, the rise included."""
     _span(start, small, "a source card")
     _span(small, end, "a source card's corner")
-    x, wide, pad = TEXT_LEFT - 30.0, TEXT_WIDE + 60.0, 34.0
+    area = safe_box(cv, safe)
+    edge = _right(area)
+    x, wide, pad = TEXT_LEFT - 30.0, edge - TEXT_LEFT + 60.0, 34.0
     lines, size = _fit(measure, source.headline, 60.0, 42.0, wide - 2 * pad, 3)
     tall = 2 * pad + 62.0 + 14.0 + math.ceil(len(lines) * size * 1.12) + 2
+    rise = CARD_RISE
+    if area is not None and safe is not None:  # the headline's box starts the rise inside the area's foot
+        foot = CARD_Y + pad + 76.0 + math.ceil(len(lines) * size * 1.12) + 2
+        rise = min(CARD_RISE, area.y1 - foot)
+        if rise < 0:
+            raise NewsKitError(f"the source card's headline ends at y {foot:g}, under safe area {safe.id}'s foot")
     g = cv.group(parent, id, start=start, end=small)
     box = cv.group(g, f"{id}-box", y=0.0)
     _card(cv, box, x, CARD_Y, wide, tall, CREAM)
@@ -2059,11 +2104,11 @@ def source_card(
         size,
         PLUM_DEEP,
     )
-    cv.keys(box, "y", [(start, CARD_RISE), (start + SLIDE, 0.0)], kind="cubic-out", local=False)
+    cv.keys(box, "y", [(start, rise), (start + SLIDE, 0.0)], kind="cubic-out", local=False)
     corner = cv.group(parent, f"{id}-small", start=small, end=end)
     label = f"{source.outlet}, {source.date}"
     w = measure(label, 34.0) + 32.0
-    right = TEXT_RIGHT - _tag_wide(measure) - CREDIT_GAP if beside_tag else TEXT_RIGHT
+    right = edge - _tag_wide(measure) - CREDIT_GAP if beside_tag else edge
     if beside_tag and right - w < TEXT_LEFT + measure(SHOW, 40.0) + 36.0 + CREDIT_GAP:
         raise NewsKitError(f"{label!r} does not fit on the top row between the show's name and the PARODY tag")
     _chip(cv, corner, right - w, w, CREAM)
@@ -2087,10 +2132,13 @@ def lower_third(
     id: str | None = None,
     y: float = LOWER_Y,
     slide: bool = True,
+    safe: SafeArea | None = None,
 ) -> None:
-    """A kicker over one line of story, sliding in at ``start``: readable with the sound off."""
+    """A kicker over one line of story, sliding in at ``start``: readable with the sound off. With ``safe`` its words
+    keep inside the declared area."""
     _span(start, end, "a lower-third")
-    lines, size = _fit(measure, check_copy(headline), 60.0, 38.0, TEXT_WIDE, 1)
+    column = _right(safe_box(cv, safe)) - TEXT_LEFT
+    lines, size = _fit(measure, check_copy(headline), 60.0, 38.0, column, 1)
     g = cv.group(parent, id or cv.uid("news-lower"), start=start, end=end, x=0.0)
     band = cv.grad("news2-lower", [(0, PLUM), (1, PLUM_DEEP)], (0, 0, 0, 1))
     cv.rect(g, -20, y, cv.width + 40, LOWER_H, band)
@@ -2098,7 +2146,7 @@ def lower_third(
     wide = measure(check_copy(kicker), 34.0) + 28.0
     cv.rect(words, TEXT_LEFT, y + 12, wide, 42.0, MINT, radius=CHIP)
     _text(cv, words, kicker, TEXT_LEFT, y + 12, wide, 42.0, 34, PLUM_DEEP, "center")
-    _text(cv, words, lines[0], TEXT_LEFT, y + 56.0, TEXT_WIDE, 68.0, size, CREAM)
+    _text(cv, words, lines[0], TEXT_LEFT, y + 56.0, column, 68.0, size, CREAM)
     _slide(cv, g, start, moves=slide)
 
 
@@ -2144,10 +2192,18 @@ def banner(
     summary="The ticker, flush under the lower-third, its tab cut to a chevron",
 )
 def ticker(
-    cv: Canvas, parent, items: Sequence[str], start: float, end: float, measure: Measure, id: str = "news-ticker"
+    cv: Canvas,
+    parent,
+    items: Sequence[str],
+    start: float,
+    end: float,
+    measure: Measure,
+    id: str = "news-ticker",
+    safe: SafeArea | None = None,
 ) -> None:
     """``items`` running right to left from ``start`` to ``end`` at the kit's speed, repeated as often as the time
-    asks, so it never runs out."""
+    asks, so it never runs out. The crawl runs the full width by design, so a scene that declares ``safe`` marks it
+    ``safeAreaForce``: the engine lists it (SA02) instead of holding its words to the area (ADR 0222)."""
     _span(start, end, "the ticker")
     if not items or not all(isinstance(item, str) and item.strip() for item in items):
         raise NewsKitError("a ticker needs at least one item of words")
@@ -2155,7 +2211,10 @@ def ticker(
     one = "   /   ".join(check_copy(item) for item in items) + "   /   "
     needed = cv.width + TICKER_SPEED * (end - start)
     many = one * max(1, math.ceil(needed / measure(one, size)))
-    g = cv.group(parent, id, start=start, end=end)
+    if safe_box(cv, safe) is None:
+        g = cv.group(parent, id, start=start, end=end)
+    else:
+        g = cv.group(parent, id, start=start, end=end, safeAreaForce=True)
     cv.rect(g, -20, TICKER_Y + 6, cv.width + 40, TICKER_H, SHADOW)
     cv.rect(g, -20, TICKER_Y, cv.width + 40, TICKER_H, CREAM)
     run = cv.group(g, f"{id}-run", x=cv.width)
@@ -2187,20 +2246,26 @@ def captions(
     measure: Measure,
     tints: Mapping[str, str] | None = None,
     id: str = "news-captions",
+    safe: SafeArea | None = None,
 ):
     """One panel per cue over the faces, in the fill ``tints`` gives its speaker: a cue that needs a third line stops
-    the build. Returns the group that holds them, which a build keeps off the cover."""
+    the build. With ``safe`` the panels centre on the declared area's column and keep inside it. Returns the group
+    that holds them, which a build keeps off the cover."""
     cv.require_font("the show letters its captions in its font", NewsKitError)
+    area = safe_box(cv, safe)
+    right = _right(area)
+    # a panel is its widest row, the padding and 12 more; reels from before ADR 0222 wrapped without the 12
+    inner = right - TEXT_LEFT - 2 * CAPTION_PAD - (0.0 if area is None else 12.0)
     track = cv.group(parent, id)
     for line in lines:
-        wrapped = _wrap(measure, line.text, CAPTION_SIZE, TEXT_WIDE - 2 * CAPTION_PAD, 2)
+        wrapped = _wrap(measure, line.text, CAPTION_SIZE, inner, 2)
         if not wrapped:
             raise NewsKitError(f"a caption takes two lines at most: {line.text!r}")
         fill = (tints or {}).get(line.speaker, CREAM)
         g = cv.group(track, cv.uid("g"), start=line.start, end=line.end)
         wide = max(measure(row, CAPTION_SIZE) for row in wrapped) + 2 * CAPTION_PAD + 12
         high = len(wrapped) * CAPTION_SIZE * CAPTION_LEADING + CAPTION_PAD
-        x = round((TEXT_LEFT + TEXT_RIGHT) / 2 - wide / 2, 2)
+        x = round((TEXT_LEFT + right) / 2 - wide / 2, 2)
         _card(cv, g, x, CAPTION_TOP, wide, high, fill)
         cv.text(
             g,

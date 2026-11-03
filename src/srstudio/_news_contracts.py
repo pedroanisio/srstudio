@@ -36,11 +36,22 @@ STOPS = P(
     description='First tuple is the initial position. Later times start a 0.22-second step to that target; '
     'positions are relative to panel origin (190,508) in the parent frame.',
 )
+SAFE = P(
+    role='safe-area',
+    description='The scene\'s declared layout.SafeArea, or None for a reel delivered before ADR 0218, drawn to x 1000 '
+    'as it went out. With an area the words keep inside its region on every frame; an area whose left edge is past '
+    'x 80 or whose right edge is short of x 720 is refused (ADR 0222).',
+)
 UI_SPAN = 'Requires finite 0 <= start < end. Frame-space overlay; a caller-owned parent controls the complete drawing.'
 PANEL_COUNTS = (
     'counts is nonempty, begins exactly at start, increases strictly and stays before end. '
     'Each (time,display_copy) is held until the next time; counts are not animated numeric values.'
 )
+
+
+def with_safe(contract: PartContract) -> PartContract:
+    """``contract`` with the version 2 drawings' declared safe area (ADR 0222)."""
+    return replace(contract, parameters=(*contract.parameters, ('safe', SAFE)))
 
 
 def graphic(*parameters: tuple[str, P], animated: bool = False, constraints: tuple[str, ...] = ()) -> PartContract:
@@ -144,24 +155,28 @@ _CONTRACTS = {
     'news-bug': _BUG,
     'news-bug@2': _BUG,
     'news-parody-tag': replace(_TAG, constraints=(*_TAG.constraints, 'Version 1 measures the tag at size 44.')),
-    'news-parody-tag@2': replace(_TAG, constraints=(*_TAG.constraints, 'Version 2 measures the tag at size 40.')),
+    'news-parody-tag@2': with_safe(
+        replace(_TAG, constraints=(*_TAG.constraints, 'Version 2 measures the tag at size 40.'))
+    ),
     'news-source-card': _SOURCE,
-    'news-source-card@2': replace(
-        _SOURCE,
-        constraints=(
-            *_SOURCE.constraints,
-            'beside_tag=True reserves the right corner for PARODY and refuses a credit that cannot fit between '
-            'that tag and the show name. It does not draw the PARODY tag.',
-        ),
+    'news-source-card@2': with_safe(
+        replace(
+            _SOURCE,
+            constraints=(
+                *_SOURCE.constraints,
+                'beside_tag=True reserves the right corner for PARODY and refuses a credit that cannot fit between '
+                'that tag and the show name. It does not draw the PARODY tag.',
+            ),
+        )
     ),
     'news-lower-third': _LOWER,
-    'news-lower-third@2': _LOWER,
+    'news-lower-third@2': with_safe(_LOWER),
     'news-banner': _BANNER,
     'news-banner@2': _BANNER,
     'news-ticker': _TICKER,
-    'news-ticker@2': _TICKER,
+    'news-ticker@2': with_safe(_TICKER),
     'news-captions': _CAPTIONS,
-    'news-captions@2': _CAPTIONS,
+    'news-captions@2': with_safe(_CAPTIONS),
     'news-phone': _PHONE,
     'news-phone@2': _PHONE,
     'news-missing-card': graphic(
