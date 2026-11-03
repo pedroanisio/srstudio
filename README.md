@@ -39,7 +39,7 @@ This creates a synthetic dialogue, a tone-burst soundtrack, a caption font, `cof
 python examples/new_episode.py examples/out/coffee-review --font /path/to/DejaVuSans-Bold.ttf
 ```
 
-Once scene-render is installed, encode the scene:
+In this workspace the engine is `generated/bin/scene-render`, installed from its Docker image and switched with `python3 tools/engine_install.py 0.9.0 --activate` (see [ADR 0224](docs/decisions/0224-the-engine-comes-from-its-image.md)). Once scene-render is installed, encode the scene:
 
 ```bash
 scene-render encode examples/out/coffee-review/coffee-review.scene.xml
