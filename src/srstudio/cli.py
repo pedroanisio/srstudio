@@ -168,7 +168,12 @@ def main(argv=None):
         "enhance", help="the auto-enhance mode, its ledger, its kinds and a check of this branch's claims (ADR 0056)"
     )
     enhance.add_argument("action", nargs="?", choices=("status", "kinds", "check", "on", "off"), default="status")
-    enhance.add_argument("--scripts", type=Path, default=_scripts_default(), help="folder of episode scripts")
+    enhance.add_argument(
+        "--scripts", type=Path, default=_scripts_default(), help="episodes/ of the srstudio-episodes checkout"
+    )
+    enhance.add_argument(
+        "--sdk", type=Path, default=None, help="the srstudio checkout (default: $SRSTUDIO_SDK, else this package's)"
+    )
     versions = sub.add_parser("parts", help="list each part's versions, print a digest, check the pins")
     versions.add_argument("--json", action="store_true")
     versions.add_argument("--digest", metavar="NAME[@N]", help="the digest of a drawing, for its version record")
@@ -343,7 +348,8 @@ def main(argv=None):
     if args.cmd == "anatomy":
         return _anatomy(args)
     if args.cmd == "enhance":
-        return _enhance(args.action, args.scripts.resolve().parent)
+        sdk = args.sdk or (Path(os.environ["SRSTUDIO_SDK"]) if os.environ.get("SRSTUDIO_SDK") else None)
+        return _enhance(args.action, args.scripts.resolve().parent, sdk)
     if args.cmd == "lip-proof":
         return _lip_proof(args)
     if args.cmd == "beat":
@@ -772,25 +778,30 @@ def _parts(args: argparse.Namespace) -> int:
     return 0
 
 
-def _enhance(action: str, repo: Path) -> int:
+def _enhance(action: str, repo: Path, sdk: Path | None) -> int:
+    """The auto-enhance command over the episodes repository ``repo`` and the library checkout ``sdk`` (ADR 0226)."""
     if action == "kinds":
         for kind, what in auto_enhance.KINDS.items():
             print(f"{kind:<10} {what}")
         return 0
     try:
+        if action in ("on", "off"):
+            auto_enhance.pin(repo)  # only an episodes repository holds the mode: nothing is written anywhere else
+            auto_enhance.set_mode(repo, on=action == "on")
+            print(f"auto-enhance: {auto_enhance.setting(repo)}")
+            return 0
+        sources = auto_enhance.histories(repo, auto_enhance.checkout(sdk))
         if action == "check":
-            rows = auto_enhance.unsound(repo)
+            rows = [row for history in sources for row in auto_enhance.unsound(history)]
         else:
-            if action != "status":
-                auto_enhance.set_mode(repo, on=action == "on")
-            print(f"auto-enhance: {'on' if auto_enhance.enabled(repo) else 'off'}")
-            rows = auto_enhance.ledger(repo) if action == "status" else []
+            print(f"auto-enhance: {auto_enhance.setting(repo)}")
+            rows = auto_enhance.ledgers(sources)
     except auto_enhance.EnhanceError as exc:
         _error("enhance", exc)
         return 2
     for row in rows:
         verdict = "; ".join(row.problems) or "counts"
-        print(f"{row.commit[:7]} {','.join(row.slugs)} [{','.join(row.kinds)}] {row.subject}: {verdict}")
+        print(f"{row.source} {row.commit[:7]} {','.join(row.slugs)} [{','.join(row.kinds)}] {row.subject}: {verdict}")
     return 1 if action == "check" and rows else 0
 
 
