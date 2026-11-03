@@ -75,7 +75,8 @@ def inactive(pid):
     try:
         # A killed grandchild can await reaping by the host's init process.
         return path.read_text().split(') ', 1)[1][0] == 'Z'
-    except FileNotFoundError:
+    except (FileNotFoundError, ProcessLookupError):
+        # Gone before the open, or reaped between the open and the read (ESRCH).
         return True
 
 

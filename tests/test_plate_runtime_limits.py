@@ -78,7 +78,8 @@ raise AssertionError('memory allocation escaped its budget')
 def inactive(pid):
     try:
         return Path(f'/proc/{pid}/stat').read_text().split(') ', 1)[1][0] == 'Z'
-    except FileNotFoundError:
+    except (FileNotFoundError, ProcessLookupError):
+        # Gone before the open, or reaped between the open and the read (ESRCH).
         return True
 
 
