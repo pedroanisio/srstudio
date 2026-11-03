@@ -15,6 +15,7 @@ All LLM output must be treated as untrusted and validated explicitly.
 
 from __future__ import annotations
 
+import json
 import math
 import os
 import re
@@ -109,6 +110,7 @@ CAPTION_PAD = 30.0
 FRAMINGS = ("medium", "close", "tight")
 GAP = 0.2  # seconds of air between two lines that have no hold
 TAIL = 0.6  # seconds the reel runs on after the last line, on the first frame's picture
+IN_STEP = 0.0015  # seconds a take may differ from the data: kept and the starts are written to the millisecond
 PACE = 2.7  # spoken words a second, the estimate a length is checked at until a take measures it
 SHORTEST, LONGEST = 20.0, 30.0
 QUESTION_BY = 2.0  # seconds: the question is on screen by then (it is from the first frame)
@@ -267,6 +269,31 @@ class Show:
                         wide.append(f"{beat.id}: {row!r} is {px:.0f} px")
         if wide:
             raise ScriptError(f"caption rows wider than the safe area's {room:.0f} px: {'; '.join(wide)}")
+
+    def check_recorded(self, narration: Mapping[str, Any]) -> None:
+        """The recording (``narration.json``) is in step with the data, line by line, or :class:`ScriptError`: each
+        take ran the seconds ``kept`` says, and was laid where :meth:`starts` puts it, within :data:`IN_STEP`. The
+        recorder lays each take at the start the data gave it when it ran, and ``kept`` is an estimate until it is set
+        from the takes; set after recording with no second run, it moves the pictures and leaves the voice where it was.
+        The build compares only the total running time, which two errors in opposite directions leave right."""
+        items = narration.get("items") if isinstance(narration, Mapping) else None
+        lines = (
+            [i for i in items if isinstance(i, Mapping) and i.get("phase") == "line"] if isinstance(items, list) else []
+        )
+        if len(lines) != len(self.beats):
+            raise ScriptError(f"{len(lines)} recorded lines for {len(self.beats)} beats: record the show again")
+        off = []
+        for beat, item, kept, start in zip(self.beats, lines, self.kept, self.starts(), strict=True):
+            try:
+                take, laid = float(item["speech_duration"]), float(item["start"])
+            except (KeyError, TypeError, ValueError):
+                raise ScriptError(f"{beat.id}: the recorded line has no number for its start or its length") from None
+            if abs(take - kept) > IN_STEP:
+                off.append(f"{beat.id}: take {take:.3f} s, kept {kept} s")
+            if abs(laid - start) > IN_STEP:
+                off.append(f"{beat.id}: laid at {laid:.3f} s, starts at {start} s")
+        if off:
+            raise ScriptError("; ".join(off))
 
     def _check(self, beat: Beat) -> None:
         host_kit.check_copy(beat.line)
@@ -1272,6 +1299,21 @@ def run(show: Show, argv: Sequence[str], env: Mapping[str, str] = os.environ) ->
     show.validate_sketch()
     root = Path(argv[1]).resolve()
     voiced = "--voice" in argv
+    if voiced:
+        recorded = root / "narration.json"
+        try:
+            narration = json.loads(recorded.read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            raise ScriptError(f"no narration.json in {root}: record the show before the voiced build") from None
+        except (OSError, json.JSONDecodeError) as e:
+            raise ScriptError(f"{recorded} cannot be read: {e}") from None
+        try:
+            show.check_recorded(narration)
+        except ScriptError as e:
+            raise ScriptError(
+                f"the voice is out of step with the data ({e}); set kept from the takes and run the recording again"
+                " (cached takes cost nothing)"
+            ) from None
     renders = Renders.from_env(env)
 
     @lru_cache(maxsize=1)

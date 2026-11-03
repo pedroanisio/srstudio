@@ -3,6 +3,7 @@ question opens and closes it, every finding is stamped with its source inside th
 
 from __future__ import annotations
 
+import json
 import math
 import xml.etree.ElementTree as ET
 from dataclasses import replace
@@ -705,3 +706,74 @@ def test_the_recording_refuses_a_caption_too_wide_before_any_take(monkeypatch, t
     assert taken == []
     sp.audio_main(fits, None, lambda *a, **k: [])([str(project)], {})
     assert len(taken) == 1
+
+
+def narration(show: Show, kept: tuple[float, ...] | None = None) -> dict:
+    """The recorder's narration.json for ``show``, its takes measured as ``kept`` (the show's own when None) and laid
+    where the show's data said when it was recorded."""
+    takes = show.kept if kept is None else kept
+    recorded = replace(show, kept=takes)
+    return {
+        "items": [
+            {"id": f"{i:02d}", "phase": "line", "start": at, "speech_duration": take}
+            for i, (at, take) in enumerate(zip(recorded.starts(), takes, strict=True), 1)
+        ]
+    }
+
+
+def test_takes_laid_where_the_data_says_are_in_step():
+    SHOW.check_recorded(narration(SHOW))
+
+
+def test_a_kept_changed_after_recording_is_refused_line_by_line():
+    """The total can agree while the lines do not: two estimates off in opposite directions cancel out."""
+    swapped = (KEPT[1], KEPT[0], *KEPT[2:])
+    with pytest.raises(
+        ScriptError,
+        match=r"hook: take 1\.400 s, kept 2\.4 s; try: take 2\.400 s, kept 1\.4 s; "
+        r"try: laid at 1\.600 s, starts at 2\.6 s$",
+    ) as refused:
+        SHOW.check_recorded(narration(SHOW, swapped))
+    assert "no: laid at" not in str(refused.value), "from the third line on the two agree again"
+
+
+def test_a_recording_with_a_line_missing_is_refused():
+    short = narration(SHOW)
+    short["items"].pop()
+    with pytest.raises(ScriptError, match="7 recorded lines for 8 beats"):
+        SHOW.check_recorded(short)
+
+
+def run_env(tmp_path: Path) -> dict[str, str]:
+    engine = tmp_path / "scene-render"
+    engine.write_text("#!/bin/sh\n")  # the engine must exist (layout.find_engine)
+    return {"SRSTUDIO_ENGINE": str(engine), "SRSTUDIO_RENDERS": str(tmp_path), "SRSTUDIO_FONTS": str(tmp_path)}
+
+
+def test_the_voiced_build_refuses_takes_out_of_step_before_it_draws(monkeypatch, tmp_path):
+    monkeypatch.setattr(sp, "build", lambda *a: pytest.fail("the build drew a reel whose voice is out of step"))
+    env = run_env(tmp_path)
+    (tmp_path / "narration.json").write_text(json.dumps(narration(SHOW, (KEPT[1], KEPT[0], *KEPT[2:]))))
+    with pytest.raises(ScriptError, match="out of step"):
+        sp.run(SHOW, ["show", str(tmp_path), "--voice"], env)
+    (tmp_path / "narration.json").unlink()
+    with pytest.raises(ScriptError, match="no narration.json"):
+        sp.run(SHOW, ["show", str(tmp_path), "--voice"], env)
+
+
+def test_the_voiced_build_draws_takes_in_step(monkeypatch, tmp_path):
+    built = []
+    monkeypatch.setattr(sp, "build", lambda root, staging, flags: built.append(flags))
+    (tmp_path / "narration.json").write_text(json.dumps(narration(SHOW)))
+    sp.run(SHOW, ["show", str(tmp_path), "--voice"], run_env(tmp_path))
+    assert built == [{"--voice"}]
+
+
+@pytest.mark.parametrize(
+    "recorded",
+    [[], {"items": "lines"}, {"items": [{"id": "01", "phase": "line", "start": 0.0}] * len(BEATS)},
+     {"items": [{"phase": "line", "start": "soon", "speech_duration": 1.0}] * len(BEATS)}],
+)  # fmt: skip
+def test_a_recording_that_is_not_one_is_refused(recorded):
+    with pytest.raises(ScriptError):
+        SHOW.check_recorded(recorded)
