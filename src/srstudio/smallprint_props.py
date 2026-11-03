@@ -69,6 +69,7 @@ OWN = {  # what is new in his world: name, colour, roughness, metallic, clay-fin
     "snow": ("#F6F4EE", 0.5, 0.0, True),
     "glass": ("#BCDCE0", 0.1, 0.0, False),
     "goldfish": ("#E8782E", 0.3, 0.0, True),
+    "fishmouth": ("#A8402A", 0.4, 0.0, True),
     "fin": ("#F2A25E", 0.35, 0.0, True),
     "flake": ("#D9A441", 0.6, 0.0, True),
     "appleskin": ("#B8352B", 0.4, 0.0, True),
@@ -390,27 +391,31 @@ GOLDFISH_STATES = ("swim", "turn", "fed")
 _FISHBOWL = (32.0, 18.0, 0.83)  # the bowl: its widest radius, half its height as a whole round, the share of it made
 FISHBOWL_RIM = _FISHBOWL[0] * math.sqrt(1.0 - (2.0 * _FISHBOWL[2] - 1.0) ** 2)  # its radius at the rim, about 24
 _FISHBOWL_TALL = 2.0 * _FISHBOWL[1] * _FISHBOWL[2]  # how high its rim stands over the worktop, about 30
-_FISH = {  # where the fish is at the water's top: x, z, which way he faces (1 frame right, -1 frame left)
+_FISH = {  # where the fish comes up through the water's top: x, z, which way he faces (1 frame right, -1 frame left)
     "swim": (-5.0, 6.0, -1.0),
     "turn": (6.0, 6.0, 1.0),
     "fed": (0.0, -8.0, 1.0),
 }
+_FISH_SIZE = (11.0, 5.6, 5.0)  # his half length, half height, half width
+_NOSE_UP = {"swim": 38.0, "turn": 38.0, "fed": 48.0}  # degrees his nose points up out of the water
 
 
 @register(
     "prop",
     "smallprint-goldfish",
-    summary="A round glass bowl of water with a goldfish at its top, swimming across it or come up for his flakes",
+    summary="A round glass bowl of water with a goldfish coming up through its top, nose first, mouth open",
     contract=_contract(
         "smallprint-goldfish",
         GOLDFISH_STATES,
         "swim and turn put the fish at the back of the water, facing frame left or right; fed brings him to the front "
-        "with flakes on the water. His back breaks the surface, so the lens sees him over the bowl's rim.",
+        "with flakes on the water. His head comes up out of the water nose first, mouth open, so the lens sees him "
+        "over the bowl's rim and he reads alive, not floating.",
     ),
 )
 def goldfish(m: Model, state: str = "swim") -> None:
-    """A round bowl of pale glass filled to near its rim, and a goldfish swimming at the top of the water, his back
-    and his tail over it; on ``fed`` he is at the front, his head up among a few flakes. No one fish's likeness."""
+    """A round bowl of pale glass filled to near its rim, and a goldfish coming up through the top of the water, his
+    head out and his mouth open, as goldfish do at feeding time; on ``fed`` he is at the front among a few flakes. No
+    one fish's likeness."""
     if state not in _FISH:
         raise PropError(f"the goldfish's states are {GOLDFISH_STATES}, got {state!r}")
     wide, half, share = _FISHBOWL
@@ -419,11 +424,20 @@ def goldfish(m: Model, state: str = "swim") -> None:
     top = -_FISHBOWL_TALL - 0.6
     m.ell("water", (0.0, top, 0.0), (FISHBOWL_RIM - 0.4, 0.6, FISHBOWL_RIM - 0.4))
     x, z, facing = _FISH[state]
-    nose_up = 18.0 if state == "fed" else 0.0
-    m.ell("goldfish", (x, top - 1.2, z), (9.0, 4.6, 4.2), rotation=-facing * nose_up)
-    m.ell("fin", (x - facing * 11.0, top - 1.5 + nose_up * 0.12, z), (4.6, 4.2, 1.0), rotation=facing * 30.0)
-    m.ell("fin", (x - facing * 1.0, top - 5.4, z), (3.6, 1.8, 0.8), rotation=-facing * 18.0)
-    m.ell("black", (x + facing * 5.6, top - 2.6 - nose_up * 0.1, z - 3.0), (1.3, 1.3, 0.7))
+    length, tall, thick = _FISH_SIZE
+    up = math.radians(_NOSE_UP[state])
+    ahead = (facing * math.cos(up), -math.sin(up))  # along his body, nose first (y grows down)
+    over = (-facing * math.sin(up), -math.cos(up))  # square to it, toward his back
+
+    def at(u: float, v: float, dz: float = 0.0) -> tuple[float, float, float]:
+        cy = top + 0.8  # his middle at the water: the head out, the tail in the bowl
+        return (x + u * ahead[0] + v * over[0], cy + u * ahead[1] + v * over[1], z + dz)
+
+    tilt = -facing * _NOSE_UP[state]
+    m.ell("goldfish", at(0.0, 0.0), (length, tall, thick), rotation=tilt)
+    m.ell("fin", at(-0.1 * length, tall * 0.95), (3.8, 1.9, 0.8), rotation=tilt - facing * 18.0)  # on his back
+    m.ell("black", at(0.55 * length, tall * 0.3, -thick * 0.75), (1.4, 1.4, 0.7))  # his eye, to the lens
+    m.ell("fishmouth", at(0.92 * length, -tall * 0.05, -thick * 0.35), (1.3, 1.6, 1.0), rotation=tilt)  # open
     if state == "fed":
         for fx, fz in ((-6.0, -14.0), (5.0, -16.0), (-2.0, -19.0), (9.0, -12.0), (-10.0, -10.0)):
             m.box("flake", (fx, top - 0.9, fz), (2.4, 0.4, 1.8), 0.1)
@@ -607,7 +621,7 @@ PLACES: dict[str, tuple[float, float, float, float, float]] = {  # x, y, z, yaw,
     "smallprint-phone": (-60.0, -248.0, -84.0, -14.0, 1.0),  # at his right, clear of his chin
     "smallprint-bowl": (16.0, -248.0, -80.0, 0.0, 1.0),
     "smallprint-wall": (2.0, -248.0, -70.0, -8.0, 1.0),
-    "smallprint-goldfish": (8.0, -248.0, -78.0, 0.0, 1.0),
+    "smallprint-goldfish": (8.0, -248.0, -78.0, 0.0, 1.2),
     "smallprint-apple": (6.0, -248.0, -80.0, -4.0, 1.0),
     "smallprint-can": (58.0, -248.0, -80.0, 0.0, 0.8),  # under his frame-right hand, clear of his chin
 }

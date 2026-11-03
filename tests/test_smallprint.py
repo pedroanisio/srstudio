@@ -556,6 +556,18 @@ def test_the_goldfish_swims_to_his_lever_again_and_again_and_food_comes_one_hour
     assert "lever" in words_on(root) and "1 hour a day" in words_on(root)
 
 
+def test_when_the_food_stops_the_goldfish_keeps_pressing_and_no_pellet_comes():
+    root = panel_root("fish-stopped")
+    assert groups(root, "sp-pellet") == [], "no food comes"
+    (fish,) = groups(root, "sp-fish")
+    xs = keyed(fish, "x")
+    assert len([t for t, v in xs if v == max(v for _, v in xs)]) >= 2, "he keeps going to the lever"
+    (lever,) = groups(root, "sp-lever")
+    assert max(v for _, v in keyed(lever, "rotation")) > 0.0, "and pressing it"
+    assert "no food" in words_on(root) and "1 hour a day" not in words_on(root)
+    assert groups(panel_root("fish-lever"), "sp-pellet"), "while it was fed, the pellets came"
+
+
 def test_the_days_are_crossed_off_week_after_week_and_the_fish_waits_at_his_corner():
     root = panel_root("fish-weeks", 1.0, 9.0)
     days = groups(root, "sp-day")
@@ -563,8 +575,12 @@ def test_the_days_are_crossed_off_week_after_week_and_the_fish_waits_at_his_corn
     shown = [min(t for t, v in keyed(day, "opacity") if v > 0.0) for day in days]
     assert shown == sorted(shown) and shown[-1] <= 9.0 - 1.0, "crossed off in order, the last a second before the cut"
     (fish,) = groups(root, "sp-fish")
-    assert len(keyed(fish, "y")) >= 4, "he bobs at the ring"
+    assert len(keyed(fish, "y")) >= 4, "he bobs where his food comes"
     assert "weeks" in words_on(root) and "food here" in words_on(root)
+    food = groups(root, "sp-food")
+    assert len(food) >= 3, "pellets on the water mark where the food comes"
+    hollow = [e for e in root.iter() if e.get("shape") == "ellipse" and (e.get("fill") or "").endswith("00000000")]
+    assert hollow == [], "no ring over the fish: a ring over his head reads as a halo"
 
 
 def test_the_cut_face_browns_only_once_its_cells_have_broken_and_the_oxygen_has_come_in():
@@ -576,7 +592,7 @@ def test_the_cut_face_browns_only_once_its_cells_have_broken_and_the_oxygen_has_
     assert rises[0][1] == 0.0 and rises[-1][1] > 0.6
     assert min(t for t, v in rises if v > 0.0) > broken
     assert groups(root, "sp-oxygen") and groups(root, "sp-enzyme")
-    assert "enzyme" in words_on(root) and "oxygen" in words_on(root)
+    assert "enzyme" in words_on(root) and "oxygen" in words_on(root) and "cells" in words_on(root)
 
 
 def test_the_bare_half_browns_and_the_lemon_half_stays_pale_under_its_drops():
@@ -602,6 +618,7 @@ def test_tapped_and_untapped_cans_lose_the_same_foam():
     assert len(keyed(finger, "rotation")) >= 6, "the finger taps, and keeps tapping"
     words = words_on(root)
     assert "tapped" in words and "not tapped" in words and "1,000 cans" in words
+    assert "beer lost" in words and "foam" not in words, "the trial weighed the beer lost, not the foam"
 
 
 def test_the_bubbles_on_the_can_s_wall_shrink_away_while_the_clock_runs():
@@ -614,3 +631,5 @@ def test_the_bubbles_on_the_can_s_wall_shrink_away_while_the_clock_runs():
     (hand,) = groups(root, "sp-clock-hand")
     assert keyed(hand, "rotation")[-1][1] > keyed(hand, "rotation")[0][1]
     assert "wait" in words_on(root)
+    last = max(bubbles, key=lambda b: max(t for t, _ in keyed(b, "scaleX")))
+    assert float(last.get("x")) < 500.0, "the last bubble to go is on the wall by its label"

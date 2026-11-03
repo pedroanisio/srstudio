@@ -287,6 +287,20 @@ def test_the_goldfish_swims_at_the_top_of_its_water_and_comes_to_the_front_for_i
     assert abs(swim - turn) > 10.0, "he crosses the bowl between swim and turn"
 
 
+def test_the_goldfish_comes_up_nose_first_with_his_mouth_open_so_he_reads_alive():
+    for state in sp.GOLDFISH_STATES:
+        m = clay.Model()
+        sp.goldfish(m, state)
+        parts = {mesh.material: mesh.vertices for mesh in m.meshes()}
+        fish, facing = parts["goldfish"], sp._FISH[state][2]
+        ahead = facing * fish[:, 0]
+        nose, tail = fish[ahead >= ahead.max() - 1.0], fish[ahead <= ahead.min() + 1.0]
+        assert nose[:, 1].mean() < tail[:, 1].mean() - 4.0, f"{state}: nose up, not lying flat on the water"
+        mouth = parts["fishmouth"]
+        assert facing * (mouth[:, 0].mean() - fish[:, 0].mean()) > 4.0, f"{state}: his mouth is at his nose"
+        assert mouth[:, 1].mean() < parts["water"][:, 1].min(), f"{state}: his mouth is out of the water"
+
+
 def test_a_cut_apple_is_pale_then_brown_and_the_lemon_half_stays_pale():
     def made(state):
         m = clay.Model()
