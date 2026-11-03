@@ -109,10 +109,12 @@ def test_the_bespoke_recorders_share_the_recording_command_line(monkeypatch, tmp
 def test_the_toon_recorder_can_place_the_beats_again_without_the_cloud(helpers, monkeypatch, tmp_path):
     toon, _ = helpers
     placed = []
-    monkeypatch.setattr(toon.sketch, "place_again", lambda sk, project, **k: placed.append((sk, project, k)))
+    monkeypatch.setattr(toon, "place_episode", lambda *a, **k: placed.append((a, k)))
     monkeypatch.setattr(toon, "record_episode", lambda *a, **k: pytest.fail("no recording"))
     assert toon.recorder("SKETCH", 7, "note", "Doc", mouth="MOUTH")([str(tmp_path), "--place-only"], {}) == 0
-    assert placed == [("SKETCH", tmp_path.resolve(), {"mouth": "MOUTH"})]
+    assert placed == [
+        (("SKETCH", tmp_path.resolve(), 7, "note"), {"mouth": "MOUTH", "foley_of": toon.sound_effects, "sounds": None})
+    ]
 
 
 FONT = "assets/fonts/cover.ttf"

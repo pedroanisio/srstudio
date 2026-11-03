@@ -848,6 +848,7 @@ def record(
         takes.append((spoken, trim_speech(spoken.wav, lead=SPEECH_LEAD, tail=SPEECH_TAIL)))
     placed, needed = _placed(sketch.lines, plan, [trim.clip_out - trim.clip_in for _, trim in takes])
     items, heard, failures, word_starts, kept_takes = [], [], [], [], []
+    spans: list[tuple[float, float]] = []  # each kept take's start and end, as place_again reads them back
     lip_synced = sketch.cast.lip_synced
     mouths: Mouths = {s.character: [] for s in sketch.speakers if s.character is not None and s.character in lip_synced}
     for line, slot, (spoken, trim), at in zip(sketch.lines, plan, takes, placed, strict=True):
@@ -862,7 +863,7 @@ def record(
             failures.append(f"line {slot.id} ({line.speaker}): {exc}")
             continue
         dst = audio / f"vo-{slot.id}.wav"
-        kept = round(at.kept, 6)
+        start, kept = round(at.start, 6), round(at.kept, 6)  # as voiced/speech.json keeps them: see place_again
         colour = {"effect": PHONE_SPEAKER} if line.phone else {}
         conform_clip(
             spoken.wav,
@@ -874,9 +875,12 @@ def record(
             ffmpeg,
             **colour,
         )
-        word_starts.append([round(at.start + max(0.0, a - trim.clip_in), 6) for _, a, _ in words_of(spoken.alignment)])
+        word_starts.append(
+            [round(start + round(max(0.0, a - trim.clip_in), 6), 6) for _, a, _ in words_of(spoken.alignment)]
+        )  # summed from the rounded values place_again reads back, so both place a beat on the same microsecond
+        spans.append((start, start + kept))
         played = speakers[line.speaker].character
-        kept_takes.append(kept_take(slot.id, played, spoken.alignment, round(at.start, 6), trim.clip_in, kept))
+        kept_takes.append(kept_take(slot.id, played, spoken.alignment, start, trim.clip_in, kept))
         if played is not None and played in mouths:
             extend_track(mouths[played], visemes(spoken.alignment, at.start, trim.clip_in, kept, style=mouth), slot.id)
         items.append(
@@ -885,7 +889,7 @@ def record(
                 "text": line.text,
                 "phase": "line",
                 "caption_start": slot.start,
-                "start": round(at.start, 6),
+                "start": start,
                 "duration": kept,
                 "speech_duration": round(trim.clip_out - trim.clip_in, 6),
                 "speed": speakers[line.speaker].settings.speed,
@@ -900,11 +904,11 @@ def record(
     (root / "voice-transcript.json").write_text(json.dumps({"lines": heard, "passed": not failures}, indent=2) + "\n")
     if failures:
         raise SketchError("speech check failed:\n" + "\n".join(failures))
-    beats = place(sketch, word_starts, [p.end for p in placed])
+    beats = place(sketch, word_starts, [b for _, b in spans])
     end = round(max(needed, beats[-1].start + sketch.tail), 6)
     write_voiced(root, beats, end, sketch.lines, mouths)
     write_speech(root, kept_takes, end)
-    return Recorded(items, beats, end, [(p.start, p.end) for p in placed], voices, heard)
+    return Recorded(items, beats, end, spans, voices, heard)
 
 
 def place_again(sketch: Sketch, root: Path, *, mouth: soundtrack.PhonemeStyle | None = None) -> list[Beat]:

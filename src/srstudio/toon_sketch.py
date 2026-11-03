@@ -448,6 +448,23 @@ def record_episode(
     key = env.get(KEY_ENV, "")
     client = ElevenLabsClient(root / "assets" / "elevenlabs", key, model=MODEL, seed=seed)
     rec = sketch.record(sk, root, client, key=key, ffmpeg=ffmpeg, mouth=mouth)
+    manifest = _effects_and_manifest(sk, root, rec, seed, note, foley_of, sounds)
+    for q in rec.items:
+        flags = " ".join(f for f, on in (("cut", q["cut"]), ("lag", q["lag"] > 0)) if on)
+        print(f"{q['id']} {q['duration']:5.2f}s {flags:8} {q['text']}")
+    print(f"{len(rec.items)} lines, {len(manifest['effects'])} effects, the project runs {rec.end:.3f} s")
+    return manifest
+
+
+class PlaceOnlyError(sketch.SketchError):
+    """``--place-only`` cannot re-make what the moved beats place: the project's ``narration.json`` is missing, is
+    not a manifest of this recorder, or is of other lines. Nothing is moved; record again."""
+
+
+def _effects_and_manifest(
+    sk: sketch.Sketch, root: Path, rec: sketch.Recorded, seed: int, note: str, foley_of: Foley, sounds: Sounds | None
+) -> dict:
+    """Every sound placed from the beats, made from ``rec``, and ``narration.json`` written with them."""
     effects = (
         foley_of(rec.beats, rec.end, rec.speech, root, seed)
         if sounds is None
@@ -455,11 +472,54 @@ def record_episode(
     )
     manifest = sketch.manifest(sk, rec, effects, MODEL, note)
     (root / "narration.json").write_text(json.dumps(manifest, indent=2) + "\n")
-    for q in rec.items:
-        flags = " ".join(f for f, on in (("cut", q["cut"]), ("lag", q["lag"] > 0)) if on)
-        print(f"{q['id']} {q['duration']:5.2f}s {flags:8} {q['text']}")
-    print(f"{len(rec.items)} lines, {len(effects)} effects, the project runs {rec.end:.3f} s")
     return manifest
+
+
+def _recorded_lines(sk: sketch.Sketch, root: Path) -> tuple[list[dict], dict[str, Any]]:
+    """The spoken lines and the voices ``narration.json`` holds, read as untrusted: they must be this sketch's lines."""
+    path = root / "narration.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        raise PlaceOnlyError(f"{path}: there is no narration.json to re-make the effects into: record again") from None
+    except (OSError, ValueError) as exc:
+        raise PlaceOnlyError(f"{path}: narration.json cannot be read: {exc}") from None
+    if not isinstance(data, dict):
+        raise PlaceOnlyError(f"{path}: narration.json is not a manifest: record again")
+    items, voices = data.get("items"), data.get("voice")
+    if not isinstance(items, list) or not all(isinstance(item, dict) for item in items):
+        raise PlaceOnlyError(f"{path}: its items are not a list of spoken lines: record again")
+    if not isinstance(voices, dict):
+        raise PlaceOnlyError(f"{path}: its voice is not a mapping of the speakers' voices: record again")
+    if len(items) != len(sk.lines) or [item.get("text") for item in items] != [line.text for line in sk.lines]:
+        raise PlaceOnlyError(
+            f"{path}: the manifest has {len(items)} lines that are not the sketch's {len(sk.lines)}: record again"
+        )
+    return items, voices
+
+
+def place_episode(
+    sk: sketch.Sketch,
+    root: Path,
+    seed: int,
+    note: str,
+    mouth: soundtrack.PhonemeStyle = sketch.MOUTH_STYLE,
+    foley_of: Foley = sound_effects,
+    sounds: Sounds | None = None,
+) -> dict:
+    """``--place-only``: the beats moved onto the recording already under ``root``
+    (:func:`srstudio.sketch.place_again`), and everything placed from them made again from the moved beats: the foley
+    of ``foley_of`` or ``sounds``, as :func:`record_episode` makes it, and ``narration.json`` with those effects and
+    the lines it already holds. No voice is asked. A click tied to a beat follows the beat; on unchanged cues the
+    files come out as the recording wrote them. :class:`PlaceOnlyError`, before anything is moved, when the manifest
+    cannot be re-made."""
+    os.umask(0o077)  # generated outputs are private: folders 700, files 600
+    root = Path(root)
+    items, voices = _recorded_lines(sk, root)
+    beats = sketch.place_again(sk, root, mouth=mouth)
+    takes, end = sketch.load_speech(root / "voiced" / "speech.json", sk.cast)
+    rec = sketch.Recorded(items, beats, end, [(t.at, t.at + t.kept) for t in takes], voices, [])
+    return _effects_and_manifest(sk, root, rec, seed, note, foley_of, sounds)
 
 
 def recorder(
@@ -479,7 +539,8 @@ def recorder(
     (``python3 <episode>_audio.py PROJECT [--ffmpeg PATH] [--place-only]``, the help from ``doc``); ``validate`` checks
     the sketch once the arguments are parsed, before anything is recorded; ``foley_of`` and ``sounds`` as in
     :func:`record_episode`. ``--place-only`` asks no voice and needs no consent: the beats are moved onto the recording
-    that is already there and the lips read again with ``mouth`` (:func:`srstudio.sketch.place_again`).
+    that is already there, the lips read again with ``mouth``, and the foley and ``narration.json`` made again from the
+    moved beats (:func:`place_episode`).
 
     ``cover`` is the post's cover, laid out with the project's own ``cover_font`` (its path inside the project) on a
     ``cover_size`` frame before any take is paid for, so a headline too wide or too tall stops the recording rather
@@ -501,8 +562,7 @@ def recorder(
             validate(sk)
         check_cover(project)
         if place_only:
-            sketch.place_again(sk, project, mouth=mouth)
-            return {}
+            return place_episode(sk, project, seed, note, mouth=mouth, foley_of=foley_of, sounds=sounds)
         return record_episode(sk, project, env, ffmpeg, seed, note, mouth=mouth, foley_of=foley_of, sounds=sounds)
 
     def options(parser: argparse.ArgumentParser) -> None:
