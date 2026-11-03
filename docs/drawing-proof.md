@@ -310,9 +310,21 @@ and remains above every picture layer.
 
 The scene's native `background="#efe8df"` restores the original clear color
 without inserting an extra picture layer. This retains the original text-edge
-compositing path and adds no raw render jobs. At the default cadence, the
-complete layer plan includes the supported candidate's 196 raw jobs and the existing
-node, memory and output limits.
+compositing path and adds no raw render jobs. At the default 12-fps cadence the
+complete scene has 80 intervals, 196 raw render jobs, 180,355 planned nodes and
+6,837,269,832 bytes of planned working storage.
+
+Before the sequence buffer table (ADR 0217), this plan failed the compiler's
+first check. Its source buffers measured 8,941,694 bytes against the compiler's 8,388,608-byte
+cap: the 80 hand snapshots carried 3,350,720 bytes because every snapshot
+repeated the fixed cup rests, the unchanged cup and the shared triangle
+lists. The sequence payload now carries each distinct buffer once, and the cap
+counts that payload: the hand measures 1,090,592 bytes and the complete scene
+6,681,566. [`test_drawing_source_budget`](../tests/test_drawing_source_budget.py)
+runs the compiler's own source check on this plan. The cap value, snapshot
+identities and render-job keys are unchanged. Passing the source check is not
+a completed compile: the rendered full-size images must also fit the bundle's
+eight-MiB image and file limits.
 
 Use `complete_scene()` in the build snippet to include the background and
 information. This reproduces the existing candidate layout; that layout itself

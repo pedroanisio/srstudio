@@ -9,6 +9,7 @@
     {"number": "0205", "name": "full-body-groove", "owner": "worskpace-db", "reserved": "2026-11-02"},
     {"number": "0212", "name": "fein-moves-transcribed", "owner": "worskpace-fein-moves", "reserved": "2026-11-02"},
     {"number": "0214", "name": "dance-2d-skeleton-bridge", "owner": "worskpace-db", "reserved": "2026-11-02"},
-    {"number": "0215", "name": "frontal-shoulder-camera-cuts", "owner": "orchestrator", "reserved": "2026-11-02"}
+    {"number": "0215", "name": "frontal-shoulder-camera-cuts", "owner": "orchestrator", "reserved": "2026-11-02"},
+    {"number": "0217", "name": "sequence-buffer-table", "owner": "worskpace-drawing-proof", "reserved": "2026-11-03"}
   ]
 }

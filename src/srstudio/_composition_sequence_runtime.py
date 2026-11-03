@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import asdict, replace
 
 from . import _composition_plate_wire as pw
@@ -14,45 +15,73 @@ from ._composition_runtime import _call
 
 
 def encode(source: c.RasterSequence) -> dict:
+    """Snapshots reference a content-addressed table that carries each distinct mesh buffer once."""
     payload.validate_source(source)
+    table = pw.BufferTable()
+    frames = [
+        {
+            'time': frame.time,
+            'backend': 'plates' if isinstance(frame.source, c.PlateSource) else 'proxy',
+            'source': pw.source_encode(frame.source, table)
+            if isinstance(frame.source, c.PlateSource)
+            else proxy.encode(frame.source, table),
+        }
+        for frame in source.frames
+    ]
     return {
         'id': source.id,
         'duration': source.duration,
-        'frames': [
-            {
-                'time': frame.time,
-                'backend': 'plates' if isinstance(frame.source, c.PlateSource) else 'proxy',
-                'source': pw.source_encode(frame.source)
-                if isinstance(frame.source, c.PlateSource)
-                else proxy.encode(frame.source),
-            }
-            for frame in source.frames
-        ],
+        'buffers': [{'digest': digest, 'data': pw._encode(data)} for digest, data in table.buffers.items()],
+        'frames': frames,
     }
 
 
+def _table(value: object) -> tuple[pw.BufferTable, int]:
+    if type(value) is not list or not 1 <= len(value) <= c.MAX_RECORD_ITEMS * 4 * pw.MAX_MESHES:
+        raise wire.fail(None, 'a nonempty bounded buffer table')
+    buffers: dict[str, bytes] = {}
+    total = 0
+    for entry in value:
+        item = wire.fields(entry, {'digest', 'data'})
+        data = pw._decode(item['data'])
+        if type(item['digest']) is not str or item['digest'] in buffers:
+            raise wire.fail(None, 'distinct buffer table digests')
+        if hashlib.sha256(data).hexdigest() != item['digest']:
+            raise wire.fail(None, 'buffer table entries matching their SHA-256 digests')
+        total += len(data)
+        if total > pw.MAX_BYTES:
+            raise payload.fail('buffers', 'at most eight MiB of combined timeline inputs')
+        buffers[item['digest']] = data
+    return pw.BufferTable(buffers), total
+
+
 def decode(value: object) -> c.RasterSequence:
-    data = wire.fields(value, {'id', 'duration', 'frames'})
+    data = wire.fields(value, {'id', 'duration', 'buffers', 'frames'})
     if type(data['frames']) is not list or not 1 <= len(data['frames']) <= c.MAX_RECORD_ITEMS:
         raise wire.fail(None, '1..1024 raster snapshots')
+    table, total = _table(data['buffers'])
     frames = []
-    total = 0
     for entry in data['frames']:
         frame = wire.fields(entry, {'time', 'backend', 'source'})
         source: c.PlateSource | c.ProxySource
         if frame['backend'] == 'plates':
-            source = pw.source_decode(frame['source'])
-            total += pw.validate_source(source)
+            source = pw.source_decode(frame['source'], table)
+            size = pw.validate_source(source)
         elif frame['backend'] == 'proxy':
-            source = proxy.decode(frame['source'])
-            total += proxy_payload.validate_source(source)
+            source = proxy.decode(frame['source'], table)
+            size = proxy_payload.validate_source(source)
         else:
             raise wire.fail(None, 'a plates or proxy snapshot')
+        # The table already counted the geometry; add only this snapshot's own records.
+        total += size - payload.geometry_bytes(source)
         if total > pw.MAX_BYTES:
             raise payload.fail('buffers', 'at most eight MiB of combined timeline inputs')
         frames.append(c.RasterFrame(frame['time'], source))
+    if table.used != table.buffers.keys():
+        raise wire.fail(None, 'a buffer table without unreferenced entries')
     result = c.RasterSequence(data['id'], data['duration'], tuple(frames))
-    payload.validate_source(result)
+    if payload.validate_source(result) != total:
+        raise wire.fail(None, 'a decoded sequence whose counted bytes match its payload')
     return result
 
 

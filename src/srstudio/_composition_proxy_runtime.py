@@ -12,14 +12,14 @@ from . import composition as c
 from ._composition_runtime import _call
 
 
-def encode(source: c.ProxySource) -> dict:
+def encode(source: c.ProxySource, table: pw.BufferTable | None = None) -> dict:
     payload.validate_source(source)
-    return {'geometry': pw.source_encode(payload.sources(source)[0]), 'recipe': asdict(source.recipe)}
+    return {'geometry': pw.source_encode(payload.sources(source)[0], table), 'recipe': asdict(source.recipe)}
 
 
-def decode(value: object) -> c.ProxySource:
+def decode(value: object, table: pw.BufferTable | None = None) -> c.ProxySource:
     data = wire.fields(value, {'geometry', 'recipe'})
-    geometry = pw.source_decode(data['geometry'])
+    geometry = pw.source_decode(data['geometry'], table)
     source = c.ProxySource(
         geometry.id, geometry.meshes, wire.record(c.ProxyRecipe, data['recipe']), geometry.meters_per_unit
     )

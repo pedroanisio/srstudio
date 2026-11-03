@@ -145,8 +145,34 @@ def source_digest(source: c.PlateSource) -> str:
     )
 
 
-def source_encode(source: c.PlateSource) -> dict:
+class BufferTable:
+    """Content-addressed mesh buffers shared by the snapshots of one sequence payload.
+
+    Encoding interns each distinct buffer once under its SHA-256; decoding
+    resolves references to one shared bytes object and records which entries
+    were used, so the caller can refuse unreferenced table entries.
+    """
+
+    def __init__(self, buffers: dict[str, bytes] | None = None) -> None:
+        self.buffers: dict[str, bytes] = {} if buffers is None else buffers
+        self.used: set[str] = set()
+
+    def reference(self, value: bytes) -> str:
+        digest = hashlib.sha256(_bytes(value)).hexdigest()
+        self.buffers.setdefault(digest, value)
+        return digest
+
+    def resolve(self, value: object) -> bytes:
+        if type(value) is not str or value not in self.buffers:
+            raise wire.fail(None, 'a reference to a buffer in the sequence table')
+        self.used.add(value)
+        return self.buffers[value]
+
+
+def source_encode(source: c.PlateSource, table: BufferTable | None = None) -> dict:
+    """Encode one plate source; with a table, mesh buffers become references into it."""
     validate_source(source)
+    put = _encode if table is None else table.reference
     return {
         'id': source.id,
         'meters_per_unit': source.meters_per_unit,
@@ -167,15 +193,17 @@ def source_encode(source: c.PlateSource) -> dict:
             {
                 'material': m.material,
                 'basis': m.basis,
-                **{k: _encode(getattr(m, k)) for k in ('vertices', 'normals', 'triangles')},
-                'uvs': _encode(m.uvs) if m.uvs is not None else None,
+                **{k: put(getattr(m, k)) for k in ('vertices', 'normals', 'triangles')},
+                'uvs': put(m.uvs) if m.uvs is not None else None,
             }
             for m in source.meshes
         ],
     }
 
 
-def source_decode(value: object) -> c.PlateSource:
+def source_decode(value: object, table: BufferTable | None = None) -> c.PlateSource:
+    """Decode one plate source; with a table, every mesh buffer must be a reference into it."""
+    get = _decode if table is None else table.resolve
     data = wire.fields(value, {'id', 'meters_per_unit', 'materials', 'meshes', 'textures', 'prints'})
     if any(type(data[k]) is not list or not 1 <= len(data[k]) <= MAX_MESHES for k in ('meshes', 'materials')):
         raise wire.fail(None, 'bounded lists of meshes and materials')
@@ -183,8 +211,8 @@ def source_decode(value: object) -> c.PlateSource:
     total = 0
     for value in data['meshes']:
         m = wire.fields(value, {'material', 'basis', 'vertices', 'normals', 'triangles', 'uvs'})
-        buffers = [_decode(m[k]) for k in ('vertices', 'normals', 'triangles')]
-        uvs = _decode(m['uvs']) if m['uvs'] is not None else None
+        buffers = [get(m[k]) for k in ('vertices', 'normals', 'triangles')]
+        uvs = get(m['uvs']) if m['uvs'] is not None else None
         total += sum(map(len, buffers))
         total += len(uvs) if uvs is not None else 0
         if total > MAX_BYTES:
