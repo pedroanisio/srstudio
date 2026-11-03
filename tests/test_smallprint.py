@@ -6,15 +6,18 @@ from __future__ import annotations
 import math
 import xml.etree.ElementTree as ET
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import Canvas, rafa_show, sketch
+from srstudio import Canvas, host_kit, rafa_show, sketch, toon_sketch
 from srstudio import smallprint as sp
 from srstudio import smallprint_kit as kit
+from srstudio.sample import SYSTEM_FONTS
 from srstudio.smallprint import Beat, ScriptError, Show, Stamp
 from srstudio.social import InstagramPost
+from srstudio.thumbnail import Thumbnail, ThumbnailError
 
 SMILE, BATTERY, MELTDOWN = "public-smile", "social-battery", "internal-meltdown"
 TOWER = "smallprint-tower"
@@ -635,3 +638,40 @@ def test_the_bubbles_on_the_can_s_wall_shrink_away_while_the_clock_runs():
     assert "wait" in words_on(root)
     last = max(bubbles, key=lambda b: max(t for t, _ in keyed(b, "scaleX")))
     assert float(last.get("x")) < 500.0, "the last bubble to go is on the wall by its label"
+
+
+FIXTURE_FONT = next((f for f in SYSTEM_FONTS if f.is_file()), None)  # DejaVu Sans Bold, the fixture font
+NEEDS_FONT = pytest.mark.skipif(FIXTURE_FONT is None, reason="no DejaVu Sans Bold to measure with")
+
+
+def project_with_font(root: Path) -> Path:
+    """A project folder holding the fixture font where the show's style installs its own."""
+    assert FIXTURE_FONT is not None and host_kit.HOST.font is not None
+    font = root / host_kit.HOST.font.src
+    font.parent.mkdir(parents=True)
+    font.write_bytes(FIXTURE_FONT.read_bytes())
+    return root
+
+
+def with_cover(headline: str) -> Show:
+    post = InstagramPost(title="Goldfish", description="d", thumbnail=Thumbnail(headline, 1.0, "Small Print #7"))
+    return replace(SHOW, post=post)
+
+
+@NEEDS_FONT
+def test_the_recording_refuses_a_cover_headline_too_wide_before_any_take(monkeypatch, tmp_path):
+    """goldfish-memory's first headline only failed when its cover was drawn from the master, every take paid for."""
+    taken = []
+    monkeypatch.setattr(toon_sketch, "record_episode", lambda *a, **k: taken.append(a) or {})
+    project = project_with_font(tmp_path)
+    with pytest.raises(ThumbnailError, match="THREE-SECOND MEMORY"):
+        sp.audio_main(with_cover("Goldfish\nthree-second memory?"), None, lambda *a, **k: [])([str(project)], {})
+    assert taken == []
+    sp.audio_main(with_cover("Goldfish\n3 seconds?"), None, lambda *a, **k: [])([str(project)], {})
+    assert len(taken) == 1
+
+
+def test_the_recording_refuses_a_cover_whose_font_is_not_installed(monkeypatch, tmp_path):
+    monkeypatch.setattr(toon_sketch, "record_episode", lambda *a, **k: pytest.fail("a take was recorded"))
+    with pytest.raises(ThumbnailError, match="is not in"):
+        sp.audio_main(with_cover("Goldfish\n3 seconds?"), None, lambda *a, **k: [])([str(tmp_path)], {})

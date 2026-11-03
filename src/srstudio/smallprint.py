@@ -1222,9 +1222,19 @@ def shared_sounds(show: Show, beats, end: float, root: Path, seed: int) -> list[
 
 
 def audio_main(show: Show, doc: str | None, foley_of: Callable[..., list[dict]]) -> Callable[..., int]:
-    """The ``main`` of an episode's recording script: Will says every line, one take a line."""
+    """The ``main`` of an episode's recording script: Will says every line, one take a line. The post's cover is laid
+    out in the font the build installs before any take is paid for, so a headline too wide for the frame stops the
+    recording, not the delivery after the master."""
     return recorder(
-        show.sketch, SEED, NOTE, doc, mouth=rafa_show.MOUTH, validate=show.validate_sketch, foley_of=foley_of
+        show.sketch,
+        SEED,
+        NOTE,
+        doc,
+        mouth=rafa_show.MOUTH,
+        validate=show.validate_sketch,
+        foley_of=foley_of,
+        cover=show.post.thumbnail,
+        cover_font=host_kit.HOST.font.src if host_kit.HOST.font else "",
     )
 
 
