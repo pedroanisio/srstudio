@@ -268,6 +268,12 @@ pickup pose, and `check_cuts` refuses any carry held across a declared cut.
 With the shared timing, the held cup moved 64 cm in world space at the cut.
 Each rigid paw drawing takes its solved sole's yaw, so the toes follow the
 solver's forward axis in every shot. A tilted sole raises an error.
+The [full-size feet review](../../generated/sdk-bento-body/v5/index.html)
+renders the body component at 14 times, covering both painter windows, both
+steps and both sides of the camera cut. In all 28 paw observations, the
+rendered paw fill covers at least 76.3% of the outline projected from the
+held pose, with no stray paw pixels. The same paw turned 45 degrees fails that
+check in every frame.
 
 `tests/test_drawing_body_support.py` exercises support, planted sole positions,
 bone lengths, native pelvis registration, source preparation and full-size
