@@ -16,6 +16,8 @@ def prepare_sequence(plan: c.ValidatedScenePlan, layer: str, source: c.RasterSeq
     known: dict[str, c.PreparedPlate | c.PreparedProxy] = {}
     frames = []
     total, nodes = 0, 0
+    # The reply carries each distinct resource once; prepared XML crosses per snapshot.
+    seen: set[bytes] = set()
     for snapshot in source.frames:
         key = payload.frame_digest(snapshot.source)
         if key not in known:
@@ -27,7 +29,12 @@ def prepare_sequence(plan: c.ValidatedScenePlan, layer: str, source: c.RasterSeq
                 known[key] = prepare_proxy(plan, layer, snapshot.source, sequence=True)
         asset = known[key]
         passes = asset.passes if isinstance(asset, c.PreparedProxy) else (asset,)
-        total += sum(len(p.xml) + sum(len(r.data) for r in p.resources) for p in passes)
+        for part in passes:
+            total += len(part.xml)
+            for resource in part.resources:
+                if resource.data not in seen:
+                    seen.add(resource.data)
+                    total += len(resource.data)
         nodes += sum(p.nodes for p in passes)
         if total > pw.MAX_BYTES or nodes > binding.nodes or total * 8 > binding.memory_bytes:
             raise payload.fail('resources', 'combined timeline preparation within byte, node and memory bounds')

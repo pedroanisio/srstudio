@@ -45,14 +45,20 @@ def prepare_proxy(plan: c.ValidatedScenePlan, layer: str, source: c.ProxySource)
 
 
 def prepared_decode(
-    response: dict, plan: c.ValidatedScenePlan, layer: str, source: c.ProxySource, *, sequence: bool = False
+    response: dict,
+    plan: c.ValidatedScenePlan,
+    layer: str,
+    source: c.ProxySource,
+    *,
+    sequence: bool = False,
+    table: pw.BufferTable | None = None,
 ) -> c.PreparedProxy:
     binding, view, sources = payload.context(plan, layer, source, sequence=sequence)
     wire.fields(response, {'schema', 'status', 'passes', 'digest'})
     if type(response['passes']) is not list or len(response['passes']) != len(sources):
         raise wire.fail(None, 'exactly the required light/ID pass evidence')
     passes = tuple(
-        pw.prepared_decode(raw, plan, layer, part, view=pass_view)
+        pw.prepared_decode(raw, plan, layer, part, view=pass_view, table=table)
         for raw, part, pass_view in zip(response['passes'], sources, payload.views(view, len(sources)), strict=True)
     )
     asset = c.PreparedProxy(binding, source, layer, plan.digest, passes, '')

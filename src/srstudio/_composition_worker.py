@@ -19,6 +19,7 @@ def dispatch(raw: bytes) -> dict:
     request = wire.loads(raw)
     operation = request.get('operation')
     if operation == 'prepare-sequence':
+        from srstudio import _composition_plate_wire as pw
         from srstudio._composition_sequence_runtime import decode as sequence_decode
         from srstudio._composition_sequence_runtime import frame_encode
         from srstudio._composition_sequence_worker import prepare_sequence
@@ -26,10 +27,14 @@ def dispatch(raw: bytes) -> dict:
         wire.fields(request, {'schema', 'operation', 'plan', 'layer', 'source'})
         plan = wire.record(c.ValidatedScenePlan, request['plan'])
         sequence = prepare_sequence(plan, request['layer'], sequence_decode(request['source']))
+        # Passes and held snapshots share content-addressed resources; the reply carries each once.
+        table = pw.BufferTable()
+        frames = [frame_encode(f, table) for f in sequence.frames]
         return {
             'schema': SCHEMA,
             'status': 'ok',
-            'frames': [frame_encode(f) for f in sequence.frames],
+            'frames': frames,
+            'resources': [{'digest': d, 'data': pw._encode(data)} for d, data in table.buffers.items()],
             'digest': sequence.digest,
         }
     if operation == 'prepare-proxy':

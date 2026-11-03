@@ -30,6 +30,18 @@ The sequence payload is now a content-addressed table plus references:
 
 Plate and proxy sources outside a sequence keep inline buffers.
 
+Sequence preparation had the same defect one step later. The prepare-sequence
+reply inlined every content-named resource (`meshes/<sha256>.obj`) for every
+pass of every snapshot, and the worker's bound counted each copy. For the
+candidate's 12-fps hand this came to 8,843,680 bytes: 467,520 of prepared XML,
+plus 8,376,160 of resources that are 2,267,126 bytes across 232 distinct files.
+The light and ID passes of a snapshot share their meshes, and held snapshots
+share the rests. The reply now carries a verified resource table in the same
+form. Passes reference it, and the bound counts the prepared XML of each
+snapshot plus each distinct resource once. The client refuses unused,
+duplicate, mismatched or missing entries and inline data, and shares one bytes
+object per entry. Prepared digests are unchanged; a test pins them.
+
 The cap value is unchanged. Snapshot digests, `raster_sequence_digest` and
 render-job keys hash the same source content as before, so cached renders stay
 valid; a test pins the earlier identities. With the table, the candidate's hand

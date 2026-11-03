@@ -85,14 +85,15 @@ def decode(value: object) -> c.RasterSequence:
     return result
 
 
-def frame_encode(frame: c.PreparedRasterFrame) -> dict:
+def frame_encode(frame: c.PreparedRasterFrame, table: pw.BufferTable | None = None) -> dict:
+    """Encode one prepared snapshot; with a table, its resources reference the reply's table."""
     if isinstance(frame.asset, c.PreparedPlate):
-        data = pw.prepared_encode(frame.asset)
+        data = pw.prepared_encode(frame.asset, table)
     else:
         data = {
             'schema': wire.SCHEMA,
             'status': 'ok',
-            'passes': [pw.prepared_encode(p) for p in frame.asset.passes],
+            'passes': [pw.prepared_encode(p, table) for p in frame.asset.passes],
             'digest': frame.asset.digest,
         }
     return {'time': frame.time, 'prepared': data}
@@ -110,20 +111,23 @@ def prepare_sequence(plan: c.ValidatedScenePlan, layer: str, source: c.RasterSeq
         },
         plan.spec.budget,
     )
-    wire.fields(response, {'schema', 'status', 'frames', 'digest'})
+    wire.fields(response, {'schema', 'status', 'frames', 'resources', 'digest'})
     if type(response['frames']) is not list or len(response['frames']) != len(source.frames):
         raise wire.fail(None, 'complete preparation evidence for every source snapshot')
+    table, _ = _table(response['resources'])
     frames = []
     for raw, snapshot in zip(response['frames'], source.frames, strict=True):
         entry = wire.fields(raw, {'time', 'prepared'})
         if type(entry['time']) not in (int, float) or entry['time'] != snapshot.time:
             raise wire.fail(None, 'unchanged typed snapshot times')
         asset = (
-            pw.prepared_decode(entry['prepared'], plan, layer, snapshot.source)
+            pw.prepared_decode(entry['prepared'], plan, layer, snapshot.source, table=table)
             if isinstance(snapshot.source, c.PlateSource)
-            else proxy.prepared_decode(entry['prepared'], plan, layer, snapshot.source, sequence=True)
+            else proxy.prepared_decode(entry['prepared'], plan, layer, snapshot.source, sequence=True, table=table)
         )
         frames.append(c.PreparedRasterFrame(snapshot.time, asset))
+    if table.used != table.buffers.keys():
+        raise wire.fail(None, 'a resource table without unreferenced entries')
     result = c.PreparedRasterSequence(binding, source, layer, plan.digest, tuple(frames), '')
     if response['digest'] != payload.identity(result):
         raise wire.fail(None, 'the complete prepared sequence identity')

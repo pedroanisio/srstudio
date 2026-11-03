@@ -280,10 +280,12 @@ def identity(asset: c.PreparedPlate) -> str:
     )
 
 
-def prepared_encode(asset: c.PreparedPlate) -> dict:
+def prepared_encode(asset: c.PreparedPlate, table: BufferTable | None = None) -> dict:
+    """Encode prepared evidence; with a table, resource data become references into it."""
+    put = _encode if table is None else table.reference
     return {
         'xml': _encode(asset.xml),
-        'resources': [{'name': r.name, 'data': _encode(r.data)} for r in asset.resources],
+        'resources': [{'name': r.name, 'data': put(r.data)} for r in asset.resources],
         'bounds': asdict(asset.bounds),
         'nodes': asset.nodes,
         'width': asset.width,
@@ -294,8 +296,15 @@ def prepared_encode(asset: c.PreparedPlate) -> dict:
 
 
 def prepared_decode(
-    value: object, plan: c.ValidatedScenePlan, layer: str, source: c.PlateSource, *, view: c.PlateView | None = None
+    value: object,
+    plan: c.ValidatedScenePlan,
+    layer: str,
+    source: c.PlateSource,
+    *,
+    view: c.PlateView | None = None,
+    table: BufferTable | None = None,
 ) -> c.PreparedPlate:
+    get = _decode if table is None else table.resolve
     data = wire.fields(value, {'xml', 'resources', 'bounds', 'nodes', 'width', 'height', 'offset', 'digest'})
     binding = next(b for b in plan.bindings if b.id == source.id)
     if type(data['resources']) is not list or not 1 <= len(data['resources']) <= MAX_RESOURCES:
@@ -306,7 +315,7 @@ def prepared_decode(
     total = len(xml)
     for entry in data['resources']:
         r = wire.fields(entry, {'name', 'data'})
-        content = _decode(r['data'])
+        content = get(r['data'])
         digest = hashlib.sha256(content).hexdigest()
         expected = r['name']
         if (
