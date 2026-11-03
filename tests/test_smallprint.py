@@ -3,6 +3,7 @@ question opens and closes it, every finding is stamped with its source inside th
 
 from __future__ import annotations
 
+import math
 import xml.etree.ElementTree as ET
 from dataclasses import replace
 
@@ -535,3 +536,102 @@ def test_a_caption_band_on_a_reel_built_before_held_frames_keeps_its_times():
     root = ET.fromstring(caption_scene(False, (6.367,)))
     (band,) = [g for g in root.iter() if g.get("start") is not None]
     assert (band.get("start"), band.get("end")) == ("6.367", "7.367")
+
+
+def words_on(root: ET.Element) -> str:
+    return " ".join(t.get("text") or "" for t in root.iter() if t.tag.endswith("text"))
+
+
+def test_the_goldfish_swims_to_his_lever_again_and_again_and_food_comes_one_hour_in_twenty_four():
+    root = panel_root("fish-lever")
+    (fish,) = groups(root, "sp-fish")
+    xs = keyed(fish, "x")
+    arrivals = [t for t, v in xs if v == max(v for _, v in xs)]
+    assert len(arrivals) >= 2 and arrivals[-1] >= 5.0, "he keeps going to the lever while the page is up"
+    (hour,) = groups(root, "sp-hour")
+    d = next(e for e in hour if e.get("shape") == "path").get("path")
+    (cx, cy), *arc = [tuple(map(float, part.strip(" MLZ").split())) for part in d.split("L")]
+    turn = [math.degrees(math.atan2(y - cy, x - cx)) for x, y in (arc[0], arc[-1])]
+    assert turn[1] - turn[0] == pytest.approx(360.0 / 24.0, abs=0.01), "one hour of the dial's day"
+    (hand,) = groups(root, "sp-clock-hand")
+    assert keyed(hand, "rotation")[-1][1] > keyed(hand, "rotation")[0][1], "the clock goes round"
+    assert "lever" in words_on(root) and "1 hour a day" in words_on(root)
+
+
+def test_when_the_food_stops_the_goldfish_keeps_pressing_and_no_pellet_comes():
+    root = panel_root("fish-stopped")
+    assert groups(root, "sp-pellet") == [], "no food comes"
+    (fish,) = groups(root, "sp-fish")
+    xs = keyed(fish, "x")
+    assert len([t for t, v in xs if v == max(v for _, v in xs)]) >= 2, "he keeps going to the lever"
+    (lever,) = groups(root, "sp-lever")
+    assert max(v for _, v in keyed(lever, "rotation")) > 0.0, "and pressing it"
+    assert "no food" in words_on(root) and "1 hour a day" not in words_on(root)
+    assert groups(panel_root("fish-lever"), "sp-pellet"), "while it was fed, the pellets came"
+
+
+def test_the_days_are_crossed_off_week_after_week_and_the_fish_waits_at_his_corner():
+    root = panel_root("fish-weeks", 1.0, 9.0)
+    days = groups(root, "sp-day")
+    assert len(days) == 28, "four weeks of days"
+    shown = [min(t for t, v in keyed(day, "opacity") if v > 0.0) for day in days]
+    assert shown == sorted(shown) and shown[-1] <= 9.0 - 1.0, "crossed off in order, the last a second before the cut"
+    (fish,) = groups(root, "sp-fish")
+    assert len(keyed(fish, "y")) >= 4, "he bobs where his food comes"
+    assert "weeks" in words_on(root) and "food here" in words_on(root)
+    food = groups(root, "sp-food")
+    assert len(food) >= 3, "pellets on the water mark where the food comes"
+    hollow = [e for e in root.iter() if e.get("shape") == "ellipse" and (e.get("fill") or "").endswith("00000000")]
+    assert hollow == [], "no ring over the fish: a ring over his head reads as a halo"
+
+
+def test_the_cut_face_browns_only_once_its_cells_have_broken_and_the_oxygen_has_come_in():
+    root = panel_root("apple-cells")
+    cells = groups(root, "sp-cell")
+    broken = min(t for cell in cells for t, v in keyed(cell, "scaleX") if v < 0.5)
+    (brown,) = groups(root, "sp-browning")
+    rises = [(t, v) for t, v in keyed(brown, "opacity")]
+    assert rises[0][1] == 0.0 and rises[-1][1] > 0.6
+    assert min(t for t, v in rises if v > 0.0) > broken
+    assert groups(root, "sp-oxygen") and groups(root, "sp-enzyme")
+    assert "enzyme" in words_on(root) and "oxygen" in words_on(root) and "cells" in words_on(root)
+
+
+def test_the_bare_half_browns_and_the_lemon_half_stays_pale_under_its_drops():
+    root = panel_root("apple-lemon")
+    browning = groups(root, "sp-browning")
+    assert len(browning) == 1, "only the bare half has a brown layer"
+    assert max(v for _, v in keyed(browning[0], "opacity")) > 0.6
+    drops = groups(root, "sp-juice")
+    assert drops and all(len(keyed(d, "y")) >= 4 for d in drops), "the juice keeps dripping on the other half"
+    bare_x = float(next(e for e in browning[0] if e.get("shape") == "ellipse").get("x"))
+    drop_x = float(next(e for e in drops[0] if e.get("shape") == "path").get("path").split()[0][1:])
+    assert drop_x > bare_x + 300.0, "the drops fall on the other half"
+    assert "bare" in words_on(root) and "lemon juice" in words_on(root)
+
+
+def test_tapped_and_untapped_cans_lose_the_same_foam():
+    root = panel_root("can-test")
+    bars = groups(root, "sp-foam-bar")
+    assert len(bars) == 2
+    lengths = [keyed(bar, "scaleX")[-1][1] for bar in bars]
+    assert lengths[0] == pytest.approx(lengths[1]), "no significant difference (Sopina et al., 2019)"
+    (finger,) = groups(root, "sp-finger")
+    assert len(keyed(finger, "rotation")) >= 6, "the finger taps, and keeps tapping"
+    words = words_on(root)
+    assert "tapped" in words and "not tapped" in words and "1,000 cans" in words
+    assert "beer lost" in words and "foam" not in words, "the trial weighed the beer lost, not the foam"
+
+
+def test_the_bubbles_on_the_can_s_wall_shrink_away_while_the_clock_runs():
+    root = panel_root("can-bubbles")
+    bubbles = groups(root, "sp-bubble")
+    assert len(bubbles) >= 6
+    for bubble in bubbles:
+        rows = keyed(bubble, "scaleX")
+        assert rows[0][1] == 1.0 and min(v for _, v in rows) < 0.2, "each one dissolves"
+    (hand,) = groups(root, "sp-clock-hand")
+    assert keyed(hand, "rotation")[-1][1] > keyed(hand, "rotation")[0][1]
+    assert "wait" in words_on(root)
+    last = max(bubbles, key=lambda b: max(t for t, _ in keyed(b, "scaleX")))
+    assert float(last.get("x")) < 500.0, "the last bubble to go is on the wall by its label"

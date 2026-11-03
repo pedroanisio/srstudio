@@ -916,6 +916,228 @@ def wall_colour(cv, g, first: float, last: float, measure: Measure) -> None:
     cv.keys(lens, "x", _sawtooth(first, last, 2.6, 0.0, 640.0), hold=False, kind=None, local=False)
 
 
+# -- batch 2, the rest: the goldfish, the apple, the can ------------------------------------------------------------
+FISH, WATER, APPLE_FLESH, APPLE_BROWN, ENZYME, CAN = "#E8782E", "#CFE6EC", "#F3E7BE", "#A86A35", "#5E9E5A", "#2F7FA6"
+
+
+def _fish(cv, parent, x: float, y: float, size: float, facing: float = 1.0) -> None:
+    """A goldfish in profile about ``x, y``, facing frame right (``facing`` 1) or left (-1)."""
+    tail = x - facing * size * 1.05
+    cv.path(parent, f"M{x - facing * size * 0.7:.0f} {y:.0f} L{tail - facing * size * 0.35:.0f} {y - size * 0.5:.0f} "
+            f"L{tail - facing * size * 0.35:.0f} {y + size * 0.5:.0f} Z", fill=FISH, stroke=INK, sw=4.0)  # fmt: skip
+    cv.ellipse(parent, x - size, y - size * 0.55, 2 * size, 1.1 * size, FISH, stroke=INK, sw=4.0)
+    cv.ellipse(parent, x + facing * size * 0.5 - 8, y - size * 0.22 - 8, 16, 16, INK)
+
+
+def _clock(cv, g, cx: float, cy: float, r: float, first: float, last: float, per_turn: float) -> None:
+    """A dial with its hand going round once every ``per_turn`` seconds while the page is up."""
+    cv.ellipse(g, cx - r, cy - r, 2 * r, 2 * r, PAPER, stroke=INK, sw=6.0)
+    for k in range(12):
+        a = math.radians(k * 30)
+        cv.line(g, cx + 0.8 * r * math.sin(a), cy - 0.8 * r * math.cos(a), cx + 0.92 * r * math.sin(a),
+                cy - 0.92 * r * math.cos(a), INK, 4.0)  # fmt: skip
+    hand = pivot(cv, g, "sp-clock-hand", cx, cy)
+    cv.line(hand, cx, cy, cx, cy - 0.75 * r, INK, 7.0)
+    turns = max(1, math.ceil((last - first) / per_turn))
+    cv.keys(hand, "rotation", [(first, 0.0), (first + turns * per_turn, 360.0 * turns)], hold=False, local=False)
+
+
+def fish_lever(cv, g, first: float, last: float, measure: Measure, fed: bool = True) -> None:
+    """The lab's tank: a goldfish swimming to a lever and back, a pellet dropping each time he presses it, and a clock
+    whose one fed hour of the twenty-four is shaded (Gee et al., 1994). Not ``fed``: the food has stopped, and he
+    keeps pressing at that hour with no pellet coming."""
+    sheet(cv, g)
+    cv.rect(g, 110, 470, 800, 430, WATER, stroke=INK, sw=6.0, radius=18.0)
+    cv.line(g, 110, 520, 910, 520, AIR, 4.0)  # the water's top
+    lever = pivot(cv, g, "sp-lever", 860.0, 600.0)
+    cv.line(lever, 860, 600, 800, 700, INK, 10.0)
+    cv.ellipse(lever, 784, 684, 32, 32, STAMP, stroke=INK, sw=3.0)
+    fish = cv.group(g, cv.uid("sp-fish"), x=0.0)
+    _fish(cv, fish, 330.0, 720.0, 62.0)
+    lap = 1.8
+    rows, presses, t = [], [], first
+    while t < last:
+        rows += [(t, 0.0), (t + lap * 0.45, 380.0), (t + lap * 0.55, 380.0), (t + lap, 0.0)]
+        presses.append(t + lap * 0.45)
+        t += lap
+    cv.keys(fish, "x", rows, hold=False, kind="sine-in-out", local=False)
+    cv.keys(lever, "rotation", [k for at in presses for k in ((at - 0.05, 0.0), (at, 14.0), (at + 0.3, 0.0))],
+            hold=False, local=False)  # fmt: skip
+    if fed:
+        pellet = cv.group(g, cv.uid("sp-pellet"), y=0.0)
+        cv.ellipse(pellet, 700, 470, 26, 26, COPPER, stroke=INK, sw=3.0)
+        cv.keys(pellet, "y", [k for at in presses for k in ((at, 0.0), (at + 0.6, 260.0), (at + 0.61, 0.0))],
+                hold=False, local=False)  # fmt: skip
+    cx, cy, r = 250.0, 330.0, 92.0
+    _clock(cv, g, cx, cy, r, first, last, 2.4)
+    wedge = cv.group(g, cv.uid("sp-hour"))
+    arc = [(cx + r * 0.95 * math.cos(math.radians(a)), cy + r * 0.95 * math.sin(math.radians(a)))
+           for a in np.linspace(-90.0, -90.0 + 360.0 / 24.0, 6)]  # fmt: skip
+    cv.path(wedge, f"M{cx:.2f} {cy:.2f} " + " ".join(f"L{x:.4f} {y:.4f}" for x, y in arc) + " Z", fill=STAMP,
+            stroke=INK, sw=3.0)  # fmt: skip
+    words = "food: 1 hour a day" if fed else "no food now"
+    size = min(46.0, 46.0 * (RIGHT - 370) / measure(words, 46.0))
+    label(cv, g, words, 370, 300, RIGHT - 370, 64, size, INK if fed else STAMP, "start")
+    label(cv, g, "lever", 700, 400, RIGHT - 700, 60, 44.0, INK, "end")
+
+
+def fish_stopped(cv, g, first: float, last: float, measure: Measure) -> None:
+    """The same tank once the food has stopped: he still swims to the lever and presses it, and nothing comes."""
+    fish_lever(cv, g, first, last, measure, fed=False)
+
+
+def fish_weeks(cv, g, first: float, last: float, measure: Measure) -> None:
+    """A month of days crossed off one by one, and under it the goldfish bobbing under the pellets where his food
+    comes, still there week after week (Brown, in Live Science, 2021)."""
+    sheet(cv, g)
+    label(cv, g, "weeks later", LEFT, 250, RIGHT - LEFT, 70, 52.0, INK, "center")
+    left, top, side = 150.0, 340.0, 108.0
+    span = max(last - first - 1.2, 1.0)
+    for n in range(28):
+        week, day = divmod(n, 7)
+        x, y = left + day * side, top + week * 86.0
+        cv.rect(g, x, y, side - 10, 76, PAPER, stroke=INK, sw=3.0, radius=6.0)
+        mark = cv.group(g, cv.uid("sp-day"), opacity=0.0)
+        cv.line(mark, x + 18, y + 14, x + side - 28, y + 62, STAMP, 6.0)
+        cv.line(mark, x + side - 28, y + 14, x + 18, y + 62, STAMP, 6.0)
+        at = round(first + 0.2 + span * n / 28, 4)
+        cv.keys(mark, "opacity", [(at, 0.0), (at + 0.06, 1.0)], hold=False, local=False)
+    cv.rect(g, 140, 720, 760, 220, WATER, stroke=INK, sw=6.0, radius=18.0)
+    for k, x in enumerate((700.0, 740.0, 780.0)):  # pellets on the water where his food comes (a ring reads as a halo)
+        food = cv.group(g, cv.uid("sp-food"))
+        cv.ellipse(food, x - 12, 734 + 6 * (k % 2), 24, 24, COPPER, stroke=INK, sw=3.0)
+    fish = cv.group(g, cv.uid("sp-fish"), y=0.0)
+    _fish(cv, fish, 740.0, 830.0, 54.0, facing=-1.0)
+    bob, t, rows = 0.8, first, []
+    while t < last:
+        rows += [(t, 0.0), (t + bob / 2, -22.0)]
+        t += bob
+    cv.keys(fish, "y", rows, hold=False, kind="sine-in-out", local=False)
+    label(cv, g, "food here", 380, 760, 280, 60, 44.0, INK, "end")
+
+
+def apple_cells(cv, g, first: float, last: float, measure: Measure) -> None:
+    """An apple's cut face up close: its cells breaking one after another, an enzyme spilling out of them, oxygen
+    drifting down from the air to meet it, and the face browning after (UW-Madison, 2008)."""
+    sheet(cv, g)
+    cx, cy, r = 470.0, 650.0, 290.0
+    cv.ellipse(g, cx - r - 14, cy - r - 14, 2 * r + 28, 2 * r + 28, "#B8352B", stroke=INK, sw=6.0)
+    cv.ellipse(g, cx - r, cy - r, 2 * r, 2 * r, APPLE_FLESH, stroke=INK, sw=4.0)
+    brown = cv.group(g, cv.uid("sp-browning"), opacity=0.0)
+    cv.ellipse(brown, cx - r, cy - r, 2 * r, 2 * r, APPLE_BROWN)
+    span = max(last - first, 2.0)
+    breaks = []
+    for k in range(10):
+        a = k * 2 * math.pi / 10
+        x, y = cx + 170 * math.cos(a), cy + 170 * math.sin(a)
+        cell = pivot(cv, g, "sp-cell", x, y)
+        cv.ellipse(cell, x - 34, y - 34, 68, 68, "#FFFFFF", stroke=INK, sw=3.0)
+        at = first + 0.2 + 0.4 * span * k / 10
+        breaks.append(at)
+        cv.keys(cell, "scaleX", [(at, 1.0), (at + 0.15, 0.0)], hold=False, local=False)
+        cv.keys(cell, "scaleY", [(at, 1.0), (at + 0.15, 0.0)], hold=False, local=False)
+        dot = cv.group(g, cv.uid("sp-enzyme"), x=0.0, y=0.0, opacity=0.0)
+        cv.ellipse(dot, x - 12, y - 12, 24, 24, ENZYME, stroke=INK, sw=2.0)
+        cv.keys(dot, "opacity", [(at, 0.0), (at + 0.1, 1.0)], hold=False, local=False)
+        cv.keys(dot, "x", [(at, 0.0), (last, (cx - x) * 0.35)], hold=False, local=False)
+        cv.keys(dot, "y", [(at, 0.0), (last, -60.0)], hold=False, local=False)
+    for k in range(6):
+        o2 = cv.group(g, cv.uid("sp-oxygen"), y=0.0)
+        x = 220.0 + k * 100.0
+        cv.ellipse(o2, x - 16, 250, 32, 32, AIR, stroke=INK, sw=2.0)
+        cv.ellipse(o2, x + 6, 250, 32, 32, AIR, stroke=INK, sw=2.0)
+        cv.keys(o2, "y", _sawtooth(first + 0.1 * k, last, 1.6, 0.0, 300.0), hold=False, local=False)
+    rise = max(breaks) + 0.2
+    cv.keys(brown, "opacity", [(first, 0.0), (rise, 0.0), (min(rise + 1.2, last), 0.8)], hold=False, local=False)
+    label(cv, g, "oxygen", 760, 250, RIGHT - 760, 60, 44.0, INK, "end")
+    label(cv, g, "enzyme", 780, 880, RIGHT - 780, 60, 40.0, INK, "end")
+    label(cv, g, "cells", LEFT, 960, 300, 60, 40.0, INK, "start")
+
+
+def apple_lemon(cv, g, first: float, last: float, measure: Measure) -> None:
+    """Two halves side by side: the bare one browning, the other kept pale under drips of lemon juice (Illinois
+    Extension, 2020)."""
+    sheet(cv, g)
+    r = 170.0
+    for name, cx in (("bare", 290.0), ("lemon juice", 720.0)):
+        cv.ellipse(g, cx - r - 12, 640 - r - 12, 2 * r + 24, 2 * r + 24, "#B8352B", stroke=INK, sw=6.0)
+        cv.ellipse(g, cx - r, 640 - r, 2 * r, 2 * r, APPLE_FLESH, stroke=INK, sw=4.0)
+        size = min(48.0, 48.0 * 380.0 / measure(name, 48.0))
+        label(cv, g, name, cx - 190, 840, 380, 70, size, INK, "center")
+    brown = cv.group(g, cv.uid("sp-browning"), opacity=0.0)
+    cv.ellipse(brown, 290.0 - r, 640 - r, 2 * r, 2 * r, APPLE_BROWN)
+    cv.keys(brown, "opacity", [(first, 0.0), (first + 0.4, 0.0), (min(first + 2.2, last), 0.85)], hold=False,
+            local=False)  # fmt: skip
+    cv.path(g, "M630 320 Q720 240 810 320 Q720 400 630 320 Z", fill="#E7BC4B", stroke=INK, sw=5.0)  # a lemon
+    for k, x in enumerate((690.0, 730.0, 765.0)):
+        drop = cv.group(g, cv.uid("sp-juice"), y=0.0, opacity=0.0)
+        cv.path(drop, f"M{x} 380 Q{x - 12} 404 {x} 412 Q{x + 12} 404 {x} 380 Z", fill="#F2D86B", stroke=INK, sw=3.0)
+        rows, t = [], first + 0.25 * k
+        while t < last:
+            rows += [(t, 0.0), (t + 0.7, 200.0), (t + 0.71, 0.0)]
+            t += 1.0
+        cv.keys(drop, "y", rows, hold=False, local=False)
+        cv.keys(drop, "opacity", [(first, 1.0)], hold=True, local=False)
+
+
+def _can(cv, parent, x: float, y: float, w: float, h: float) -> None:
+    """A plain can, no lettering: a body, a pale band, a lid."""
+    cv.rect(parent, x, y, w, h, CAN, stroke=INK, sw=4.0, radius=w * 0.12)
+    cv.rect(parent, x, y + h * 0.42, w, h * 0.14, PAPER, stroke=INK, sw=2.0)
+    cv.rect(parent, x + w * 0.08, y - h * 0.05, w * 0.84, h * 0.08, "#AAB8B4", stroke=INK, sw=3.0, radius=4.0)
+
+
+FOAM_LOST = 0.7  # the bars' common height: the two groups lost the same, to within the test's error
+
+
+def can_test(cv, g, first: float, last: float, measure: Measure) -> None:
+    """The Danish trial: a crowd of shaken cans, a finger tapping one, and the beer each kind lost rising in two bars
+    to the same length (Sopina et al., 2019)."""
+    sheet(cv, g)
+    label(cv, g, "1,000 cans", LEFT, 240, RIGHT - LEFT, 80, 64.0, INK, "center")
+    for k in range(10):
+        _can(cv, g, 150.0 + k * 74.0, 350.0, 56.0, 96.0)
+    for i, (name, cx) in enumerate((("tapped", 300.0), ("not tapped", 700.0))):
+        _can(cv, g, cx - 50, 520.0, 100.0, 160.0)
+        size = min(46.0, 46.0 * 360.0 / measure(name, 46.0))
+        label(cv, g, name, cx - 180, 696, 360, 64, size, INK, "center")
+        bar = pivot(cv, g, "sp-foam-bar", cx - 150.0, 800.0)  # the beer each lost, growing from its left end
+        cv.rect(bar, cx - 150.0, 780.0, 300.0, 40.0, COPPER, stroke=INK, sw=4.0, radius=10.0)
+        cv.keys(bar, "scaleX", [(first, 0.02), (min(first + 1.6, last), FOAM_LOST)], hold=False, kind="cubic-out",
+                local=False)  # fmt: skip
+        if i == 0:  # a finger at the can's side, tapping it
+            finger = pivot(cv, g, "sp-finger", cx - 120.0, 600.0)
+            cv.rect(finger, cx - 120.0, 588.0, 72.0, 26.0, "#E9B48F", stroke=INK, sw=3.0, radius=13.0)
+            taps, t = [], first
+            while t < last:
+                taps += [(t, 0.0), (t + 0.12, -14.0), (t + 0.24, 0.0)]
+                t += 0.5
+            cv.keys(finger, "rotation", taps, hold=False, local=False)
+    label(cv, g, "beer lost", LEFT, 838, RIGHT - LEFT, 56, 40.0, INK, "center")
+
+
+def can_bubbles(cv, g, first: float, last: float, measure: Measure) -> None:
+    """Inside a shaken can: bubbles clinging to its wall, shrinking away while a clock runs, so it can be opened (Live
+    Science, 2026)."""
+    sheet(cv, g)
+    cv.rect(g, 300, 300, 400, 620, WATER, stroke=INK, sw=8.0, radius=40.0)
+    cv.rect(g, 330, 270, 340, 40, "#AAB8B4", stroke=INK, sw=5.0, radius=8.0)
+    span = max(last - first, 2.0)
+    for k in range(10):
+        side, row = divmod(k, 5)
+        x, y = (330.0 if side == 0 else 670.0), 380.0 + row * 110.0
+        r = 22.0 + 6.0 * ((k * 7) % 3)
+        bubble = pivot(cv, g, "sp-bubble", x, y)
+        cv.ellipse(bubble, x - r, y - r, 2 * r, 2 * r, "#FFFFFF", stroke=INK, sw=3.0)
+        order = (9 - k) if side == 0 else (k - 5)  # the far wall clears first, the wall by the label last
+        gone = first + 0.3 + 0.75 * span * (order + 1) / 10
+        cv.keys(bubble, "scaleX", [(first, 1.0), (gone, 0.0)], hold=False, local=False)
+        cv.keys(bubble, "scaleY", [(first, 1.0), (gone, 0.0)], hold=False, local=False)
+    _clock(cv, g, 830.0, 420.0, 70.0, first, last, 1.6)
+    label(cv, g, "wait", 760, 510, RIGHT - 760, 70, 52.0, INK, "center")
+    label(cv, g, "bubbles", LEFT, 410, 210, 60, 42.0, INK, "start")
+
+
 PANELS: dict[str, Callable[..., None]] = {
     "penny-fall": penny_fall,
     "lightning": lightning,
@@ -929,6 +1151,13 @@ PANELS: dict[str, Callable[..., None]] = {
     "wet-grip": wet_grip,
     "wall-orbit": wall_orbit,
     "wall-colour": wall_colour,
+    "fish-lever": fish_lever,
+    "fish-stopped": fish_stopped,
+    "fish-weeks": fish_weeks,
+    "apple-cells": apple_cells,
+    "apple-lemon": apple_lemon,
+    "can-test": can_test,
+    "can-bubbles": can_bubbles,
 }
 
 

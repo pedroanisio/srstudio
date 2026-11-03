@@ -15915,6 +15915,57 @@
           "rig": null
         }
       ]
+    },
+    "smallprint-goldfish": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-03",
+          "note": "A round glass bowl on his worktop with a goldfish coming up through the top of the water nose first, mouth open, at the back facing left or right or at the front among his flakes, as replacement plates. First drawn for Small Print's goldfish-memory question.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "036172b31aa403e49defbad7b54cf5832d643827db3aff045eb6a53ad62d5809",
+          "rig": null
+        }
+      ]
+    },
+    "smallprint-apple": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-03",
+          "note": "An apple cut in two on a board, its halves standing with their faces to the lens, pale, brown, or one kept pale by a squeezed lemon, as replacement plates. First drawn for Small Print's apple-brown question.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a7d3a97d1e341b8cc3992f55f2668df9eb4e7dd59e70d0caada131a5c6d88614",
+          "rig": null
+        }
+      ]
+    },
+    "smallprint-can": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-03",
+          "note": "A plain unlettered drink can, shaken up and down in his hand, then open on the worktop foaming over or calm, as replacement plates; his own rig is not changed. First drawn for Small Print's shaken-soda question.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "77c97e4bb4d506187dc10b1ded60e182da6d2ed2ee6438182e487059e2e08230",
+          "rig": null
+        }
+      ]
     }
   }
 }
