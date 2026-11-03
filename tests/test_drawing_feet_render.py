@@ -1,4 +1,10 @@
-"""Bento's rendered paws sit where, and point the way, the body solver says, in every shot."""
+"""Bento's rendered paws sit where, and point the way, the body solver says, in every shot.
+
+Two limits bound what these frames can prove. The paw is a flat front-view card, so a
+heel-to-toe reflection through its plane moves no point and no pixel test can see it; the
+reversed (180 degree) control is caught only by its stray-pixel margin. And every solved sole
+in this motion has yaw 0, so the frames show feet facing the camera, never a turned foot.
+"""
 
 import importlib
 import math
@@ -11,6 +17,13 @@ import pytest
 # Both painter windows, both steps, the held opening, and both sides of the 4 s camera cut.
 TIMES = (0.25, 0.85, 1.1, 1.35, 2.2, 2.45, 2.95, 3.1, 3.95, 4.05, 4.35, 5.2, 5.45, 5.95)
 PAW = (212, 154, 101)  # Bento's paw fill; nothing else in the component uses it.
+COVERED, STRAY = 0.75, 0.02  # A paw fits when its fill covers this share of the outline with this little spill.
+CONTROLS = {'turned45': 45.0, 'reversed': 180.0}
+
+
+def margins(covered, stray, area):
+    """Signed distance to each fit threshold; a fit passes only when both are non-negative."""
+    return {'coverage': round(covered / area - COVERED, 4), 'stray': round(STRAY - stray / max(covered, 1), 4)}
 
 
 @pytest.fixture
@@ -48,6 +61,18 @@ def test_paw_outline_matches_the_composition_camera(example):
             camera = c.spatial_camera(plan, layer)
             projected = np.array([camera.project(Vec3(*p)).xy for p in binding.forms[0].path.points])
             assert projected == pytest.approx(paw_outline(example, leg, time), abs=1e-6)
+
+
+def test_a_heel_toe_reflection_of_the_flat_paw_projects_identically(example):
+    """The paw is a flat card: reflecting it through its own plane moves no point, so no frame can show it."""
+    binding, _ = example.foot_source()
+    assert {point[2] for form in binding.forms for point in form.path.points} == {0.0}
+    for time in (0.25, 4.05):
+        for leg in example.body_plan().sample(time if time < 3 else time - 3).legs:
+            outline = paw_outline(example, leg, time)
+            transform = example.foot_transform(leg, time)
+            assert paw_outline(example, leg, time, turn=0.0) == pytest.approx(outline)
+            assert transform.rotation[0] == transform.rotation[2] == 0
 
 
 def test_feet_render_at_full_size_in_every_shot(example, scene_render, tmp_path):
@@ -119,24 +144,30 @@ def test_feet_render_at_full_size_in_every_shot(example, scene_render, tmp_path)
             other = next(shape for side, shape in outlines.items() if side != leg.side)
             covered, stray = fit(outline, other)
             # 88% of the outline is visible fill; toe and edge marks cover the rest.
-            assert covered >= 0.75 * outline.area, (time, leg.side, covered, outline.area)
-            assert stray <= 0.02 * covered, (time, leg.side, stray, covered)
-            # The control: the same paw turned 45 degrees about its sole fails the same fit.
-            turned = shapely.Polygon(paw_outline(example, leg, held_at, turn=45))
-            control_covered, control_stray = fit(turned, other)
-            assert control_covered < 0.75 * turned.area or control_stray > 0.02 * control_covered, (time, leg.side)
-            report.append(
-                {
-                    'time': time,
-                    'held_from': held_at,
-                    'side': leg.side,
-                    'planted': leg.planted,
-                    'outline_px': round(outline.area, 1),
-                    'covered_px': covered,
-                    'stray_px': stray,
-                    'turned45_outline_px': round(turned.area, 1),
-                    'turned45_covered_px': control_covered,
-                    'turned45_stray_px': control_stray,
+            assert covered >= COVERED * outline.area, (time, leg.side, covered, outline.area)
+            assert stray <= STRAY * covered, (time, leg.side, stray, covered)
+            row = {
+                'time': time,
+                'held_from': held_at,
+                'side': leg.side,
+                'planted': leg.planted,
+                'outline_px': round(outline.area, 1),
+                'covered_px': covered,
+                'stray_px': stray,
+                'margin': margins(covered, stray, outline.area),
+            }
+            # Controls: the same paw turned 45 degrees, and reversed (turned 180 degrees, toes pointing
+            # backwards), each about its sole, must fail the same fit.
+            for name, turn in CONTROLS.items():
+                control = shapely.Polygon(paw_outline(example, leg, held_at, turn=turn))
+                control_covered, control_stray = fit(control, other)
+                margin = margins(control_covered, control_stray, control.area)
+                assert min(margin.values()) < 0, (time, leg.side, name, margin)
+                row[name] = {
+                    'outline_px': round(control.area, 1),
+                    'covered_px': control_covered,
+                    'stray_px': control_stray,
+                    'margin': margin,
                 }
-            )
+            report.append(row)
     (tmp_path / 'feet.json').write_text(__import__('json').dumps(report, indent=1) + '\n')
