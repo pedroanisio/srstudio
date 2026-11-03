@@ -1,0 +1,1286 @@
+{
+  "schema": "srstudio.dance-moves/1.0.0",
+  "generated_by": {
+    "tool": "Claude Code",
+    "model": "Claude Opus 5.5 (claude-opus-5-5)"
+  },
+  "moves": [
+    {
+      "name": "seat-groove",
+      "description": "The seated car dance measured on a 129 BPM reel: a near-sine bob that drops on the beat and a sideways snap that lands with the drop. The head holds its angle; arms ride the body.",
+      "support": "seat",
+      "loop_beats": 1,
+      "lags": {
+        "left_arm": 0,
+        "right_arm": 0
+      },
+      "patterns": [
+        {
+          "target": "root.up",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": -0.19,
+          "snap": 0.422
+        },
+        {
+          "target": "root.right",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.1,
+          "snap": 0.278
+        },
+        {
+          "target": "left_shoulder.down_up",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": -0.05,
+          "snap": 0.422
+        },
+        {
+          "target": "right_shoulder.down_up",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": -0.05,
+          "snap": 0.422
+        }
+      ]
+    },
+    {
+      "name": "bob",
+      "description": "A standing bob: knees give on the beat, the chest and head follow a little late.",
+      "support": "feet",
+      "loop_beats": 1,
+      "lags": {
+        "torso": 0.05,
+        "head": 0.1
+      },
+      "contacts": [
+        {
+          "foot": "left_foot",
+          "from": 0,
+          "to": 1
+        },
+        {
+          "foot": "right_foot",
+          "from": 0,
+          "to": 1
+        }
+      ],
+      "patterns": [
+        {
+          "target": "root.up",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": -0.15,
+          "snap": 0.45
+        },
+        {
+          "target": "left_lower_leg.stretch",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": -0.09,
+          "snap": 0.45,
+          "bias": -0.09
+        },
+        {
+          "target": "right_lower_leg.stretch",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": -0.09,
+          "snap": 0.45,
+          "bias": -0.09
+        },
+        {
+          "target": "left_upper_leg.front_back",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": -0.09,
+          "snap": 0.45
+        },
+        {
+          "target": "right_upper_leg.front_back",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": -0.09,
+          "snap": 0.45
+        },
+        {
+          "target": "chest.front_back",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": -0.04,
+          "snap": 0.45
+        },
+        {
+          "target": "head.nod_down_up",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": -0.04,
+          "snap": 0.45
+        }
+      ]
+    },
+    {
+      "name": "sway",
+      "description": "Weight rocks side to side over two beats; the spine counters and the head tilts after.",
+      "support": "feet",
+      "loop_beats": 2,
+      "lags": {
+        "torso": 0.05,
+        "head": 0.15
+      },
+      "contacts": [
+        {
+          "foot": "left_foot",
+          "from": 0,
+          "to": 2
+        },
+        {
+          "foot": "right_foot",
+          "from": 0,
+          "to": 2
+        }
+      ],
+      "patterns": [
+        {
+          "target": "root.right",
+          "waveform": "sine",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.22,
+          "snap": 0.5
+        },
+        {
+          "target": "hips.left_right",
+          "waveform": "sine",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.08,
+          "snap": 0.5
+        },
+        {
+          "target": "spine.left_right",
+          "waveform": "sine",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": -0.05,
+          "snap": 0.5
+        },
+        {
+          "target": "head.tilt_left_right",
+          "waveform": "sine",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.04,
+          "snap": 0.5
+        }
+      ]
+    },
+    {
+      "name": "bounce",
+      "description": "A quick bounce on every eighth, from the knees.",
+      "support": "feet",
+      "loop_beats": 1,
+      "lags": {
+        "torso": 0.05
+      },
+      "contacts": [
+        {
+          "foot": "left_foot",
+          "from": 0,
+          "to": 1
+        },
+        {
+          "foot": "right_foot",
+          "from": 0,
+          "to": 1
+        }
+      ],
+      "patterns": [
+        {
+          "target": "root.up",
+          "waveform": "sine",
+          "cycles": 2,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": -0.08,
+          "snap": 0.35
+        },
+        {
+          "target": "left_lower_leg.stretch",
+          "waveform": "sine",
+          "cycles": 2,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": -0.05,
+          "snap": 0.35,
+          "bias": -0.05
+        },
+        {
+          "target": "right_lower_leg.stretch",
+          "waveform": "sine",
+          "cycles": 2,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": -0.05,
+          "snap": 0.35,
+          "bias": -0.05
+        },
+        {
+          "target": "left_shoulder.down_up",
+          "waveform": "sine",
+          "cycles": 2,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": -0.04,
+          "snap": 0.35
+        },
+        {
+          "target": "right_shoulder.down_up",
+          "waveform": "sine",
+          "cycles": 2,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": -0.04,
+          "snap": 0.35
+        }
+      ]
+    },
+    {
+      "name": "shoulder-shimmy",
+      "description": "Shoulders alternate forward and back on the eighths, the upper chest twisting with them.",
+      "support": "either",
+      "loop_beats": 1,
+      "patterns": [
+        {
+          "target": "left_shoulder.front_back",
+          "waveform": "sine",
+          "cycles": 2,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.14,
+          "snap": 0.4
+        },
+        {
+          "target": "right_shoulder.front_back",
+          "waveform": "sine",
+          "cycles": 2,
+          "per": "beat",
+          "phase": 0.25,
+          "amplitude": 0.14,
+          "snap": 0.4
+        },
+        {
+          "target": "upper_chest.twist_left_right",
+          "waveform": "sine",
+          "cycles": 2,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.05,
+          "snap": 0.4
+        }
+      ]
+    },
+    {
+      "name": "head-nod",
+      "description": "The head nods down on the beat, the neck leading it.",
+      "support": "either",
+      "loop_beats": 1,
+      "lags": {
+        "head": 0.04
+      },
+      "patterns": [
+        {
+          "target": "head.nod_down_up",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": -0.14,
+          "snap": 0.4
+        },
+        {
+          "target": "neck.nod_down_up",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": -0.05,
+          "snap": 0.4
+        }
+      ]
+    },
+    {
+      "name": "arm-pump",
+      "description": "A fist pumped up on the beat: the right arm raised, the elbow punching straight onto the hit.",
+      "support": "either",
+      "loop_beats": 1,
+      "lags": {
+        "right_arm": 0
+      },
+      "patterns": [
+        {
+          "target": "right_upper_arm.down_up",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.3,
+          "snap": 0.3,
+          "bias": 1.2
+        },
+        {
+          "target": "right_lower_arm.stretch",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.4,
+          "snap": 0.3,
+          "bias": -1.0
+        },
+        {
+          "target": "right_thumb_proximal.stretched",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.0,
+          "snap": 0.5,
+          "bias": -0.5
+        },
+        {
+          "target": "right_index_proximal.stretched",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.0,
+          "snap": 0.5,
+          "bias": -1.2
+        },
+        {
+          "target": "right_index_intermediate.stretched",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.0,
+          "snap": 0.5,
+          "bias": -1.2
+        },
+        {
+          "target": "right_middle_proximal.stretched",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.0,
+          "snap": 0.5,
+          "bias": -1.2
+        },
+        {
+          "target": "right_middle_intermediate.stretched",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.0,
+          "snap": 0.5,
+          "bias": -1.2
+        },
+        {
+          "target": "right_ring_proximal.stretched",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.0,
+          "snap": 0.5,
+          "bias": -1.2
+        },
+        {
+          "target": "right_ring_intermediate.stretched",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.0,
+          "snap": 0.5,
+          "bias": -1.2
+        },
+        {
+          "target": "right_little_proximal.stretched",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.0,
+          "snap": 0.5,
+          "bias": -1.2
+        },
+        {
+          "target": "right_little_intermediate.stretched",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.0,
+          "snap": 0.5,
+          "bias": -1.2
+        },
+        {
+          "target": "chest.front_back",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": -0.04,
+          "snap": 0.3
+        }
+      ]
+    },
+    {
+      "name": "arm-wave-overhead",
+      "description": "Both arms overhead, waving side to side over two beats; the hands trail the body.",
+      "support": "either",
+      "loop_beats": 2,
+      "lags": {
+        "left_arm": 0.15,
+        "right_arm": 0.15,
+        "torso": 0.05
+      },
+      "patterns": [
+        {
+          "target": "left_upper_arm.down_up",
+          "waveform": "sine",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 1,
+          "amplitude": 0.12,
+          "snap": 0.5,
+          "bias": 2.5
+        },
+        {
+          "target": "right_upper_arm.down_up",
+          "waveform": "sine",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.12,
+          "snap": 0.5,
+          "bias": 2.5
+        },
+        {
+          "target": "left_lower_arm.stretch",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.0,
+          "snap": 0.5,
+          "bias": -0.2
+        },
+        {
+          "target": "right_lower_arm.stretch",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.0,
+          "snap": 0.5,
+          "bias": -0.2
+        },
+        {
+          "target": "left_hand.in_out",
+          "waveform": "sine",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 1,
+          "amplitude": 0.25,
+          "snap": 0.5
+        },
+        {
+          "target": "right_hand.in_out",
+          "waveform": "sine",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.25,
+          "snap": 0.5
+        },
+        {
+          "target": "spine.left_right",
+          "waveform": "sine",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.06,
+          "snap": 0.5
+        },
+        {
+          "target": "upper_chest.left_right",
+          "waveform": "sine",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.06,
+          "snap": 0.5
+        }
+      ]
+    },
+    {
+      "name": "step-touch",
+      "description": "Step right and touch, step left and touch, over four beats: the weight shifts and holds, the free leg lifts as it travels, the arms swing with the steps.",
+      "support": "feet",
+      "loop_beats": 4,
+      "lags": {
+        "left_arm": 0.1,
+        "right_arm": 0.1
+      },
+      "contacts": [
+        {
+          "foot": "right_foot",
+          "from": 0,
+          "to": 2.5
+        },
+        {
+          "foot": "right_foot",
+          "from": 3,
+          "to": 3.5
+        },
+        {
+          "foot": "left_foot",
+          "from": 0,
+          "to": 0.5
+        },
+        {
+          "foot": "left_foot",
+          "from": 1,
+          "to": 1.5
+        },
+        {
+          "foot": "left_foot",
+          "from": 2,
+          "to": 4
+        }
+      ],
+      "patterns": [
+        {
+          "target": "root.right",
+          "waveform": "hold",
+          "cycles": 0.25,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.35,
+          "snap": 0.125
+        },
+        {
+          "target": "root.up",
+          "waveform": "sine",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": -0.05,
+          "snap": 0.4
+        },
+        {
+          "target": "hips.left_right",
+          "waveform": "hold",
+          "cycles": 0.25,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.06,
+          "snap": 0.125
+        },
+        {
+          "target": "right_lower_leg.stretch",
+          "waveform": "sine",
+          "cycles": 0.25,
+          "per": "beat",
+          "phase": 3.25,
+          "amplitude": -0.175,
+          "snap": 0.5,
+          "bias": -0.175
+        },
+        {
+          "target": "left_lower_leg.stretch",
+          "waveform": "sine",
+          "cycles": 0.25,
+          "per": "beat",
+          "phase": 1.25,
+          "amplitude": -0.175,
+          "snap": 0.5,
+          "bias": -0.175
+        },
+        {
+          "target": "right_upper_leg.front_back",
+          "waveform": "sine",
+          "cycles": 0.25,
+          "per": "beat",
+          "phase": 3.25,
+          "amplitude": -0.2,
+          "snap": 0.5
+        },
+        {
+          "target": "left_upper_leg.front_back",
+          "waveform": "sine",
+          "cycles": 0.25,
+          "per": "beat",
+          "phase": 1.25,
+          "amplitude": -0.2,
+          "snap": 0.5
+        },
+        {
+          "target": "right_upper_arm.front_back",
+          "waveform": "sine",
+          "cycles": 0.25,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.2,
+          "snap": 0.5
+        },
+        {
+          "target": "left_upper_arm.front_back",
+          "waveform": "sine",
+          "cycles": 0.25,
+          "per": "beat",
+          "phase": 2,
+          "amplitude": 0.2,
+          "snap": 0.5
+        }
+      ]
+    },
+    {
+      "name": "clap",
+      "description": "Both hands meet in front of the chest on the beat and part between beats.",
+      "support": "either",
+      "loop_beats": 1,
+      "lags": {
+        "left_arm": 0,
+        "right_arm": 0
+      },
+      "patterns": [
+        {
+          "target": "left_upper_arm.down_up",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": 0.8
+        },
+        {
+          "target": "right_upper_arm.down_up",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": 0.8
+        },
+        {
+          "target": "left_upper_arm.front_back",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": -0.3,
+          "snap": 0.35,
+          "bias": -0.7
+        },
+        {
+          "target": "right_upper_arm.front_back",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": -0.3,
+          "snap": 0.35,
+          "bias": -0.7
+        },
+        {
+          "target": "left_upper_arm.twist_in_out",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": -0.5
+        },
+        {
+          "target": "right_upper_arm.twist_in_out",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": -0.5
+        },
+        {
+          "target": "left_lower_arm.stretch",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": -1.5
+        },
+        {
+          "target": "right_lower_arm.stretch",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": -1.5
+        },
+        {
+          "target": "left_hand.in_out",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": 0.4
+        },
+        {
+          "target": "right_hand.in_out",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": 0.4
+        }
+      ]
+    },
+    {
+      "name": "point-up",
+      "description": "Disco points: the right arm shoots up and out on one, the left on two, straight at the elbow, the chest leaning into each point.",
+      "support": "either",
+      "loop_beats": 2,
+      "lags": {
+        "left_arm": 0,
+        "right_arm": 0
+      },
+      "patterns": [
+        {
+          "target": "left_upper_arm.down_up",
+          "waveform": "hold",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 1,
+          "amplitude": 1.1,
+          "snap": 0.15,
+          "bias": 1.4
+        },
+        {
+          "target": "right_upper_arm.down_up",
+          "waveform": "hold",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 1.1,
+          "snap": 0.15,
+          "bias": 1.4
+        },
+        {
+          "target": "left_upper_arm.front_back",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": -0.3
+        },
+        {
+          "target": "right_upper_arm.front_back",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": -0.3
+        },
+        {
+          "target": "left_lower_arm.stretch",
+          "waveform": "hold",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 1,
+          "amplitude": 0.5,
+          "snap": 0.15,
+          "bias": -0.5
+        },
+        {
+          "target": "right_lower_arm.stretch",
+          "waveform": "hold",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.5,
+          "snap": 0.15,
+          "bias": -0.5
+        },
+        {
+          "target": "spine.left_right",
+          "waveform": "hold",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.08,
+          "snap": 0.15
+        }
+      ]
+    },
+    {
+      "name": "raise-the-roof",
+      "description": "Elbows out, forearms up, palms flat to the ceiling: both hands push up on the beat.",
+      "support": "either",
+      "loop_beats": 1,
+      "lags": {
+        "left_arm": 0,
+        "right_arm": 0
+      },
+      "patterns": [
+        {
+          "target": "left_upper_arm.down_up",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.25,
+          "snap": 0.35,
+          "bias": 1.45
+        },
+        {
+          "target": "right_upper_arm.down_up",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.25,
+          "snap": 0.35,
+          "bias": 1.45
+        },
+        {
+          "target": "left_upper_arm.twist_in_out",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": 1.3
+        },
+        {
+          "target": "right_upper_arm.twist_in_out",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": 1.3
+        },
+        {
+          "target": "left_lower_arm.stretch",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.25,
+          "snap": 0.35,
+          "bias": -1.45
+        },
+        {
+          "target": "right_lower_arm.stretch",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.25,
+          "snap": 0.35,
+          "bias": -1.45
+        },
+        {
+          "target": "left_lower_arm.twist_in_out",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": -1.2
+        },
+        {
+          "target": "right_lower_arm.twist_in_out",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": -1.2
+        },
+        {
+          "target": "left_hand.down_up",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": 1.1
+        },
+        {
+          "target": "right_hand.down_up",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": 1.1
+        },
+        {
+          "target": "chest.front_back",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.04,
+          "snap": 0.35
+        }
+      ]
+    },
+    {
+      "name": "hand-wave-side",
+      "description": "Both arms raised in a V wave to the right over the first half of a bar and to the left over the second, the chest swaying with them.",
+      "support": "either",
+      "loop_beats": 4,
+      "lags": {
+        "left_arm": 0,
+        "right_arm": 0
+      },
+      "patterns": [
+        {
+          "target": "right_upper_arm.down_up",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "bar",
+          "phase": 0,
+          "amplitude": -0.45,
+          "snap": 0.5,
+          "bias": 2.2
+        },
+        {
+          "target": "left_upper_arm.down_up",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "bar",
+          "phase": 0,
+          "amplitude": 0.45,
+          "snap": 0.5,
+          "bias": 2.2
+        },
+        {
+          "target": "left_lower_arm.stretch",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": -0.3
+        },
+        {
+          "target": "right_lower_arm.stretch",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": -0.3
+        },
+        {
+          "target": "spine.left_right",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "bar",
+          "phase": 0,
+          "amplitude": 0.08,
+          "snap": 0.5
+        },
+        {
+          "target": "upper_chest.left_right",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "bar",
+          "phase": 0,
+          "amplitude": 0.06,
+          "snap": 0.5
+        }
+      ]
+    },
+    {
+      "name": "shoulder-roll",
+      "description": "Each shoulder rolls up, back, down and forward over two beats, the left a beat after the right.",
+      "support": "either",
+      "loop_beats": 2,
+      "lags": {
+        "left_arm": 0,
+        "right_arm": 0
+      },
+      "patterns": [
+        {
+          "target": "left_shoulder.down_up",
+          "waveform": "sine",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 1,
+          "amplitude": 0.15,
+          "snap": 0.5,
+          "bias": 0.12
+        },
+        {
+          "target": "right_shoulder.down_up",
+          "waveform": "sine",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.15,
+          "snap": 0.5,
+          "bias": 0.12
+        },
+        {
+          "target": "left_shoulder.front_back",
+          "waveform": "sine",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 1.5,
+          "amplitude": 0.15,
+          "snap": 0.5
+        },
+        {
+          "target": "right_shoulder.front_back",
+          "waveform": "sine",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 0.5,
+          "amplitude": 0.15,
+          "snap": 0.5
+        }
+      ]
+    },
+    {
+      "name": "hip-sway",
+      "description": "The hips sway to the right on one and the left on two; the forearms are held forward and the hands swing with the hips.",
+      "support": "feet",
+      "loop_beats": 2,
+      "lags": {
+        "left_arm": 0,
+        "right_arm": 0,
+        "head": 0.1
+      },
+      "contacts": [
+        {
+          "foot": "left_foot",
+          "from": 0,
+          "to": 2
+        },
+        {
+          "foot": "right_foot",
+          "from": 0,
+          "to": 2
+        }
+      ],
+      "patterns": [
+        {
+          "target": "root.right",
+          "waveform": "sine",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.25,
+          "snap": 0.4
+        },
+        {
+          "target": "hips.left_right",
+          "waveform": "sine",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.08,
+          "snap": 0.4
+        },
+        {
+          "target": "spine.left_right",
+          "waveform": "sine",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": -0.06,
+          "snap": 0.4
+        },
+        {
+          "target": "head.tilt_left_right",
+          "waveform": "sine",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": -0.04,
+          "snap": 0.4
+        },
+        {
+          "target": "left_lower_arm.stretch",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": -1.2
+        },
+        {
+          "target": "right_lower_arm.stretch",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": -1.2
+        },
+        {
+          "target": "right_upper_arm.twist_in_out",
+          "waveform": "sine",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0.35,
+          "snap": 0.4
+        },
+        {
+          "target": "left_upper_arm.twist_in_out",
+          "waveform": "sine",
+          "cycles": 0.5,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": -0.35,
+          "snap": 0.4
+        }
+      ]
+    },
+    {
+      "name": "hands-up",
+      "description": "Both hands held high, elbows soft: a pose to hold over a phrase, not a motion.",
+      "support": "either",
+      "loop_beats": 1,
+      "lags": {
+        "left_arm": 0,
+        "right_arm": 0
+      },
+      "patterns": [
+        {
+          "target": "left_upper_arm.down_up",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": 2.7
+        },
+        {
+          "target": "right_upper_arm.down_up",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": 2.7
+        },
+        {
+          "target": "left_upper_arm.front_back",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": -0.2
+        },
+        {
+          "target": "right_upper_arm.front_back",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": -0.2
+        },
+        {
+          "target": "left_lower_arm.stretch",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": -0.15
+        },
+        {
+          "target": "right_lower_arm.stretch",
+          "waveform": "sine",
+          "cycles": 1,
+          "per": "beat",
+          "phase": 0,
+          "amplitude": 0,
+          "snap": 0.5,
+          "bias": -0.15
+        }
+      ]
+    }
+  ]
+}
