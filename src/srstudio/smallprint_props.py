@@ -32,9 +32,12 @@ __all__ = [
     "PLACES",
     "STATES",
     "PropError",
+    "apple",
     "bowl",
+    "can",
     "draw",
     "finished",
+    "goldfish",
     "materials",
     "onion",
     "paper",
@@ -64,6 +67,16 @@ OWN = {  # what is new in his world: name, colour, roughness, metallic, clay-fin
     "land": ("#C9A97C", 0.62, 0.0, True),
     "wallstone": ("#B99C72", 0.62, 0.0, True),
     "snow": ("#F6F4EE", 0.5, 0.0, True),
+    "glass": ("#BCDCE0", 0.1, 0.0, False),
+    "goldfish": ("#E8782E", 0.3, 0.0, True),
+    "fin": ("#F2A25E", 0.35, 0.0, True),
+    "flake": ("#D9A441", 0.6, 0.0, True),
+    "appleskin": ("#B8352B", 0.4, 0.0, True),
+    "appleflesh": ("#F3E7BE", 0.5, 0.0, True),
+    "applebrown": ("#A86A35", 0.55, 0.0, True),
+    "pip": ("#3F2618", 0.3, 0.0, False),
+    "canpaint": ("#2F7FA6", 0.3, 0.35, False),
+    "foam": ("#FBF6EA", 0.6, 0.0, True),
 }
 
 
@@ -372,6 +385,136 @@ def wall(m: Model, state: str = "land") -> None:
         m.box("wallstone", (x, -10.0, z), (7.0, 12.0, 7.0), 0.6)
 
 
+# -- the goldfish -----------------------------------------------------------------------------------------------------
+GOLDFISH_STATES = ("swim", "turn", "fed")
+_FISHBOWL = (32.0, 18.0, 0.83)  # the bowl: its widest radius, half its height as a whole round, the share of it made
+FISHBOWL_RIM = _FISHBOWL[0] * math.sqrt(1.0 - (2.0 * _FISHBOWL[2] - 1.0) ** 2)  # its radius at the rim, about 24
+_FISHBOWL_TALL = 2.0 * _FISHBOWL[1] * _FISHBOWL[2]  # how high its rim stands over the worktop, about 30
+_FISH = {  # where the fish is at the water's top: x, z, which way he faces (1 frame right, -1 frame left)
+    "swim": (-5.0, 6.0, -1.0),
+    "turn": (6.0, 6.0, 1.0),
+    "fed": (0.0, -8.0, 1.0),
+}
+
+
+@register(
+    "prop",
+    "smallprint-goldfish",
+    summary="A round glass bowl of water with a goldfish at its top, swimming across it or come up for his flakes",
+    contract=_contract(
+        "smallprint-goldfish",
+        GOLDFISH_STATES,
+        "swim and turn put the fish at the back of the water, facing frame left or right; fed brings him to the front "
+        "with flakes on the water. His back breaks the surface, so the lens sees him over the bowl's rim.",
+    ),
+)
+def goldfish(m: Model, state: str = "swim") -> None:
+    """A round bowl of pale glass filled to near its rim, and a goldfish swimming at the top of the water, his back
+    and his tail over it; on ``fed`` he is at the front, his head up among a few flakes. No one fish's likeness."""
+    if state not in _FISH:
+        raise PropError(f"the goldfish's states are {GOLDFISH_STATES}, got {state!r}")
+    wide, half, share = _FISHBOWL
+    m.lid("glass", (0.0, -half, 0.0), (wide, half, wide), share, lower=True)
+    m.ell("glass", (0.0, -_FISHBOWL_TALL, 0.0), (FISHBOWL_RIM + 1.2, 1.4, FISHBOWL_RIM + 1.2))  # its rim
+    top = -_FISHBOWL_TALL - 0.6
+    m.ell("water", (0.0, top, 0.0), (FISHBOWL_RIM - 0.4, 0.6, FISHBOWL_RIM - 0.4))
+    x, z, facing = _FISH[state]
+    nose_up = 18.0 if state == "fed" else 0.0
+    m.ell("goldfish", (x, top - 1.2, z), (9.0, 4.6, 4.2), rotation=-facing * nose_up)
+    m.ell("fin", (x - facing * 11.0, top - 1.5 + nose_up * 0.12, z), (4.6, 4.2, 1.0), rotation=facing * 30.0)
+    m.ell("fin", (x - facing * 1.0, top - 5.4, z), (3.6, 1.8, 0.8), rotation=-facing * 18.0)
+    m.ell("black", (x + facing * 5.6, top - 2.6 - nose_up * 0.1, z - 3.0), (1.3, 1.3, 0.7))
+    if state == "fed":
+        for fx, fz in ((-6.0, -14.0), (5.0, -16.0), (-2.0, -19.0), (9.0, -12.0), (-10.0, -10.0)):
+            m.box("flake", (fx, top - 0.9, fz), (2.4, 0.4, 1.8), 0.1)
+
+
+# -- the apple -------------------------------------------------------------------------------------------------------
+APPLE_STATES = ("fresh", "brown", "lemon")
+
+
+APPLE_R = 15.0  # an apple half's radius
+_FACE_TO_LENS = np.array([[1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0, 0.0]])  # a quarter turn about x: up to the lens
+
+
+def _half(m: Model, x: float, foot: float, flesh: str) -> None:
+    """One apple half standing on its rim on ``foot``, its cut face to the lens: the flesh, the core with two pips one
+    over the other, and the skin round the back."""
+
+    def build(s: Model) -> None:  # face up, about the origin; turned so up looks at the lens
+        s.lid("appleskin", (0.0, 0.0, 0.0), (APPLE_R, APPLE_R * 0.9, APPLE_R), 0.5, lower=True)
+        s.ell(flesh, (0.0, -0.1, 0.0), (APPLE_R - 1.8, 0.6, APPLE_R - 1.8))  # a ring of red skin shows round it
+        s.tube("oakdark", ((0.0, 1.5, APPLE_R - 2.0), (0.4, 1.5, APPLE_R + 1.5), (1.6, 1.2, APPLE_R + 4.5)), 0.9)
+        s.ell("cream" if flesh == "appleflesh" else "oaklight", (0.0, -0.5, 0.0), (3.6, 0.3, 6.0))
+        for dz in (-2.4, 2.4):
+            s.ell("pip", (0.0, -0.8, dz), (1.1, 0.5, 1.9))
+
+    _turned(m, build, _FACE_TO_LENS, (x, foot - APPLE_R, 0.0))
+
+
+@register(
+    "prop",
+    "smallprint-apple",
+    summary="An apple cut in half on a board, its faces pale, then brown, or one half kept pale by a lemon",
+    contract=_contract(
+        "smallprint-apple",
+        APPLE_STATES,
+        "fresh: two pale halves; brown: both faces brown; lemon: the left half brown, the right half pale with a "
+        "squeezed lemon half beside it.",
+    ),
+)
+def apple(m: Model, state: str = "fresh") -> None:
+    """A board with an apple cut in two, both halves on their backs with their faces to the lens: pale when just cut,
+    brown when left, and on ``lemon`` one half left brown and the other kept pale, a squeezed lemon half by it."""
+    if state not in APPLE_STATES:
+        raise PropError(f"the apple's states are {APPLE_STATES}, got {state!r}")
+    m.box("board", (0.0, -2.0, 0.0), (76.0, 4.0, 40.0), 1.5)
+    _half(m, -17.0, -4.0, "appleflesh" if state == "fresh" else "applebrown")
+    _half(m, 17.0, -4.0, "applebrown" if state == "brown" else "appleflesh")
+    if state == "lemon":  # a squeezed half, on its back by the pale half
+        m.lid("lemon", (40.0, -11.0, -8.0), (8.0, 7.0, 8.0), 0.5, lower=True)
+        m.ell("cream", (40.0, -11.2, -8.0), (7.6, 0.5, 7.6))
+
+
+# -- the can ---------------------------------------------------------------------------------------------------------
+CAN_STATES = ("shake-up", "shake-down", "foam", "calm")
+CAN_TALL, CAN_R = 48.0, 12.0  # a soft-drink can, in his units
+_SHAKE = {"shake-up": 30.0, "shake-down": 18.0}  # how high his hand lifts the can's foot off the worktop
+
+
+@register(
+    "prop",
+    "smallprint-can",
+    summary="A plain drink can, shaken up and down in his hand, then open on the worktop, foaming over or calm",
+    contract=_contract(
+        "smallprint-can",
+        CAN_STATES,
+        "shake-up and shake-down lift the closed can off the worktop in his hand; foam stands it open with foam over "
+        "its top and down its side; calm stands it open with nothing come out. No brand, no lettering.",
+    ),
+)
+def can(m: Model, state: str = "shake-up") -> None:
+    """A plain can, one colour with a pale band and no lettering: closed and lifted while he shakes it, then open on
+    the worktop, foam welling over its top and running down its side into a puddle, or, after a wait, just open."""
+    if state not in CAN_STATES:
+        raise PropError(f"the can's states are {CAN_STATES}, got {state!r}")
+    foot = -_SHAKE.get(state, 0.0)
+    m.cylinder("canpaint", (0.0, foot - CAN_TALL / 2, 0.0), CAN_R, CAN_TALL)
+    m.cylinder("white", (0.0, foot - CAN_TALL * 0.42, 0.0), CAN_R + 0.2, 7.0)
+    m.cylinder("steel", (0.0, foot - CAN_TALL - 1.0, 0.0), CAN_R - 1.2, 2.0)
+    m.box("steel", (0.0, foot - CAN_TALL - 2.3, 2.5), (5.0, 0.6, 9.0), 0.3)  # the tab
+    if state in ("foam", "calm"):
+        m.ell("black", (0.0, foot - CAN_TALL - 2.1, -5.0), (3.4, 0.4, 2.2))  # it is open
+    if state == "foam":
+        for dx, dy, r in ((0.0, 4.0, 9.0), (-6.0, 1.5, 7.0), (6.0, 2.0, 7.5), (0.0, 8.5, 6.0)):
+            m.ell("foam", (dx, foot - CAN_TALL - dy, -1.0), (r, r * 0.7, r))
+        for k, (dx, run) in enumerate(((-7.0, 26.0), (2.0, 38.0), (8.0, 18.0))):
+            drip = [(dx, foot - CAN_TALL - 1.0, -CAN_R + 1.5), (dx + 0.5 * k, foot - CAN_TALL + run / 2, -CAN_R - 0.6),
+                    (dx - 0.4, foot - CAN_TALL + run, -CAN_R - 0.6)]  # fmt: skip
+            m.tube("foam", drip, 2.2, n=12, sides=10)
+        m.ell("foam", (CAN_R + 4.0, foot - 0.4, -2.0), (9.0, 0.7, 7.0))  # the puddle at its foot
+
+
 def fist(m: Model, x: float, y: float, z: float) -> None:
     """His frame-right hand closed round a handle that lies across the lens: :func:`srstudio.rafa.hold` turned on its
     side, so the hand is his own drawing."""
@@ -440,6 +583,9 @@ STATES: dict[str, tuple[str, ...]] = {
     "smallprint-phone": PHONE_STATES,
     "smallprint-bowl": BOWL_STATES,
     "smallprint-wall": WALL_STATES,
+    "smallprint-goldfish": GOLDFISH_STATES,
+    "smallprint-apple": APPLE_STATES,
+    "smallprint-can": CAN_STATES,
 }
 _DRAW: dict[str, Callable[..., None]] = {
     "smallprint-tower": tower,
@@ -449,6 +595,9 @@ _DRAW: dict[str, Callable[..., None]] = {
     "smallprint-phone": phone,
     "smallprint-bowl": bowl,
     "smallprint-wall": wall,
+    "smallprint-goldfish": goldfish,
+    "smallprint-apple": apple,
+    "smallprint-can": can,
 }
 PLACES: dict[str, tuple[float, float, float, float, float]] = {  # x, y, z, yaw, scale on the worktop
     "smallprint-tower": (-62.0, -248.0, -80.0, -10.0, 1.4),  # at his right, clear of his face and mouth
@@ -458,6 +607,9 @@ PLACES: dict[str, tuple[float, float, float, float, float]] = {  # x, y, z, yaw,
     "smallprint-phone": (-60.0, -248.0, -84.0, -14.0, 1.0),  # at his right, clear of his chin
     "smallprint-bowl": (16.0, -248.0, -80.0, 0.0, 1.0),
     "smallprint-wall": (2.0, -248.0, -70.0, -8.0, 1.0),
+    "smallprint-goldfish": (8.0, -248.0, -78.0, 0.0, 1.0),
+    "smallprint-apple": (6.0, -248.0, -80.0, -4.0, 1.0),
+    "smallprint-can": (58.0, -248.0, -80.0, 0.0, 0.8),  # under his frame-right hand, clear of his chin
 }
 GRIPS: dict[str, tuple[str, tuple[float, float, float]]] = {  # his hand: a kind, and where (the knife's moves)
     "smallprint-tower": ("rest", (82.0, -248.0, -70.0)),
@@ -467,10 +619,14 @@ GRIPS: dict[str, tuple[str, tuple[float, float, float]]] = {  # his hand: a kind
     "smallprint-phone": ("rest", (34.0, -248.0, -78.0)),
     "smallprint-bowl": ("rest", (72.0, -248.0, -70.0)),
     "smallprint-wall": ("rest", (80.0, -248.0, -72.0)),
+    "smallprint-goldfish": ("rest", (76.0, -248.0, -72.0)),
+    "smallprint-apple": ("rest", (82.0, -248.0, -72.0)),
+    "smallprint-can": ("rest", (92.0, -248.0, -70.0)),
 }
 HANDS: dict[tuple[str, str], tuple[str, tuple[float, float, float]]] = {  # a state that moves his hand: kind, where
     ("smallprint-bowl", "soaking"): ("dip", (21.0, -256.0, -86.0)),  # in the water, under its surface
     ("smallprint-bowl", "wrinkled"): ("wrinkled", (72.0, -248.0, -70.0)),
+    **{("smallprint-can", state): ("hold", (58.0, 0.0, -80.0)) for state in _SHAKE},  # round the can, where it is
 }
 
 
@@ -496,6 +652,10 @@ def worktop(prop: str, state: str, where: str = "rafa-kitchen") -> Plate:
         hy = y - KNIFE_LIFT[state.split("-")[1]] - 4.0
         rafa.reach(model, (hx + 12.0, hy + 2.0, hz + 20.0))
         fist(model, hx, hy, hz)
+    elif kind == "hold":  # round the lifted can, at the height the shake has it
+        hy = y - (_SHAKE[state] + CAN_TALL * 0.4) * scale
+        rafa.reach(model, (hx + 16.0, hy + 10.0, hz + 18.0))
+        rafa.hold(model, hx + CAN_R * scale - 2.0, hy, hz + 1.0)
     elif kind == "dip":  # his forearm over the rim, the hand under the water
         rafa.reach(model, (hx + 14.0, y - BOWL_RIM - 3.0, hz + 18.0))
         rafa.rest(model, hx, hy, hz)

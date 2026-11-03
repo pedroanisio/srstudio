@@ -164,6 +164,9 @@ def test_a_tear_plate_turns_with_his_head_and_holds_his_own_body():
         (lambda: sp.phone(clay.Model(), "ringing"), "phone's states"),
         (lambda: sp.bowl(clay.Model(), "dry"), "bowl's states"),
         (lambda: sp.wall(clay.Model(), "fog"), "wall's states"),
+        (lambda: sp.goldfish(clay.Model(), "asleep"), "goldfish's states"),
+        (lambda: sp.apple(clay.Model(), "rotten"), "apple's states"),
+        (lambda: sp.can(clay.Model(), "crushed"), "can's states"),
         (lambda: sp.draw(clay.Model(), "rafa-mug", "x"), "worktop props"),
         (lambda: sp.worktop("smallprint-roll", "roll", "garage"), "his rooms"),
         (lambda: sp._skin_z(400.0, 0.0), "no skin"),
@@ -234,7 +237,7 @@ def test_the_soaking_hand_is_under_the_water_inside_the_bowl_and_the_wrinkled_on
 
 def test_his_hand_moves_only_for_the_states_that_say_so():
     for (prop, state), (kind, _) in sp.HANDS.items():
-        assert state in sp.STATES[prop] and kind in ("dip", "wrinkled")
+        assert state in sp.STATES[prop] and kind in ("dip", "wrinkled", "hold")
     a, b = (materials_of(sp.worktop("smallprint-phone", state))["flesh"] for state in sp.PHONE_STATES)
     np.testing.assert_array_equal(a, b)
     c, d = (materials_of(sp.worktop("smallprint-bowl", state))["flesh"] for state in sp.BOWL_STATES)
@@ -264,3 +267,79 @@ def _contrast(a: str, b: str) -> float:
 
     hi, lo = sorted((lum(a), lum(b)), reverse=True)
     return (hi + 0.05) / (lo + 0.05)
+
+
+def test_the_goldfish_swims_at_the_top_of_its_water_and_comes_to_the_front_for_its_flakes():
+    def made(state):
+        m = clay.Model()
+        sp.goldfish(m, state)
+        return {mesh.material: mesh.vertices for mesh in m.meshes()}
+
+    rows = {state: made(state) for state in sp.GOLDFISH_STATES}
+    for state, parts in rows.items():
+        water_top = parts["water"][:, 1].min()
+        fish = parts["goldfish"]
+        assert fish[:, 1].min() < water_top, f"{state}: his back breaks the surface, where the lens sees him"
+        assert (np.hypot(fish[:, 0], fish[:, 2]) < sp.FISHBOWL_RIM).all(), f"{state}: inside the bowl"
+    assert "flake" in rows["fed"] and "flake" not in rows["swim"] and "flake" not in rows["turn"]
+    assert rows["fed"]["goldfish"][:, 2].mean() < rows["swim"]["goldfish"][:, 2].mean() - 8.0, "he comes to the front"
+    swim, turn = rows["swim"]["goldfish"][:, 0].mean(), rows["turn"]["goldfish"][:, 0].mean()
+    assert abs(swim - turn) > 10.0, "he crosses the bowl between swim and turn"
+
+
+def test_a_cut_apple_is_pale_then_brown_and_the_lemon_half_stays_pale():
+    def made(state):
+        m = clay.Model()
+        sp.apple(m, state)
+        return {mesh.material: mesh.vertices for mesh in m.meshes()}
+
+    fresh, brown, lemon = (made(state) for state in sp.APPLE_STATES)
+    assert "appleflesh" in fresh and "applebrown" not in fresh
+    assert "applebrown" in brown and "appleflesh" not in brown
+    assert "appleflesh" in lemon and "applebrown" in lemon and "lemon" in lemon
+    pale, browned = lemon["appleflesh"][:, 0].mean(), lemon["applebrown"][:, 0].mean()
+    squeezed = lemon["lemon"][:, 0].mean()
+    assert abs(squeezed - pale) < abs(squeezed - browned), "the lemon is by the half that stays pale"
+    for parts in (fresh, brown, lemon):
+        face = parts.get("appleflesh", parts.get("applebrown"))
+        assert face[:, 2].min() < parts["appleskin"][:, 2].min() + 1.0, "the cut face looks at the lens"
+    stone, flesh = (sp.materials()[name].color for name in ("applebrown", "appleflesh"))
+    assert _contrast(stone, flesh) > 1.6, "brown reads as brown against the fresh flesh"
+
+
+def can_parts(state):
+    return materials_of(sp.worktop("smallprint-can", state))
+
+
+def test_the_shaken_can_is_in_his_hand_off_the_worktop_and_goes_up_and_down():
+    y = sp.PLACES["smallprint-can"][1]
+    up, down = can_parts("shake-up"), can_parts("shake-down")
+    for parts in (up, down):
+        can = parts["canpaint"]
+        assert can[:, 1].max() < y - 10.0, "lifted off the worktop"
+        hand = parts["flesh"]
+        middle = can.mean(axis=0)
+        assert np.hypot(*(hand.mean(axis=0) - middle)[[0, 2]]) < 22.0, "his hand is round the can"
+        assert can[:, 1].min() < hand[:, 1].min() < can[:, 1].max(), "and holds it between its top and its foot"
+    assert up["canpaint"][:, 1].mean() < down["canpaint"][:, 1].mean() - 6.0, "a shake moves it"
+    assert "foam" not in up and "foam" not in down
+
+
+def test_the_opened_can_foams_over_its_rim_and_down_its_side_and_after_a_wait_it_does_not():
+    y = sp.PLACES["smallprint-can"][1]
+    foamed, calm = can_parts("foam"), can_parts("calm")
+    for parts in (foamed, calm):
+        assert parts["canpaint"][:, 1].max() == pytest.approx(y, abs=1.5), "it stands on the worktop"
+    foam = foamed["foam"]
+    top = foamed["canpaint"][:, 1].min()
+    assert foam[:, 1].min() < top - 3.0, "the foam stands up over the top"
+    assert foam[:, 1].max() > top + 15.0, "and runs down its side"
+    assert "foam" not in calm and "black" in calm, "open, and nothing came out"
+    for state in sp.CAN_STATES:
+        assert "canpaint" in can_parts(state)
+
+
+def test_only_the_shaken_can_moves_his_hand_off_the_worktop():
+    rest = can_parts("calm")["flesh"]
+    held = can_parts("shake-up")["flesh"]
+    assert held[:, 1].mean() < rest[:, 1].mean() - 10.0
