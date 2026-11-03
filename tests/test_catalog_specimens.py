@@ -307,6 +307,39 @@ def test_an_approved_part_of_any_kind_still_draws_what_was_approved(name, planne
     cs.check(planned[name])
 
 
+# Every other version that records a drawing: a proposed one, and an approved one a later version replaced. A record
+# taken from a draft would otherwise reach its approval unchecked.
+RECORDED = [
+    parts.part_name(n, v.number)
+    for n, p in parts.load().items()
+    if p.kind != "character" and not p.refused
+    for v in p.versions
+    if v.drawing and not (v is p.versions[-1] and v.status == "approved")
+]
+
+
+@needs_projects
+@pytest.mark.parametrize("name", RECORDED)
+def test_every_recorded_version_draws_what_its_record_holds(name, planned):
+    cs.check(planned[name])
+
+
+def test_proposed_and_replaced_versions_are_checked_too():
+    replaced = [n for n, p in parts.load().items() if len(p.versions) > 1 and p.kind != "character" and not p.refused]
+    assert "smallprint-onion" in RECORDED and replaced and all(n in RECORDED for n in replaced)
+
+
+@needs_projects
+def test_a_proposed_part_whose_record_is_not_its_drawing_fails_and_says_to_record_it(planned):
+    name = next(n for n in RECORDED if parts.get(n.partition("@")[0]).versions[-1].status == "proposed")
+    plan_ = planned[name]
+    changed = replace(plan_, document=plan_.document.replace(b'fill="#', b'fill="#1', 1))
+    with pytest.raises(
+        specimens.StaleRecordError, match=rf"{name.partition('@')[0]} version \d+ is proposed.*parts --digest"
+    ):
+        cs.check(changed)
+
+
 @needs_projects
 def test_a_changed_part_fails_and_says_to_add_a_version(planned):
     plan_ = planned["coffee-cup"]
