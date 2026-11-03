@@ -8,12 +8,12 @@ from __future__ import annotations
 
 import math
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from . import checks
-from ._head_channels import Channel, Key, Spring, _finite, _invalid
+from ._head_channels import Channel, Key, Spring, _channel_bounds, _finite, _invalid
 from ._head_noise import fbm, hash_unit
-from ._head_speech import Speech, _breaths, dips, listening, nods
+from ._head_speech import Nod, Speech, _breaths, dips, listening, nods
 from ._head_types import (
     ANTICIPATE,
     AVERT,
@@ -23,9 +23,12 @@ from ._head_types import (
     FACE_UP,
     GAZES,
     LOOK_AWAY,
+    NOD_SPAN,
     Facing,
     HeadPlan,
     HeadStyle,
+    _within,
+    limit,
 )
 
 
@@ -102,6 +105,51 @@ def _shape(kind: str, span: float) -> tuple[Key, ...]:
     if kind == "~":
         return ((0.0, 0.0), (span * 0.5, 1.0), (span, -0.4), (span + 0.45, 0.0))
     return ((0.0, 0.0), (span + 0.1, 1.0), (span + 0.35, 0.9), (span + 1.3, 0.0))
+
+
+_SPAN_STEP = 0.01  # how much longer a nod's swing grows each time its spring cannot follow it
+
+
+def _followed(style: HeadStyle, nod: Nod) -> Nod:
+    """``nod`` with a swing long enough for the head spring to follow inside the style envelope.
+
+    A short, full-gain swing reverses faster than a slow spring settles, and the spring overshoots the envelope. The
+    swing grows by :data:`_SPAN_STEP` until its own response from rest fits, up to the longest :data:`NOD_SPAN`. Rolls
+    share the nod's shape and are scaled to their own envelope by the same factor, so a span that fits the nod fits its
+    roll.
+    """
+    allowed, span = limit(style, "nod"), nod.span
+    while span < NOD_SPAN[1]:
+        keys = _chain([_Move(1.0, _shape(nod.kind, span), nod.amplitude)], style.head, span + 3.0)
+        channel = Channel(keys, style.head)
+        if _within(channel, _channel_bounds(channel), allowed):
+            break
+        span = round(min(NOD_SPAN[1], span + _SPAN_STEP), 6)
+    return nod if span == nod.span else replace(nod, span=span)
+
+
+def _nodding(
+    style: HeadStyle, nodded: Sequence[Nod], dipped: Sequence[float], nodding: Sequence[Nod], duration: float
+) -> tuple[tuple[Key, ...], tuple[Key, ...]]:
+    """The nod and roll keys of the speaker's ``nodded`` accents, the dips before phrases at ``dipped``, and the
+    listener's ``nodding``."""
+    moves = [_Move(max(0.0, t), _DIP, style.nod_px * _DIP_SHARE) for t in dipped]
+    moves += [_Move(n.at, _shape(n.kind, n.span), n.amplitude) for n in (*nodded, *nodding)]
+    rolls = [
+        _Move(
+            n.at,
+            _shape(n.kind, n.span),
+            n.amplitude / style.nod_px * style.nod_roll * (1 if hash_unit(style.seed, "roll", k) < 0.5 else -1),
+        )
+        for k, n in enumerate(nodded)
+    ]
+    return _chain(moves, style.head, duration), _chain(rolls, style.head, duration)
+
+
+def _inside(style: HeadStyle, nod: tuple[Key, ...], roll: tuple[Key, ...]) -> bool:
+    """Whether the head spring follows these nod and roll keys inside the style's envelope."""
+    channels = (("nod", Channel(nod, style.head)), ("roll", Channel(roll, style.head)))
+    return all(_within(channel, _channel_bounds(channel), limit(style, name)) for name, channel in channels)
 
 
 def _chain(moves: Sequence[_Move], spring: Spring, duration: float) -> tuple[Key, ...]:
@@ -358,18 +406,13 @@ def plan(
     busy = sorted([*spans, *(span for speech in heard for span in _breaths(speech))])
     nodded = [nod for k, speech in enumerate(speeches) for nod in nods(speech, style, k)]
     dipped = [t - _DIP_LEAD for speech in speeches for t in dips(speech)]
-    moves = [_Move(max(0.0, t), _DIP, style.nod_px * _DIP_SHARE) for t in dipped]
-    moves += [_Move(n.at, _shape(n.kind, n.span), n.amplitude) for n in nodded]
     nodding = [nod for k, speech in enumerate(heard) for nod in listening(speech, style, k, spans)]
-    moves += [_Move(n.at, _shape(n.kind, n.span), n.amplitude) for n in nodding]
-    rolls = [
-        _Move(
-            n.at,
-            _shape(n.kind, n.span),
-            n.amplitude / style.nod_px * style.nod_roll * (1 if hash_unit(style.seed, "roll", k) < 0.5 else -1),
-        )
-        for k, n in enumerate(nodded)
-    ]
+    nod_keys, roll_keys = _nodding(style, nodded, dipped, nodding, duration)
+    if not _inside(style, nod_keys, roll_keys):
+        # Only a plan the head cannot follow changes: every plan that fits keeps its keys, and its frames.
+        nodded = [_followed(style, nod) for nod in nodded]
+        nodding = [_followed(style, nod) for nod in nodding]
+        nod_keys, roll_keys = _nodding(style, nodded, dipped, nodding, duration)
     leans, trails = [], []
     for k, (start, end) in enumerate(spans):
         value = style.lean * (1.0 if hash_unit(style.seed, "lean", k) < 0.5 else -1.0)
@@ -396,8 +439,8 @@ def plan(
     result = HeadPlan(
         lean=Channel(_trapezoids(leans, duration), style.body),
         turn=Channel(_trapezoids([*turned, *trails], duration), style.settle),
-        nod=Channel(_chain(moves, style.head, duration), style.head),
-        roll=Channel(_chain(rolls, style.head, duration), style.head),
+        nod=Channel(nod_keys, style.head),
+        roll=Channel(roll_keys, style.head),
         face_x=Channel(_trapezoids(slid, duration), style.settle),
         idle_roll=Channel(_noise_keys(style, "idle_roll", style.idle_roll, busy, duration), curve="catmull-rom"),
         idle_y=Channel(_noise_keys(style, "idle_y", style.idle_px, busy, duration), curve="catmull-rom"),

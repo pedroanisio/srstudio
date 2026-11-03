@@ -240,6 +240,57 @@ def test_every_channel_stays_inside_its_bound_through_the_springs(name, seed):
     assert peak(channel) <= hm.limit(style, name)
 
 
+SWAY = replace(STYLE, signature="~", nod_px=4.5, head=Spring(1.9, 0.72, 0.1), nod_share=1.0)  # Rafa's head
+
+
+def short_loud_so() -> hm.Speech:
+    """A line opening on a short, loud intensifier: the shortest nod at the full gain."""
+    return speech("So that's what I sound like.", step=0.06, level=loud_on((0.0, 0.12)))
+
+
+def test_a_short_loud_intensifier_on_a_swaying_head_stays_inside_the_bound():
+    """The sway crested and troughed inside the shortest nod, 0.06 s apart, faster than the head's spring follows: the
+    spring overshot the style's own envelope and the plan raised (a Small Print take, 2026-11-03)."""
+    first = hm.nods(short_loud_so(), SWAY)[0]
+    assert (first.word, first.kind, first.span) == ("So", "~", hm.NOD_SPAN[0])
+    assert first.amplitude == SWAY.nod_px * hm.INTENSIFIER_GAIN
+    plan = hm.plan(SWAY, [short_loud_so()], 6.0)
+    for name in ("nod", "roll"):
+        assert peak(getattr(plan, name)) <= hm.limit(SWAY, name)
+
+
+def library_styles() -> list[tuple[str, HeadStyle]]:
+    """Every head style the library ships, by module and name."""
+    found = {}
+    for module in ("host_kit", "news_head", "pedro_host", "rafa_host", "toon_bento", "toon_critters", "toon_inked",
+                   "toon_lyra", "toon_redrawn"):  # fmt: skip
+        for name, value in vars(importlib.import_module(f"srstudio.{module}")).items():
+            if isinstance(value, HeadStyle):
+                found[f"{module}.{name}"] = value
+    return sorted(found.items())
+
+
+@pytest.mark.parametrize("step", [0.04, 0.06, 0.08])
+@pytest.mark.parametrize(("name", "style"), library_styles(), ids=[name for name, _ in library_styles()])
+def test_every_library_head_follows_a_short_loud_intensifier_inside_its_envelope(name, style, step):
+    """Rafa's head overshot the nod envelope, and the host, fox and dog heads the roll envelope, on this line."""
+    s = speech("So that's what I sound like.", step=step, level=loud_on((0.0, 2 * step)))
+    plan = hm.plan(style, [s], 6.0)
+    for channel in ("nod", "roll"):
+        assert peak(getattr(plan, channel)) <= hm.limit(style, channel)
+
+
+def test_a_nod_the_spring_cannot_follow_swings_longer_and_one_it_can_keeps_its_span():
+    s = short_loud_so()
+    lead = hm.ANTICIPATE
+    for style, stretched in ((SWAY, True), (replace(SWAY, head=Spring(4.0, 0.72, 0.1)), False)):
+        nod = hm.nods(s, style)[0]
+        crests = [t for t, v in hm.plan(style, [s], 6.0).nod.keys if v == round(nod.amplitude, 4)]
+        assert len(crests) == 1
+        assert (crests[0] > round(nod.at + lead + nod.span * 0.5, 6)) is stretched
+        assert crests[0] <= round(nod.at + lead + hm.NOD_SPAN[1] * 0.5, 6)
+
+
 @pytest.mark.parametrize("name", ("nod", "roll", "turn", "lean", "face_x"))
 def test_a_spring_channel_comes_back_to_rest_after_the_last_word(name):
     plan = hm.plan(STYLE, [line()], 8.0)
