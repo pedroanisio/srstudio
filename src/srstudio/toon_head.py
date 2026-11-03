@@ -355,11 +355,27 @@ def figure(
     target_gaze: GazePlan | None = None,
     face_blends: FaceTrack | None = None,
     external_arms: tuple[str, ...] = (),
+    arms: Callable[[Any, Any], None] | None = None,
 ):
     """The character in nested groups (the module's docstring), one drawing per pose run inside the chains, moved by
     ``plan``. The arguments mean what they mean to :func:`srstudio.toon_cast.figure`; ``on_face`` draws into the face's
-    group last, so what it adds moves with the head. Returns the outermost group."""
+    group last, so what it adds moves with the head. ``external_arms`` names the sides a candidate leaves to a drawing
+    outside the figure. ``arms``, when given, draws both arms itself in place of the drawn ones: it is called once with
+    the body's group over the trunk and its group in front of the head, both in the body's own chain, so what it draws
+    rides the lean and the breath; every pose then holds the ``desk`` arms, and each pose run counts the two hands it
+    draws.
+
+    Returns the outermost group."""
     delegated = _external_arms(rig, poses, external_arms)
+    if delegated and arms is not None:
+        raise HeadMotionError(
+            'external_arms: expected no side when arms draws both',
+            code='head.external_arms',
+            path='external_arms',
+            actual=sorted(delegated),
+            expected='no external side when arms draws both',
+            remedy='Draw both arms with arms, or delegate sides with external_arms, not both.',
+        )
     plan.check_bounds(rig.style, frozen=bool(cv._frozen))
     frames: tuple[FaceFrame, ...] = ()
     if face_blends is not None:
@@ -391,10 +407,23 @@ def figure(
                 on_face,
                 tracking=tracking,
                 external_arms=delegated,
+                own_arms=arms,
             )
     if not frames:
         return _draw_figure(
-            cv, parent, rig, poses, duration, plan, taps, enter, stickers, mouths, on_face, external_arms=delegated
+            cv,
+            parent,
+            rig,
+            poses,
+            duration,
+            plan,
+            taps,
+            enter,
+            stickers,
+            mouths,
+            on_face,
+            external_arms=delegated,
+            own_arms=arms,
         )
     with scene_transaction(cv.scene, cv):
         return _draw_figure(
@@ -411,6 +440,7 @@ def figure(
             on_face,
             face_frames=frames,
             external_arms=delegated,
+            own_arms=arms,
         )
 
 
@@ -444,8 +474,17 @@ def _draw_figure(
     tracking: target_drawing.PreparedGaze | None = None,
     face_frames: tuple[FaceFrame, ...] = (),
     external_arms: frozenset[str] = frozenset(),
+    own_arms: Callable[[Any, Any], None] | None = None,
 ):
     """Emit a preflighted performance or the fixed, rig-derived specimen probe."""
+    sides = external_arms  # the arms another drawing owns, or both when the caller draws its own
+    slots: list[str] = []
+    if own_arms is not None:
+        held = sorted({pose.arms for pose in poses} - {"desk"})
+        if held:
+            raise ToonDataError(f"{rig.look.name}: arms drawn by the caller hold desk poses only, not {held}")
+        sides = frozenset(("left", "right"))
+        slots = ["left", "right"]
     if rig.drawn_as is not None:
         anatomy_ledger.note_part(cv, *rig.drawn_as)
     with drawing_events.drawing(rig):
@@ -524,20 +563,22 @@ def _draw_figure(
             _draw(cv, g, _place((_teeth(look) if bare else []) + worn + list(stickers), arms))
 
             body = cv.group(trunk, cv.uid("g"), start=start, end=end)
-            pose_hands(cv, look, body.id, arms, external_arms)
+            pose_hands(cv, look, body.id, arms, sides, slots)
             _draw(cv, body, _place(list(rig.trunk()), arms))
             if arms == "type":
 
                 def frame_of(into, frame: int) -> None:
-                    _draw(cv, into, _place(_arms(look, "type", frame, external_arms)[0], "type"))
+                    _draw(cv, into, _place(_arms(look, "type", frame, sides)[0], "type"))
 
                 swap_frames(cv, body, start, end, taps, frame_of)
                 over: list[Layer] = []
             else:
-                under, over = _arms(look, arms, 0, external_arms)
+                under, over = _arms(look, arms, 0, sides)
                 _draw(cv, body, _place(under, arms))
             if over:
                 _draw(cv, cv.group(front, cv.uid("g"), start=start, end=end), _place(over, arms))
+        if own_arms is not None:
+            own_arms(trunk, front)
         if on_face is not None:
             on_face(face)
         return lean

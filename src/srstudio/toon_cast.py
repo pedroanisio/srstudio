@@ -103,6 +103,11 @@ PIVOT = (CENTRE, 812.0)  # where a lean turns about: the seat, under the desk's 
 LEAN_DEGREES = 7.0
 SIGH_DROP = 10.0
 SHOULDERS: tuple[Point, Point] = ((62.0, 712.0), (308.0, 712.0))
+# The desk arms past the shoulders, screen-left then screen-right: the elbow, the wrist and the paw on the desk's edge.
+DESK: tuple[tuple[Point, Point, Point], tuple[Point, Point, Point]] = (
+    ((82.0, 760.0), (124.0, 792.0), (132.0, 794.0)),
+    ((288.0, 760.0), (246.0, 792.0), (238.0, 794.0)),
+)
 VISEMES = ("closed", "open", "round", "teeth")  # the lip-sync mouths; closed is the pose's own mouth
 BLINK_HOLD = 0.12  # seconds the lids stay down in a blink
 BLINK_PHASE = 0.55  # the first blink of a pose comes this fraction of the period after it starts
@@ -681,9 +686,10 @@ def _arms(
     under: list[Layer] = []
     over: list[Layer] = []
     if arms == "desk" or arms == "lean":
-        under += limb("left", [(lx, ly), (82.0, 760.0), (124.0, 792.0)], look, (132.0, 794.0))
+        (le, lw, lp), (re, rw, rp) = DESK
+        under += limb("left", [(lx, ly), le, lw], look, lp)
         if arms == "desk":
-            under += limb("right", [(rx, ry), (288.0, 760.0), (246.0, 792.0)], look, (238.0, 794.0))
+            under += limb("right", [(rx, ry), re, rw], look, rp)
         else:
             under += limb("right", [(rx, ry), (330.0, 750.0), (344.0, 788.0)], look, (348.0, 792.0))
     elif arms == "type":
