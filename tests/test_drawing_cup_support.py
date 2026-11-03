@@ -120,7 +120,9 @@ def test_invalid_support_time_is_rejected_before_sampling_placement(example, tim
         example.supported_mesh(time, placement=unexpected)
 
 
-@pytest.mark.parametrize('time', [1.3, 5.3])
+# 1.0 s: the cup on its rest as the paw arrives. From 1.15 s to about 1.5 s the closing paw covers the cup from this
+# camera (about 20 of its pixels show), so a frame there cannot show that every material draws.
+@pytest.mark.parametrize('time', [1.0, 5.3])
 def test_real_rest_and_cup_render_in_the_shared_world_and_reuse_cache(example, time, scene_render, tmp_path):
     from examples.drawing_body import body_transform
     from examples.drawing_proof import sample
