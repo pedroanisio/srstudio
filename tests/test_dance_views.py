@@ -45,6 +45,29 @@ def test_every_preset_is_the_default_plan():
     assert [name for name, _, _ in views.plan(None, bars_each=1)] == list(dance.moves())
 
 
+def test_a_library_plans_and_draws_its_own_moves():
+    fein = dance.library("fein")
+    first = next(iter(fein))
+    assert len(fein) > views.MAX_BARS  # the whole library is longer than one sheet: a plan names its moves
+    with pytest.raises(views.ViewsError, match="bars in all"):
+        views.plan(None, bars_each=1, library="fein")
+    sheet = views.Sheet(("cartoon",), ("front",))
+    plan = views.plan([first], 1, library="fein")
+    drawn = views.render_frame(sheet, plan, GROOVE, 0.3, library="fein")
+    assert drawn.size == (views.CELL, views.TOP_BAR + views.CELL + views.BOTTOM_BAR)
+    stage = views.floor_stage(sheet, [first], GROOVE, 1, library="fein")
+    assert stage.parts == ((first, 0, 1),)
+
+
+def test_a_library_is_refused_where_it_does_not_apply(tmp_path):
+    with pytest.raises(views.ViewsError, match="no-such"):
+        views.plan(None, bars_each=1, library="no-such")
+    with pytest.raises(views.ViewsError, match="the fein library holds"):
+        views.plan(["bob"], bars_each=1, library="fein")
+    with pytest.raises(views.ViewsError, match="--library is for --moves"):
+        views.write(tmp_path / "out.mp4", phrases=["groove-step"], library="fein")
+
+
 def test_a_frame_is_one_cell_per_character_and_view():
     sheet = views.Sheet(("realistic", "stick"), ("front", "top"))
     image = views.render_frame(sheet, views.plan(["bob"], 1), GROOVE, 0.2)
