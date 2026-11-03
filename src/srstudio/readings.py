@@ -14,13 +14,14 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from . import checks
+from .errors import SrstudioError
 
 __all__ = ["LEAST", "Reading", "ReadingError", "climbing", "held", "shown_at"]
 
 LEAST = 0.84  # seconds: just over the engine's minimum for a text to be read
 
 
-class ReadingError(ValueError):
+class ReadingError(SrstudioError, ValueError):
     """Cues that cannot make a value anybody could read."""
 
 
