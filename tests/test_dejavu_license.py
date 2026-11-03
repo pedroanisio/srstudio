@@ -15,7 +15,7 @@ from srstudio import sample
 
 ROOT = Path(__file__).resolve().parents[1]
 DEBIAN = Path("/usr/share/doc/fonts-dejavu-core/copyright")
-SOURCES = [p for folder in ("src", "examples", "episodes") for p in sorted((ROOT / folder).rglob("*.py"))]
+SOURCES = [p for folder in ("src", "examples") for p in sorted((ROOT / folder).rglob("*.py"))]
 # The notices the licences make a condition of every copy, and the conditions themselves, as words (the line wrapping
 # of the licence text is not part of it).
 REQUIRED = (

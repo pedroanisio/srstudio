@@ -1,4 +1,4 @@
-"""Every decision record the code cites exists: an ``ADR NNNN`` or a ``NNNN-name.md`` under ``src/`` or ``episodes/``
+"""Every decision record the code cites exists: an ``ADR NNNN`` or a ``NNNN-name.md`` under ``src/``
 resolves to a file in ``docs/decisions/``, so a reader sent to a decision always finds it, and finds only one: no two
 records share a number, and none takes a number ``reserved.json`` holds for a branch's record.
 """
@@ -51,7 +51,7 @@ def _squatted(names: set[str], held: dict[str, str]) -> set[str]:
 
 
 def _sources() -> list[Path]:
-    return sorted(p for top in ("src", "episodes") for p in (ROOT / top).rglob("*.py"))
+    return sorted(p for top in ("src",) for p in (ROOT / top).rglob("*.py"))
 
 
 def test_every_cited_decision_record_exists():

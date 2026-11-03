@@ -263,11 +263,11 @@ A burned caption does not run across a sentence end: a window that drops the sto
 
 A text is timed as a viewer sees it: `text_rules` reads the frames the engine evaluates and times the words from the first frame they are legible to the last, across layers and cuts, against the 0.8333 s reading minimum, along with each page of a burned caption track. The check is `text-timing`, run by `srstudio build` when it has an engine and at first delivery (ADR 0150).
 
-Render the master with `srstudio master <slug>.scene.xml -- --strict`, which never replaces a master already there: approved files (masters, voice takes, songs, package versions) are write-once through `srstudio.files`, and a re-run writes beside them or stops ([ADR 0170](docs/decisions/0170-approved-files-are-write-once.md)). A reel's first delivery through `episodes/instagram_posts.py` also passes the frame gates, which refuse measured defects such as captions that run sentences together or signature marks the camera hides, and someone who is not the author reviews frames at full size. `publish_pilots.py` does not run these gates. See [ADR 0073](docs/decisions/0073-frame-gates-and-standing-review.md).
+Render the master with `srstudio master <slug>.scene.xml -- --strict`, which never replaces a master already there: approved files (masters, voice takes, songs, package versions) are write-once through `srstudio.files`, and a re-run writes beside them or stops ([ADR 0170](docs/decisions/0170-approved-files-are-write-once.md)). A reel's first delivery through `episodes/instagram_posts.py` in [srstudio-episodes](https://github.com/pedroanisio/srstudio-episodes) also passes the frame gates, which refuse measured defects such as captions that run sentences together or signature marks the camera hides, and someone who is not the author reviews frames at full size. `publish_pilots.py` does not run these gates. See [ADR 0073](docs/decisions/0073-frame-gates-and-standing-review.md).
 
 ## Lanes
 
-Batches and pilot sets run as `govern` lanes, so their state and token cost live in files: processes and exit checks are in [tools/govern/](tools/govern/), the reasons in [ADR 0058](docs/decisions/0058-govern-lanes.md).
+Batches and pilot sets run as `govern` lanes, so their state and token cost live in files: processes and exit checks are in `tools/govern/` of [srstudio-episodes](https://github.com/pedroanisio/srstudio-episodes), the reasons in [ADR 0058](docs/decisions/0058-govern-lanes.md).
 
 ## Verification
 
@@ -297,7 +297,8 @@ Every `render` and `encode` srstudio starts takes one machine-wide GPU lock, `/r
 
 - [src/srstudio/](src/srstudio/) — library and CLI.
 - [examples/](examples/) — runnable authoring and limbs examples.
-- [episodes/](episodes/) — episode builders, recording scripts and releases.
+- Episodes, pilots, the cast bible, delivery, the reel process and the funny-reels skill live in [srstudio-episodes](https://github.com/pedroanisio/srstudio-episodes), which pins
+  a commit of this library ([ADR 0220](docs/decisions/0220-episodes-repository.md)).
 - [tests/](tests/) — unit, integration and fidelity tests.
 - [docs/decisions/](docs/decisions/) — architecture decisions.
 - [Head motion internals](docs/decisions/0093-head-motion-module-boundaries.md) — module ownership and public API compatibility.

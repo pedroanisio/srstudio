@@ -17,8 +17,8 @@ cd "$wt" || exit 2
 export PYTHONPATH=$wt/src SRSTUDIO_FONTS=$WS/generated/fonts SRSTUDIO_PACKAGES=$WS/generated/packages
 export SRSTUDIO_ENGINE=$WS/generated/bin/scene-render SRSTUDIO_RENDERS=$WS/generated/renders
 export SRSTUDIO_EPISODES=$WS/generated/episodes
-for t in "format:$WS/.venv/bin/ruff format --check src tests episodes tools" \
-         "lint:$WS/.venv/bin/ruff check src tests episodes tools" "mypy:$WS/.venv/bin/mypy src"; do
+for t in "format:$WS/.venv/bin/ruff format --check src tests tools" \
+         "lint:$WS/.venv/bin/ruff check src tests tools" "mypy:$WS/.venv/bin/mypy src"; do
   out=$(${t#*:} 2>&1) || rc=1; echo "[$sha] ${t%%:*}: $(echo "$out" | tail -1)"
 done
 COVERAGE_FILE=$wt/.coverage "$WS/.venv/bin/python" -m pytest -q -p no:cacheprovider --basetemp="$home/tmp" --cov -rf \

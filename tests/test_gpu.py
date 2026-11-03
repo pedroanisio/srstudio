@@ -225,8 +225,8 @@ def _engine_commands(tree: ast.AST) -> Iterator[tuple[ast.FunctionDef | ast.Asyn
 
 
 def _sources() -> list[Path]:
-    library, episodes, tools = REPO / "src" / "srstudio", REPO / "episodes", REPO / "tools"
-    return sorted([*library.glob("*.py"), *episodes.rglob("*.py"), *tools.glob("*.py")])
+    library, tools = REPO / "src" / "srstudio", REPO / "tools"
+    return sorted([*library.glob("*.py"), *tools.glob("*.py")])
 
 
 def test_every_engine_call_that_uses_the_gpu_takes_the_lock():

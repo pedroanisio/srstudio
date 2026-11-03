@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The quick gate before the full one (ADR 0141): format, lint, types, enhancement claims, and the tests a change can
+"""The quick gate before the full one (ADR 0141): format, lint, types, and the tests a change can
 plainly break.
 
     python3 tools/pregate.py [--base develop]
@@ -20,15 +20,10 @@ from pathlib import Path, PurePosixPath
 REPO = Path(__file__).resolve().parents[1]
 ALWAYS = (
     "tests/test_agent_approved_recovery.py",
-    "tests/test_anatomy_body.py",
     "tests/test_anatomy_parts.py",
-    "tests/test_catalog_app.py",
     "tests/test_catalog_coverage.py",
     "tests/test_character_contracts.py",
-    "tests/test_skill.py",
-    "tests/test_text_rules.py",
 )
-PUBLISHING = "tests/test_social.py"  # what a change under episodes/ reaches first
 
 Run = Callable[..., "subprocess.CompletedProcess[str]"]
 
@@ -43,8 +38,6 @@ def select(changed: Iterable[str], tests: Collection[str]) -> list[str]:
         own = f"tests/{path.name}" if path.parts[0] == "tests" else f"tests/test_{path.stem}.py"
         if own in tests:
             chosen.add(own)
-        if path.parts[0] == "episodes" and PUBLISHING in tests:
-            chosen.add(PUBLISHING)
     return sorted(chosen)
 
 
@@ -59,10 +52,9 @@ def changed_paths(base: str, run: Run) -> list[str]:
 def plan(tests: Sequence[str], bin_dir: Path) -> list[tuple[str, list[str]]]:
     """Each step's name and its command; the tools come from the interpreter's own folder."""
     return [
-        ("format", [str(bin_dir / "ruff"), "format", "--check", "src", "tests", "episodes", "tools"]),
-        ("lint", [str(bin_dir / "ruff"), "check", "src", "tests", "episodes", "tools"]),
+        ("format", [str(bin_dir / "ruff"), "format", "--check", "src", "tests", "tools"]),
+        ("lint", [str(bin_dir / "ruff"), "check", "src", "tests", "tools"]),
         ("mypy", [str(bin_dir / "mypy"), "src"]),
-        ("enhance", [str(bin_dir / "python"), "-m", "srstudio.cli", "enhance", "check", "--scripts", "episodes"]),
         ("tests", [str(bin_dir / "python"), "-m", "pytest", "--no-cov", "-q", *tests]),
     ]
 

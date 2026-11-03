@@ -40,12 +40,10 @@ def test_a_changed_test_runs_and_a_module_without_a_test_adds_nothing():
     assert pregate.select(["src/srstudio/nothing_here.py", "README.md"], TESTS) == sorted(pregate.ALWAYS)
 
 
-def test_anything_under_episodes_brings_the_publishing_tests():
-    assert "tests/test_social.py" in pregate.select(["episodes/posts/_held.py"], TESTS)
-
-
 def test_a_test_that_is_not_there_is_never_named():
-    assert pregate.select(["src/srstudio/social.py"], {"tests/test_skill.py"}) == ["tests/test_skill.py"]
+    assert pregate.select(["src/srstudio/social.py"], {"tests/test_anatomy_parts.py"}) == [
+        "tests/test_anatomy_parts.py"
+    ]
 
 
 def test_the_change_is_read_against_where_head_left_the_base():
@@ -58,12 +56,12 @@ def test_a_clean_run_exits_zero_and_runs_every_step(capsys):
     last = capsys.readouterr().out.splitlines()[-1]
     assert last.startswith("pregate: ok")
     tools = [Path(c[0]).name for c in run.calls if c[0] != "git"]
-    assert tools == ["ruff", "ruff", "mypy", "python", "python"]
+    assert tools == ["ruff", "ruff", "mypy", "python"]
 
 
 def test_a_failed_step_fails_the_gate_and_is_named(capsys):
     assert pregate.main([], run=Commands(code=1)) == 1
-    assert "failed: format, lint, mypy, enhance, tests" in capsys.readouterr().out
+    assert "failed: format, lint, mypy, tests" in capsys.readouterr().out
 
 
 def test_the_full_gate_needs_a_commit():

@@ -17,8 +17,6 @@ from .errors import SrstudioError
 
 __all__ = ["add_parser", "run"]
 
-REPO = Path(__file__).resolve().parent.parent.parent
-
 
 def _env_path(name: str) -> Path | None:
     value = os.environ.get(name)
@@ -27,8 +25,8 @@ def _env_path(name: str) -> Path | None:
 
 def add_parser(sub: argparse._SubParsersAction) -> None:
     top = sub.add_parser("bible", help="the cast bible: inventory, verify, check a reel or a brief, render the folder")
-    top.add_argument("--library", type=Path, default=REPO / "bible", help="the folder holding cast.json")
-    top.add_argument("--releases", type=Path, default=REPO / "episodes" / "posts", help="one release file per reel")
+    top.add_argument("--library", type=Path, default=Path("bible"), help="the folder holding cast.json")
+    top.add_argument("--releases", type=Path, default=Path("episodes/posts"), help="one release file per reel")
     top.add_argument("--episodes", type=Path, default=_env_path("SRSTUDIO_EPISODES"), help="the episode projects")
     top.add_argument("--outbox", type=Path, help="outbox.json, the manifest of what is published")
     actions = top.add_subparsers(dest="action", required=True)
@@ -42,13 +40,13 @@ def add_parser(sub: argparse._SubParsersAction) -> None:
     check.add_argument("--brief", type=Path, action="append", default=[], help="a brief or script with a Cast: line")
     check.add_argument("--only", nargs="+", default=[], help="these release slugs alone")
     check.add_argument(
-        "--scripts", type=Path, default=REPO / "episodes", help="the folder of the reels' episode modules"
+        "--scripts", type=Path, default=Path("episodes"), help="the folder of the reels' episode modules"
     )
     rig = actions.add_parser(
         "rig", help="hold each Stick reel's drawn looks to the base rig its figures were published with"
     )
     rig.add_argument("--only", nargs="+", default=[], help="these release slugs alone, published or not")
-    rig.add_argument("--scripts", type=Path, default=REPO / "episodes", help="the folder of the reels' builders")
+    rig.add_argument("--scripts", type=Path, default=Path("episodes"), help="the folder of the reels' builders")
     render = actions.add_parser("render", help="write the bible folder: sheets, pictures, diagram and pages")
     render.add_argument("out", type=Path)
     render.add_argument("--model", required=True, help="the model that wrote the pages, for their frontmatter")
