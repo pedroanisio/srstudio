@@ -31,6 +31,22 @@ def test_a_measured_slow_or_gpu_test_goes_to_the_full_tier_and_a_fast_one_stays(
     assert not tiers.full("tests/test_a.py::test_fast", set(), measured)
 
 
+def test_a_file_whose_measured_slow_tests_add_up_past_the_file_bound_leaves_whole():
+    """A cache shared by a file's tests charges its cost to whichever test runs first, a different one each run."""
+    half = tiers.FILE_BOUND / 2 + 1
+    measured = tiers.parse(
+        table(
+            **{
+                "tests/test_a.py::test_one": {"seconds": half, "gpu": False},
+                "tests/test_a.py::test_two": {"seconds": half, "gpu": False},
+                "tests/test_b.py::test_one": {"seconds": half, "gpu": False},
+            }
+        )
+    )
+    assert tiers.full("tests/test_a.py::test_never_measured_slow[x]", set(), measured)
+    assert not tiers.full("tests/test_b.py::test_never_measured_slow", set(), measured)
+
+
 def test_the_writer_keeps_only_what_leaves_the_gate():
     runs = {
         "tests/test_a.py::test_slow": tiers.Run(tiers.BOUND + 0.5, False),

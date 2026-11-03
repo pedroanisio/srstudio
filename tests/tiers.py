@@ -2,7 +2,9 @@
 
 The five-minute gate runs every test except those marked ``slow``; the full tier runs them all. A test is ``slow``
 when it asks for the engine (the ``scene_render`` fixture), or when :data:`TABLE` lists it: a full-tier run measured it
-over :data:`BOUND` seconds, or saw it take the GPU lock, which serialises every worker that wants it. The table is
+over :data:`BOUND` seconds, or saw it take the GPU lock, which serialises every worker that wants it. A file whose
+listed tests add up past :data:`FILE_BOUND` leaves whole: a cache its tests share charges its cost to whichever test
+runs first in a worker, a different one each run, so the cost belongs to the file. The table is
 written by ``pytest --write-tiers tests/tiers.json`` on a full run, never by hand.
 """
 
@@ -15,6 +17,7 @@ from pathlib import Path
 
 SCHEMA = "1.0.0"
 BOUND = 2.0  # seconds: a gate test above it, on a loaded twelve-worker run, leaves the gate
+FILE_BOUND = 30.0  # seconds: a file whose measured slow tests add up past it leaves the gate whole
 TABLE = Path(__file__).with_name("tiers.json")
 ENGINE_FIXTURES = frozenset({"scene_render"})
 
@@ -94,6 +97,18 @@ def render(runs: dict[str, Run]) -> str:
     )
 
 
-def full(node: str, fixtures: set[str] | frozenset[str], measured: dict[str, Run]) -> bool:
+def heavy_files(measured: dict[str, Run]) -> frozenset[str]:
+    """The files whose measured tests add up past :data:`FILE_BOUND` seconds."""
+    totals: dict[str, float] = {}
+    for node, run in measured.items():
+        path = node.split("::", 1)[0]
+        totals[path] = totals.get(path, 0.0) + run.seconds
+    return frozenset(path for path, seconds in totals.items() if seconds > FILE_BOUND)
+
+
+def full(
+    node: str, fixtures: set[str] | frozenset[str], measured: dict[str, Run], heavy: frozenset[str] | None = None
+) -> bool:
     """Whether the test at ``node``, asking for ``fixtures``, runs in the full tier only."""
-    return bool(ENGINE_FIXTURES & fixtures) or node in measured
+    files = heavy_files(measured) if heavy is None else heavy
+    return bool(ENGINE_FIXTURES & fixtures) or node in measured or node.split("::", 1)[0] in files

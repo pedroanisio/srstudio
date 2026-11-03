@@ -75,8 +75,9 @@ def pytest_configure(config):
 def pytest_collection_modifyitems(config, items):
     """Mark ``slow`` every test that asks for the engine or that the measured table lists (ADR 0221)."""
     measured = tiers.load()
+    heavy = tiers.heavy_files(measured)
     for item in items:
-        if tiers.full(item.nodeid, set(getattr(item, "fixturenames", ())), measured):
+        if tiers.full(item.nodeid, set(getattr(item, "fixturenames", ())), measured, heavy):
             item.add_marker(pytest.mark.slow)
 
 
