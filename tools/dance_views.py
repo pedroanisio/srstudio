@@ -284,6 +284,11 @@ def _rest_floor(profile: sk.SkeletonProfile) -> float:
     return max(frame.origin.y for frame in sk.world(profile, sk.rest_pose(profile)).values())
 
 
+def _cell_camera(profile: sk.SkeletonProfile, view: str) -> Camera:
+    """The camera of one cell drawn in its own picture, whose corner is the cell's corner."""
+    return Camera(view, 0, 0, FIGURE_PX / profile.stature, _rest_floor(profile))
+
+
 def _camera(sheet: Sheet, profile: sk.SkeletonProfile, view: str, row: int, col: int) -> Camera:
     return Camera(view, col * CELL, TOP_BAR + row * CELL, FIGURE_PX / profile.stature, _rest_floor(profile))
 
@@ -539,7 +544,7 @@ def _moves_cells(
     for row, cast in enumerate(sheet.cast):
         posed = dance_pose(cast.profile, frame, base=cast.base(), clamp=True).pose
         for col, view in enumerate(sheet.views):
-            camera = _camera(sheet, cast.profile, view, 0, 0)
+            camera = _cell_camera(cast.profile, view)
             cell, draw = _cell_image()
             _frame_cell(draw, camera, f"{cast.label} · {view}", font)
             _floor(draw, camera, None)

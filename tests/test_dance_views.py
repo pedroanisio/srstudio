@@ -66,6 +66,25 @@ def test_a_raised_arm_draws_above_the_head_in_the_front_view():
     assert hand[1] < head[1]
 
 
+@pytest.mark.parametrize("look", views.LOOKS)
+def test_a_move_cell_is_the_whole_pose_where_the_screen_says(look):
+    """Each cell of the moves sheet draws in its own picture: its corner is the picture's corner, so the feet and the
+    cell's own frame are inside it, and the joints land where ``screen`` puts them."""
+    sheet = views.Sheet(("realistic",), ("front", "left"))
+    profile = sk.preset("realistic")
+    t = 0.4
+    frame = dance.sample(dance.moves()["bob"], GROOVE, t)
+    posed = views.dance_pose(profile, frame, base=sk.rest_pose(profile), clamp=True).pose
+    image = views.render_frame(sheet, views.plan(["bob"], 1), GROOVE, t, look=look)
+    alone = views.pose_image(profile, posed, sheet.views, look=look)
+    cells = (0, views.TOP_BAR, 2 * views.CELL, views.TOP_BAR + views.CELL)
+    assert ImageChops.difference(image.crop(cells), alone.crop(cells)).getbbox() is None
+    for col, view in enumerate(sheet.views):
+        (foot,) = views.screen(sheet, profile, posed, view, row=0, col=col, names=("right_foot",))
+        assert views.TOP_BAR < foot[1] < views.TOP_BAR + views.CELL
+        assert image.getpixel((round(foot[0]), round(foot[1]))) != views.BG
+
+
 @pytest.mark.parametrize(
     "kw, match",
     [
