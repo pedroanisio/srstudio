@@ -144,7 +144,7 @@ BEATS = (
     hold(28.3, "hamster", "", "half", "none", "desk", "board"),
     say(30.1, "hamster", 13, "half", "flat", "desk"),
 )
-SKETCH = Sketch(SLUG, TITLE, (MIA, OTTO, LEWIS), LINES, BEATS, END, tail=1.3)
+SKETCH = Sketch(SLUG, TITLE, (MIA, OTTO, LEWIS), LINES, BEATS, END, tail=1.3, bare=BARE)
 
 
 def validate(sk: Sketch = SKETCH) -> None:

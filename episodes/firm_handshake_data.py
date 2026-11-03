@@ -116,7 +116,7 @@ BEATS = (
     hold(26.3, "hamster", "", "half", "none", "desk", "pat"),  # the two-shot: his hoof on her shoulder
     say(27.1, "hamster", 10, "half", "none", "desk"),
 )
-SKETCH = Sketch(SLUG, TITLE, (DAD, FERN), LINES, BEATS, END, tail=1.0)
+SKETCH = Sketch(SLUG, TITLE, (DAD, FERN), LINES, BEATS, END, tail=1.0, bare=BARE)
 
 
 def validate(sk: Sketch = SKETCH) -> None:

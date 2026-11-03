@@ -118,7 +118,7 @@ BEATS = (
     say(25.1, "dog", 12, "teary", "frown", "desk"),
     hold(26.6, "hamster", "", "teary", "none", "desk", "slide"),  # the box crosses the desk
 )
-SKETCH = Sketch(SLUG, TITLE, (REX, FERN), LINES, BEATS, END, tail=2.8)
+SKETCH = Sketch(SLUG, TITLE, (REX, FERN), LINES, BEATS, END, tail=2.8, bare=BARE)
 
 
 def validate(sk: Sketch = SKETCH) -> None:
