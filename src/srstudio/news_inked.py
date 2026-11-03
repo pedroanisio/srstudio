@@ -18,6 +18,7 @@ import math
 import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
+from fractions import Fraction
 from types import MappingProxyType
 from typing import Any
 
@@ -28,6 +29,7 @@ from . import (
     brush,
     drawing_events,
     head_motion,
+    held_keys,
     look,
     news_arms,
     news_head,
@@ -158,6 +160,7 @@ BANNER_Y, BANNER_H = 1146.0, 76.0  # under the desk's top, so the hands on it st
 LOWER_Y, LOWER_H = 1222.0, 130.0
 TICKER_Y, TICKER_H = 1352.0, 64.0
 CHIP = 10.0  # one corner for everything over the picture
+_FLOAT_NOISE = Fraction(1, 10**6)  # of a frame: a sum of written times this close to a frame is that frame
 CREDIT_GAP = 14.0  # between chips on the top row
 SHADOW = "#160a3066"
 PHONE_X, PHONE_Y, PHONE_W, PHONE_H = 190.0, 508.0, 700.0, 786.0  # the handset over the dimmed room
@@ -2142,12 +2145,28 @@ def lower_third(
     g = cv.group(parent, id or cv.uid("news-lower"), start=start, end=end, x=0.0)
     band = cv.grad("news2-lower", [(0, PLUM), (1, PLUM_DEEP)], (0, 0, 0, 1))
     cv.rect(g, -20, y, cv.width + 40, LOWER_H, band)
-    words = cv.group(g, cv.uid("g"), start=start + SLIDE if slide else start, end=end)  # on arrival, never off frame
+    words = cv.group(
+        g, cv.uid("g"), start=_arrival(cv, start) if slide else start, end=end
+    )  # on arrival, never off frame
     wide = measure(check_copy(kicker), 34.0) + 28.0
     cv.rect(words, TEXT_LEFT, y + 12, wide, 42.0, MINT, radius=CHIP)
     _text(cv, words, kicker, TEXT_LEFT, y + 12, wide, 42.0, 34, PLUM_DEEP, "center")
     _text(cv, words, lines[0], TEXT_LEFT, y + 56.0, column, 68.0, size, CREAM)
     _slide(cv, g, start, moves=slide)
+
+
+def _arrival(cv: Canvas, start: float) -> float:
+    """When a graphic that slides in at ``start`` arrives: ``start + SLIDE``. On a ``held_frames`` canvas a sum within
+    float noise of a frame is that frame's own time, so the frame it names shows it: 10.8 + 0.3 is 11.100000000000001,
+    a hair after frame 333 at 30 fps, which the engine showed on 334 (ADR 0223). A reel already built keeps its sum."""
+    at = start + SLIDE
+    if not cv.held_frames:
+        return at
+    rate = held_keys.project_fps(cv.scene)
+    frame = round(Fraction(at) * rate)
+    if frame >= 0 and abs(Fraction(at) * rate - frame) <= _FLOAT_NOISE:
+        return held_keys.frame_time(frame, rate)
+    return at
 
 
 @register(
@@ -2163,7 +2182,9 @@ def banner(
     _span(start, end, "the banner")
     g = cv.group(parent, id, start=start, end=end, x=0.0)
     cv.rect(g, -20, BANNER_Y, cv.width + 40, BANNER_H, TANGERINE)
-    run = cv.group(g, f"{id}-run", x=0.0, start=start + SLIDE if slide else start, end=end)  # the bar arrives first
+    run = cv.group(
+        g, f"{id}-run", x=0.0, start=_arrival(cv, start) if slide else start, end=end
+    )  # the bar arrives first
     gap = 120.0
     for i in range(40):
         left = i * gap
@@ -2179,7 +2200,7 @@ def banner(
     shift = gap * round(span * 2.0)
     cv.keys(run, "x", [(start, 0.0), (end, -min(shift, gap * 26))], hold=False, local=False)
     wide = measure("BREAKING", 54.0) + 52.0
-    chip = cv.group(g, f"{id}-word", start=start + SLIDE if slide else start, end=end)
+    chip = cv.group(g, f"{id}-word", start=_arrival(cv, start) if slide else start, end=end)
     cv.rect(chip, TEXT_LEFT, BANNER_Y + 7, wide, BANNER_H - 14, PLUM_DEEP, radius=CHIP)
     _text(cv, chip, "BREAKING", TEXT_LEFT, BANNER_Y + 7, wide, BANNER_H - 14, 54, BUTTER, "center")
     _slide(cv, g, start, moves=slide)

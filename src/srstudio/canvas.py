@@ -168,6 +168,9 @@ class Canvas:
         # round(t, 6), which lands a change on a frame time one frame late whenever the rounding goes up
         self.held_frames = held_frames
         self._held_rate: Fraction | None = None  # the project's frame rate, read at the first held key
+        # every held animate a held_frames canvas wrote: (animate, node, the keys asked for, the keys as written), so
+        # place_held can key them on the reel's frames through their node's clock (ADR 0223)
+        self._held: list[tuple[Any, Any, list[tuple[float, Any]], list[tuple[str | None, str | None]]]] = []
         self._sig_ids: dict[str, int] = {}
         self._assets = None
         self._paints = None
@@ -457,7 +460,8 @@ class Canvas:
         ``kind`` names any schema interpolation (``sine-in-out``, ``cubic-out``...) and overrides ``hold``;
         ``local`` puts the keys on the shot's clock (``timeBase="local"``), default from the canvas.
         On a ``held_frames`` canvas a held key lands half a project frame before the first frame at or after its
-        time (:func:`srstudio.held_keys.held_key`), and of two changes that frame would show, the later stays.
+        time (:func:`srstudio.held_keys.held_key`), and of two changes that frame would show, the later stays. That is
+        the frame of the key's own clock; :meth:`place_held` moves it to the reel's frame through the clock's start.
         The complete animation is built off-scene; invalid input leaves the scene unchanged."""
         if not isinstance(values, Sequence) or isinstance(values, (str, bytes)):
             raise CanvasError(
@@ -529,7 +533,52 @@ class Canvas:
             a = Animate(**kw)
             a.add_key(time=0, value=str(value))
         node.add(a)
+        if self.held_frames and kw["defaultInterpolation"] == "hold" and not self._frozen:
+            self._held.append((a, node, [(float(t), v) for t, v in ordered], _written(a)))
         return a
+
+    def place_held(self) -> None:
+        """Key every held change this ``held_frames`` canvas wrote half a frame before the first frame of the reel at
+        or after its time, through its node's clock: a sequence's placement of its shots, and its groups' clocks
+        (ADR 0223). :meth:`keys` keys on the frames of the key's own clock, which are the reel's only when that clock
+        starts on a reel frame; a shot whose take is not a whole number of frames starts between them, and its
+        changes would show up to a frame early or late. ``Episode.finish`` calls this before it checks the scene.
+
+        An animate that someone removed or rewrote since the canvas wrote it is left as it is, and so is one on a
+        node outside the composition (a symbol's, on its instance's clock). Placing twice changes nothing more. A
+        timing the clocks cannot follow is a :class:`CanvasError`, raised before any key moves."""
+        if not self._held:
+            return
+        from .frame_gates import FrameGateError
+        from .held_gate import clocks
+
+        try:
+            placed = clocks(self.comp)
+        except FrameGateError as exc:
+            raise CanvasError(
+                f"held keys cannot be placed on the reel's frames: {exc}",
+                code="canvas.held.clock",
+                path="keys",
+                actual=str(exc),
+                expected="a sequence, groups and clocks the held-key gate can follow",
+                remedy="Place shots by time, not by marker, and give every clock a running time scale.",
+            ) from None
+        rate = self._held_rate if self._held_rate is not None else project_fps(self.scene)
+        moves = []
+        for i, (a, node, asked, written) in enumerate(self._held):
+            clock = placed.get(id(node))
+            if clock is None or not any(c is a for c in node.elements()) or _written(a) != written:
+                continue
+            local = a.attributes().get("timeBase") == "local"
+            shown = {clock.held(t, rate, local): value for t, value in asked}  # the later of one frame's changes
+            moves.append((i, a, sorted(shown.items(), key=lambda kv: kv[0])))
+        for i, a, timed in moves:
+            for key in a.find_all("key"):
+                a.remove(key)
+            for t, value in timed:
+                a.add_key(time=t, value=str(value))
+            a_, node, asked, _ = self._held[i]
+            self._held[i] = (a_, node, asked, _written(a))
 
     @contextmanager
     def frozen(self) -> Iterator[Canvas]:
@@ -574,6 +623,11 @@ class Canvas:
     def expression(self, node, prop: str, js: str):
         self._refuse_frozen(f"the expression on {prop!r}")
         node.add_expression(property=prop).content = js
+
+
+def _written(animate: Any) -> list[tuple[str | None, str | None]]:
+    """An animate's keys as written: each key's time and value, lexically."""
+    return [(k.attributes().get("time"), k.attributes().get("value")) for k in animate.find_all("key")]
 
 
 def _at_zero(ordered: Sequence[tuple[float, Any]], hold: bool, prop: str) -> Any:

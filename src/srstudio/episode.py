@@ -1053,6 +1053,7 @@ class Episode:
             for target, prop, value in self._cover_hidden[self._cover_written :]:
                 self._cover_variant.add_override(target=target, property=prop, value=value)
             self._cover_written = len(self._cover_hidden)
+        self.cv.place_held()  # held keys on the reel's frames through each shot's start, once all is drawn (ADR 0223)
         findings = self.check()
         report_rows = [{"severity": f.severity, "code": f.code, "message": str(f)} for f in findings]
         errors = [f for f in findings if f.severity == "error"]
