@@ -2,6 +2,7 @@
 folder that posts to @tuxmeme. Everything refused is refused before anything is staged or uploaded; rclone is faked."""
 
 import hashlib
+import io
 import json
 import re
 import stat
@@ -45,12 +46,31 @@ class Runner:
         return subprocess.CompletedProcess(cmd, self.codes.pop(0), "", "rclone: quota exceeded\n")
 
 
+SCENE = (
+    '<scene><project safeArea="v" width="1080" height="1920" fps="24" duration="1"/>'
+    '<safeAreas><safeArea id="v" top="0.1" right="0.1" bottom="0.2" left="0.1" enforce="error"/></safeAreas></scene>'
+)
+
+
+def packed(slug: str, scene: str | None = SCENE) -> bytes:
+    """A package with the pilot's scene in it, as the engine packs one (project/<slug>.scene.xml)."""
+    data = io.BytesIO()
+    with zipfile.ZipFile(data, "w") as z:
+        z.writestr("vpkg.json", "{}")
+        if scene is not None:
+            z.writestr(f"project/{slug}.scene.xml", scene)
+    return data.getvalue()
+
+
 def pilot(root: Path, slug: str = "the-tell", package: str = "vpkg.zip") -> Path:
     folder = root / slug
     folder.mkdir(parents=True)
     (folder / f"{slug}.mp4").write_bytes(b"video")
     for name in FILES:
-        (folder / (package if name == "vpkg.zip" else name)).write_text(f"{name}\n")
+        if name == "vpkg.zip":
+            (folder / package).write_bytes(packed(slug))
+        else:
+            (folder / name).write_text(f"{name}\n")
     return folder
 
 
@@ -830,3 +850,43 @@ def test_a_package_with_a_scene_the_gate_cannot_read_is_refused(tool, world, mon
     monkeypatch.setattr(tool.outbox, "_run", Manifest(code=3))
     with pytest.raises(tool.PilotError, match="the-tell: held keys: not a scene document"):
         tool.late(tool.bundles(world / "in", set()), "gdrive:srstudio/pilots/mind", "rclone")
+
+
+# -- the safe area: every series, first delivery only (ADR 0218) ---------------------------------------------------
+UNDECLARED = '<scene><project width="1080" height="1920" fps="24" duration="1"/></scene>'
+
+
+def repack(world: Path, slug: str, scene: str | None) -> None:
+    (world / "in" / slug / "vpkg.zip").write_bytes(packed(slug, scene))
+
+
+def test_a_new_pilot_whose_scene_declares_no_safe_area_is_refused_before_anything_is_staged(
+    tool, world, monkeypatch, capsys
+):
+    repack(world, "the-tell", UNDECLARED)
+    monkeypatch.setattr(tool.outbox, "_run", Manifest(code=3))
+    assert tool.main(args(world, "--stage-only")) == 2
+    err = capsys.readouterr().err
+    assert "the-tell: its scene declares no safe area (ADR 0218)" in err and "second-pilot" not in err
+    assert not (world / "generated/pilots").exists()
+
+
+def test_a_pilot_whose_scene_declares_one_never_reads_drive(tool, world):
+    tool.undeclared(tool.bundles(world / "in", set()), "gdrive:srstudio/pilots/mind", "not-rclone")
+
+
+def test_a_pilot_already_on_drive_keeps_its_scene_and_a_new_one_does_not(tool, world, monkeypatch):
+    repack(world, "the-tell", UNDECLARED)
+    repack(world, "second-pilot", None)
+    text = json.dumps({"version": "1.0.0", "videos": {"the-tell": {}}})
+    monkeypatch.setattr(tool.outbox, "_run", Manifest(text))
+    with pytest.raises(tool.PilotError, match="second-pilot: no project/second-pilot.scene.xml") as e:
+        tool.undeclared(tool.bundles(world / "in", set()), "gdrive:srstudio/pilots/mind", "rclone")
+    assert "the-tell" not in str(e.value)
+
+
+def test_a_package_that_is_not_a_zip_is_refused_by_name(tool, world, monkeypatch):
+    (world / "in" / "the-tell" / "vpkg.zip").write_text("not a package\n")
+    monkeypatch.setattr(tool.outbox, "_run", Manifest(code=3))
+    with pytest.raises(tool.PilotError, match="the-tell: vpkg.zip is not a zip"):
+        tool.undeclared(tool.bundles(world / "in", set()), "gdrive:srstudio/pilots/mind", "rclone")

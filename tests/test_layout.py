@@ -336,7 +336,8 @@ def test_episode_declares_its_safe_area_and_the_engine_enforces_it(project, tmp_
     assert run.returncode != 0 and "SA01" in codes
 
 
-def test_episode_without_a_safe_area_declares_none(project, tmp_path):
+def test_episode_that_names_no_safe_area_declares_its_styles(project, tmp_path):
+    """Every scene declares its safe area (ADR 0218): one that names none gets its style's."""
     ep = Episode(
         EpisodeSpec(
             slug="t-plain", title="t", description="t", root=project, seed=1, background="#D5DFDF", signature=False
@@ -345,7 +346,8 @@ def test_episode_without_a_safe_area_declares_none(project, tmp_path):
     ep.captions()
     out = ep.finish(out=tmp_path / "plain.scene.xml", report=tmp_path / "report.json")
     root = ET.fromstring(out.read_bytes())
-    assert root.find("safeAreas") is None and root.find("project").get("safeArea") is None
+    assert root.find("project").get("safeArea") == VERTICAL.id
+    assert root.find("safeAreas/safeArea").get("id") == VERTICAL.id
 
 
 # -- failure paths -------------------------------------------------------------------------------------

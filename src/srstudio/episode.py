@@ -19,14 +19,14 @@ from sr_core.scene import AudioMix, AudioTrack, CaptionTrack, Composition, Group
 from sr_core.scene import Sequence as SceneSequence
 from sr_core.scene._runtime import _attr_specs
 
-from . import anatomy_ledger, checks, digest, native, show, signature
+from . import anatomy_ledger, checks, digest, native, safe_areas, show, signature
 from ._outputs import pinned_directories, write_outputs
 from ._transaction import scene_transaction
 from .canvas import Canvas, Keys, Palette, Signature
 from .errors import SrstudioError
 from .generated import PlacedClip, load_clips, verify
 from .graphics import captions as _captions
-from .layout import Crossing, SafeArea, check_overlays, find_engine
+from .layout import Crossing, SafeArea, UndeclaredSafeAreaError, check_overlays, find_engine
 from .narration import narration_cues
 from .rig import Actor, Performance
 from .social import InstagramPost
@@ -377,7 +377,9 @@ class EpisodeSpec:
     accessibility: dict | None = None  # metadata/accessibility attributes, merged over the style's
     namer: Callable[[str], str] | None = FROM_STYLE  # id scheme for anonymous nodes (default prefix-0001)
     local_time: bool = FROM_STYLE  # animations on the shot clock (sequence styles)
-    safe_area: SafeArea | None = None  # declared and made the project's; the engine enforces it (SA01)
+    # declared and made the project's; the engine enforces it (SA01). By default the style's; None only for a reel on
+    # srstudio.safe_areas.PUBLISHED_WITHOUT, which is built as it went out (ADR 0218)
+    safe_area: SafeArea | None = FROM_STYLE
     # -- the signature marks (docs/decisions/0001-signature.md) ----------------------------------
     signature: bool = True  # False only for packages older than the convention
     signature_code: str = "SR-1028"  # project-wide; changing it is a decision, not a per-episode choice
@@ -417,6 +419,14 @@ class EpisodeSpec:
         ):
             if getattr(self, name) is FROM_STYLE:
                 setattr(self, name, value)
+        published = self.slug in safe_areas.PUBLISHED_WITHOUT
+        if self.safe_area is FROM_STYLE:
+            self.safe_area = None if published else st.safe_area
+        elif self.safe_area is None and not published:
+            raise UndeclaredSafeAreaError(
+                f"{self.slug}: every scene declares its safe area (ADR 0218); leave safe_area to the style "
+                f"({st.safe_area.id}) or name one"
+            )
         if self.mouth_style is FROM_STYLE:
             self.mouth_style = None if st.silent else st.mouth(self.palette)
         if self.namer is FROM_STYLE:

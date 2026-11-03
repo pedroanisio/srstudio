@@ -54,6 +54,7 @@ from srstudio import (
     overlay_gate,
     registry,
     releases,
+    safe_area_gate,
     send_gate,
     show_gate,
     show_numbers,
@@ -192,9 +193,9 @@ def write_all(
     print over each other, or a first delivery with no enhancement behind it (ADR 0056), under the comedy floor
     (ADR 0064), over the hashtag limit (ADR 0065), with bait on the send test (ADR 0080), refused by a frame gate
     (ADR 0073), out of the show's look (ADR 0074), with a --strict finding not proven false (ADR 0078), with a held
-    change the engine shows a frame late (ADR 0216) or one the cast bible refuses (ADR 0069), is a
-    :class:`DeliveryError` before anything is written. A video in the manifest is past all of these: what was
-    published stays as it went out. A reel on the hold list (ADR 0140) is passed over, and
+    change the engine shows a frame late (ADR 0216), one the cast bible refuses (ADR 0069) or a scene that declares
+    no safe area (ADR 0218), is a :class:`DeliveryError` before anything is written. A video in the manifest is past
+    all of these: what was published stays as it went out. A reel on the hold list (ADR 0140) is passed over, and
     naming one is a :class:`DeliveryError`."""
     stopped = {
         r.video_name: HELD[slug] for slug, r in RELEASES.items() if slug in HELD and r.video_name in (only or ())
@@ -224,6 +225,7 @@ def write_all(
     frame_gates.refuse(overlay_gate.repeated_lines(chosen, _beside(renders), first.values()))
     frame_gates.refuse(
         [
+            *safe_area_gate.undeclared(chosen, _beside(renders), first),
             *frame_gates.captions_run_together(chosen, _beside(renders), first),
             *text_rules.caption_defects(chosen, _beside(renders), first),
             *text_rules.timing_defects(chosen, _beside(renders), first, engine),
