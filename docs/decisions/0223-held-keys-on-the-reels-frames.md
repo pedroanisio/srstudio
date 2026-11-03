@@ -75,6 +75,16 @@ idempotence, rewritten and removed animates, `Episode.finish`, and the engine it
 one drawing per frame in a shot that starts 0.72 of a frame late. `tests/test_held_gate.py` holds the gate's
 refusal of a change keyed on a shot's frames at 24 fps and 30000/1001, and its pass when the shot starts on a frame.
 
+## A News graphic's arrival
+
+`news_inked` slides a lower-third and the BREAKING banner in by starting their words at `start + SLIDE`, and in
+floats 10.8 + 0.3 is 11.100000000000001, a hair after frame 333 at 30 fps: the engine shows the words on frame 334
+and the gate refuses it. On a `held_frames` canvas `_arrival` gives a sum within a millionth of a frame of a frame
+that frame's own time (`held_keys.frame_time`); any other sum, and every sum on a canvas without `held_frames`, stays
+as it was. `five-minutes-away` already put its windows back on their frames with the episodes repository's
+`news_story.on_frames` and builds the same scene; `top-that` built on develop holds two such starts (8.7 and 19.9 s,
+frames 261 and 597), which now land on their frames, and nothing else in its scene changes.
+
 ## Rejected alternatives
 
 - Place each key in `Canvas.keys`, through the node's parents at the time of the call. A shot's start in a
