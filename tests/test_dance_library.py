@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from srstudio import choreograph, dance
+from srstudio import dance_study as ds
 from srstudio import skeleton as sk
 from srstudio.dance_pose import dance_pose
 from srstudio.music import Groove
@@ -18,6 +19,8 @@ ROOT = Path(__file__).resolve().parents[1]
 GRID = Groove(152)
 PROFILES = {name: sk.preset(name) for name in sk.PRESETS}
 STEPS = 48
+FLOOR_STEPS = 12  # places a beat a foot's height is read at
+FLOOR_TOLERANCE = 0.01  # head radii: a planted foot on the floor, whatever the skeleton
 FEIN = dance.library("fein")
 
 
@@ -52,6 +55,26 @@ def test_every_transcribed_move_dances_within_every_characters_limits_unclamped(
     for source in (move, move.mirror()):
         for step in range(round(move.loop_beats * STEPS)):
             dance_pose(PROFILES[character], dance.sample(source, GRID, step / STEPS * GRID.beat))
+
+
+def _lowest_foot_above_the_floor(profile, frame) -> float:
+    """Head radii the frame's lowest planted ankle sits above where that ankle rests; negative under the floor."""
+    at = [ds._AT["left_ankle" if foot == "left_foot" else "right_ankle"] for foot in frame.planted]
+    rest = ds._skeleton_points(profile, sk.rest_pose(profile))
+    here = ds._skeleton_points(profile, dance_pose(profile, frame).pose)
+    return float(min(rest[i, 1] - here[i, 1] for i in at)) / profile.proportions.head_radius_m
+
+
+@pytest.mark.parametrize("name", sorted(FEIN))
+@pytest.mark.parametrize("character", sorted(PROFILES))
+def test_a_transcribed_move_stands_on_the_floor_on_every_character(name, character):
+    move = FEIN[name]
+    assert {c.foot for c in move.contacts} == {"left_foot", "right_foot"}
+    for source in (move, move.mirror()):
+        for step in range(round(move.loop_beats * FLOOR_STEPS)):
+            frame = dance.sample(source, GRID, step / FLOOR_STEPS * GRID.beat)
+            assert frame.planted == {"left_foot", "right_foot"}
+            assert abs(_lowest_foot_above_the_floor(PROFILES[character], frame)) <= FLOOR_TOLERANCE
 
 
 def test_a_palette_splits_a_library_by_how_much_it_moves():

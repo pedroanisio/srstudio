@@ -8,6 +8,13 @@ big-headed cartoon bobs more than a realistic figure by the same share; each joi
 A delta on a joint the character lacks (a finger of a mitten hand, a joint ``omit`` removed) is dropped and named in
 :attr:`DancePose.dropped`, never applied elsewhere. A target outside the canonical skeleton is refused, and a value
 past a joint's limit is refused unless ``clamp`` asks for it to be clamped, as :func:`skeleton.add` does.
+
+A frame's ``planted`` feet stay on the floor (ADR 0212). The root's translation is measured from standing: at a
+root of zero, the lowest planted foot is where that foot stands in the base pose. So when a dance bends the legs, the
+body is carried straight up or down by what the bend lifted or sank that foot, and the root's own travel rides on top,
+as a bob or a hop. How far the bend lifts depends on this character's legs, so it is read here and never written into
+a move, whose root is in head radii. A planted foot may still slide along the floor, and the higher of two planted
+feet may leave it. A ``seat`` is held up by what it sits on and is not carried.
 """
 
 from __future__ import annotations
@@ -46,7 +53,24 @@ def dance_pose(
             delta[key] = delta.get(key, 0.0) + value
         else:
             dropped.add(key)
-    return DancePose(sk.add(profile, start, delta, clamp=clamp), frozenset(dropped))
+    pose = sk.add(profile, start, delta, clamp=clamp)
+    bent = sk.add(profile, start, {k: v for k, v in delta.items() if k not in HIPS}, clamp=clamp)
+    return DancePose(_grounded(profile, start, bent, pose, frame), frozenset(dropped))
+
+
+def _grounded(
+    profile: sk.SkeletonProfile, start: sk.SkeletonPose, bent: sk.SkeletonPose, pose: sk.SkeletonPose, frame: DanceFrame
+) -> sk.SkeletonPose:
+    """``pose`` carried along the vertical by what the joints alone (``bent``) moved the lowest of ``frame``'s
+    planted feet from where ``start`` has it, so that at a root of zero that foot stands on the floor."""
+    if frame.support == "seat" or not frame.planted:
+        return pose
+    at, floor = sk.world(profile, bent), sk.world(profile, start)
+    lifts = [floor[foot].origin.y - at[foot].origin.y for foot in sorted(frame.planted) if foot in at]
+    if not lifts or min(lifts) == 0.0:
+        return pose
+    root = pose.root
+    return sk.SkeletonPose(sk.Frame(root.origin + sk.Vec3(0.0, min(lifts), 0.0), root.rotation), pose.values)
 
 
 def _joints(joints: Mapping[str, float]) -> Mapping[str, float]:

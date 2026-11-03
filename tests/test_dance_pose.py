@@ -111,3 +111,44 @@ def test_every_preset_move_dances_on_every_preset_character():
             for t in (0.0, 0.11, 0.37, 1.9):
                 result = dance_pose(profile, dance.sample(move, GROOVE, t), clamp=True)
                 assert all(math.isfinite(v) for _, v in result.pose.values), (name, character)
+
+
+# --- planted feet stay on the floor (ADR 0212) ----------------------------------------------------------------------
+
+BOTH = frozenset({"left_foot", "right_foot"})
+KNEES = {"left_upper_leg.front_back": -0.6, "left_lower_leg.stretch": -1.2}  # one knee bent, its foot drawn up
+
+
+def _feet(profile, planted, joints, root=(0.0, 0.0, 0.0), support="feet"):
+    """Each foot's height over where it stands at rest, in head radii, positive up, and the hips' rise."""
+    posed = dance_pose(profile, dance.DanceFrame(0.0, root, joints, None, frozenset(planted), support, "test")).pose
+    at, rest = sk.world(profile, posed), sk.world(profile, sk.rest_pose(profile))
+    up = lambda name: (rest[name].origin.y - at[name].origin.y) / profile.proportions.head_radius_m  # noqa: E731
+    return up("left_foot"), up("right_foot"), up("hips")
+
+
+@pytest.mark.parametrize("name", sk.PRESETS)
+def test_a_bent_leg_lowers_the_body_until_its_lowest_planted_foot_stands_on_the_floor(name):
+    profile = sk.preset(name)
+    free_left, free_right, free_hips = _feet(profile, (), KNEES)
+    assert free_left > 0.1 and free_right == pytest.approx(0.0, abs=1e-9)  # unplanted, the bent leg's foot rises
+    left, right, hips = _feet(profile, {"left_foot"}, KNEES)
+    assert left == pytest.approx(0.0, abs=1e-9) and right < -0.1 and hips < free_hips  # planted, the body comes down
+    left, right, hips = _feet(profile, BOTH, KNEES)
+    assert min(left, right) == pytest.approx(0.0, abs=1e-9) and left > 0.1 and hips == free_hips  # the lower one holds
+
+
+@pytest.mark.parametrize("name", sk.PRESETS)
+def test_the_roots_own_travel_rides_on_top_of_the_planted_feet(name):
+    profile = sk.preset(name)
+    _, _, standing = _feet(profile, BOTH, KNEES)
+    left, right, hips = _feet(profile, BOTH, KNEES, root=(0.0, 0.5, 0.0))
+    assert hips - standing == pytest.approx(0.5) and min(left, right) == pytest.approx(0.5)  # a hop leaves the floor
+    left, right, hips = _feet(profile, BOTH, {}, root=(0.0, 0.5, 0.0))
+    assert hips == pytest.approx(0.5) and left == right == pytest.approx(0.5)  # straight legs: the bob, unchanged
+
+
+def test_a_seat_or_no_planted_foot_is_not_carried():
+    for planted, support in ((BOTH, "seat"), ((), "feet"), ((), "either")):
+        left, _, hips = _feet(REALISTIC, planted, KNEES, support=support)
+        assert hips == 0.0 and left > 0.1

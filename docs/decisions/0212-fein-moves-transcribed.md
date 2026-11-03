@@ -31,8 +31,8 @@ library of fitted pattern parameters, and compose from it through the same chore
 
 ### What a transcribed move is
 
-Each window of the reference becomes one `dance.Move` named `fein-NN`, `support` `feet`, both feet declared in contact
-through a loop of four beats (a declaration only, see the known defect below): the measured span fills the first two beats as the strike onto the hit, the other two are the slow
+Each window of the reference becomes one `dance.Move` named `fein-NN`, `support` `feet`, both feet planted through a
+loop of four beats (held on the floor's height by `dance_pose`, see below): the measured span fills the first two beats as the strike onto the hit, the other two are the slow
 return. Every moved joint carries one `sine` pattern of a quarter cycle a beat (bias, amplitude, phase and snap), on
 the same canonical targets the presets use: hips, chest and neck on all three axes, each upper arm's lift, swing and
 twist with the forearm's stretch, each upper leg's swing and spread with the lower leg's stretch. Nothing moves the
@@ -96,22 +96,48 @@ pairs there has an area under the curve of 0.90 on few pairs). A cluster seen fr
 move: 78 of them. For each, the window is the first member whose track the estimator holds through the window with a
 steady torso.
 
-### Known defect: the feet are not planted
+### Planted feet stand on the floor
 
-A move's contacts declare both feet on the floor, and nothing makes that true. `dance_pose` adds the patterns to the
-rest pose and does not solve the legs against the floor, and no pattern moves the root, so a bent knee lifts its foot
-instead of lowering the hips. Measured on every move at 12 samples a beat, in head radii, against each ankle's place
-at rest:
+A move's contacts said both feet were on the floor, and nothing made it true: `dance_pose` added the patterns to the
+rest pose and no pattern moves the root, so a bent knee lifted its foot instead of lowering the hips. Measured on every
+move at 12 samples a beat, in head radii against each ankle's place at rest, the lowest planted foot stood above the
+floor by:
 
-| Library, skeleton | Foot drift, median / max | Lowest foot above the floor, median / max |
+| Library, skeleton | Median | Max |
 |---|---|---|
-| `fein`, realistic | 4.36 / 8.50 | 1.51 / 3.29 |
-| `fein`, stick | 3.91 / 7.51 | 1.32 / 2.92 |
-| `fein`, cartoon | 1.06 / 2.09 | 0.36 / 0.80 |
-| `moves` (the five standing presets), realistic | 0.47 / 1.64 | 0.08 / 0.18 |
+| `fein`, realistic | 1.51 | 3.29 |
+| `fein`, stick | 1.32 | 2.92 |
+| `fein`, cartoon | 0.36 | 0.80 |
+| `moves` (the five standing presets), realistic | 0.08 | 0.18 |
 
-The transcribed moves therefore float on the realistic and stick skeletons, and no test reads a foot's place. They
-are not fit to compose from until the root's height comes from the feet.
+The root can not carry the correction. It is written in head radii, and the same knee bend lifts a foot by a
+different share of a head on each skeleton. So `dance_pose` now reads it per character: a frame's root is measured
+from standing, and the body is carried up or down by what the joints alone lifted or sank the lowest planted foot.
+The root's own travel rides on top, so a bob or a hop is unchanged; a seat, and a frame with no foot planted, are not
+carried. `tests/test_dance_library.py` holds every FE!N move and its mirror on every preset to 0.01 head radii of the
+floor; it failed on all 234 move and character pairs before the change. The lowest planted foot of every FE!N move
+now stands at 0.00 on all three skeletons.
+
+The presets change too, because some of their feet floated. 15 of the 48 preset and skeleton pairs move, and the
+largest change to any joint's place, in head radii, is:
+
+| Preset | realistic | stick | cartoon |
+|---|---|---|---|
+| `step-touch` | 0.149 | 0.137 | 0.044 |
+| `sway`, `hip-sway` | 0.039 | 0.009 | 0.020 |
+| `bob` | 0.033 | 0.030 | 0.008 |
+| `bounce` | 0.021 | 0.018 | 0.005 |
+
+`bob` keeps its whole bounce (0.300 head radii of hip travel before and after); the hips of `step-touch` now
+travel 0.139 head radii up and down where they travelled 0.100. These are approved presets, so the change waits on
+a proof clip before it lands.
+
+### Known defect: planted feet slide
+
+Only the height is held. A planted foot still slides along the floor, by 4.01 head radii at the median on the
+realistic skeleton (7.98 at most), 3.57 on stick and 0.98 on cartoon: the hips stay where the root puts them and the
+fitted legs swing the feet. Holding a foot in place on the floor needs the hips to move under it, or the legs solved
+to reach it, and either one changes the transcribed motion. Until then the moves skate.
 
 ## Rejected alternatives
 
