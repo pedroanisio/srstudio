@@ -22,7 +22,10 @@ from functools import cache, lru_cache
 
 import numpy as np
 
-from . import clay, rafa_skin
+from . import _character_contracts as cc
+from . import anatomy, clay, rafa_skin
+from ._rafa_prop_contracts import contract as prop_contract
+from .anatomy import Facing, Fingers
 from .clay import Mesh, Model
 from .errors import SrstudioError
 from .plates import Line, Material, Print, Texture
@@ -482,8 +485,9 @@ def mouth(m: Model, name: str, shape: str = "rest") -> None:
 
 
 # -- the body ---------------------------------------------------------------------------------------------------------
-def _hand(m: Model, x: float, y: float, z: float, side: int = 1) -> None:
-    """A hand at the end of a hanging arm."""
+def _hand(m: Model, x: float, y: float, z: float, hand: anatomy.Hand) -> None:
+    """A hand at the end of a hanging arm: its back to the lens and its fingers down, so its thumb lies in."""
+    side = -hand.thumb_x
     m.ell("flesh", (x, y, z), (13, 18, 8))
     for i in range(4):
         xx = x - 8 + i * 5.5
@@ -491,7 +495,36 @@ def _hand(m: Model, x: float, y: float, z: float, side: int = 1) -> None:
     m.capsule("flesh", (x - side * 9, y - 3, z - 1), (x - side * 17, y + 10, z - 5), 4.8)
 
 
-@register("character", "rafa", summary="Rafa, 34, mostly functional: a clay man in a teal cardigan, shot as plates")
+@register(
+    "character",
+    "rafa",
+    summary="Rafa, 34, mostly functional: a clay man in a teal cardigan, shot as plates",
+    contract=cc.character(
+        limbs=False,
+        expressions=False,
+        parameters=(('m', cc.P(unit='Rafa model units')),),
+        constraints=(
+            'This builder emits only the static body below the head into a clay.Model; '
+            'it does not draw or animate a face. Use rafa_host for composited plate performance.',
+        ),
+        operations=(
+            cc.Operation(
+                'face',
+                Face,
+                cc.PartContract(
+                    parameters=(
+                        ('mood', cc.P(enum=tuple(MOODS))),
+                        ('gaze', cc.P(enum=tuple(GAZES))),
+                        ('lid', cc.P(enum=tuple(LIDS))),
+                        ('mouth', cc.P(enum=MOUTHS)),
+                        ('turn', cc.P(unit='degrees', enum=TURNS)),
+                        ('nod', cc.P(unit='degrees', enum=NODS)),
+                    )
+                ),
+            ),
+        ),
+    ),
+)
 def body(m: Model) -> None:
     """Everything of him below the head: he slouches, his hips sit a little off, the cardigan hangs open. A neck carries
     the head, and the shoulders have weight: a knit body, a turned-over collar, a placket, folds where wool bends."""
@@ -545,7 +578,7 @@ def _cardigan(m: Model) -> None:
         arm = (neck, top, (side * 78, -262, 4), (side * 73, -226, -1), (side * 67, -177, -12))
         m.sweep("teal", arm, (14, 21, 24, 22, 19, 16, 14), n=90, sides=48)
         m.box("teallight", (side * 67, -178, -12), (28, 15, 26), 5, rotation=side * 2)
-        _hand(m, side * 67, -156, -14, side)
+        _hand(m, side * 67, -156, -14, anatomy.Arm(anatomy.Side.of(side)).hand(Facing.BACK, Fingers.DOWN))
         m.box("tealdark", (side * 50, -190, -28), (19, 22, 2), 1)
         m.box("teallight", (side * 50, -199, -29), (22, 4, 3), 1)
         for start, middle, stop in (((46, -274), (58, -262), (66, -240)), ((48, -232), (56, -216), (54, -196))):
@@ -608,7 +641,9 @@ def finished(mesh: Mesh) -> Mesh:
 
 
 # -- the props --------------------------------------------------------------------------------------------------------
-@register("prop", "rafa-mug", summary="The denial mug: I'M GREAT. (I think)")
+@register(
+    "prop", "rafa-mug", summary="The denial mug: I'M GREAT. (I think)", contract=prop_contract('rafa-mug', finished)
+)
 def mug(m: Model) -> None:
     """The denial mug: "I'M GREAT. (I think)". A rounded body, recessed coffee, a thin lip, one arched handle."""
     m.cylinder("glaze", (0, -23, 0), 22, 42)
@@ -631,7 +666,12 @@ def mug(m: Model) -> None:
     m.curved_label("mug-label", 22.2, -39, -7, 1.75)
 
 
-@register("prop", "rafa-phone", summary="His phone at 99+ unread: everyone needs something")
+@register(
+    "prop",
+    "rafa-phone",
+    summary="His phone at 99+ unread: everyone needs something",
+    contract=prop_contract('rafa-phone', finished),
+)
 def phone(m: Model) -> None:
     """The 99+ phone: everyone needs something."""
     m.box("case", (0, -48, 0), (48, 96, 8), 6)
@@ -641,7 +681,12 @@ def phone(m: Model) -> None:
     m.box("red", (24, -60, 0), (2, 17, 4), 0.5)
 
 
-@register("prop", "rafa-bills", summary="The bills folder: ADULT LIFE / PENDING")
+@register(
+    "prop",
+    "rafa-bills",
+    summary="The bills folder: ADULT LIFE / PENDING",
+    contract=prop_contract('rafa-bills', finished),
+)
 def bills(m: Model) -> None:
     """The bills folder: "ADULT LIFE / PENDING". Being organized does not mean being paid."""
     m.box("rust", (0, -38, 0), (96, 73, 17), 4)
@@ -655,7 +700,12 @@ def bills(m: Model) -> None:
     m.ell("gold", (0, -39, -16), (3, 3, 1))
 
 
-@register("prop", "rafa-lunchbox", summary="The personal lunch: RAFA / NOT COMMUNAL")
+@register(
+    "prop",
+    "rafa-lunchbox",
+    summary="The personal lunch: RAFA / NOT COMMUNAL",
+    contract=prop_contract('rafa-lunchbox', finished),
+)
 def lunchbox(m: Model) -> None:
     """The personal lunch: "RAFA / NOT COMMUNAL". The office fridge has no laws."""
     m.box("navy", (0, -20, 0), (86, 35, 57), 9)
@@ -666,7 +716,12 @@ def lunchbox(m: Model) -> None:
     m.tube("navy", ((-15, -44, 0), (-15, -55, 0), (15, -55, 0), (15, -44, 0)), 3)
 
 
-@register("prop", "rafa-tote", summary="The tote: JUST CAME FOR BREAD, and a receipt for $187.40")
+@register(
+    "prop",
+    "rafa-tote",
+    summary="The tote: JUST CAME FOR BREAD, and a receipt for $187.40",
+    contract=prop_contract('rafa-tote', finished),
+)
 def tote(m: Model) -> None:
     """The grocery tote: "JUST CAME FOR BREAD", $187.40. The bread, the greens and the receipt are part of it."""
     m.box("cream", (0, -44, 0), (90, 86, 40), 12)
@@ -720,7 +775,12 @@ def _window(m: Model, x: float, y: float, z: float, w: float, h: float) -> None:
     m.box("oaklight", (x, y + h / 2 + 10, z - 22), (w + 35, 12, 62), 3)
 
 
-@register("location", "rafa-kitchen", summary="His apartment kitchen in warm sage, terracotta and wood")
+@register(
+    "location",
+    "rafa-kitchen",
+    summary="His apartment kitchen in warm sage, terracotta and wood",
+    contract=prop_contract('rafa-kitchen', finished),
+)
 def kitchen(m: Model) -> None:
     """His apartment kitchen, warm sage, terracotta and wood. The recurring props are placed by the shot, not here."""
     m.box("oakdark", (0, 9, 75), (1120, 20, 900))
@@ -771,7 +831,12 @@ def kitchen(m: Model) -> None:
     _plant(m, -436, 0, 375, 1.2)
 
 
-@register("location", "rafa-breakroom", summary="The office break room: cool cabinets, a shared fridge, a poster")
+@register(
+    "location",
+    "rafa-breakroom",
+    summary="The office break room: cool cabinets, a shared fridge, a poster",
+    contract=prop_contract('rafa-breakroom', finished),
+)
 def breakroom(m: Model) -> None:
     """His office break room: cool cabinets, a tiled floor, a shared fridge and institutional optimism."""
     m.box("navy", (0, 10, 70), (1120, 20, 880))

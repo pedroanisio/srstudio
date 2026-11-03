@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import dataclasses
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from types import SimpleNamespace
 
 import pytest
@@ -134,20 +134,24 @@ def test_record_runs_the_takes_recording_on_the_script(monkeypatch):
     assert seen["script"].title == "Demo"
 
 
-def test_a_reel_can_go_without_its_series_music_bed_and_says_so_in_its_voice_note():
-    bed = takes.Bed(SimpleNamespace(), seed=1, bpm=120, gain_db=-16.0, fade=1.0)
-    scored = dataclasses.replace(SERIES, bed=bed)
-
+def test_a_reel_can_go_without_the_bed_of_its_series():
     @dataclass(frozen=True)
     class Scored(Reel):
-        series = scored
+        series = replace(SERIES, bed="the-series-bed")
 
-    fields = {f.name: getattr(reel(), f.name) for f in dataclasses.fields(Reel)}
-    assert Scored(**fields).script().bed is bed
-    assert "Instrumental music bed" in Scored(**fields).script().voice_note
-    bare = Scored(**(fields | {"bed": False})).script()
-    assert bare.bed is None
-    assert bare.voice_note == "ElevenLabs premade voices River and George; no reference-voice cloning."
+    base = reel()
+    scored = Scored(**{f.name: getattr(base, f.name) for f in dataclasses.fields(Reel)})
+    assert scored.script().bed == "the-series-bed"
+    quiet = dataclasses.replace(scored, bed=False).script()
+    assert quiet.bed is None
+    assert quiet.voice_note.endswith("No music.") and "composed" not in quiet.voice_note
+
+
+def test_a_reel_can_ask_for_its_own_loudness_and_otherwise_leaves_it_to_the_style(project):
+    series.build(reel(loudness="-14"), "unused.py", argv=["demo.py", str(project)])
+    assert FakeEpisode.made[-1].spec.given.loudness == "-14"
+    series.build(reel(), "unused.py", argv=["demo.py", str(project)])
+    assert FakeEpisode.made[-1].spec.given.loudness is None
 
 
 def test_a_reel_asks_for_no_bed_with_a_boolean_or_is_refused():

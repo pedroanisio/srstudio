@@ -13,11 +13,11 @@ faces sit above the word captions (:data:`srstudio.stick.WORD_Y`).
 
 from __future__ import annotations
 
-import math
 from collections.abc import Sequence
-from typing import NamedTuple
 
+from . import _stick_transport_contracts as tc
 from . import checks, signature
+from ._stick_motion import MAX_KEYS, check_motion_keys, cycle_count, key_budget
 from .canvas import Canvas
 from .registry import register
 from .stick import PLAIN, Gradient, Look, RigPose, StickDataError, _group, _seat, box, oval, paint, shape
@@ -42,9 +42,11 @@ from .stick_car import DASH_TOP as DASH_TOP_PAINT
 
 __all__ = [
     "COUPLE",
+    "DASH_CACTUS",
     "DASH_TOP",
     "DRIVER_AT",
     "FRONT",
+    "GROUNDS",
     "NOOR",
     "PASSENGER_AT",
     "REAR_WINDOW",
@@ -59,6 +61,7 @@ BODY, BODY_LIGHT, BODY_SHADE = "#c46a4a", "#d98a68", "#9e5238"  # the car's pain
 FIELD_FAR = "#a9c48f"  # the far fields along the horizon
 TRACK = "#7a9a60"  # wheel tracks through a field
 GROUNDS = ("road", "field")  # what the rear window can show
+DASH_CACTUS = 0.3  # the signature cactus's scale on the dashboard, where delivered reels have it
 DASH_TOP = 1290  # the dashboard's top edge across the cabin: what is below it is hidden
 GLASS = "M 74 584 L 1006 584 L 1080 1462 L 0 1462 Z"  # the windshield, its frame drawn over its edge
 REAR_WINDOW = "M 150 712 Q 158 668 214 664 L 866 664 Q 922 668 930 712 L 958 902 L 122 902 Z"
@@ -122,23 +125,25 @@ def _pole(k: int, side: int) -> str:
     return f"M {x:.2f} {y + d:.2f} L {x:.2f} {y - 0.55 * d:.2f} M {x - side * 0.12 * d:.2f} {y - 0.48 * d:.2f} L {x:.2f} {y - 0.48 * d:.2f}"  # noqa: E501
 
 
-def _recede(cv: Canvas, node, end: float, speed: float) -> None:
-    """Shrink ``node`` about the vanishing point by :data:`RECEDE` once per dash, ``speed`` dashes a second, and
-    snap it back: the road behind runs away from the car without end."""
+def _recede_keys(end: float, speed: float, max_keys: int) -> list[tuple[float, float]]:
+    """Plan bounded shrinking/reset keys before any drawing is created."""
+    key_budget(max_keys)
     if not speed:
-        return
+        return []
+    count = cycle_count(end * speed, max_keys, keys_per_cycle=2)
     period = 1 / speed
+    reset_gap = min(0.001, period / 2)
     keys: list[tuple[float, float]] = []
-    for i in range(math.ceil(end * speed)):
-        keys += [(i * period, 1.0), ((i + 1) * period - 0.001, 1 / RECEDE)]
-    keys.append((math.ceil(end * speed) * period, 1.0))
-    cv.keys(node, "scaleX", keys, hold=False)
-    cv.keys(node, "scaleY", keys, hold=False)
+    for i in range(count):
+        keys += [(i * period, 1.0), ((i + 1) * period - reset_gap, 1 / RECEDE)]
+    keys.append((count * period, 1.0))
+    check_motion_keys(keys)
+    return keys
 
 
-def _road(cv: Canvas, parent, end: float, speed: float, ground: str = "road") -> None:
+def _road(cv: Canvas, parent, keys: list[tuple[float, float]], ground: str = "road") -> None:
     """What the rear window shows: the sky, the fields, and on ``"road"`` the road narrowing to the horizon with its
-    centre line and poles receding; on ``"field"`` two wheel tracks through the grass and nothing else."""
+    centre line and poles receding on ``keys``; on ``"field"`` two wheel tracks through the grass and nothing else."""
     g = _group(cv, parent)
     g.add_mask(type="path", path=REAR_WINDOW)
     sky = paint(cv, Gradient("ws-rear-sky", ((0, SKY_TOP), (1, SKY_LOW)), 0, 660, 0, HORIZON))
@@ -156,7 +161,9 @@ def _road(cv: Canvas, parent, end: float, speed: float, ground: str = "road") ->
         shape(cv, lines, _dash(k), "#f2efe6")
         for side in (-1, 1):
             shape(cv, lines, _pole(k, side), sw=max(1.0, 0.06 * NEAR * RECEDE**-k), stroke=cv.ink)
-    _recede(cv, lines, end, speed)
+    if keys:
+        cv.keys(lines, "scaleX", keys, hold=False)
+        cv.keys(lines, "scaleY", keys, hold=False)
 
 
 def _seat_back(cv: Canvas, parent, cx: float) -> None:
@@ -172,12 +179,21 @@ def _seat_back(cv: Canvas, parent, cx: float) -> None:
         shape(cv, parent, f"M {cx + dx} 960 L {cx + dx * 1.04} 1440", sw=3, stroke=SEAT_DEEP)
 
 
-@register("location", "stick-windshield", tags=("car", "interior", "front", "two-shot", "rear-window", "road"))
-def windshield(cv: Canvas, parent, end: float, *, speed: float = 2.5, ground: str = "road") -> None:
+@register(
+    "location",
+    "stick-windshield",
+    contract=tc.contract('stick-windshield'),
+    tags=("car", "interior", "front", "two-shot", "rear-window", "road"),
+)
+def windshield(
+    cv: Canvas, parent, end: float, *, speed: float = 2.5, ground: str = "road", max_keys: int = MAX_KEYS
+) -> None:
     """The car from its hood, the back layer: the sky above the roof, the headliner with its mirror, the rear window
     with the road receding behind the car (``speed`` dashes of its centre line a second; 0 for a parked car), or, for
     a ``ground`` of ``"field"``, a car stopped in the grass with its tracks behind it; the rear seat and the two front
-    seats at :data:`SEATS`. Pose a figure from :data:`FRONT` in each, then draw :func:`dashboard` over them."""
+    seats at :data:`SEATS`. Pose a figure from :data:`FRONT` in each, then draw :func:`dashboard` over them.
+    ``max_keys`` bounds each scale track (2..20000); all generated keys are checked for finite values and distinct
+    times before drawing. Reset gaps are at most half a cycle."""
     _check_end(end, "windshield")
     if not (checks.number(speed) and speed >= 0):
         raise StickDataError(f"the road's speed must be a non-negative number of dashes a second, got {speed!r}")
@@ -185,6 +201,7 @@ def windshield(cv: Canvas, parent, end: float, *, speed: float = 2.5, ground: st
         raise StickDataError(f"unknown ground {ground!r}; known: {', '.join(GROUNDS)}")
     if ground == "field" and speed:
         raise StickDataError(f"a car in a field is stopped, got speed {speed!r}")
+    keys = _recede_keys(end, speed, max_keys)
     s = cv
     sky = paint(s, Gradient("ws-sky", ((0, SKY_TOP), (1, SKY_LOW)), 0, 0, 0, 600))
     box(s, parent, 0, 0, s.width, 600, sky)
@@ -195,7 +212,7 @@ def windshield(cv: Canvas, parent, end: float, *, speed: float = 2.5, ground: st
     roof = paint(s, Gradient("ws-headliner", ((0, ROOF_LIGHT), (1, ROOF_SHADE)), 0, 584, 0, 720))
     box(s, parent, 0, 584, s.width, 136, roof)
     shape(s, parent, REAR_WINDOW, s.clear, 7, stroke=s.ink)
-    _road(s, parent, end, speed, ground)
+    _road(s, parent, keys, ground)
     shape(s, parent, REAR_WINDOW, sw=7, stroke=s.ink)
     rear = paint(s, Gradient("ws-rear-seat", ((0, SEAT_LIGHT), (1, SEAT_SHADE)), 0, 896, 0, 1000))
     shape(s, parent, "M 104 1000 L 112 914 Q 120 896 160 896 L 920 896 Q 960 896 968 914 L 976 1000 Z", rear, 4)
@@ -265,30 +282,32 @@ def _wheel(cv: Canvas, parent) -> None:
           f"{cy - ry * 0.7:.1f}", sw=5, stroke="#7b8290")  # fmt: skip
 
 
-class Marks(NamedTuple):
-    """Where :func:`dashboard` puts the signature: the cactus's scale, the code's top-left corner, height and colour."""
-
-    cactus: float
-    code_at: tuple[float, float]
-    code_height: float
-    code_colour: str
-
-
-MARKS = Marks(0.3, (70.0, 1840.0), 9.0, BODY_SHADE)  # on the dash and on the hood, where delivered reels have them
-
-
-@register("prop", "stick-windshield-dash", tags=("car", "front", "dashboard", "steering-wheel", "phone", "buzz"))
+@register(
+    "prop",
+    "stick-windshield-dash",
+    contract=tc.contract('stick-windshield-dash'),
+    tags=("car", "front", "dashboard", "steering-wheel", "phone", "buzz"),
+)
 def dashboard(
-    cv: Canvas, parent, end: float, *, buzz: Sequence[float] = (), down: float | None = None, marks: Marks = MARKS
+    cv: Canvas,
+    parent,
+    end: float,
+    *,
+    buzz: Sequence[float] = (),
+    down: float | None = None,
+    code: tuple[float, float, float, str] = (70, 1840, 9, BODY_SHADE),
+    cactus: float = DASH_CACTUS,
 ) -> None:
     """What is between the camera and the couple of :func:`windshield`: the wheel in front of the driver, the
     dashboard across the cabin (its top at :data:`DASH_TOP`), the phone in its mount between the seats, buzzing at
     each time in ``buzz`` and put face down on the dashboard at ``down`` (seconds on the shot clock), the glare on
-    the glass, the wipers, the pillars, the roof's edge and the hood."""
+    the glass, the wipers, the pillars, the roof's edge and the hood. ``code`` is the signature code's x, y, height and
+    colour, on the hood; a reel whose captions darken its foot lifts it clear (ADR 0001). ``cactus`` is the scale of
+    the signature cactus on the dashboard, the passenger's side."""
     _check_end(end, "dashboard")
     _check_phone(end, buzz, down)
-    if not all(checks.number(size) and size > 0 for size in (marks.cactus, marks.code_height)):
-        raise StickDataError(f"marks need a size over 0, got {marks!r}")
+    if not all(checks.number(size) and size > 0 for size in (cactus, code[2])):
+        raise StickDataError(f"the signature marks need a size over 0, got cactus {cactus!r} and code {code!r}")
     s = cv
     _wheel(s, parent)
     dash = _group(s, parent, effects=_lift(s))
@@ -300,7 +319,7 @@ def dashboard(
         for vy in (1352, 1366):
             shape(s, dash, f"M {vx - 38} {vy} L {vx + 38} {vy}", sw=4, stroke="#575c67")
     box(s, dash, 120, 1360, 220, 70, DASH_TOP_PAINT, 4, r=14)  # the glovebox
-    signature.cactus(s, parent, 196, DASH_TOP + 8, scale=marks.cactus)  # the passenger's side (ADR 0001)
+    signature.cactus(s, parent, 196, DASH_TOP + 8, scale=cactus)  # the passenger's side (ADR 0001)
     _phone(s, parent, buzz, down)
     glare = _group(s, parent, blend="screen", opacity=0.16)
     glare.add_mask(type="path", path=GLASS)
@@ -319,4 +338,5 @@ def dashboard(
           "L 74 584 Z", BODY, 5)  # fmt: skip
     shape(s, parent, "M 120 500 Q 540 486 960 500", sw=4, stroke=BODY_LIGHT)
     shape(s, parent, GLASS, s.clear, 7, stroke=s.ink)
-    signature.code(s, parent, *marks.code_at, marks.code_height, color=marks.code_colour)
+    x, y, height, colour = code
+    signature.code(s, parent, x, y, height, color=colour)  # on the hood

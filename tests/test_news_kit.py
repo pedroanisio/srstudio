@@ -204,6 +204,20 @@ def test_a_talking_beat_with_no_words_in_it_shuts_the_mouth():
     assert rows == [(0.0, "closed"), (1.0, "closed"), (1.5, "open")]
 
 
+def test_a_talking_beat_opens_on_the_sound_already_due_when_it_starts():
+    """The beat lands on the heard word; the take's first viseme leads it by a sample. Shut until the next viseme, the
+    mouth missed the first sound of the line at every cut to its speaker."""
+    acts = [(0.0, Pose(mouth="flat")), (1.0, Pose(mouth="talk"))]
+    rows = news_kit.mouth_track(acts, [(0.95, "open"), (1.2, "teeth"), (1.5, "closed")], 2.0)
+    assert rows == [(0.0, "flat"), (1.0, "open"), (1.2, "teeth"), (1.5, "closed")]
+
+
+def test_a_talking_beat_after_a_closed_take_still_starts_shut():
+    acts = [(0.0, Pose(mouth="talk")), (1.0, Pose(mouth="talk"))]
+    rows = news_kit.mouth_track(acts, [(0.2, "open"), (0.6, "closed"), (1.3, "open")], 2.0)
+    assert rows == [(0.0, "closed"), (0.2, "open"), (0.6, "closed"), (1.0, "closed"), (1.3, "open")]
+
+
 def test_the_ticker_never_runs_out_of_words():
     cv = canvas()
     news_kit.ticker(cv, cv.comp, ("ONE",), 0.0, 25.0, measure)

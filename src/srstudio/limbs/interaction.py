@@ -15,7 +15,7 @@ from .errors import LimbError
 from .geometry import ProjectedPose, path, project_pose
 from .math3d import Frame, Vec3
 from .motion import Motion, TransformTrack, sample_motion
-from .projection import Affine, Camera
+from .projection import Affine, Camera, CameraTrack
 from .validation import MotionReport, audit
 
 _CAMERA = Camera()
@@ -124,7 +124,7 @@ def bake_interaction(
     props: tuple[PropDrawing, ...],
     *,
     id: str,
-    camera: Camera = _CAMERA,
+    camera: Camera | CameraTrack = _CAMERA,
     options: BakeOptions = _OPTIONS,
     parent_transform: Affine = _PARENT,
 ) -> InteractionResult:
@@ -136,6 +136,10 @@ def bake_interaction(
     custom frame sources require an explicit duration. An implicitly timed attached prop holds its released
     composited pose through the scene's end; without a scene duration it needs an explicit one. There is no hidden
     physical simulation.
+
+    CameraTrack samples use scene seconds (including options.offset). Its cuts
+    join the bake grid without resetting motion time. During an implicitly
+    extended released-prop hold, source poses freeze while the camera continues.
     """
     options = _resolve_options(cv, options)
     assert options.fps is not None
@@ -175,50 +179,96 @@ def bake_interaction(
             raise LimbError("attached props need a representable scene duration")
         if _scene_time(project_end) > _scene_time(options.offset + duration):
             released_hold_end = project_end
-    frame_total = count + int(released_hold_end is not None)
+    times = tuple(i / options.fps for i in range(count)) + ((duration,) if released_hold_end is not None else ())
+    scene_times = tuple(options.offset + time for time in times)
+    if type(camera) is CameraTrack:
+        camera.__post_init__()
+        scene_end = released_hold_end if released_hold_end is not None else options.offset + duration
+        if scene_end > camera.duration:
+            raise LimbError('camera track must cover the complete bake interval', code='projection')
+        if released_hold_end is not None:
+            count = _frame_count(scene_end - options.offset, options)
+            times = tuple(i / options.fps for i in range(count))
+            scene_times = tuple(options.offset + time for time in times)
+        events = dict(zip(scene_times, times, strict=True))
+        if released_hold_end is not None:
+            events[options.offset + duration] = duration
+        for sample in camera.samples:
+            if options.offset < sample.time < scene_end:
+                events[sample.time] = sample.time - options.offset
+        scene_times = tuple(sorted(events))
+        times = tuple(events[time] for time in scene_times)
+        cameras = tuple(camera.sample(time) for time in scene_times)
+    elif type(camera) is Camera:
+        cameras = (camera,) * len(times)
+    else:
+        raise LimbError('interaction camera must be Camera or CameraTrack', code='projection')
+    frame_total = len(times)
     if frame_total > options.max_frames:
         raise LimbError("interaction frame budget exceeded", code="budget")
     surface_count = sum(3 + len(p.motion.hand.digits) for p in participants) + sum(len(p.mesh.faces) for p in props)
     estimate = frame_total * (2 + surface_count * 24) + 1
     if estimate > options.max_nodes:
         raise LimbError(f"interaction budget exceeded: {count} frames, at most {estimate} nodes", code="budget")
+    intervals = tuple(
+        (
+            _scene_time(time),
+            _scene_time(scene_times[i + 1])
+            if i + 1 < len(scene_times)
+            else _scene_time(released_hold_end if released_hold_end is not None else options.offset + duration),
+        )
+        for i, time in enumerate(scene_times)
+    )
+    if any(start >= end for start, end in intervals):
+        raise LimbError('camera/bake cuts must have distinct representable scene times', code='projection')
     inverse = parent_transform.inverse()
     reports = []
-    times = tuple(i / options.fps for i in range(count)) + ((duration,) if released_hold_end is not None else ())
     frames: list[list[_Surface]] = [[] for _ in range(frame_total)]
     for participant in participants:
+        if options.quality is not None:
+            options.quality.check_scope(participant.motion, participant.style, options.fps)
         adapter = adapter_for(participant.style)
         if (
-            camera.projection == "perspective"
+            any(view.projection == "perspective" for view in cameras)
             and not adapter.capabilities.perspective
             or len(participant.motion.hand.digits) > 1
             and not adapter.capabilities.articulated_digits
             or "contour" not in adapter.capabilities.deformation
         ):
             raise LimbError(f"adapter {participant.style} cannot draw the requested interaction", code="capability")
-        samples = tuple(sample_motion(participant.motion, time, track=participant.name) for time in times)
+        samples = tuple(
+            replace(
+                sample_motion(
+                    participant.motion,
+                    min(time, duration) if released_hold_end is not None else time,
+                    track=participant.name,
+                ),
+                time=time,
+            )
+            for time in times
+        )
         poses = tuple(
             project_pose(
                 s,
-                camera,
+                view,
                 width=participant.motion.arm.width,
                 parent=parent_transform,
                 thickness=participant.motion.hand.thickness,
                 correctives=participant.correctives,
             )
-            for s in samples
+            for s, view in zip(samples, cameras, strict=True)
         )
-        reports.append((participant.name, audit(samples, poses, participant.motion.arm)))
+        reports.append((participant.name, audit(samples, poses, participant.motion.arm, quality=options.quality)))
         for frame, pose in zip(frames, poses, strict=True):
             for part in pose.parts:
                 frame.append(
                     _Surface(f"{participant.name}:{part.name}", part.depth, participant, pose.select({part.name}))
                 )
     for prop in props:
-        for time, frame in zip(times, frames, strict=True):
-            transform = prop.track.sample(time)
+        for time, frame, view in zip(times, frames, cameras, strict=True):
+            transform = prop.track.sample(min(time, duration) if released_hold_end is not None else time)
             for face in prop.mesh.faces:
-                projected = [camera.project(p, frame=transform) for p in face.vertices]
+                projected = [view.project(p, frame=transform) for p in face.vertices]
                 frame.append(
                     _Surface(
                         f"{prop.mesh.name}:{face.name}",
@@ -233,12 +283,7 @@ def bake_interaction(
     root = cv.group(parent, id)
     for i, frame in enumerate(frames):
         group = cv.group(root, f"{id}-frame-{i:06d}")
-        if i == count:
-            assert released_hold_end is not None
-            start, end = options.offset + duration, released_hold_end
-        else:
-            start, end = options.offset + i / options.fps, options.offset + min(duration, (i + 1) / options.fps)
-        start, end = _scene_time(start), _scene_time(end)
+        start, end = intervals[i]
         cv.gate(group, [(start, end)])
         for j, surface in enumerate(frame):
             if surface.participant is not None and surface.pose is not None:

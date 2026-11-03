@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "generated_by": {
+    "model": "GPT-6",
+    "tool": "OpenAI Codex"
+  },
+  "source_commit": "1234c5f88387d0ca3b7362eb96108f19c9a65bc5",
+  "scene_sha256": {
+    "soft-office": "d2fcdb57ab9e1e4a4bf3c81605333465f7788012b46412e609820c9bcddc5b13",
+    "soft-home": "f7a2c8c82827e77c497719086d7082493cd47a344c677264586a184040694dcd",
+    "soft-meeting-room": "ce2d73080ad9b35c7b4ca21a2ba068e8592ea73fd9b2c5b84184f8c3ca45d0b9",
+    "soft-break-room": "9130e6853602fbd28dce6c3ae84b7ab1cbfca156e4ec80d7b70e8ee36e87d634",
+    "soft-desk": "6174beb87157c66b03624953ab54dd0d8857d22ddbc46c376716b9d3a47ad60a",
+    "soft-chair": "32fa672ece37f45d0059639aa208df907816cb431e9d11115965a177fbc19a3d",
+    "soft-laptop": "cb58948a5050d776b30d42029c50e61ece686ec99f0c1de49821806feac887e4",
+    "soft-sofa": "e5c83cb206040841981a6639cd6609f4fbd41519bd2816f72460187a2c1a533b",
+    "soft-swivel-chair": "532894b78bd9e272c92dd344e4e7ce98751afda741d92d86d1268a924297a6db",
+    "soft-coffee-machine": "c5995b8904f90b49bb6a9959ba7257d17ec2b6b096a9a618e5b873d32fc1e683",
+    "soft-fridge": "b7762eff51ce1e2284317f3823aebbb40b0855ddb7347414d74f9bcf4f548ce0",
+    "soft-stool": "c0ad1a049d5f4544063995597b2a0551c9eae062e6de30b5886cdb50f527a5d5"
+  }
+}

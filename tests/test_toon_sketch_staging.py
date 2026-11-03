@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import TOON, camera, craft, parts, sketch, toon, toon_sketch, usage
+from srstudio import TOON, camera, craft, look, parts, sketch, toon, toon_sketch, usage
 from srstudio.layout import VERTICAL
 from srstudio.sketch import Beat, Line, Sketch, Speaker
 from srstudio.voice import Voice, VoiceSettings
@@ -92,6 +92,16 @@ def test_a_build_refuses_a_pin_it_cannot_draw(pinned_fonts, tmp_path):
         built(tmp_path, silent(fox_sketch(), versions={"toon-fox": 9}), pinned_fonts)
 
 
+def test_the_opening_push_moves_the_first_shot_and_no_other(pinned_fonts, tmp_path):
+    sk = Sketch("push-test", "Push test", SPEAKERS, LINES, STILL, END)
+    _, xml = built(tmp_path, replace(silent(sk), camera=toon_sketch.opening_push(1.08)), pinned_fonts)
+    shots = xml.findall(".//group[@id]")
+    moved = [g.get("id") for g in shots if g.get("id", "").startswith("shot-") and g.find("animate") is not None]
+    assert moved == ["shot-001"]
+    with pytest.raises(toon_sketch.StagingError, match="above 1"):
+        toon_sketch.opening_push(1.0)
+
+
 def test_a_sketch_may_open_on_a_still_uncaptioned_beat_and_caption_its_first_line_later(pinned_fonts, tmp_path):
     sk = Sketch("still-test", "Still test", SPEAKERS, LINES, STILL, END)
     sketch.check(sk)
@@ -124,6 +134,19 @@ def test_a_staging_camera_moves_every_shot_under_an_id_craft_counts(pinned_fonts
     shots = [g for g in xml.find("composition") if craft.CAMERA.fullmatch(g.get("id", ""))]
     assert [(float(g.get("start")), float(g.get("end"))) for g in shots] == [(a.start, a.end) for a in apps]
     assert all(g.find("animate[@property='scaleX']") is not None for g in shots)
+
+
+def test_a_staging_asks_for_bleed_and_is_built_without_it_by_default(pinned_fonts, tmp_path):
+    sk = Sketch("bleed-test", "Bleed test", SPEAKERS, LINES, STILL, END)
+    far_plane = lambda shot: look.depth(shot.cv, shot.back, shot.cv.uid("far"), 5.0, overscan=True)  # noqa: E731
+    off, _ = built(tmp_path / "off", replace(silent(sk), dress=far_plane), pinned_fonts)
+    on, xml = built(tmp_path / "on", replace(silent(sk), dress=far_plane, bleed=True), pinned_fonts)
+    assert off.cv.bleed is False
+    assert b'threeD="true"' not in off.scene.to_bytes()
+    assert on.cv.bleed is True
+    far = [g for g in xml.iter("group") if g.get("threeD") == "true"]
+    assert len(far) == len(sketch.appearances(STILL, END))  # every shot's far plane is on a sheet past the frame's edge
+    assert all(float(g.get("scaleX")) > 1 for g in far)
 
 
 def test_without_a_camera_the_shots_keep_their_anonymous_ids(pinned_fonts, tmp_path):
@@ -210,6 +233,46 @@ def test_an_overlay_is_drawn_once_over_every_shot_and_under_the_captions(pinned_
     assert [n for n in xml.iter() if n.get("id") == "over-every-shot"]
 
 
+def test_an_opening_line_is_drawn_over_every_shot_until_the_first_line_ends_and_kept_off_the_cover(
+    pinned_fonts, tmp_path
+):
+    seen = []
+
+    def opening(cv, parent, said, measure):
+        seen.append((parent, said, measure("x", 10.0)))
+        return cv.group(parent, "the-opening-line")
+
+    st = replace(silent(stage_sketch()), opening=opening)
+    ep, xml = built(tmp_path, st, pinned_fonts)
+    assert len(seen) == 1
+    parent, said, width = seen[0]
+    assert parent is ep.comp and width > 0
+    assert said == sketch.line_spans(st.sketch)[0][1]  # silent: where the next line starts on the scripted clock
+    comp = xml.find("composition")
+    assert "the-opening-line" in [g.get("id") for g in comp.findall("group")]  # never inside a shot or its camera
+    assert "the-opening-line" in [node for node, _, _ in ep._cover_hidden]
+
+
+def test_no_opening_line_draws_nothing():
+    assert toon_sketch.Staging.opening is None
+
+
+def test_the_first_line_ends_where_its_take_stops_speaking(tmp_path):
+    sk = stage_sketch()
+    letters = tuple("She is still typing.")
+    starts = tuple(0.05 * i for i in range(len(letters)))
+    takes = [
+        sketch.Take("01", "bear", 0.3, 1.6, sketch.Alignment(letters, starts, tuple(s + 0.05 for s in starts))),
+        sketch.Take("02", "rabbit", 3.0, 0.8, sketch.Alignment(tuple("Pepperoni."), (0.0,) * 10, (0.1,) * 10)),
+    ]
+    sketch.write_speech(tmp_path, takes, END)
+    assert sketch.first_line_end(tmp_path, sk, voiced=True) == pytest.approx(0.3 + 0.05 * len(letters))
+    assert sketch.first_line_end(tmp_path, sk, voiced=False) == sketch.line_spans(sk)[0][1]
+    sketch.write_speech(tmp_path, [], END)
+    with pytest.raises(sketch.SketchError, match="no first line"):
+        sketch.first_line_end(tmp_path, sk, voiced=True)
+
+
 def test_a_dress_is_handed_the_mouths_of_the_recording_only_when_there_is_one(pinned_fonts, tmp_path):
     seen = []
     st = replace(silent(stage_sketch()), dress=lambda shot: seen.append(shot.mouths))
@@ -250,3 +313,18 @@ def test_captions_a_staging_brings_stay_off_the_cover(pinned_fonts, tmp_path):
 
     ep, _ = built(tmp_path, replace(silent(stage_sketch()), captions=captions), pinned_fonts)
     assert ("my-captions", "visible", "false") in ep._cover_hidden  # written into the cover variant by finish()
+
+
+def test_a_move_keys_the_body_of_that_character_on_every_shot_of_theirs(pinned_fonts, tmp_path):
+    """A figure can bend about its seat while the set stays still; the other character is left alone."""
+    calls = []
+
+    def bend(cv, body, app, beats):
+        calls.append(app.who)
+        cv.keys(body, "rotation", [(app.start, 0.0), (app.end, 20.0)], hold=False, local=False)
+
+    sk = Sketch("moved", "Moved", SPEAKERS, LINES, STILL, END)
+    _, moved = built(tmp_path / "moved", silent(sk, moves={"bear": bend}), pinned_fonts)
+    _, still = built(tmp_path / "still", silent(sk), pinned_fonts)
+    assert set(calls) == {"bear"}
+    assert ET.tostring(moved).count(b"rotation") > ET.tostring(still).count(b"rotation")

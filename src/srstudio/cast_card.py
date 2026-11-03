@@ -31,9 +31,10 @@ from typing import Any, Literal
 import numpy as np
 from sr_core.scene import Scene
 
-from . import blob, checks, collage, fonts, parts, rig, specimens, stick, toon
+from . import blob, checks, collage, fonts, gpu, parts, rig, specimens, stick, toon
 from .canvas import Canvas, Palette, flat_counter
 from .catalog_specimens import bounds, pixels_of
+from .checks import contrast
 from .errors import SrstudioError
 from .styles import STYLES
 
@@ -333,18 +334,6 @@ def compose(card: Card, faces: Lettering, layer: Layer = "card") -> Scene:
     return scene
 
 
-def _luminance(colour: str) -> float:
-    channels = (int(colour[i : i + 2], 16) / 255 for i in (1, 3, 5))
-    r, g, b = (c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in channels)
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b
-
-
-def contrast(a: str, b: str) -> float:
-    """The WCAG contrast ratio of two #rrggbb colours, 1 to 21."""
-    high, low = sorted((_luminance(a), _luminance(b)), reverse=True)
-    return (high + 0.05) / (low + 0.05)
-
-
 def _draw(scene: Scene, faces: Lettering, engine: str | Path, work: Path, name: str) -> Path:
     """Render ``scene`` in ``work``, with the fonts beside it."""
     (work / DISPLAY_FILE).write_bytes(faces.display)
@@ -353,7 +342,8 @@ def _draw(scene: Scene, faces: Lettering, engine: str | Path, work: Path, name: 
     document.write_bytes(scene.to_bytes())
     command = [str(engine), "render", document.name, *ENGINE_ARGS, "-o", png.name]
     try:
-        subprocess.run(command, cwd=work, check=True, capture_output=True)
+        with gpu.held():
+            subprocess.run(command, cwd=work, check=True, capture_output=True)
     except (OSError, subprocess.CalledProcessError) as exc:
         detail = getattr(exc, "stderr", b"") or b""
         raise CastCardError(f"the engine cannot draw {name}: {detail.decode(errors='replace')[-400:] or exc}") from exc

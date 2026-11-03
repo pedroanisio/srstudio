@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "generated_by": {
+    "model": "GPT-6",
+    "tool": "OpenAI Codex"
+  },
+  "source_commit": "4908b40d507e3588ad41adaee72db5f2b5e198de",
+  "scene_sha256": {
+    "park:False": "aebcd1d5c069daef53bff9e1fcd849472d89d3bafd7afc21d79ecf334881458d",
+    "park:True": "37494fae9df2fd3e2ff93ba058ae2564f4a5b1890073dd6d516ea7cfcb60c204",
+    "bedroom:False": "fa37213d057bb6d26248f9c3daad69834a9c8fcb059939a214fea7306fca8526",
+    "bedroom:True": "a70bbb4ee5602bbba5a0232e9609a67bb6a091d66fc8e13d71bad8d57d11a33d",
+    "playroom:False": "666e390c35469fd92d1399af5b82fdcdb87a0fb489de302f7870eaee822cbaad",
+    "playroom:True": "1339eb052d9551bac03aa250d38b0bffef9e6b4c209b5ff81fd025c98685fe7c",
+    "front_room:False": "324f49635adf37feae5c69606681bea6435eca7179c90c9fea541897777cb8d1",
+    "front_room:True": "e9610db1a1082bee120aaa01d4b049f60f6f399c2fef85a1d19b967ec3705ff2"
+  }
+}

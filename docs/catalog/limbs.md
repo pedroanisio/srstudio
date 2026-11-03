@@ -7,6 +7,10 @@ generated-by: OpenAI Codex
 See the [library overview](../../README.md), [architecture decision](../decisions/0038-reusable-limb-performance.md),
 and [requirements-to-verification map](limbs-verification.json).
 
+For implementation changes, see [the motion ownership map](../decisions/0099-limb-motion-module-boundaries.md).
+Public records stay in `srstudio.limbs.motion`; transform interpolation, gesture requests, contact sampling and
+skeletal solving have separate internal owners. Existing JSON and Python imports remain unchanged.
+
 Build a motion once, then choose its camera and style when compiling it:
 
 ```python
@@ -36,6 +40,188 @@ Entirely static motion defaults to one second. `BakeOptions(duration=...)` delib
 Character tracks clip root motion to the character's lifetime; actions and attachment releases must fit inside it.
 Prepared character tracks reuse their numeric samples, projections and reports during drawing. Changed motion,
 camera, timing or corrective inputs invalidate that preparation; IDs, budgets and adapter capabilities are still checked.
+
+## Play externally solved poses
+
+Use `Motion(arm, hand).keyed(samples, fps)` to replace a private playback subclass with the public API:
+
+<!-- keyed-motion:start -->
+```python
+from srstudio.limbs import HUMAN, ArmProfile
+from srstudio.limbs.motion import Action, Motion
+
+source = Motion(ArmProfile(), HUMAN, (Action("point", duration=1),))
+samples = tuple(source.sample(i / 24) for i in range(24))
+played = source.keyed(samples, fps=24)
+assert played.end == 1
+assert played.sample(0.5) == samples[12]
+```
+<!-- keyed-motion:end -->
+
+Supply a list or tuple of 1–4096 immutable `Sample` records with times exactly `i / fps`, starting at zero,
+and an integer rate of 1–120 fps. Solved arm and hand geometry is in world coordinates. The factory checks the
+record graph, finite values, bone lengths, wrist frames, elbow angle, digit topology and control limits against
+the supplied anatomy. It does not infer contacts, repair poses or certify finger collisions and dynamic balance.
+Nested mutable containers are refused; the outer list is copied. A two-million-item graph budget bounds validation.
+
+Each sample is held until the next sample's exact timestamp. Duration includes the final frame interval:
+`len(samples) / fps`. Reads are independent of playback order, and later times hold the final pose. Negative times
+are refused. Baking can use a different output rate and `BakeOptions(duration=...)` can explicitly crop playback.
+The source motion's actions, contacts, attachments and root transforms are replaced, because these poses are
+already solved. Re-solving, root transformation, action chaining and retargeting to different anatomy would change
+that geometry; author new samples for those operations. `describe_continuity()` reports held playback without a
+derivative-continuity guarantee.
+
+`motion_dict`, `parse_motion`, `save_motion` and `load_motion` use the closed `srstudio.limbs-keyed/1.0.0` schema
+with explicit `arm`, `hand`, `played` and `fps` fields. Unit rotations are preserved without repeated normalization
+drift. The existing 5 MiB file limit also applies, so a large in-memory sequence may need splitting for persistence.
+Ordinary procedural motions retain `srstudio.limbs/1.3.0`.
+
+## Preserve authored wrist turns
+
+`HandControl.forearm_twist` is an angle in radians, including authored whole turns when `ArmProfile.twist_limit`
+permits them. Gesture interpolation follows that scalar angle. During orientation-constrained solving, equivalent
+Y-X-Z wrist decompositions are selected within joint limits and nearest the authored control. This retains the
+intended sign at ±π and the reference winding; at gimbal lock it preserves the authored wrist deviation.
+Sampling does not depend on a previously visited frame.
+
+A quaternion represents orientation, not accumulated revolutions. An identity-to-identity quaternion track alone
+cannot express a full turn. Supply winding through the scalar control or author intermediate rotation keys to
+establish the path. The default twist limits remain ±π; enlarge them deliberately for a mechanical or stylized rig.
+
+## Continue through a moving pose
+
+Use `TransformTrack(interpolation="continuous")` for a root or contact target that should pass through its
+interior keys. The default `"smooth"` mode still stops at each key. This standalone recipe moves through the
+middle position without pausing:
+
+<!-- continuous-track:start -->
+```python
+from srstudio.limbs import HUMAN, ArmProfile
+from srstudio.limbs.math3d import Frame, Vec3
+from srstudio.limbs.motion import Motion, TransformKey, TransformTrack
+
+track = TransformTrack(
+    tuple(TransformKey(t, Frame(Vec3(0.2 * t, 0, 0))) for t in (0, 1, 2)),
+    interpolation="continuous",
+)
+motion = Motion(ArmProfile(), HUMAN, root=track)
+assert track.sample(1).origin == Vec3(0.2, 0, 0)
+```
+<!-- continuous-track:end -->
+
+Each key can supply `velocity=Vec3(...)` in parent units/second and `angular_velocity=Vec3(...)` in local
+radians/second. Missing interior velocities come from neighboring poses; endpoints default to zero. Translation
+uses quintic segments with matching velocity and zero acceleration at keys. Rotation uses spherical cubic
+controls targeting shared angular velocity; small-arc normalized linear blending makes this approximate,
+and angular acceleration is not constrained. Excessive angular control
+arcs are rejected before sampling: insert keys or reduce angular velocity. Velocities require continuous mode.
+
+Sampling is independent of playback order. Outside the key interval, the nearest frame is held, even when an
+explicit endpoint velocity is nonzero. Compiler output still follows its bake frame rate; continuous authoring
+does not override an intentionally held-frame look. Motion JSON `1.2.0` and later preserve the mode and velocities.
+
+## Inspect continuity before choosing a transition
+
+`TransformTrack.describe_continuity()` and `Motion.describe_continuity()` return fresh JSON-compatible
+`srstudio.continuity/1.0.0` descriptions. Guarantees apply to the named boundary and stated conditions.
+`false` means **no general guarantee**, not that every instance has a visible jump. Discovery does not sample
+the motion, certify reachability or change its serialization.
+
+| Boundary | Position | Velocity | Acceleration |
+| --- | --- | --- | --- |
+| Smooth source transform at interior keys | Continuous | Zero on both sides | Zero on both sides |
+| Continuous source translation at interior keys | Continuous | Shared, possibly nonzero | Zero on both sides |
+| Continuous source rotation at interior keys | Continuous | Approximately matched by spherical controls | Not guaranteed |
+| Join boundary with valid regular geometry and continuous source boundaries | Matched pose | Estimated from preserved source | Not guaranteed |
+| Native or baked rendered limb frames | Held samples; can jump between frames | Not inherited from source | Not inherited from source |
+
+Continuous translation is C2 at interior keys: position, velocity and acceleration match. That guarantee does
+not extend through a held outer endpoint with a nonzero authored velocity. `endpoint_holds` reports those
+translation and rotation velocity jumps separately. A one-key track is constant. Finite clock resolution,
+floating-point error, IK branch changes, constraint activation and projection still need separate checks.
+
+<!-- continuity-discovery:start -->
+```python
+import json
+from srstudio.limbs import HUMAN, ArmProfile, Frame, Vec3
+from srstudio.limbs.motion import Action, Motion, TransformKey, TransformTrack
+
+track = TransformTrack(
+    tuple(TransformKey(t, Frame(Vec3(0.1 * t, 0, 0))) for t in (0, 1, 2)),
+    interpolation="continuous",
+)
+motion = Motion(
+    ArmProfile(), HUMAN,
+    (Action("point", duration=2), Action("present", start=2, duration=2)),
+    root=track,
+).chain()
+track_info = track.describe_continuity()
+motion_info = motion.describe_continuity()
+assert track_info["interior_keys"]["translation"]["acceleration"]
+assert motion_info["joins"][0]["velocity_matching"] == "estimated"
+assert not motion_info["emission"]["native"]["inherits_source_derivatives"]
+json.dumps(motion_info, allow_nan=False)
+```
+<!-- continuity-discovery:end -->
+
+Inspect `BENTO.describe()["transitions"]` for acting contracts. Its legacy and policy descriptions distinguish
+numeric linear baked keys from held expression, gesture and gaze arrivals. Easing a source curve does not
+preserve its derivatives after baking. Windowing one performance preserves its source-time samples across
+cuts; it does not make an independently authored camera cut or discrete drawing switch continuous.
+See [acting policies](../authoring-acting.md#opt-in-acting-transition-policies).
+
+## Chain gestures without returning to rest
+
+`Motion.chain()` joins every adjacent action. It returns a new motion, replacing the first action's recovery
+and the next action's preparation/stroke with a transition. The default window starts at the end of the first
+action's hold and ends at the next action's stroke time. Outside that window, the original motion is unchanged.
+
+<!-- action-chain:start -->
+```python
+from srstudio.limbs import HUMAN, ArmProfile
+from srstudio.limbs.motion import Action, Motion
+
+source = Motion(
+    ArmProfile(), HUMAN,
+    (Action("point", duration=2), Action("present", start=2, duration=2)),
+)
+motion = source.chain()
+assert motion.sample(2).phase == "transition"
+assert source.joins == ()
+```
+<!-- action-chain:end -->
+
+For selected pairs, use `motion.chain(0, 2)`: each index identifies the action before a join. Existing explicit
+windows are preserved. For custom timing, use `dataclasses.replace(motion, joins=(ActionJoin(0, start=1.4,
+end=2.65),))`, importing `ActionJoin` from `srstudio.limbs.motion`. Times are motion seconds. Each endpoint
+must lie inside its respective action; windows must be ordered, unique and nonoverlapping. A join can bridge
+a gap between actions, and neighboring windows may touch.
+
+The transition matches source wrist position, hand orientation, elbow plane and effective finger angles,
+with boundary velocities estimated from the preserved source motion. Sampling order does not affect the
+result. IK and the existing reach, wrist and finger limits still apply; a join can fail if its intermediate
+poses are unreachable or its elbow plane becomes ambiguous. Such failures include `join_after` and
+`phase="transition"` in their diagnostic context. Compilation checks sampled poses before scene emission.
+
+Joins cannot replace an active contact. An explicit window can start at a contact's release and end at the
+next contact's acquisition; held props continue following the sampled hand frame. Use an intermediate action
+or different endpoints when a direct transition violates limits. Joins do not repair discontinuities in the
+root track, guarantee matching acceleration/jerk, or certify anatomical or emotional plausibility. Keep root
+motion continuous and inspect the compiled quality report and rendered movement. Output remains sampled at
+the compiler's bake rate. Without explicit joins, actions retain their original return-to-rest behavior.
+
+Build the same six chained gestures in Stick, Toon and Gloss, including strict motion JSON and numeric reports:
+
+```sh
+python examples/limbs_gallery.py ../generated/limbs/chained --chain
+scene-render encode ../generated/limbs/chained/limbs-gallery.scene.xml
+```
+
+Add `--deformation skin` for planar native arm skinning or `--hand gripper` for the mechanical hand. Omitting
+`--chain` keeps the gallery's original independent gestures. The chained skin example uses an explicit elbow
+guide to keep one planar bend direction. Joining opposite elbow branches may require a spatial transition;
+that motion needs the baked backend rather than native planar skinning.
 
 ## Time an expressive gesture to speech
 
@@ -72,6 +258,9 @@ these to the character and preview the result: an exaggerated reaction and a qui
 amounts of movement. The numeric report checks geometry and timing; it does not score emotional readability.
 Set `preparation=0` to start a stroke at the resting pose without an anticipation. The `rest` action holds the
 resting pose throughout its interval; a moving root or an explicitly declared contact can still move the hand.
+Hand controls use a minimum-jerk envelope at the neutral and fully posed limits. Anticipation and reach
+overshoot therefore do not start or stop finger curls with an abrupt velocity change; the wrist's authored
+reach path remains independent of this hand-control envelope.
 An explicit `Action.pole` is a world-space elbow guide. Its direction eases in during preparation (or the stroke
 when preparation is zero), remains authored through the hold, and returns to the default during recovery.
 The transition rotates the elbow around the reach axis, so an opposing pole can require spatial motion and the
@@ -92,6 +281,120 @@ numbers do not certify whole-body biomechanics or emotional readability.
 Velocity samples belong to interval midpoints when computing acceleration, so a partial final frame does not
 artificially inflate the acceleration report. Native IK, baked hand contours and interaction visibility share
 the same six-decimal scene-time quantization, including frame-aligned offsets such as `1 / 24` seconds.
+
+## Apply a character's motion quality limits
+
+`BakeOptions(quality=QualityProfile(...))` checks authored limits before scene emission in native and baked
+compilation, prepared character tracks, and interaction bakes. Profiles are opt-in and named for the character
+or style. This example uses an existing `cv` Canvas; the limits are illustrative authoring choices, to be
+calibrated against the intended performance:
+
+<!-- quality-profile:start -->
+```python
+from srstudio.limbs import HUMAN, ArmProfile
+from srstudio.limbs.compile import BakeOptions, compile_motion
+from srstudio.limbs.motion import Action, Motion
+from srstudio.limbs.validation import QualityProfile
+
+arm = ArmProfile()
+profile = QualityProfile("presenter", max_speed=2 * arm.length, max_jerk=60 * arm.length, policy="warn")
+compiled = compile_motion(
+    cv, cv.comp, Motion(arm, HUMAN, (Action("point", duration=2),)),
+    id="quality-point", backend="baked", options=BakeOptions(fps=24, quality=profile),
+)
+findings = compiled.report.quality_findings
+```
+<!-- quality-profile:end -->
+
+Available limits cover wrist speed, acceleration and jerk; elbow speed; hand angular speed and acceleration;
+reach residual; and obstacle penetration. `max_jerk` uses world units/second³ and angular acceleration uses
+world radians/second². Differences carry interval-midpoint times, including nonuniform sampling. Each finding
+contains its metric, measured value, limit, sample time, repair guidance and, for collisions, obstacle and arm
+segment. `policy="warn"` preserves these findings in the report and compiler diagnostics; `"error"` raises a
+`LimbError` with `code="quality.limit"` before drawing. Changed profiles invalidate prepared reports.
+
+Derivatives require evidence: speed needs two samples, acceleration three, jerk four. An enabled limit with
+too few samples produces `quality.evidence`, rather than passing on a default zero. Reports without a quality
+profile retain zero defaults for unavailable measurements; those zeros are not proof of stillness.
+
+### Versioned reference envelopes
+
+`srstudio.limbs.calibration.list_presets()` describes two frozen numeric regression envelopes:
+`toon-human-conversation/1.0.0` and `gloss-human-deliberate/1.0.0`. Both apply to the unchanged
+`ArmProfile()` and `calibration.CALIBRATED_HAND` at exactly 24 Hz, with the named style adapter.
+`CALIBRATED_HAND` is the human hand the envelopes were measured with, with its two-segment thumb; the current
+`HUMAN`, whose thumb has three segments, is outside their scope until a new version is measured and reviewed
+([ADR 0213](../decisions/0213-calibration-keeps-its-measured-hand.md)). Mirrored sides and shoulder
+translation are allowed. Arm lengths, width, joint limits and hand anatomy must match; these are canonical
+human-arm studies, not calibrated profiles for every Toon or Gloss character. Camera scale affects the drawing,
+while limits use world units and seconds, with radians for angular quantities.
+
+Each envelope comes from six measured motions: pointing, presenting and a joined point/present performance
+on both anatomical sides. Gesture spans are two seconds for Toon and three for Gloss. The six derivative
+limits are the measured corpus maxima plus 25% authored headroom, rounded upward to two decimals. Reach
+residual has a separate `1e-6` tolerance. The headroom is a regression policy, not a physiological threshold.
+
+<!-- calibrated-quality:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas
+from srstudio.limbs import ArmProfile, Camera
+from srstudio.limbs.calibration import CALIBRATED_HAND, get_preset
+from srstudio.limbs.compile import compile_motion
+from srstudio.limbs.motion import Action, Motion
+
+scene = Scene(version="auto")
+scene.add_project(width=1280, height=720, fps="24", duration=2)
+cv = Canvas(scene, width=1280, height=720, font_asset=None)
+motion = Motion(ArmProfile(), CALIBRATED_HAND, (Action("point", duration=2),))
+preset = get_preset("toon-human-conversation/1.0.0")
+compiled = compile_motion(
+    cv, cv.comp, motion, id="calibrated-point", style="toon", backend="baked",
+    camera=Camera(origin=(500, 180), scale=160),
+    options=preset.options_for(motion, style="toon", fps=24),
+)
+assert not compiled.report.quality_findings
+```
+<!-- calibrated-quality:end -->
+
+`options_for` defaults to the production error policy. A scope mismatch raises `quality.scope` with a field
+path, actual/expected values and repair guidance. Native/baked compilation and interaction baking recheck the
+scope if options are reused. Scope is the motion sampling rate, not a promise that a different output frame
+rate has been calibrated. Apply presets through these compiler options; low-level `audit` measures supplied
+samples and does not know the drawing style or full hand anatomy.
+
+`measure_reference(id)` recomputes the bounded corpus without changing its frozen limits. The shipped
+calibration asset records source hashes, sample counts, measurements and limits; tests detect drift. Changes
+to the reference motions or limits require an explicitly reviewed new version, not automatic recalibration.
+
+The [quality study](../../examples/limbs_quality.py) builds all twelve references and two sixfold time-compressed
+failures. It first proves each failure is refused without drawing, then deliberately uses `policy="warn"` to
+render that rejected motion for inspection. Both members of an A/B pair have the same camera, appearance and
+video duration. Failed motions finish early and hold their resting pose. Use a fresh output directory:
+
+```bash
+python examples/limbs_quality.py ../generated/sdk-quality-study \
+  --seed "$SRSTUDIO_LIMBS_REVIEW_SEED" --engine /path/to/scene-render
+```
+
+Set the seed to a nonempty private review key before running. The optional engine argument strictly encodes
+all fourteen clips and records actual engine responses and video hashes. Without it the report explicitly
+says rendering was not requested. `review/` contains only blind clip names, tasks, instructions and an empty
+ratings template. Keep `private-key.json`, source scenes and the engineering report outside that packet.
+Actual reviews can be supplied with `--ratings FILE`, the same seed and a new output directory. The existing
+rating parser and summarizer report absent or insufficient observations explicitly; numeric pass/fail is
+never converted into human scores. These envelopes do not establish emotional readability, preference,
+whole-body balance or collision safety. See [ADR 0089](../decisions/0089-calibrated-motion-envelopes.md).
+
+For obstacles, pass `CollisionSphere(name, center, radius, parts=("upper", "forearm"))` in `profile.obstacles`
+and set `max_penetration`. Centers and radii use world canonical units. The check measures sphere penetration
+against arm-segment capsules of radius `arm.width / 2`; it does not check the hand mesh, infer the torso, detect
+collisions between samples, or move the actor automatically. Choose obstacles and exclusions to represent the
+intended contacts. At most 128 uniquely named obstacles and `max_collision_checks` segment/obstacle/sample
+checks (default and maximum 1,000,000) are allowed. Budget exhaustion is an error even under warning policy.
+
+These measurements support visual review. They do not certify anatomical plausibility, emotion or whole-body
+balance, and thresholds are not universal across rigs or stylized animation.
 
 ## Artist contours
 
@@ -306,9 +609,12 @@ in the wrist frame, including axial roll. FK and IK share one hand-frame convent
 lateral direction, as `reach` does with its default pole, so an FK pose solved back through `reach` with its
 elbow as the pole returns the same hand frame on both sides.
 
-The current writer emits `srstudio.limbs/1.1.0` motion documents. The reader also accepts `1.0.0` documents
-without explicit axes and supplies their original +X default. Explicit axes require `1.1.0`; unknown versions
-and fields are rejected. Both versions pass through the current numeric and resource validation.
+The current writer emits `srstudio.limbs/1.3.0` motion documents. The reader also accepts `1.0.0`, `1.1.0` and `1.2.0`
+documents and supplies the original smooth interpolation for tracks without the new fields. Documents without
+explicit axes retain their original +X default. Explicit axes require at least `1.1.0`; transform interpolation
+and velocity fields require `1.2.0`; action joins require `1.3.0`. Older documents without joins preserve their
+return-to-rest behavior. Unknown versions and fields are rejected. All accepted versions pass through
+the current numeric and resource validation.
 Decoding errors retain the nested field path, including optional objects: an invalid target coordinate reports
 `motion.actions[0].target.position.x` and the expected finite number, so an authoring agent can repair that field.
 `load_motion` reads at most 5 MiB of UTF-8 and bounds array/object nesting to 64 levels before parsing, so
@@ -457,3 +763,17 @@ only. Paired differences use the same author's completed attempts on the same ta
 seconds minus baseline seconds; a negative difference means the candidate took less time in that pair.
 An unpaired attempt or failed attempt cannot become a successful paired comparison. These descriptive
 observations do not authenticate authors, judge the completed videos or establish statistical significance.
+
+## HUMAN thumb topology
+
+`HUMAN` has a three-segment articulated thumb chain in the canonical rig's 24:20:16 length ratio. The stylized
+lengths are `(0.12, 0.10, 0.08)`, retaining the previous total reach of 0.30 character units. These are rig segments,
+not a claim that a human thumb has three phalanges. Explicit thumb joint overrides now require three angles.
+The simplified `MITTEN` and `THREE_FINGER` presets retain their two-segment thumbs.
+
+Persisted hand profiles carry their own lengths: loading a previously saved two-segment HUMAN hand preserves its
+anatomy and playback. To retain that topology in new Python authoring, supply a custom `HandProfile` with the
+previous thumb lengths `(0.17, 0.13)`. No loader silently inserts a joint or drops an authored angle.
+The 1.0.0 calibrated presets keep the two-segment hand they were measured with, `calibration.CALIBRATED_HAND`,
+and refuse the three-segment `HUMAN` with `quality.scope`
+([ADR 0213](../decisions/0213-calibration-keeps-its-measured-hand.md)).

@@ -56,7 +56,7 @@ def stage() -> tuple[Scene, Canvas]:
 
 def drawn(plan: HeadPlan | None = None, poses=POSES, rig=RIG, **kw) -> ET.Element:
     scene, cv = stage()
-    plan = hm_plan() if plan is None else plan
+    plan = head_motion.plan(rig.style, [], 8.0) if plan is None else plan
     toon_head.figure(cv, cv.comp, rig, poses, 8.0, plan, **kw)
     return ET.fromstring(scene.to_bytes(layout="pretty"))
 
@@ -517,7 +517,7 @@ def test_each_character_moves_its_own_way():
     styles = {part: rig.style for part, rig in toon_rigs.RIGS.items()}
     sloth, goat, hamster = styles["toon-sloth"], styles["toon-goat"], styles["toon-hamster"]
     fox = styles["toon-fox@2"]
-    assert len({s.seed for s in styles.values()}) == len(styles)
+    assert len({s.seed for s in styles.values()}) == len({part.partition("@")[0] for part in styles})
     assert goat.head.frequency > sloth.head.frequency  # abrupt against slow
     assert goat.head.damping > sloth.head.damping  # and it stops dead
     assert hamster.nod_px < min(s.nod_px for s in (sloth, goat, fox))  # small

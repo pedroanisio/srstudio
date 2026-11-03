@@ -296,17 +296,17 @@ def test_a_script_refuses_a_font_without_its_licence():
         script(font=("PatrickHand-Regular.ttf",)).check()
 
 
-def test_silent_writes_a_timeline_the_episode_can_load_with_no_client_and_no_consent(tmp_path):
+def test_a_rehearsal_writes_a_timeline_the_episode_can_load_with_no_client_and_no_consent(tmp_path):
     fonts = tmp_path / "fonts"
     fonts.mkdir()
     for name in takes.FONT:
         (fonts / name).write_bytes(b"x")
     s = replace(script(), still=0.5)
     project = tmp_path / "p"
-    assert takes.main(s, [str(project), "--silent", "--font", str(fonts)], env={}) == 0
+    assert takes.main(s, [str(project), "--rehearse", "--font", str(fonts)], env={}) == 0
     tl = Timeline.load(project / "timeline.json")
     data = json.loads((project / "timeline.json").read_text())
-    assert data["tts_engine"] == "estimate" and data["voices"] == {}
+    assert data["rehearsal"] is True and data["voices"] == {}
     assert tl.takes[0].start == 0 and tl.duration == pytest.approx(sum(t.duration for t in tl.takes), abs=1 / 24)
     for a, b in zip(tl.takes, tl.takes[1:], strict=False):
         assert b.start == pytest.approx(a.start + a.duration)
@@ -318,19 +318,19 @@ def test_silent_writes_a_timeline_the_episode_can_load_with_no_client_and_no_con
         assert take.duration >= take.speech_duration
 
 
-def test_silent_keeps_each_hold_and_a_real_timeline_overwrites_nothing_it_refuses(tmp_path):
+def test_a_rehearsal_keeps_each_hold_and_never_replaces_a_recording(tmp_path):
     s = script()
-    timeline = takes.silent(s, tmp_path)
+    timeline = takes.rehearse(s, tmp_path)
     by = {i["id"]: i for i in timeline["items"]}
     for take in s.takes:
         body = by[take.id]["speech_duration"] if not take.is_effect else take.longest
         assert by[take.id]["duration"] == pytest.approx(round(body + take.hold, 6), abs=1 / 24)
-    (tmp_path / "voice-transcript.json").write_text("{}")
-    with pytest.raises(takes.TakesError, match="recorded"):
-        takes.silent(s, tmp_path)
+    (tmp_path / "timeline.json").write_text(json.dumps({"tts_engine": "ElevenLabs", "duration": 1.0, "items": []}))
+    with pytest.raises(takes.TakesError, match="recording"):
+        takes.rehearse(s, tmp_path)
 
 
-def test_silent_checks_the_script_first(tmp_path):
+def test_a_rehearsal_checks_the_script_first(tmp_path):
     with pytest.raises(takes.TakesError):
-        takes.silent(replace(script(), voices={}), tmp_path)
+        takes.rehearse(replace(script(), voices={}), tmp_path)
     assert not (tmp_path / "timeline.json").exists()

@@ -6,14 +6,16 @@ the face, accepts exactly one ``@font-face`` that matches the request and points
 weight and style it declares must be the ones requested. The licence comes from the ``google/fonts``
 repository (OFL, Apache or UFL) and is stored beside the font. ``fonts.lock.json`` records the URL and
 digest; a later install with the file in place makes no request, and a file whose digest changed is
-refused. Nothing is written until every check passes. :func:`as_font` turns the result into the
-:class:`~srstudio.styles.Font` a style or ``EpisodeSpec`` uses.
+refused. Nothing is written until every check passes, and what is written is private: mode 600 for the files, 700 for
+the folder and any parent made for it. :func:`as_font` turns the result into the :class:`~srstudio.styles.Font` a style
+or ``EpisodeSpec`` uses.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import struct
 import urllib.error
@@ -38,6 +40,8 @@ __all__ = [
     "parse_css",
     "inspect_ttf",
     "text_width",
+    "WordGap",
+    "word_gaps",
     "install",
     "as_font",
     "fetch_url",
@@ -260,6 +264,55 @@ def text_width(data: bytes, text: str, size: float) -> float:
     return sum(advance(cmap.get(ord(ch), 0)) for ch in text) * size / upm
 
 
+@dataclass(frozen=True)
+class WordGap:
+    """The background left between the words ``left`` and ``right`` of one line, in pixels."""
+
+    left: str
+    right: str
+    px: float
+
+
+def word_gaps(data: bytes, text: str, size: float, *, outline: float = 0.0) -> list[WordGap]:
+    """The background between each two neighbouring words of ``text`` (lines split at ``\\n``) set in this font at
+    ``size`` pixels, with an ``outline`` that wide drawn outside every letter: the right side bearing of the last
+    letter, the advance of the spaces between, and the left side bearing of the next letter, from each glyph's box in
+    the ``glyf`` table, less the outline reaching in from both words. Zero or less means the outlines meet and the
+    two words read as one. Glyph advances only, no kerning, as :func:`text_width` measures."""
+    tables = _tables(data)
+    for name in (b"head", b"cmap", b"hhea", b"hmtx", b"loca", b"glyf"):
+        if name not in tables:
+            raise FontError(f"font has no {name.decode()!r} table")
+    head, loca, glyf = tables[b"head"], tables[b"loca"], tables[b"glyf"]
+    (upm,) = struct.unpack(">H", head[18:20])
+    (long_loca,) = struct.unpack(">h", head[50:52])
+    (metrics,) = struct.unpack(">H", tables[b"hhea"][34:36])
+    if not upm or not metrics:
+        raise FontError("font 'head' or 'hhea' table is inconsistent")
+    cmap, hmtx = _cmap(tables[b"cmap"]), tables[b"hmtx"]
+
+    def ink(ch: str) -> tuple[float, float]:
+        """The letter's left and right side bearings, in pixels."""
+        glyph = cmap.get(ord(ch), 0)
+        if long_loca:
+            start, end = struct.unpack(">II", loca[4 * glyph : 4 * glyph + 8])
+        else:
+            start, end = (2 * v for v in struct.unpack(">HH", loca[2 * glyph : 2 * glyph + 4]))
+        if end <= start or end > len(glyf):
+            raise FontError(f"no outline to measure for {ch!r}")
+        x_min, _, x_max, _ = struct.unpack(">hhhh", glyf[start + 2 : start + 10])
+        at = 4 * min(glyph, metrics - 1)
+        (advance,) = struct.unpack(">H", hmtx[at : at + 2])
+        return x_min * size / upm, (advance - x_max) * size / upm
+
+    gaps = []
+    for line in text.split("\n"):
+        for left, spaces, right in re.findall(r"(\S+)(\s+)(?=(\S+))", line):
+            px = ink(left[-1])[1] + text_width(data, spaces, size) + ink(right[0])[0] - 2 * outline
+            gaps.append(WordGap(left, right, px))
+    return gaps
+
+
 # -- install -----------------------------------------------------------------------------------------------------
 @dataclass(frozen=True)
 class Installed:
@@ -294,6 +347,21 @@ def _read_lock(path: Path) -> dict[str, dict]:
 
 def _digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def _private_folder(folder: Path) -> None:
+    """``folder`` at mode 700, with any parent that has to be made for it at 700 too; a parent already there is left."""
+    missing = [p for p in (folder, *folder.parents) if not p.exists()]
+    for path in reversed(missing):
+        path.mkdir(mode=0o700, exist_ok=True)
+    folder.chmod(0o700)
+
+
+def _write_private(path: Path, data: bytes) -> None:
+    """``data`` in ``path`` at mode 600, whatever mode a file already there had."""
+    with os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "wb") as out:
+        os.fchmod(out.fileno(), 0o600)
+        out.write(data)
 
 
 def install(font: GoogleFont, folder: str | Path, *, fetch: Fetch | None = None) -> Installed:
@@ -340,15 +408,15 @@ def install(font: GoogleFont, folder: str | Path, *, fetch: Fetch | None = None)
     if licence is None:
         raise FontError(f"no licence for {font.family!r} in the google/fonts repository (ofl, apache, ufl)")
     spdx, text = licence
-    folder.mkdir(parents=True, exist_ok=True)
+    _private_folder(folder)
     path = folder / f"{font.slug}.ttf"
     licence_path = folder / f"{font.family.lower().replace(' ', '-')}.{spdx.split('-')[0]}.txt"
-    path.write_bytes(data)
-    licence_path.write_bytes(text)
+    _write_private(path, data)
+    _write_private(licence_path, text)
     got = Installed(path, _digest(data), font.family, font.weight, font.italic, spdx, licence_path, url)
     entry = {k: v for k, v in asdict(got).items() if k not in ("path", "license_file")}
     lock[font.slug] = {**entry, "file": path.name, "license_file": licence_path.name}
-    (folder / LOCK).write_text(json.dumps(lock, indent=2, sort_keys=True) + "\n")
+    _write_private(folder / LOCK, (json.dumps(lock, indent=2, sort_keys=True) + "\n").encode())
     return got
 
 

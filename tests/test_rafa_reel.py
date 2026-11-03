@@ -89,7 +89,7 @@ def test_the_framing_holds_from_cut_to_cut_about_his_face():
 
 def test_only_a_prop_with_a_lens_has_an_insert():
     with pytest.raises(RafaReelError, match="insert"):
-        rafa_reel.insert_plate("rafa-mug")
+        rafa_reel.insert_plate("rafa-phone")
 
 
 def test_the_insert_is_the_approved_prop_on_its_own_at_his_plate_size():

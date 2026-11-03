@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0.0",
+  "generated_by": {
+    "model": "GPT-6",
+    "tool": "OpenAI Codex"
+  },
+  "source_commit": "28724308a2f3ed50a42d5311f7ded7272b41f994",
+  "scene_sha256": {
+    "news-set": "b112cc5e9372ee6984cdb9574828bbafe94d3f877ad3c322e18a588513cfd692",
+    "news-set@2": "f146814ece75be3faa565ca22db932cf0d89a3f2d055ea7e44b7432f6622cf8e",
+    "news-desk": "47fc3d37f3218bbc0b09c1709c3fb979717a18f0928f7685e9f87af315252e4a",
+    "news-desk@2": "5ef55f05ac20b320ec38520797a8a66c30966c8179b284b8a53a56f8fec45327",
+    "news-bug": "4dd3d92ecf99f4239bd0e29a29ed08ae99e8ccd1faec8935d934e0a0109c35b5",
+    "news-parody-tag": "7e81a7838958def86e9915bdf0f9626541a37b2d48365d97a679372abd20d15d",
+    "news-source-card": "6aa2209f6474563bf6265dffda54b38cd16b883ee4e9ac19b22ece647315558b",
+    "news-lower-third": "afe989ec139e97b77ae679f10b7f0c77a714eae37c85bbe8df92167035df8cc0",
+    "news-banner": "be2fedd10d9ef7ba658e0f374c52d7af77ca878792b3c1b9728dd25b3c94a36b",
+    "news-ticker": "4825b2d96dd4746b81de81748ecdedded33292e3c97fb27e41df83b047dfc489",
+    "news-captions": "6986cc265640281ac2263dc0a41f0c634cfe85cf0bb2f6bc2e63c64c79716565",
+    "news-phone": "02c95eba2350a166923ce4b01a2a75dd9151ec93b6641159a6e1a2a2e49f7bfd",
+    "news-bug@2": "601bc994b2e6c17f557388cee60d2c9933838728f5ed15042518e7590b153171",
+    "news-parody-tag@2": "e8c3322838adf2a37004515581689cbe92e5eba5700fa811c48b9a4d9f00b4a0",
+    "news-missing-card": "29307f9594e41790eefa14b868857b5a2583cac1063db0802298e5df3ab2bf9d",
+    "news-live-door": "917336254aeab38af9d79b6af34e8e62f6d8ad884ab971558cda1183b6f71e97",
+    "news-source-card@2": "d3db884d0685a7e17fddaba2c064aa15ad9701e423754430f48e4a3839b080e9",
+    "news-lower-third@2": "6231ec1db5391e0fe54a23435ea2926645ac8f7df8c1f0d14b8f955bc1ff64e0",
+    "news-banner@2": "878177e79a13d52a2a7206dde2f65a936b3178b59667bfa524188b5f0451266f",
+    "news-ticker@2": "ebffb9fc3983facb377bffb12a9fc9585b909924212156eac93ce31870f43c52",
+    "news-captions@2": "14bf4f7622a4f4b7d9be73dd4f4eb54fe74040afe1c243cfff2116703ab53c38",
+    "news-phone@2": "9a1c641aad3c9fca6671503664bd158a412ee4c23502960aec311422b008948d",
+    "news-route": "3b29416ee2236cd3553824cb402435423ed7c23e58cd14de812ae58fa9015d22",
+    "news-money-app": "f61e7c801492bc53f9e0074308259e1a37e665b1c34093f067bbfcd512f885d7",
+    "news-oven-clock": "9c7a4b1668a434bad7b12677586d6b5ec057392bcf223f61092c689b29a727a8",
+    "news-forecast-map": "e913de6453aeac0f15eb3a592b18fe71d87a557c13139ed588faa6e73d0ce155",
+    "news-corridor-map": "a4b8d4b59805d696a748967606d5f8b9587e5b8816eb4c1d727575bd75d5f06f"
+  }
+}

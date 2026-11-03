@@ -32,7 +32,10 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-from . import brush, checks
+from . import _character_contracts as cc
+from . import _toon_contracts as tc
+from . import anatomy_ledger, brush, checks
+from .anatomy import Side
 from .brush import Point, Shape
 from .canvas import Canvas
 from .registry import register
@@ -44,6 +47,7 @@ from .toon import (
     MOUTHS,
     REF_TOP,
     SCALE,
+    WEAR,
     Pose,
     ToonDataError,
     flat,
@@ -706,6 +710,18 @@ def _arms(
     return under, over
 
 
+def pose_hands(
+    cv: Canvas, look: Look, node: str, arms: str, omit_arms: frozenset[str] = frozenset(), tracks: Sequence[str] = ()
+) -> None:
+    """Record the hands the body drawing ``node`` draws in the pose ``arms``: one per arm :func:`_arms` draws, and one
+    per limb track drawn into it (``tracks``, their sides), so the count of a character's hands sees each (ADR 0174).
+    A look's own gesture draws both its arms whatever is omitted, as :func:`_arms` does."""
+    gesture = isinstance(look.drawing, Posing) and look.drawing.gesture(arms) is not None
+    drawn = [side for side in ("left", "right") if gesture or side not in omit_arms]
+    sides = {"left": Side.LEFT, "right": Side.RIGHT}
+    anatomy_ledger.pose_hands(cv, look.name, node, [sides[side] for side in [*drawn, *tracks]])
+
+
 def _brow(look: Look, centre: Point, kind: str, inner: float) -> Layer:
     """An eyebrow over one eye: raised for surprise, flat and low when tired, angled down toward the nose in anger,
     up toward it in pain."""
@@ -988,6 +1004,7 @@ HEADSET_LIGHT = "#6b7385"
 @register(
     "prop",
     "toon-headset",
+    contract=tc.contract('toon-headset'),
     summary="A call-centre headset for any brush-drawn character: a band over the crown, a cup and a mic boom",
     style="toon",
 )
@@ -1235,6 +1252,7 @@ def figure(
     for pose, start, end in runs(poses, duration - enter):
         start, end = round(start + enter, 6), round(end + enter, 6)
         g = cv.group(parent, cv.uid("g"), start=start, end=end)
+        pose_hands(cv, look, g.id, pose.arms, sides, [facing.slot(t.motion.arm.side) for t in limbs] if limbs else ())
 
         behind = _limb_layer(cv, g, pose.arms) if limbs else None
         under, mouth_layers, over = figure_layers(
@@ -1270,10 +1288,14 @@ def figure(
     return groups
 
 
+_CHARACTER_CONTRACT = cc.toon(Pose, EYES, MOUTHS, ARMS, visemes=VISEMES, wear=WEAR, limbs=True)
+
+
 @register(
     "character",
     "toon-dog",
     summary="A floppy-eared dog at the desk, brush-drawn: the cat's expressions and arms, its own snout and ears",
+    contract=_CHARACTER_CONTRACT,
 )
 def dog(
     cv: Canvas,
@@ -1294,6 +1316,7 @@ def dog(
     "character",
     "toon-frog",
     summary="A wide-mouthed frog at the desk, brush-drawn: eyes on bumps, a pale belly, the cat's vocabulary",
+    contract=_CHARACTER_CONTRACT,
 )
 def frog(
     cv: Canvas,
@@ -1314,6 +1337,7 @@ def frog(
     "character",
     "toon-bear",
     summary="A brown bear at the desk: round ears, a pale muzzle, eyebrows, blushing cheeks, blinks and lip sync",
+    contract=_CHARACTER_CONTRACT,
 )
 def bear(
     cv: Canvas,
@@ -1334,6 +1358,7 @@ def bear(
     "character",
     "toon-rabbit",
     summary="A pale rabbit at the desk: tall pink-lined ears, whiskers, front teeth, eyebrows, blinks and lip sync",
+    contract=_CHARACTER_CONTRACT,
 )
 def rabbit(
     cv: Canvas,
@@ -1354,6 +1379,7 @@ def rabbit(
     "character",
     "toon-fox",
     summary="A slender red fox at the desk: tall ears, white cheek tufts and chin, dark paws, blinks and lip sync",
+    contract=_CHARACTER_CONTRACT,
 )
 def fox(
     cv: Canvas,
@@ -1374,6 +1400,7 @@ def fox(
     "character",
     "toon-raccoon",
     summary="A stout grey raccoon at the desk: a bandit's mask, white-rimmed ears, dark gloves, blinks and lip sync",
+    contract=_CHARACTER_CONTRACT,
 )
 def raccoon(
     cv: Canvas,
@@ -1394,6 +1421,7 @@ def raccoon(
     "character",
     "toon-hedgehog",
     summary="A small hedgehog at the desk: a crown of dark spines, beady eyes, a button nose, blinks and lip sync",
+    contract=_CHARACTER_CONTRACT,
 )
 def hedgehog(
     cv: Canvas,

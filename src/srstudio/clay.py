@@ -1,7 +1,8 @@
 """Clay: small procedural geometry for path-traced plates, baked to meshes (ADR 0068).
 
-The library draws in 2D; a clay character is the one thing here that is modelled in 3D, so that it can be path-traced
-once and composited. :class:`Model` is a sketchbook of the shapes such a character is made of, ellipsoids, rounded
+A clay character is modelled here so that it can be path-traced once and composited, and a rigid object seen from
+more than one angle is modelled here for :mod:`srstudio.proxy` (ADR 0091). :class:`Model` is a sketchbook of the
+shapes such a character is made of, ellipsoids, rounded
 boxes, rods, tubes and sweeps, built in centimetre-like scene units with y down and z away from the lens. Every shape
 is baked to triangles at once, in the frame :meth:`Model.at` holds, and :meth:`Model.meshes` merges them by material.
 
@@ -14,7 +15,7 @@ from __future__ import annotations
 
 import hashlib
 import math
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import cached_property
@@ -24,7 +25,18 @@ import numpy as np
 from . import checks
 from .errors import SrstudioError
 
-__all__ = ["ClayError", "Mesh", "Model", "bezier", "normal_tile", "obj_bytes", "planar", "thumbed", "knit"]
+__all__ = [
+    "ClayError",
+    "Mesh",
+    "Model",
+    "bezier",
+    "normal_tile",
+    "obj_bytes",
+    "planar",
+    "superellipse",
+    "thumbed",
+    "knit",
+]
 
 Point = Sequence[float] | np.ndarray
 Points = Sequence[Point] | np.ndarray
@@ -163,13 +175,10 @@ class Model:
 
     def surface(self, material: str, verts: Points, normals: Points, tris, uvs=None) -> None:
         """Triangles exactly as given."""
-        self._add(
-            material,
-            np.array(verts, float).reshape(-1, 3),
-            np.array(normals, float).reshape(-1, 3),
-            tris,
-            None if uvs is None else np.array(uvs, float).reshape(-1, 2),
-        )
+        points, facing = np.array(verts, float).reshape(-1, 3), np.array(normals, float).reshape(-1, 3)
+        if not (np.isfinite(points).all() and np.isfinite(facing).all()):
+            raise ClayError(f"a {material} surface has a vertex or a normal that is not a number")
+        self._add(material, points, facing, tris, None if uvs is None else np.array(uvs, float).reshape(-1, 2))
 
     def _shell(self, material: str, p: Point, size: np.ndarray, spin: np.ndarray, last: float) -> None:
         """An ellipsoid from its top down to the polar angle ``last``."""
@@ -246,7 +255,10 @@ class Model:
             tangent = centres[min(row + 1, rows - 1)] - centres[max(row - 1, 0)]
             verts.append(centres[end])
             normals.append(_unit(tangent, "a tube") * (-1.0 if row == 0 else 1.0))
-            tris += [(hub, row * sides + i, row * sides + (i + 1) % sides) for i in range(sides)]
+            cap = [(hub, row * sides + i, row * sides + (i + 1) % sides) for i in range(sides)]
+            # The starting cap faces against the path tangent. Its normal and
+            # triangle winding must agree, including after OBJ axis conversion.
+            tris += [(a, c, b) for a, b, c in cap] if row == 0 else cap
         self._add(material, np.array(verts), np.array(normals), tris)
 
     def rod(self, material: str, a: Point, b: Point, r: float) -> None:
@@ -312,6 +324,85 @@ class Model:
         size = np.interp(np.arange(n) / (n - 1), np.linspace(0.0, 1.0, len(radii)), radii)
         self._ring_body(material, path, us, vs, size, sides, depth)
 
+    def loft(self, xs: Points, ring: Callable, assign: Callable) -> None:
+        """Rings along x with both ends capped: ``ring(x)`` gives a ring's z and y, and ``assign(centroid, normal,
+        row, column)`` names each quad's material, or None to leave it open."""
+        if not len(xs):
+            raise ClayError("a loft needs at least one ring")
+        rows = [ring(float(x)) for x in np.asarray(xs, float)]
+        v = np.array(
+            [[(x, y, z) for z, y in zip(r[0], r[1], strict=True)] for x, r in zip(xs, rows, strict=True)], float
+        )
+        v = np.concatenate([np.array(_closing(v[0])[::-1]), v, np.array(_closing(v[-1]))])
+        n = _grid_normals(v)
+        flip = np.sum(n * (v - v.mean(axis=1, keepdims=True))) < 0
+        n = -n if flip else n
+        nr, nc = v.shape[:2]
+        points, normals = v.reshape(-1, 3), n.reshape(-1, 3)
+        parts: dict[str, list] = {}
+        for i in range(nr - 1):
+            for j in range(nc):
+                a, b, c, d = i * nc + j, i * nc + (j + 1) % nc, (i + 1) * nc + (j + 1) % nc, (i + 1) * nc + j
+                name = assign((points[a] + points[c]) / 2, normals[a], i, j)
+                if name:
+                    parts.setdefault(name, []).extend([(a, c, b), (a, d, c)] if flip else [(a, b, c), (a, c, d)])
+        for name, triangles in parts.items():
+            self.surface(name, points, normals, triangles)
+
+    def _capped(self, material: str, rows: Sequence[np.ndarray]) -> None:
+        v = np.array(rows, float)
+        start, end = v[0].mean(0), v[-1].mean(0)
+        v = np.concatenate([np.repeat(start[None, None], v.shape[1], 1), v, np.repeat(end[None, None], v.shape[1], 1)])
+        n = _grid_normals(v)
+        n = -n if np.sum(n * (v - v.mean(axis=1, keepdims=True))) < 0 else n
+        nr, nc = v.shape[:2]
+        triangles = []
+        for i in range(nr - 1):
+            for j in range(nc):
+                a, b, c, d = i * nc + j, i * nc + (j + 1) % nc, (i + 1) * nc + (j + 1) % nc, (i + 1) * nc + j
+                triangles += [(a, b, c), (a, c, d)]
+        self.surface(material, v.reshape(-1, 3), n.reshape(-1, 3), triangles)
+
+    def strut(
+        self, material: str, path: Points, width: float | Sequence[float], thick: float, out: Point, n: float = 4.0
+    ) -> None:
+        """A flat bar along ``path``, ``width`` across and ``thick`` deep, its face toward ``out``; ``n`` squares off
+        its section."""
+        line = np.array(path, float)
+        if len(line) < 2:
+            raise ClayError(f"a strut needs a path of two points, got {len(line)}")
+        face = _unit(np.array(out, float), "a strut's face")
+        widths = np.asarray(width, float)
+        if widths.ndim and len(widths) != len(line):
+            raise ClayError(f"a strut of {len(line)} points needs one width or one each, got {len(widths)}")
+        along = np.gradient(line, axis=0)
+        u, w = superellipse(28, n)
+        rows = []
+        for point, step, wide in zip(line, along, np.broadcast_to(widths, (len(line),)), strict=True):
+            t = _unit(step, "a strut's path")
+            side = _unit(np.cross(t, face), "a strut running along its face")
+            rows.append(point + np.outer(u * wide / 2, side) + np.outer(w * thick / 2, np.cross(side, t)))
+        self._capped(material, rows)
+
+    def revolve(self, material: str, profile: Points, sides: int = 64) -> None:
+        """A surface of revolution about the local z axis: ``profile`` rows are (radius, z)."""
+        p = np.array(profile, float)
+        if p.ndim != 2 or p.shape[1] != 2 or len(p) < 2 or p[:, 0].min() < 0:
+            raise ClayError(f"a revolved profile needs two rows of radius and z, radii not negative, got {profile!r}")
+        if sides < 3:
+            raise ClayError(f"a revolved surface needs three sides, got {sides}")
+        angles = np.linspace(0, 2 * np.pi, sides, endpoint=False)
+        v = np.array([[(r * math.cos(a), r * math.sin(a), z) for a in angles] for r, z in p])
+        n = _grid_normals(v)
+        n = -n if np.sum(n * (v * np.array([1, 1, 0]))) < 0 else n
+        triangles = []
+        for i in range(len(p) - 1):
+            for j in range(sides):
+                a, b = i * sides + j, i * sides + (j + 1) % sides
+                c, d = (i + 1) * sides + (j + 1) % sides, (i + 1) * sides + j
+                triangles += [(a, b, c), (a, c, d)]
+        self.surface(material, v.reshape(-1, 3), n.reshape(-1, 3), triangles)
+
     def faceplate(self, material: str, p: Point, w: float, h: float) -> None:
         """A printed flat facing the lens, as thin as paint."""
         x, y, z = p
@@ -356,6 +447,26 @@ class Model:
                 )
             )
         return tuple(out)
+
+
+def superellipse(m: int, n: float, power: float | None = None) -> tuple[np.ndarray, np.ndarray]:
+    """``m`` points round a unit superellipse: ``n`` squares it off across, ``power`` (``n`` by default) up and down."""
+    up = n if power is None else power
+    if m < 3 or n <= 0 or up <= 0:
+        raise ClayError(f"a superellipse needs three points and powers above zero, got {m}, {n} and {power}")
+    theta = np.linspace(0, 2 * np.pi, m, endpoint=False)
+    c, s = np.cos(theta), np.sin(theta)
+    return np.sign(c) * np.abs(c) ** (2 / n), np.sign(s) * np.abs(s) ** (2 / up)
+
+
+def _grid_normals(v: np.ndarray) -> np.ndarray:
+    n = np.cross(np.gradient(v, axis=0), np.roll(v, -1, 1) - np.roll(v, 1, 1))
+    return n / np.maximum(np.linalg.norm(n, axis=2, keepdims=True), 1e-9)
+
+
+def _closing(row: np.ndarray) -> list[np.ndarray]:
+    centre = row.mean(0)
+    return [centre + (row - centre) * k for k in (0.75, 0.45, 0.15, 0.0)]
 
 
 def _flat(axis: int, sign: float) -> np.ndarray:

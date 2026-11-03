@@ -8,10 +8,11 @@ until ``opens``, then swinging in through :data:`SWING_STEPS` drawn frames and h
 
 :func:`tow_truck` is a truck from behind, reversing down the path toward the door through ``path`` with its beacon
 turning, and lowering its hook from ``drop``; with neither it stands where :data:`PARKED` left it, hook down.
-:func:`clipboard` is what a man from an agency carries: edge on while he reads it, flat to the viewer when he turns it
-round. :data:`POSES` are the visitor's and the householder's: the visitor stands at :data:`VISITOR` and the householder,
-mirrored, at :data:`HOUSEHOLDER_AT`, at :data:`HOUSEHOLDER_SCALE`. Everything is in frame pixels of the 1080 × 1920
-Stick frame and nothing is random, so a shot redraws the same.
+:func:`clipboard` (:func:`srstudio.stick_table.clipboard`, re-exported) is what a man from an agency carries: edge on
+while he reads it, flat to the viewer when he turns it round. :data:`POSES` are the visitor's and the householder's:
+the visitor stands at :data:`VISITOR` and the householder, mirrored, at :data:`HOUSEHOLDER_AT`, at
+:data:`HOUSEHOLDER_SCALE`. Everything is in frame pixels of the 1080 × 1920 Stick frame and nothing is random, so a shot
+redraws the same.
 """
 
 from __future__ import annotations
@@ -24,6 +25,7 @@ from .look import sheet
 from .registry import register
 from .stick import STANDING, Gradient, RigPose, StickDataError, _group, _seat, box, oval, paint, shape
 from .stick_door import DOORWAY, HANDLE_Y, MAX_DEPTH, SWING_STEP, SWING_STEPS, VANISH, on_path, through
+from .stick_table import BOARD_LETTERS, clipboard
 
 __all__ = [
     "BOARD_LETTERS",
@@ -74,7 +76,6 @@ TRUCK, TRUCK_SHADE, TRUCK_DARK, STEEL, STEEL_DARK, TYRE, GLASS = (
     "#3a4a58",
 )
 AMBER, TAIL, STRIPE = "#ffb22e", "#c8362b", "#f6efe0"
-BOARD, BOARD_EDGE, PAGE, RULE, CLIP = "#a9794a", "#7c5532", "#fbf8f0", "#b9b4a8", "#70777f"
 
 X, Y, W, H = DOORWAY
 FLOOR_Y = Y + H
@@ -93,7 +94,6 @@ LOWER = 0.8  # seconds the hook takes to come down
 BEACON_RATE = 2.0  # turns of the beacon a second: below anything a flash check counts on so small a light
 VISITOR, VISITOR_LANE = 0.98, -0.3  # the step: a visitor on it stands just outside the door, left of the path
 HOUSEHOLDER_AT, HOUSEHOLDER_SCALE = (1322.0, 138.0), 0.86  # with flip=True, a pose here stands right of the doorway
-BOARD_LETTERS = 16  # the longest heading the turned clipboard takes
 _FEET = dict(hip=(540, 1190), knees=((525, 1445), (560, 1445)), feet=((512, 1700), (566, 1700)))
 _FAR = dict(elbow=(510, 1040), hand=(502, 1195))
 
@@ -339,31 +339,4 @@ def tow_truck(
         cv.keys(hook, "y", span, kind="linear")
         cv.keys(cable, "scaleY", [(t, round((v - BOOM_TOP) / 100, 4)) for t, v in span], kind="linear")
     _hook(cv, hook)
-    return g
-
-
-@register("prop", "stick-clipboard", tags=("clipboard", "form", "official", "collections", "font"))
-def clipboard(cv: Canvas, parent, *, turned: bool = False, heading: str = "SIGN HERE"):
-    """A clipboard about its origin, the hand that holds it: edge on, as its reader sees the page and no one else does,
-    or ``turned`` flat to the viewer: ``heading``, ruled lines, a row of four boxes and a line to sign on."""
-    if not turned:
-        g = _group(cv, parent)
-        shape(cv, g, "M -8 -210 L 34 -226 L 34 16 L -8 40 Z", BOARD, 5, stroke=cv.ink)
-        shape(cv, g, "M 34 -226 L 46 -220 L 46 14 L 34 16 Z", BOARD_EDGE, 3, stroke=cv.ink)
-        box(cv, g, 2, -240, 26, 30, CLIP, 4, r=4)
-        return g
-    cv.require_font("the clipboard's page is set in it")
-    if not heading.strip() or len(heading) > BOARD_LETTERS:
-        raise StickDataError(f"a clipboard's heading is 1 to {BOARD_LETTERS} letters, got {heading!r}")
-    g = _group(cv, parent)
-    box(cv, g, -150, -320, 300, 380, BOARD, 6, r=16)
-    box(cv, g, -126, -286, 252, 326, PAGE, 3, r=4)
-    box(cv, g, -44, -340, 88, 42, CLIP, 5, r=8)
-    cv.text(g, cv.uid("clipboard-heading"), heading, -120, -274, 240, 74, 46, cv.ink, weight=700)
-    for ry in (-186, -160, -134):
-        shape(cv, g, f"M -104 {ry} L 104 {ry}", sw=5, stroke=RULE)
-    for k in range(4):
-        box(cv, g, -104 + k * 56, -112, 40, 40, PAGE, 4)
-    shape(cv, g, "M -104 -2 L 104 -2", sw=5, stroke=cv.ink)
-    shape(cv, g, "M -104 -32 L -84 -12 M -84 -32 L -104 -12", sw=6, stroke=TAIL)
     return g

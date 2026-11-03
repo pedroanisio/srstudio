@@ -1,0 +1,8 @@
+Which country has the most time zones?
+
+Maps #4. In July, France: 12 clocks to Russia's 11 on tz database 2026c. In January France and Russia tie at 11. Antarctic claims are left out, and so is uninhabited Clipperton, which has no tz zone. For the sun we checked seven towns from Papeete to Noumea every five minutes of 2026, and they are never all dark.
+Source: tz database 2026c; sun from the Astronomical Almanac's low-precision formulae.
+
+Coordinates: GeoNames (geonames.org), CC BY 4.0. Made with Natural Earth. Time zones: IANA tz database, public domain. Voices: ElevenLabs premade.
+
+#maps #geography #timezones #france #didyouknow

@@ -25,8 +25,16 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from typing import Any, Protocol, runtime_checkable
 
-from . import brush
+from . import _gaze_drawing as target_drawing
+from . import anatomy_ledger, brush, drawing_events
+from ._gaze_drawing import EyeLayers as EyeLayers
+from ._gaze_drawing import TrackingEyes as TrackingEyes
+from ._transaction import scene_transaction
 from .canvas import Canvas, _at_zero
+from .face_blends import FaceBlender, FaceFrame, FaceTrack
+from .face_blends import segments as face_segments
+from .gaze import GazePlan
+from .gaze import _fail as _gaze_fail
 from .head_motion import (
     CHANNELS,
     GAZES,
@@ -47,6 +55,7 @@ from .toon_cast import (
     Look,
     Mouths,
     Point,
+    Posing,
     _arms,
     _draw,
     _draw_blinks,
@@ -56,6 +65,7 @@ from .toon_cast import (
     _place,
     _teeth,
     _whiskers,
+    pose_hands,
 )
 from .toon_torso import depth_in
 
@@ -64,11 +74,14 @@ __all__ = [
     "SPRING_RUN",
     "TILT_EASE",
     "Glancing",
+    "EyeLayers",
+    "TrackingEyes",
     "HeadRig",
     "figure",
     "gaze_states",
     "open_seam",
     "rest_springs",
+    "gaze_capabilities",
 ]
 
 TILT_EASE = 0.4  # seconds a held tilt takes to reach its pose's value, less when the pose is short, see _held_tilts
@@ -117,7 +130,8 @@ class HeadRig:
     is how far a kind of eyes tilts the head beyond ``tilt``, held from that pose to the next and eased in on the
     style's ``settle``, for a drawing whose expressions carry a tilt; ``tilt_reach`` is the least and the most it
     gives, which count toward the rig's bounds. ``face_slide`` is how much further than the skull the face drops on a
-    nod, for a face that has less room on its head than most."""
+    nod, for a face that has less room on its head than most. ``drawn_as`` is the part and version the rig draws, for a
+    rig whose version the anatomy rules read."""
 
     look: Look
     neck: Point
@@ -133,6 +147,8 @@ class HeadRig:
     pose_tilt: Callable[[str], float] | None = None
     tilt_reach: tuple[float, float] = (0.0, 0.0)
     face_slide: float = FACE_SLIDE
+    drawn_as: tuple[str, int] | None = None
+    face_blender: FaceBlender | None = None
 
 
 def _bounds(rig: Seam) -> list[tuple[float, float]]:
@@ -284,6 +300,45 @@ def _eyes(cv: Canvas, parent, look: Look, kind: str, arms: str, gaze, start: flo
         cv.keys(layer, "opacity", keys, local=False)
 
 
+def _external_arms(rig: HeadRig, poses: Sequence[Pose], sides: tuple[str, ...]) -> frozenset[str]:
+    """Validate candidate-only delegation before allocating any drawing or ledger nodes."""
+
+    def refuse(actual, expected):
+        return HeadMotionError(
+            f'external_arms: expected {expected}',
+            code='head.external_arms',
+            path='external_arms',
+            actual=actual,
+            expected=expected,
+            remedy='Use an unapproved candidate, unique left/right sides and separable shared arm poses.',
+        )
+
+    if (
+        type(sides) is not tuple
+        or len(sides) > 2
+        or any(type(side) is not str or side not in ('left', 'right') for side in sides)
+        or len(set(sides)) != len(sides)
+    ):
+        raise refuse(sides, 'an immutable tuple of at most two distinct left/right sides')
+    if not sides:
+        return frozenset()
+    if rig.drawn_as is not None:
+        raise refuse(rig.drawn_as, 'a candidate rig with drawn_as=None')
+    if type(poses) not in (tuple, list) or not 1 <= len(poses) <= 20000:
+        raise refuse(None, '1..20000 finite authored poses')
+    for pose in poses:
+        if not isinstance(pose, Pose) or pose.arms not in ('desk', 'lean', 'type', 'crossed', 'sigh', 'face', 'face2'):
+            raise refuse(None, 'separable shared arm poses throughout the source clock')
+        if isinstance(rig.look.drawing, Posing):
+            try:
+                own = rig.look.drawing.gesture(pose.arms)
+            except ToonDataError as error:
+                raise refuse(pose.arms, 'a drawing supporting this separable shared pose') from error
+            if own is not None:
+                raise refuse(pose.arms, 'a shared pose without an indivisible drawing-specific gesture')
+    return frozenset(sides)
+
+
 def figure(
     cv: Canvas,
     parent,
@@ -296,82 +351,193 @@ def figure(
     stickers: Sequence[Layer] = (),
     mouths: Mouths = (),
     on_face: Callable[[Any], None] | None = None,
+    *,
+    target_gaze: GazePlan | None = None,
+    face_blends: FaceTrack | None = None,
+    external_arms: tuple[str, ...] = (),
 ):
     """The character in nested groups (the module's docstring), one drawing per pose run inside the chains, moved by
     ``plan``. The arguments mean what they mean to :func:`srstudio.toon_cast.figure`; ``on_face`` draws into the face's
     group last, so what it adds moves with the head. Returns the outermost group."""
-    from .toon_wear import face_of, wear_layers  # here, not at import: toon_wear draws with toon_cast
+    delegated = _external_arms(rig, poses, external_arms)
+    plan.check_bounds(rig.style, frozen=bool(cv._frozen))
+    frames: tuple[FaceFrame, ...] = ()
+    if face_blends is not None:
+        from .face_blends import _fail
 
-    look = rig.look
-    style = rig.style
-    if not cv._frozen:
-        plan = replace(plan, **{name: _bake_spring(getattr(plan, name)) for name in CHANNELS})  # type: ignore[arg-type]
-    spans = [(p, round(s + enter, 6), round(e + enter, 6)) for p, s, e in runs(poses, duration - enter)]
-    pose_tilt = Channel(_held_tilts(spans, rig.pose_tilt), style.settle) if rig.pose_tilt else None
-    if cv._frozen:
-        for name, channel in [(name, getattr(plan, name)) for name in CHANNELS] + [("pose_tilt", pose_tilt)]:
-            if channel is not None and channel.keys:
-                _at_zero(channel.keys, channel.spring is None and channel.curve == "hold", name)
-    seat_x, seat_y = fx(PIVOT[0]), fy(PIVOT[1])
-    neck_x, neck_y = fx(rig.neck[0]), fy(rig.neck[1])
-    seat = {"x": seat_x, "y": seat_y, "anchorX": seat_x, "anchorY": seat_y}
-    neck = {"x": neck_x, "y": neck_y, "anchorX": neck_x, "anchorY": neck_y}
+        if not isinstance(face_blends, FaceTrack):
+            raise _fail('face_blends', None, 'a typed FaceTrack')
+        if cv._frozen or enter or target_gaze is not None or any(n != 'ahead' for _, n in plan.gaze):
+            raise _fail('face_blends', None, 'one facial owner, a running canvas and enter=0')
+        if any(n != 'closed' for _, n in mouths):
+            raise _fail('mouths', None, 'one mouth owner; authored blends without speech')
+        frames = face_blends.prepare(rig, tuple(poses), duration)
+    if target_gaze is not None:
+        if cv._frozen:
+            raise _gaze_fail('canvas', 'frozen', 'a running canvas for target gaze', 'gaze.unsupported')
+        tracking = target_drawing.prepare(rig, poses, duration, plan, target_gaze)
+        with scene_transaction(cv.scene, cv):
+            return _draw_figure(
+                cv,
+                parent,
+                rig,
+                poses,
+                duration,
+                tracking.head,
+                taps,
+                enter,
+                stickers,
+                mouths,
+                on_face,
+                tracking=tracking,
+                external_arms=delegated,
+            )
+    if not frames:
+        return _draw_figure(
+            cv, parent, rig, poses, duration, plan, taps, enter, stickers, mouths, on_face, external_arms=delegated
+        )
+    with scene_transaction(cv.scene, cv):
+        return _draw_figure(
+            cv,
+            parent,
+            rig,
+            poses,
+            duration,
+            plan,
+            taps,
+            enter,
+            stickers,
+            mouths,
+            on_face,
+            face_frames=frames,
+            external_arms=delegated,
+        )
 
-    lean = cv.group(parent, cv.uid("lean"), **seat)
-    _animate(cv, lean, "rotation", plan.lean)
-    breath = cv.group(lean, cv.uid("breath"), **seat)
-    _animate(cv, breath, "scaleY", plan.breath, style.breath_scale, 1.0)
-    trunk = cv.group(breath, cv.uid("trunk")) if rig.head_over else None
-    turn = cv.group(breath, cv.uid("turn"), rotation=rig.tilt, **neck)
-    _animate(cv, turn, "rotation", plan.turn, base=rig.tilt)
-    held = turn
-    if pose_tilt is not None:
-        held = cv.group(turn, cv.uid("tilt"), **neck)
-        _animate(cv, held, "rotation", pose_tilt, carried=True)  # approved rigs hold these keys, see check_rig
-    nod = cv.group(held, cv.uid("nod"), **neck)
-    _animate(cv, nod, "rotation", plan.roll)
-    _animate(cv, nod, "y", plan.nod, fh(1.0), neck_y)
-    idle = cv.group(nod, cv.uid("idle"), **neck)
-    _animate(cv, idle, "rotation", plan.idle_roll)
-    _animate(cv, idle, "y", plan.idle_y, fh(1.0), neck_y)
-    lift = cv.group(idle, cv.uid("lift"))
-    _animate(cv, lift, "y", plan.breath, -fh(style.breath_px))
-    skull = cv.group(lift, cv.uid("skull"))
-    face = cv.group(lift, cv.uid("face"))
-    _animate(cv, face, "x", plan.face_x, fh(1.0))
-    _animate(cv, face, "y", plan.nod, fh(rig.face_slide))
-    trunk = trunk if trunk is not None else cv.group(breath, cv.uid("trunk"))
-    front = cv.group(breath, cv.uid("front"))
 
-    for pose, start, end in spans:
-        arms = pose.arms
-        _draw(cv, cv.group(skull, cv.uid("g"), start=start, end=end), _place(list(rig.skull()), arms))
+def gaze_capabilities(rig: HeadRig) -> dict:
+    """Explicit continuous target-gaze support and the drawing's stylized mapping."""
+    return target_drawing.capabilities(rig)
 
-        g = cv.group(face, cv.uid("g"), start=start, end=end)
-        _draw(cv, g, _place(list(rig.face()), arms))
-        _eyes(cv, g, look, pose.eyes, arms, plan.gaze, start, end)
-        cheeks, worn = wear_layers(face_of(look), pose.wear) if pose.wear else ([], [])
-        nose = [(shape, "ink" if i == 0 else "white") for i, shape in enumerate(look.nose)]
-        _draw(cv, g, _place(cheeks + nose + (_whiskers(look) if look.whiskers else []), arms))
-        _draw_mouth(cv, g, look, pose, _place(_mouth(look, pose.mouth), arms), mouths, start, end)
-        _draw_blinks(cv, g, look, pose, start, end)
-        bare = look.teeth and pose.mouth not in ("none", "grimace", "kiss", "scream")
-        _draw(cv, g, _place((_teeth(look) if bare else []) + worn + list(stickers), arms))
 
-        body = cv.group(trunk, cv.uid("g"), start=start, end=end)
-        _draw(cv, body, _place(list(rig.trunk()), arms))
-        if arms == "type":
+def _draw_reach(cv: Canvas, parent, rig: HeadRig, poses: Sequence[Pose], duration: float, taps=(), *, mouths=()):
+    """Draw only the rig-derived aggregate envelope probe for immutable specimen fingerprints.
 
-            def frame_of(into, frame: int) -> None:
-                _draw(cv, into, _place(_arms(look, "type", frame)[0], "type"))
+    ``reach`` folds roll/idle/pose tilt into turn and lift/idle into nod. Those combined geometry bounds are
+    deliberately larger than one performance channel's allowance. No caller-supplied plan enters this path.
+    """
+    return _draw_figure(cv, parent, rig, poses, duration, reach(rig), taps, mouths=mouths)
 
-            swap_frames(cv, body, start, end, taps, frame_of)
-            over: list[Layer] = []
-        else:
-            under, over = _arms(look, arms, 0)
-            _draw(cv, body, _place(under, arms))
-        if over:
-            _draw(cv, cv.group(front, cv.uid("g"), start=start, end=end), _place(over, arms))
-    if on_face is not None:
-        on_face(face)
-    return lean
+
+def _draw_figure(
+    cv: Canvas,
+    parent,
+    rig: HeadRig,
+    poses: Sequence[Pose],
+    duration: float,
+    plan: HeadPlan,
+    taps: Sequence[float] = (),
+    enter: float = 0.0,
+    stickers: Sequence[Layer] = (),
+    mouths: Mouths = (),
+    on_face: Callable[[Any], None] | None = None,
+    *,
+    tracking: target_drawing.PreparedGaze | None = None,
+    face_frames: tuple[FaceFrame, ...] = (),
+    external_arms: frozenset[str] = frozenset(),
+):
+    """Emit a preflighted performance or the fixed, rig-derived specimen probe."""
+    if rig.drawn_as is not None:
+        anatomy_ledger.note_part(cv, *rig.drawn_as)
+    with drawing_events.drawing(rig):
+        from .toon_wear import face_of, wear_layers  # here, not at import: toon_wear draws with toon_cast
+
+        look = rig.look
+        style = rig.style
+        if not cv._frozen:
+            plan = replace(plan, **{name: _bake_spring(getattr(plan, name)) for name in CHANNELS})  # type: ignore[arg-type]
+        spans = [(p, round(s + enter, 6), round(e + enter, 6)) for p, s, e in runs(poses, duration - enter)]
+        pose_tilt = Channel(_held_tilts(spans, rig.pose_tilt), style.settle) if rig.pose_tilt else None
+        if cv._frozen:
+            for name, channel in [(name, getattr(plan, name)) for name in CHANNELS] + [("pose_tilt", pose_tilt)]:
+                if channel is not None and channel.keys:
+                    _at_zero(channel.keys, channel.spring is None and channel.curve == "hold", name)
+        seat_x, seat_y = fx(PIVOT[0]), fy(PIVOT[1])
+        neck_x, neck_y = fx(rig.neck[0]), fy(rig.neck[1])
+        seat = {"x": seat_x, "y": seat_y, "anchorX": seat_x, "anchorY": seat_y}
+        neck = {"x": neck_x, "y": neck_y, "anchorX": neck_x, "anchorY": neck_y}
+
+        lean = cv.group(parent, cv.uid("lean"), **seat)
+        _animate(cv, lean, "rotation", plan.lean)
+        breath = cv.group(lean, cv.uid("breath"), **seat)
+        _animate(cv, breath, "scaleY", plan.breath, style.breath_scale, 1.0)
+        trunk = cv.group(breath, cv.uid("trunk")) if rig.head_over else None
+        turn = cv.group(breath, cv.uid("turn"), rotation=rig.tilt, **neck)
+        _animate(cv, turn, "rotation", plan.turn, base=rig.tilt)
+        held = turn
+        if pose_tilt is not None:
+            held = cv.group(turn, cv.uid("tilt"), **neck)
+            _animate(cv, held, "rotation", pose_tilt, carried=True)  # approved rigs hold these keys, see check_rig
+        nod = cv.group(held, cv.uid("nod"), **neck)
+        _animate(cv, nod, "rotation", plan.roll)
+        _animate(cv, nod, "y", plan.nod, fh(1.0), neck_y)
+        idle = cv.group(nod, cv.uid("idle"), **neck)
+        _animate(cv, idle, "rotation", plan.idle_roll)
+        _animate(cv, idle, "y", plan.idle_y, fh(1.0), neck_y)
+        lift = cv.group(idle, cv.uid("lift"))
+        _animate(cv, lift, "y", plan.breath, -fh(style.breath_px))
+        skull = cv.group(lift, cv.uid("skull"))
+        face = cv.group(lift, cv.uid("face"))
+        _animate(cv, face, "x", plan.face_x, fh(1.0))
+        _animate(cv, face, "y", plan.nod, fh(rig.face_slide))
+        trunk = trunk if trunk is not None else cv.group(breath, cv.uid("trunk"))
+        front = cv.group(breath, cv.uid("front"))
+
+        for pose, start, end in spans:
+            arms = pose.arms
+            _draw(cv, cv.group(skull, cv.uid("g"), start=start, end=end), _place(list(rig.skull()), arms))
+
+            g = cv.group(face, cv.uid("g"), start=start, end=end)
+            _draw(cv, g, _place(list(rig.face()), arms))
+            if tracking is None:
+                if face_frames:
+                    for a, b, layers in face_segments(face_frames, start, end):
+                        region = cv.group(g, cv.uid('face-blend-eyes' if layers else 'face-eyes'), start=a, end=b)
+                        if layers is None:
+                            _eyes(cv, region, look, pose.eyes, arms, plan.gaze, a, b)
+                        else:
+                            _draw(cv, region, _place(layers.eyes, arms))
+                else:
+                    _eyes(cv, g, look, pose.eyes, arms, plan.gaze, start, end)
+            else:
+                target_drawing.draw_eyes(cv, g, tracking, pose.eyes, arms)
+            cheeks, worn = wear_layers(face_of(look), pose.wear) if pose.wear else ([], [])
+            nose = [(shape, "ink" if i == 0 else "white") for i, shape in enumerate(look.nose)]
+            _draw(cv, g, _place(cheeks + nose + (_whiskers(look) if look.whiskers else []), arms))
+            if face_frames:
+                for a, b, layers in face_segments(face_frames, start, end):
+                    region = cv.group(g, cv.uid('face-blend-mouth' if layers else 'face-mouth'), start=a, end=b)
+                    _draw(cv, region, _place(layers.mouth if layers else _mouth(look, pose.mouth), arms))
+            else:
+                _draw_mouth(cv, g, look, pose, _place(_mouth(look, pose.mouth), arms), mouths, start, end)
+            _draw_blinks(cv, g, look, pose, start, end)
+            bare = look.teeth and pose.mouth not in ("none", "grimace", "kiss", "scream")
+            _draw(cv, g, _place((_teeth(look) if bare else []) + worn + list(stickers), arms))
+
+            body = cv.group(trunk, cv.uid("g"), start=start, end=end)
+            pose_hands(cv, look, body.id, arms, external_arms)
+            _draw(cv, body, _place(list(rig.trunk()), arms))
+            if arms == "type":
+
+                def frame_of(into, frame: int) -> None:
+                    _draw(cv, into, _place(_arms(look, "type", frame, external_arms)[0], "type"))
+
+                swap_frames(cv, body, start, end, taps, frame_of)
+                over: list[Layer] = []
+            else:
+                under, over = _arms(look, arms, 0, external_arms)
+                _draw(cv, body, _place(under, arms))
+            if over:
+                _draw(cv, cv.group(front, cv.uid("g"), start=start, end=end), _place(over, arms))
+        if on_face is not None:
+            on_face(face)
+        return lean

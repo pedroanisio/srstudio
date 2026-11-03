@@ -18,7 +18,7 @@ from .geometry import Part, ProjectedPose, project_pose, ribbon
 from .math3d import number
 from .motion import Motion, Sample, sample_motion
 from .projection import Affine, Camera
-from .validation import MotionReport, audit, motion_diagnostics
+from .validation import MotionReport, QualityProfile, audit, motion_diagnostics
 
 _CAMERA = Camera()
 _APPEARANCE = Appearance()
@@ -45,8 +45,11 @@ class BakeOptions:
     offset: float = 0.0
     max_frames: int = 2400
     max_nodes: int = 500000
+    quality: QualityProfile | None = None
 
     def __post_init__(self) -> None:
+        if self.quality is not None and not isinstance(self.quality, QualityProfile):
+            raise LimbError('quality must be a QualityProfile')
         for name, high in (("fps", 120), ("max_frames", 100000), ("max_nodes", 10000000)):
             value = getattr(self, name)
             if name == "fps" and value is None:
@@ -99,8 +102,12 @@ def _frame_count(duration: float, options: BakeOptions) -> int:
 
 
 def _motion_duration(motion: Motion, options: BakeOptions, hold_until: float | None) -> float:
+    from ._motion_keyed import _KeyedMotion
+
     if options.duration is not None:
         return options.duration
+    if isinstance(motion, _KeyedMotion):
+        return motion.end
     root_end = motion.root.keys[-1].time
     if hold_until is not None:
         root_end = min(root_end, hold_until - options.offset)
@@ -219,6 +226,9 @@ def bake(
     ``hold_until`` extends the first and last poses across the character lifetime, in scene seconds.
     """
     options = _resolve_options(cv, options)
+    if options.quality is not None:
+        assert options.fps is not None
+        options.quality.check_scope(motion, style, options.fps)
     prepared = _prepared if _prepared is not None else _Preparation()
     prepared.configure(motion, camera, parent_transform, correctives, options, hold_until)
     assert options.fps is not None
@@ -251,7 +261,7 @@ def bake(
         for rule in occlusion:
             if rule.end > duration + 1e-9 or not any(fnmatch.fnmatchcase(name, rule.part) for name in names):
                 raise LimbError(f"occlusion part {rule.part!r} does not resolve or its time exceeds the bake")
-        report = audit(samples, poses, motion.arm)
+        report = audit(samples, poses, motion.arm, quality=options.quality)
         assignments_list = []
         hidden = 0
         for pose in poses:
@@ -268,7 +278,11 @@ def bake(
                     hidden += 1
             assignments_list.append(slots)
         plan = _BakePlan(
-            samples, poses, tuple(assignments_list), replace(report, hidden_parts=hidden), motion_diagnostics(samples)
+            samples,
+            poses,
+            tuple(assignments_list),
+            replace(report, hidden_parts=hidden),
+            motion_diagnostics(samples) + tuple(f.diagnostic() for f in report.quality_findings),
         )
         prepared.plans[plan_key] = plan
     samples, poses, assignments = plan.samples, plan.poses, plan.assignments
@@ -335,6 +349,9 @@ def compile_motion(
     _check_id(cv, id)
     prepared = _prepared if _prepared is not None else _Preparation()
     options = _resolve_options(cv, options)
+    if options.quality is not None:
+        assert options.fps is not None
+        options.quality.check_scope(motion, style, options.fps)
     prepared.configure(motion, camera, parent_transform, correctives, options, hold_until)
     assert options.fps is not None
     if backend == "baked":

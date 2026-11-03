@@ -15,6 +15,8 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, TypedDict, TypeVar
 
+from . import drawing_events
+from .contracts import PartContract, describe_callable, describe_part
 from .errors import SrstudioError
 
 KINDS = ("character", "location", "prop", "graphic")
@@ -72,6 +74,7 @@ class PartDetails(TypedDict):
     examples: list[str]
     part_version: PartVersionDetails | None
     character_version: CharacterVersionDetails | None
+    contract: dict[str, Any]
 
 
 def _signature(builder: Callable[..., Any]) -> inspect.Signature:
@@ -90,6 +93,7 @@ class _OriginalEntry:
     style: str
     slots: tuple[str, ...]
     examples: tuple[str, ...]
+    contract: PartContract | None
 
 
 @dataclass
@@ -104,6 +108,7 @@ class Entry:
     slots: tuple[str, ...] = ()  # extra callback names for builders without Slot annotations
     examples: tuple[str, ...] = ()  # Python snippets; ep is an existing Episode
     replacement: bool = False
+    contract: PartContract | None = None
     _registered_builder: Callable[..., Any] = field(init=False, repr=False, compare=False)
     _original: _OriginalEntry | None = field(init=False, repr=False, compare=False)
     _verified_builder: Callable[..., Any] | None = field(default=None, init=False, repr=False, compare=False)
@@ -115,12 +120,23 @@ class Entry:
             None
             if self.replacement
             else _OriginalEntry(
-                self.builder, self.summary, self.tags, self.module, self.style, self.slots, self.examples
+                self.builder, self.summary, self.tags, self.module, self.style, self.slots, self.examples, self.contract
             )
         )
 
     def __call__(self, *args, **kwargs):
-        return self.builder(*args, **kwargs)
+        return drawing_events.call(self.builder, *args, **kwargs)
+
+    @property
+    def _current_contract(self) -> PartContract | None:
+        """Authored metadata belongs to its registered callable, including when signatures happen to match."""
+        return self.contract if self.builder is self._registered_builder else None
+
+    def _describe_contract(self) -> dict[str, Any]:
+        result = describe_part(self.builder, self._current_contract)
+        if self.contract is not None and self._current_contract is None:
+            result['declaration_status'] = 'builder-changed'
+        return result
 
     def describe(self) -> PartDetails:
         """Signature, callback slots, documentation and usage; never calls the builder."""
@@ -163,6 +179,7 @@ class Entry:
             "examples": list(self.examples),
             "part_version": _part_version(self),
             "character_version": _character_version(self),
+            "contract": self._describe_contract(),
         }
 
 
@@ -253,22 +270,29 @@ def register(
     replace: bool = False,
     slots: tuple[str, ...] = (),
     examples: tuple[str, ...] = (),
+    contract: PartContract | None = None,
 ) -> Callable[[_Builder], _Builder]:
     """Decorator: ``@register("prop", "coffee-cup", summary="...")``.
 
     ``style`` names the style the part belongs to; by default it is the style whose ``parts`` list the
     module, and ``""`` for a part shared by every style. Duplicate names are refused unless
-    ``replace=True`` explicitly replaces the existing builder. ``slots`` declares location callbacks when
-    they have no ``Slot`` annotation; ``examples`` supplies Python snippets using an existing ``ep`` Episode."""
+    ``replace=True`` explicitly replaces the existing builder. ``slots`` declares drawing callbacks when
+    they have no ``Slot`` annotation; ``examples`` supplies Python snippets using an existing ``ep`` Episode.
+    ``contract`` adds structured discovery semantics without replacing the builder's runtime validation.
+
+    Use the returned callable: it emits explicit usage events while preserving its signature and function kind.
+    Class registration retains the class identity and instruments only methods declared on that class.
+    Deferred builders are attributed when their bodies execute, not when their generator/coroutine is created.
+    Shared performers can identify their owning registered callable with ``drawing_events.drawing(owner)``."""
     if kind not in KINDS:
         raise RegistryError(f"unknown kind {kind!r}; one of {KINDS}")
 
     def wrap(obj: _Builder) -> _Builder:
         if name in _REGISTRY[kind] and not replace:
             raise RegistryError(f"{kind} {name!r} is already registered; use replace=True to replace it")
+        if contract is not None:
+            describe_callable(obj, contract)  # Refuse invalid metadata before mutating the registry.
         if slots:
-            if kind != "location":
-                raise RegistryError("only locations declare callback slots")
             parameters = _signature(obj).parameters
             for slot in slots:
                 if slot not in parameters or parameters[slot].kind in (
@@ -283,8 +307,20 @@ def register(
 
         resolved = style_of_module(obj.__module__) if style is None else style
         previous = _REGISTRY[kind].get(name)
+        if previous is None or obj is not previous.builder:  # the current builder is already instrumented
+            obj = drawing_events.instrument(obj)
         entry = Entry(
-            kind, name, obj, doc, tuple(tags), obj.__module__, resolved, tuple(slots), tuple(examples), replace
+            kind,
+            name,
+            obj,
+            doc,
+            tuple(tags),
+            obj.__module__,
+            resolved,
+            tuple(slots),
+            tuple(examples),
+            replace,
+            contract,
         )
         if previous is not None:
             entry._original = previous._original
@@ -299,7 +335,14 @@ def get(kind: str, name: str) -> Entry:
         return _REGISTRY[kind][name]
     except KeyError:
         known = ", ".join(sorted(_REGISTRY.get(kind, {})))
-        raise NotRegisteredError(f"no {kind} named {name!r}; known: {known}") from None
+        raise NotRegisteredError(
+            f"no {kind} named {name!r}; known: {known}",
+            code='registry.not_found',
+            path='name',
+            actual=name,
+            expected=sorted(_REGISTRY.get(kind, {})),
+            remedy='Choose a name from srstudio catalog for this kind.',
+        ) from None
 
 
 def describe(kind: str, name: str) -> PartDetails:
@@ -333,3 +376,43 @@ def catalog(style: str | None = None, *, kind: str | None = None) -> list[dict]:
         }
         for e in entries(kind, style)
     ]
+
+
+def contract_coverage(style: str | None = None, *, kind: str | None = None) -> dict:
+    """Report declared semantics separately from argument shape inference; never invoke builders.
+
+    Explicit metadata may still be partial. A complete argument shape is not proof of
+    units, clocks, capabilities, return types or runtime semantic validation.
+    """
+    selected = entries(kind, style)
+
+    def contains(value: object, key: str) -> bool:
+        if isinstance(value, dict):
+            return key in value or any(contains(v, key) for v in value.values())
+        return isinstance(value, list) and any(contains(v, key) for v in value)
+
+    kinds = {}
+    for name in (kind,) if kind else KINDS:
+        rows = [e for e in selected if e.kind == name]
+        contracts = [e._describe_contract() for e in rows]
+        kinds[name] = {
+            'registered': len(rows),
+            'explicit_contracts': sum(e._current_contract is not None for e in rows),
+            'shape_complete': sum(c['shape_complete'] for c in contracts),
+            'with_units': sum(contains(c, 'x-unit') for c in contracts),
+            'with_clocks': sum(contains(c, 'x-timebase') for c in contracts),
+            'with_anchors': sum(contains(c, 'x-anchors') for c in contracts),
+            'undeclared_parts': sorted(e.name for e in rows if e._current_contract is None),
+            'stale_contract_parts': sorted(
+                e.name for e in rows if e.contract is not None and e._current_contract is None
+            ),
+        }
+    return {
+        'schema': 'srstudio.contract-coverage/1.0.0',
+        'kind': kind,
+        'style': style,
+        'kinds': kinds,
+        'qualification': (
+            'Declared metadata and complete argument shapes do not certify semantic completeness or validity.'
+        ),
+    }

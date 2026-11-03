@@ -141,23 +141,21 @@ def test_a_ground_that_cannot_be_drawn_is_refused(kw, match):
         stick_windshield.windshield(cv, cv.comp, 4.0, **kw)
 
 
-def dash_xml(marks=None) -> str:
+def dash_xml(**kw) -> str:
     cv = canvas(signed=True)
-    kw = {} if marks is None else {"marks": marks}
     stick_windshield.dashboard(cv, cv.comp, 2.0, **kw)
     return ET.tostring(xml(cv), encoding="unicode")
 
 
 def test_a_reel_can_place_the_dashboard_marks_and_the_default_keeps_them():
-    marks = stick_windshield.Marks(0.5, (700.0, 1385.0), 13.0, "#d7dae0")
-    assert stick_windshield.MARKS == stick_windshield.Marks(0.3, (70.0, 1840.0), 9.0, stick_windshield.BODY_SHADE)
-    assert dash_xml(stick_windshield.MARKS) == dash_xml()
-    assert "#d7dae0" in dash_xml(marks) and "#d7dae0" not in dash_xml()
+    moved = dict(cactus=0.5, code=(700.0, 1385.0, 13.0, "#d7dae0"))
+    assert dash_xml(cactus=0.3, code=(70, 1840, 9, stick_windshield.BODY_SHADE)) == dash_xml()
+    assert "#d7dae0" in dash_xml(**moved) and "#d7dae0" not in dash_xml()
+    assert dash_xml(cactus=0.5) != dash_xml()
 
 
 @pytest.mark.parametrize(("scale", "height"), [(0.0, 9.0), (0.3, 0.0), (float("nan"), 9.0)])
 def test_marks_of_no_size_are_refused(scale, height):
     cv = canvas(signed=True)
-    marks = stick_windshield.Marks(scale, (70.0, 1840.0), height, "#000000")
     with pytest.raises(StickDataError, match="marks"):
-        stick_windshield.dashboard(cv, cv.comp, 2.0, marks=marks)
+        stick_windshield.dashboard(cv, cv.comp, 2.0, cactus=scale, code=(70.0, 1840.0, height, "#000000"))

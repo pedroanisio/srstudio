@@ -153,6 +153,20 @@ class Quaternion:
     def inverse(self) -> Quaternion:
         return Quaternion(self.w, -self.x, -self.y, -self.z)
 
+    @property
+    def rotation_vector(self) -> Vec3:
+        """Shortest axis-angle vector in radians; antipodal quaternions describe the same rotation."""
+        q = -self if self.w < 0 else self
+        vector = Vec3(q.x, q.y, q.z)
+        length = vector.length
+        return vector * (2 * math.atan2(length, q.w) / length) if length else Vec3()
+
+    @classmethod
+    def from_rotation_vector(cls, vector: Vec3) -> Quaternion:
+        """Rotation by the vector's magnitude in radians around its direction."""
+        angle = vector.length
+        return cls.axis_angle(vector / angle, angle) if angle else cls()
+
     def rotate(self, point: Vec3) -> Vec3:
         q = Vec3(self.x, self.y, self.z)
         t = q.cross(point) * 2

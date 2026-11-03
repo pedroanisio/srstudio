@@ -12,17 +12,30 @@ What refuses a reel that lost it is :mod:`srstudio.show_gate`.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 
+from ._remaining_part_contracts import contract
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
 from .signature import ADVANCE, GLYPHS
 from .thumbnail import INK
 
-__all__ = ["BUG_BOX", "BUG_ID", "ShowError", "active", "bug", "bug_id", "stamping"]
+__all__ = [
+    "BUG_BOX",
+    "BUG_ID",
+    "CLEAR",
+    "ShowError",
+    "active",
+    "bug",
+    "bug_id",
+    "clear_of_bug",
+    "stamping",
+    "widest_clear",
+]
 
 BUG_ID = "show-bug"
 BUG_BOX = (
@@ -31,6 +44,7 @@ BUG_BOX = (
     1044.0,
     332.0,
 )  # the right gutter, under the top 14 % Meta keeps clear, over a caption at y 334
+CLEAR = 12.0  # frame pixels a caption or a text pill keeps between itself and the bug's box, on one side at least
 HASH = "M3.5 0 L1.5 16 M8.5 0 L6.5 16 M0 5.5 L10 5.5 M0 10.5 L10 10.5"  # a glyph of the signature's set, for this mark
 _CHIP = INK.ink
 _RADIUS, _PAD = 12.0, 8.0
@@ -56,6 +70,24 @@ _active: ContextVar[int | None] = ContextVar("show_number", default=None)
 
 class ShowError(SrstudioError, ValueError):
     """A show number that is not a whole number from 1."""
+
+
+def clear_of_bug(box: tuple[float, float, float, float]) -> bool:
+    """Whether ``box`` (left, top, right, bottom, frame pixels) keeps :data:`CLEAR` pixels off :data:`BUG_BOX` on at
+    least one side: a pill that meets the bug's corner diagonally is as crowded as one under its edge."""
+    left, top, right, bottom = box
+    bug_left, bug_top, bug_right, bug_bottom = BUG_BOX
+    return (
+        right <= bug_left - CLEAR or left >= bug_right + CLEAR or bottom <= bug_top - CLEAR or top >= bug_bottom + CLEAR
+    )
+
+
+def widest_clear(top: float, bottom: float, centre: float) -> float:
+    """The widest box centred on ``centre`` from ``top`` to ``bottom`` that is :func:`clear_of_bug`: infinite when
+    those rows already clear it, else what keeps its right edge :data:`CLEAR` left of the bug."""
+    if bottom <= BUG_BOX[1] - CLEAR or top >= BUG_BOX[3] + CLEAR:
+        return math.inf
+    return 2 * (BUG_BOX[0] - CLEAR - centre)
 
 
 def bug_id(number: int) -> str:
@@ -97,7 +129,13 @@ def _glyphs(cv: Canvas, parent, id: str, text: str, x: float, y: float, scale: f
         cv.path(g, HASH if ch == "#" else GLYPHS[ch], stroke=colour, sw=_STROKE)
 
 
-@register("graphic", BUG_ID, summary="The show's fixed corner: the OK-eye mark and the reel's number", style="")
+@register(
+    "graphic",
+    BUG_ID,
+    summary="The show's fixed corner: the OK-eye mark and the reel's number",
+    style="",
+    contract=contract('show-bug'),
+)
 def bug(cv: Canvas, parent, number: int):
     """The bug of reel ``number`` on ``parent``, every point of it inside :data:`BUG_BOX`; returns its group."""
     if type(number) is not int or number < 1:

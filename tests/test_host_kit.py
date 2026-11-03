@@ -90,6 +90,14 @@ def test_a_talking_beat_takes_the_visemes_and_any_other_holds_its_expression():
     assert (1.5, "open") not in rows and (1.0, "chew") in rows
 
 
+def test_a_talking_beat_opens_on_the_sound_already_due_when_it_starts():
+    """The beat lands on the heard word and the take's first viseme leads it: the mouth is open from the cut, as the
+    News desk's mouth_track was fixed to be."""
+    acts = ((0.0, Pose(mouth="chew")), (1.0, Pose()))
+    rows = host_kit.mouth_track(acts, [(0.95, "open"), (1.2, "teeth"), (1.5, "closed")], 2.0)
+    assert rows == [(0.0, "chew"), (1.0, "open"), (1.2, "teeth"), (1.5, "closed")]
+
+
 def test_a_silent_master_still_opens_and_shuts_the_mouth():
     states = {state for _, state in host_kit.mouth_track(((0.0, Pose()),), (), 2.0)}
     assert states == {"open", "closed"}
@@ -351,3 +359,36 @@ def test_a_shot_draws_him_with_the_keys_of_the_beats_inside_it():
 def test_a_click_is_a_sound_in_a_file(tmp_path: Path):
     path = host_kit.write_click(tmp_path / "click.wav", [0.5], 1.0)
     assert path.read_bytes()[:4] == b"RIFF"
+
+
+def test_a_number_the_speech_splits_at_its_separator_is_one_caption_word_on_its_first_sound():
+    said = ((0.0, 0.2, "One"), (0.2, 0.4, "sheet,"), (0.5, 0.7, "4"), (0.7, 1.1, "000"), (1.1, 1.3, "feet."))
+    (cue,) = host_kit.caption_cues([toon.Line("a", "One sheet, 4,000 feet.", 0.0, 1.5)], said)
+    assert [(w.text, w.start) for w in cue.words][2:] == [("4,000", 0.5), ("feet.", 1.1)]
+
+
+@pytest.mark.parametrize(
+    ("text", "said"),
+    [
+        ("4,000 feet.", ((0.0, 0.2, "4"), (0.2, 0.4, "500"), (0.4, 0.6, "feet."))),  # another number
+        ("4,000 feet.", ((0.0, 0.2, "4"),)),  # the rest never said
+        ("well-done", ((0.0, 0.2, "well"), (0.2, 0.4, "done"))),  # words that are not a number stay word for word
+    ],
+)
+def test_a_caption_word_the_speech_does_not_make_up_stops_the_build(text, said):
+    with pytest.raises(host_kit.HostKitError, match="is not the next word said"):
+        host_kit.caption_cues([toon.Line("a", text, 0.0, 1.0)], said)
+
+
+def test_a_long_line_breaks_into_the_fewest_cues_that_fit_so_a_short_sentence_never_stands_alone():
+    text = "What does hit that building? Lightning. About twenty-three times a year."
+    said = tuple((1.0 + 0.2 * k, 1.15 + 0.2 * k, word) for k, word in enumerate(text.split()))
+    cues = host_kit.caption_cues([toon.Line("a", text, 1.0, 4.0)], said)
+    assert [c.text for c in cues] == ["What does hit that building? Lightning.", "About twenty-three times a year."]
+    assert cues[1].start == pytest.approx(said[6][0])
+
+
+def test_packing_joins_a_sentence_to_the_cue_before_only_while_both_fit():
+    assert host_kit.packed([["Okay."], ["One", "penny."]]) == [["Okay.", "One", "penny."]]
+    long = "nobody ever wrote down a single word of any of this for anybody".split()
+    assert host_kit.packed([["Okay."], long, ["Done."]]) == [["Okay."], long, ["Done."]]

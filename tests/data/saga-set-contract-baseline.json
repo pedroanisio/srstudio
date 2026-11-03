@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0.0",
+  "generated_by": {
+    "model": "GPT-6",
+    "tool": "OpenAI Codex"
+  },
+  "source_commit": "fc3f2af8d8be4808d549ffb25bc43ed16ed74eca",
+  "font_sha256": "a4c5bc453ca281d90ea079e596da7ae0dfeb5777497c29ec254e76d97ff6f890",
+  "scene_sha256": {
+    "saga-space": "76721a5019f0afbffa000dc045f3d04e43b0168e419dcb9ef98eaca88c9fbba3",
+    "saga-bridge": "9254e85e9ce7e46356c1c30c242e32fa85c7c5c857ae4c5b0590aaa42beb80ee",
+    "saga-cantina": "f57542b4194c2953144dceaeaabb656451dcd41069635849447de21bd067d604",
+    "saga-cantina-bar": "325a262fae0968243bf4fb37cf0e68c0ef6e4a0e16974b98f30c41dfce042c09",
+    "saga-desert": "13186e07aa53f896aba6c77cdce5e3180b56ed04b60426f0dbecb08bef8eeba8",
+    "saga-cockpit": "07e6901d45d0157fda1706ddff163fb0fb47f27cc7231ea3c14727f2bf366221",
+    "saga-cockpit-console": "2fea8e30be092ff29dfa4cba41bcf7972c9d1b7fa8613a17efe30d2da42c6669",
+    "saga-compactor": "650b24f5fa81e04800c0e0b46c8b8b7e7c2c1c4a1dcdded21e228240cedb635f",
+    "saga-handbook": "dd90fe13594d615b91cdc0568752bd5fd3ed63bf60f01887f7741cc94c53277d",
+    "saga-holo": "03bd6d8f19553b0adec0e82af9fec47d660bc6307f80874937f367974ed95e8d",
+    "saga-cube": "79280d65a9c04b137f5f5789e69f9f186d40d9dc70ed5e4c415d36d5f962f486",
+    "saga-freighter": "307f482338011487a31a9ce817fbe6b4ee5097bcc89e7887c95e0ae579f31d01",
+    "saga-pebble": "8c6a73d0123e727acf64c716c6ebd1aee11f0d67ad78fbcf511285dc1af38f2c",
+    "saga-fighter": "aa79dd2291ee6186891acf13c75494ad6d43d236f22dad1e39ab412efc5df715",
+    "saga-hook": "7070aad348952ed5c76b633396e47e155834e2cfe7e63f9efde76589937448bd",
+    "saga-entry": "4effe2879fdb5617443a92c7fc5d62c38975bc0aa09821c5b3deaf6441d95232"
+  }
+}

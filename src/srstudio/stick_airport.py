@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from functools import partial
 
+from . import _stick_transport_contracts as tc
 from . import checks, look, signature
 from .canvas import Canvas
 from .registry import register
@@ -117,7 +118,9 @@ def now_size(now: str) -> float:
     return 72 if len(now) <= 10 else 72 * 8 / len(now)
 
 
-@register("location", "stick-gate", tags=("airport", "gate", "boarding", "travel", "font"))
+@register(
+    "location", "stick-gate", contract=tc.contract('stick-gate'), tags=("airport", "gate", "boarding", "travel", "font")
+)
 def gate(
     cv: Canvas,
     parent,
@@ -126,22 +129,21 @@ def gate(
     now: str = "GROUP 1",
     boarding_size: float = APPROVED_BOARDING_SIZE,
     cactus_at: tuple[float, float] = CACTUS_AT,
+    sign: bool = True,
 ) -> None:
     """The boarding gate: the terminal wall, the window on the apron with a parked airliner, the gate seats under it,
     the boarding sign with ``gate`` (1 to :data:`GATE_CHARS` characters) and the group called ``now`` (1 to
     :data:`NOW_CHARS`), and the carpet. The code sits on the carpet's near edge and the cactus by the window
     (ADR 0001). ``boarding_size`` letters the sign's first line; the default is the drawing that was approved, and
     a reel whose font runs wide passes :data:`BOARDING_SIZE`. ``cactus_at`` is where the cactus's pot stands; the
-    default is the approved drawing, and a reel that stands something in front of it moves it."""
+    default is the approved drawing, and a reel that stands something in front of it moves it. ``sign=False`` leaves
+    the sign's face to :func:`boarding_sign`, for a reel that washes the room and keeps the sign out of the wash."""
     cv.require_font("the boarding sign is set in it")
     if not (isinstance(cactus_at, tuple) and len(cactus_at) == 2 and all(checks.number(value) for value in cactus_at)):
         raise StickDataError(f"the cactus stands at an x and a y, got {cactus_at!r}")
     if not (checks.number(boarding_size) and boarding_size > 0):
         raise StickDataError(f"the sign's first line has a size above 0, got {boarding_size!r}")
-    if not gate.strip() or len(gate) > GATE_CHARS:
-        raise StickDataError(f"the gate has 1 to {GATE_CHARS} characters, got {gate!r}")
-    if not now.strip() or len(now) > NOW_CHARS:
-        raise StickDataError(f"the sign calls 1 to {NOW_CHARS} characters, got {now!r}")
+    _check_sign(gate, now)
     s = cv
     wall = paint(s, Gradient("gate-wall", ((0, WALL_TOP), (1, WALL_LOW)), 0, 0, 0, FLOOR_Y))
     box(s, parent, 0, 0, s.width, FLOOR_Y, wall)
@@ -154,14 +156,11 @@ def gate(
     for mx in (x + w / 3, x + 2 * w / 3):  # the mullions
         box(s, parent, mx - 7, y, 14, h, FRAME)
     # the boarding sign, hung from the ceiling on two rods
-    sx, sy, sw_, sh = SIGN_BOX
+    sx, sy, sw_, _ = SIGN_BOX
     for rx in (sx + 60, sx + sw_ - 60):
         box(s, parent, rx - 4, 0, 8, sy, FRAME)
-    box(s, parent, sx, sy, sw_, sh, SIGN, r=14)
-    box(s, parent, sx + 20, sy + 20, 120, 110, SIGN_LIGHT, r=10)
-    _label(s, parent, gate, sx + 20, sy + 20, 120, 110, 72, SIGN)
-    _label(s, parent, "NOW BOARDING", sx + 150, sy + 30, sw_ - 170, 90, boarding_size, SIGN_TEXT, align="start")
-    _label(s, parent, now, sx + 20, sy + 140, sw_ - 40, 96, now_size(now), SIGN_TEXT)
+    if sign:
+        boarding_sign(s, parent, gate=gate, now=now, boarding_size=boarding_size)
     # the gate seats under the window: a row joined on one beam
     box(s, parent, 30, 1420, 560, 16, SEAT_DARK)
     for k in range(4):
@@ -178,7 +177,12 @@ def gate(
     signature.code(s, parent, 40, 1880, 9, color="#8a99a8")
 
 
-@register("prop", "stick-gate-podium", tags=("airport", "gate", "counter", "front-layer", "font"))
+@register(
+    "prop",
+    "stick-gate-podium",
+    contract=tc.contract('stick-gate-podium'),
+    tags=("airport", "gate", "counter", "front-layer", "font"),
+)
 def podium(cv: Canvas, parent, *, gate: str = "B9", plate: bool = True):
     """The gate podium at the right, from :data:`PODIUM_X` at :data:`PODIUM_TOP`: drawn after the agent, it hides
     her legs. A screen on top and the gate lettered on its front plate, or the plate blank with ``plate=False``
@@ -200,10 +204,18 @@ def podium(cv: Canvas, parent, *, gate: str = "B9", plate: bool = True):
     return g
 
 
-@register("prop", "stick-carry-on", tags=("airport", "luggage", "suitcase", "tag", "font"))
-def carry_on(cv: Canvas, parent, x, y, *, tag: str | None = "GROUP 4"):
+@register(
+    "prop",
+    "stick-carry-on",
+    contract=tc.contract('stick-carry-on'),
+    tags=("airport", "luggage", "suitcase", "tag", "font"),
+)
+def carry_on(cv: Canvas, parent, x, y, *, tag: str | None = "GROUP 4", hanging: bool = False):
     """A wheeled carry-on standing on ``x, y`` (the floor under its middle), its handle up and a luggage tag
-    lettered ``tag`` (1 to :data:`TAG_CHARS` characters; ``None``: left blank) hanging from the grip."""
+    lettered ``tag`` (1 to :data:`TAG_CHARS` characters; ``None``: left blank) hanging from the grip; ``hanging``
+    drops a blank tag straight down from its string, close to the handle, instead of the wide tag beside it."""
+    if hanging and tag is not None:
+        raise StickDataError("a hanging tag is blank")
     if tag is not None:
         cv.require_font("the luggage tag is set in it")
     if tag is not None and (not tag.strip() or len(tag) > TAG_CHARS):
@@ -218,6 +230,10 @@ def carry_on(cv: Canvas, parent, x, y, *, tag: str | None = "GROUP 4"):
         shape(s, g, f"M {gx} {y - 244} L {gx} {y - 40}", sw=4, stroke=CASE_DARK)
     for wx in (x - 56, x + 32):
         oval(s, g, wx, y - 26, 24, 24, s.ink)
+    if hanging:
+        shape(s, g, f"M {x + 30} {y - 440} Q {x + 58} {y - 430} {x + 62} {y - 396}", sw=4, stroke=s.ink)
+        box(s, g, x + 42, y - 396, 40, 86, TAG, 4, r=8)
+        return g
     shape(s, g, f"M {x + 30} {y - 440} Q {x + 60} {y - 420} {x + 74} {y - 380}", sw=4, stroke=s.ink)
     tag_x, tag_w = x + TAG_SPAN[0], TAG_SPAN[1] - TAG_SPAN[0]
     box(s, g, tag_x, y - 384, tag_w, 64, TAG, 4, r=10)
@@ -226,12 +242,18 @@ def carry_on(cv: Canvas, parent, x, y, *, tag: str | None = "GROUP 4"):
     return g
 
 
-@register("prop", "stick-bag-scale", tags=("airport", "scale", "luggage", "readout", "weight", "font"))
+@register(
+    "prop",
+    "stick-bag-scale",
+    contract=tc.contract('stick-bag-scale'),
+    tags=("airport", "scale", "luggage", "readout", "weight", "font"),
+)
 def bag_scale(cv: Canvas, parent, x, y, readings, end, *, readout: tuple[float, float, float, float] = READOUT):
     """A bag scale: its platter set in the floor under ``x, y`` and its red readout at ``readout``, on the podium's
     front by default. ``readings`` are ``(start, weight)`` in rising order, the first from the shot's start; each
     shows until the next and the last until ``end``. A weight has 1 to :data:`READOUT_CHARS` characters, lit at
-    :data:`READOUT_SIZE` so it reads at phone size. Draw it after the podium and before the bag."""
+    :data:`READOUT_SIZE` so it reads at phone size, and a weight of ``None`` leaves the readout dark. Draw it after the
+    podium and before the bag."""
     cv.require_font("the readout is set in it")
     readings = tuple(readings)
     if not readings:
@@ -240,7 +262,7 @@ def bag_scale(cv: Canvas, parent, x, y, readings, end, *, readout: tuple[float, 
     if starts[0] != 0 or any(b <= a for a, b in zip(starts, starts[1:], strict=False)) or starts[-1] >= end:
         raise StickDataError(f"readings start at 0 and rise before the end, got {starts} to {end}")
     for _, weight in readings:
-        if not weight.strip() or len(weight) > READOUT_CHARS:
+        if weight is not None and (not weight.strip() or len(weight) > READOUT_CHARS):
             raise StickDataError(f"a reading has 1 to {READOUT_CHARS} characters, got {weight!r}")
     s = cv
     g = _group(s, parent)
@@ -249,13 +271,42 @@ def bag_scale(cv: Canvas, parent, x, y, readings, end, *, readout: tuple[float, 
     rx, ry, rw, rh = readout
     box(s, g, rx, ry, rw, rh, LED_BACK, 5, r=16)
     for (start, weight), until in zip(readings, [*starts[1:], end], strict=True):
+        if weight is None:
+            continue
         lit = _group(s, g)
         _label(s, lit, weight, rx, ry, rw, rh, READOUT_SIZE, LED)
         s.gate(lit, [(start, until)])
     return g
 
 
-@register("prop", "stick-coat-ball", tags=("airport", "clothes", "coats", "scarf", "hat", "front-layer"))
+def _check_sign(gate: str, now: str) -> None:
+    if not gate.strip() or len(gate) > GATE_CHARS:
+        raise StickDataError(f"the gate has 1 to {GATE_CHARS} characters, got {gate!r}")
+    if not now.strip() or len(now) > NOW_CHARS:
+        raise StickDataError(f"the sign calls 1 to {NOW_CHARS} characters, got {now!r}")
+
+
+def boarding_sign(
+    cv: Canvas, parent, *, gate: str = "B9", now: str = "GROUP 1", boarding_size: float = APPROVED_BOARDING_SIZE
+) -> None:
+    """The face of the gate's boarding sign at :data:`SIGN_BOX`: ``gate`` on its light tile, the first line in
+    ``boarding_size``, the group called ``now`` under them."""
+    _check_sign(gate, now)
+    s = cv
+    sx, sy, sw_, sh = SIGN_BOX
+    box(s, parent, sx, sy, sw_, sh, SIGN, r=14)
+    box(s, parent, sx + 20, sy + 20, 120, 110, SIGN_LIGHT, r=10)
+    _label(s, parent, gate, sx + 20, sy + 20, 120, 110, 72, SIGN)
+    _label(s, parent, "NOW BOARDING", sx + 150, sy + 30, sw_ - 170, 90, boarding_size, SIGN_TEXT, align="start")
+    _label(s, parent, now, sx + 20, sy + 140, sw_ - 40, 96, now_size(now), SIGN_TEXT)
+
+
+@register(
+    "prop",
+    "stick-coat-ball",
+    contract=tc.contract('stick-coat-ball'),
+    tags=("airport", "clothes", "coats", "scarf", "hat", "front-layer"),
+)
 def coat_ball(cv: Canvas, parent, x, chin, radius, *, layers=3, hats=0, scarves=0, trousers=False, shoes=False):
     """Everything a passenger owns, worn: a ball of ``radius`` hanging from the chin at ``x, chin``, drawn after a
     STANDING figure so only the head shows. ``layers`` of coat (1 to :data:`MAX_LAYERS`) show as hems around it, a
@@ -308,7 +359,9 @@ def _shoe(x, y, side) -> str:
     return f"M {heel} {y + 12} L {heel} {y - 70} L {ankle} {y - 70} Q {toe} {y - 30} {toe} {y + 12} Z"
 
 
-@register("prop", "stick-palm", tags=("palm", "tree", "tropics", "arrivals", "holiday"))
+@register(
+    "prop", "stick-palm", contract=tc.contract('stick-palm'), tags=("palm", "tree", "tropics", "arrivals", "holiday")
+)
 def palm(cv: Canvas, parent, x, y, *, height=560):
     """A palm standing on ``x, y``: a bent trunk ``height`` tall and seven fronds. Nothing about it is cold."""
     if height < 120:
@@ -330,7 +383,12 @@ def palm(cv: Canvas, parent, x, y, *, height=560):
     return g
 
 
-@register("location", "stick-cabin", tags=("airport", "plane", "cabin", "middle-seat", "travel", "font"))
+@register(
+    "location",
+    "stick-cabin",
+    contract=tc.contract('stick-cabin'),
+    tags=("airport", "plane", "cabin", "middle-seat", "travel", "font"),
+)
 def cabin(cv: Canvas, parent, *, row: str = "38", seats: str = "DEF") -> None:
     """A row of the cabin seen from the aisle: the overhead bins with the ``row`` number (1 to :data:`ROW_CHARS`
     characters) and a letter over each of the three seats (``seats``, three letters), the seat backs at
@@ -359,7 +417,9 @@ def cabin(cv: Canvas, parent, *, row: str = "38", seats: str = "DEF") -> None:
     signature.code(s, parent, 40, 1880, 9, color="#8a7f99")
 
 
-@register("prop", "stick-armrests", tags=("airport", "plane", "cabin", "front-layer"))
+@register(
+    "prop", "stick-armrests", contract=tc.contract('stick-armrests'), tags=("airport", "plane", "cabin", "front-layer")
+)
 def armrests(cv: Canvas, parent):
     """The two armrests between the three seats, at :data:`ARMRESTS`: drawn after the passengers, so an elbow on
     one rests on it."""

@@ -13,6 +13,7 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 
 from . import checks, look, signature
+from ._collage_context_contracts import contract
 from .canvas import Canvas
 from .collage import INK, LOOKS, CollageError, Point, _cut, _paper, _ring, draw_shapes, figure_shapes
 from .registry import register
@@ -167,6 +168,7 @@ def _frame(cv: Canvas, g, key: str, x: float, y: float, w: float, h: float, fill
     "location",
     "collage-boardroom",
     summary="A glass-walled boardroom: city at dusk, a mission poster, a shelf with the signature cactus",
+    contract=contract('collage-boardroom', signature_box=signature_box, marks_box=marks_box, zoom_pivot=zoom_pivot),
 )
 def boardroom(cv: Canvas, parent) -> object:
     g = cv.group(parent, cv.uid("g"))
@@ -196,6 +198,7 @@ GLASS_END = 700.0  # the meeting room's window stops here: the shelf hangs on so
     "location",
     "collage-meeting-room",
     summary="A meeting room: a window on the city at dusk, and a solid wall with a picture and the signature shelf",
+    contract=contract('collage-meeting-room', signature_box=signature_box, marks_box=marks_box, zoom_pivot=zoom_pivot),
 )
 def meeting_room(cv: Canvas, parent) -> object:
     g = cv.group(parent, cv.uid("g"))
@@ -228,6 +231,7 @@ def meeting_room(cv: Canvas, parent) -> object:
     "location",
     "collage-classroom",
     summary="A classroom: chalkboard with scribbles, a colour strip, a clock and the cactus on the sill",
+    contract=contract('collage-classroom', signature_box=signature_box, marks_box=marks_box, zoom_pivot=zoom_pivot),
 )
 def classroom(cv: Canvas, parent) -> object:
     g = cv.group(parent, cv.uid("g"))
@@ -264,6 +268,7 @@ def classroom(cv: Canvas, parent) -> object:
     "collage-living-room",
     summary="A living room: striped wallpaper, a window with curtains, a "
     "framed sunset, a floor lamp, the cactus on a shelf",
+    contract=contract('collage-living-room', signature_box=signature_box, marks_box=marks_box, zoom_pivot=zoom_pivot),
 )
 def living_room(cv: Canvas, parent) -> object:
     g = cv.group(parent, cv.uid("g"))
@@ -300,6 +305,7 @@ def living_room(cv: Canvas, parent) -> object:
     "location",
     "collage-cafe",
     summary="A café: painted brick, a chalk menu, two glowing pendant lamps, the cactus on the counter shelf",
+    contract=contract('collage-cafe', signature_box=signature_box, marks_box=marks_box, zoom_pivot=zoom_pivot),
 )
 def cafe(cv: Canvas, parent) -> object:
     g = cv.group(parent, cv.uid("g"))
@@ -335,6 +341,7 @@ def cafe(cv: Canvas, parent) -> object:
     "location",
     "collage-newsroom",
     summary="A TV newsroom: blue gradient, a spinning-globe graphic, light streaks, the cactus on the anchor's shelf",
+    contract=contract('collage-newsroom', signature_box=signature_box, marks_box=marks_box, zoom_pivot=zoom_pivot),
 )
 def newsroom(cv: Canvas, parent) -> object:
     g = cv.group(parent, cv.uid("g"))
@@ -360,6 +367,7 @@ def newsroom(cv: Canvas, parent) -> object:
     "collage-therapy",
     summary="A therapist's office: bookshelf, framed diploma, window blinds, a "
     "rubber plant and the cactus on the books",
+    contract=contract('collage-therapy', signature_box=signature_box, marks_box=marks_box, zoom_pivot=zoom_pivot),
 )
 def therapy(cv: Canvas, parent) -> object:
     g = cv.group(parent, cv.uid("g"))
@@ -387,6 +395,7 @@ def therapy(cv: Canvas, parent) -> object:
     "location",
     "collage-stage",
     summary="The BOWLHEADS stage: a candy sky, a rainbow, sparkles, a tiled floor and the cactus on a floating shelf",
+    contract=contract('collage-stage', signature_box=signature_box, marks_box=marks_box, zoom_pivot=zoom_pivot),
 )
 def stage(cv: Canvas, parent) -> object:
     g = cv.group(parent, cv.uid("g"))
@@ -415,6 +424,7 @@ def stage(cv: Canvas, parent) -> object:
     "collage-bathroom",
     summary="A family bathroom: two-tone tiles, a mirror with a sheen, a striped shower curtain, a towel on its rail "
     "and the cactus on the shelf above the sink",
+    contract=contract('collage-bathroom', signature_box=signature_box, marks_box=marks_box, zoom_pivot=zoom_pivot),
 )
 def bathroom(cv: Canvas, parent) -> object:
     g = cv.group(parent, cv.uid("g"))
@@ -450,6 +460,7 @@ def bathroom(cv: Canvas, parent) -> object:
     "collage-bedroom",
     summary="A bedroom at night: dark blue wall, a moonlit window, a padded headboard, pillows and the cactus on a "
     "wall shelf",
+    contract=contract('collage-bedroom', signature_box=signature_box, marks_box=marks_box, zoom_pivot=zoom_pivot),
 )
 def bedroom(cv: Canvas, parent) -> object:
     g = cv.group(parent, cv.uid("g"))
@@ -477,6 +488,7 @@ def bedroom(cv: Canvas, parent) -> object:
     "collage-supermarket",
     summary="A supermarket aisle: strip lights, shelves of plain paper packets with price tags, and the cactus on an "
     "end shelf",
+    contract=contract('collage-supermarket', signature_box=signature_box, marks_box=marks_box, zoom_pivot=zoom_pivot),
 )
 def supermarket(cv: Canvas, parent) -> object:
     g = cv.group(parent, cv.uid("g"))
@@ -513,6 +525,7 @@ def supermarket(cv: Canvas, parent) -> object:
     "collage-dining-room",
     summary="A dining room: sage wallpaper, a dusk window, a sideboard with plates and a laid table's cloth, the "
     "cactus on a shelf",
+    contract=contract('collage-dining-room', signature_box=signature_box, marks_box=marks_box, zoom_pivot=zoom_pivot),
 )
 def dining_room(cv: Canvas, parent) -> object:
     g = cv.group(parent, cv.uid("g"))
@@ -544,6 +557,7 @@ def dining_room(cv: Canvas, parent) -> object:
     "collage-bus-stop",
     summary="A bus stop in the morning: pale sky, a row of far buildings, the shelter's glass and bench, the cactus "
     "on the shelter's ledge",
+    contract=contract('collage-bus-stop', signature_box=signature_box, marks_box=marks_box, zoom_pivot=zoom_pivot),
 )
 def bus_stop(cv: Canvas, parent) -> object:
     g = cv.group(parent, cv.uid("g"))
@@ -624,7 +638,12 @@ SETS: dict[str, Callable[[Canvas, object], object]] = {
 
 
 # -- props ------------------------------------------------------------------------------------------------------------
-@register("prop", "collage-sign", summary="A paper card with words on it, tilted, with a drop shadow")
+@register(
+    "prop",
+    "collage-sign",
+    summary="A paper card with words on it, tilted, with a drop shadow",
+    contract=contract('collage-sign'),
+)
 def sign(
     cv: Canvas,
     parent,
@@ -647,7 +666,12 @@ def sign(
     return g
 
 
-@register("prop", "collage-chart", summary="A paper bar chart: bars rising to the given fractions")
+@register(
+    "prop",
+    "collage-chart",
+    summary="A paper bar chart: bars rising to the given fractions",
+    contract=contract('collage-chart'),
+)
 def chart(
     cv: Canvas, parent, x: float, y: float, w: float, h: float, values: Sequence[float], colour: str = "#e94f37"
 ) -> object:
@@ -672,7 +696,12 @@ def chart(
     return g
 
 
-@register("prop", "collage-tv", summary="A paper TV playing BOWLHEADS: a tiny glossy Flush in the screen")
+@register(
+    "prop",
+    "collage-tv",
+    summary="A paper TV playing BOWLHEADS: a tiny glossy Flush in the screen",
+    contract=contract('collage-tv'),
+)
 def tv(cv: Canvas, parent, x: float, y: float, w: float) -> object:
     """A TV ``w`` wide at ``x, y`` (top-left), its screen showing Flush from :mod:`srstudio.collage`."""
     h = w * 0.66
@@ -719,6 +748,7 @@ CALL_BOX = (540.0 - CALL_STEP - CALL_R, CALL_Y - CALL_R, 540.0 + CALL_STEP + CAL
     "prop",
     "collage-call-buttons",
     summary="A video call's buttons over the picture: mute and camera in grey, the red hang-up between them",
+    contract=contract('collage-call-buttons'),
 )
 def call_buttons(cv: Canvas, parent) -> object:
     """Three paper buttons across :data:`CALL_BOX`: what turns a shot into the other side of a video call. No

@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0.0",
+  "generated_by": {
+    "model": "GPT-6",
+    "tool": "OpenAI Codex"
+  },
+  "source_commit": "a5e9609e670a643be1c84d3761e124ed7aa3dfa3",
+  "scene_sha256": {
+    "soft-park": "c07c5ef987664db6620bff34a250639f160688d95e5b55bf8e72bb7ad5d918c0",
+    "soft-bedroom": "6c22ab4792ec92e4862cd1233be6b7265dbef8e1a30bfa01e79198e865299796",
+    "soft-playroom": "e22bde955b5561057767e11cbae540398a00807995adea1c2e57c67d46e82bd6",
+    "soft-front-room": "e296e77c279f274782d6cefeb2087060ef6ebce3d08b1329811a89e6c171a5d4",
+    "soft-wall-clock": "e179d4e630172c1600646af3e02cf0e92c1a83359a8958afd4933f5fcb94079f",
+    "soft-picture-book": "93451552fc15bb3a3430fc09b70a8acbbc8fa31953a4b1a708e25651ffad04ea",
+    "soft-bedside-lamp": "f397e16236b0745026ead104daa58d895bdaa71025ac7796978707db2c8db441",
+    "soft-open-briefcase": "a2c685785dde1afafe2f42d7b20dbfd6860f7427cf424d15dbf7c1de9aa1298b",
+    "soft-handshake": "520ee230f2539dd8d2c1281219a45fa4053a8b19be88d007519ddfc4d12c2173",
+    "soft-quilt-pull": "7074f96c854e468b6891c591e6c26d77b6baeca1de5515452d7d8b44122ec354",
+    "soft-door": "26d122c9f8ab6d9ff564f6bf7a9b73becb8a8b3aff6b0d32117193f479ffe46f",
+    "soft-mop": "a86824b63c49513d2819877cea17521082bca004e9a9877566c92ecfbb013b52",
+    "soft-closet": "c14ac53256402c27f8194e4288dc37b07a0c1c6604edd4f481905935602d3d97",
+    "soft-mug": "ab8b1c3eada56ca8477cd4ac5c69aa72443fd8e962f1798a3a4306030dc16891",
+    "soft-mail-screen": "515fc0b96caf68b8d86ba0fe150bcbbce99bbc22c1e9fb89b074fa5f8e80e0e8",
+    "soft-mail-list": "44a0111c88fc981ce30316eb8294479fd6afe85f1ca17ee2c25303d8cbc8c596",
+    "soft-call-screen": "f843db1bf3fd1cca05997004cd7fec1c9a85a75d80c80634a9404e4fa547be72",
+    "soft-star-card": "993cce370c629b4a4916219a16986768152fd0d4d5ef0635b95cea95b754a703",
+    "soft-battery-screen": "643b59c5e95184ab9064978db81e6800bfef21c437ab0a86556c930d0d66505a"
+  }
+}

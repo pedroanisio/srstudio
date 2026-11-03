@@ -10,6 +10,7 @@ from __future__ import annotations
 import random
 from collections.abc import Sequence
 
+from . import _counter_store_contracts as family_contracts
 from . import checks, locations, look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -47,7 +48,13 @@ def _check_scale(scale) -> None:
     checks.positive(scale, CutoutStoreError, f"scale must be a positive number, got {scale!r}")
 
 
-@register("prop", "hand-basket", style="cutout", summary="A very small red wire shopping basket, with a handle")
+@register(
+    "prop",
+    "hand-basket",
+    style="cutout",
+    summary="A very small red wire shopping basket, with a handle",
+    contract=family_contracts.contract('hand-basket'),
+)
 def hand_basket(cv: Canvas, parent, x=540, y=1300, *, scale: float = 1.0, id: str = "hand-basket"):
     """The foot's middle stands on (``x``, ``y``), 240 wide at scale 1."""
     _check_scale(scale)
@@ -67,6 +74,8 @@ def hand_basket(cv: Canvas, parent, x=540, y=1300, *, scale: float = 1.0, id: st
     "shopping-cart",
     style="cutout",
     summary="A store cart seen from the front, chrome wire on small wheels; goods stand inside it",
+    contract=family_contracts.contract('shopping-cart'),
+    slots=('contents',),
 )
 def shopping_cart(
     cv: Canvas, parent, x=540, y=1500, *, contents: Slot = None, scale: float = 1.0, id: str = "shopping-cart"
@@ -92,7 +101,13 @@ def shopping_cart(
     return g
 
 
-@register("prop", "table-lamp", style="cutout", summary="A table lamp with a pleated shade")
+@register(
+    "prop",
+    "table-lamp",
+    style="cutout",
+    summary="A table lamp with a pleated shade",
+    contract=family_contracts.contract('table-lamp'),
+)
 def table_lamp(cv: Canvas, parent, x=540, y=1300, *, scale: float = 1.0, id: str = "table-lamp"):
     """Its foot's middle stands on (``x``, ``y``), 300 tall at scale 1."""
     _check_scale(scale)
@@ -106,7 +121,13 @@ def table_lamp(cv: Canvas, parent, x=540, y=1300, *, scale: float = 1.0, id: str
     return g
 
 
-@register("prop", "taper-candles", style="cutout", summary="Three tall candles bound together with string")
+@register(
+    "prop",
+    "taper-candles",
+    style="cutout",
+    summary="Three tall candles bound together with string",
+    contract=family_contracts.contract('taper-candles'),
+)
 def taper_candles(cv: Canvas, parent, x=540, y=1300, *, scale: float = 1.0, id: str = "taper-candles"):
     """Their foot's middle stands on (``x``, ``y``), 260 tall at scale 1."""
     _check_scale(scale)
@@ -119,7 +140,13 @@ def taper_candles(cv: Canvas, parent, x=540, y=1300, *, scale: float = 1.0, id: 
     return g
 
 
-@register("prop", "step-ladder", style="cutout", summary="An aluminium step ladder, folded, with four treads")
+@register(
+    "prop",
+    "step-ladder",
+    style="cutout",
+    summary="An aluminium step ladder, folded, with four treads",
+    contract=family_contracts.contract('step-ladder'),
+)
 def step_ladder(cv: Canvas, parent, x=540, y=1300, *, height: float = 760, scale: float = 1.0, id: str = "step-ladder"):
     """Its foot's middle stands on (``x``, ``y``), ``height`` tall."""
     _check_scale(scale)
@@ -134,7 +161,12 @@ def step_ladder(cv: Canvas, parent, x=540, y=1300, *, height: float = 760, scale
 
 
 @register(
-    "prop", "kayak", style="cutout", summary="A long yellow sit-in kayak seen from the side, with its cockpit open"
+    "prop",
+    "kayak",
+    style="cutout",
+    summary="A long yellow sit-in kayak seen from the side, with its cockpit open",
+    contract=family_contracts.contract('kayak'),
+    slots=('rider',),
 )
 def kayak(
     cv: Canvas,
@@ -166,7 +198,13 @@ def kayak(
     return g
 
 
-@register("prop", "paddle", style="cutout", summary="A double-bladed kayak paddle on a long black shaft")
+@register(
+    "prop",
+    "paddle",
+    style="cutout",
+    summary="A double-bladed kayak paddle on a long black shaft",
+    contract=family_contracts.contract('paddle'),
+)
 def paddle(
     cv: Canvas,
     parent,
@@ -193,7 +231,13 @@ def paddle(
     return g
 
 
-@register("prop", "life-ring", style="cutout", summary="A red and white life ring")
+@register(
+    "prop",
+    "life-ring",
+    style="cutout",
+    summary="A red and white life ring",
+    contract=family_contracts.contract('life-ring'),
+)
 def life_ring(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str = "life-ring"):
     """Its middle is (``x``, ``y``), 300 across at scale 1."""
     _check_scale(scale)
@@ -212,6 +256,7 @@ def life_ring(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str =
     "dark-eyes",
     style="cutout",
     summary="A pair of eyes in total darkness, white with small pupils, blinking on cue",
+    contract=family_contracts.contract('dark-eyes'),
 )
 def dark_eyes(
     cv: Canvas,
@@ -255,6 +300,7 @@ def dark_eyes(
     "shelf-goods",
     style="cutout",
     summary="Store shelves in a long run, packed with coloured boxes, sliding past on cue",
+    contract=family_contracts.contract('shelf-goods'),
 )
 def shelf_goods(
     cv: Canvas,
@@ -297,6 +343,7 @@ def shelf_goods(
     "store-aisle",
     style="cutout",
     summary="A big-box store aisle: long shelves out of focus sliding past, a pale floor, strip lights",
+    contract=family_contracts.contract('store-aisle'),
 )
 def store_aisle(
     cv: Canvas,
@@ -328,7 +375,11 @@ def store_aisle(
 
 
 @register(
-    "prop", "light-switch", style="cutout", summary="A wall light switch on a white plate, whose rocker flips on cue"
+    "prop",
+    "light-switch",
+    style="cutout",
+    summary="A wall light switch on a white plate, whose rocker flips on cue",
+    contract=family_contracts.contract('light-switch'),
 )
 def light_switch(
     cv: Canvas, parent, x=160, y=860, *, flips: Sequence[float] = (), scale: float = 1.0, id: str = "light-switch"
@@ -358,6 +409,7 @@ def light_switch(
     "long-receipt",
     style="cutout",
     summary="A till receipt printing out and running on down the frame, lines of items on it",
+    contract=family_contracts.contract('long-receipt'),
 )
 def long_receipt(
     cv: Canvas,
@@ -390,6 +442,7 @@ def long_receipt(
     "checkout-lane",
     style="cutout",
     summary="A supermarket checkout counter across the foot of the frame, its black belt running",
+    contract=family_contracts.contract('checkout-lane'),
 )
 def checkout_lane(cv: Canvas, parent, y=1130, *, running: tuple[float, float] = (0.0, 1.0), id: str = "checkout-lane"):
     """The counter's far edge is at ``y``; the belt's marks run for the span ``running``."""

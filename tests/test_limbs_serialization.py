@@ -7,7 +7,7 @@ import pytest
 
 from srstudio.limbs.model import HUMAN, ArmProfile, LimbError
 from srstudio.limbs.motion import Action, Motion
-from srstudio.limbs.serialization import load_motion, motion_dict, parse_motion, save_motion
+from srstudio.limbs.serialization import SCHEMA, load_motion, motion_dict, parse_motion, save_motion
 
 
 def document():
@@ -112,7 +112,7 @@ def test_an_unterminated_string_of_escaped_quotes_is_scanned_once_and_rejected(t
     "original,duplicated",
     [
         ('"reach_policy": "strict"', '"reach_policy": "clamp", "reach_policy": "strict"'),
-        ('"schema": "srstudio.limbs/1.1.0"', '"schema": "srstudio.limbs/1.1.0", "schema": "srstudio.limbs/1.1.0"'),
+        (f'"schema": "{SCHEMA}"', f'"schema": "{SCHEMA}", "schema": "{SCHEMA}"'),
         ('"upper": 1.0', '"upper": 1.0, "upper": 1.0'),
     ],
 )

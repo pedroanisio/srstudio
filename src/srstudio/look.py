@@ -19,7 +19,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from . import checks, fonts
+from . import breaks, checks, fonts
 from .canvas import Canvas
 from .errors import SrstudioError
 
@@ -36,9 +36,14 @@ class FitError(SrstudioError, ValueError):
     """A text does not fit its box: a word wider than the box, or more lines than it holds."""
 
 
-def wrap(font: bytes, text: str, size: float, width: float, max_lines: int) -> list[str]:
+def wrap(
+    font: bytes, text: str, size: float, width: float, max_lines: int, *, keep_together: bool = False
+) -> list[str]:
     """``text`` broken greedily into lines the font draws within ``width`` at ``size``; explicit newlines are
-    kept. :class:`FitError` when a word alone is too wide or the text needs more than ``max_lines`` lines."""
+    kept. :class:`FitError` when a word alone is too wide or the text needs more than ``max_lines`` lines. With
+    ``keep_together`` (ADR 0173) no line ends after a weak word, inside a number or inside a name while another
+    layout fits in ``max_lines``; a text with explicit newlines keeps its own. It is off by default, so a published
+    reel's lines stay as they were drawn."""
     lines: list[str] = []
     for para in text.split("\n"):
         line = ""
@@ -56,6 +61,10 @@ def wrap(font: bytes, text: str, size: float, width: float, max_lines: int) -> l
         lines.append(line)
     if len(lines) > max_lines:
         raise FitError(f"{text!r} needs {len(lines)} lines at {size:g} px; the box holds {max_lines}")
+    if keep_together and "\n" not in text:
+        kept = breaks.lay_out(text.split(), lambda line: fonts.text_width(font, line, size) <= width, max_lines)
+        if kept is not None:
+            return kept
     return lines
 
 
@@ -134,13 +143,18 @@ def _overscan(cv: Canvas, radius: float) -> dict[str, float]:
     return {"x": cx, "y": cy, "anchorX": cx, "anchorY": cy, "scaleX": scale, "scaleY": scale}
 
 
-def depth(cv: Canvas, parent, name: str, radius: float, *, overscan: bool = False):
+def depth(cv: Canvas, parent, name: str, radius: float, *, overscan: bool = False, moving: bool = False):
     """A group in ``parent`` thrown out of focus by a ``radius`` px blur (the effect ``name``): a set's far plane. On
     a reel with ``bleed`` it is drawn on a :func:`sheet`, and ``overscan`` also grows it past the frame: for a far plane
-    painted exactly to the frame, whose bottom edge is hidden if it stops above the frame's centre."""
+    painted exactly to the frame, whose bottom edge is hidden if it stops above the frame's centre. A far plane that
+    is ``moving`` stays off the sheet: its bounds change every frame, and the sheets they ask for run the GPU out of
+    memory over an encode. Lay a sharp plate of its own colour under it instead, so its edge shows no page."""
     if not (checks.number(radius) and radius > 0):
         raise LookError(f"a far plane's blur radius must be positive, got {radius}")
-    far = cv.group(parent, cv.uid("g"), **sheet(cv), **(_overscan(cv, radius) if overscan else {}))
+    if moving:
+        far = cv.group(parent, cv.uid("g"))
+    else:
+        far = cv.group(parent, cv.uid("g"), **sheet(cv), **(_overscan(cv, radius) if overscan else {}))
     cv.apply(far, cv.effect(name, "blur", radius=radius))
     return far
 

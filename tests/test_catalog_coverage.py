@@ -10,10 +10,13 @@ listed below. A declared part can start to be used later; the build then still s
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from collections.abc import Collection
 from pathlib import Path
 
 from srstudio import (
+    pedro,  # noqa: F401 (importing it registers Pedro, which this file declares)
     rafa_host,  # noqa: F401 (importing it registers Rafa's parts, which this file declares)
     registry,
 )
@@ -37,9 +40,12 @@ REPLACED_ON_SCREEN = ["news-gus@2", "news-vera@2"]
 NO_EPISODE = [
     "news-gus@4",
     "news-gus@5",
+    "news-gus@6",
     "news-phone@2",
     "news-vera@4",
     "news-vera@5",
+    "news-vera@6",
+    "pedro",
     "rafa",
     "rafa-bills",
     "rafa-breakroom",
@@ -49,10 +55,29 @@ NO_EPISODE = [
     "rafa-phone",
     "rafa-tote",
     "show-bug",
+    "smallprint-card",
+    "smallprint-onion",
+    "smallprint-paper",
+    "smallprint-roll",
+    "smallprint-stamp",
+    "smallprint-tears",
+    "smallprint-tower",
     "toon-bento",
+    "toon-bento@2",
     "toon-counter",
+    "toon-field-notebook",
+    "toon-lyra",
+    "toon-moon-globe",
+    "toon-pipe",
+    "toon-planetarium-salon",
     "toon-receipt",
+    "toon-saturn-model",
+    "toon-signal-clicker",
+    "toon-starlight-terrace",
     "toon-take-a-number",
+    "toon-telescope",
+    "wire-car",
+    "wire-jet",
 ]
 NOT_SHOWN: dict[str, str] = {
     **dict.fromkeys(PACKAGE_ONLY, "only a packaged reel uses it; the packages' cards stay under #/pacotes"),
@@ -88,3 +113,15 @@ def test_a_part_with_no_item_and_no_declaration_is_a_gap_and_so_is_a_declaration
     assert missing == ["b"]  # registered, not shown, not declared
     assert stale == ["a", "gone"]  # declared though shown, declared though unregistered
     assert coverage_gaps({"a"}, {"a", "c"}, {"c"}) == ([], [])  # shown or declared: no gap
+
+
+def test_importing_the_library_registers_every_recorded_part():
+    """Run apart from the suite, whose collection imports every module and so hides a part nothing else imports."""
+    code = (
+        "import srstudio\n"
+        "from srstudio import parts, registry\n"
+        "known = {e.name for e in registry.entries()}\n"
+        "print(sorted(set(parts.load()) - known))\n"
+    )
+    done = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True)
+    assert done.stdout.strip() == "[]"

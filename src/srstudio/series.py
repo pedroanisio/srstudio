@@ -96,8 +96,8 @@ class Reel:
     still: float = 0.0  # seconds the opening holds still before the first take (sp-hook_motion arm A)
     crf: str | None = None  # None: the series' crf; a longer reel can ask for a higher one to stay under a size cap
     bleed: bool = False  # far planes blurred past the frame's edge (srstudio.look.sheet): every new reel sets it
-    bed: bool = True  # False: no music under this reel, whatever its series scores its others with
-    loudness: str | None = None  # the master's integrated LUFS; None: its style's
+    bed: bool = True  # False: this reel goes without the series' music bed
+    loudness: str | None = None  # None: the style's; the mix's integrated target, in LUFS
     foley: Foley | None = None  # the sounds under the takes, written from the recording when the reel is built
     series: ClassVar[Series | None] = None
 
@@ -128,16 +128,15 @@ class Reel:
         if unknown:
             raise SeriesError(f"reel {self.slug!r}: no voice for {unknown[0]!r}; the series has {sorted(s.voices)}")
         names = " and ".join(", ".join(s.voices[r].name for r in roles).rsplit(", ", 1))
-        bed = s.bed if self.bed else None
-        scored = " Instrumental music bed composed with the ElevenLabs Music API." if bed is not None else ""
+        music = "Instrumental music bed composed with the ElevenLabs Music API." if self.bed else "No music."
         return Script(
             title=self.title,
             seed=s.seed,
             voices={r: s.voices[r] for r in roles},
             settings={r: s.settings[r] for r in roles},
             takes=self.takes,
-            voice_note=f"ElevenLabs premade voices {names}; no reference-voice cloning.{scored}",
-            bed=bed,
+            voice_note=f"ElevenLabs premade voices {names}; no reference-voice cloning. {music}",
+            bed=s.bed if self.bed else None,
             font=s.font,
             still=self.still,
         )

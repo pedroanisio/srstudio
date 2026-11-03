@@ -233,24 +233,64 @@ def test_the_style_value(tmp_path):
     assert STICK.facts()["parts"] == [
         "stick",
         "stick_airport",
+        "stick_bed",
         "stick_car",
         "stick_door",
         "stick_flat",
         "stick_gym",
+        "stick_holiday",
         "stick_home",
         "stick_interview",
+        "stick_odds",
         "stick_office",
         "stick_porch",
+        "stick_roadtrip",
         "stick_satnav",
         "stick_school",
         "stick_shop",
         "stick_street",
+        "stick_table",
         "stick_windshield",
     ]
     parts = {e.name for e in registry.entries(style="stick") if e.style == "stick"}
     assert parts == {
+        "stick-blinker",
+        "stick-clipboard",
+        "stick-folded-bedding",
+        "stick-wall-brackets",
+        "stick-duvet",
+        "stick-eye-mask",
+        "stick-lights-low",
+        "stick-rear-view",
+        "stick-recorder",
+        "stick-swim-ring",
         "stick-room",
         "stick-yard",
+        "stick-wardrobe",
+        "stick-screws",
+        "stick-planks",
+        "stick-manual-page",
+        "stick-drill",
+        "stick-caller",
+        "stick-box",
+        "stick-receipt",
+        "stick-wheelie-bin",
+        "stick-trash-truck",
+        "stick-sparks",
+        "stick-slipper",
+        "stick-queue",
+        "stick-duffel",
+        "stick-book",
+        "stick-aisle",
+        "stick-xray",
+        "stick-spoon",
+        "stick-scan-belt",
+        "stick-robe",
+        "stick-plate",
+        "stick-foil-parcel",
+        "stick-foil-note",
+        "stick-poster",
+        "stick-headset",
         "stick-figure",
         "stick-hook",
         "stick-headline",
@@ -262,7 +302,6 @@ def test_the_style_value(tmp_path):
         "stick-hall",
         "stick-front-door",
         "stick-tow-truck",
-        "stick-clipboard",
         "stick-rough-road",
         "stick-nav-insert",
         "stick-interview-room",
@@ -335,6 +374,13 @@ def test_the_style_value(tmp_path):
         "stick-handset",
         "stick-key",
         "stick-reply-screen",
+        "stick-holiday-tree",
+        "stick-tree-star",
+        "stick-light-string",
+        "stick-step-stool",
+        "stick-pumpkin",
+        "stick-smart-speaker",
+        "stick-worktop",
     }
 
 
@@ -684,6 +730,44 @@ def test_a_look_with_a_neck_joins_its_head_to_its_torso_and_the_default_keeps_it
 def test_a_neck_is_true_or_false():
     with pytest.raises(stick.StickDataError):
         stick.check_look(stick.Look(neck="yes"))
+
+
+def _eye_canvas() -> Canvas:
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="24", duration=1.0, background="#d9d2c4")
+    return Canvas(scene, DAYLIGHT, font_asset="inter", namer=flat_counter("n"))
+
+
+SHUT_EYE = b"Q 0 9 15 0"
+
+
+def test_a_peek_shuts_the_eye_away_from_x_and_opens_the_other():
+    cv = _eye_canvas()
+    stick._eyes(cv, cv.comp, stick.Face("peek"))
+    drawn = cv.scene.to_bytes(layout="pretty")
+    assert drawn.count(SHUT_EYE) == 1
+    assert drawn.index(SHUT_EYE) < drawn.index(b"ellipse"), "the shut eye is the one at -x"
+
+
+def test_a_peek_is_a_face_the_rig_draws_and_a_blink_leaves_it_alone():
+    assert "peek" in stick.EYES
+    cv = _eye_canvas()
+    stick.rig(cv, cv.comp, [stick.RigKey(0, "lean", stick.Face("peek"))], 1.0, blinks=(0.5,), flip=True)
+    assert cv.scene.to_bytes(layout="pretty").count(SHUT_EYE) == 1
+
+
+def test_a_wink_is_not_a_known_eye():
+    with pytest.raises(stick.StickDataError, match="eyes"):
+        stick.check_face(stick.Face("wink"))
+
+
+def test_a_peek_back_opens_the_eye_a_figure_that_is_not_flipped_turns_left():
+    cv = _eye_canvas()
+    stick._eyes(cv, cv.comp, stick.Face("peek-back"))
+    drawn = cv.scene.to_bytes(layout="pretty")
+    assert drawn.count(SHUT_EYE) == 1
+    assert drawn.index(b"ellipse") < drawn.index(SHUT_EYE), "the shut eye is the one at +x"
+    assert "peek-back" in stick.EYES
 
 
 def test_hand_at_is_where_the_hand_lands_after_the_figure_is_placed():

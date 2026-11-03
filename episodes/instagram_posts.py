@@ -33,19 +33,31 @@ from __future__ import annotations
 import argparse
 import os
 import shutil
+from collections.abc import Mapping
+from dataclasses import replace
 from pathlib import Path
 
 from srstudio import (
+    anatomy_gate,
     auto_enhance,
+    bible,
+    bible_check,
+    bible_lock,
+    bible_rig,
     caption_gate,
     comedy_floor,
     figure_gates,
     fonts,
     frame_gates,
     outbox,
+    overlay_gate,
+    registry,
     releases,
+    send_gate,
     show_gate,
     show_numbers,
+    strict_gate,
+    text_rules,
 )
 from srstudio.social import (
     MANIFEST,
@@ -68,13 +80,16 @@ THUMBNAIL_FONT = fonts.GoogleFont("Anton", 400)  # a condensed display face: two
 
 REPO = Path(__file__).resolve().parent.parent  # its history holds the enhancements, its settings the mode (ADR 0056)
 RELEASES = releases.load(Path(__file__).resolve().parent / "posts")  # one file per episode: posts/<slug>.py
+STRICT = Path(__file__).resolve().parent / "strict"  # strict/<slug>.json: a reel's findings proven false (ADR 0078)
+BIBLE_DIR = Path(__file__).resolve().parent.parent / "bible"  # the cast bible a first delivery is checked against
 GRANDFATHERED = releases.grandfathered(Path(__file__).resolve().parent / "posts")  # published before the caption gate
+HELD = releases.held(Path(__file__).resolve().parent / "posts", RELEASES)  # stopped before a first delivery (ADR 0140)
 POSTS: dict[str, InstagramPost] = {slug: r.post for slug, r in RELEASES.items()}
 VIDEOS = {slug: r.video_name for slug, r in RELEASES.items()}  # project slug -> its rendered video's file name
 COVER_SCENES = {slug: r.scene_file for slug, r in RELEASES.items() if r.cover}  # scenes with a cover variant
 FROZEN = {r.video_name: r.frozen for r in RELEASES.values() if r.frozen}  # video name -> accepted drawing
 AB = {
-    r.video_name: outbox.Arm(r.tags.test, r.tags.arm, r.tags.recipient, r.tags.to)
+    r.video_name: outbox.Arm(r.tags.test, r.tags.arm, r.tags.recipient, r.tags.to, r.tags.also)
     for r in RELEASES.values()
     if r.tags and r.tags.test
 }  # A/B arms
@@ -88,6 +103,21 @@ PINS = {slug: r.parts or {} for slug, r in RELEASES.items()}  # project slug -> 
 
 def _beside(renders: Path) -> Path:
     return Path(renders).resolve().parent / "episodes"
+
+
+def numbers(renders: Path) -> dict[str, show_numbers.Claim]:
+    """:data:`NUMBERS` with each reel's brief and posting days, which only the ledger beside ``renders`` holds
+    (ADR 0080). With no numbered reel the ledger is not read."""
+    if not NUMBERS:
+        return {}
+    held = show_numbers.read(show_numbers.ledger_path(renders)).reels
+    ledger = {VIDEOS[slug]: c for slug, c in held.items() if slug in VIDEOS}
+    return {
+        name: replace(claim, brief=kept.brief, post_by=kept.post_by, not_before=kept.not_before)
+        if (kept := ledger.get(name))
+        else replace(claim, brief="")
+        for name, claim in NUMBERS.items()
+    }
 
 
 def items(renders: Path, episodes: Path | None = None) -> dict[str, Item]:
@@ -108,12 +138,49 @@ def caption_drift(renders: Path, *, episodes: Path | None = None, only: list[str
     return caption_gate.check_releases(RELEASES, Path(renders), episodes, grandfathered=GRANDFATHERED, only=only)
 
 
+def bible_findings(first: dict[str, str], chosen: dict[str, releases.Release], episodes: Path) -> dict:
+    """What the cast bible (ADR 0069) finds in each first delivery: its names, drawings and voices, and the base rig
+    of a recurring Stick figure. A bible that cannot be read refuses the delivery: a canon check that passes because
+    its book is missing would be a control that cannot fail."""
+    if not first:
+        return {}
+    try:
+        library = bible.load(BIBLE_DIR)
+        bible_lock.check(BIBLE_DIR)  # a persona edited without a new version is drift, and nothing is delivered on it
+    except bible.BibleError as exc:
+        raise DeliveryError(f"the cast bible cannot be read: {exc}") from exc
+    known = {e.name for e in registry.entries("character")}
+    scripts = Path(__file__).resolve().parent  # a Stick reel's builder is run to see the looks it draws
+    return {
+        slug: [
+            *bible_check.check_release(library, chosen[slug], episodes, characters=known),
+            *bible_rig.check_release(chosen[slug], episodes, scripts),
+        ]
+        for slug in sorted(first)
+    }
+
+
+def held_videos() -> set[str]:
+    """The rendered names of the reels :data:`HELD` stopped."""
+    return {r.video_name for slug, r in RELEASES.items() if slug in HELD}
+
+
 def _delivering(out: Path, renders: Path, font: Path, only: list[str] | None) -> set[str]:
     """The videos a delivery would write: those named, else those that drifted, or all if the manifest is unreadable."""
     if only:
         return set(only)
-    stale = {d.name for d in check_delivery(items(renders), out, font=font, frozen=FROZEN)}
-    return {r.video_name for r in RELEASES.values()} if "*" in stale else stale
+    held = held_videos()
+    stale = {d.name for d in check_delivery(items(renders), out, font=font, frozen=FROZEN, held=held)}
+    return {r.video_name for r in RELEASES.values()} - held if "*" in stale else stale
+
+
+def send_drift(renders: Path, chosen: Mapping[str, releases.Release]) -> list[Drift]:
+    """The bait in ``chosen``, for the reels on the send test by their tags or by the brief in the ledger."""
+    try:
+        held = show_numbers.read(show_numbers.ledger_path(renders)).reels
+    except show_numbers.NumberError as exc:
+        raise DeliveryError(str(exc)) from None
+    return send_gate.bait_drift(chosen, _beside(renders), {slug: claim.brief for slug, claim in held.items()})
 
 
 def write_all(
@@ -122,9 +189,16 @@ def write_all(
     """Deliver every post whose video drifted (or only the ``only`` ones) and record the delivery; returns the
     folders written. A video the caption gate refuses, a release that does not pin what it draws, or captions that
     print over each other, or a first delivery with no enhancement behind it (ADR 0056), under the comedy floor
-    (ADR 0064), over the hashtag limit (ADR 0065), refused by a frame gate (ADR 0073) or out of the show's look
-    (ADR 0074), is a :class:`DeliveryError` before anything is written. A video in the manifest is past all of these:
-    what was published stays as it went out."""
+    (ADR 0064), over the hashtag limit (ADR 0065), with bait on the send test (ADR 0080), refused by a frame gate
+    (ADR 0073), out of the show's look (ADR 0074), with a --strict finding not proven false (ADR 0078) or one the cast
+    bible refuses (ADR 0069), is a :class:`DeliveryError` before anything is written. A video in the manifest is past
+    all of these: what was published stays as it went out. A reel on the hold list (ADR 0140) is passed over, and
+    naming one is a :class:`DeliveryError`."""
+    stopped = {
+        r.video_name: HELD[slug] for slug, r in RELEASES.items() if slug in HELD and r.video_name in (only or ())
+    }
+    if stopped:
+        raise DeliveryError("; ".join(f"held, not delivered: {name}: {why}" for name, why in sorted(stopped.items())))
     refused = caption_drift(renders, only=only)
     if refused:
         raise DeliveryError("the caption gate refuses: " + "; ".join(str(d) for d in refused))
@@ -133,18 +207,28 @@ def write_all(
     refused = [
         *releases.unpinned(chosen, _beside(renders), delivering),
         *releases.doubled_captions(chosen, _beside(renders), delivering),
+        *releases.caption_on_cover(chosen, _beside(renders), delivering),
     ]
     if refused:
         raise DeliveryError("; ".join(map(str, refused)))
     done = read_manifest(out)
     first = {r.slug: r.video_name for r in chosen.values() if r.video_name in delivering and r.video_name not in done}
     refuse_hashtags({slug: hashtag_excess(chosen[slug].post.text()) for slug in first})
+    bible_check.refuse(bible_findings(first, chosen, _beside(renders)))
     comedy_floor.refuse({slug: comedy_floor.shortfall(chosen[slug].comedy) for slug in first})
+    refused = send_drift(renders, {slug: chosen[slug] for slug in first})
+    if refused:
+        raise DeliveryError("; ".join(map(str, refused)))
+    frame_gates.refuse(overlay_gate.repeated_lines(chosen, _beside(renders), first.values()))
     frame_gates.refuse(
         [
             *frame_gates.captions_run_together(chosen, _beside(renders), first),
+            *text_rules.caption_defects(chosen, _beside(renders), first),
+            *text_rules.timing_defects(chosen, _beside(renders), first, engine),
             *frame_gates.signature_hidden(chosen, _beside(renders), first, engine),
             *figure_gates.figure_defects(chosen, _beside(renders), first, engine),
+            *anatomy_gate.hand_defects(chosen, _beside(renders), first),
+            *anatomy_gate.body_defects(chosen, _beside(renders), first, engine),
             *show_gate.show_defects(
                 RELEASES,
                 _beside(renders),
@@ -154,18 +238,26 @@ def write_all(
                 show_numbers.ledger_path(renders),
                 font_file(fonts_dir),
             ),
+            *strict_gate.strict_defects(chosen, _beside(renders), renders, first, STRICT),
         ]
     )
     refused = auto_enhance.refused(first, REPO)
     if refused:
         raise DeliveryError("; ".join(map(str, refused)))
-    return publish(items(renders), out, font=font_file(fonts_dir), engine=engine, only=only, frozen=FROZEN)
+    return publish(
+        items(renders), out, font=font_file(fonts_dir), engine=engine, only=only, frozen=FROZEN, held=held_videos()
+    )
 
 
 def check_all(out: Path, renders: Path, *, fonts_dir: Path) -> list[Drift]:
     """Every drift between ``out`` and delivering every post from ``renders`` now, with every missing pin."""
-    drift = check_delivery(items(renders), out, font=font_file(fonts_dir), frozen=FROZEN)
-    return [*releases.unpinned(RELEASES, _beside(renders)), *drift, *caption_drift(renders)]
+    drift = check_delivery(items(renders), out, font=font_file(fonts_dir), frozen=FROZEN, held=held_videos())
+    return [
+        *releases.unpinned(RELEASES, _beside(renders)),
+        *drift,
+        *caption_drift(renders),
+        *send_drift(renders, RELEASES),
+    ]
 
 
 def migrate_all(out: Path, renders: Path, *, fonts_dir: Path, dry_run: bool = False) -> Migration:
@@ -197,7 +289,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{counts} (dry run: nothing written)" if args.dry_run else f"{counts}; {done}")
         return 0
     if args.command == "check":
-        drift = check_all(args.out, args.renders, fonts_dir=args.fonts)
+        try:
+            drift = check_all(args.out, args.renders, fonts_dir=args.fonts)
+        except DeliveryError as exc:
+            raise SystemExit(f"check: {exc}") from None
         for d in drift:
             print(d)
         if FROZEN:

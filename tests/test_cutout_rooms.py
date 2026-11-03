@@ -172,3 +172,29 @@ def test_the_conference_room_passes_the_calls_talk_to_its_speakerphone():
     locations.conference_room(cv, cv.comp, speaker_talk=[(0.2, 0.9)])
     ring = by_id(ET.fromstring(scene.to_bytes()), "location-conference-room-speakerphone-talk")
     assert opacity_keys(ring) == [(0, 0), (0.2, 1), (0.9, 0)]
+
+
+def code_at(root) -> tuple[str | None, str | None]:
+    mark = next(el for el in root.iter() if el.get("id") == "sig-code")
+    return mark.get("x"), mark.get("y")
+
+
+def test_the_reception_keeps_its_code_where_it_was_unless_a_reel_moves_it():
+    scene, cv = signed_canvas()
+    locations.reception(cv, cv.comp)
+    moved_scene, moved_cv = signed_canvas()
+    locations.reception(moved_cv, moved_cv.comp, code_at=(560, 1376))
+    assert code_at(ET.fromstring(scene.to_bytes())) != code_at(ET.fromstring(moved_scene.to_bytes()))
+    fresh_scene, fresh_cv = signed_canvas()
+    locations.reception(fresh_cv, fresh_cv.comp, code_at=locations.RECEPTION_CODE)
+    assert scene.to_bytes() == fresh_scene.to_bytes()
+
+
+def test_a_cup_in_the_air_can_leave_its_contact_shadow_off():
+    def shapes(**options):
+        scene, cv = signed_canvas()
+        props.coffee_cup(cv, cv.group(cv.comp, "held"), 0, 0, **options)
+        return [el for el in ET.fromstring(scene.to_bytes()).iter() if local(el.tag) == "shape"]
+
+    assert len(shapes()) == len(shapes(shadow=True))
+    assert len(shapes(shadow=False)) == len(shapes()) - 1

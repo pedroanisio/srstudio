@@ -10,6 +10,8 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 - Builds on [ADR 0066](0066-talking-head-host-kit.md) (the host kit), [ADR 0020](0020-toon-lip-synced-cast.md) (lip sync)
   and [ADR 0050](0050-organic-head-motion.md) (head motion)
 - Back to the [library README](../../README.md)
+- [ADR 0095](0095-rendered-artifact-cache-identity.md) separates rendered cache keys from the stable drawing
+  digests described here. It adds renderer/font provenance without changing the approved drawing.
 
 ## Context
 

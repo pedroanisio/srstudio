@@ -14,6 +14,7 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Sequence
 
+from . import _drawing_contracts as dc
 from . import checks, look, props, signature
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -27,13 +28,34 @@ class LocationError(SrstudioError, ValueError):
 
 
 def _call(slot: Slot, g):
-    if slot:
+    if slot is not None:
         slot(g)
 
 
+def _check_slots(**slots: object) -> None:
+    """Validate presence without executing callbacks or allocating drawing resources."""
+    for name, slot in slots.items():
+        if slot is not None and not callable(slot):
+            raise LocationError(
+                f'{name} must be a drawing callback or None',
+                code='location.slot',
+                path=name,
+                actual=slot,
+                expected='a callable accepting the supplied Group, or None',
+                remedy='Pass a callback receiving the drawing group; use None to omit this slot.',
+            )
+
+
 def _check_depth(depth) -> None:
-    if depth is not None:
-        checks.positive(depth, LocationError, f"depth is a far-plane blur radius in px above 0, got {depth!r}")
+    if depth is not None and not (checks.number(depth) and depth > 0):
+        raise LocationError(
+            'depth is a far-plane blur radius in px above 0',
+            code='location.depth',
+            path='depth',
+            actual=depth,
+            expected='a finite positive blur radius in pixels, or None',
+            remedy='Pass a positive pixel radius; use None to disable depth blur.',
+        )
 
 
 def _far(cv: Canvas, g, depth: float | None, overscan: bool = False):
@@ -67,7 +89,12 @@ def _refuse_instanced_hand_off(instanced: bool, cactus: Slot):
     if instanced and cactus is not None:
         raise signature.SignatureError(
             "an instanced office draws its desk once for every angle; hand its cactus "
-            "over on the inline drawing (instanced=False)"
+            "over on the inline drawing (instanced=False)",
+            code='location.instanced_cactus',
+            path='instanced',
+            actual=True,
+            expected=False,
+            remedy='Set instanced=False when supplying a cactus callback.',
         )
 
 
@@ -84,6 +111,7 @@ def _office_desk_front(cv: Canvas, g, p, cactus: Slot = None):
 @register(
     "location",
     "office-wide",
+    contract=dc.location('office-wide'),
     summary="Office, wide shot: wall art, plant, desk, laptop, the candidate's back",
     examples=(
         'from srstudio import cast, get\n'
@@ -110,10 +138,18 @@ def office_wide(
     a camera push-in on an instanced angle softens its edges: keep the inline drawing for angles that zoom.
     ``cactus`` draws the desk's cactus instead of the set (ADR 0039); it needs the inline drawing. ``depth`` blurs
     the room behind the desk (wall, art, plant) by that many px; the desk, the cast and the marks stay sharp."""
+    _check_slots(at_desk=at_desk, cactus=cactus)
     _refuse_instanced_hand_off(instanced, cactus)
     _check_depth(depth)
     if instanced and depth is not None:
-        raise LocationError("an instanced office shares its room with every angle; blur its depth inline")
+        raise LocationError(
+            "an instanced office shares its room with every angle; blur its depth inline",
+            code='location.instanced_depth',
+            path='instanced',
+            actual=True,
+            expected=False,
+            remedy='Set instanced=False to blur this room, or omit depth to keep instancing.',
+        )
     p = props.office_paints(cv)
     g = cv.group(parent, id)
     if shots is not None:
@@ -135,6 +171,7 @@ def office_wide(
 @register(
     "location",
     "office-desk",
+    contract=dc.location('office-desk'),
     summary="Office, wide shot without the foreground candidate: whoever sits behind "
     "the desk; chair=False leaves the chair to the slot (to spin it)",
 )
@@ -152,6 +189,7 @@ def office_desk(
 
     As for :func:`office_wide`, keep the inline drawing for an angle the camera zooms into. ``cactus`` draws the
     desk's cactus instead of the set, after ``behind_desk`` and before the desk's front (ADR 0039)."""
+    _check_slots(behind_desk=behind_desk, cactus=cactus)
     _refuse_instanced_hand_off(instanced, cactus)
     p = props.office_paints(cv)
     g = cv.group(parent, id)
@@ -174,6 +212,7 @@ def office_desk(
 @register(
     "location",
     "office-reverse",
+    contract=dc.location('office-reverse'),
     summary="Office, reverse angle on the candidate: warm wall, gray chair, glass of water",
 )
 def office_reverse(
@@ -185,9 +224,11 @@ def office_reverse(
     cactus: Slot = None,
     *,
     depth: float | None = None,
+    chair: bool = True,
 ):
     """``depth`` blurs the wall behind the chair by that many px; the chair, the cast, the desk and the marks stay
-    sharp."""
+    sharp. ``chair=False`` leaves the chair to the slot (to sink it)."""
+    _check_slots(in_chair=in_chair, cactus=cactus)
     _check_depth(depth)
     p = props.office_paints(cv)
     ink = cv.ink
@@ -200,7 +241,8 @@ def office_reverse(
     cv.line(far, 20, 0, 20, 1402, "#ECE0C9", 3)
     for y in [8, 342]:
         cv.path(far, f"M1069 {y + 12} L1086 {y} L1086 {y + 38} L1071 {y + 43}Z", "#A49176", ink, 3)
-    props.chair(cv, g, "gray")
+    if chair:
+        props.chair(cv, g, "gray")
     _call(in_chair, g)
     cv.rect(g, 0, 1399, 1080, 433, p["desk"], ink, 4)
     props.woodgrain(cv, g, 1418, 390, 12)
@@ -232,6 +274,7 @@ MENU_CHARS = 14  # the most characters a line of the café's menu board holds at
 @register(
     "location",
     "cafe",
+    contract=dc.location('cafe'),
     summary="Café interior: tiles, shelf, menu, masked window, pendants, espresso machine, counter",
     examples=(
         'from srstudio import cast, get\n'
@@ -252,9 +295,13 @@ def cafe(
     cactus: Slot = None,
     *,
     menu: tuple[str, str, str] | None = None,
+    code_on_shelf: bool = False,
 ):
     """``menu`` letters the board's three lines under its title (the two prices and the footer, each 1 to
-    :data:`MENU_CHARS` characters) with an episode's own; ``None`` draws the shipped board, byte for byte."""
+    :data:`MENU_CHARS` characters) with an episode's own; ``None`` draws the shipped board, byte for byte.
+    ``code_on_shelf`` moves the signature code from the board's corner to the shelf's edge, for a reel with someone
+    standing in front of the board."""
+    _check_slots(behind_counter=behind_counter, at_counter=at_counter, on_counter=on_counter, cactus=cactus)
     if menu is not None and not (
         isinstance(menu, tuple)
         and len(menu) == 3
@@ -290,7 +337,10 @@ def cafe(
                 ("menu-wifi", footer, 634, 61, 31, "#A9CBB8"),
             ),
         )
-    signature.code(cv, g, 445, 708, 11, color="#C49B68", opacity=0.9, align="end")
+    if code_on_shelf:
+        signature.code(cv, g, 555, 1017, 12, color="#F3DCA4", align="end")
+    else:
+        signature.code(cv, g, 445, 708, 11, color="#C49B68", opacity=0.9, align="end")
     props.cafe_window(cv, g)
     for xx in [300, 850]:
         props.pendant_light(cv, g, xx)
@@ -318,7 +368,12 @@ def park_seat_y(bottom: float, scale: float) -> float:
     return PARK_SEAT_Y - bottom * scale
 
 
-@register("location", "park", summary="Park: buildings, lawn, path, swaying tree, shrubs, sign, bench")
+@register(
+    "location",
+    "park",
+    contract=dc.location('park'),
+    summary="Park: buildings, lawn, path, swaying tree, shrubs, sign, bench",
+)
 def park(
     cv: Canvas,
     parent,
@@ -333,6 +388,7 @@ def park(
     """``sign_lettering=False`` keeps the sign's post, board and signature code but leaves its lettering out: the
     safe-area audit (SA01) measures a text layer even off frame, so a framing that crops the sign away must not draw
     it. The default draws the set as before, byte for byte."""
+    _check_slots(on_bench=on_bench, beside_bench=beside_bench, cactus=cactus)
     if not isinstance(sign_lettering, bool):
         raise LocationError(f"sign_lettering is True or False, got {sign_lettering!r}")
     p = props.cafe_paints(cv)
@@ -373,11 +429,13 @@ RECEPTION_CLERK = (600, 790, 1.3)  # an office actor behind the counter
 RECEPTION_VISITOR = (250, 1080, 1.5)  # a standing café actor in front of it
 COUNTER_Y = 1060  # the counter's top
 COUNTER_FLOOR = 1440  # where the counter meets the floor
+RECEPTION_CODE = (990, COUNTER_FLOOR - 64)  # the code on the counter's face, by its top right corner
 
 
 @register(
     "location",
     "conference-room",
+    contract=dc.location('conference-room'),
     summary="Conference room: blinds with light shafts, a whiteboard with a chart and sticky notes, a high-back "
     "chair, a walnut table with a speakerphone, notes and a mug",
 )
@@ -395,6 +453,7 @@ def conference_room(
     """``behind_table`` seats an office actor at :data:`CONFERENCE_SEAT`; ``rising`` turns the board's trend, and
     ``None`` leaves the wall bare for ``on_wall``, which draws over the wall and behind the light and the chair.
     ``speaker_talk`` lights the speakerphone in the spans a caller speaks (:func:`props.speakerphone`)."""
+    _check_slots(behind_table=behind_table, on_table=on_table, on_wall=on_wall)
     ink = cv.ink
     g = cv.group(parent, id)
     if shots is not None:
@@ -463,6 +522,7 @@ def conference_room(
 @register(
     "location",
     "reception",
+    contract=dc.location('reception'),
     summary="Reception: a lit walnut slat wall with a backlit logo, opal globe pendants, a plant, a stone-topped "
     "fluted counter with a monitor and flowers, and a polished floor that reflects them",
 )
@@ -475,9 +535,13 @@ def reception(
     id="location-reception",
     shots=None,
     cactus: Slot = None,
+    code_at: tuple[float, float] | None = None,
 ):
     """``behind_desk`` at :data:`RECEPTION_CLERK`, ``at_desk`` at :data:`RECEPTION_VISITOR`; ``cactus`` takes over the
-    counter's cactus (:func:`srstudio.signature.home_cactus`) for a reel that puts something in front of it."""
+    counter's cactus (:func:`srstudio.signature.home_cactus`) for a reel that puts something in front of it, and
+    ``code_at`` moves the code (its top right, default :data:`RECEPTION_CODE`) for a reel whose framing leaves it
+    out."""
+    _check_slots(behind_desk=behind_desk, on_desk=on_desk, at_desk=at_desk, cactus=cactus)
     ink = cv.ink
     g = cv.group(parent, id)
     if shots is not None:
@@ -537,7 +601,8 @@ def reception(
     cv.path(desk, "M300 1060 L298 1004 Q324 990 350 1004 L348 1060Z", vase, ink, 3)
     cv.ellipse(desk, 304, 996, 42, 14, "#D7EEEA", ink, 2.5)
     signature.home_cactus(cv, desk, 450, COUNTER_Y + 6, 0.5, slot=cactus)
-    signature.code(cv, g, 990, COUNTER_FLOOR - 64, 10, color="#9E9483", align="end")
+    code_x, code_y = code_at or RECEPTION_CODE
+    signature.code(cv, g, code_x, code_y, 10, color="#9E9483", align="end")
     _call(on_desk, desk)
     _call(at_desk, g)
     return g
@@ -596,6 +661,7 @@ def _digit(cv: Canvas, parent, ch: str, x, y, id: str):
 @register(
     "location",
     "elevator",
+    contract=dc.location('elevator'),
     summary="Elevator cab: brushed steel walls, sliding doors onto a hallway, a seven-segment floor display, a "
     "button panel with the rider's floor lit, a ceiling light and handrails",
 )
@@ -621,6 +687,7 @@ def elevator(
     points the display's arrow ``"up"`` (the default) or ``"down"``; ``depth`` blurs the hallway seen through the
     doorway by that many px (its cactus, the cab and the riders stay sharp); ``hallway`` draws in the hallway, in
     focus, behind the doors (someone waiting there, seen while they are open)."""
+    _check_slots(riders=riders, on_floor=on_floor, hallway=hallway)
     _check_depth(depth)
     _check_floors(floors)
     _check_doors(doors)

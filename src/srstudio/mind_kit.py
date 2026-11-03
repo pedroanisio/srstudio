@@ -20,6 +20,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
+from . import _presentation_contracts as dc
 from . import checks, foley, look, signature, toon
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -56,8 +57,11 @@ __all__ = [
     "name_lines",
     "sign",
     "spotlight",
+    "named",
     "stage",
+    "stamp",
     "two_lines",
+    "zipper",
     "write_sting",
 ]
 
@@ -86,6 +90,10 @@ NAME_LINES = 3
 NAME_HOLD = 1.0  # the least the name stays up
 NAME_POP = 0.18  # seconds the spot takes to open
 CARD_LINE_SIZE = 62.0  # the catchphrase
+STAMP_Y, STAMP_MOST, STAMP_LEAST, STAMP_CITE, STAMP_INK = 270.0, 58.0, 40.0, 36.0, "#8f2a16"  # coral dark on paper
+ZIP_ROWS, ZIP_CLOTH, ZIP_TOOTH, ZIP_PULL = 30, "#3d4a7a", "#e8c35a", "#f2d27a"  # a closed zipper
+ZIP_TOOTH_W, ZIP_TOOTH_H, ZIP_BEAT = 26.0, 20.0, 0.45  # a tooth in frame px, and the seconds a row takes to part
+STAMP_PAD, STAMP_ROW = 34.0, 1.08  # the strip's margin at the sides, and a row's height over its letters
 EVIDENCE_HOLD = 2.0  # the least a card of about two seconds' reading stays up
 WHAT_WORDS, RESULT_WORDS = 12, 10
 CAPTION_TOP, CAPTION_SIZE, CAPTION_PAD, CAPTION_RADIUS = 300.0, 50.0, 26.0, 18.0
@@ -192,7 +200,12 @@ def _block(cv: Canvas, parent, lines: Sequence[str], x, y, w, size, colour, alig
     return y + height
 
 
-@register("location", "mind-stage", summary="The channel's dark ground, a soft glow behind what it shows")
+@register(
+    "location",
+    "mind-stage",
+    contract=dc.contract('mind-stage'),
+    summary="The channel's dark ground, a soft glow behind what it shows",
+)
 def stage(cv: Canvas, parent) -> None:
     """The ground of every card and mechanism: deep ink, a little lighter towards the middle."""
     g = cv.group(parent, cv.uid("g"))
@@ -201,14 +214,130 @@ def stage(cv: Canvas, parent) -> None:
     cv.rect(g, 0, 0, cv.width, cv.height, paint)
 
 
+@register(
+    "graphic",
+    "mind-stamp",
+    contract=dc.contract('mind-stamp'),
+    summary="One line of evidence stamped over the picture, with its source under it",
+)
+def stamp(
+    cv: Canvas, parent, rows: Sequence[str], cite: str, start: float, end: float, measure: Measure, y: float = STAMP_Y
+) -> Any:
+    """The evidence over the picture and never a slide of its own (L10): ``rows`` of the finding at the largest size
+    that fits the safe width, ``cite`` smaller under them. It lands from ``start``, tilted, and goes at ``end``. Lay it
+    over a line whose caption is off, so the frame does not say it twice. Returns its group."""
+    _span(start, end, "a stamp")
+    if not rows:
+        raise MindKitError("a stamp needs a line of evidence")
+    for text in (*rows, cite):
+        check_copy(text)
+    wide = SAFE_WIDTH - 2 * STAMP_PAD
+    size = STAMP_MOST
+    while size >= STAMP_LEAST and max(measure(row, size) for row in rows) > wide:
+        size -= 2.0
+    if size < STAMP_LEAST or measure(cite, STAMP_CITE) > wide:
+        raise MindKitError(f"a stamp does not fit {wide:.0f} px: {(*rows, cite)!r}")
+    shown = max(*(measure(row, size) for row in rows), measure(cite, STAMP_CITE)) + 2 * STAMP_PAD
+    row = size * STAMP_ROW + 8.0
+    high = len(rows) * row + STAMP_CITE * 1.3 + 30.0
+    x = round((cv.width - shown) / 2, 2)
+    mid = y + high / 2
+    g = cv.group(parent, cv.uid("g"), start=start, end=end, rotation=-2.5, x=cv.width / 2, y=mid,
+                 anchorX=cv.width / 2, anchorY=mid)  # fmt: skip
+    pop = [(start, 1.25), (start + 0.12, 1.0)]
+    cv.keys(g, "scaleX", pop, hold=False)
+    cv.keys(g, "scaleY", pop, hold=False)
+    cv.rect(g, x, y, shown, high, PAPER, CORAL, 8.0, radius=14.0)
+    box = round(shown)
+    for k, words in enumerate(rows):
+        cv.text(g, cv.uid("mind-stamp"), words, x, y + 12 + k * row, box, round(row), size, color=INK, wrap="none")
+    foot = y + 16 + len(rows) * row
+    cv.text(
+        g, cv.uid("mind-stamp"), cite, x, foot, box, round(STAMP_CITE * 1.25), STAMP_CITE, color=STAMP_INK, wrap="none"
+    )
+    return g
+
+
+@register(
+    "graphic",
+    "mind-zipper",
+    contract=dc.contract('mind-zipper'),
+    summary="A closed zipper over the whole frame, pulled open to show the shot behind",
+)
+def zipper(cv: Canvas, parent, start: float, end: float) -> Any:
+    """The frame is cloth with a zipper down its middle. The pull runs down from the top from ``start`` to ``end``, and
+    each row of the cloth parts as it passes, so the shot underneath opens in a V. Returns its group."""
+    _span(start, end, "a zipper")
+    g = cv.group(parent, cv.uid("g"), end=end + ZIP_BEAT)
+    high = cv.height / ZIP_ROWS
+    half = cv.width / 2
+    for row in range(ZIP_ROWS):
+        y = row * high
+        at = start + (end - start) * row / ZIP_ROWS
+        for side, x, off in ((0, 0.0, -1.0), (1, half, 1.0)):
+            strip = cv.group(g, cv.uid("g"), x=0.0)
+            cv.keys(strip, "x", [(at, 0.0), (at + ZIP_BEAT, off * (half + ZIP_TOOTH_W))], hold=False, kind="cubic-in")
+            cv.rect(strip, x, y, half, high + 1.0, ZIP_CLOTH)
+            edge = half - ZIP_TOOTH_W if side == 0 else half
+            cv.rect(
+                strip,
+                edge,
+                y + (0.0 if side == 0 else high / 2),
+                ZIP_TOOTH_W,
+                ZIP_TOOTH_H,
+                ZIP_TOOTH,
+                cv.ink,
+                3.0,
+                radius=4.0,
+            )
+    pull = cv.group(g, cv.uid("g"), y=0.0)
+    cv.keys(pull, "y", [(start, 0.0), (end, float(cv.height))], hold=False)
+    cv.rect(pull, half - 54.0, -40.0, 108.0, 80.0, ZIP_PULL, cv.ink, 6.0, radius=16.0)
+    cv.rect(pull, half - 26.0, 30.0, 52.0, 150.0, ZIP_PULL, cv.ink, 6.0, radius=20.0)
+    return g
+
+
+@register(
+    "graphic",
+    "mind-named",
+    contract=dc.contract('mind-named'),
+    summary="The effect's name, small, over the last hold: a signature after the laugh",
+)
+def named(
+    cv: Canvas,
+    parent,
+    name: str,
+    start: float,
+    end: float,
+    measure: Measure,
+    scale: float = 1.0,
+    pivot: tuple[float, float] = (540.0, 960.0),
+) -> Any:
+    """``name`` on an ink strip where a caption sits. Under a punch-in of ``scale`` about ``pivot`` it is drawn at the
+    place and size that land centred on the caption's line once the punch has happened. Returns its group."""
+    _span(start, end, "a name")
+    if not (checks.number(scale) and scale >= 1.0):
+        raise MindKitError(f"a punch-in scales by 1 or more, got {scale!r}")
+    g = cv.group(parent, cv.uid("g"), start=start, end=end)
+    size, pad = CAPTION_SIZE / scale, CAPTION_PAD / scale
+    wide = measure(check_copy(name), size) + 2 * pad + 12
+    high = size * CAPTION_LEADING + pad
+    x = round(pivot[0] + (cv.width / 2 - pivot[0]) / scale - wide / 2, 2)
+    y = round(pivot[1] + (CAPTION_TOP - pivot[1]) / scale, 2)
+    cv.rect(g, x, y, wide, high, INK, radius=CAPTION_RADIUS / scale)
+    cv.text(g, cv.uid("mind-name"), name, x, y, round(wide), round(high), size, color=PAPER, wrap="none")
+    return g
+
+
 def finish(cv: Canvas, node) -> None:
     """The channel's grade over a shot (:data:`GRADE`); it blurs nothing, so the signature marks stay sharp."""
     look.grade(cv, node, "mind", GRADE)
 
 
-def far(cv: Canvas, parent):
-    """A group out of focus for a set's far plane: a set behind a character goes in here, its marks stay out of it."""
-    return look.depth(cv, parent, "mind-depth", FAR_BLUR)
+def far(cv: Canvas, parent, moving: bool = False):
+    """A group out of focus for a set's far plane: a set behind a character goes in here, its marks stay out of it.
+    See :func:`srstudio.look.depth` for ``moving``."""
+    return look.depth(cv, parent, "mind-depth", FAR_BLUR, overscan=True, moving=moving)
 
 
 def key(cv: Canvas, parent) -> None:
@@ -253,7 +382,12 @@ def name_lines(name: str, measure: Measure) -> tuple[list[str], float]:
     return best
 
 
-@register("graphic", "mind-name-card", summary="The series card: the catchphrase, then the effect's name in the spot")
+@register(
+    "graphic",
+    "mind-name-card",
+    contract=dc.contract('mind-name-card'),
+    summary="The series card: the catchphrase, then the effect's name in the spot",
+)
 def name_card(
     cv: Canvas, parent, name: str, start: float, reveal: float, end: float, measure: Measure, id: str = "name-card"
 ) -> None:
@@ -303,7 +437,10 @@ class Evidence:
 
 
 @register(
-    "graphic", "mind-evidence-card", summary="One study on a paper card: who, when, what they did, what they found"
+    "graphic",
+    "mind-evidence-card",
+    contract=dc.contract('mind-evidence-card'),
+    summary="One study on a paper card: who, when, what they did, what they found",
 )
 def evidence_card(
     cv: Canvas,
@@ -347,7 +484,12 @@ def evidence_card(
     _block(cv, cv.group(g, f"{id}-result", **timing), result, x + pad, top + 30.0, inner, result_size, "#a3301a")
 
 
-@register("prop", "mind-spotlight", summary="A beam of attention from above onto one point, which can sweep")
+@register(
+    "prop",
+    "mind-spotlight",
+    contract=dc.contract('mind-spotlight'),
+    summary="A beam of attention from above onto one point, which can sweep",
+)
 def spotlight(
     cv: Canvas,
     parent,
@@ -375,7 +517,12 @@ def spotlight(
         cv.keys(g, "x", list(sweep), kind="sine-in-out", local=False)
 
 
-@register("prop", "mind-memory-shelf", summary="A shelf of labelled files, one of which slides up")
+@register(
+    "prop",
+    "mind-memory-shelf",
+    contract=dc.contract('mind-memory-shelf'),
+    summary="A shelf of labelled files, one of which slides up",
+)
 def memory_shelf(
     cv: Canvas,
     parent,
@@ -422,7 +569,12 @@ def _line_of(what: object) -> tuple[str, float, str]:
     return what[0], float(what[1]), str(what[2])
 
 
-@register("prop", "mind-two-lines", summary="Expectation against reality: two bars to scale, the second one late")
+@register(
+    "prop",
+    "mind-two-lines",
+    contract=dc.contract('mind-two-lines'),
+    summary="Expectation against reality: two bars to scale, the second one late",
+)
 def two_lines(
     cv: Canvas,
     parent,
@@ -453,7 +605,12 @@ def two_lines(
         cv.keys(bar, "scaleX", [(at, BAR_FROM), (at + BAR_GROW, 1.0)], kind="cubic-out", local=False)
 
 
-@register("prop", "mind-lens", summary="A bias as a lens: a tinted glass that colours what it passes over")
+@register(
+    "prop",
+    "mind-lens",
+    contract=dc.contract('mind-lens'),
+    summary="A bias as a lens: a tinted glass that colours what it passes over",
+)
 def lens(
     cv: Canvas,
     parent,
@@ -482,7 +639,12 @@ def lens(
         cv.keys(g, "x", list(path), kind="sine-in-out", local=False)
 
 
-@register("graphic", "mind-captions", summary="The channel's captions: one or two lines in a box, ink for the narrator")
+@register(
+    "graphic",
+    "mind-captions",
+    contract=dc.contract('mind-captions'),
+    summary="The channel's captions: one or two lines in a box, ink for the narrator",
+)
 def captions(
     cv: Canvas,
     parent,

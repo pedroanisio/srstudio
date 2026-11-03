@@ -15,8 +15,9 @@ signature on it (ADR 0001), is drawn after that layer, so no light state changes
 A sketch picks a room by name (:data:`ROOMS`, :func:`stage`, :func:`dress`) and gives its cues as data, the way
 a JSON file holds them: ``{"lamp": [[0, "on"], [4.5, "flicker"]], "tv": [[0, "on", "blue"], [3, "on", "red"]]}``.
 
-Every measure is a reference screen pixel (:func:`srstudio.toon.fx`/``fy``). Every key is on the composition
-clock, from 0 to ``end``; with ``end`` 0 (a still) a light holds the level of its one cue at 0.
+Every measure is a reference screen pixel (:func:`srstudio.toon.fx`/``fy``). Room light, ticket and router keys
+follow ``Canvas.local_time``; the speaker ring explicitly uses composition time. With ``end`` 0 (a still), a light
+holds the level of its one cue at 0. Positive ``end`` bounds animation keys without hiding the room.
 """
 
 from __future__ import annotations
@@ -24,8 +25,9 @@ from __future__ import annotations
 import re
 from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Annotated, Any
 
+from . import _toon_social_contracts as tc
 from . import brush, checks, toon_everyday
 from .canvas import Canvas, _at_zero
 from .registry import register
@@ -51,6 +53,8 @@ __all__ = [
     "colour_spans",
     "stage",
     "dress",
+    "front_screen",
+    "front_tint",
     "lounge",
     "counter",
 ]
@@ -89,6 +93,9 @@ LAMP_LIGHT = "#ffb85c"
 LAMP_GLOW = 0.55
 TV_BODY, TV_FACE = "#15161c", "#0c0f1a"
 TV_GLOW = 0.5
+FRONT_NIGHT = "#2c3454"  # the dark of a room lit only by a screen
+FRONT_GLOW = 0.42  # how much of a screen's colour reaches the people facing it
+FRONT_LOW, FRONT_FALL = 0.12, 0.5  # the night's opacity with the screen full on, and what it gains as the screen dies
 CONSOLE, CONSOLE_LIGHT = "#6b4a3a", "#86604c"
 SOFA, SOFA_LIGHT, SOFA_SEAM = "#7a4a7e", "#946098", "#5e3762"
 PILLOW = "#e6b450"
@@ -296,6 +303,7 @@ def _layer(cv: Canvas, parent, light):
 @register(
     "location",
     "toon-lounge",
+    contract=tc.room_contract('toon-lounge', dict[str, list[Annotated[Cue, tc.CUE_FIELDS]]]),
     summary="A living room at night, lit over time: a floor lamp, a wall TV whose glow changes colour, a sofa, a "
     "router that blinks, a smart speaker (ADR 0043)",
 )
@@ -429,6 +437,7 @@ def _lounge_shelf(
 @register(
     "location",
     "toon-counter",
+    contract=tc.room_contract('toon-counter', dict[str, list[Annotated[Cue, tc.CUE_FIELDS]]]),
     summary="A waiting area under fluorescent tubes, lit over time: the tubes, a NOW SERVING board whose colour "
     "and ticket change, a TAKE A NUMBER sign, a plastic chair (ADR 0043)",
 )
@@ -440,12 +449,17 @@ def counter(
     *,
     light=None,
     serving: Sequence[Sequence[Any]] = ((0.0, "A17"),),
+    lettering: bool = True,
 ):
     """A mint institutional wall with a darker wainscot; two fluorescent fixtures hang from the ceiling tiles above
     the pill; a TAKE A NUMBER sign with its red dispenser at the left; a NOW SERVING board at the right whose ticket
     changes at each ``(second, ticket)`` of ``serving`` (a capital and one to three digits, from 0, in order); an
     orange plastic chair behind the character. ``lights`` keys the ``tubes`` and the ``board``. The light layer goes
-    into ``light`` (the shot's), else into a group drawn over the set. Returns the cues."""
+    into ``light`` (the shot's), else into a group drawn over the set. ``lettering=False`` leaves the sign, the label
+    and the ticket out and keeps everything else, for a reel with no use for them: under the wash and the board's own
+    glow they measure 1.9 to 4.2:1 on the frame. Returns the cues."""
+    if not isinstance(lettering, bool):
+        raise ToonDataError(f"lettering is True or False, got {lettering!r}")
     cues = parse_lights("counter", lights, end)
     end = float(end)
     tickets = _check_serving(serving, end)
@@ -474,8 +488,9 @@ def counter(
     cv.rect(g, fx(30), fy(330), fh(206), fh(66), SHADOW_CARD, radius=fh(4), opacity=0.16)
     cv.rect(g, fx(24), fy(324), fh(206), fh(66), SIGN, cv.ink, FINE_W, radius=fh(4))
     cv.rect(g, fx(24), fy(324), fh(206), fh(16), SIGN_BAND, cv.ink, FINE_W, radius=fh(4))
-    cv.text(g, cv.uid("counter-sign"), "TAKE A NUMBER", fx(24), fy(342), int(fh(206)), int(fh(48)), 34,
-            color=SIGN_INK)  # fmt: skip
+    if lettering:
+        cv.text(g, cv.uid("counter-sign"), "TAKE A NUMBER", fx(24), fy(342), int(fh(206)), int(fh(48)), 34,
+                color=SIGN_INK)  # fmt: skip
     _line(cv, g, [(126, 396), (126, 410)], 5.0)
     _inked(cv, g, [(98, 408), (154, 408), (158, 444), (94, 444)], SIGN_BAND)
     cv.rect(g, fx(112), fy(436), fh(28), fh(10), SIGN, cv.ink, FINE_W / 2, radius=fh(2))
@@ -484,11 +499,12 @@ def counter(
               lambda c, name, col: _glow(cv, c, f"toon-counter-board-halo-{name}", 485, 400, 165, col))  # fmt: skip
     cv.rect(g, fx(380), fy(330), fh(210), fh(138), BOARD_FRAME, cv.ink, INK_W, radius=fh(6))
     cv.rect(g, fx(392), fy(342), fh(186), fh(114), BOARD, cv.ink, FINE_W, radius=fh(4))
-    cv.text(g, cv.uid("counter-label"), "NOW SERVING", fx(392), fy(346), int(fh(186)), int(fh(26)), 26,
-            color=BOARD_LABEL)  # fmt: skip
+    if lettering:
+        cv.text(g, cv.uid("counter-label"), "NOW SERVING", fx(392), fy(346), int(fh(186)), int(fh(26)), 26,
+                color=BOARD_LABEL)  # fmt: skip
     face = _level(cv, g, board)
     _coloured(cv, face, cues["board"], end, lambda c, name, col: _board_face(cv, c, col))
-    for i, (at, ticket) in enumerate(tickets):
+    for i, (at, ticket) in enumerate(tickets if lettering else ()):
         shown = cv.group(face, cv.uid("g"))
         cv.text(shown, cv.uid("counter-ticket"), ticket, fx(400), fy(376), int(fh(170)), int(fh(72)), 96,
                 color=TICKET_INK)  # fmt: skip
@@ -552,7 +568,7 @@ ROOMS: dict[str, Room] = {
         "board",
         {"tubes": ((0, "on"),), "board": ((0, "on", "red"),)},
         {"tubes": (36, 128, 556, 176), "board": (380, 330, 590, 468), "sign": (24, 324, 230, 446)},
-        frozenset({"serving"}),
+        frozenset({"serving", "lettering"}),
     ),
 }
 
@@ -561,13 +577,43 @@ def stage(
     cv: Canvas, back, light, room: str, lights: Mapping[str, Any] | None = None, end: float = 0.0, **options
 ) -> dict[str, list[Cue]]:
     """Draw the room named ``room`` into ``back`` and its light layer into ``light``, keyed by ``lights`` from 0 to
-    ``end``; ``options`` are the room's own (the counter's ``serving``). Returns the cues of every light."""
+    ``end``; ``options`` are the room's own (the counter's ``serving`` and ``lettering``). Returns the cues of every
+    light."""
     r = _room(room)
     extra = sorted(set(options) - r.options)
     if extra:
         takes = ", ".join(sorted(r.options)) or "none"
         raise ToonDataError(f"the {r.name} takes no {', '.join(extra)}; its options: {takes}")
     return r.draw(cv, back, lights, end, light=light, **options)
+
+
+def front_tint(colour: str, strength: float = FRONT_GLOW) -> str:
+    """``colour`` ``strength`` of the way from white, the sheet that multiplies a shot into that light."""
+    r, g, b = (int(colour[k : k + 2], 16) for k in (1, 3, 5))
+    return "#{:02x}{:02x}{:02x}".format(*(round(255 + (c - 255) * strength) for c in (r, g, b)))
+
+
+def front_screen(
+    cv: Canvas, parent, cues: Any, end: float, *, strength: float = FRONT_GLOW, night: str = FRONT_NIGHT
+) -> list[Cue]:
+    """The light of a screen on the viewer's side of the frame, for people who face us to watch it: two sheets over
+    the whole shot, both multiplied so the ink stays ink. One holds ``strength`` of the screen's colour, the other
+    takes the shot down to ``night`` as the screen's level falls. ``cues`` read as a lounge TV's (:func:`parse_lights`):
+    ``(second, state[, colour])`` from 0, the first naming its colour, so a sting is one cue and a pause another. Draw
+    it last into ``parent``, over the people and the set. Returns the cues."""
+    if not (checks.number(strength) and 0 < strength <= 1):
+        raise ToonDataError(f"a screen's strength is over 0 and at most 1, got {strength!r}")
+    end = _check_end(end)
+    parsed = _cues("screen", cues, True, end)
+
+    def sheet(g, colour: str) -> None:
+        cv.rect(g, 0, 0, cv.width, cv.height, colour, cv.clear, 0, radius=0)
+
+    g = cv.group(parent, cv.uid("g"))
+    tint = cv.group(g, cv.uid("g"), blend="multiply")
+    _coloured(cv, tint, parsed, end, lambda c, name, colour: sheet(c, front_tint(colour, strength)))
+    sheet(_level(cv, g, level_keys(parsed, end), -FRONT_FALL, FRONT_LOW + FRONT_FALL, blend="multiply"), night)
+    return parsed
 
 
 def dress(shot, room: str, lights: Mapping[str, Any] | None = None, **options) -> dict[str, list[Cue]]:

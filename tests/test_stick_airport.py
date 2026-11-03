@@ -187,6 +187,20 @@ def test_a_close_up_can_leave_the_plate_and_the_tag_unlettered():
     assert texts(cv) == []
 
 
+def test_a_hanging_tag_is_blank_and_drops_straight_from_its_string():
+    cv = canvas()
+    stick_airport.carry_on(cv, cv.comp, 480, stick_airport.FLOOR_FEET, tag=None, hanging=True)
+    floor = stick_airport.FLOOR_FEET
+    tag = [
+        r for r in ET.fromstring(cv.scene.to_bytes(layout="pretty")).iter("shape") if r.get("fill") == stick_airport.TAG
+    ]
+    assert [(float(r.get("x")), float(r.get("y")), float(r.get("width")), float(r.get("height"))) for r in tag] == [
+        (522.0, floor - 396, 40.0, 86.0)
+    ]
+    with pytest.raises(StickDataError, match="hanging tag is blank"):
+        stick_airport.carry_on(cv, cv.comp, 480, floor, tag="GROUP 4", hanging=True)
+
+
 def test_the_scale_lights_one_weight_at_a_time_at_phone_size():
     cv = canvas()
     readings = ((0.0, "23.4"), (2.0, "22.9"))
@@ -195,6 +209,30 @@ def test_the_scale_lights_one_weight_at_a_time_at_phone_size():
     assert stick_airport.READOUT_SIZE >= 110  # a phone's width of 1080 pixels is about 7 cm
     keyed = [k for k in xml(cv).iter() if k.tag.endswith("keyframe") or k.tag.endswith("key")]
     assert keyed, "each reading is lit only for its own time"
+
+
+def test_the_scale_can_stay_dark_until_its_first_reading():
+    cv = canvas()
+    stick_airport.bag_scale(cv, cv.comp, 540, 1700, ((0.0, None), (0.44, "23.4")), 4.0)
+    assert texts(cv) == ["23.4"]
+
+
+def test_the_gate_can_leave_its_sign_for_a_reel_to_hang_over_a_wash():
+    plain, whole = canvas(), canvas()
+    stick_airport.gate(plain, plain.comp, gate="A1", now="HOT", sign=False)
+    assert texts(plain) == []
+    stick_airport.boarding_sign(plain, plain.comp, gate="A1", now="HOT")
+    stick_airport.gate(whole, whole.comp, gate="A1", now="HOT")
+    assert sorted(texts(plain)) == sorted(texts(whole))
+    assert shapes(plain) == shapes(whole)
+
+
+def test_the_sign_refuses_what_the_gate_refuses():
+    cv = canvas()
+    with pytest.raises(StickDataError, match="gate has 1 to"):
+        stick_airport.boarding_sign(cv, cv.comp, gate="", now="HOT")
+    with pytest.raises(StickDataError, match="sign calls 1 to"):
+        stick_airport.boarding_sign(cv, cv.comp, gate="A1", now="")
 
 
 @pytest.mark.parametrize(

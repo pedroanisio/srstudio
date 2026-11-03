@@ -36,8 +36,18 @@ def points(shapes):
 # -- the style and the cast -------------------------------------------------------------------------------------------
 def test_the_style_is_registered_with_its_parts_and_font():
     assert STYLES["collage"] is COLLAGE
-    assert COLLAGE.parts == ("collage", "collage_everyday", "collage_home", "collage_photo", "collage_sets")
-    assert COLLAGE.palettes == (collage.PAPER,)
+    assert COLLAGE.parts == (
+        "collage",
+        "collage_article",
+        "collage_big_type",
+        "collage_everyday",
+        "collage_forecast",
+        "collage_home",
+        "collage_odds",
+        "collage_photo",
+        "collage_sets",
+        "collage_things",
+    ) and COLLAGE.palettes == (collage.PAPER,)
     assert (COLLAGE.width, COLLAGE.height, COLLAGE.fps) == (1080, 1920, 24)
     assert COLLAGE.font.google.family == "Luckiest Guy" and COLLAGE.font.id == "luckiest-guy"
     assert COLLAGE.font.src == f"assets/fonts/{COLLAGE.font.google.slug}.ttf"
@@ -308,6 +318,21 @@ def test_a_caption_wraps_into_at_most_two_lines_that_fit_the_frame():
         collage.caption_lines(measure, "x" * 40, 1080)
 
 
+def test_a_caption_breaks_at_a_sentence_end_only_when_asked():
+    text = "Hi, it's Bella Roma. Love you too. Inside or outside?"
+
+    def narrow(row: str) -> float:
+        return 24.0 * len(row)
+
+    assert collage.caption_lines(narrow, text, 1080, sentences=True)[0] == "Hi, it's Bella Roma."
+    assert collage.caption_lines(narrow, text, 1080)[0] == "Hi, it's Bella Roma. Love"
+
+
+def test_a_sentence_break_that_does_not_fit_keeps_the_ordinary_wrap():
+    text = "We are rebranding the bank as a singing toilet"
+    assert collage.caption_lines(measure, text, 1080, sentences=True) == collage.caption_lines(measure, text, 1080)
+
+
 def test_captions_draw_a_tinted_pill_per_cue_above_the_figure():
     cv = canvas()
     lines = [
@@ -324,6 +349,53 @@ def test_captions_draw_a_tinted_pill_per_cue_above_the_figure():
     groups = [g for g in root.iter("group") if g.get("start") is not None]
     assert [(float(g.get("start")), float(g.get("end"))) for g in groups] == [(0.0, 1.5), (1.5, 3.0)]
     assert all(g.get("effects") == "collage-caption-shadow" for g in groups)  # each pill lifts off the set
+
+
+def test_a_cue_can_take_its_pill_somewhere_else():
+    cv = canvas()
+    lines = [toon.Line("01", "Better?", 0.0, 1.5, "brent"), toon.Line("02", "Worse.", 1.5, 3.0, "rosa")]
+    collage.captions(cv, cv.comp, lines, measure, tops={"Worse.": 815.0})
+    root = tree(cv)
+    rects = [s for s in root.iter("shape") if s.get("shape") == "rect"]
+    assert [float(r.get("y")) for r in rects] == [collage.CAPTION_TOP, 815.0]
+    first, second = (float(layer.get("y")) for layer in root.iter("layer"))
+    assert second - 815.0 == first - collage.CAPTION_TOP
+
+
+def _lid_heights(look: collage.Look, **options) -> list[float]:
+    return [float(y) for shape in collage.lid_shapes(look, **options) for y in re.findall(r"-?[\d.]+", shape[0])[1::2]]
+
+
+def test_a_new_reel_s_blink_under_a_hat_stays_below_its_band():
+    jun = collage.LOOKS["jun"]
+    assert jun.hair == "beanie"
+    band = collage.face(jun)[1] + collage.BEANIE_BAND_BOTTOM
+    assert min(_lid_heights(jun, under_band=True)) >= band
+
+
+def test_a_delivered_reel_keeps_the_lid_it_was_drawn_with():
+    jun = collage.LOOKS["jun"]
+    assert min(_lid_heights(jun)) < collage.face(jun)[1] + collage.BEANIE_BAND_BOTTOM
+    assert collage.lid_shapes(jun) != collage.lid_shapes(jun, under_band=True)
+
+
+def _shape_paths(cv: Canvas) -> set[str]:
+    return {s.get("path") for s in tree(cv).iter("shape")}
+
+
+def test_a_figure_draws_the_lid_under_the_band_only_when_asked():
+    wanted = {shape[0] for shape in collage.lid_shapes(collage.LOOKS["jun"], under_band=True)}
+    asked, plain = canvas(), canvas()
+    collage.DRAWERS["jun"](asked, asked.comp, [pose()], D, (), lids_under_band=True)
+    collage.DRAWERS["jun"](plain, plain.comp, [pose()], D, ())
+    assert wanted <= _shape_paths(asked)
+    assert not wanted & _shape_paths(plain)
+
+
+def test_a_blink_with_no_hat_covers_the_whole_eye():
+    deb = collage.LOOKS["deb"]
+    heights = [float(y) for shape in collage.lid_shapes(deb) for y in re.findall(r"-?[\d.]+", shape[0])[1::2]]
+    assert min(heights) < collage._eye_centres(deb)[0][1] - 60  # up past the top of the eye
 
 
 def test_captions_need_the_style_font():
@@ -406,3 +478,30 @@ def test_the_call_buttons_sit_in_the_frame_below_the_figure_and_clear_of_every_s
     assert reds  # the red hang-up button between the two grey ones
     assert not list(tree(cv).iter("text"))  # no lettering: nothing for the safe-area check to measure
     assert registry.get("prop", "collage-call-buttons") is not None
+
+
+def test_a_caption_asked_to_clear_the_bug_wraps_so_its_pill_keeps_the_clearance():
+    from srstudio import show
+
+    text = "Tell your brother I can read that."  # 34 characters, 884 px: one row 948 px wide unasked
+
+    def narrow(row: str) -> float:
+        return 26.0 * len(row)
+
+    def pills(**kw):
+        cv = canvas()
+        collage.captions(cv, cv.comp, [toon.Line("01", text, 0.0, 1.0, "rosa")], narrow, **kw)
+        root = tree(cv)
+        rects = [s for s in root.iter("shape") if s.get("shape") == "rect"]
+        boxes = [(float(r.get("x")), float(r.get("y"))) for r in rects]
+        return [
+            (x, y, x + float(r.get("width")), y + float(r.get("height")))
+            for (x, y), r in zip(boxes, rects, strict=True)
+        ], [t.get("text") for t in root.iter("text")]
+
+    (box,), rows = pills()
+    assert not show.clear_of_bug(box) and rows == [text]  # the frame's margins alone let it reach under the bug
+    (box,), rows = pills(clear_bug=True)
+    assert show.clear_of_bug(box) and len(rows) == 2 and " ".join(rows) == text
+    (box,), rows = pills(clear_bug=True, tops={text: show.BUG_BOX[3] + show.CLEAR})
+    assert rows == [text] and box[2] - box[0] > 2 * (show.BUG_BOX[0] - show.CLEAR - 540.0)  # clear below it

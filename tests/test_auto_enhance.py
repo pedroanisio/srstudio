@@ -89,6 +89,22 @@ def test_a_mention_in_the_body_is_not_a_trailer(repo):
     assert "no commit on develop" in reasons(repo)[0]
 
 
+STRANDED = "feat: x\n\nWhy.\n\nEnhances: new-reel\nEnhancement-Kind: props\n\nCo-Authored-By: A <a@example.com>"
+
+
+def test_trailers_stranded_above_the_co_author_are_refused_with_the_reason(repo):
+    commit(repo, STRANDED, REAL)
+    (reason,) = reasons(repo)
+    assert "does not count" in reason and "middle paragraph" in reason
+
+
+def test_the_pregate_catches_stranded_trailers_before_the_merge(repo):
+    git(repo, "checkout", "-q", "-b", "feat/x")
+    commit(repo, STRANDED, REAL)
+    (row,) = auto_enhance.unsound(repo)
+    assert row.slugs == ("new-reel",) and any("middle paragraph" in p for p in row.problems)
+
+
 def test_one_commit_cannot_pay_for_two_videos(repo):
     commit(repo, message(extra="Enhances: other-reel\n"), REAL)
     assert "one commit enhances one video" in reasons(repo)[0]
@@ -281,3 +297,20 @@ def test_the_command_reports_a_broken_setting(repo, capsys):
     path.write_text("nope", encoding="utf-8")
     assert cli.main(["enhance", "--scripts", str(path.parent)]) == 2
     assert "srstudio enhance:" in capsys.readouterr().err
+
+
+def test_check_names_a_bad_trailer_while_it_is_still_on_its_branch(repo, capsys):
+    git(repo, "checkout", "-q", "-b", "feat/next")
+    commit(repo, message(kind="framing"), REAL)
+    assert [row.kinds for row in auto_enhance.unsound(repo)] == [("framing",)]
+    assert cli.main(["enhance", "check", *scripts(repo)]) == 1
+    assert "Enhancement-Kind must be one of" in capsys.readouterr().out
+
+
+def test_check_passes_a_sound_trailer_and_leaves_develops_history_alone(repo):
+    commit(repo, message(slug="old-reel", kind="framing"), REAL)  # already landed, so no branch can fix it
+    git(repo, "checkout", "-q", "-b", "feat/next")
+    other = {"src/srstudio/other.py": "Y = 1\n", "tests/test_other.py": "def test_y():\n    assert True\n"}
+    commit(repo, message(), other)
+    assert auto_enhance.unsound(repo) == []
+    assert cli.main(["enhance", "check", *scripts(repo)]) == 0

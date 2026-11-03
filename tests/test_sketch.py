@@ -12,6 +12,7 @@ from sr_core.scene import Scene
 
 from srstudio import PEACH, Canvas, flat_counter, music, narration, sketch, toon
 from srstudio.fonts import GoogleFont
+from srstudio.lipsync import SPEECH_MOUTH
 from srstudio.sketch import Line
 from srstudio.voice import Alignment
 from support.sketch import BEATS, LINES, SK, SPEAKERS, FakeClient, confirm_stub, with_beats
@@ -54,6 +55,8 @@ def test_a_consistent_sketch_passes_and_derives_its_cues_appearances_events_and_
         (lambda s: replace(s, lines=(replace(LINES[0], gain=1.0), *LINES[1:])), "gain"),
         (lambda s: replace(s, lines=(replace(LINES[0], gain=-13.0), *LINES[1:])), "gain"),
         (lambda s: replace(s, lines=(LINES[0], Line("boss", "  "), LINES[2])), "known speaker and some text"),
+        (lambda s: replace(s, lines=(replace(LINES[0], gain=2.0), *LINES[1:])), "gain"),
+        (lambda s: replace(s, lines=(replace(LINES[0], gain=float("nan")), *LINES[1:])), "gain"),
         (lambda s: with_beats(lambda b: [replace(b[0], start=0.5), *b[1:]]), "starts at 0"),
         (lambda s: with_beats(lambda b: [b[0], replace(b[1], start=0.05), *b[2:]]), "held less than"),
         (lambda s: with_beats(lambda b: [replace(b[0], who="owl"), *b[1:]]), "not in the Toon vocabulary"),
@@ -505,3 +508,64 @@ def test_a_line_gain_is_in_db_at_zero_or_under_within_the_mix(gain):
     lines = (LINES[0], replace(LINES[1], gain=gain), LINES[2])
     with pytest.raises(sketch.SketchError, match="gain"):
         sketch.check(replace(SK, lines=lines))
+
+
+def test_placing_again_reads_the_recording_and_asks_no_voice(tmp_path):
+    sketch.record(SK, tmp_path, FakeClient(tmp_path), confirm=confirm_stub, conform_clip=copy_clip)
+    voiced = tmp_path / "voiced"
+    mouths, speech = (voiced / "mouths.json").read_bytes(), (voiced / "speech.json").read_bytes()
+    beats = (voiced / "beats.json").read_bytes()
+    placed = sketch.place_again(SK, tmp_path)
+    again = json.loads((voiced / "beats.json").read_text())["beats"]
+    assert [b["start"] for b in again] == pytest.approx([b["start"] for b in json.loads(beats)["beats"]], abs=2e-6)
+    assert [b.start for b in placed] == [b["start"] for b in again]
+    assert (voiced / "mouths.json").read_bytes() == mouths and (voiced / "speech.json").read_bytes() == speech
+
+
+def test_placing_again_with_a_mouth_reads_the_lips_again_from_the_recording(tmp_path):
+    """A fix to the lip reading reaches a recorded reel without paying for its takes again."""
+    sketch.record(SK, tmp_path, FakeClient(tmp_path), confirm=confirm_stub, conform_clip=copy_clip)
+    voiced = tmp_path / "voiced"
+    speech, beats = (voiced / "speech.json").read_bytes(), (voiced / "beats.json").read_bytes()
+    takes, _ = sketch.load_speech(voiced / "speech.json", SK.cast)
+    (voiced / "mouths.json").write_text(json.dumps({"end": 1.0, "mouths": {}}))
+    sketch.place_again(SK, tmp_path, mouth=SPEECH_MOUTH)
+    mouths, _ = sketch.load_mouths(voiced / "mouths.json", SK.cast)
+    expected: dict[str, list] = {}
+    for take in takes:
+        if take.who in SK.cast.lip_synced:
+            states = sketch.visemes(take.alignment, take.at, 0.0, take.kept, style=SPEECH_MOUTH)
+            sketch.extend_track(expected.setdefault(take.who, []), states, take.id)
+    assert expected and {who: list(map(tuple, track)) for who, track in mouths.items()} == expected
+    assert (voiced / "speech.json").read_bytes() == speech
+    again = [b["start"] for b in json.loads((voiced / "beats.json").read_text())["beats"]]
+    assert again == pytest.approx([b["start"] for b in json.loads(beats)["beats"]], abs=2e-6)
+
+
+def test_placing_again_carries_a_changed_cue_to_the_voiced_build(tmp_path):
+    sketch.record(SK, tmp_path, FakeClient(tmp_path), confirm=confirm_stub, conform_clip=copy_clip)
+    before = sketch.load_beats(tmp_path / "voiced" / "beats.json")[0]
+    held = replace(SK, caption_min=2.5, tail=0.0)
+    assert held.caption_min == 2.5
+    sketch.place_again(held, tmp_path)
+    after = sketch.load_beats(tmp_path / "voiced" / "beats.json")[0]
+    assert any(b.start > a.start for a, b in zip(before, after, strict=True))
+
+
+def test_placing_again_refuses_a_recording_of_other_lines(tmp_path):
+    sketch.record(SK, tmp_path, FakeClient(tmp_path), confirm=confirm_stub, conform_clip=copy_clip)
+    fewer = replace(SK, lines=SK.lines[:2], beats=tuple(b for b in SK.beats if b.line in (None, 0, 1)))
+    with pytest.raises(sketch.SketchError, match="record again"):
+        sketch.place_again(fewer, tmp_path)
+
+
+def test_placing_again_refuses_a_recording_that_ends_before_the_beats(tmp_path):
+    sketch.record(SK, tmp_path, FakeClient(tmp_path), confirm=confirm_stub, conform_clip=copy_clip)
+    with pytest.raises(sketch.SketchError, match="record again"):
+        sketch.place_again(replace(SK, tail=9.0), tmp_path)
+
+
+@pytest.mark.parametrize("bad", [0, -0.5, "long", float("nan")])
+def test_a_caption_minimum_is_a_positive_number(bad):
+    with pytest.raises(sketch.SketchError, match="caption_min"):
+        sketch.check(replace(SK, caption_min=bad))

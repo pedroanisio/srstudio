@@ -10,7 +10,8 @@ so it needs no font, looks the same in every family and never trips the engine's
 legibility check at the sizes it is used.
 
 :func:`missing` is the gate: ``Episode.finish`` refuses to write a signed episode whose document lacks either
-mark, so a location that forgets to call :func:`code` or :func:`cactus` cannot ship.
+mark, so a location that forgets to call :func:`code` or :func:`cactus` cannot ship. It reads the document, so a mark
+behind the cast or outside the shot passes it; :func:`without` is what a render compares against to see the mark.
 
 The cactus may perform (ADR 0039): an :class:`Act` turns its flower, blooms it on a beat and writes the code on its
 pot, and a location calls :func:`home_cactus`, which draws the location's own cactus or hands it to the episode's
@@ -26,6 +27,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from . import checks
+from ._remaining_part_contracts import contract
 from .canvas import MONO, Canvas, Signature
 from .errors import SrstudioError
 from .registry import register
@@ -38,6 +40,7 @@ __all__ = [
     "cactus",
     "home_cactus",
     "missing",
+    "without",
     "MARKS",
     "GLYPHS",
     "ADVANCE",
@@ -84,6 +87,19 @@ def missing(document: bytes) -> list[str]:
     """The marks (:data:`MARKS`) no group of the scene ``document`` carries; paints and other elements do not count."""
     ids = {el.get("id") or "" for el in ET.fromstring(document).iter("group")}
     return [m for m in MARKS if not any(i == m or re.fullmatch(rf"{m}-\d+", i) for i in ids)]
+
+
+def without(document: bytes, mark: str) -> bytes:
+    """The scene ``document`` with every group of ``mark`` (one of :data:`MARKS`) taken out: rendered next to the
+    document itself, what differs is what of the mark a frame shows, which :func:`missing` cannot tell."""
+    if mark not in MARKS:
+        raise SignatureError(f"a mark is one of {MARKS}, got {mark!r}")
+    root = ET.fromstring(document)
+    for parent in root.iter():
+        for child in list(parent):
+            if child.tag == "group" and re.fullmatch(rf"{mark}(-\d+)?", child.get("id") or ""):
+                parent.remove(child)
+    return ET.tostring(root)
 
 
 # Stroke glyphs on a 10 × 16 box (y down), drawn with round caps; ADVANCE is the pen move per character.
@@ -147,6 +163,7 @@ def text_width(text: str, height: float) -> float:
     "graphic",
     "signature-code",
     summary="The recurring code (ADR 0001) as stroked glyphs; nothing when the episode is unsigned",
+    contract=contract('signature-code', text_width=text_width),
 )
 def code(
     cv: Canvas,
@@ -209,6 +226,7 @@ _TOKEN = re.compile(r"[A-Za-z]|-?\d+(?:\.\d+)?")
     "signature-cactus",
     summary="The recurring potted cactus (ADR 0001), gradients or pen stroke by "
     "palette; nothing when the episode is unsigned",
+    contract=contract('signature-cactus'),
 )
 def cactus(cv: Canvas, parent, x, y, scale: float = 1, *, act: Act | None = None):
     """A small potted cactus with one flower, its pot's base centred on ``x, y``; 152 units tall at scale 1.

@@ -74,20 +74,40 @@ def spec(
     )
 
 
-def words(ep: Episode, takes: Sequence[Any], *, y: float = WORDS_Y, size: float = WORD_SIZE, sentences: bool = False):
-    """The spoken ``takes`` as word captions on the episode clock; returns their group. With ``sentences``, no cue
-    runs across a sentence end (:func:`srstudio.stick.word_cues`): new reels ask for it, delivered ones keep theirs."""
+def words(
+    ep: Episode,
+    takes: Sequence[Any],
+    *,
+    y: float = WORDS_Y,
+    size: float = WORD_SIZE,
+    alone: bool = True,
+    sentences: bool = False,
+    least: float = WORD_MIN,
+    join: bool = False,
+    hold: bool = False,
+    asks: bool = False,
+):
+    """The spoken ``takes`` as word captions on the episode clock; returns their group. ``alone=False`` keeps a word
+    from a cue of its own wherever a neighbour fits it. With ``sentences``, no cue runs across a sentence end, and
+    ``hold`` keeps the short cues that can leave up long enough to read (:func:`srstudio.stick.word_cues`): new reels
+    ask for them, delivered ones keep theirs. ``least`` is the shortest a cue is meant to show; with ``join``, a cue
+    still under it joins a neighbour, keeping the sentence mark between them. ``asks`` keeps a question's question mark
+    (:func:`srstudio.stick.word_cues`): new reels ask for it, delivered ones keep their bare cues."""
     group = ep.cv.group(ep.cv.comp, "spoken-words")
     font = (ep.root / str(ep.spec.font)).read_bytes()
     cues = stick.word_cues(
         takes,
-        min_seconds=WORD_MIN,
+        min_seconds=least,
         linger=WORD_LINGER,
         width=lambda text: fonts.text_width(font, text, size),
         size=size,
         borrow=True,
         balance=True,
+        alone=alone,
         sentences=sentences,
+        join=join,
+        hold=hold,
+        asks=asks,
     )
     stick.words(ep.cv, group, cues, y=y, scrim=SCRIM)
     return group
@@ -154,14 +174,20 @@ def check_framing(
     return landed
 
 
-def spoken_cues(takes: Sequence[Any]) -> list[tuple[float, float, str]]:
-    """One subtitle per spoken take, from its first word: a still opening is inside its take and says nothing."""
-    return [(x.start + (x.words[0]["start"] if x.words else 0.0), x.end, x.text) for x in takes if not x.is_effect]
+def spoken_cues(takes: Sequence[Any], *, first_word: bool = False) -> list[tuple[float, float, str]]:
+    """One subtitle per spoken take, from the take's start. ``first_word`` starts it at the take's first word, because
+    a still opening is inside its take and says nothing: new reels ask for it, delivered ones keep their cues."""
+
+    def start(x: Any) -> float:
+        return x.start + x.words[0]["start"] if first_word and x.words else x.start
+
+    return [(start(x), x.end, x.text) for x in takes if not x.is_effect]
 
 
-def close(ep: Episode, post: InstagramPost, *hidden: Any) -> Path:
-    """The burned ``hidden`` nodes off the cover, the subtitles, the post and the scene."""
+def close(ep: Episode, post: InstagramPost, *hidden: Any, first_word: bool = False) -> Path:
+    """The burned ``hidden`` nodes off the cover, the subtitles (``first_word`` is :func:`spoken_cues`'), the post and
+    the scene."""
     ep.hide_on_cover(*hidden)
-    subtitles.write_srt(ep.root / f"{ep.spec.slug}.srt", spoken_cues(ep.t.takes))
+    subtitles.write_srt(ep.root / f"{ep.spec.slug}.srt", spoken_cues(ep.t.takes, first_word=first_word))
     ep.instagram(post)
     return ep.finish(ep.root / f"{ep.spec.slug}.scene.xml", ep.root / "qa" / "sdk-validation.json")

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from . import checks, locations, look, signature
+from . import _cutout_contracts, anatomy_ledger, checks, locations, look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -52,6 +52,7 @@ def _check_scale(scale) -> None:
     "job-ad",
     style="cutout",
     summary="A printed job advert standing on a desk, a small heading over two lines of large type",
+    contract=_cutout_contracts.contract('job-ad'),
 )
 def job_ad(
     cv: Canvas,
@@ -87,6 +88,7 @@ def job_ad(
     "crayon-cv",
     style="cutout",
     summary="A CV in crayon with a clip-on tie, held up by two very small hands, small shoes swinging under it",
+    contract=_cutout_contracts.contract('crayon-cv'),
 )
 def crayon_cv(
     cv: Canvas,
@@ -101,6 +103,7 @@ def crayon_cv(
 ):
     """The sheet's top middle is (``x``, ``y``), 520 × 560 at scale 1, and whoever holds it is entirely behind it.
     The shoes swing in each of the ``swings`` spans."""
+    anatomy_ledger.loose_hand(cv, "crayon-cv")
     cv.require_font("the CV's title is lettered in it", CutoutHiringError)
     _check_scale(scale)
     if not title.strip():
@@ -141,6 +144,7 @@ def crayon_cv(
     style="cutout",
     summary="A slatted crib with a mobile over it, whoever is inside hidden, a CV hooked over the rail and a rattle "
     "that shakes on cue",
+    contract=_cutout_contracts.contract('crib'),
 )
 def crib(
     cv: Canvas,
@@ -206,6 +210,7 @@ def crib(
     "paper-hat",
     style="cutout",
     summary="A hat folded from one sheet of paper, as worn on a first day, lettered on its band",
+    contract=_cutout_contracts.contract('paper-hat'),
 )
 def paper_hat(cv: Canvas, parent, x=540, y=600, *, label: str = "TRAINEE", scale: float = 1.0, id: str = "paper-hat"):
     """The brim's middle sits on (``x``, ``y``), 220 wide and 130 tall at scale 1."""
@@ -227,6 +232,7 @@ def paper_hat(cv: Canvas, parent, x=540, y=600, *, label: str = "TRAINEE", scale
     "roller-blind",
     style="cutout",
     summary="A roller blind over an inside window, snapping up on cue, with a pull cord that dips first",
+    contract=_cutout_contracts.contract('roller-blind'),
 )
 def roller_blind(
     cv: Canvas,
@@ -268,6 +274,8 @@ def roller_blind(
     style="cutout",
     summary="A hiring manager's office: a slate wall and a poster out of focus, a glass wall onto the next room with "
     "a roller blind, and a desk across the foot of the frame",
+    contract=_cutout_contracts.contract('hiring-office'),
+    slots=('next_room', 'behind_desk', 'on_desk'),
 )
 def hiring_office(
     cv: Canvas,
@@ -280,9 +288,11 @@ def hiring_office(
     *,
     snap: float | None = None,
     depth: float = 7.0,
+    code: tuple[float, float, float] = (1000.0, HIRING_DESK_Y + 40, 10.0),
 ):
     """``next_room`` draws behind the glass and the blind, which covers it until ``snap``; ``behind_desk`` draws who
-    sits there, above :data:`HIRING_DESK_Y`; ``on_desk`` draws in front of them."""
+    sits there, above :data:`HIRING_DESK_Y`; ``on_desk`` draws in front of them. ``code`` is where the signature's
+    right end sits and its height, for a reel whose desk things or camera would lose it at the far right."""
     ink = cv.ink
     g = cv.group(parent, id)
     if shots:
@@ -305,7 +315,7 @@ def hiring_office(
     top = cv.grad("hiring-desk", [(0, "#9A6E4C"), (0.3, "#A97C53"), (1, "#6F4F35")], (0, 0, 0.2, 1))
     cv.rect(g, -300, HIRING_DESK_Y, 1680, 1200, top, ink, 4)
     cv.rect(g, -300, HIRING_DESK_Y + 4, 1680, 7, "#FFFFFF", opacity=0.25)
-    signature.code(cv, g, 1000, HIRING_DESK_Y + 40, 10, color="#3B2A1C", align="end")
+    signature.code(cv, g, code[0], code[1], code[2], color="#3B2A1C", align="end")
     signature.cactus(cv, g, 96, HIRING_DESK_Y + 100, 0.55)
     locations._call(on_desk, g)
     return g

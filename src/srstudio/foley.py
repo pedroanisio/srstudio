@@ -47,6 +47,7 @@ __all__ = [
     "SCRAPE",
     "SWISH",
     "DING",
+    "RING",
     "THUD",
     "CHIRP",
     "CHIRP_SHUT",
@@ -62,6 +63,28 @@ __all__ = [
     "note_hz",
     "piano",
     "phrase",
+    "BITE",
+    "CHEW",
+    "PAPER_CRUNCH",
+    "COIN",
+    "GAS_LIFT",
+    "CART_WHEELS",
+    "PEN",
+    "CLACK",
+    "FLAP",
+    "CLINK",
+    "SIP",
+    "SIZZLE",
+    "PURR",
+    "HUM",
+    "BIRD",
+    "BARK",
+    "CREAK",
+    "SQUEAK",
+    "GROWL",
+    "GROWL_REPLY",
+    "GROWL_SMALL",
+    "GROWL_VAST",
     "STING",
     "whoosh",
     "write_whoosh",
@@ -70,9 +93,13 @@ __all__ = [
     "write_plop",
     "PLOP",
     "CHIME",
+    "CYCLE_DONE",
     "BELL",
     "air",
     "write_air",
+    "jingle",
+    "room",
+    "write_room",
     "WATER_EDGE",
     "water",
     "write_water",
@@ -346,6 +373,49 @@ def write_air(
     return write_wav(path, air(times, duration, length, rate, PEAK, seed), rate)
 
 
+ROOM_LOW = 0.02  # share of each noise sample a room keeps: under about 170 Hz at the foley's rate
+ROOM_HUM = ((120.0, 0.5), (240.0, 0.2))  # a fridge across the room, in the band a phone speaker still plays
+ROOM_EDGE = 0.05  # seconds it fades at each end, so the cut back to the first frame does not click
+
+
+def room(duration: float, rate: int = RATE, peak: float = PEAK, seed: int = 0) -> list[float]:
+    """A mono bed of ``duration`` seconds of an ordinary room: soft low noise and a far fridge. Silence under a held
+    pause reads as a dropped file; this keeps the pause in a place, and it never competes with a line."""
+    if not (isinstance(rate, int) and rate >= MIN_RATE):
+        raise FoleyError(f"rate {rate} must be an integer of at least {MIN_RATE} Hz")
+    if not (checks.number(duration) and duration >= 2 * ROOM_EDGE):
+        raise FoleyError(f"duration {duration} must be at least {2 * ROOM_EDGE} s")
+    if not (checks.number(peak) and 0 < peak <= 1):
+        raise FoleyError(f"peak {peak} must be in 0..1")
+    rng = random.Random(seed)
+    n, edge = int(round(duration * rate)), int(ROOM_EDGE * rate)
+    out, low = [0.0] * n, 0.0
+    for k in range(n):
+        low += ROOM_LOW * (rng.uniform(-1.0, 1.0) - low)
+        hum = sum(level * math.sin(2 * math.pi * hz * k / rate) for hz, level in ROOM_HUM)
+        out[k] = (low * 6.0 + hum * 0.2) * min(1.0, k / edge, (n - 1 - k) / edge)
+    top = max(abs(v) for v in out)
+    return [v * peak / top for v in out]
+
+
+def jingle(at: float, seed: int = 0, shakes: int = 7) -> list[float]:
+    """The moments of a bunch of keys coming out of a pocket from second ``at``, for :data:`KEYS`: a loose, uneven run
+    that slows as the hand finds the right one."""
+    if not (checks.number(at) and at >= 0 and isinstance(shakes, int) and shakes > 0):
+        raise FoleyError(f"a jingle needs a time and a count, got {at!r}, {shakes!r}")
+    rng = random.Random(seed)
+    times, gap = [at], 0.05
+    for _ in range(shakes - 1):
+        times.append(round(times[-1] + gap * rng.uniform(0.7, 1.3), 4))
+        gap *= 1.25
+    return times
+
+
+def write_room(path: Path, duration: float, rate: int = RATE, seed: int = 0) -> Path:
+    """The bed of :func:`room`, written to ``path``."""
+    return write_wav(path, room(duration, rate, PEAK, seed), rate)
+
+
 WATER_EDGE = 0.02  # seconds a shower takes to come on or go off: a tap, not a fade
 
 
@@ -393,6 +463,15 @@ Glide = tuple[float, float, float]  # (start Hz, end Hz, seconds): one note that
 STING: tuple[Glide, ...] = ((330.0, 262.0, 0.32), (262.0, 196.0, 0.42))  # the "wah-wah": two sagging notes
 CHIME: tuple[Glide, ...] = ((784.0, 784.0, 0.12), (1047.0, 1047.0, 0.22))  # a call's two-note chime
 DING: tuple[Glide, ...] = ((1319.0, 1319.0, 0.07), (1760.0, 1760.0, 0.2))  # a phone's notification
+# one ring of a desk phone: two close notes swapping fast, the trill a real bell makes
+RING: tuple[Glide, ...] = tuple((1175.0 if i % 2 else 988.0,) * 2 + (0.05,) for i in range(18))
+CYCLE_DONE: tuple[Glide, ...] = (  # an appliance pleased with itself: five notes that climb and sit back
+    (1047.0, 1047.0, 0.16),
+    (1319.0, 1319.0, 0.16),
+    (1568.0, 1568.0, 0.16),
+    (1319.0, 1319.0, 0.16),
+    (2093.0, 2093.0, 0.42),
+)
 
 
 def tones(
@@ -497,6 +576,29 @@ FAR_BARK = Burst(0.2, 900.0, attack=0.005, decay=0.5, tone_hz=520.0, tone_end_hz
 BARK_STEP = 0.34
 HUM_HZ, HUM_FLAT = 100.0, 50.0  # mains hum, and a decay so slow it reads as flat
 PLATES = Burst(0.3, 9000.0, attack=0.001, decay=0.3, tone_hz=3100.0, tone_end_hz=2900.0, tone=0.35)
+KEYS = Burst(0.08, 8000.0, attack=0.001, decay=0.2, tone_hz=4300.0, tone_end_hz=3900.0, tone=0.3)
+BITE = Burst(0.1, 3200.0, attack=0.001, decay=0.3, tone_hz=210.0, tone_end_hz=120.0, tone=0.3)  # teeth through bread
+CHEW = Burst(0.2, 800.0, attack=0.03, decay=0.5, tone_hz=120.0, tone_end_hz=85.0, tone=0.3, flutter_hz=23.0)
+PAPER_CRUNCH = Burst(0.42, 7500.0, attack=0.005, decay=0.45, flutter_hz=47.0)  # a napkin, between the teeth
+COIN = Burst(0.26, 9000.0, attack=0.001, decay=0.3, tone_hz=4300.0, tone_end_hz=4240.0, tone=0.55)  # one, on a counter
+GAS_LIFT = Burst(0.6, 6500.0, attack=0.015, decay=0.65)  # an office chair letting go; ``seconds`` sets how far it drops
+CART_WHEELS = Burst(1.1, 1300.0, attack=0.06, decay=1.6, tone_hz=95.0, tone_end_hz=95.0, tone=0.15, flutter_hz=19.0)
+PEN = Burst(0.5, 3800.0, attack=0.03, decay=0.8, flutter_hz=29.0)  # a nib on paper, unhurried
+CLACK = Burst(0.05, 7000.0, attack=0.001, decay=0.22, tone_hz=2600.0, tone_end_hz=2300.0, tone=0.45)  # kitchen tongs
+FLAP = Burst(0.12, 1800.0, attack=0.004, decay=0.3, tone_hz=240.0, tone_end_hz=140.0, tone=0.3)  # a page, a burger
+CLINK = Burst(0.09, 9000.0, attack=0.001, decay=0.2, tone_hz=4300.0, tone_end_hz=4250.0, tone=0.5)  # a coin, a glass
+SIP = Burst(0.34, 2600.0, attack=0.1, decay=0.6, tone_hz=520.0, tone_end_hz=760.0, tone=0.12, flutter_hz=31.0)  # a cup
+SIZZLE = Burst(4.0, 7000.0, attack=0.3, decay=5.0, flutter_hz=23.0)  # fat on a grill; lay them end to end
+PURR = Burst(4.0, 320.0, attack=0.3, decay=6.0, tone_hz=58.0, tone_end_hz=58.0, tone=0.5, flutter_hz=26.0)  # a motor
+HUM = Burst(4.0, 200.0, attack=0.2, decay=8.0, tone_hz=100.0, tone_end_hz=100.0, tone=0.8)  # a fridge
+BIRD = Burst(0.14, 400.0, attack=0.01, decay=0.5, tone_hz=3400.0, tone_end_hz=4300.0, tone=1.0, flutter_hz=41.0)
+BARK = Burst(0.16, 1100.0, attack=0.006, decay=0.4, tone_hz=520.0, tone_end_hz=300.0, tone=0.6, flutter_hz=70.0)
+CREAK = Burst(2.4, 520.0, attack=0.25, decay=1.4, tone_hz=210.0, tone_end_hz=120.0, tone=0.55, flutter_hz=17.0)
+SQUEAK = Burst(0.3, 900.0, attack=0.02, decay=0.5, tone_hz=1500.0, tone_end_hz=2100.0, tone=0.7, flutter_hz=33.0)
+GROWL = Burst(1.5, 240.0, attack=0.12, decay=1.1, tone_hz=88.0, tone_end_hz=190.0, tone=0.6, flutter_hz=14.0)
+GROWL_REPLY = Burst(0.9, 300.0, attack=0.08, decay=0.9, tone_hz=150.0, tone_end_hz=250.0, tone=0.6, flutter_hz=17.0)
+GROWL_SMALL = Burst(0.5, 260.0, attack=0.05, decay=0.7, tone_hz=210.0, tone_end_hz=140.0, tone=0.6, flutter_hz=21.0)
+GROWL_VAST = Burst(4.2, 180.0, attack=0.4, decay=1.6, tone_hz=62.0, tone_end_hz=36.0, tone=0.6, flutter_hz=8.0)
 
 
 _SEMITONE = {"C": -9, "D": -7, "E": -5, "F": -4, "G": -2, "A": 0, "B": 2}

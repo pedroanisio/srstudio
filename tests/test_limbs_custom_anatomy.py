@@ -41,10 +41,14 @@ def test_custom_hinge_axis_is_validated_and_used_in_local_joint_space():
 
 def test_current_motion_schema_roundtrips_axes_and_legacy_schema_supplies_default_hinges():
     data = motion_dict(Motion(ArmProfile(), GRIPPER))
-    assert data["schema"] == "srstudio.limbs/1.1.0"
+    assert data["schema"] == "srstudio.limbs/1.3.0"
     assert parse_motion(json.loads(json.dumps(data))).hand == GRIPPER
     legacy = deepcopy(motion_dict(Motion(ArmProfile(), HUMAN)))
     legacy["schema"] = "srstudio.limbs/1.0.0"
+    del legacy['motion']['joins']
+    del legacy['motion']['root']['interpolation']
+    for key in legacy['motion']['root']['keys']:
+        del key['velocity'], key['angular_velocity']
     for digit in legacy["motion"]["hand"]["digits"]:
         del digit["bend_axis"]
     assert parse_motion(legacy).hand == HUMAN

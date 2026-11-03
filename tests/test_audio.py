@@ -44,6 +44,12 @@ def test_one_mixed_file_plays_as_the_dialogue_track(project):
     assert mix_of(new).find("master").get("loudness") == "-16"
 
 
+def test_an_episode_can_set_its_own_loudness_over_its_style(project):
+    ep = Episode(spec(project, loudness="-14"))
+    ep.audio(track_id="voice-and-effects")
+    assert mix_of(ep).find("master").get("loudness") == "-14"
+
+
 def test_takes_each_bring_their_own_audio_at_the_takes_start(tmp_path):
     data = takes_data()
     (tmp_path / "timeline.json").write_text(json.dumps(data))

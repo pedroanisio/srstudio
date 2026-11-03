@@ -1,0 +1,260 @@
+{
+ "frame": {
+  "height_px": 1920,
+  "width_px": 1080
+ },
+ "location": {
+  "catalog": "studio",
+  "digest": "301e5701d9e16ec2b19fcc7f4955891d0eef30496ffba854cd0fe5abf905bf99",
+  "name": "airliner",
+  "source": "catalog",
+  "version": "1.0.1"
+ },
+ "schema_version": "1.0.0",
+ "shots": [
+  {
+   "camera": {
+    "eye_m": [
+     0.0,
+     1.22,
+     -1.3
+    ],
+    "fit": "height",
+    "focal_px": 1200.0,
+    "forward": [
+     0.0,
+     0.0,
+     1.0
+    ],
+    "gate_mm": [
+     36.0,
+     24.0
+    ],
+    "lens_mm": 15.0,
+    "look_at_m": [
+     0.0,
+     1.22,
+     8.0
+    ],
+    "near_m": 0.05,
+    "right": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "up": [
+     0.0,
+     1.0,
+     0.0
+    ]
+   },
+   "marks": [
+    {
+     "at_m": [
+      0.0,
+      0.0,
+      3.0
+     ],
+     "facing_deg": 0.0,
+     "feet_px": [
+      540.0,
+      1300.4651162790697
+     ],
+     "framing": "",
+     "head_px": [
+      540.0,
+      826.046511627907
+     ],
+     "height_m": 1.7,
+     "in_frame": true,
+     "mark": "aisle",
+     "pixels_per_metre": 279.06976744186045
+    },
+    {
+     "at_m": [
+      0.0,
+      0.0,
+      10.9
+     ],
+     "facing_deg": 180.0,
+     "feet_px": [
+      540.0,
+      1080.0
+     ],
+     "framing": "",
+     "head_px": [
+      540.0,
+      912.7868852459017
+     ],
+     "height_m": 1.7,
+     "in_frame": true,
+     "mark": "galley-door",
+     "pixels_per_metre": 98.3606557377049
+    }
+   ],
+   "name": "down-the-aisle"
+  },
+  {
+   "camera": {
+    "eye_m": [
+     -1.0,
+     1.2,
+     3.0
+    ],
+    "fit": "height",
+    "focal_px": 1600.0,
+    "forward": [
+     0.6294366339755545,
+     -0.06052275326688023,
+     0.7746912418160671
+    ],
+    "gate_mm": [
+     36.0,
+     24.0
+    ],
+    "lens_mm": 20.0,
+    "look_at_m": [
+     1.6,
+     0.95,
+     6.2
+    ],
+    "near_m": 0.05,
+    "right": [
+     0.7761140001162655,
+     0.0,
+     -0.6305926250944657
+    ],
+    "up": [
+     0.038165201860506655,
+     0.9981668178901743,
+     0.046972556136008196
+    ]
+   },
+   "marks": [
+    {
+     "at_m": [
+      0.0,
+      0.0,
+      3.0
+     ],
+     "facing_deg": 0.0,
+     "feet_px": [
+      2308.759700017964,
+      3602.801983154525
+     ],
+     "framing": "",
+     "head_px": [
+      2612.486113152362,
+      -474.6349699118848
+     ],
+     "height_m": 1.7,
+     "in_frame": false,
+     "mark": "aisle",
+     "pixels_per_metre": 2278.9947092218354
+    },
+    {
+     "at_m": [
+      0.0,
+      0.0,
+      10.9
+     ],
+     "facing_deg": 180.0,
+     "feet_px": [
+      -446.3361678839527,
+      1144.939869083773
+     ],
+     "framing": "",
+     "head_px": [
+      -461.43949598161726,
+      743.7059343938276
+     ],
+     "height_m": 1.7,
+     "in_frame": false,
+     "mark": "galley-door",
+     "pixels_per_metre": 234.53103820948624
+    }
+   ],
+   "name": "window-seat"
+  },
+  {
+   "camera": {
+    "eye_m": [
+     0.0,
+     1.55,
+     10.9
+    ],
+    "fit": "height",
+    "focal_px": 1440.0,
+    "forward": [
+     1.223604486130022e-16,
+     -0.04124926597011402,
+     -0.9991488868316507
+    ],
+    "gate_mm": [
+     36.0,
+     24.0
+    ],
+    "lens_mm": 18.0,
+    "look_at_m": [
+     0.0,
+     1.1,
+     0.0
+    ],
+    "near_m": 0.05,
+    "right": [
+     -1.0,
+     0.0,
+     -1.2246467991473532e-16
+    ],
+    "up": [
+     5.051578153747797e-18,
+     0.9991488868316507,
+     -0.04124926597011402
+    ]
+   },
+   "marks": [
+    {
+     "at_m": [
+      0.0,
+      0.0,
+      3.0
+     ],
+     "facing_deg": 0.0,
+     "feet_px": [
+      540.0000000000002,
+      1181.2896351121735
+     ],
+     "framing": "",
+     "head_px": [
+      540.0000000000002,
+      873.1405991225267
+     ],
+     "height_m": 1.7,
+     "in_frame": true,
+     "mark": "aisle",
+     "pixels_per_metre": 180.96789392688677
+    },
+    {
+     "at_m": [
+      0.0,
+      0.0,
+      10.9
+     ],
+     "facing_deg": 180.0,
+     "feet_px": [
+      540.0,
+      35840.00000000001
+     ],
+     "framing": "",
+     "head_px": null,
+     "height_m": 1.7,
+     "in_frame": false,
+     "mark": "galley-door",
+     "pixels_per_metre": 22522.394913345124
+    }
+   ],
+   "name": "from-the-galley"
+  }
+ ],
+ "srlocations_commit": "be0aabced115e4e885adba380c72f2f63f80959c"
+}

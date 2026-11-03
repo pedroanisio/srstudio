@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from functools import partial
 
+from . import _stick_scene_contracts as sc
 from . import checks, look, signature
 from .canvas import Canvas
 from .registry import register
@@ -73,7 +74,12 @@ def _city(cv: Canvas, parent, lit: bool) -> None:
                     box(cv, parent, x + bx + 14 + (j % 2) * 26, base - bh + 24 + j * 40, 14, 18, CITY_LIT)
 
 
-@register("location", "stick-gym", tags=("gym", "fitness", "front-desk", "window", "dawn", "font"))
+@register(
+    "location",
+    "stick-gym",
+    contract=sc.contract('stick-gym'),
+    tags=("gym", "fitness", "front-desk", "window", "dawn", "font"),
+)
 def gym(cv: Canvas, parent, end: float, *, sunrise: float | None = None) -> None:
     """The gym's front desk area before dawn: the wall, the brand, the poster, the window with the city (night, or
     dawn from ``sunrise`` seconds on the parent's clock, turning over :data:`DAWN`; 0 draws it already day), the
@@ -135,7 +141,12 @@ def gym(cv: Canvas, parent, end: float, *, sunrise: float | None = None) -> None
     signature.code(s, parent, 40, 1880, 9, color="#6b7280")  # on the mats' near edge (ADR 0001)
 
 
-@register("prop", "stick-gym-counter", tags=("gym", "front-desk", "sign", "fine-print", "font"))
+@register(
+    "prop",
+    "stick-gym-counter",
+    contract=sc.contract('stick-gym-counter'),
+    tags=("gym", "front-desk", "sign", "fine-print", "font"),
+)
 def counter(cv: Canvas, parent, *, sign: str, fine: str = ""):
     """The front desk, drawn over the staff: the slab, the front with its stripe, a card reader, and the tent sign
     on top lettered ``sign`` (1 to :data:`SIGN_CHARS` characters) over its ``fine`` print (up to

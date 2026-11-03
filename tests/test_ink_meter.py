@@ -221,3 +221,39 @@ def test_a_taken_row_flips_to_ink_with_a_cross_and_the_word_taken():
 def test_the_meter_the_kerb_and_the_app_refuse_what_they_cannot_show(call, match):
     with pytest.raises(MeterError, match=match):
         call(canvas())
+
+
+@pytest.mark.parametrize('local', [False, True])
+@pytest.mark.parametrize(
+    'count,extras', [(6, {}), (5, {'progress': (0, 1)}), (5, {'stars': 1}), (4, {'progress': (0, 1), 'stars': 1})]
+)
+def test_app_refuses_content_that_overflows_the_phone_before_drawing(count, extras, local):
+    cv = canvas()
+    cv.local_time = local
+    before = cv.scene.to_bytes()
+    with pytest.raises(MeterError, match='fit.*screen'):
+        ink_meter.app_screen(
+            cv, cv.comp, take(duration=3), title='Park', rows=tuple(AppRow(f'Row {i}') for i in range(count)), **extras
+        )
+    assert cv.scene.to_bytes() == before
+
+
+@pytest.mark.parametrize(
+    'count,extras', [(5, {}), (4, {'progress': (0, 1)}), (4, {'stars': 1}), (3, {'progress': (0, 1), 'stars': 1})]
+)
+def test_app_keeps_largest_fitting_forms_inside_the_glass(count, extras):
+    cv = canvas()
+    ink_meter.app_screen(
+        cv, cv.comp, take(duration=3), title='Park', rows=tuple(AppRow(f'Row {i}') for i in range(count)), **extras
+    )
+    root = ET.fromstring(cv.scene.to_bytes())
+    assets = {t.get('id'): t for t in root.iter('text')}
+    rows = [
+        layer
+        for layer in root.iter('layer')
+        if layer.get('asset') in assets and assets[layer.get('asset')].get('text', '').startswith('Row ')
+    ]
+    assert len(rows) == count
+    for row in rows:
+        assert float(row.get('y')) >= 368
+        assert float(row.get('y')) + float(assets[row.get('asset')].get('height')) <= 980

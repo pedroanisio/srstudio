@@ -28,7 +28,9 @@ from importlib.resources import files
 from pathlib import Path
 from typing import Any
 
-from . import checks, signature
+from . import _character_contracts as cc
+from . import _toon_contracts as tc
+from . import checks, show, signature
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -401,7 +403,9 @@ CHAIR_D = _d(
 )  # fmt: skip
 
 
-@register("location", "toon-room", summary="A gradient wall, a window and a chair back")
+@register(
+    "location", "toon-room", contract=tc.contract('toon-room'), summary="A gradient wall, a window and a chair back"
+)
 def room(cv: Canvas, parent) -> None:
     g = cv.group(parent, cv.uid("g"))
     cv.rect(g, 0, 0, cv.width, cv.height, cv.grad("toon-wall", [(float(o), c) for o, c in WALL], (0, 0, 0, 1)))
@@ -412,7 +416,12 @@ def room(cv: Canvas, parent) -> None:
     _path(cv, g, CHAIR_D, CHAIR)
 
 
-@register("location", "toon-desk", summary="The laptop lid and the desk in front of the character")
+@register(
+    "location",
+    "toon-desk",
+    contract=tc.contract('toon-desk'),
+    summary="The laptop lid and the desk in front of the character",
+)
 def desk(cv: Canvas, parent) -> None:
     g = cv.group(parent, cv.uid("g"))
     _path(cv, g, _d("M", (418, 531), "L", (660, 523), "L", (660, 760), "L", (415, 752), "Z"), LAPTOP)
@@ -499,7 +508,12 @@ def _layers(cv: Canvas, g, layers: Sequence[tuple[Shape, str]]) -> None:
         flat(cv, g, shape, {"ink": cv.ink, "white": cv.white}.get(colour, colour))
 
 
-@register("character", "toon-cat", summary="The desk cat, traced: a body per arm pose, eyes and a mouth per expression")
+@register(
+    "character",
+    "toon-cat",
+    summary="The desk cat, traced: a body per arm pose, eyes and a mouth per expression",
+    contract=cc.toon(Pose, TRACED_EYES, TRACED_MOUTHS, ARMS, wear=WEAR),
+)
 def cat(
     cv: Canvas, parent, poses: Sequence[Pose], duration: float, taps: Sequence[float] = (), enter: float = 0.0
 ) -> list:
@@ -544,17 +558,38 @@ def pill_width(measure: Callable[[str], float], text: str) -> float:
     return round(max(measure(text) + CAPTION_PAD, round(fh(CAPTION_H))), 2)
 
 
-@register("graphic", "toon-captions", summary="Each cue in a white pill at the top, in the style's italic")
+@register(
+    "graphic",
+    "toon-captions",
+    contract=tc.contract('toon-captions'),
+    summary="Each cue in a white pill at the top, in the style's italic",
+)
 def captions(
-    cv: Canvas, parent, lines: Sequence[Line], measure: Callable[[str], float], tints: Mapping[str, str] | None = None
+    cv: Canvas,
+    parent,
+    lines: Sequence[Line],
+    measure: Callable[[str], float],
+    tints: Mapping[str, str] | None = None,
+    *,
+    band: float = CAPTION_TOP,
+    clear_bug: bool = False,
 ) -> None:
     """One pill per cue, centred, sized by ``measure(text)`` (the text's advance width at :data:`CAPTION_SIZE`);
-    ``tints`` colours the pill of a cue by its speaker (white otherwise)."""
+    ``tints`` colours the pill of a cue by its speaker (white otherwise); ``band`` is the top of the pills in reference
+    pixels, for a reel whose corner bug would crowd them. With ``clear_bug`` a pill that comes within
+    :data:`srstudio.show.CLEAR` pixels of the show's bug is refused, since a Toon pill is one row: lower the band or
+    split the line. False keeps a published reel's pills."""
     cv.require_font("the Toon style letters its captions in its font")
-    top, height = int(round(fy(CAPTION_TOP))), int(round(fh(CAPTION_H)))  # the text box takes whole pixels
+    top, height = int(round(fy(band))), int(round(fh(CAPTION_H)))  # the text box takes whole pixels
     for line in lines:
-        g = cv.group(parent, cv.uid("g"), start=line.start, end=line.end)
         width = pill_width(measure, line.text)
+        left = round(cv.width / 2 - width / 2, 2)
+        if clear_bug and not show.clear_of_bug((left, top, left + width, top + height)):
+            raise ToonDataError(
+                f"the caption {line.text!r} at ({left}, {top}) to ({left + width}, {top + height}) comes within "
+                f"{show.CLEAR:g} px of the show bug {show.BUG_BOX}: lower the band or split the line"
+            )
+        g = cv.group(parent, cv.uid("g"), start=line.start, end=line.end)
         fill = (tints or {}).get(line.speaker, cv.white)
-        cv.rect(g, round(cv.width / 2 - width / 2, 2), top, width, height, fill, cv.clear, 0, radius=CAPTION_RADIUS)
+        cv.rect(g, left, top, width, height, fill, cv.clear, 0, radius=CAPTION_RADIUS)
         cv.text(g, cv.uid("caption"), line.text, 0, top, cv.width, height, CAPTION_SIZE, color=cv.ink, wrap="none")

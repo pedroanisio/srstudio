@@ -1,0 +1,197 @@
+{
+  "schema": "1.0.0",
+  "exemptions": [
+    {
+      "reel": "any-news",
+      "rule": "hand-no-side",
+      "part": "collage-arm",
+      "why": "published before a hand had to say its side; its picture is frozen"
+    },
+    {
+      "reel": "fluent",
+      "rule": "hand-no-side",
+      "part": "collage-arm",
+      "why": "published before a hand had to say its side; its picture is frozen"
+    },
+    {
+      "reel": "ill-get-this",
+      "rule": "hand-no-side",
+      "part": "collage-arm",
+      "why": "published before a hand had to say its side; its picture is frozen"
+    },
+    {
+      "reel": "its-gone",
+      "rule": "hand-no-side",
+      "part": "collage-arm",
+      "why": "published before a hand had to say its side; its picture is frozen"
+    },
+    {
+      "reel": "missing-lid",
+      "rule": "hand-unpaired",
+      "part": "news-gus",
+      "why": "published on a version with one hand on both arms; its picture is frozen (ADR 0142)"
+    },
+    {
+      "reel": "missing-lid",
+      "rule": "hand-unpaired",
+      "part": "news-vera",
+      "why": "published on a version with one hand on both arms; its picture is frozen (ADR 0142)"
+    },
+    {
+      "reel": "regards-dad",
+      "rule": "hand-no-side",
+      "part": "collage-arm",
+      "why": "published before a hand had to say its side; its picture is frozen"
+    },
+    {
+      "reel": "seabird-jet-lag",
+      "rule": "hand-unpaired",
+      "part": "news-gus",
+      "why": "published on a version with one hand on both arms; its picture is frozen (ADR 0142)"
+    },
+    {
+      "reel": "seabird-jet-lag",
+      "rule": "hand-unpaired",
+      "part": "news-vera",
+      "why": "published on a version with one hand on both arms; its picture is frozen (ADR 0142)"
+    },
+    {
+      "reel": "baby-monitor",
+      "rule": "hand-no-arm",
+      "part": "toon-lasagna",
+      "why": "published before rule 2: the prop draws its holder's hand, the build never named the arm"
+    },
+    {
+      "reel": "do-you-floss",
+      "rule": "hand-no-arm",
+      "part": "toon-clipboard",
+      "why": "published before rule 2: the prop draws its holder's hand, the build never named the arm"
+    },
+    {
+      "reel": "entry-level",
+      "rule": "hand-no-arm",
+      "part": "crayon-cv",
+      "why": "published before rule 2: the prop draws its holder's hand, the build never named the arm"
+    },
+    {
+      "reel": "get-your-mother",
+      "rule": "hand-no-arm",
+      "part": "toon-phone",
+      "why": "published before rule 2: the prop draws its holder's hand, the build never named the arm"
+    },
+    {
+      "reel": "its-soaking",
+      "rule": "hand-no-arm",
+      "part": "toon-watering-can",
+      "why": "published before rule 2: the prop draws its holder's hand, the build never named the arm"
+    },
+    {
+      "reel": "nine-alarms",
+      "rule": "hand-no-arm",
+      "part": "toon-phone",
+      "why": "published before rule 2: the prop draws its holder's hand, the build never named the arm"
+    },
+    {
+      "reel": "text-me",
+      "rule": "hand-no-arm",
+      "part": "toon-phone",
+      "why": "published before rule 2: the prop draws its holder's hand, the build never named the arm"
+    },
+    {
+      "reel": "texts-back",
+      "rule": "hand-no-arm",
+      "part": "toon-phone",
+      "why": "published before rule 2: the prop draws its holder's hand, the build never named the arm"
+    },
+    {
+      "reel": "voice-note",
+      "rule": "hand-no-arm",
+      "part": "toon-watering-can",
+      "why": "published before rule 2: the prop draws its holder's hand, the build never named the arm"
+    },
+    {
+      "reel": "thought-of-you",
+      "rule": "hand-no-side",
+      "part": "collage-arm",
+      "why": "published before a hand had to say its side; its picture is frozen, and its insert is a POV arm drawn right"
+    },
+    {
+      "reel": "nine-alarms",
+      "rule": "hand-count",
+      "part": "bear",
+      "why": "published before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm; its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "nine-alarms",
+      "rule": "hand-count",
+      "part": "rabbit",
+      "why": "published before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm; its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "regards-dad",
+      "rule": "hand-count",
+      "part": "gary",
+      "why": "published before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm; its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "regards-dad",
+      "rule": "bust-open",
+      "part": "collage-gary",
+      "why": "posted; the frame check reads the figure open at the waist at 11.5 s, but on the posted frame it ends behind the counter top (false finding, signed off by arc4d3 in Slack 1793597983.414849)"
+    },
+    {
+      "reel": "regards-dad",
+      "rule": "bust-open",
+      "part": "collage-kai",
+      "why": "posted; the frame check reads the figure open at the waist at 11.5 s, but on the posted frame it ends behind the counter top (false finding, signed off by arc4d3 in Slack 1793597983.414849)"
+    },
+    {
+      "reel": "home-anyway",
+      "rule": "hand-count",
+      "part": "rabbit",
+      "why": "delivered before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm that reads as attached on every flagged frame (signed off by arc4d3 in Slack 1793598631.780769); its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "ill-get-this",
+      "rule": "hand-count",
+      "part": "gary",
+      "why": "delivered before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm that reads as attached on every flagged frame (signed off by arc4d3 in Slack 1793598631.780769); its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "ill-get-this",
+      "rule": "hand-count",
+      "part": "rosa",
+      "why": "delivered before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm that reads as attached on every flagged frame (signed off by arc4d3 in Slack 1793598631.780769); its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "it-autoplayed",
+      "rule": "hand-count",
+      "part": "bear",
+      "why": "delivered before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm that reads as attached on every flagged frame (signed off by arc4d3 in Slack 1793598631.780769); its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "it-autoplayed",
+      "rule": "hand-count",
+      "part": "rabbit",
+      "why": "delivered before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm that reads as attached on every flagged frame (signed off by arc4d3 in Slack 1793598631.780769); its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "its-gone",
+      "rule": "hand-count",
+      "part": "rosa",
+      "why": "delivered before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm that reads as attached on every flagged frame (signed off by arc4d3 in Slack 1793598631.780769); its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "texts-back",
+      "rule": "hand-count",
+      "part": "dog",
+      "why": "delivered before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm that reads as attached on every flagged frame (signed off by arc4d3 in Slack 1793598631.780769); its picture is frozen (ADR 0174)"
+    },
+    {
+      "reel": "texts-back",
+      "rule": "hand-count",
+      "part": "rabbit",
+      "why": "delivered before rule 2 counted a figure's hands across its layers: a body drawing keeps its pair behind the set beside a scene arm that reads as attached on every flagged frame (signed off by arc4d3 in Slack 1793598631.780769); its picture is frozen (ADR 0174)"
+    }
+  ]
+}

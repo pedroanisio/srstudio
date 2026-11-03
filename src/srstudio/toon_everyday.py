@@ -10,12 +10,13 @@ unrolls, its rows of items and prices showing as the paper passes them; a longer
 display whose number changes on cue. :func:`clipboard` holds a printed form (a job application, a sign-in sheet):
 its title, labelled rows whose handwritten values are filled in on cue, and a stamp that lands across it.
 
-Every prop stands at a reference point (``at``, screen pixels as :func:`srstudio.toon.fx`/``fy`` map them), is
-drawn ``scale`` times its size about that point, and returns its footprint, the reference box it may draw in over
-its whole life (motion included). A placement whose footprint leaves the frame, enters the caption band or touches
+The phone, speaker, receipt, dispenser and clipboard stand at reference ``at`` (:func:`srstudio.toon.fx`/``fy``),
+drawn ``scale`` times their size, and return a reference footprint including their motion allowance.
+The TV menu and remote return groups; rating stars return None. A checked footprint leaving the frame, entering
+the caption band or touching
 the signature marks on the desk (:data:`SIGNATURE_BOX`) is refused, and so is a text its box does not hold, measured
 in the style's font by the ``measure`` the sketch build passes (``Shot.measure``). States are keyed from 0 in rising
-project seconds, on the composition clock like the rest of the style; every refusal is a :class:`ToonDataError`.
+project seconds on the composition clock; every refusal is a :class:`ToonDataError`.
 """
 
 from __future__ import annotations
@@ -25,7 +26,8 @@ import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
-from . import checks
+from . import _toon_detail_contracts as dc
+from . import anatomy_ledger, checks
 from .canvas import Align, Canvas
 from .registry import register
 from .toon import CAPTION_H, CAPTION_TOP, FINE_W, INK_W, REF_TOP, REF_W, SCALE, ToonDataError, fh, fx, fy
@@ -52,11 +54,15 @@ __all__ = [
     "STAMP_POP",
     "STAMP_TILT",
     "STAMP_TONES",
+    "TV_MENU_HEAD",
+    "TV_MENU_LABEL",
     "Field",
     "Screen",
     "clipboard",
     "phone",
     "receipt",
+    "remote",
+    "tv_menu",
     "ring_keys",
     "stars",
     "speaker",
@@ -325,6 +331,7 @@ def _screen(cv: Canvas, g, gid: str, s: Screen, fill_until: float) -> None:
 @register(
     "prop",
     "toon-phone",
+    contract=dc.contract('toon-phone'),
     summary="A smartphone standing on a surface or held, whose screen changes on cue: a notification that buzzes it, "
     "a code or password prompt, a dating profile, a declined payment, a loading bar, the screen off",
 )
@@ -358,6 +365,7 @@ def phone(
         _shown(cv, sg, s.at, nxt)
         _screen(cv, sg, f"{id}-screen-{k}", s, s.at + FILL_TIME if nxt is None else nxt)
     if hand is not None:
+        anatomy_ledger.loose_hand(cv, "toon-phone")
         _ellipse(cv, g, -68, -96, 22, 36, hand, FINE_W)
     buzzes = [s.at for s in shown if s.kind == "notify"]
     if buzzes:
@@ -369,13 +377,79 @@ def phone(
     return box
 
 
+# -- the TV -----------------------------------------------------------------------------------------------------------
+MENU_BG, MENU_TRACK, MENU_SEEN, MENU_INK = "#10151f", "#3a4254", "#e8ecf5", "#f4f6fb"
+TILE_WALL, TILE_DOOR, TILE_FRAME, TILE_KNOB, TILE_FLOOR = "#54607a", "#8a6a4e", "#6d533c", "#e0c063", "#39415a"
+TV_MENU_X, TV_MENU_W = 40.0, 512.0  # the row's left edge and width, reference pixels
+TILE_TOP, TILE_H = 420.0, 410.0
+BAR_TOP, BAR_H = 846.0, 18.0
+TV_MENU_HEAD = Slot(TV_MENU_X, 340.0, TV_MENU_W, 56.0, 62, MENU_INK, "start")
+TV_MENU_LABEL = Slot(TV_MENU_X, 880.0, TV_MENU_W, 64.0, 76, MENU_INK, "start")
+TV_MENU_HEADING = "CONTINUE WATCHING"
+REMOTE_BODY, REMOTE_KEY, REMOTE_LIGHT = "#2b2f3a", "#8d94a6", "#d8dde8"
+
+
+@register(
+    "prop",
+    "toon-tv-menu",
+    contract=dc.contract('toon-tv-menu'),
+    summary="A full-frame TV menu with one row: a plain door on its tile, a bar as far as it has been seen, a label. "
+    "An invented interface, no app name or logo",
+)
+def tv_menu(cv: Canvas, parent, label: str, seen: float, *, measure: Measure, id: str = "tv-menu"):
+    """The whole frame as a television's menu, its one row ``label`` watched as far as ``seen`` (over 0, at most 1).
+    A label the row cannot hold is refused. Returns its group."""
+    if not (checks.number(seen) and 0 < seen <= 1):
+        raise ToonDataError(f"a menu's bar is seen over 0 and at most 1, got {seen!r}")
+    shown = TV_MENU_LABEL.fit(measure, label, "the menu's label")
+    head = TV_MENU_HEAD.fit(measure, TV_MENU_HEADING, "the menu's heading")
+    g = cv.group(parent, id, x=fx(0), y=fy(0))
+    _rect(cv, g, -8, REF_TOP - 8, REF_W + 16, 1080, MENU_BG, 0)
+    TV_MENU_HEAD.draw(cv, g, head, "menu-text")
+    x, w = TV_MENU_X, TV_MENU_W
+    _rect(cv, g, x, TILE_TOP, w, TILE_H, TILE_WALL, FINE_W, radius=10)
+    _rect(cv, g, x, TILE_TOP + TILE_H - 72, w, 72, TILE_FLOOR, 0)
+    door_x, door_w, door_h = x + 176, 160.0, 296.0
+    _rect(cv, g, door_x - 12, TILE_TOP + TILE_H - 72 - door_h - 12, door_w + 24, door_h + 12, TILE_FRAME, FINE_W * 0.6)
+    _rect(cv, g, door_x, TILE_TOP + TILE_H - 72 - door_h, door_w, door_h, TILE_DOOR, FINE_W * 0.6)
+    _ellipse(cv, g, door_x + door_w - 34, TILE_TOP + TILE_H - 72 - door_h / 2, 18, 18, TILE_KNOB, FINE_W * 0.5)
+    _rect(cv, g, x, BAR_TOP, w, BAR_H, MENU_TRACK, 0, radius=4)
+    bar = cv.group(g, f"{id}-seen", anchorX=fh(x), anchorY=fh(BAR_TOP), x=fh(x), y=fh(BAR_TOP), scaleX=seen)
+    _rect(cv, bar, x, BAR_TOP, w, BAR_H, MENU_SEEN, 0, radius=4)
+    TV_MENU_LABEL.draw(cv, g, shown, "menu-text")
+    return g
+
+
+@register(
+    "prop", "toon-remote", contract=dc.contract('toon-remote'), summary="A plain TV remote, small enough for a paw"
+)
+def remote(cv: Canvas, parent, at: tuple[float, float], *, scale: float = 1.0, tilt: float = 0.0, id: str = "remote"):
+    """A remote with its middle at reference ``at``, turned ``tilt`` degrees, for a hand to hold. Returns its group."""
+    if not (checks.number(scale) and scale > 0):
+        raise ToonDataError(f"a remote's scale is over 0, got {scale!r}")
+    if not checks.number(tilt):
+        raise ToonDataError(f"a remote's tilt is a number of degrees, got {tilt!r}")
+    g = cv.group(parent, id, x=fx(at[0]), y=fy(at[1]), scaleX=scale, scaleY=scale, rotation=tilt)
+    _rect(cv, g, -26, -74, 52, 148, REMOTE_BODY, INK_W * 0.7, radius=14)
+    _ellipse(cv, g, -7, -60, 14, 14, REMOTE_LIGHT, 0)
+    for row in range(3):
+        for column in (-14, 6):
+            _rect(cv, g, column, -30 + row * 26, 10, 12, REMOTE_KEY, 0, radius=3)
+    return g
+
+
 # -- the rating --------------------------------------------------------------------------------------------------------
 STAR_FILL, STAR_EMPTY = "#ffcf33", "#59606b"
 STAR_R = 21.0  # a star's outer radius, reference pixels
 STAR_MAX = 5
 
 
-@register("prop", "toon-stars", summary="A row of rating stars that fill one at a time, for a phone's screen or a sign")
+@register(
+    "prop",
+    "toon-stars",
+    contract=dc.contract('toon-stars'),
+    summary="A row of rating stars that fill one at a time, for a phone's screen or a sign",
+)
 def stars(
     cv: Canvas,
     parent,
@@ -482,6 +556,7 @@ def ring_keys(states: Sequence[tuple[float, str]], end: float) -> dict[str, list
 @register(
     "prop",
     "toon-speaker",
+    contract=dc.contract('toon-speaker'),
     summary="A smart speaker whose light ring shows what it is doing: dark, listening, thinking (a light chasing "
     "round), speaking (the ring pulsing) or an error (red)",
 )
@@ -556,6 +631,7 @@ def _dashes(cv: Canvas, g, y: float) -> None:
 @register(
     "prop",
     "toon-receipt",
+    contract=dc.contract('toon-receipt'),
     summary="A receipt that unrolls from a printer's slot, its items and prices showing as the paper passes them; "
     "an optional store name on top and a total under a rule",
 )
@@ -648,6 +724,7 @@ def _number(value, slot: Slot, measure: Measure, what: str) -> str:
 @register(
     "prop",
     "toon-take-a-number",
+    contract=dc.contract('toon-take-a-number'),
     summary="A take-a-number dispenser on its pole, a ticket sticking out of it, under a NOW SERVING display whose "
     "number changes on cue",
 )
@@ -709,6 +786,7 @@ class Field:
 
 
 BOARD, CLIP, PEN = "#b07b4f", "#c9cdd3", "#1e40af"
+CLIP_TOP = 242.0  # how far the clip stands above the foot of the board, reference units at scale 1
 FORM_X, FORM_W = -64.0, 128.0  # the lettering's width on the paper, reference units
 TITLE_SLOT = Slot(FORM_X, -214, FORM_W, 28, 30)
 FIRST_ROW, ROW_PITCH, ROW_H = -178.0, 30.0, 28.0
@@ -765,6 +843,7 @@ def _stamp(stamp, measure: Measure) -> tuple[float, str, str] | None:
 @register(
     "prop",
     "toon-clipboard",
+    contract=dc.contract('toon-clipboard'),
     summary="A clipboard holding a printed form (a job application, a sign-in sheet): its title, labelled rows "
     "whose handwritten values are filled in on cue, and a REJECTED or HIRED stamp that lands across it",
 )
@@ -809,7 +888,7 @@ def clipboard(
             v = cv.group(g, f"{id}-value-{k}")
             _shown(cv, v, float(f.at), None)
             value.draw(cv, v, f.value, "form-text")
-    _rect(cv, g, -30, -242, 60, 24, CLIP, INK_W * 0.6, radius=6)
+    _rect(cv, g, -30, -CLIP_TOP, 60, 24, CLIP, INK_W * 0.6, radius=6)
     _rect(cv, g, -16, -236, 32, 6, PRINTER, 0, radius=3)
     if landing is not None:
         t, text, tone = landing
@@ -824,5 +903,6 @@ def clipboard(
             cv, st, text, "stamp-text"
         )
     if hand is not None:
+        anatomy_ledger.loose_hand(cv, "toon-clipboard")
         _ellipse(cv, g, -89, -130, 24, 40, hand, FINE_W)
     return box

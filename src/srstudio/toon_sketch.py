@@ -22,6 +22,7 @@ all synthesised deterministically by :mod:`srstudio.foley`.
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -36,6 +37,7 @@ from . import (
     TOON,
     Episode,
     EpisodeSpec,
+    camera,
     checks,
     craft,
     errors,
@@ -46,6 +48,7 @@ from . import (
     sketch,
     soundtrack,
     subtitles,
+    thumbnail,
     toon,
     toon_head,
     toon_props,
@@ -138,8 +141,17 @@ class Staging:
     overlay: Callable[[Canvas, object, Sequence[Any], float, Callable[..., float]], None] | None = None
     """``(cv, parent, beats, end, measure)`` draws what stays over every shot, under the captions and out of the
     camera's reach, from the beats the build placed: a show's graphics."""
+    opening: Callable[[Canvas, object, float, Callable[..., float]], Any] | None = None
+    """``(cv, parent, said, measure)`` draws the reel's opening line (:mod:`srstudio.opener`) over every shot, out of
+    the camera's reach, from the first frame until ``said``, when the first spoken line stops
+    (:func:`srstudio.sketch.first_line_end`): its take on a recording, the next line's start on the scripted clock.
+    What it returns is kept off the cover."""
     safe_area: SafeArea | None = None  # declared on the project, for a show that keeps its text inside one
     loudness: str | None = None  # the master's integrated LUFS, when a reel departs from its style's
+    moves: Mapping[str, Callable[[Canvas, Any, Any, Sequence[Any]], None]] = field(default_factory=dict)
+    """Per character: ``(cv, body, appearance, beats)`` keys that shot's body group on the project clock, about the
+    character's seat, so a figure can bend, sink or sway while its set stays put."""
+    bleed: bool = False  # far planes blurred past the frame's edge (srstudio.look.sheet): every new reel sets it
 
 
 def figure_group(cv: Canvas, parent, framing: tuple[float, float] | None):
@@ -217,6 +229,21 @@ def fit_captions(lines: Sequence[toon.Line], measure: Callable[[str], float], wi
         raise StagingError("captions too wide for one pill: " + "; ".join(repr(t) for t in wide))
 
 
+def opening_push(scale: float = 1.06, at: tuple[float, float] = (540.0, 1000.0)) -> Callable[[Shot, object], None]:
+    """A :attr:`Staging.camera` that pushes in on ``at`` across the first shot and leaves the others where they stand:
+    a reel that speaks from its first frame opens on movement (the ``sp-hook_motion`` test's arm b) without a redrawn
+    pose or another second of recording."""
+    if not (checks.number(scale) and scale > 1):
+        raise StagingError(f"an opening push grows the shot, above 1, got {scale!r}")
+
+    def push(shot: Shot, group: object) -> None:
+        if shot.app.start == 0:
+            camera.anchor(group, *at, place=True)
+            camera.push_in(shot.cv, group, scale=[(0.0, 1.0), (shot.app.end, scale)])
+
+    return push
+
+
 def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
     """The episode, drawn and ready for its post and :meth:`Episode.finish`; ``--init`` writes the project files
     and returns ``None`` (the script ends there), ``--voice`` builds from the recording."""
@@ -250,6 +277,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
             language="en-US",
             output=staging.output,
             safe_area=staging.safe_area,
+            bleed=staging.bleed,
             output_options=dict(
                 codec="h264",
                 container="mp4",
@@ -296,6 +324,10 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         poses = toon.parse_poses(app.poses, f"poses of {app.who} from {app.start} s")
         extra = {} if app.who in bare else sketch.drawer_extras(app.who, staging.stickers, mouths)
         body = figure_group(cv, g, staging.figures.get(app.who))
+        if app.who in staging.moves:
+            x, y = toon.fx(SEAT[0]), toon.fy(SEAT[1])
+            body = cv.group(body, cv.uid("g"), anchorX=x, anchorY=y, x=x, y=y)
+            staging.moves[app.who](cv, body, app, sk.beats)
         if app.who in bare:
             pass  # a card: the dress draws the whole frame
         elif app.who in heads:
@@ -318,6 +350,10 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
     lines = toon.load_script(root / ep.spec.dialogue)
     if staging.overlay is not None:
         staging.overlay(cv, ep.comp, sk.beats, sk.end, measure)
+    if staging.opening is not None:
+        drawn = staging.opening(cv, ep.comp, sketch.first_line_end(root, sk, voiced), measure)
+        if drawn is not None:
+            ep.hide_on_cover(drawn)
     if staging.captions is not None:
         drawn = staging.captions(cv, ep.comp, lines, measure, staging.tints)
         if drawn is not None:
@@ -435,18 +471,44 @@ def recorder(
     validate: Callable[[sketch.Sketch], object] | None = None,
     foley_of: Foley = sound_effects,
     sounds: Sounds | None = None,
+    cover: thumbnail.Thumbnail | None = None,
+    cover_font: str = "",
+    cover_size: tuple[int, int] = (1080, 1920),
 ) -> Callable[..., int]:
     """The ``main`` of an episode's recording script: :func:`srstudio.recording.main` around :func:`record_episode`
-    (``python3 <episode>_audio.py PROJECT [--ffmpeg PATH]``, the help from ``doc``); ``validate`` checks the sketch
-    once the arguments are parsed, before anything is recorded; ``foley_of`` and ``sounds`` as in
-    :func:`record_episode`."""
+    (``python3 <episode>_audio.py PROJECT [--ffmpeg PATH] [--place-only]``, the help from ``doc``); ``validate`` checks
+    the sketch once the arguments are parsed, before anything is recorded; ``foley_of`` and ``sounds`` as in
+    :func:`record_episode`. ``--place-only`` asks no voice and needs no consent: the beats are moved onto the recording
+    that is already there and the lips read again with ``mouth`` (:func:`srstudio.sketch.place_again`).
 
-    def record(project: Path, env: Mapping[str, str], ffmpeg: str) -> dict:
+    ``cover`` is the post's cover, laid out with the project's own ``cover_font`` (its path inside the project) on a
+    ``cover_size`` frame before any take is paid for, so a headline too wide or too tall stops the recording rather
+    than the delivery after the encode. A cover without its font is refused when the recorder is made."""
+    if cover is not None and not cover_font:
+        raise thumbnail.ThumbnailError("a cover to check needs cover_font, the font's path inside the project")
+
+    def check_cover(project: Path) -> None:
+        if cover is None:
+            return
+        try:
+            font = (project / cover_font).read_bytes()
+        except OSError as e:
+            raise thumbnail.ThumbnailError(f"the cover font {cover_font} is not in {project}: {e.strerror}") from None
+        thumbnail.layout(cover, font, *cover_size)
+
+    def record(project: Path, env: Mapping[str, str], ffmpeg: str, place_only: bool = False) -> dict:
         if validate is not None:
             validate(sk)
+        check_cover(project)
+        if place_only:
+            sketch.place_again(sk, project, mouth=mouth)
+            return {}
         return record_episode(sk, project, env, ffmpeg, seed, note, mouth=mouth, foley_of=foley_of, sounds=sounds)
 
+    def options(parser: argparse.ArgumentParser) -> None:
+        parser.add_argument("--place-only", action="store_true", help="move the beats onto the recording already there")
+
     def main(argv: Sequence[str] | None = None, env: Mapping[str, str] | None = None) -> int:
-        return recording.main(record, doc, argv, env)
+        return recording.main(record, doc, argv, env, options)
 
     return main

@@ -318,6 +318,16 @@ def test_captions_sit_in_measured_pills_in_the_style_font():
         toon.captions(canvas(font=None), cv.comp, lines, measure)
 
 
+def test_a_shot_can_lower_the_caption_band():
+    default, lowered = canvas(), canvas()
+    lines = toon.parse_script(SCRIPT)
+    toon.captions(default, default.comp, lines, measure)
+    toon.captions(lowered, lowered.comp, lines, measure, band=toon.CAPTION_TOP + 12)
+    pill = lambda cv: next(s for s in tree(cv).find("composition").iter("shape") if s.get("shape") == "rect")  # noqa: E731
+    assert float(pill(default).get("y")) == round(toon.fy(toon.CAPTION_TOP))
+    assert float(pill(lowered).get("y")) == round(toon.fy(toon.CAPTION_TOP + 12))
+
+
 # -- the style ------------------------------------------------------------------------------------------------
 def test_the_style_value(tmp_path):
     assert STYLES["toon"] is TOON and TOON.silent and TOON.font.google.italic and TOON.font.style == "italic"
@@ -369,3 +379,19 @@ def test_the_cat_can_enter_later_and_its_poses_count_from_then():
     assert [(g.get("start"), g.get("end")) for g in runs] == [("1", str(D).rstrip("0").rstrip("."))]
     with pytest.raises(toon.ToonDataError, match="enter must be"):
         toon.cat(canvas(), cv.comp, poses, D, enter=D)
+
+
+def test_captions_asked_to_clear_the_bug_refuse_a_pill_that_does_not_and_a_lower_band_clears_it():
+    from srstudio import show
+
+    lines = toon.parse_script([{"start": 0.0, "end": 1.0, "text": "Move home. Your room's still there."}])
+    cv = canvas()
+    toon.captions(cv, cv.comp, lines, measure)  # unasked, as every published reel draws it
+    with pytest.raises(toon.ToonDataError, match="show bug"):
+        toon.captions(canvas(), cv.comp, lines, measure, clear_bug=True)
+    lowered = canvas()
+    band = toon.REF_TOP + (show.BUG_BOX[3] + show.CLEAR) / toon.SCALE + 0.5
+    toon.captions(lowered, lowered.comp, lines, measure, band=band, clear_bug=True)
+    pill = next(s for s in tree(lowered).find("composition").iter("shape") if s.get("shape") == "rect")
+    x, y, w, h = (float(pill.get(k)) for k in ("x", "y", "width", "height"))
+    assert show.clear_of_bug((x, y, x + w, y + h))

@@ -19,7 +19,7 @@ RELEASE = Release(
             "synthesized in code."
         ),
         hashtags=("#unsubscribe", "#onlineshopping", "#relatable", "#animatedshorts", "#comedy"),
-        thumbnail=Thumbnail("No thanks.", 2.6, "Collage"),
+        thumbnail=Thumbnail("No thanks.", 10.7, "Collage"),
     ),
     tags=Tags("everyday-tech", "institution", "tension", recurring=("brent", "priya"), test="sp-hook_motion", arm="b"),
     style="Collage",

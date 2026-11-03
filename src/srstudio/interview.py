@@ -55,7 +55,7 @@ from .generated import (
 from .layout import LayoutError, find_engine
 from .provider import CACHE_ENV, CONSENT_ENV, KEY_ENV, NAME, SFX_MODEL, format_voice
 from .sample import SYSTEM_FONTS, copy_dejavu
-from .scripting import SECONDS_A_LINE, SECONDS_A_WORD
+from .scripting import line_seconds
 from .song import MAX_GAIN, Singer, SongError
 from .timeline import Phrase
 from .voice import (
@@ -90,6 +90,7 @@ class Spoken:
     seed: int | None = None  # this line's own take: a re-take changes it; None keeps the interview's seed
     heard: tuple[str, ...] = ()  # hearings the operator approved for this line, besides its own words
     gain: float = 0.0  # dB against the others in the mix; the take stays the same (:data:`LEVELS`)
+    phone: bool = False  # heard through a phone; the speech check still hears the clean take
 
 
 @dataclass(frozen=True)
@@ -110,6 +111,34 @@ class Schedule:
 
     lines: Sequence[float]
     effects: Mapping[str, float]
+
+
+def beats(speech: Sequence[float], start: float, gaps: Sequence[float]) -> Schedule:
+    """Lines one after another: the first at ``start``, each next one ``gaps[i]`` seconds after line ``i`` ends. A
+    reel's schedule is then its pauses, read in a column, and a slow take moves everything after it."""
+    if len(gaps) != len(speech) - 1:
+        raise InterviewError(f"{len(speech)} lines have {len(speech) - 1} gaps between them, got {len(gaps)}")
+    if not checks.number(start) or start < 0 or any(not checks.number(g) or g < 0 for g in gaps):
+        raise InterviewError(f"a start and its gaps are non-negative seconds, got {start!r} and {list(gaps)!r}")
+    cursor, starts = start, []
+    for i, length in enumerate(speech):
+        starts.append(cursor)
+        cursor += length + (gaps[i] if i < len(gaps) else 0.0)
+    return Schedule(starts, {})
+
+
+def chain(start: float, **gaps: float) -> dict[str, float]:
+    """Named beats one after another: the first ``gaps`` seconds after ``start``, each next one its gap after the last.
+    A wordless stretch of a reel then reads as a column, and moving one beat moves everything after it."""
+    if not checks.number(start) or start < 0 or not gaps:
+        raise InterviewError(f"a chain starts at a time and has beats, got {start!r} and {list(gaps)!r}")
+    cursor, beats_at = start, {}
+    for name, gap in gaps.items():
+        if not checks.number(gap) or gap < 0:
+            raise InterviewError(f"beat {name!r} comes a non-negative number of seconds later, got {gap!r}")
+        cursor += gap
+        beats_at[name] = cursor
+    return beats_at
 
 
 @dataclass(frozen=True)
@@ -349,6 +378,7 @@ def place(iv: Interview, pins: Mapping[str, Resolved], schedule: ScheduleFn) -> 
             gain_db=round(voice_gain + line.gain, 4),
             role="dialogue",
             language="en",
+            phone=line.phone,
         )
         clips.append(PlacedClip(item, pins[item.id].sha256, placement))
     sound_effects = []
@@ -465,7 +495,7 @@ REHEARSAL_SYLLABLE = 5.0  # Hz: how fast a rehearsal tone opens and shuts, so an
 def spoken_estimate(text: str, speed: float = 1.0) -> float:
     """About how long ``text`` runs at ``speed``, before a take is paid for: an estimate, as
     :func:`srstudio.scripting.spoken_seconds` is, and the recording decides."""
-    return (SECONDS_A_WORD * len(text.split()) + SECONDS_A_LINE) / speed
+    return line_seconds(text, speed)
 
 
 def _write_tone(path: Path, seconds: float, *, syllables: bool) -> Path:

@@ -13,6 +13,8 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
 
+from . import anatomy
+from .anatomy import Facing, Side
 from .brush import Point
 from .news_kit import ARMS, NewsKitError, Pose
 
@@ -58,6 +60,53 @@ class Hold:
     bend: float
     palm: float
     hand: str
+
+
+# Each shape as it is drawn: a palm to the camera has its thumb inward, so ``open`` is the hand on the frame's right,
+# and the other three are the frame's left with the thumb on top.
+DRAWINGS: Mapping[str, anatomy.Drawing] = MappingProxyType(
+    {
+        "open": anatomy.Drawing("open", Side.RIGHT, Facing.PALM),
+        "fist": anatomy.Drawing("fist", Side.LEFT, Facing.PALM),
+        "rest": anatomy.Drawing("rest", Side.LEFT, Facing.BACK),
+        "point": anatomy.Drawing("point", Side.LEFT, Facing.PALM),
+    }
+)
+DRAWN_FOR: Mapping[str, float] = MappingProxyType({kind: float(d.side.value) for kind, d in DRAWINGS.items()})
+
+
+@dataclass(frozen=True)
+class Hand:
+    """One of a pair of hands, from version 6: a shape and the arm it hangs on. The hand on the other arm is the same
+    drawing mirrored, so a thumb follows its side and the two can never be the same hand (:mod:`srstudio.anatomy`)."""
+
+    kind: str
+    side: float
+
+    def __post_init__(self) -> None:
+        if self.kind not in DRAWN_FOR:
+            raise NewsKitError(f"no hand drawn as {self.kind!r}")
+        if self.side not in (-1.0, 1.0):
+            raise NewsKitError(f"a hand is on the frame's left (-1) or right (1), not {self.side}")
+
+    @property
+    def hand(self) -> anatomy.Hand:
+        """This hand in the shared contract: the arm it hangs on, showing what its shape shows."""
+        return anatomy.Arm(Side.of(self.side)).hand(DRAWINGS[self.kind].facing)
+
+    @property
+    def mirrored(self) -> bool:
+        return DRAWINGS[self.kind].mirrored(self.hand)
+
+    def on(self, side: float) -> Hand:
+        """This hand once it is placed on the arm on ``side``. Only its own arm takes it."""
+        try:
+            self.hand.on(anatomy.Arm(Side.of(side)))
+        except anatomy.HandError:
+            raise NewsKitError(
+                f"the {self.kind} hand of the arm on side {self.side} was placed on side {side}"
+            ) from None
+        return self
 
 
 Keys = tuple[tuple[float, float], ...]

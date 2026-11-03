@@ -17,6 +17,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import partial
 
+from . import _stick_scene_contracts as scene_contracts
 from . import checks, look, signature
 from .canvas import Canvas
 from .registry import register
@@ -97,7 +98,12 @@ def hand(pose: RigPose, *, at: Point = SHOPPER_AT, flip: bool = False) -> Point:
     return (at[0] - x if flip else at[0] + x, at[1] + y)
 
 
-@register("location", "stick-checkout", tags=("shop", "supermarket", "self-checkout"))
+@register(
+    "location",
+    "stick-checkout",
+    contract=scene_contracts.contract('stick-checkout'),
+    tags=("shop", "supermarket", "self-checkout"),
+)
 def checkout(cv: Canvas, parent) -> None:
     """A supermarket's self-checkout: stocked shelves along the back wall under strip lights, the hanging
     ``SELF-CHECKOUT`` sign, a tiled floor in perspective and the bagging shelf with its rack, left of where
@@ -197,7 +203,12 @@ def _display(cv: Canvas, parent, sc: Screen) -> None:
     _label(cv, parent, sc.text, x + 14, top, w - 28, y + h - top - 8, 30, cv.ink, lines=4)
 
 
-@register("prop", "stick-kiosk", tags=("shop", "self-checkout", "screen", "font"))
+@register(
+    "prop",
+    "stick-kiosk",
+    contract=scene_contracts.contract('stick-kiosk'),
+    tags=("shop", "self-checkout", "screen", "font"),
+)
 def kiosk(cv: Canvas, parent, screens: Sequence[Screen], end: float, *, alarm: Sequence[float] = ()):
     """The self-checkout kiosk right of the bagging shelf: a pedestal with a card reader and a receipt slot, the
     scanner bed with its red line, and the screen on its neck showing each of ``screens`` from its start until the
@@ -236,7 +247,7 @@ def kiosk(cv: Canvas, parent, screens: Sequence[Screen], end: float, *, alarm: S
     return g
 
 
-@register("prop", "stick-avocado", tags=("shop", "food", "item"))
+@register("prop", "stick-avocado", contract=scene_contracts.contract('stick-avocado'), tags=("shop", "food", "item"))
 def avocado(cv: Canvas, parent, x: float, y: float, *, scale: float = 1.0):
     """An avocado standing on (``x``, ``y``): a pear-shaped dark green skin, a highlight and a stalk, about 90 px
     tall at ``scale`` 1."""
@@ -250,7 +261,12 @@ def avocado(cv: Canvas, parent, x: float, y: float, *, scale: float = 1.0):
     return g
 
 
-@register("prop", "stick-name-badge", tags=("shop", "uniform", "badge", "font"))
+@register(
+    "prop",
+    "stick-name-badge",
+    contract=scene_contracts.contract('stick-name-badge'),
+    tags=("shop", "uniform", "badge", "font"),
+)
 def name_badge(cv: Canvas, parent, x: float, y: float, name: str, title: str):
     """A name badge with its top left at (``x``, ``y``): ``name`` large over ``title`` small, white on the
     store's green, for the chest of an apron."""

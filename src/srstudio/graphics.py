@@ -2,10 +2,18 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
 
+from . import _drawing_contracts as dc
 from .canvas import Canvas
+from .errors import SrstudioError
 from .registry import register
+
+
+class CaptionError(SrstudioError, ValueError):
+    """Captions asked for in a way they cannot be set."""
+
 
 GOLD = "#E2BB72"
 SLATE_INK = "#203638"
@@ -24,6 +32,7 @@ def _part_id(instance: str, default: str, name: str, *, own: bool = False) -> st
 @register(
     "graphic",
     "episode-slate",
+    contract=dc.graphic('episode-slate'),
     summary="Episode number badge and title, fading in and out in the first second",
     examples=('from srstudio import get\nslate = get("graphic", "episode-slate")(ep.cv, ep.comp, "01", "HELLO")',),
 )
@@ -61,7 +70,12 @@ def episode_slate(
     return g
 
 
-@register("graphic", "quiz-card", summary="Question card with a gold spine; a NOPE. line appears on the wrong answer")
+@register(
+    "graphic",
+    "quiz-card",
+    contract=dc.graphic('quiz-card'),
+    summary="Question card with a gold spine; a NOPE. line appears on the wrong answer",
+)
 def quiz_card(
     cv: Canvas,
     parent,
@@ -89,7 +103,12 @@ def quiz_card(
     return g
 
 
-@register("graphic", "answer-bubble", summary="Fast number reveal with motion streaks and a 9° tilt")
+@register(
+    "graphic",
+    "answer-bubble",
+    contract=dc.graphic('answer-bubble'),
+    summary="Fast number reveal with motion streaks and a 9° tilt",
+)
 def answer_bubble(
     cv: Canvas, parent, value: str, show: tuple[float, float], *, x=876, y=660, rotation=9, id="instant-answer"
 ):
@@ -107,7 +126,12 @@ def _slide_up(cv, g, at, y):
     cv.keys(g, "y", [(0, y + 50), (at, y + 50), (at + 0.19, y - 8), (at + 0.32, y)], hold=False)
 
 
-@register("graphic", "scorecard", summary="Dark end card with a heading and label/value rows that slides up")
+@register(
+    "graphic",
+    "scorecard",
+    contract=dc.graphic('scorecard'),
+    summary="Dark end card with a heading and label/value rows that slides up",
+)
 def scorecard(
     cv: Canvas,
     parent,
@@ -180,7 +204,12 @@ def scorecard(
     return g
 
 
-@register("graphic", "dashboard", summary="MULTITASKING: ACTIVE style status board with three label/value rows")
+@register(
+    "graphic",
+    "dashboard",
+    contract=dc.graphic('dashboard'),
+    summary="MULTITASKING: ACTIVE style status board with three label/value rows",
+)
 def dashboard(
     cv: Canvas,
     parent,
@@ -242,7 +271,12 @@ def dashboard(
     return g
 
 
-@register("graphic", "notification", summary="Phone-style notification card with a red spine")
+@register(
+    "graphic",
+    "notification",
+    contract=dc.graphic('notification'),
+    summary="Phone-style notification card with a red spine",
+)
 def notification(
     cv: Canvas, parent, index: int, who: str, status: str, show: tuple[float, float], *, x, y, id_prefix="notification"
 ):
@@ -260,7 +294,10 @@ def notification(
 
 
 @register(
-    "graphic", "password-card", summary="Cream card: heading, big password, small footnote; pops on a spoken word"
+    "graphic",
+    "password-card",
+    contract=dc.graphic('password-card'),
+    summary="Cream card: heading, big password, small footnote; pops on a spoken word",
 )
 def password_card(
     cv: Canvas,
@@ -309,7 +346,12 @@ def password_card(
     return g
 
 
-@register("graphic", "location-slate", summary="Small green banner such as LATER, AT THE PARK")
+@register(
+    "graphic",
+    "location-slate",
+    contract=dc.graphic('location-slate'),
+    summary="Small green banner such as LATER, AT THE PARK",
+)
 def location_slate(
     cv: Canvas,
     parent,
@@ -329,7 +371,12 @@ def location_slate(
     return g
 
 
-@register("graphic", "connected-card", summary="Status card with a green dot, heading and value")
+@register(
+    "graphic",
+    "connected-card",
+    contract=dc.graphic('connected-card'),
+    summary="Status card with a green dot, heading and value",
+)
 def connected_card(
     cv: Canvas,
     parent,
@@ -357,7 +404,12 @@ def connected_card(
     return g
 
 
-@register("graphic", "squeak-mark", summary="Comic SQUEAK! lettering with vibration arcs; pops in and wobbles")
+@register(
+    "graphic",
+    "squeak-mark",
+    contract=dc.graphic('squeak-mark'),
+    summary="Comic SQUEAK! lettering with vibration arcs; pops in and wobbles",
+)
 def squeak_mark(
     cv: Canvas,
     parent,
@@ -415,7 +467,12 @@ def squeak_mark(
     return g
 
 
-@register("graphic", "captions", summary="Outlined, shadowed subtitles; a highlight colours part of a line")
+@register(
+    "graphic",
+    "captions",
+    contract=dc.graphic('captions'),
+    summary="Outlined, shadowed subtitles; a highlight colours part of a line",
+)
 def captions(
     cv: Canvas,
     specs: Sequence[tuple[float, float, str, str]],
@@ -434,13 +491,23 @@ def captions(
     highlight_color="#F4D492",
     highlights: dict[str, Sequence[tuple[str, bool]]] | None = None,
     layer_suffix="-caption",
+    word_space: int = 1,
 ):
     """``specs`` = (start, end, text, name).
 
     ``highlights[name]`` = [(text, is_highlighted), ...] splits a line into spans. ``color`` is the text,
-    ``stroke`` its outline; ``shadow=None`` draws no drop shadow (dark text on a light stage)."""
+    ``stroke`` its outline; ``shadow=None`` draws no drop shadow (dark text on a light stage). ``word_space`` is the
+    count of spaces set where a line has one or more between two words: an outline drawn outside the letters reaches
+    into the space from both words, and a narrow space can close (:func:`srstudio.fonts.word_gaps` measures it). Only
+    the drawn text changes; the line breaks and the specs stay as given."""
+    if isinstance(word_space, bool) or not isinstance(word_space, int) or word_space < 1:
+        raise CaptionError(f"word_space is a count of spaces from 1, got {word_space!r}")
     if not specs:
         return []
+
+    def spaced(text: str) -> str:
+        return text if word_space == 1 else re.sub(r" +", " " * word_space, text)
+
     original_assets = cv._assets
     assets = cv.assets
     old_texts = {id(node) for node in assets.find_all("text")}
@@ -470,9 +537,9 @@ def captions(
             if name in highlights:
                 for part, lit in highlights[name]:
                     span = asset.add_span(color=highlight_color) if lit else asset.add_span()
-                    span.content = part
+                    span.content = spaced(part)
             else:
-                asset.text = text
+                asset.text = spaced(text)
             layers.append(cv.comp.add_layer(id=f"{name}{layer_suffix}", asset=name, x=x, y=y, start=start, end=end))
         return layers
     except Exception:

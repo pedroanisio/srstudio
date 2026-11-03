@@ -72,7 +72,7 @@ def two_shot(
     keys = noor if isinstance(noor, list) else [stick.RigKey(0, noor_pose, noor)]
     stick.rig(cv, parent, keys, end, poses=nav.POSES, look=NOOR_LOOK, at=ws.PASSENGER_AT, mouth=SPEECH_MOUTH,
               **speaks(take, "noor"))  # fmt: skip
-    ws.dashboard(cv, parent, end, buzz=buzz, marks=CAR_MARKS)
+    ws.dashboard(cv, parent, end, buzz=buzz, **CAR_MARKS)
 
 
 def drive_on(take, g, end: float) -> None:
@@ -159,4 +159,4 @@ hook = stick.card(cv, cv.comp, HOOK, size=58, width=stick_reel.CARD_CLEAR)
 cv.gate(hook, [(0, min(3.0, t.takes[3].start))])
 spoken = stick_reel.words(ep, t.takes, sentences=True)
 ep.audio(take=stick_reel.placing({}), loudness="-14", extra=sound())
-stick_reel.close(ep, POSTS["in-two-hundred"], hook, spoken)
+stick_reel.close(ep, POSTS["in-two-hundred"], hook, spoken, first_word=True)

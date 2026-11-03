@@ -17,7 +17,7 @@ from . import checks, look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
-from .soft_sets import FAR_BLUR, FLICKER, FLICKER_STEP, INK_LINE, NIGHT, OVER, Shot, _framed
+from .soft_sets import FAR_BLUR, FLICKER, FLICKER_STEP, INK_LINE, NIGHT, OVER, Shot, _framed, _framing
 
 __all__ = [
     "BLUE_HOUSE",
@@ -138,8 +138,9 @@ def den(
     _rows("day rows", day)
     if not (checks.number(end) and end > 0 and checks.number(still) and 0 <= still < end):
         raise SoftHomeError(f"a den runs to a positive end with its stillness inside it, got {end!r}, {still!r}")
+    framing = _framing(shots)
     g = cv.group(parent, id)
-    room = _framed(cv, g, f"{id}-room", shots)
+    room = _framed(cv, g, f"{id}-room", framing)
     wall = cv.grad(f"{id}-wall", [(0.0, room_colors.wall[0]), (1.0, room_colors.wall[1])], (0, 0, 0, 1))
     cv.rect(room, -OVER, -OVER, WIDTH + 2 * OVER, 1500 + OVER, wall)
     floor = cv.grad(f"{id}-floor", [(0.0, room_colors.floor[0]), (1.0, room_colors.floor[1])], (0, 0, 0, 1))
@@ -202,8 +203,9 @@ def flats(
 ):
     """The two homes, the wall at x 540. ``cast`` sits on the sofas, and ``shots`` cut in on everything but the
     planter that holds the signature marks: ``Shot(t, 2, 270, 960)`` is the left home alone."""
+    framing = _framing(shots)
     g = cv.group(parent, id)
-    room = _framed(cv, g, f"{id}-room", shots)
+    room = _framed(cv, g, f"{id}-room", framing)
     _flat(cv, room, 0.0, left, 12.0, 176.0, f"{id}-left")
     _flat(cv, room, WIDTH / 2, right, 918.0, 564.0, f"{id}-right")
     cv.rect(room, 534, -OVER, 12, HEIGHT + 2 * OVER, cv.ink)

@@ -374,6 +374,18 @@ def test_the_call_centre_refuses_counts_it_cannot_show(waiting, message):
         toon_sets.call_centre(cv, cv.comp, waiting)
 
 
+def test_a_bright_count_is_lettered_lighter_and_leaves_the_label_alone():
+    plain, bright = canvas(), canvas()
+    toon_sets.call_centre(plain, plain.comp, ((0.0, 99),))
+    toon_sets.call_centre(bright, bright.comp, ((0.0, 99),), bright_count=True)
+
+    def colours(cv):
+        return {t.get("text"): t.get("color") for t in tree(cv).iter("text")}
+
+    assert colours(plain)["99"] == toon_sets.LED and colours(bright)["99"] == toon_sets.LED_LABEL
+    assert colours(plain)["CALLS WAITING"] == colours(bright)["CALLS WAITING"]
+
+
 def test_a_legible_call_centre_letters_its_label_lighter_and_leaves_the_rest_as_it_was():
     plain, legible = canvas(), canvas()
     toon_sets.call_centre(plain, plain.comp, [(0.0, 12)])
@@ -422,3 +434,16 @@ def test_the_call_centre_label_fails_the_strict_contrast_check_unless_legible(tm
     code, findings = contrast_findings(tmp_path / "plain", comic_neue)
     assert code != 0 and [f["code"] for f in findings] == ["LEG-CONTRAST"] and findings[0]["measured"] < 4.5
     assert contrast_findings(tmp_path / "legible", comic_neue, legible=True) == (0, [])
+
+
+def test_a_kitchen_can_leave_the_chair_out_and_the_default_keeps_it():
+    def drawn(**options) -> bytes:
+        scene = Scene(version="auto")
+        scene.add_project(width=1080, height=1920, fps="24", duration=4.0, background=PEACH.background)
+        cv = Canvas(scene, PEACH, font_asset="comic-neue", namer=flat_counter("k"))
+        toon_sets.kitchen(cv, cv.comp, **options)
+        return scene.to_bytes(layout="pretty")
+
+    assert toon_sets.KITCHEN_CHAIR.encode().lower() in drawn().lower()
+    assert toon_sets.KITCHEN_CHAIR.encode().lower() not in drawn(chair=False).lower()
+    assert drawn() == drawn(chair=True)

@@ -180,6 +180,40 @@ def still_staging(beats=STILL_BEATS, still=1.0, **kw) -> Staging:
     return Staging(sk, 7, "d", "a", "n", collage_sketch.TINTS, sets, still=still, **kw)
 
 
+def test_a_push_runs_from_the_first_frame_across_the_cuts_inside_it(pinned_fonts, tmp_path):
+    ep = built(tmp_path, still_staging(STILL_BEATS, 0.0, push=(2.0, 1.05)), pinned_fonts)
+    xml = ep.scene.to_bytes(layout="pretty")
+    assert xml.count(b'property="scaleX"') >= 2
+
+
+@pytest.mark.parametrize(("push", "match"), [((-1.0, 1.1), "seconds"), ((1.0, 0.9), "scale")])
+def test_a_push_refuses_what_is_no_push(push, match):
+    with pytest.raises(collage_sketch.StagingError, match=match):
+        collage_sketch.check_push(push, STILL_BEATS, "x")
+
+
+def test_a_push_keeps_clear_of_a_zoom():
+    beats = (sketch.Beat(0.0, "gary", "", "h", "f", "d"), sketch.Beat(1.0, "gary", "", "h", "f", "d", event="zoom"))
+    with pytest.raises(collage_sketch.StagingError, match="inside the push"):
+        collage_sketch.check_push((2.0, 1.1), beats, "x")
+    collage_sketch.check_push((1.0, 1.1), beats, "x")
+
+
+def test_a_pushed_first_shot_is_checked():
+    check_staging(still_staging(still=0.0, first_shot_push=1.06))
+    for kw, match in (
+        ({"still": 0.0, "first_shot_push": 0.9}, "grow"),
+        ({"still": 0.0, "first_shot_push": float("nan")}, "grow"),
+        ({"still": 1.0, "first_shot_push": 1.06}, "not both"),
+        ({"still": 0.0, "first_shot_push": 1.06, "push": (2.0, 1.05)}, "same keys"),
+    ):
+        with pytest.raises(collage_sketch.StagingError, match=match):
+            check_staging(still_staging(**kw))
+    zoomed = (replace(STILL_BEATS[0], event="zoom"), *STILL_BEATS[1:])
+    with pytest.raises(collage_sketch.StagingError, match="crash zoom"):
+        check_staging(still_staging(beats=zoomed, still=0.0, first_shot_push=1.06))
+
+
 def test_a_still_opening_is_checked():
     check_staging(still_staging())
     check_staging(still_staging(still=0.0))  # no still opening: any first beat
@@ -246,3 +280,112 @@ def test_a_thud_beat_plays_a_thud(tmp_path):
         sketch.Beat(1.0, "gary", "", "open", "flat", "down", event="thud"),
     ]
     assert [e["id"] for e in sound_effects(beats, 3.0, tmp_path, 7)] == ["thud"]
+
+
+def output(ep) -> dict:
+    return dict(next(ET.fromstring(ep.scene.to_bytes(layout="pretty")).iter("output")).attrib)
+
+
+def test_a_staging_may_set_its_keyframes_and_the_published_ones_do_not(pinned_fonts, tmp_path):
+    assert "keyframeInterval" not in output(built(tmp_path / "default", still_staging(), pinned_fonts))
+    set_ = output(built(tmp_path / "set", still_staging(keyframes=52 / 24), pinned_fonts))
+    assert set_["keyframeInterval"] == "2.1667"
+    for bad in (-1, "2", float("nan")):
+        with pytest.raises(collage_sketch.StagingError, match="keyframes"):
+            check_staging(still_staging(keyframes=bad))
+
+
+def test_a_staging_may_turn_off_b_frames_and_the_published_ones_do_not(pinned_fonts, tmp_path):
+    """0 is a setting here, not the unset value: the engine's default is the encoder's three."""
+    assert "bFrames" not in output(built(tmp_path / "default", still_staging(), pinned_fonts))
+    assert output(built(tmp_path / "set", still_staging(bframes=0), pinned_fonts))["bFrames"] == "0"
+    for bad in (-1, 1.5, "0", True):
+        with pytest.raises(collage_sketch.StagingError, match="bframes"):
+            check_staging(still_staging(bframes=bad))
+
+
+def test_an_overlay_is_drawn_once_over_every_shot_out_of_the_cameras_reach_and_under_the_captions(
+    pinned_fonts, tmp_path
+):
+    seen = []
+
+    def overlay(layer):
+        seen.append(layer)
+        g = layer.cv.group(layer.parent, "over-it-all")
+        layer.cv.rect(g, 100.0, 240.0, 300.0, 84.0, "#15131f")
+        return g
+
+    st = replace(staging(), overlay=overlay)
+    ep = built(tmp_path, st, pinned_fonts)
+    assert len(seen) == 1
+    layer = seen[0]
+    assert layer.parent is ep.comp and layer.cv is ep.cv
+    assert layer.beats == tuple(BEATS) and layer.end == END
+    assert layer.first_line_end == sketch.line_spans(st.sketch)[0][1]
+    assert layer.measure("HI", 54) > 0
+    root = ET.fromstring(ep.scene.to_bytes(layout="pretty"))
+    comp = root.find("composition")
+    ids = [g.get("id") for g in comp.findall("group")]
+    shots = sketch.appearances(BEATS, END)
+    at = ids.index("over-it-all")  # a child of the composition, never of a shot and its zoom
+    assert at >= len(shots)
+    words = {t.get("id") for t in root.iter("text") if t.get("text")}
+    later = {
+        layer.get("asset")
+        for g in list(comp)[list(comp).index(comp.findall("group")[at]) + 1 :]
+        for layer in g.iter("layer")
+    }
+    assert words & later  # the captions come after it, so they stay on top
+    assert "over-it-all" in [node for node, _, _ in ep._cover_hidden]
+
+
+def test_no_overlay_draws_nothing_and_reads_nothing(pinned_fonts, tmp_path):
+    assert collage_sketch.Staging.overlay is None
+    ep = built(tmp_path, staging(), pinned_fonts)
+    assert not (tmp_path / "voiced").exists()
+    assert ep._cover_hidden == []
+
+
+def test_the_first_line_ends_where_its_take_stops_speaking_and_not_where_the_file_does(tmp_path):
+    st = staging()
+    letters = tuple("Natural, everyone!")
+    starts = tuple(0.05 * i for i in range(len(letters)))
+    ends = tuple(s + 0.05 for s in starts)
+    takes = [
+        sketch.Take("01", "gary", 0.25, 1.4, sketch.Alignment(letters, starts, ends)),
+        sketch.Take("02", "rosa", 1.6, 1.0, sketch.Alignment(tuple("I"), (0.0,), (0.1,))),
+    ]
+    sketch.write_speech(tmp_path, takes, 3.0)
+    assert collage_sketch.first_line_end(tmp_path, st.sketch, voiced=True) == pytest.approx(0.25 + 0.9)
+    assert collage_sketch.first_line_end(tmp_path, st.sketch, voiced=False) == sketch.line_spans(st.sketch)[0][1]
+
+
+def test_a_recording_with_no_first_take_is_refused(tmp_path):
+    sketch.write_speech(tmp_path, [], 3.0)
+    with pytest.raises(sketch.SketchError):
+        collage_sketch.first_line_end(tmp_path, staging().sketch, voiced=True)
+
+
+def test_a_staging_that_asks_its_captions_to_clear_the_bug_keeps_every_pill_off_it(pinned_fonts, tmp_path):
+    from srstudio import show
+
+    long = (sketch.Line("rosa", "Tell your brother I can read that."),)
+    beats, end = timed(long, ((2.4, "rosa", 0, "half", "smug", "hold"),), tail=1.0)
+    sk = make_sketch("clear-test", "Clear test", ("rosa",), long, beats, end)
+    base = Staging(sk, 7, "d", "a", "n", collage_sketch.TINTS, {"rosa": "living-room"})
+    assert base.clear_bug is False  # every published reel's rows stay as they were drawn
+
+    def pills(st: Staging) -> list[tuple[float, float, float, float]]:
+        root = ET.fromstring(built(tmp_path / str(st.clear_bug), st, pinned_fonts).scene.to_bytes(layout="pretty"))
+        rects = [
+            s for s in root.iter("shape") if s.get("shape") == "rect" and s.get("radius") == str(collage.CAPTION_RADIUS)
+        ]
+        return [
+            (float(r.get("x")), float(r.get("y")), float(r.get("x")) + float(r.get("width")),
+             float(r.get("y")) + float(r.get("height")))
+            for r in rects
+        ]  # fmt: skip
+
+    assert not all(show.clear_of_bug(box) for box in pills(base))
+    asked = pills(replace(base, clear_bug=True))
+    assert asked and all(show.clear_of_bug(box) for box in asked)

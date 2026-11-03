@@ -6,6 +6,7 @@ drawn from ordinary shapes, so a still shows them at rest.
 
 from __future__ import annotations
 
+from . import _toon_care_contracts as tc
 from . import checks
 from .canvas import Canvas
 from .registry import register
@@ -45,7 +46,12 @@ def _span(start: float, end: float, what: str) -> None:
         raise ToonDataError(f"{what} needs 0 <= start < end, got {start}..{end}")
 
 
-@register("location", "toon-surgery", summary="A dentist's surgery from either side: the chair, or the cupboards")
+@register(
+    "location",
+    "toon-surgery",
+    contract=tc.contract('toon-surgery'),
+    summary="A dentist's surgery from either side: the chair, or the cupboards",
+)
 def surgery(cv: Canvas, parent, view: str = "chair") -> None:
     """The wall in pale tile to a teal dado. ``view`` ``"chair"`` looks at the patient: the headrest behind the
     character and a lit box of X-rays at the right. ``"cupboards"`` looks back at the dentist: glass-fronted cupboards
@@ -76,7 +82,12 @@ def surgery(cv: Canvas, parent, view: str = "chair") -> None:
             cv.rect(g, fx(x + 22 + k * 58), fy(400), fh(52), fh(14), CUPBOARD, cv.ink, FINE_W * 0.7, radius=fh(3))
 
 
-@register("prop", "toon-dental-lamp", summary="A dentist's lamp on a long arm, swinging, with a hand on it if asked")
+@register(
+    "prop",
+    "toon-dental-lamp",
+    contract=tc.contract('toon-dental-lamp'),
+    summary="A dentist's lamp on a long arm, swinging, with a hand on it if asked",
+)
 def dental_lamp(
     cv: Canvas,
     parent,
@@ -110,7 +121,12 @@ def dental_lamp(
         cv.keys(g, "rotation", keys, kind="sine-in-out", local=False)
 
 
-@register("prop", "toon-dental-tray", summary="A steel tray of instruments and cotton rolls, for a ledge to carry")
+@register(
+    "prop",
+    "toon-dental-tray",
+    contract=tc.contract('toon-dental-tray'),
+    summary="A steel tray of instruments and cotton rolls, for a ledge to carry",
+)
 def dental_tray(cv: Canvas, parent, x: float = 150.0, y: float = 842.0) -> None:
     """A tray standing on the surface at reference (``x``, ``y``): a mirror, a probe, and two rolls of cotton."""
     if not (checks.number(x) and checks.number(y)):
@@ -125,7 +141,12 @@ def dental_tray(cv: Canvas, parent, x: float = 150.0, y: float = 842.0) -> None:
         cv.rect(g, fx(x + 284 + i * 8), fy(y - 66 + i * 20), fh(36), fh(18), COTTON, cv.ink, FINE_W * 0.7, radius=fh(9))
 
 
-@register("prop", "toon-tooth-photo", summary="A photograph of one bad tooth, sliding in from the right")
+@register(
+    "prop",
+    "toon-tooth-photo",
+    contract=tc.contract('toon-tooth-photo'),
+    summary="A photograph of one bad tooth, sliding in from the right",
+)
 def tooth_photo(
     cv: Canvas, parent, at: Point = (432, 620), start: float = 0.0, end: float = 0.0, id: str = "tooth-photo"
 ) -> None:
@@ -150,7 +171,12 @@ def tooth_photo(
         cv.keys(g, "x", [(start, fx(760)), (start + SLIDE, fx(x))], hold=False, local=False)
 
 
-@register("prop", "toon-probe", summary="A steel dental probe coming in from the right to a point, once")
+@register(
+    "prop",
+    "toon-probe",
+    contract=tc.contract('toon-probe'),
+    summary="A steel dental probe coming in from the right to a point, once",
+)
 def probe(cv: Canvas, parent, tip: Point = (232, 610), start: float = 0.0, end: float = 0.0, id: str = "probe") -> None:
     """A probe with its hooked tip on reference ``tip``, its handle running out of frame to the right, arriving at
     ``start`` and gone at ``end``; a still (``end`` 0) shows it in place."""
@@ -166,7 +192,12 @@ def probe(cv: Canvas, parent, tip: Point = (232, 610), start: float = 0.0, end: 
         cv.keys(g, "x", [(start, fx(x + 150)), (start + SLIDE, fx(x))], hold=False, local=False)
 
 
-@register("prop", "toon-bib-insert", summary="The whole frame: a paper bib in close-up, and one drop landing on it")
+@register(
+    "prop",
+    "toon-bib-insert",
+    contract=tc.contract('toon-bib-insert'),
+    summary="The whole frame: a paper bib in close-up, and one drop landing on it",
+)
 def bib_insert(cv: Canvas, parent, start: float, end: float, skin: str = "#7fcf6b", id: str = "bib-insert") -> None:
     """A full-frame insert from ``start`` to ``end``: the wearer's ``skin`` at the top, the bib's waffled paper and its
     chain across it, a drop of blood falling from the top and landing at the centre."""

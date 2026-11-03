@@ -13,11 +13,12 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from sr_core.scene import Scene
+from sr_core.scene import Animate, Scene, SchemaValueError
 
-from . import checks
+from . import checks, drawing_events
 from ._counter import Counter
-from .errors import SrstudioError
+from ._transaction import scene_transaction
+from .errors import SrstudioError, _brief
 from .native import NativeError
 
 CLEAR = "#00000000"
@@ -26,6 +27,15 @@ CLEAR = "#00000000"
 class CanvasError(SrstudioError, ValueError):
     """A drawing call the canvas cannot make: an unnamed effect, an undefined symbol, text without a font, a
     visibility span that runs backwards."""
+
+
+class KeyTimeError(CanvasError, SchemaValueError):
+    """Invalid key time with SDK repair fields and the existing schema-error catch contract."""
+
+    def __reduce__(self):
+        # SchemaValueError's reducer rebuilds only the base schema exception. Keep
+        # this subtype and its explicit SDK repair fields when crossing processes.
+        return type(self), self.args, self.__dict__
 
 
 Align = Literal["start", "center", "end", "justify"]
@@ -83,9 +93,35 @@ Spans = Iterable[tuple[float, float]]
 def _visibility_keys(spans: Spans) -> list[tuple[float, int]]:
     """One union of spans, shared by visibility gates and complementary rig layers."""
     intervals = []
-    for start, end in spans:
+    if not isinstance(spans, Iterable) or isinstance(spans, (str, bytes)):
+        raise CanvasError(
+            'visibility spans must be iterable pairs',
+            code='canvas.visibility.shape',
+            path='visibility',
+            actual=spans,
+            expected='an iterable of (start, end) pairs',
+            remedy='Provide finite time spans, or an empty iterable to keep the layer hidden.',
+        )
+    for index, span in enumerate(spans):
+        if not isinstance(span, (tuple, list)) or len(span) != 2:
+            raise CanvasError(
+                'a visibility span needs a start and end',
+                code='canvas.visibility.shape',
+                path=f'visibility[{index}]',
+                actual=span,
+                expected='a (start, end) pair',
+                remedy='Supply exactly two finite seconds for each visibility span.',
+            )
+        start, end = span
         if not (checks.number(start) and checks.number(end) and 0 <= start <= end):
-            raise CanvasError(f"visibility span {start}..{end} must be finite with 0 <= start <= end")
+            raise CanvasError(
+                f"visibility span {_brief(start)}..{_brief(end)} must be finite with 0 <= start <= end",
+                code='canvas.visibility.time',
+                path=f'visibility[{index}]',
+                actual=span,
+                expected='finite seconds with 0 <= start <= end',
+                remedy='Order the endpoints and use nonnegative seconds on the owning canvas clock.',
+            )
         if end > start:
             intervals.append((float(start), float(end)))
     merged: list[tuple[float, float]] = []
@@ -139,6 +175,8 @@ class Canvas:
         self._effect_root: Any = None
         self._frozen = 0  # inside Canvas.frozen(): every key holds its value at 0 s
         self._frozen_hidden: set[Any] = set()
+        self.anatomy: dict[tuple[str, str], str] = {}  # (rule, part): what a build drew against the anatomy rules
+        self.limbs: dict[tuple[str, Any], Any] = {}  # (node id, side): whose hand it is (srstudio.anatomy_ledger.Limb)
 
     @property
     def assets(self):
@@ -171,13 +209,18 @@ class Canvas:
     def shade(self) -> str:
         return self.palette.shade
 
+    def note_anatomy(self, rule: str, part: str, detail: str) -> None:
+        """Note that this build drew ``part`` against ``rule`` of the anatomy rules; see :mod:`srstudio.anatomy_ledger`,
+        which refuses the reel when it finishes."""
+        self.anatomy[(rule, part)] = detail
+
     # -- ids and paints ------------------------------------------------------------------
     def uid(self, prefix: str) -> str:
         """``prefix-0001``, ``prefix-0002``...: stable ids for anonymous shapes (or the ``namer``'s own)."""
         if self.namer is not None:
-            return self.namer(prefix)
+            return drawing_events.allocated(self.namer(prefix))
         self._serial += 1
-        return f"{prefix}-{self._serial:04d}"
+        return drawing_events.allocated(f"{prefix}-{self._serial:04d}")
 
     def grad(
         self,
@@ -336,12 +379,14 @@ class Canvas:
 
         A symbol without size or duration takes the document's, so static scenery needs neither. The engine
         draws each instance into an offscreen at the symbol's frame size and transforms that texture: an
-        instance magnified by a camera move is sampled, not redrawn, and its edges soften."""
+        instance magnified by a camera move is sampled, not redrawn, and its edges soften. A failed drawing
+        restores the scene and canvas caches so the same symbol can be retried."""
         if id not in self._symbols:
-            if self._symbol_root is None:
-                self._symbol_root = self.scene.add_symbols()
-            self._symbols[id] = element = self._symbol_root.add_symbol(id=id)
-            draw(element)
+            with scene_transaction(self.scene, self):
+                if self._symbol_root is None:
+                    self._symbol_root = self.scene.add_symbols()
+                self._symbols[id] = element = self._symbol_root.add_symbol(id=id)
+                draw(element)
         return id
 
     def instance(self, parent, id: str, symbol: str, **kw):
@@ -403,18 +448,70 @@ class Canvas:
         """Keyframes on ``prop``; ``hold`` steps between values, otherwise they interpolate linearly.
 
         ``kind`` names any schema interpolation (``sine-in-out``, ``cubic-out``...) and overrides ``hold``;
-        ``local`` puts the keys on the shot's clock (``timeBase="local"``), default from the canvas."""
+        ``local`` puts the keys on the shot's clock (``timeBase="local"``), default from the canvas.
+        The complete animation is built off-scene; invalid input leaves the scene unchanged."""
+        if not isinstance(values, Sequence) or isinstance(values, (str, bytes)):
+            raise CanvasError(
+                f'keys on {_brief(prop)}: expected a sequence of key pairs',
+                code='canvas.keys.shape',
+                path=f'keys.{prop}',
+                actual=values,
+                expected='a sequence of (second, value) pairs',
+                remedy='Provide a finite sequence of timed values.',
+            )
+        for i, row in enumerate(values):
+            path = f'keys.{prop}[{i}]'
+            if not isinstance(row, (tuple, list)) or len(row) != 2:
+                raise CanvasError(
+                    f'keys on {_brief(prop)}: expected a (second, value) pair',
+                    code='canvas.keys.shape',
+                    path=path,
+                    actual=row,
+                    expected='a (second, value) pair',
+                    remedy='Give every key exactly one numeric time and one value.',
+                )
+            time, value = row
+            if not checks.number(time):
+                raise KeyTimeError(
+                    f'keys on {_brief(prop)}: time must be finite',
+                    code='canvas.keys.time',
+                    path=path + '[0]',
+                    actual=time,
+                    expected='a finite numeric second, excluding booleans',
+                    remedy='Replace the key time with a finite second on the selected canvas clock.',
+                )
+            if isinstance(value, (float, int)) and not isinstance(value, bool) and not checks.number(value):
+                raise CanvasError(
+                    f'keys on {_brief(prop)} at {time}: numeric values must be finite',
+                    code='canvas.keys.value',
+                    path=path + '[1]',
+                    actual=value,
+                    expected='a finite numeric value',
+                    remedy='Replace the nonfinite or unrepresentable key value before emitting the animation.',
+                )
         ordered = sorted(values, key=lambda kv: kv[0])
-        if self._frozen:
-            ordered = [(0, _at_zero(ordered, hold and kind is None, prop))]
-            if prop == "visible" and node in self._frozen_hidden:
-                ordered = [(0, "false")]
-        kw = {"property": prop, "defaultInterpolation": kind or ("hold" if hold else "linear")}
+        if not ordered:
+            raise CanvasError(
+                f'keys on {_brief(prop)}: no keys to animate',
+                code='canvas.keys.empty',
+                path=f'keys.{prop}',
+                actual=values,
+                expected='at least one (second, value) pair',
+                remedy='Provide a held key or omit this animation.',
+            )
+        kw: dict[str, Any] = {"property": prop, "defaultInterpolation": kind or ("hold" if hold else "linear")}
         if self.local_time if local is None else local:
             kw["timeBase"] = "local"
-        a = node.add_animate(**kw)
+        a = Animate(**kw)
         for t, value in ordered:
             a.add_key(time=round(float(t), 6), value=str(value))
+        if self._frozen:
+            value = _at_zero(ordered, hold and kind is None, prop)
+            if prop == "visible" and node in self._frozen_hidden:
+                value = "false"
+            a = Animate(**kw)
+            a.add_key(time=0, value=str(value))
+        node.add(a)
         return a
 
     @contextmanager
@@ -435,9 +532,12 @@ class Canvas:
         if self._frozen:
             raise CanvasError(f"a frozen drawing cannot hold {what} still")
 
-    def gate(self, node, spans: Spans):
-        """Visible in the union of finite, non-negative ``spans``; overlaps and touching spans merge."""
-        return self.keys(node, "opacity", _visibility_keys(spans))
+    def gate(self, node, spans: Spans, *, local: bool | None = None):
+        """Visible in the union of finite, non-negative ``spans``; overlaps and touching spans merge.
+
+        ``local`` selects the animation clock as in :meth:`keys`, defaulting to ``Canvas.local_time``.
+        """
+        return self.keys(node, "opacity", _visibility_keys(spans), local=local)
 
     def pop_in(
         self,

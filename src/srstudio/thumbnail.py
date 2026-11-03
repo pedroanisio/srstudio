@@ -31,11 +31,12 @@ from typing import Literal
 
 from sr_core.scene import Scene
 
-from . import checks, fonts
+from . import checks, fonts, gpu
 from .canvas import Canvas, Palette
 from .errors import SrstudioError
 
 __all__ = [
+    "ACCENT_CONTRAST",
     "ShowCover",
     "Thumbnail",
     "ThumbnailError",
@@ -72,6 +73,9 @@ SHADE = (1.0, 0.95)  # ink opacity outside the grid area and behind the headline
 FADE = 1 / 6  # of the grid area height, the fade past the headline
 GRID = 3 / 4  # the profile grid's crop of a portrait cover, width / height
 _HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
+# The accent's floor against the ink: its letters sit in the ink outline and the kicker's ink letters on it, so a
+# dark accent reads as a smudge on the band. 4.5:1 is the engine's own text contrast floor (LEG-CONTRAST).
+ACCENT_CONTRAST = 4.5
 INK = Palette(ink="#0b0b0d", white="#ffffff", name="thumbnail", background="#0b0b0d")
 # How :func:`render` turns the composed document into the JPEG. A change here changes every cover, so the publish
 # gate digests these with the document (ADR 0037).
@@ -118,6 +122,8 @@ class Thumbnail:
         lines = self.lines
         if not self.headline.strip() or any(not line for line in lines):
             out.append("headline has an empty line")
+        if "\\" in self.headline:
+            out.append("headline has a backslash, which would be drawn: was a line break escaped twice?")
         if len(lines) > MAX_LINES:
             out.append(f"headline has {len(lines)} lines; a thumbnail holds {MAX_LINES}")
         at = self.at
@@ -129,6 +135,8 @@ class Thumbnail:
             out.append(f"zoom must be between 1 and 3, got {self.zoom!r}")
         if not _HEX.match(self.accent):
             out.append(f"accent must be a #rrggbb colour, got {self.accent!r}")
+        elif (ratio := checks.contrast(self.accent, INK.ink)) < ACCENT_CONTRAST:
+            out.append(f"accent {self.accent} is {ratio:.1f}:1 against the ink {INK.ink}; it needs {ACCENT_CONTRAST}:1")
         if self.place not in ("top", "bottom"):
             out.append(f"place must be 'top' or 'bottom', got {self.place!r}")
         return out
@@ -441,7 +449,8 @@ def render(
         doc = work / "thumbnail.scene.xml"
         doc.write_bytes(scene.to_bytes())
         png = work / "thumbnail.png"
-        _run([str(engine), "render", str(doc), *ENGINE_ARGS, "-o", str(png.resolve())], "the engine cannot draw it")
+        with gpu.held():
+            _run([str(engine), "render", str(doc), *ENGINE_ARGS, "-o", str(png.resolve())], "the engine cannot draw it")
         jpg = work / out.name
         _run([ffmpeg, "-v", "error", "-y", "-i", str(png), *ENCODER_ARGS, str(jpg)], f"cannot encode {out.name}")
         if not jpg.exists():

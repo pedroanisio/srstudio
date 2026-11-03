@@ -35,12 +35,14 @@ import json
 import math
 import random
 import re
-from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from collections.abc import Callable, Collection, Mapping, Sequence
+from dataclasses import dataclass, replace
 from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from . import _character_contracts as cc
+from . import _stick_core_contracts as sc
 from . import checks, look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -89,11 +91,16 @@ __all__ = [
     "SEATED",
     "STANDING",
     "check_keys",
+    "ARM",
     "hand_at",
     "held",
+    "forearm",
+    "reaching",
     "rig",
+    "between",
     "camera",
     "card",
+    "dolly",
     "Tile",
     "Mail",
     "SPEAKING",
@@ -448,9 +455,10 @@ TUFTS = (  # x, y, scale: grass tufts from the fence line to the foreground
 TUFT = "M -23 8 Q -29 -7 -37 -13 M -10 8 Q -12 -10 -21 -23 M 1 9 Q 1 -13 7 -27 M 12 10 Q 20 -12 28 -18 M 24 12 L 35 0"
 
 
-@register("location", "stick-room", tags=("room", "desk", "laptop", "window"))
-def room(cv: Canvas, parent) -> None:
-    """A sunlit study in two-point perspective: window, wall picture, bookcase, chair, desk and an open laptop."""
+@register("location", "stick-room", contract=sc.contract('stick-room'), tags=("room", "desk", "laptop", "window"))
+def room(cv: Canvas, parent, *, marks: bool = True) -> None:
+    """A sunlit study in two-point perspective: window, wall picture, bookcase, chair, desk and an open laptop. A reel
+    that blurs the room or frames the desk out passes ``marks=False`` and places the marks itself (ADR 0001)."""
     s = cv
     box(s, parent, 0, 0, s.width, s.height, paint(s, WALL))
     shape(s, parent, "M 0 0 L 1040 0 L 810 128 L 0 112 Z", "#b7ac90", 3)
@@ -513,11 +521,12 @@ def room(cv: Canvas, parent) -> None:
     shape(s, parent, "M 868 941 L 868 960 L 892 960 L 898 941 Z", "#444753", 3)
     for x in (589, 605, 623):
         box(s, parent, x, 1182, 8, 4, "#343943")
-    signature.cactus(s, parent, 1010, 1190, scale=0.42)  # on the desk, by the laptop (ADR 0001)
-    signature.code(s, parent, 790, 1120, 9, color="#c9ccd3", angle=-16)  # on the laptop's lid
+    if marks:
+        signature.cactus(s, parent, 1010, 1190, scale=0.42)  # on the desk, by the laptop (ADR 0001)
+        signature.code(s, parent, 790, 1120, 9, color="#c9ccd3", angle=-16)  # on the laptop's lid
 
 
-@register("location", "stick-yard", tags=("garden", "fence", "trees", "outdoor"))
+@register("location", "stick-yard", contract=sc.contract('stick-yard'), tags=("garden", "fence", "trees", "outdoor"))
 def yard(cv: Canvas, parent, foliage: Sequence[Plate], seed: int) -> None:
     """A back garden: sky, trees with traced foliage, a board fence that jitters by ``seed``, grass and tufts."""
     s = cv
@@ -551,7 +560,33 @@ def yard(cv: Canvas, parent, foliage: Sequence[Plate], seed: int) -> None:
 
 
 # -- the character ------------------------------------------------------------------------------------------
-@register("character", "stick-figure", tags=("traced", "12fps", "badges"))
+@register(
+    "character",
+    "stick-figure",
+    tags=("traced", "12fps", "badges"),
+    contract=cc.character(
+        limbs=False,
+        expressions=False,
+        parameters=(
+            ('duration', cc.seconds('canvas', 'end')),
+            (
+                'poses',
+                cc.P(
+                    items=cc.P(fields=(('start', cc.seconds('canvas', 'start')), ('end', cc.seconds('canvas', 'end'))))
+                ),
+            ),
+            (
+                'badges',
+                cc.P(
+                    items=cc.P(fields=(('traced_angle', cc.P(unit='degrees')), ('radius', cc.P(unit='drawing pixels'))))
+                ),
+            ),
+        ),
+        constraints=(
+            'Traced poses are held drawings. Geometry is in Stick frame coordinates; duration crops pose ends.',
+        ),
+    ),
+)
 def figures(cv: Canvas, parent, poses: Sequence[Pose], badges: Sequence[Badge], duration: float) -> None:
     """The traced stick figure, one group per pose: seated in the room, or leading a row of badge-headed dancers."""
     for i, pose in enumerate(poses):
@@ -590,7 +625,7 @@ def _badge(cv: Canvas, parent, badge: Badge, cx: float, cy: float, angle: float)
 
 
 # -- lettering and captions ---------------------------------------------------------------------------------
-@register("graphic", "stick-hook", tags=("lettering", "card"))
+@register("graphic", "stick-hook", contract=sc.contract('stick-hook'), tags=("lettering", "card"))
 def hook(cv: Canvas, parent, lettering: Plate, start: float, end: float):
     """The hook: traced lettering on a rounded white card at the top of the frame, from ``start`` to ``end``."""
     g = _group(cv, parent, start=start, end=end)
@@ -600,7 +635,7 @@ def hook(cv: Canvas, parent, lettering: Plate, start: float, end: float):
     return g
 
 
-@register("graphic", "stick-headline", tags=("lettering",))
+@register("graphic", "stick-headline", contract=sc.contract('stick-headline'), tags=("lettering",))
 def headline(cv: Canvas, parent, outline: Plate, fill: Plate, start: float, end: float):
     """A headline: traced lettering, its outline plate under its fill, the fill edged in its own colour."""
     g = _group(cv, parent, start=start, end=end)
@@ -609,7 +644,7 @@ def headline(cv: Canvas, parent, outline: Plate, fill: Plate, start: float, end:
     return g
 
 
-@register("graphic", "stick-captions", tags=("captions", "outlined"))
+@register("graphic", "stick-captions", contract=sc.contract('stick-captions'), tags=("captions", "outlined"))
 def captions(cv: Canvas, parent, lines: Sequence[Line], *, outline: str = "stroke") -> None:
     """One caption per cue: centred font text in white, outlined in ink, across the frame at :data:`CAPTION_Y`.
 
@@ -677,7 +712,11 @@ def word_cues(
     borrow: bool = False,
     tail: bool = False,
     balance: bool = False,
+    alone: bool = True,
     sentences: bool = False,
+    join: bool = False,
+    hold: bool = False,
+    asks: bool = False,
 ) -> list[Line]:
     """One cue per spoken word of ``takes`` (each with ``start``, ``end`` and ``words`` relative to the take), on
     the episode clock: a cue shows from its start until the next one starts; a take's last cue lingers up to
@@ -694,7 +733,19 @@ def word_cues(
     ``balance``, each take's words are split where the shortest cue lasts longest instead of greedily from the
     left, every cue within ``max_width`` (a single wider word still gets its own), the fewest cues on a tie. With
     ``sentences`` as well, no cue runs across a sentence end: the punctuation that would mark it is dropped from the
-    cue, so with the sound off "Bro. Four hours" would read "Bro Four hours"."""
+    cue, so with the sound off "Bro. Four hours" would read "Bro Four hours". With ``alone=False`` a balanced split
+    takes the fewest one-word cues first: a sentence does not end on an orphan. With ``join``, a cue of a take still
+    shorter than ``min_seconds`` joins the neighbour that leaves the longer cue while the two fit ``max_width``, keeping
+    the sentence marks ("Love it. Evenings?"): a sentence too quick for a cue of its own. A sentence end can leave a cue
+    too short to read: with ``hold``, a cue still shorter than ``min_seconds`` runs on, past its take into the silence
+    after it and pushing back the cue that follows when there is none, so the words after it show a little after they
+    are spoken. With ``asks``, a word that ends a question keeps its question mark wherever the cue drops the rest:
+    "Who?" read muted as "Who" is a statement, and the question is the line. A full stop still goes, as the cue's
+    own end already stops the reading; new reels ask for it, delivered ones keep their cues."""
+    if join and not min_seconds:
+        raise StickDataError("join merges cues shorter than min_seconds: give min_seconds")
+    if hold and not min_seconds:
+        raise StickDataError("hold keeps cues up for min_seconds: give min_seconds")
     if sentences and not balance:
         raise StickDataError("sentences is a limit on balance's split: give balance")
     if borrow and not min_seconds:
@@ -717,7 +768,7 @@ def word_cues(
     for take in takes:
         words = [w for w in (take.words or []) if w["text"].strip(PUNCTUATION)]
         groups: list[list[dict]] = (
-            _balanced(words, take.end - take.start, linger, width, max_width, sentences=sentences)
+            _balanced(words, take.end - take.start, linger, width, max_width, alone, sentences=sentences, asks=asks)
             if balance and width is not None
             else []
         )
@@ -730,7 +781,7 @@ def word_cues(
                 and width is not None
                 and i < len(words)
                 and words[i]["start"] - group[0]["start"] < min_seconds
-                and width(_spoken(group + [words[i]])) <= max_width
+                and width(_spoken(group + [words[i]], asks)) <= max_width
             ):
                 group.append(words[i])
                 i += 1
@@ -738,10 +789,10 @@ def word_cues(
         if tail and width is not None and len(groups) > 1:
             last_end = min(take.end, take.start + groups[-1][-1]["end"] + linger)
             short = last_end - (take.start + groups[-1][0]["start"]) < min_seconds
-            if short and width(_spoken(groups[-2] + groups[-1])) <= max_width:
+            if short and width(_spoken(groups[-2] + groups[-1], asks)) <= max_width:
                 groups[-2:] = [groups[-2] + groups[-1]]
             else:  # too wide together: the cue before lends its last words while it keeps one and both fit
-                while short and len(groups[-2]) > 1 and width(_spoken(groups[-2][-1:] + groups[-1])) <= max_width:
+                while short and len(groups[-2]) > 1 and width(_spoken(groups[-2][-1:] + groups[-1], asks)) <= max_width:
                     groups[-1].insert(0, groups[-2].pop())  # bounded: the cue before shrinks by a word each pass
                     short = last_end - (take.start + groups[-1][0]["start"]) < min_seconds
         spans: list[list[float]] = []
@@ -763,9 +814,49 @@ def word_cues(
                 if shift > 0:
                     here[1] += shift
                     after[0] += shift
+        if join and width is not None:
+            _join_short(groups, spans, min_seconds, width, max_width, asks)
         for (start, end), group in zip(spans, groups, strict=True):
-            cues.append(Line(round(start, 3), round(end, 3), _spoken(group), size))
-    return cues
+            text = _marked(group, asks) if join else _spoken(group, asks)
+            cues.append(Line(round(start, 3), round(end, 3), text, size))
+    return _held(cues, min_seconds) if hold else cues
+
+
+def _held(cues: Sequence[Line], least: float) -> list[Line]:
+    """``cues``, each up for at least ``least`` seconds, the later ones moved back by whatever that takes. One pass, in
+    order: each cue only moves the one after it."""
+    held: list[Line] = []
+    start = -math.inf  # the earliest the next cue may start
+    for cue in cues:
+        at = max(cue.start, start)
+        start = max(round(at + least, 3), cue.end)
+        held.append(replace(cue, start=at, end=start))
+    return held
+
+
+def _join_short(
+    groups: list[list[dict]],
+    spans: list[list[float]],
+    least: float,
+    width: Callable[[str], float],
+    max_width: float,
+    asks: bool = False,
+) -> None:
+    """Join each cue shorter than ``least``, the shortest first, with the neighbour that fits and leaves the shorter
+    cue. Every pass removes a cue or stops: bounded by the cue count."""
+    while len(groups) > 1:
+        joins = []
+        for k, (start, end) in enumerate(spans):
+            if end - start >= least:
+                continue
+            for i in (k - 1, k):
+                if 0 <= i < len(groups) - 1 and width(_marked(groups[i] + groups[i + 1], asks)) <= max_width:
+                    joins.append((end - start, spans[i + 1][1] - spans[i][0], i))
+        if not joins:
+            return
+        _, _, i = min(joins)
+        groups[i : i + 2] = [groups[i] + groups[i + 1]]
+        spans[i : i + 2] = [[spans[i][0], spans[i + 1][1]]]
 
 
 def _balanced(
@@ -774,25 +865,29 @@ def _balanced(
     linger: float,
     width: Callable[[str], float],
     max_width: float,
+    alone: bool = True,
     *,
     sentences: bool = False,
+    asks: bool = False,
 ) -> list[list[dict]]:
     """The split of a take's ``words`` into cues whose shortest lasts longest (each cue runs to the next one's first
     word, the last to its last word plus ``linger``, within the take's ``length``), every cue but a lone word within
-    ``max_width``; on a tie, the fewest cues. With ``sentences``, a cue stops at the first word that ends a sentence.
-    Dynamic programming over the split points: n² candidate cues."""
+    ``max_width``; on a tie, the fewest cues. With ``alone=False`` the fewest one-word cues comes before both. With
+    ``sentences``, a cue stops at the first word that ends a sentence. Dynamic programming over the split points: n²
+    candidate cues."""
     n = len(words)
-    best: list[tuple[float, int, int]] = [(math.inf, 0, n)] * (n + 1)  # (shortest, -cues, next split) from i
+    best: list[tuple[float, int, int, int]] = [(math.inf, 0, n, 0)] * (n + 1)  # (shortest, -cues, next split, lone)
     for i in range(n - 1, -1, -1):
         options = []
         for j in range(i + 1, n + 1):
-            if j - i > 1 and width(_spoken(words[i:j])) > max_width:
+            if j - i > 1 and width(_spoken(words[i:j], asks)) > max_width:
                 break  # wider only grows with more words
             end = words[j]["start"] if j < n else min(length, words[-1]["end"] + linger)
-            options.append((min(end - words[i]["start"], best[j][0]), best[j][1] - 1, j))
+            lone = best[j][3] + (0 if alone or j - i > 1 else 1)
+            options.append((min(end - words[i]["start"], best[j][0]), best[j][1] - 1, j, lone))
             if sentences and _ends_sentence(words[j - 1]):
                 break  # a longer cue would run across the sentence end
-        best[i] = max(options, key=lambda o: (round(o[0], 6), o[1]))
+        best[i] = max(options, key=lambda o: (-o[3], round(o[0], 6), o[1]))
     groups, i = [], 0
     while i < n:  # every pass moves past at least one word: bounded by the word count
         j = best[i][2]
@@ -805,11 +900,26 @@ def _ends_sentence(word: dict) -> bool:
     return word["text"].rstrip(CLOSING).endswith(SENTENCE_ENDS)
 
 
-def _spoken(words: Sequence[dict]) -> str:
-    return " ".join(w["text"].strip(PUNCTUATION) for w in words)
+def _spoken(words: Sequence[dict], asks: bool = False) -> str:
+    """The words with the punctuation around each dropped; with ``asks``, a word whose closing marks hold a question
+    mark keeps one."""
+    return " ".join(_bare(w["text"], asks) for w in words)
 
 
-@register("graphic", "stick-words", tags=("captions", "outlined", "word-by-word"))
+def _bare(text: str, asks: bool) -> str:
+    core = text.strip(PUNCTUATION)
+    return core + "?" if asks and "?" in text[len(text.rstrip(PUNCTUATION)) :] else core
+
+
+def _marked(words: Sequence[dict], asks: bool = False) -> str:
+    """The words as :func:`_spoken`, but a cue that holds a sentence end keeps its sentences' marks: two sentences
+    read as one without them."""
+    if not any(_ends_sentence(w) for w in words[:-1]):
+        return _spoken(words, asks)
+    return " ".join(w["text"].lstrip(PUNCTUATION) if _ends_sentence(w) else w["text"].strip(PUNCTUATION) for w in words)
+
+
+@register("graphic", "stick-words", contract=sc.contract('stick-words'), tags=("captions", "outlined", "word-by-word"))
 def words(cv: Canvas, parent, cues: Sequence[Line], *, y: float = WORD_Y, scrim: float = SCRIM_PEAK) -> None:
     """Word-by-word captions: each cue a word (or a few, :func:`word_cues`), very large white text outlined in
     ink, centred at ``y``, popping in as it starts (:meth:`Canvas.pop_in`), over a feathered ink scrim that fades in
@@ -876,7 +986,9 @@ def _scrim(cv: Canvas, parent, cues: Sequence[Line], y: float, peak: float = SCR
 
 # -- the rig: a drawn, posable figure for new episodes ------------------------------------------------------
 Point = tuple[float, float]
-EYES = ("open", "wide", "half", "closed", "happy")
+Framing = tuple[Point, float, Point]  # focus, zoom, where the focus lands: what a camera is told
+EYES = ("open", "wide", "half", "closed", "happy", "peek", "peek-back")
+PEEKS = {"peek": ("closed", "open"), "peek-back": ("open", "closed")}  # the eyes at -x and at +x
 BROWS = ("flat", "raised", "angry", "worried")
 MOUTHS = ("flat", "smile", "frown", "smirk")
 HEAD_R = 92
@@ -922,10 +1034,11 @@ STRAND_HAIR, FILLED_HAIR = ("cowlick", "spiky"), ("side-part",)  # the bun sits 
 @dataclass(frozen=True)
 class Look:
     """Who the figure is: a hairstyle from :data:`HAIR`, glasses or not, a tie colour (``None``: no tie), an
-    apron colour (``None``: no apron; a shop's uniform) and a cap colour (``None``: bareheaded; a pilot's cap). The
-    poses stop the torso at the neck, some 15 pixels short of the head: ``neck`` draws that span, so that a head does
-    not float above its body. A figure already published keeps its gap and stays off. ``brows`` off draws none: a cap's
-    band sits where they go, so a figure with its cap down reads without them."""
+    apron colour (``None``: no apron; a shop's uniform), a cap colour (``None``: bareheaded; a pilot's cap) and a
+    sun hat colour (``None``: bareheaded; a wide straw hat over the hair, a day at the beach). The poses stop the torso
+    at the neck, some 15 pixels short of the head: ``neck`` draws that span, so that a head does not float above its
+    body. A figure already published keeps its gap and stays off. ``brows`` off draws none: a cap's band sits where
+    they go, so a figure with its cap down reads without them."""
 
     hair: str = "cowlick"
     glasses: bool = False
@@ -933,6 +1046,7 @@ class Look:
     apron: str | None = None
     cap: str | None = None
     neck: bool = False
+    sunhat: str | None = None
     brows: bool = True
 
 
@@ -955,6 +1069,8 @@ def check_look(look: Look) -> None:
         raise StickDataError(f"apron must be a #rrggbb colour or None, got {look.apron!r}")
     if look.cap is not None and not COLOUR.match(look.cap):
         raise StickDataError(f"cap must be a #rrggbb colour or None, got {look.cap!r}")
+    if look.sunhat is not None and not COLOUR.match(look.sunhat):
+        raise StickDataError(f"sunhat must be a #rrggbb colour or None, got {look.sunhat!r}")
 
 
 @dataclass(frozen=True)
@@ -1122,9 +1238,12 @@ def _head(cv: Canvas, parent, look: Look, r: float = HEAD_R) -> None:
         shape(cv, parent, HAIR[look.hair], sw=6, stroke=cv.ink)
     if look.cap is not None:
         _cap(cv, parent, look.cap)
+    if look.sunhat is not None:
+        _sunhat(cv, parent, look.sunhat)
 
 
 CAP_BAND, CAP_BADGE = "#111111", "#e3b23c"
+SUNHAT_BAND = "#c0453b"
 
 
 def _cap(cv: Canvas, parent, colour: str) -> None:
@@ -1134,6 +1253,13 @@ def _cap(cv: Canvas, parent, colour: str) -> None:
     shape(cv, parent, "M -92 -60 Q 0 -74 98 -60 L 96 -40 Q 0 -54 -90 -42 Z", CAP_BAND, 4, stroke=cv.ink)
     shape(cv, parent, "M 22 -44 Q 96 -50 138 -30 Q 84 -22 22 -32 Z", CAP_BAND, 4, stroke=cv.ink)
     oval(cv, parent, -6, -110, 26, 20, CAP_BADGE)
+
+
+def _sunhat(cv: Canvas, parent, colour: str) -> None:
+    """A wide sun hat on a head of radius :data:`HEAD_R`: the crown, a band and a brim that overhangs the head."""
+    shape(cv, parent, "M -160 -56 Q 0 -112 160 -56 Q 0 -30 -160 -56 Z", colour, 6, stroke=cv.ink)
+    shape(cv, parent, "M -84 -74 Q -92 -146 0 -148 Q 92 -146 84 -74 Q 0 -94 -84 -74 Z", colour, 6, stroke=cv.ink)
+    shape(cv, parent, "M -84 -76 Q 0 -96 84 -76 L 86 -96 Q 0 -116 -86 -96 Z", SUNHAT_BAND, 4, stroke=cv.ink)
 
 
 def _glasses(cv: Canvas, parent) -> None:
@@ -1164,17 +1290,21 @@ def _crescent(r: float) -> str:
 
 
 def _eyes(cv: Canvas, parent, face: Face) -> None:
+    """The two eyes. ``peek`` keeps the one at -x shut and opens the one at +x: the one a figure, flipped or not, turns
+    toward whoever it faces. ``peek-back`` is the other way round, for a figure seated facing the camera with the one
+    it is checking on at its left, as a driver is."""
     lx, ly = face.look
-    for ex in (-30, 30):
+    for side, ex in enumerate((-30, 30)):
         e = _group(cv, parent, x=ex, y=-12)
-        if face.eyes in ("closed", "happy"):
-            d = "M -15 0 Q 0 9 15 0" if face.eyes == "closed" else "M -15 5 Q 0 -10 15 5"
+        state = PEEKS[face.eyes][side] if face.eyes in PEEKS else face.eyes
+        if state in ("closed", "happy"):
+            d = "M -15 0 Q 0 9 15 0" if state == "closed" else "M -15 5 Q 0 -10 15 5"
             shape(cv, e, d, sw=5, stroke=cv.ink)
             continue
-        w, h, pupil = (22, 26, 7) if face.eyes == "wide" else (17, 20, 9)
+        w, h, pupil = (22, 26, 7) if state == "wide" else (17, 20, 9)
         cv.ellipse(e, -w, -h, 2 * w, 2 * h, cv.white, stroke=cv.ink, sw=4)
         oval(cv, e, lx * (w - pupil - 3) - pupil, ly * (h - pupil - 3) - pupil, 2 * pupil, 2 * pupil, cv.ink)
-        if face.eyes == "half":
+        if state == "half":
             shape(cv, e, f"M {-w - 2} {-h - 2} L {w + 2} {-h - 2} L {w + 2} -2 L {-w - 2} -2 Z", SKIN)
             shape(cv, e, f"M {-w} -2 L {w} -2", sw=4, stroke=cv.ink)
 
@@ -1240,7 +1370,48 @@ def _gate(cv: Canvas, node, start: float, end: float, total: float) -> None:
     cv.gate(node, [(start, end)])
 
 
-@register("character", "stick-rig", tags=("procedural", "seated", "standing", "looks", "lip-sync", "expressions"))
+_FACE_FIELDS = (
+    ('eyes', cc.P(enum=EYES)),
+    ('brows', cc.P(enum=BROWS)),
+    ('mouth', cc.P(enum=MOUTHS)),
+    ('look', cc.P(unit='ratio', prefix_items=(cc.P(minimum=-1, maximum=1), cc.P(minimum=-1, maximum=1)))),
+)
+_RIG_KEY_FIELDS = (('start', cc.seconds('canvas', 'start')), ('face', cc.P(fields=_FACE_FIELDS)))
+
+
+@register(
+    "character",
+    "stick-rig",
+    tags=("procedural", "seated", "standing", "looks", "lip-sync", "expressions"),
+    contract=cc.character(
+        limbs=True,
+        expressions=True,
+        parameters=(
+            *cc.AT,
+            ('keys', cc.P(items=cc.P(fields=_RIG_KEY_FIELDS))),
+            ('end', cc.seconds('canvas', 'end')),
+            ('blinks', cc.P(items=cc.seconds('canvas'))),
+            ('phones', cc.P(description='Character timestamps relative to the shot start; start/end use seconds.')),
+            (
+                'poses',
+                cc.P(
+                    unit='Stick frame pixels',
+                    description='Pose names are keys in this mapping, including custom poses.',
+                ),
+            ),
+        ),
+        vocabularies=(('eyes', EYES), ('brows', BROWS), ('mouths', MOUTHS), ('default_poses', tuple(SEATED))),
+        operations=(
+            cc.Operation('key', RigKey, cc.PartContract(parameters=_RIG_KEY_FIELDS)),
+            cc.Operation('face', Face, cc.PartContract(parameters=_FACE_FIELDS)),
+        ),
+        constraints=(
+            'Keys hold their pose; they do not tween. All animation uses the canvas shot clock.',
+            'The poses mapping may supply arbitrary names; default_poses is not a closed vocabulary.',
+            'at translates reference geometry; scale acts about the frame origin, not the feet.',
+        ),
+    ),
+)
 def rig(
     cv: Canvas,
     parent,
@@ -1335,6 +1506,34 @@ def hand_at(pose: RigPose, *, far: bool = False, at: Point = (0, 0), scale: floa
     return at[0] + (-scale if flip else scale) * x, at[1] + scale * y
 
 
+ARM = 155.0  # one bone of a standing figure's arm, shoulder to elbow and elbow to hand, as STANDING draws it
+
+
+def reaching(pose: RigPose, hand: Point, *, far: bool = False, bend: int = 1, arm: float = ARM) -> RigPose:
+    """``pose`` with its near hand, or its ``far`` one, on ``hand``, and the elbow solved so both bones stay ``arm``
+    long: a hand sent to a prop arrives without the arm stretching to get there. ``bend`` is +1 or -1, the side of the
+    line from shoulder to hand the elbow goes. A point the arm cannot reach is refused: bring the figure closer."""
+    if not all(_is_number(v) for v in hand):
+        raise StickDataError(f"a hand reaches a finite point, got {hand!r}")
+    if bend not in (1, -1):
+        raise StickDataError(f"an elbow bends +1 or -1, got {bend!r}")
+    if not (_is_number(arm) and arm > 0):
+        raise StickDataError(f"an arm's bone is a positive length, got {arm!r}")
+    sx, sy = pose.neck[0] - 4, pose.neck[1] + 34  # where _body starts an arm
+    dx, dy = hand[0] - sx, hand[1] - sy
+    span = math.hypot(dx, dy)
+    if not 0 < span <= 2 * arm:
+        raise StickDataError(f"a hand at {hand} is out of reach: {span:.0f} from the shoulder, the arm is {2 * arm:g}")
+    side = bend * math.sqrt(arm**2 - (span / 2) ** 2) / span
+    elbow = (sx + dx / 2 - dy * side, sy + dy / 2 + dx * side)
+    i = 0 if far else 1
+    return replace(
+        pose,
+        elbows=(elbow, pose.elbows[1]) if i == 0 else (pose.elbows[0], elbow),
+        hands=(hand, pose.hands[1]) if i == 0 else (pose.hands[0], hand),
+    )
+
+
 def held(
     cv: Canvas,
     parent,
@@ -1360,6 +1559,36 @@ def held(
     return g
 
 
+def forearm(
+    cv: Canvas,
+    parent,
+    keys: Sequence[RigKey],
+    end: float,
+    *,
+    over: Collection[str],
+    poses: Mapping[str, RigPose] = SEATED,
+    far: bool = False,
+    at: Point = (0, 0),
+    scale: float = 1.0,
+    flip: bool = False,
+):
+    """A figure's near forearm (the ``far`` one if asked), elbow to hand, drawn again while its pose is in ``over``: a
+    :func:`rig` is one layer, so a hand that reaches across what is drawn after the figure would go behind it. Draw this
+    after that prop, with the figure's own ``keys``, ``poses``, ``at``, ``scale`` and ``flip``; it holds the same spans
+    and the same stroke, so the arm runs on over the prop's edge with no step."""
+    check_keys(keys, end, poses)
+    if not (_is_number(scale) and scale > 0):
+        raise StickDataError(f"scale must be a positive number, got {scale!r}")
+    i = 0 if far else 1
+    g = _group(cv, parent, x=at[0], y=at[1], scaleX=-scale if flip else scale, scaleY=scale)
+    for k, a, b in _spans(keys, end):
+        if k.pose in over:
+            stroke = _group(cv, g)
+            _limb(cv, stroke, [poses[k.pose].elbows[i], poses[k.pose].hands[i]], LIMB_FAR if far else LIMB)
+            _gate(cv, stroke, a, b, end)
+    return g
+
+
 def camera(cv: Canvas, parent, focus: Point, *, zoom: float = 1.0, push: float = 0.0, to=(540, 760)):
     """A group that frames its contents: at ``zoom`` with ``focus`` moved to ``to``; with ``push`` > 0 it starts
     wide and eases in to that framing over ``push`` seconds. Drawings inside are vectors, so a close-up stays sharp."""
@@ -1374,10 +1603,50 @@ def camera(cv: Canvas, parent, focus: Point, *, zoom: float = 1.0, push: float =
     return g
 
 
+def _framing(frame: Framing, what: str) -> tuple[float, float, float, float, float]:
+    """``frame`` as numbers, refused unless it is a real framing."""
+    try:
+        (fx, fy), zoom, (tx, ty) = frame
+    except (TypeError, ValueError):
+        raise StickDataError(f"{what} is (focus, zoom, to), got {frame!r}") from None
+    numbers = (fx, fy, zoom, tx, ty)
+    if not (all(_is_number(n) for n in numbers) and zoom > 0):
+        raise StickDataError(f"{what} needs finite numbers and a positive zoom, got {frame!r}")
+    return numbers
+
+
+def between(a: Framing, b: Framing, at: float) -> Framing:
+    """The framing ``at`` of the way (0..1) from ``a`` to ``b``, eased like :func:`dolly`, each focus and landing point
+    moving straight: a long move crossing several shots is one :func:`dolly` per shot between two of these."""
+    if not (_is_number(at) and 0 <= at <= 1):
+        raise StickDataError(f"a move's point is 0 to 1, got {at!r}")
+    fx, fy, zoom, tx, ty = _framing(a, "the first framing")
+    fx2, fy2, zoom2, tx2, ty2 = _framing(b, "the second framing")
+    u = (1 - math.cos(math.pi * at)) / 2
+    mix = lambda p, q: p + (q - p) * u  # noqa: E731
+    return (mix(fx, fx2), mix(fy, fy2)), mix(zoom, zoom2), (mix(tx, tx2), mix(ty, ty2))
+
+
+def dolly(cv: Canvas, parent, a: Framing, b: Framing, seconds: float, *, start: float = 0.0, kind: str = "sine-in-out"):
+    """A group that holds framing ``a`` until ``start``, moves to ``b`` over ``seconds`` and stays there. A framing is
+    (focus, zoom, to), as :func:`camera` takes them, and either way round: in to a face, or back out to show what the
+    frame was hiding, down to a zoom under 1 on a set wider than the frame."""
+    if not (_is_number(seconds) and seconds > 0 and _is_number(start) and start >= 0):
+        raise StickDataError(f"a move starts at 0 or later and lasts some seconds, got {start!r}, {seconds!r}")
+    fx, fy, zoom, tx, ty = _framing(a, "the first framing")
+    fx2, fy2, zoom2, tx2, ty2 = _framing(b, "the second framing")
+    # the anchor stays on the first focus, so the second framing is where that point must land for it to hold
+    x2, y2 = tx2 + (fx - fx2) * zoom2, ty2 + (fy - fy2) * zoom2
+    g = parent.add_group(id=f"setup-{cv.uid('dolly')}", anchorX=fx, anchorY=fy, x=tx, y=ty, scaleX=zoom, scaleY=zoom)
+    for prop, p, q in (("scaleX", zoom, zoom2), ("scaleY", zoom, zoom2), ("x", tx, x2), ("y", ty, y2)):
+        cv.keys(g, prop, [*([(0, p)] if start else []), (start, p), (start + seconds, q)], kind=kind)
+    return g
+
+
 CARD = (90, 300, 900, 230, 46)  # x, y, w, h, radius of the hook card
 
 
-@register("graphic", "stick-card", tags=("hook", "card", "font"))
+@register("graphic", "stick-card", contract=sc.contract('stick-card'), tags=("hook", "card", "font"))
 def card(cv: Canvas, parent, text: str, *, size: float = 54, width: int | None = None):
     """The hook in the caption font: ink text, balanced over up to three lines, on a rounded white card; ``width``
     narrows it about the frame's centre, so that a reel's card stays clear of the show's bug."""
@@ -1451,7 +1720,7 @@ def _check_call(tiles: Sequence[Tile], inbox: Sequence[Mail], speaking: str, hig
         raise StickDataError(f"highlight must index one of the {len(inbox)} mails, got {highlight!r}")
 
 
-@register("graphic", "stick-call", tags=("video-call", "screen", "inbox", "font"))
+@register("graphic", "stick-call", contract=sc.contract('stick-call'), tags=("video-call", "screen", "inbox", "font"))
 def call(
     cv: Canvas,
     parent,

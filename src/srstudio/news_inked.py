@@ -15,12 +15,27 @@ type, number and check they share. A new reel of the show calls this module. Eac
 from __future__ import annotations
 
 import math
+import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from types import MappingProxyType
 from typing import Any
 
-from . import brush, head_motion, look, news_arms, news_head, news_kit, parts, toon, toon_head
+from . import _character_contracts as cc
+from . import _news_contracts as dc
+from . import (
+    anatomy_ledger,
+    brush,
+    drawing_events,
+    head_motion,
+    look,
+    news_arms,
+    news_head,
+    news_kit,
+    parts,
+    toon,
+    toon_head,
+)
 from .brush import Point
 from .canvas import Canvas
 from .head_motion import Channel, HeadPlan
@@ -106,6 +121,12 @@ __all__ = [
     "gus",
     "live_door",
     "lower_third",
+    "corridor_dashes",
+    "corridor_keys",
+    "corridor_map",
+    "forecast_map",
+    "money_app",
+    "oven_clock",
     "parody_tag",
     "perform",
     "phone_insert",
@@ -135,6 +156,7 @@ BANNER_Y, BANNER_H = 1146.0, 76.0  # under the desk's top, so the hands on it st
 LOWER_Y, LOWER_H = 1222.0, 130.0
 TICKER_Y, TICKER_H = 1352.0, 64.0
 CHIP = 10.0  # one corner for everything over the picture
+CREDIT_GAP = 14.0  # between chips on the top row
 SHADOW = "#160a3066"
 PHONE_X, PHONE_Y, PHONE_W, PHONE_H = 190.0, 508.0, 700.0, 786.0  # the handset over the dimmed room
 MAP_TOP = 108.0  # the screen under the phone's header
@@ -298,10 +320,21 @@ HANDS: dict[str, tuple[Point, ...]] = {"open": FINGERS_UP, "fist": FIST, "rest":
 
 
 def _hand(
-    cv: Canvas, parent, kind: str, at: Point, turn: float, skin: str, tone: str, size: float = 1.0, seed: float = 0.0
+    cv: Canvas,
+    parent,
+    kind: str,
+    at: Point,
+    turn: float,
+    skin: str,
+    tone: str,
+    size: float = 1.0,
+    seed: float = 0.0,
+    mirrored: bool = False,
 ) -> None:
-    """A hand with its wrist at ``at``, fingers ``turn`` degrees clockwise of up, in the same ink as the sleeve."""
-    g = cv.group(parent, cv.uid("g"), x=at[0], y=at[1], rotation=turn, scaleX=size, scaleY=size)
+    """A hand with its wrist at ``at``, fingers ``turn`` degrees clockwise of up, in the same ink as the sleeve.
+    ``mirrored`` makes it the other hand of the pair."""
+    wide = -size if mirrored else size
+    g = cv.group(parent, cv.uid("g"), x=at[0], y=at[1], rotation=turn, scaleX=wide, scaleY=size)
     _form(cv, g, HANDS[kind], skin, tone, seed, INK * 0.72, depth=11.0, amount=0.3)
     if kind == "fist":
         for x in (-16, 2, 20):
@@ -478,7 +511,10 @@ def _rig(cv: Canvas, frame) -> None:
 
 
 @register(
-    "location", "news-set@2", summary="The studio with planes: a lit room, a monitor wall with pictures, a truss above"
+    "location",
+    "news-set@2",
+    contract=dc.contract('news-set@2'),
+    summary="The studio with planes: a lit room, a monitor wall with pictures, a truss above",
 )
 def studio(cv: Canvas, parent, end: float = 10.0) -> None:
     """The far plane out of focus: a truss in the room's head, nine bezelled screens with a picture on each, the light
@@ -545,7 +581,12 @@ def _camera(cv: Canvas, g) -> None:
     _oval(cv, near, 176, 1686, 9, 9, TANGERINE)
 
 
-@register("prop", "news-desk@2", summary="The anchor desk: a polished top with a lip, a lit front, a floor under it")
+@register(
+    "prop",
+    "news-desk@2",
+    contract=dc.contract('news-desk@2'),
+    summary="The anchor desk: a polished top with a lip, a lit front, a floor under it",
+)
 def desk(cv: Canvas, parent) -> None:
     """A top with a back edge, a sheen and a lit lip; a front of ribbed panels that curves away, a light box with the
     show's chevrons and no word; a kick plate, then a glossy floor with the desk's shadow and light on it. The frame's
@@ -1125,9 +1166,11 @@ def _arm_on_rig(
     acts: Sequence[tuple[float, Pose]],
     spans: Mapping[str, Spans],
     seed: float,
+    number: int = 5,
 ) -> None:
     """One arm of version 5: the hand under the sleeve, then all the sleeve's ink, then all its fill, so that a line
-    runs around the whole arm with none at the elbow, where the two lengths are one sleeve, or at the shoulder."""
+    runs around the whole arm with none at the elbow, where the two lengths are one sleeve, or at the shoulder.
+    From version 6 its hand is the one of the pair that belongs to this arm; before it, every arm drew the same hand."""
     build = news_arms.BUILDS[who]
     sleeve, tone, skin, shadow = _DRESS[who]
     keys = news_arms.keys_of(who, side, acts)
@@ -1138,7 +1181,8 @@ def _arm_on_rig(
     for hand in sorted({hold.hand for hold in holds.values()}):
         g = cv.group(wrist, cv.uid("g"), opacity=0.0)
         cv.gate(g, [span for state, hold in holds.items() if hold.hand == hand for span in spans[state]])
-        _hand(cv, g, hand, (0.0, 0.0), 0.0, skin, shadow, build.hand, seed + 3)
+        mirrored = number >= 6 and news_arms.Hand(hand, side).on(side).mirrored
+        _hand(cv, g, hand, (0.0, 0.0), 0.0, skin, shadow, build.hand, seed + 3, mirrored)
     end = -build.fore
     _form(
         cv,
@@ -1171,7 +1215,9 @@ def _arm_on_rig(
                 _strip(cv, bone, near, far, length, edge, tone, when)
 
 
-def _arms_on_rig(cv: Canvas, parent, who: str, acts: Sequence[tuple[float, Pose]], spans: Mapping[str, Spans]) -> None:
+def _arms_on_rig(
+    cv: Canvas, parent, who: str, acts: Sequence[tuple[float, Pose]], spans: Mapping[str, Spans], number: int = 5
+) -> None:
     """Both arms of version 5, over what they hold: Vera's sheaf and Gus's phone, which rises with his hands."""
     if who == "vera":
         g = cv.group(parent, cv.uid("g"), opacity=0.0)
@@ -1187,7 +1233,7 @@ def _arms_on_rig(cv: Canvas, parent, who: str, acts: Sequence[tuple[float, Pose]
         cv.keys(rise, "y", keys, hold=False, kind="sine-in-out", local=False)
         _phone(cv, rise, 0.0, PHONE_HELD)
     for i, side in enumerate((-1.0, 1.0)):
-        _arm_on_rig(cv, parent, who, side, acts, spans, (31.0 if who == "vera" else 61.0) + i * 6)
+        _arm_on_rig(cv, parent, who, side, acts, spans, (31.0 if who == "vera" else 61.0) + i * 6, number)
 
 
 def skeleton(who: str, number: int, state: str) -> tuple[tuple[Point, Point, Point], ...]:
@@ -1330,32 +1376,67 @@ def perform(
     when there is one, so a forearm lies across the desk's top and a head stays behind its edge. ``motion`` puts the
     head on its rig (:func:`_on_rig`) and ``looks`` is when its eyes go to the other anchor with it. ``number`` is the
     version drawn."""
+    if motion is not None:
+        rig, plan = motion
+        plan.check_bounds(rig.style, frozen=bool(cv._frozen))
+    return _perform(cv, parent, who, x, acts, start, end, mouths, id, scale, over, motion, looks, number)
+
+
+def _perform(
+    cv: Canvas,
+    parent,
+    who: str,
+    x: float,
+    acts: Sequence[tuple[float, Pose]],
+    start: float,
+    end: float,
+    mouths: Track = (),
+    id: str | None = None,
+    scale: float = 1.0,
+    over=None,
+    motion: Motion = None,
+    looks: Sequence[tuple[float, float]] = (),
+    number: int = 2,
+):
+    """Draw a checked performance or rig_specimen's fixed aggregate-envelope probe."""
     _span(start, end, "an anchor")
     if who not in ("vera", "gus"):
         raise NewsKitError(f"the desk seats vera and gus, not {who!r}")
     if not acts or acts[0][0] > start:
         raise NewsKitError(f"an anchor needs a pose from {start} s, got {acts[:1]!r}")
-    size = scale if scale else 1.0
-    g = cv.group(parent, id or cv.uid("anchor"), x=x, y=DESK_Y, scaleX=size, scaleY=size)
-    hands = g if over is None else cv.group(over, cv.uid("hands"), x=x, y=DESK_Y, scaleX=size, scaleY=size)
-    arms = _spans([(at, pose.arms) for at, pose in acts], start, end)
-    eyes = eye_track(side_eyes(acts, looks, end), end, 4.3 if who == "vera" else 2.4, 1.7 if who == "vera" else 0.9)
-    mouth = mouth_track(acts, mouths, end)
-    if motion is not None:
-        _on_rig(cv, g, hands, who, acts, arms, eyes, mouth, start, end, motion, inked(who, number), number)
+    anatomy_ledger.note_part(cv, f"news-{who}", number)
+    owner = {
+        ('vera', 2): vera,
+        ('gus', 2): gus,
+        ('vera', 3): vera_3,
+        ('gus', 3): gus_3,
+        ('vera', 4): vera_4,
+        ('gus', 4): gus_4,
+        ('vera', 5): vera_5,
+        ('gus', 5): gus_5,
+    }.get((who, number))
+    with drawing_events.drawing(owner):
+        size = scale if scale else 1.0
+        g = cv.group(parent, id or cv.uid("anchor"), x=x, y=DESK_Y, scaleX=size, scaleY=size)
+        hands = g if over is None else cv.group(over, cv.uid("hands"), x=x, y=DESK_Y, scaleX=size, scaleY=size)
+        arms = _spans([(at, pose.arms) for at, pose in acts], start, end)
+        eyes = eye_track(side_eyes(acts, looks, end), end, 4.3 if who == "vera" else 2.4, 1.7 if who == "vera" else 0.9)
+        mouth = mouth_track(acts, mouths, end)
+        if motion is not None:
+            _on_rig(cv, g, hands, who, acts, arms, eyes, mouth, start, end, motion, inked(who, number), number)
+            return g
+        neck = dict(x=0.0, y=NECK_Y, anchorX=0.0, anchorY=CHIN_Y)  # the head turns on the neck, over the collar
+        if who == "vera":
+            _vera_body(cv, g, number)
+            head = cv.group(g, cv.uid("g"), **neck)
+            _vera_head(cv, head, eyes, mouth, start, end, None, inked(who, number))
+        else:
+            _gus_body(cv, g, number)
+            head = cv.group(g, cv.uid("g"), **neck)
+            _gus_head(cv, head, eyes, mouth, start, end, None, inked(who, number))
+        _arms_of(cv, hands, who, acts, arms, number)
+        cv.keys(head, "rotation", _head_keys(acts), hold=False, kind="sine-in-out", local=False)
         return g
-    neck = dict(x=0.0, y=NECK_Y, anchorX=0.0, anchorY=CHIN_Y)  # the head turns on the neck, over the collar
-    if who == "vera":
-        _vera_body(cv, g, number)
-        head = cv.group(g, cv.uid("g"), **neck)
-        _vera_head(cv, head, eyes, mouth, start, end, None, inked(who, number))
-    else:
-        _gus_body(cv, g, number)
-        head = cv.group(g, cv.uid("g"), **neck)
-        _gus_head(cv, head, eyes, mouth, start, end, None, inked(who, number))
-    _arms_of(cv, hands, who, acts, arms, number)
-    cv.keys(head, "rotation", _head_keys(acts), hold=False, kind="sine-in-out", local=False)
-    return g
 
 
 def _arms_of(
@@ -1363,7 +1444,7 @@ def _arms_of(
 ) -> None:
     """The arms of version ``number``: from version 5 on their rig, before it a drawing for each pose."""
     if number >= 5:
-        _arms_on_rig(cv, hands, who, acts, arms)
+        _arms_on_rig(cv, hands, who, acts, arms, number)
     else:
         (_vera_arms if who == "vera" else _gus_arms)(cv, hands, arms)
 
@@ -1456,14 +1537,20 @@ RIGS: Mapping[str, AnchorRig] = MappingProxyType(
         "news-gus@4": GUS_RIG_3,
         "news-vera@5": VERA_RIG_3,
         "news-gus@5": GUS_RIG_3,
+        "news-vera@6": VERA_RIG_3,
+        "news-gus@6": GUS_RIG_3,
     }
 )
 
 
-def mouths_shown(seconds: float, number: int) -> Track:
-    """The mouths a specimen of version ``number`` draws: from version 4, whose mouths are its change, every one."""
+def mouths_shown(seconds: float, number: int, starts: Sequence[float] = ()) -> Track:
+    """The mouths a specimen of version ``number`` draws: from version 4, whose mouths are its change, every one.
+    Each beat in ``starts`` that no mouth opens on shuts first, so the specimen states its own timeline instead of
+    leaning on how ``mouth_track`` opens a reel's beat: the digest holds the drawing, not the lip-sync policy."""
     states = news_kit.EXPRESSIONS if number >= 4 else ("closed", "open")
-    return tuple((seconds * n / len(states), state) for n, state in enumerate(states))
+    track = [(seconds * n / len(states), state) for n, state in enumerate(states)]
+    on = {at for at, _ in track}
+    return tuple(sorted([*track, *((at, "closed") for at in starts if at not in on)]))
 
 
 def rig_specimen(cv: Canvas, who: str, seconds: float, number: int = 2) -> None:
@@ -1477,13 +1564,25 @@ def rig_specimen(cv: Canvas, who: str, seconds: float, number: int = 2) -> None:
     )
     slide = head_motion.limit(rig.style, "face_x")
     plan = replace(toon_head.reach(rig), face_x=Channel(((0.0, -slide), (seconds, slide))))
-    perform(
-        cv, cv.comp, who, 540.0, acts, 0.0, seconds, mouths_shown(seconds, number), motion=(rig, plan), number=number
+    _perform(
+        cv,
+        cv.comp,
+        who,
+        540.0,
+        acts,
+        0.0,
+        seconds,
+        mouths_shown(seconds, number, [at for at, _ in acts]),
+        motion=(rig, plan),
+        number=number,
     )
 
 
 @register(
-    "character", "news-vera@2", summary="Vera Stillman, inked: a silver bob with a parting, half-moon glasses, a neck"
+    "character",
+    "news-vera@2",
+    summary="Vera Stillman, inked: a silver bob with a parting, half-moon glasses, a neck",
+    contract=cc.anchor(Pose, news_kit.EYES, news_kit.EXPRESSIONS, news_kit.ARMS, news_kit.VISEMES),
 )
 def vera(
     cv: Canvas,
@@ -1498,7 +1597,12 @@ def vera(
     return perform(cv, parent, "vera", x, ((start, pose or Pose()),), start, end, mouths)
 
 
-@register("character", "news-gus@2", summary="Gus Bellows, inked: curls, a pulled tie, sleeves with elbows, real hands")
+@register(
+    "character",
+    "news-gus@2",
+    summary="Gus Bellows, inked: curls, a pulled tie, sleeves with elbows, real hands",
+    contract=cc.anchor(Pose, news_kit.EYES, news_kit.EXPRESSIONS, news_kit.ARMS, news_kit.VISEMES),
+)
 def gus(
     cv: Canvas,
     parent,
@@ -1512,7 +1616,12 @@ def gus(
     return perform(cv, parent, "gus", x, ((start, pose or Pose()),), start, end, mouths)
 
 
-@register("character", "news-vera@3", summary="Vera on the rig whose face stays on her skin: the same drawing as @2")
+@register(
+    "character",
+    "news-vera@3",
+    summary="Vera on the rig whose face stays on her skin: the same drawing as @2",
+    contract=cc.anchor(Pose, news_kit.EYES, news_kit.EXPRESSIONS, news_kit.ARMS, news_kit.VISEMES),
+)
 def vera_3(
     cv: Canvas,
     parent,
@@ -1526,7 +1635,12 @@ def vera_3(
     return perform(cv, parent, "vera", x, ((start, pose or Pose()),), start, end, mouths)
 
 
-@register("character", "news-gus@3", summary="Gus on the rig whose face stays on his skin: the same drawing as @2")
+@register(
+    "character",
+    "news-gus@3",
+    summary="Gus on the rig whose face stays on his skin: the same drawing as @2",
+    contract=cc.anchor(Pose, news_kit.EYES, news_kit.EXPRESSIONS, news_kit.ARMS, news_kit.VISEMES),
+)
 def gus_3(
     cv: Canvas,
     parent,
@@ -1540,7 +1654,12 @@ def gus_3(
     return perform(cv, parent, "gus", x, ((start, pose or Pose()),), start, end, mouths)
 
 
-@register("character", "news-vera@4", summary="Vera with the shout inside her chin, the rig of @3")
+@register(
+    "character",
+    "news-vera@4",
+    summary="Vera with the shout inside her chin, the rig of @3",
+    contract=cc.anchor(Pose, news_kit.EYES, news_kit.EXPRESSIONS, news_kit.ARMS, news_kit.VISEMES),
+)
 def vera_4(
     cv: Canvas,
     parent,
@@ -1554,7 +1673,12 @@ def vera_4(
     return perform(cv, parent, "vera", x, ((start, pose or Pose()),), start, end, mouths, number=4)
 
 
-@register("character", "news-gus@4", summary="Gus with the shout inside his chin and his mouths clear of his nose")
+@register(
+    "character",
+    "news-gus@4",
+    summary="Gus with the shout inside his chin and his mouths clear of his nose",
+    contract=cc.anchor(Pose, news_kit.EYES, news_kit.EXPRESSIONS, news_kit.ARMS, news_kit.VISEMES),
+)
 def gus_4(
     cv: Canvas,
     parent,
@@ -1568,7 +1692,12 @@ def gus_4(
     return perform(cv, parent, "gus", x, ((start, pose or Pose()),), start, end, mouths, number=4)
 
 
-@register("character", "news-vera@5", summary="Vera with a sloped shoulder that her sleeve grows out of")
+@register(
+    "character",
+    "news-vera@5",
+    summary="Vera with a sloped shoulder that her sleeve grows out of",
+    contract=cc.anchor(Pose, news_kit.EYES, news_kit.EXPRESSIONS, news_kit.ARMS, news_kit.VISEMES),
+)
 def vera_5(
     cv: Canvas,
     parent,
@@ -1582,7 +1711,12 @@ def vera_5(
     return perform(cv, parent, "vera", x, ((start, pose or Pose()),), start, end, mouths, number=5)
 
 
-@register("character", "news-gus@5", summary="Gus with arms of one length that travel between their poses")
+@register(
+    "character",
+    "news-gus@5",
+    summary="Gus with arms of one length that travel between their poses",
+    contract=cc.anchor(Pose, news_kit.EYES, news_kit.EXPRESSIONS, news_kit.ARMS, news_kit.VISEMES),
+)
 def gus_5(
     cv: Canvas,
     parent,
@@ -1594,6 +1728,44 @@ def gus_5(
 ):
     """Gus at the desk in one pose."""
     return perform(cv, parent, "gus", x, ((start, pose or Pose()),), start, end, mouths, number=5)
+
+
+@register(
+    "character",
+    "news-vera@6",
+    summary="Vera with a pair of hands, the right the mirror of the left",
+    contract=cc.anchor(Pose, news_kit.EYES, news_kit.EXPRESSIONS, news_kit.ARMS, news_kit.VISEMES),
+)
+def vera_6(
+    cv: Canvas,
+    parent,
+    pose: Pose | None = None,
+    x: float = 540.0,
+    start: float = 0.0,
+    end: float = 2.0,
+    mouths: Track = (),
+):
+    """Vera at the desk in one pose."""
+    return perform(cv, parent, "vera", x, ((start, pose or Pose()),), start, end, mouths, number=6)
+
+
+@register(
+    "character",
+    "news-gus@6",
+    summary="Gus with a pair of hands, the right the mirror of the left",
+    contract=cc.anchor(Pose, news_kit.EYES, news_kit.EXPRESSIONS, news_kit.ARMS, news_kit.VISEMES),
+)
+def gus_6(
+    cv: Canvas,
+    parent,
+    pose: Pose | None = None,
+    x: float = 540.0,
+    start: float = 0.0,
+    end: float = 2.0,
+    mouths: Track = (),
+):
+    """Gus at the desk in one pose."""
+    return perform(cv, parent, "gus", x, ((start, pose or Pose()),), start, end, mouths, number=6)
 
 
 def _phone_down(cv: Canvas, parent, x: float, spans: Spans) -> None:
@@ -1707,7 +1879,12 @@ def _chip(cv: Canvas, parent, x: float, w: float, fill: str, stroke: str | None 
     cv.rect(parent, x, BUG_Y, w, BUG_H, fill, stroke, 3.0 if stroke else 0.0, radius=CHIP)
 
 
-@register("graphic", "news-bug@2", summary="The show's name in the corner, on the top row's chip")
+@register(
+    "graphic",
+    "news-bug@2",
+    contract=dc.contract('news-bug@2'),
+    summary="The show's name in the corner, on the top row's chip",
+)
 def bug(cv: Canvas, parent, start: float, end: float, measure: Measure, id: str = "news-bug") -> None:
     """The show's name in a tangerine chip, top left."""
     _span(start, end, "the bug")
@@ -1717,12 +1894,21 @@ def bug(cv: Canvas, parent, start: float, end: float, measure: Measure, id: str 
     _text(cv, g, SHOW, TEXT_LEFT, BUG_Y, wide, BUG_H, 40, PLUM_DEEP, "center")
 
 
-@register("graphic", "news-parody-tag@2", summary="The PARODY tag on the top row's chip, on a whole fictional reel")
+def _tag_wide(measure: Measure) -> float:
+    return measure("PARODY", 40.0) + 44.0
+
+
+@register(
+    "graphic",
+    "news-parody-tag@2",
+    contract=dc.contract('news-parody-tag@2'),
+    summary="The PARODY tag on the top row's chip, on a whole fictional reel",
+)
 def parody_tag(cv: Canvas, parent, start: float, end: float, measure: Measure, id: str = "news-parody-tag") -> None:
     """PARODY in butter on plum, top right, opposite the show's name."""
     _span(start, end, "the PARODY tag")
     g = cv.group(parent, id, start=start, end=end)
-    wide = measure("PARODY", 40.0) + 44.0
+    wide = _tag_wide(measure)
     x = TEXT_RIGHT - wide
     _chip(cv, g, x, wide, PLUM_DEEP, BUTTER)
     _text(cv, g, "PARODY", x, BUG_Y, wide, BUG_H, 40, BUTTER, "center")
@@ -1735,7 +1921,12 @@ LID_FILL, LID_RIM = "#8fd4dc", "#5fb3c0"
 LID = ((-78, -34), (-62, -48), (62, -48), (78, -34), (78, 34), (62, 48), (-62, 48), (-78, 34))
 
 
-@register("graphic", "news-missing-card", summary="A missing-person flyer for an object: its picture and its name")
+@register(
+    "graphic",
+    "news-missing-card",
+    contract=dc.contract('news-missing-card'),
+    summary="A missing-person flyer for an object: its picture and its name",
+)
 def missing_card(
     cv: Canvas, parent, label: str, start: float, end: float, measure: Measure, id: str = "news-missing-card"
 ) -> None:
@@ -1783,7 +1974,12 @@ def _door(cv: Canvas, parent, right: float) -> None:
     _inked_oval(cv, parent, knob[0], knob[1], 5.5, 5.5, BUTTER, 2.5)
 
 
-@register("graphic", "news-live-door", summary="A live shot of a door nothing happens at, which can slam shut")
+@register(
+    "graphic",
+    "news-live-door",
+    contract=dc.contract('news-live-door'),
+    summary="A live shot of a door nothing happens at, which can slam shut",
+)
 def live_door(
     cv: Canvas,
     parent,
@@ -1821,7 +2017,10 @@ def live_door(
 
 
 @register(
-    "graphic", "news-source-card@2", summary="A real story's source: a card with the headline, then a top-row chip"
+    "graphic",
+    "news-source-card@2",
+    contract=dc.contract('news-source-card@2'),
+    summary="A real story's source: a card with the headline, then a top-row chip",
 )
 def source_card(
     cv: Canvas,
@@ -1832,9 +2031,11 @@ def source_card(
     end: float,
     measure: Measure,
     id: str = "news-source-card",
+    beside_tag: bool = False,
 ) -> None:
     """The card rises over the desk at ``start``, large enough to read the headline; at ``small`` it goes and the
-    outlet and date stand on the top row until ``end``. The headline is the outlet's, word for word."""
+    outlet and date stand on the top row until ``end``, at its right, or with ``beside_tag`` just left of the PARODY
+    tag, which keeps the corner. The headline is the outlet's, word for word."""
     _span(start, small, "a source card")
     _span(small, end, "a source card's corner")
     x, wide, pad = TEXT_LEFT - 30.0, TEXT_WIDE + 60.0, 34.0
@@ -1862,11 +2063,19 @@ def source_card(
     corner = cv.group(parent, f"{id}-small", start=small, end=end)
     label = f"{source.outlet}, {source.date}"
     w = measure(label, 34.0) + 32.0
-    _chip(cv, corner, TEXT_RIGHT - w, w, CREAM)
-    _text(cv, corner, label, TEXT_RIGHT - w, BUG_Y, w, BUG_H, 34, PLUM_DEEP, "center")
+    right = TEXT_RIGHT - _tag_wide(measure) - CREDIT_GAP if beside_tag else TEXT_RIGHT
+    if beside_tag and right - w < TEXT_LEFT + measure(SHOW, 40.0) + 36.0 + CREDIT_GAP:
+        raise NewsKitError(f"{label!r} does not fit on the top row between the show's name and the PARODY tag")
+    _chip(cv, corner, right - w, w, CREAM)
+    _text(cv, corner, label, right - w, BUG_Y, w, BUG_H, 34, PLUM_DEEP, "center")
 
 
-@register("graphic", "news-lower-third@2", summary="The lower-third: a mint kicker over one line, flush on the ticker")
+@register(
+    "graphic",
+    "news-lower-third@2",
+    contract=dc.contract('news-lower-third@2'),
+    summary="The lower-third: a mint kicker over one line, flush on the ticker",
+)
 def lower_third(
     cv: Canvas,
     parent,
@@ -1894,7 +2103,10 @@ def lower_third(
 
 
 @register(
-    "graphic", "news-banner@2", summary="The BREAKING banner, slimmer, flush on the lower-third, chevrons running"
+    "graphic",
+    "news-banner@2",
+    contract=dc.contract('news-banner@2'),
+    summary="The BREAKING banner, slimmer, flush on the lower-third, chevrons running",
 )
 def banner(
     cv: Canvas, parent, start: float, end: float, measure: Measure, id: str = "news-banner", slide: bool = True
@@ -1925,7 +2137,12 @@ def banner(
     _slide(cv, g, start, moves=slide)
 
 
-@register("graphic", "news-ticker@2", summary="The ticker, flush under the lower-third, its tab cut to a chevron")
+@register(
+    "graphic",
+    "news-ticker@2",
+    contract=dc.contract('news-ticker@2'),
+    summary="The ticker, flush under the lower-third, its tab cut to a chevron",
+)
 def ticker(
     cv: Canvas, parent, items: Sequence[str], start: float, end: float, measure: Measure, id: str = "news-ticker"
 ) -> None:
@@ -1957,7 +2174,12 @@ def ticker(
     _text(cv, g, "NEWS", 20, TICKER_Y, 130, TICKER_H, 40, PLUM_DEEP, "center")
 
 
-@register("graphic", "news-captions@2", summary="The show's dialogue captions on the show's panel, a colour per anchor")
+@register(
+    "graphic",
+    "news-captions@2",
+    contract=dc.contract('news-captions@2'),
+    summary="The show's dialogue captions on the show's panel, a colour per anchor",
+)
 def captions(
     cv: Canvas,
     parent,
@@ -2016,7 +2238,10 @@ def _handset(cv: Canvas, g, title: str) -> None:
 
 
 @register(
-    "graphic", "news-phone@2", summary="Gus's phone, a real handset: bezel, buttons, a status row, tailed bubbles"
+    "graphic",
+    "news-phone@2",
+    contract=dc.contract('news-phone@2'),
+    summary="Gus's phone, a real handset: bezel, buttons, a status row, tailed bubbles",
 )
 def phone_insert(
     cv: Canvas,
@@ -2106,7 +2331,12 @@ def _marker(cv: Canvas, m, kind: str) -> None:
         _inked_oval(cv, m, 0.0, 0.0, 22.0, 22.0, TANGERINE, 5.0)
 
 
-@register("graphic", "news-route", summary="A route on Gus's phone: a sea, a coast, a track that draws itself, pins")
+@register(
+    "graphic",
+    "news-route",
+    contract=dc.contract('news-route'),
+    summary="A route on Gus's phone: a sea, a coast, a track that draws itself, pins",
+)
 def route_insert(
     cv: Canvas,
     parent,
@@ -2182,3 +2412,448 @@ def route_insert(
     _marker(cv, head, marker)
     cv.keys(head, "x", [(round(t, 3), x + p[0]) for t, p in zip(times, track, strict=True)], hold=False, local=False)
     cv.keys(head, "y", [(round(t, 3), y + p[1]) for t, p in zip(times, track, strict=True)], hold=False, local=False)
+
+
+APP_LABEL_Y, APP_AMOUNT_Y, APP_BUTTON_Y = 40.0, 110.0, 310.0  # down from the screen's top, under the header
+APP_BUTTON_W, APP_BUTTON_H = 560.0, 132.0
+APP_NOTE_Y, APP_NOTE_H, APP_NOTES = 468.0, 84.0, 2  # the notes under the button, and how many fit before the foot
+APP_AMOUNT_SIZE, APP_WORD_SIZE, APP_NOTE_SIZE = 150.0, 64.0, 44.0
+APP_DEAD = "#b7afc4"  # a button that no longer does anything
+APP_TAP, APP_TAP_R = 0.28, 40.0  # seconds a tap's ring stays, and its size
+
+
+def _button(cv: Canvas, g, word: str, fill: str, ink: str) -> None:
+    """The app's one button, across the middle of the screen."""
+    x, y = PHONE_X + (PHONE_W - APP_BUTTON_W) / 2, PHONE_Y + MAP_TOP + APP_BUTTON_Y
+    cv.rect(g, x, y, APP_BUTTON_W, APP_BUTTON_H, fill, PLUM_DEEP, 5.0, radius=CHIP)
+    _text(cv, g, word, x, y, APP_BUTTON_W, APP_BUTTON_H, APP_WORD_SIZE, ink, "center")
+
+
+@register(
+    "graphic",
+    "news-money-app",
+    contract=dc.contract('news-money-app'),
+    summary="An unbranded money app on Gus's phone, whose button stops working on cue",
+)
+def money_app(
+    cv: Canvas,
+    parent,
+    title: str,
+    amount: str,
+    action: str,
+    refused: str,
+    start: float,
+    end: float,
+    measure: Measure,
+    taps: Sequence[float] = (),
+    refused_at: float | None = None,
+    notes: Sequence[tuple[float, str]] = (),
+    id: str = "news-money-app",
+) -> None:
+    """A balance on the phone from ``start`` to ``end``: ``amount`` under the app's ``title``, and a button that reads
+    ``action`` until ``refused_at`` and ``refused`` from then on. ``taps`` are the seconds a finger lands on it, beside
+    the word so the word stays read, and each of ``notes`` (its second, its words) stays once it arrives. It refuses
+    copy the show keeps off the screen, words too wide for the phone, and any instant off its span. It copies no real
+    app: a mint header and one button."""
+    _span(start, end, "the app")
+    for word, size, room in (
+        (amount, APP_AMOUNT_SIZE, PHONE_W - 60.0),
+        (action, APP_WORD_SIZE, APP_BUTTON_W - 40.0),
+        (refused, APP_WORD_SIZE, APP_BUTTON_W - 40.0),
+    ):
+        check_copy(word)
+        if not word.strip() or measure(word, size) > room:
+            raise NewsKitError(f"the app's {word!r} must be some words that fit")
+    beside = APP_BUTTON_W / 2 - measure(action, APP_WORD_SIZE) / 2  # the button left on either side of the word
+    if taps and beside < 2 * (APP_TAP_R + 4.0):
+        raise NewsKitError(f"a tap needs room beside {action!r} on the button")
+    check_copy(title)
+    blocked = end if refused_at is None else refused_at
+    if not start <= blocked <= end or (refused_at is not None and blocked >= end):
+        raise NewsKitError(f"the app's button stops inside {start}..{end}, not at {refused_at}")
+    if not all(start <= at < end for at in taps):
+        raise NewsKitError(f"a tap lands inside {start}..{end}, got {tuple(taps)}")
+    if len(notes) > APP_NOTES:
+        raise NewsKitError(f"the screen holds {APP_NOTES} notes, got {len(notes)}")
+    for at, note in notes:
+        check_copy(note)
+        if not start <= at < end:
+            raise NewsKitError(f"note {note!r} arrives after the app has gone")
+        if not note.strip() or measure(note, APP_NOTE_SIZE) > PHONE_W - 80.0:
+            raise NewsKitError(f"note {note!r} must be some words that fit")
+    g = cv.group(parent, id, start=start, end=end)
+    _handset(cv, g, title)
+    x, y = PHONE_X, PHONE_Y + MAP_TOP
+    _text(cv, g, "BALANCE", x, y + APP_LABEL_Y, PHONE_W, 56.0, 46, PLUM, "center")
+    _text(cv, g, amount, x, y + APP_AMOUNT_Y, PHONE_W, 170.0, APP_AMOUNT_SIZE, PLUM_DEEP, "center")
+    if blocked > start:
+        _button(cv, cv.group(g, f"{id}-live", start=start, end=blocked), action, MINT, PLUM_DEEP)
+    if refused_at is not None:
+        _button(cv, cv.group(g, f"{id}-refused", start=blocked, end=end), refused, APP_DEAD, PLUM_DEEP)
+    for i, at in enumerate(taps):
+        ring = cv.group(g, f"{id}-tap-{i}", start=at, end=min(at + APP_TAP, end))
+        at_x = x + PHONE_W / 2 + APP_BUTTON_W / 2 - beside / 2
+        _inked_oval(cv, ring, at_x, y + APP_BUTTON_Y + APP_BUTTON_H / 2, APP_TAP_R, APP_TAP_R, BUTTER)
+    for i, (at, note) in enumerate(notes):
+        row = cv.group(g, f"{id}-note-{i}", start=at, end=end)
+        top = y + APP_NOTE_Y + i * (APP_NOTE_H + 12.0)
+        cv.rect(row, x + 30.0, top, PHONE_W - 60.0, APP_NOTE_H, BUTTER, PLUM_DEEP, 4.0, radius=CHIP)
+        _text(cv, row, note, x + 30.0, top, PHONE_W - 60.0, APP_NOTE_H, APP_NOTE_SIZE, PLUM_DEEP, "center")
+
+
+OVEN_STRIP, OVEN_DOOR_Y, OVEN_FOOT = 270.0, 296.0, 786.0  # the stove's control strip and door, under the phone's window
+OVEN_DIGIT_W, OVEN_DIGIT_H, OVEN_STROKE, OVEN_GAP = 80.0, 150.0, 16.0, 14.0
+OVEN_LIT, OVEN_DARK = "#ffb347", "#2a1830"  # the display: a segment on, and one off that still shows faintly
+OVEN_TAG_SIZE, OVEN_LABEL_SIZE = 76.0, 46.0
+OVEN_SEGMENTS = {  # the seven segments, clockwise from the top bar with g across the middle
+    "0": "abcdef",
+    "1": "bc",
+    "2": "abdeg",
+    "3": "abcdg",
+    "4": "bcfg",
+    "5": "acdfg",
+    "6": "acdefg",
+    "7": "abc",
+    "8": "abcdefg",
+    "9": "abcdfg",
+}
+_OVEN_TIME = re.compile(r"(?:[1-9]|1[0-2]):[0-5]\d")
+
+
+def _oven_digit(cv: Canvas, g, x: float, y: float, digit: str) -> None:
+    """One seven-segment digit at ``x``, ``y``: every bar drawn, the ones the digit does not use left dark."""
+    w, h, t = OVEN_DIGIT_W, OVEN_DIGIT_H, OVEN_STROKE
+    mid = y + (h - t) / 2
+    half = (h - t) / 2
+    bars = {
+        "a": (x + t, y, w - 2 * t, t),
+        "b": (x + w - t, y + t / 2, t, half),
+        "c": (x + w - t, mid + t / 2, t, half),
+        "d": (x + t, y + h - t, w - 2 * t, t),
+        "e": (x, mid + t / 2, t, half),
+        "f": (x, y + t / 2, t, half),
+        "g": (x + t, mid, w - 2 * t, t),
+    }
+    for name, box in bars.items():
+        cv.rect(g, *box, OVEN_LIT if name in OVEN_SEGMENTS[digit] else OVEN_DARK, radius=4.0)
+
+
+def _oven_tag(cv: Canvas, g, word: str, fill: str) -> None:
+    """The tag hung in the door's window."""
+    x, y = PHONE_X + 90.0, PHONE_Y + OVEN_DOOR_Y + 216.0
+    cv.rect(g, x, y, PHONE_W - 180.0, 160.0, fill, PLUM_DEEP, 5.0, radius=CHIP)
+    _text(cv, g, word, x, y, PHONE_W - 180.0, 160.0, OVEN_TAG_SIZE, PLUM_DEEP, "center")
+
+
+@register(
+    "graphic",
+    "news-oven-clock",
+    contract=dc.contract('news-oven-clock'),
+    summary="An unbranded stove whose clock never changes while the tag on it does",
+)
+def oven_clock(
+    cv: Canvas,
+    parent,
+    label: str,
+    time: str,
+    wrong: str,
+    right: str,
+    start: float,
+    end: float,
+    measure: Measure,
+    right_at: float | None = None,
+    id: str = "news-oven-clock",
+) -> None:
+    """A stove over the dimmed room from ``start`` to ``end``: ``time`` on its seven-segment clock, ``label`` in its
+    door and a tag reading ``wrong`` until ``right_at`` and ``right`` from then on. The digits stay as they are through
+    the turn, and that is the joke: the clock was never touched. It refuses a time that is no clock's, copy the show
+    keeps off the screen, words too wide for the door, and an instant off its span. It copies no real stove."""
+    _span(start, end, "the oven")
+    if not _OVEN_TIME.fullmatch(time):
+        raise NewsKitError(f"the oven's clock reads h:mm, not {time!r}")
+    for word, size, room in (
+        (label, OVEN_LABEL_SIZE, PHONE_W - 160.0),
+        (wrong, OVEN_TAG_SIZE, PHONE_W - 220.0),
+        (right, OVEN_TAG_SIZE, PHONE_W - 220.0),
+    ):
+        check_copy(word)
+        if not word.strip() or measure(word, size) > room:
+            raise NewsKitError(f"the oven's {word!r} must be some words that fit")
+    if right_at is not None and not start < right_at < end:
+        raise NewsKitError(f"the oven's tag turns inside {start}..{end}, not at {right_at}")
+    g = cv.group(parent, id, start=start, end=end)
+    x, y, wide = PHONE_X, PHONE_Y, PHONE_W
+    cv.rect(g, 0, 0, cv.width, TICKER_Y, "#160a3088")
+    steel = cv.grad("news2-stove", [(0, "#efe9f6"), (1, "#b7afc4")], (0, 0, 0, 1))
+    cv.rect(g, x - 12, y - 8, wide + 48, OVEN_FOOT + 48, SHADOW, radius=2 * CHIP)
+    cv.rect(g, x - 20, y - 20, wide + 40, OVEN_FOOT + 40, steel, PLUM_DEEP, 5.0, radius=2 * CHIP)
+    cv.rect(g, x, y, wide, OVEN_STRIP, PLUM_DEEP, radius=CHIP)
+    for knob in (x + 70.0, x + wide - 70.0):
+        _inked_oval(cv, g, knob, y + OVEN_STRIP / 2, 40.0, 40.0, CREAM)
+        cv.rect(g, knob - 4.0, y + OVEN_STRIP / 2 - 36.0, 8.0, 30.0, PLUM_DEEP, radius=4.0)
+    cv.rect(g, x + wide / 2 - 220.0, y + 30.0, 440.0, OVEN_STRIP - 60.0, "#0e0620", radius=CHIP)
+    numerals = time.replace(":", "")
+    colon = time.index(":")
+    room = 2 * OVEN_GAP + OVEN_STROKE  # what the colon takes between the hours and the minutes
+    left = x + wide / 2 - (len(numerals) * (OVEN_DIGIT_W + OVEN_GAP) - OVEN_GAP + room) / 2
+    top = y + (OVEN_STRIP - OVEN_DIGIT_H) / 2
+    digits = cv.group(g, f"{id}-digits")
+    for i, digit in enumerate(numerals):
+        _oven_digit(cv, digits, left + i * (OVEN_DIGIT_W + OVEN_GAP) + (room if i >= colon else 0.0), top, digit)
+    dots = left + colon * (OVEN_DIGIT_W + OVEN_GAP)
+    for dot in (0.3, 0.6):
+        cv.rect(digits, dots, top + dot * OVEN_DIGIT_H, OVEN_STROKE, OVEN_STROKE, OVEN_LIT, radius=4.0)
+    cv.rect(g, x, y + OVEN_DOOR_Y, wide, OVEN_FOOT - OVEN_DOOR_Y, "#cfc7db", PLUM_DEEP, 5.0, radius=CHIP)
+    cv.rect(g, x + 60.0, y + OVEN_DOOR_Y + 24.0, wide - 120.0, 30.0, CREAM, PLUM_DEEP, 4.0, radius=15.0)
+    cv.rect(g, x + 60.0, y + OVEN_DOOR_Y + 78.0, wide - 120.0, 392.0, PLUM, PLUM_DEEP, 5.0, radius=CHIP)
+    _text(cv, g, label, x, y + OVEN_DOOR_Y + 124.0, wide, 60.0, OVEN_LABEL_SIZE, CREAM, "center")
+    turned = end if right_at is None else right_at
+    _oven_tag(cv, cv.group(g, f"{id}-wrong", start=start, end=turned), wrong, TANGERINE)
+    if right_at is not None:
+        _oven_tag(cv, cv.group(g, f"{id}-right", start=right_at, end=end), right, MINT)
+
+
+PANEL_HEAD, PANEL_FOOT = 96.0, 126.0  # a map panel's title strip and the count under it
+PANEL_TITLE_SIZE, PANEL_COUNT_SIZE = 56.0, 64.0
+FORECAST_LAND = "#7fc99a"
+FORECAST_SUN = "#ffd23f"
+FORECAST_COAST = (
+    (70, 170),
+    (200, 110),
+    (360, 150),
+    (540, 104),
+    (652, 200),
+    (620, 340),
+    (660, 470),
+    (520, 540),
+    (330, 500),
+    (170, 556),
+    (52, 440),
+    (96, 300),
+)  # an invented county, in px of the map under the title strip
+FORECAST_SUNS = ((175, 215), (515, 205), (165, 430), (530, 430), (350, 442))
+FORECAST_REACH = 52.0  # a sun's rays end here, so none is drawn under the pin or across the coast
+FORECAST_PIN = (350.0, 310.0)
+FORECAST_DRIFT = 1.4  # seconds the cloud takes to cross to the pin
+FORECAST_FALL = 0.14  # seconds the rain takes to fall one step, so a held map still moves
+
+
+def _panel(cv: Canvas, parent, title: str, id: str, start: float, end: float) -> Any:
+    """A map's card over the dimmed room, its title across the top, in the phone's window so nothing else moves.
+
+    The card is narrower than the banner, so it would cut BREAKING to a stump beside it: a bare bar rests over the
+    word and the chevrons for as long as the card is up.
+    """
+    g = cv.group(parent, id, start=start, end=end)
+    rest = cv.group(g, f"{id}-rest", start=start, end=end)
+    cv.rect(rest, 0, BANNER_Y, cv.width, BANNER_H, TANGERINE)
+    cv.rect(g, 0, 0, cv.width, TICKER_Y, "#160a3088")
+    cv.rect(g, PHONE_X - 12, PHONE_Y - 8, PHONE_W + 48, PHONE_H + 48, SHADOW, radius=2 * CHIP)
+    cv.rect(g, PHONE_X - 20, PHONE_Y - 20, PHONE_W + 40, PHONE_H + 40, CREAM, PLUM_DEEP, 5.0, radius=2 * CHIP)
+    cv.rect(g, PHONE_X, PHONE_Y, PHONE_W, PANEL_HEAD, MINT, PLUM_DEEP, 4.0, radius=CHIP)
+    _text(cv, g, title, PHONE_X, PHONE_Y, PHONE_W, PANEL_HEAD, PANEL_TITLE_SIZE, PLUM_DEEP, "center")
+    return g
+
+
+def _counts(
+    cv: Canvas, g, word: str, counts: Sequence[tuple[float, str]], end: float, measure: Measure, id: str
+) -> None:
+    """The count under a map: ``word`` and each of ``counts`` (its second, its figure), held until the next."""
+    top = PHONE_Y + PHONE_H - PANEL_FOOT
+    for i, ((at, figure), stop) in enumerate(zip(counts, [*(c[0] for c in counts[1:]), end], strict=True)):
+        row = cv.group(g, f"{id}-count-{i}", start=at, end=stop)
+        cv.rect(row, PHONE_X, top, PHONE_W, PANEL_FOOT, PLUM_DEEP, radius=CHIP)
+        _text(cv, row, f"{word}: {figure}", PHONE_X, top, PHONE_W, PANEL_FOOT, PANEL_COUNT_SIZE, BUTTER, "center")
+
+
+def _panel_copy(
+    where: str,
+    title: str,
+    counter: str,
+    counts: Sequence[tuple[float, str]],
+    start: float,
+    end: float,
+    measure: Measure,
+) -> None:
+    """What every map panel refuses: a span that is none, copy the show keeps off it, words too wide, a count that
+    does not start with the panel or does not move forward inside it."""
+    _span(start, end, where)
+    check_copy(title)
+    check_copy(counter)
+    if not title.strip() or measure(title, PANEL_TITLE_SIZE) > PHONE_W - 60.0:
+        raise NewsKitError(f"{where}'s title {title!r} must be some words that fit")
+    if not counts or counts[0][0] != start:
+        raise NewsKitError(f"{where} shows its count from {start}")
+    moments = [at for at, _ in counts]
+    if any(b <= a for a, b in zip(moments, moments[1:], strict=False)) or moments[-1] >= end:
+        raise NewsKitError(f"{where}'s count moves forward inside {start}..{end}")
+    for _, figure in counts:
+        check_copy(figure)
+        if measure(f"{counter}: {figure}", PANEL_COUNT_SIZE) > PHONE_W - 60.0:
+            raise NewsKitError(f"{where}'s count {figure!r} does not fit")
+
+
+def _sun(cv: Canvas, g, x: float, y: float) -> None:
+    near = FORECAST_REACH - 14.0
+    for i in range(8):
+        turn = i * math.pi / 4
+        cv.path(
+            g,
+            f"M {x + near * math.cos(turn):.2f} {y + near * math.sin(turn):.2f} "
+            f"L {x + FORECAST_REACH * math.cos(turn):.2f} {y + FORECAST_REACH * math.sin(turn):.2f}",
+            None,
+            PLUM_DEEP,
+            6.0,
+        )
+    _inked_oval(cv, g, x, y, 28.0, 28.0, FORECAST_SUN, 5.0)
+
+
+def _cloud(cv: Canvas, g) -> None:
+    """A small grey cloud on its own origin, its foot just over the pin's head."""
+    for x, y, r in ((-34, -8, 28), (0, -24, 36), (36, -8, 28)):
+        _inked_oval(cv, g, x, y, r, r, "#8d85a3", 5.0)
+    cv.rect(g, -56, -8, 112, 30, "#8d85a3", radius=14.0)
+
+
+@register(
+    "graphic",
+    "news-forecast-map",
+    contract=dc.contract('news-forecast-map'),
+    summary="An invented county in the sun with one pin, and a cloud small enough to find it",
+)
+def forecast_map(
+    cv: Canvas,
+    parent,
+    title: str,
+    pin: str,
+    counter: str,
+    counts: Sequence[tuple[float, str]],
+    start: float,
+    end: float,
+    measure: Measure,
+    rain: tuple[float, float] | None = None,
+    id: str = "news-forecast-map",
+) -> None:
+    """A forecast over the dimmed room from ``start`` to ``end``: an invented county, sun all over it, one ``pin``, and
+    under it ``counter`` with its ``counts``. ``rain`` is when a cloud the size of the pin is up: it crosses to the pin
+    in :data:`FORECAST_DRIFT` seconds, rains on it and nowhere else, and is gone. It refuses copy the show keeps off the
+    screen, words too wide, and a cloud off its span or gone before it arrives. It copies no real place or service."""
+    _panel_copy("the forecast", title, counter, counts, start, end, measure)
+    check_copy(pin)
+    if not pin.strip() or measure(pin, PANEL_TITLE_SIZE) > 240.0:
+        raise NewsKitError(f"the forecast's pin {pin!r} must be a word that fits")
+    if rain is not None and not (start < rain[0] and rain[0] + FORECAST_DRIFT < rain[1] <= end):
+        raise NewsKitError(f"the cloud crosses in {FORECAST_DRIFT} s inside {start}..{end}, not {rain}")
+    g = _panel(cv, parent, title, id, start, end)
+    x, y = PHONE_X, PHONE_Y
+    _polygon(cv, g, [(x + a, y + b) for a, b in FORECAST_COAST], FORECAST_LAND, 5.0)
+    for a, b in FORECAST_SUNS:
+        _sun(cv, g, x + a, y + b)
+    px, py = x + FORECAST_PIN[0], y + FORECAST_PIN[1]
+    cv.path(g, f"M {px} {py} L {px - 24} {py - 52} A 34 34 0 1 1 {px + 24} {py - 52} Z", TANGERINE, PLUM_DEEP, 5.0)
+    _inked_oval(cv, g, px, py - 66.0, 12.0, 12.0, CREAM)
+    wide = measure(pin, 40.0) + 40.0
+    cv.rect(g, px - wide / 2, py + 10.0, wide, 60.0, CREAM, PLUM_DEEP, 4.0, radius=CHIP)
+    _text(cv, g, pin, px - wide / 2, py + 10.0, wide, 60.0, 40.0, PLUM_DEEP, "center")
+    _counts(cv, g, counter, counts, end, measure, id)
+    if rain is None:
+        return
+    above = py - 138.0
+    cloud = cv.group(g, f"{id}-cloud", start=rain[0], end=rain[1], x=x + PHONE_W - 60.0, y=above)
+    cv.keys(cloud, "x", [(rain[0], x + PHONE_W - 60.0), (rain[0] + FORECAST_DRIFT, px)], hold=False, local=False)
+    _cloud(cv, cloud)
+    falling = cv.group(cloud, f"{id}-rain", start=rain[0] + FORECAST_DRIFT, end=rain[1])
+    for dx in (-30.0, 0.0, 30.0):
+        cv.path(falling, f"M {dx} 30 L {dx - 8} 64", None, "#3f7ad6", 7.0)
+    fall = rain[0] + FORECAST_DRIFT
+    beats = int((rain[1] - fall) / FORECAST_FALL)
+    cv.keys(
+        falling,
+        "y",
+        [(round(fall + i * FORECAST_FALL, 3), 12.0 * (i % 2)) for i in range(beats + 1)],
+        hold=False,
+        local=False,
+    )
+
+
+CORRIDOR_LEFT, CORRIDOR_RIGHT = 170.0, 530.0  # the walls, in px of the panel
+CORRIDOR_TOP, CORRIDOR_FOOT = 120.0, 640.0  # the floor, from under the title to over the count
+CORRIDOR_DASH, CORRIDOR_DASH_EVERY = 46.0, 110.0  # the centre line on the floor
+CORRIDOR_STEP = 0.22  # seconds a sidestep takes, the same for both, so two men who step together are seen to
+CORRIDOR_DOT = 44.0
+Stop = tuple[float, float, float]  # a second, and where the man reaches from there, in px of the panel
+
+
+def corridor_keys(stops: Sequence[Stop]) -> list[Stop]:
+    """The key frames of one man: he holds where he is until a stop's second, then steps there in one quick move."""
+    keys = [stops[0]]
+    for (_, x, y), (at, nx, ny) in zip(stops, stops[1:], strict=False):
+        keys += [(at, x, y), (at + CORRIDOR_STEP, nx, ny)]
+    return keys
+
+
+def corridor_dashes(top: float, foot: float) -> list[float]:
+    """Where each dash of the centre line starts, every one of them ending before the floor does."""
+    return [
+        top + 40.0 + i * CORRIDOR_DASH_EVERY
+        for i in range(int((foot - top - 40.0) / CORRIDOR_DASH_EVERY) + 1)
+        if top + 40.0 + i * CORRIDOR_DASH_EVERY + CORRIDOR_DASH < foot
+    ]
+
+
+def _man(cv: Canvas, g, id: str, stops: Sequence[Stop], fill: str) -> None:
+    keys = corridor_keys(stops)
+    man = cv.group(g, id, x=PHONE_X + keys[0][1], y=PHONE_Y + keys[0][2])
+    _inked_oval(cv, man, 0.0, 0.0, CORRIDOR_DOT, CORRIDOR_DOT, fill, 5.0)
+    if len(keys) > 1:
+        cv.keys(man, "x", [(round(t, 3), PHONE_X + a) for t, a, _ in keys], hold=False, local=False)
+        cv.keys(man, "y", [(round(t, 3), PHONE_Y + b) for t, _, b in keys], hold=False, local=False)
+
+
+@register(
+    "graphic",
+    "news-corridor-map",
+    contract=dc.contract('news-corridor-map'),
+    summary="A corridor from above: two plain dots that step in sync, and a count",
+)
+def corridor_map(
+    cv: Canvas,
+    parent,
+    title: str,
+    counter: str,
+    one: Sequence[Stop],
+    other: Sequence[Stop],
+    counts: Sequence[tuple[float, str]],
+    start: float,
+    end: float,
+    measure: Measure,
+    id: str = "news-corridor-map",
+) -> None:
+    """A corridor seen from above from ``start`` to ``end``: ``one`` and ``other`` are two men as plain dots, each a
+    list of stops (its second, its x, its y) he steps to in :data:`CORRIDOR_STEP` seconds, with ``counter`` and its
+    ``counts`` under them. It refuses copy the show keeps off the screen, words too wide, a man outside the walls, and
+    stops out of order or off the span."""
+    _panel_copy("the corridor", title, counter, counts, start, end, measure)
+    for stops in (one, other):
+        if not stops or stops[0][0] != start:
+            raise NewsKitError(f"a man in the corridor stands there from {start}")
+        moments = [at for at, _, _ in stops]
+        if any(b <= a for a, b in zip(moments, moments[1:], strict=False)) or moments[-1] + CORRIDOR_STEP > end:
+            raise NewsKitError(f"a man's stops move forward inside {start}..{end}")
+        for _, x, y in stops:
+            if not (
+                CORRIDOR_LEFT + CORRIDOR_DOT <= x <= CORRIDOR_RIGHT - CORRIDOR_DOT
+                and CORRIDOR_TOP + CORRIDOR_DOT <= y <= CORRIDOR_FOOT - CORRIDOR_DOT
+            ):
+                raise NewsKitError(f"({x}, {y}) is outside the corridor")
+    g = _panel(cv, parent, title, id, start, end)
+    left, right = PHONE_X + CORRIDOR_LEFT, PHONE_X + CORRIDOR_RIGHT
+    top, foot = PHONE_Y + CORRIDOR_TOP, PHONE_Y + CORRIDOR_FOOT
+    cv.rect(g, left, top, right - left, foot - top, "#e4dcef")
+    for x in (left - 22.0, right):
+        cv.rect(g, x, top, 22.0, foot - top, PLUM, PLUM_DEEP, 4.0)
+    for y in corridor_dashes(top, foot):
+        cv.rect(g, (left + right) / 2 - 5.0, y, 10.0, CORRIDOR_DASH, "#cfc7db", radius=5.0)
+    _man(cv, g, f"{id}-one", one, TANGERINE)
+    _man(cv, g, f"{id}-other", other, MINT)
+    _counts(cv, g, counter, counts, end, measure, id)

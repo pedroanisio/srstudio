@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0.0",
+  "generated_by": {
+    "model": "GPT-6",
+    "tool": "OpenAI Codex"
+  },
+  "source_commit": "c2d2a8543820ea8a47a8c0d8086d8f1397ead6b2",
+  "font_sha256": "a4c5bc453ca281d90ea079e596da7ae0dfeb5777497c29ec254e76d97ff6f890",
+  "scene_sha256": {
+    "gloss-plaza": "3295cac519cdaed226c21b22fb4778ff38d90c8e5994c3ea9c76486895702699",
+    "gloss-activity": "829c11d9826fa177fbf4e741e32e02d95c8fc249761e41186cd77c9aacaceced",
+    "gloss-waiting": "f7a6d42ac180e242eaf91948c874b7603c4ab038a2072e99c0795c8352f4dde7",
+    "gloss-board": "1b1bf317f90fce86e53dd5715b6dda373f3a05fcadf1d222c757d23b10da41db",
+    "gloss-door": "a1e3051e502124c4e50aa1b4e77388b5e7da9099888f716756e65f53d7a3d886",
+    "gloss-ticket": "b75f2adb89959477d5ad847aa709cff5a30da346f0672b56309be9c8ffc4e41f",
+    "gloss-hook": "a8c5764fbebb37db39921de62f6599a3cba6ba0d7a8b241bdb2774c4f4460b77",
+    "gloss-notice": "2cd05af43fce7a26f354b8c44ff391920e3ad7814bfd82bec142a2a45cf50531"
+  }
+}

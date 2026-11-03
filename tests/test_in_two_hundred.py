@@ -61,7 +61,7 @@ def test_the_couple_keep_their_published_rig_and_his_tie_is_clothes(data):
 
 
 def test_the_code_sits_on_the_dash_clear_of_the_captions(data):
-    x, y = data.CAR_MARKS.code_at
-    assert y + data.CAR_MARKS.code_height < 1424  # above the wipers
-    assert data.CAR_MARKS.cactus > stick_windshield.MARKS.cactus
+    x, y, height, _ = data.CAR_MARKS["code"]
+    assert y + height < 1424  # above the wipers
+    assert data.CAR_MARKS["cactus"] > stick_windshield.DASH_CACTUS
     assert 0 < x < 926

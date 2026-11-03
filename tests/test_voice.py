@@ -12,6 +12,7 @@ import subprocess
 
 import pytest
 
+from srstudio import files
 from srstudio.voice import Alignment, ElevenLabsClient, Speech, Voice, VoiceOutputError, VoiceSettings, parse_response
 from support.voice import Binary
 
@@ -249,6 +250,53 @@ def test_invalid_output_writes_nothing_to_the_cache(tmp_path):
     with pytest.raises(VoiceOutputError):
         client.synthesize(TEXT, VOICE, SETTINGS)
     assert list(tmp_path.iterdir()) == []
+
+
+@ffmpeg
+def test_a_half_written_take_is_refused_before_a_paid_request_and_kept(tmp_path, mp3):
+    """A take is write-once (ADR 0170): a cache entry with its audio and no timing is never paid for again over it."""
+    client = ElevenLabsClient(tmp_path, key="k", transport=(transport := Transport(response(audio=mp3))))
+    half = tmp_path / f"{client.fingerprint(TEXT, VOICE, SETTINGS)}.mp3"
+    half.write_bytes(b"the approved take")
+    with pytest.raises(files.WriteOnceError, match="half-written"):
+        client.synthesize(TEXT, VOICE, SETTINGS)
+    assert transport.calls == [] and half.read_bytes() == b"the approved take"
+
+
+@ffmpeg
+def test_a_take_written_by_another_process_during_the_request_is_not_replaced(tmp_path, mp3):
+    client = ElevenLabsClient(tmp_path, key="k")
+    taken = tmp_path / f"{client.fingerprint(TEXT, VOICE, SETTINGS)}.mp3"
+
+    def racing(url, payload, headers):
+        taken.write_bytes(b"the other process's take")
+        return response(audio=mp3), "req-2"
+
+    client.transport = racing
+    with pytest.raises(files.WriteOnceError):
+        client.synthesize(TEXT, VOICE, SETTINGS)
+    assert taken.read_bytes() == b"the other process's take"
+
+
+@ffmpeg
+def test_a_missing_wav_is_decoded_again_from_its_take(tmp_path, mp3):
+    client = ElevenLabsClient(tmp_path, key="k", transport=Transport(response(audio=mp3)))
+    line = client.synthesize(TEXT, VOICE, SETTINGS)
+    made = line.wav.read_bytes()
+    line.wav.unlink()
+    again = ElevenLabsClient(tmp_path, key="", transport=Transport()).synthesize(TEXT, VOICE, SETTINGS)
+    assert again.wav.read_bytes() == made
+
+
+@ffmpeg
+def test_a_half_written_sound_effect_is_refused_before_a_paid_request(tmp_path, mp3):
+    binary = Binary(mp3)
+    client = ElevenLabsClient(tmp_path, key="k", binary_transport=binary)
+    clip = client.sound_effect("a squeaky office chair", 1.0)
+    clip.file.unlink()
+    with pytest.raises(files.WriteOnceError, match="half-written"):
+        client.sound_effect("a squeaky office chair", 1.0)
+    assert len(binary.calls) == 1
 
 
 def test_missing_key_for_uncached_line_is_a_clear_error(tmp_path):
@@ -781,6 +829,38 @@ def test_hundreds_and_thousands_match_their_cardinal_words(heard, said):
     check_transcript(parse_transcript(transcript(heard)), said)
 
 
+@pytest.mark.parametrize(
+    ("heard", "said"),
+    [
+        ("You're 2,200", "You're twenty-two hundred."),
+        ("You're 2200.", "You're twenty-two hundred."),
+        ("1800, utilities included", "Eighteen hundred. Utilities included."),
+        ("It's $2,200.", "It's twenty-two hundred dollars."),
+        ("It's $2,200.", "It's $2,200."),
+        ("It's two thousand two hundred dollars.", "It's $2,200."),
+        ("It's twenty-two hundred dollars.", "It's $2,200."),
+    ],
+)
+def test_a_round_number_of_hundreds_and_a_grouped_number_read_as_they_are_said(heard, said):
+    check_transcript(parse_transcript(transcript(heard)), said)
+
+
+@pytest.mark.parametrize(
+    ("heard", "said"),
+    [
+        ("$5,800, utilities included", "$1,800. Utilities included."),
+        ("You're 2,300", "You're twenty-two hundred."),
+        ("You're 22,00", "You're twenty-two hundred."),
+        ("It's 2,200 pounds.", "It's $2,200."),
+        ("twenty hundred", "2000"),
+        ("Since 1999!", "Since nineteen hundred ninety-nine!"),
+    ],
+)
+def test_another_number_of_hundreds_is_still_a_mismatch(heard, said):
+    with pytest.raises(TranscriptMismatch):
+        check_transcript(parse_transcript(transcript(heard)), said)
+
+
 def test_silent_sound_effect_is_rejected():
     with pytest.raises(VoiceOutputError, match="sound effect is silent"):
         voice.verify_effect(wav_of([0] * 48000), 1.0)
@@ -886,3 +966,41 @@ def test_a_clock_reading_changes_no_other_word(heard):
 
 def test_a_script_that_says_the_zeros_still_hears_them():
     check_transcript(parse_transcript(transcript("Room 3:00")), "Room three oh oh")
+
+
+SUM = "Hackers took six billion dollars from Binance."
+
+
+def heard_as(text: str) -> Transcript:
+    return Transcript("eng", 1.0, text, ())
+
+
+@pytest.mark.parametrize(
+    "heard", ["Hackers took $6 billion from Binance", "Hackers took 6 billion dollars from Binance"]
+)
+def test_a_sum_in_billions_is_heard_as_it_is_said(heard):
+    check_transcript(heard_as(heard), SUM)
+
+
+@pytest.mark.parametrize("heard", ["Hackers took $7 billion from Binance", "Hackers took $6 million from Binance"])
+def test_a_sum_in_billions_does_not_pass_for_another_sum(heard):
+    with pytest.raises(TranscriptMismatch):
+        check_transcript(heard_as(heard), SUM)
+
+
+SHARE = "It lost, fifty point two to forty-nine point eight."
+
+
+def test_a_decimal_is_heard_as_it_is_said():
+    check_transcript(heard_as("It lost 50.2 to 49.8"), SHARE)
+
+
+@pytest.mark.parametrize("heard", ["It lost 50.3 to 49.8", "It lost 50 to 49.8", "It lost 502 to 49.8"])
+def test_a_decimal_does_not_pass_for_another_number(heard):
+    with pytest.raises(TranscriptMismatch):
+        check_transcript(heard_as(heard), SHARE)
+
+
+@pytest.mark.parametrize(("text", "words"), [("$6.30", ["6", "30"]), ("1.2.3", ["1", "2", "3"])])
+def test_a_price_and_a_version_are_not_decimals(text, words):
+    assert voice._tokens(text) == words

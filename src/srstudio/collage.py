@@ -26,7 +26,9 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from . import checks
+from . import _character_contracts as cc
+from . import anatomy, anatomy_ledger, checks, show
+from .anatomy import Facing, Fingers, Side
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -72,7 +74,7 @@ __all__ = [
 INK = PAPER.ink
 EYES = ("open", "side", "up", "half", "closed", "wide", "angry", "sad")
 MOUTHS = ("flat", "smile", "frown", "o", "grin", "smug")
-ARMS = ("down", "point", "shrug", "hold", "face", "fist")
+ARMS = ("down", "point", "shrug", "hold", "face", "fist", "free", "free-right")
 HAIRS = ("bald", "balding", "short", "long", "bun", "ponytail", "beanie", "curly")
 BUILDS = ("slim", "broad", "round", "kid")
 ACCENTS = ("tie", "glasses", "cane", "headset", "moustache", "pearls", "hoodie", "blazer")
@@ -447,6 +449,9 @@ def _capsule(a: Point, b: Point, width: float) -> list[Point]:
     return end + side(end[-1], start[0]) + start + side(start[-1], end[0])
 
 
+BEANIE_BAND_BOTTOM = -4  # the band's lower edge, from the face's centre
+
+
 def _eye_centres(look: Look) -> tuple[Point, Point]:
     cx, cy = face(look)
     return (cx - 62, cy - 18), (cx + 62, cy - 18)
@@ -521,10 +526,19 @@ def _eyes(look: Look, kind: str) -> list[Shape]:
     return out
 
 
-def lid_shapes(look: Look) -> list[Shape]:
-    """Both eyes shut: paper lids over the whites and a lash line, for a blink."""
+def lid_shapes(look: Look, under_band: bool = False) -> list[Shape]:
+    """Both eyes shut: paper lids over the whites and a lash line, for a blink. The lids are drawn after the hair, so
+    a hat's band ends up under them; ``under_band`` starts them at its lower edge and drops the lash line below it,
+    for new reels, and delivered ones keep the lid they were drawn with."""
     out: list[Shape] = []
+    cy = face(look)[1]
     for side, (ex, ey) in zip((-1, 1), _eye_centres(look), strict=True):
+        if under_band and look.hair == "beanie":
+            top, bottom = cy + BEANIE_BAND_BOTTOM, ey + 75
+            lid = [(ex - 57, top), (ex + 57, top), (ex + 57, bottom - 24), (ex + 30, bottom), (ex - 30, bottom)]
+            out.append((_poly([*lid, (ex - 57, bottom - 24)]), look.skin, None, 0.0, 1.0))
+            out.append(_arc(_curve(ex - 44, ex + 44, top + 22, 14), 7))
+            continue
         out.append(_blob(f"{look.name}-lid{side}", ex, ey, 57, 75, look.skin, n=14, amount=0.01, edge=0))
         out.append(_arc(_curve(ex - 44, ex + 44, ey + 4, 14), 7))
     return out
@@ -676,8 +690,17 @@ def _neck(look: Look) -> list[Shape]:
     ]
 
 
-def _hand(look: Look, key: str, x: float, y: float, r: float = 40, side: int = 1) -> list[Shape]:
-    """A mitten hand with its thumb, the skin shaded on one side."""
+def _arm(side: int) -> anatomy.Arm:
+    return anatomy.Arm(anatomy.Side.of(side))
+
+
+RIGHT = _arm(1)
+
+
+def _hand(look: Look, key: str, x: float, y: float, r: float, hand: anatomy.Hand) -> list[Shape]:
+    """A mitten hand with its thumb, the skin shaded on one side. ``hand`` says which: the thumb goes where the arm and
+    the facing put it on the frame (:mod:`srstudio.anatomy`)."""
+    side = -hand.thumb_x
     return [
         _blob(f"{look.name}-{key}-thumb", x - side * r * 0.85, y - r * 0.2, r * 0.38, r * 0.5, look.skin, n=10),
         _blob(f"{look.name}-{key}", x, y, r, r * 0.92, look.skin, n=12, amount=0.04),
@@ -716,7 +739,7 @@ def _arms(look: Look, arms: str) -> tuple[list[Shape], list[Shape]]:
         return (
             _sleeve(look, f"{key}u", shoulder, elbow)
             + _sleeve(look, f"{key}a", elbow, wrist, 70)
-            + _hand(look, f"{key}h", wrist[0], wrist[1] + 50, 40, side)
+            + _hand(look, f"{key}h", wrist[0], wrist[1] + 50, 40, _arm(side).hand(Facing.BACK, Fingers.DOWN))
         )
 
     if arms == "down":
@@ -726,25 +749,31 @@ def _arms(look: Look, arms: str) -> tuple[list[Shape], list[Shape]]:
         elbow, hand = (CX + hw + 40, sy + 160), (CX + hw + 30, sy - 120)
         under += _sleeve(look, "ru", rs, elbow) + _sleeve(look, "rf", elbow, hand, 68)
         finger = _capsule((hand[0] + 6, hand[1] - 18), (hand[0] + 44, hand[1] - 84), 26)
-        under += [_cutout(f"{look.name}-finger", finger, look.skin, 1.0)] + _hand(look, "rh", *hand, r=38)
+        under += [_cutout(f"{look.name}-finger", finger, look.skin, 1.0)] + _hand(
+            look, "rh", *hand, 38, RIGHT.hand(Facing.PALM)
+        )
     elif arms == "shrug":
         for side, shoulder, key in ((-1, ls, "l"), (1, rs, "r")):
             elbow = (CX + side * (hw + 24), sy + 220)
             hand = (CX + side * (hw + 34), sy + 70)
             under += _sleeve(look, f"{key}u", shoulder, elbow) + _sleeve(look, f"{key}f", elbow, hand, 66)
-            under += _hand(look, f"{key}h", *hand, r=36, side=side)
+            under += _hand(look, f"{key}h", *hand, 36, _arm(side).hand(Facing.PALM))
     elif arms == "hold":
         for side, shoulder, key in ((-1, ls, "l"), (1, rs, "r")):
             elbow = (CX + side * (hw + 4), sy + 300)
             hand = (CX + side * 96, sy + 250)
             under += _sleeve(look, f"{key}u", shoulder, elbow) + _sleeve(look, f"{key}f", elbow, hand, 66)
-            under += _hand(look, f"{key}h", *hand, r=36, side=-side)
+            under += _hand(look, f"{key}h", *hand, 36, _arm(side).hand(Facing.BACK))
     elif arms == "face":
         under += down(-1, ls, low_l, "l")
         ex, ey = _eye_centres(look)[1]
         elbow = (CX + hw + 10, sy + 230)
         over += _sleeve(look, "ru", rs, elbow) + _sleeve(look, "rf", elbow, (ex + 40, ey + 110), 66)
-        over += _hand(look, "rh", ex - 4, ey + 6, r=74, side=-1)
+        over += _hand(look, "rh", ex - 4, ey + 6, 74, RIGHT.hand(Facing.BACK))
+    elif arms == "free":
+        under += down(1, rs, low_r, "r")  # the screen-left arm is the scene's to draw, with what it holds
+    elif arms == "free-right":
+        under += down(-1, ls, low_l, "l")  # the same, for a figure whose scene is on its screen-right
     elif arms == "fist":
         under += down(-1, ls, low_l, "l")
         elbow, hand = (CX + hw + 50, sy + 120), (CX + hw + 30, HEAD_Y - 140)
@@ -757,6 +786,14 @@ def _arms(look: Look, arms: str) -> tuple[list[Shape], list[Shape]]:
     else:
         raise CollageError(f"arms {arms!r} is not one of {ARMS}")
     return under, over
+
+
+def hand_sides(look: Look, arms: str) -> tuple[Side, ...]:
+    """The sides of the frame the pose ``arms`` draws a hand on, as :func:`_arms` draws them: ``free`` leaves the
+    screen-left arm to the scene, ``free-right`` the screen-right one, and a toilet has none (ADR 0174)."""
+    if look.toilet:
+        return ()
+    return {"free": (Side.RIGHT,), "free-right": (Side.LEFT,)}.get(arms, (Side.LEFT, Side.RIGHT))
 
 
 def _head(look: Look) -> list[Shape]:
@@ -888,8 +925,8 @@ def _hair_front(look: Look) -> list[Shape]:
         band = [
             (cx - HEAD_RX - 22, cy - 60),
             (cx + HEAD_RX + 22, cy - 60),
-            (cx + HEAD_RX + 18, cy - 4),
-            (cx - HEAD_RX - 18, cy - 4),
+            (cx + HEAD_RX + 18, cy + BEANIE_BAND_BOTTOM),
+            (cx - HEAD_RX - 18, cy + BEANIE_BAND_BOTTOM),
         ]
         out.append(_cutout(f"{look.name}-band", band, _shade(hair), 2.0))
         for i in range(12):
@@ -1165,19 +1202,21 @@ def figure(
     stickers: Sequence[Any] = (),
     mouths: Mouths = (),
     still: bool = False,
+    lids_under_band: bool = False,
 ) -> list:
     """One group per pose run, on from project second ``enter`` until ``duration``. ``mouths`` is the lip-sync
     track (``(project second, viseme)``): the mouth becomes one layer per viseme with hold keys inside each run, the
     pose's own mouth showing while closed. The eyes shut for :data:`srstudio.toon_cast.BLINK_HOLD` at the look's
     pace. A ``still`` figure keys nothing: no breath, no blink and the pose's own mouth, for an opening whose
-    picture must not change (ADR 0036). ``taps`` and ``stickers`` are part of the drawer contract; the Collage cast
-    types on no keyboard."""
+    picture must not change (ADR 0036). ``lids_under_band`` is :func:`lid_shapes`' ``under_band``. ``taps`` and
+    ``stickers`` are part of the drawer contract; the Collage cast types on no keyboard."""
     if not (checks.number(enter) and 0 <= enter < duration):
         raise CollageError(f"{look.name}: enter must be a project second before the end, got {enter!r}")
     groups = []
     for pose, start, end in runs(poses, duration - enter):
         start, end = round(start + enter, 6), round(end + enter, 6)
         g = cv.group(parent, cv.uid("g"), start=start, end=end)
+        anatomy_ledger.pose_hands(cv, look.name, g.id, hand_sides(look, pose.arms))
         cv.apply(g, cv.effect("collage-figure-shadow", "drop-shadow", **FIGURE_SHADOW))
         if not still:
             _breathe(cv, g, start, end)
@@ -1195,7 +1234,7 @@ def figure(
         blinks = blink_times(start, end, look.blink) if pose.eyes != "closed" and not still else []
         if blinks:
             shut = cv.group(g, cv.uid("g"))
-            draw_shapes(cv, shut, lid_shapes(look))
+            draw_shapes(cv, shut, lid_shapes(look, lids_under_band))
             states = [(start, 0)]
             for t in blinks:
                 states += [(t, 1), (round(t + BLINK_HOLD, 6), 0)]
@@ -1219,21 +1258,39 @@ def _drawer(look: Look) -> Drawer:
         stickers: Sequence[Any] = (),
         mouths: Mouths = (),
         still: bool = False,
+        lids_under_band: bool = False,
     ) -> list:
-        return figure(cv, parent, look, poses, duration, taps, enter, stickers, mouths, still)
+        return figure(cv, parent, look, poses, duration, taps, enter, stickers, mouths, still, lids_under_band)
 
     draw.__name__ = draw.__qualname__ = look.name
     draw.__doc__ = look.summary
-    return register("character", f"collage-{look.name}", summary=look.summary)(draw)
+    return register(
+        "character",
+        f"collage-{look.name}",
+        summary=look.summary,
+        contract=cc.toon(
+            Pose,
+            EYES,
+            MOUTHS,
+            ARMS,
+            visemes=VISEMES,
+            geometry='Geometry is authored in Collage frame pixels; placement is through the drawing parent.',
+            constraints=(
+                'taps, stickers and pose.wear are not rendered by this drawer. '
+                'still disables breathing, blinks and lip-sync.',
+            ),
+        ),
+    )(draw)
 
 
 DRAWERS: dict[str, Drawer] = {name: _drawer(look) for name, look in LOOKS.items()}
 
 
 # -- captions ---------------------------------------------------------------------------------------------------------
-def caption_lines(measure: Callable[[str], float], text: str, width: float) -> list[str]:
+def caption_lines(measure: Callable[[str], float], text: str, width: float, *, sentences: bool = False) -> list[str]:
     """``text`` as one caption line, or as the two most even lines, every one fitting a pill inside the frame's
-    margins; :class:`CollageError` when a word alone is too wide or two lines are not enough."""
+    margins; :class:`CollageError` when a word alone is too wide or two lines are not enough. With ``sentences`` the
+    break falls at a sentence end whenever one fits, so a row never starts a sentence it cannot finish."""
     room = width - 2 * CAPTION_MARGIN - CAPTION_PAD
     words = text.split()
     too_wide = [w for w in words if measure(w) > room]
@@ -1249,25 +1306,42 @@ def caption_lines(measure: Callable[[str], float], text: str, width: float) -> l
             splits.append((widest, first, second))
     if not splits:
         raise CollageError(f"caption {text!r} does not fit in two lines: split the beat")
-    _, first, second = min(splits, key=lambda split: split[0])
+    ends = [split for split in splits if split[1].endswith((".", "?", "!"))] if sentences else []
+    _, first, second = min(ends or splits, key=lambda split: split[0])
     return [first, second]
 
 
 def captions(
-    cv: Canvas, parent, lines: Sequence[Line], measure: Callable[[str], float], tints: Mapping[str, str] | None = None
+    cv: Canvas,
+    parent,
+    lines: Sequence[Line],
+    measure: Callable[[str], float],
+    tints: Mapping[str, str] | None = None,
+    *,
+    sentences: bool = False,
+    tops: Mapping[str, float] | None = None,
+    clear_bug: bool = False,
 ) -> None:
     """One pill per cue, centred under :data:`CAPTION_TOP`, one or two lines (:func:`caption_lines`), sized by
-    ``measure(text)`` (the advance width at :data:`CAPTION_SIZE`), tinted by speaker (paper white otherwise)."""
+    ``measure(text)`` (the advance width at :data:`CAPTION_SIZE`), tinted by speaker (paper white otherwise).
+    ``tops`` moves the pill of a cue, by its text, for a shot whose picture the usual place would cover. With
+    ``clear_bug`` a pill in the rows of the show's bug wraps narrow enough to keep :data:`srstudio.show.CLEAR` pixels
+    off it; False keeps a published reel's rows."""
     cv.require_font("the Collage style letters its captions in its font", CollageError)
     for line in lines:
-        rows = caption_lines(measure, line.text, cv.width)
+        pill = (tops or {}).get(line.text, CAPTION_TOP)
+        room: float = cv.width
+        if clear_bug:
+            tallest = pill + 2 * CAPTION_LEADING + 2 * CAPTION_PAD_Y
+            room = min(room, show.widest_clear(pill, tallest, cv.width / 2) + 2 * CAPTION_MARGIN)
+        rows = caption_lines(measure, line.text, room, sentences=sentences)
         g = cv.group(parent, cv.uid("g"), start=line.start, end=line.end)
         cv.apply(g, cv.effect("collage-caption-shadow", "drop-shadow", **CAPTION_SHADOW))
         width = round(max(measure(r) for r in rows) + CAPTION_PAD, 2)
         height = len(rows) * CAPTION_LEADING + 2 * CAPTION_PAD_Y
         fill = (tints or {}).get(line.speaker, cv.white)
         x = round(cv.width / 2 - width / 2, 2)
-        cv.rect(g, x, CAPTION_TOP, width, height, fill, INK, EDGE, radius=CAPTION_RADIUS)
+        cv.rect(g, x, pill, width, height, fill, INK, EDGE, radius=CAPTION_RADIUS)
         for i, row in enumerate(rows):
-            top = CAPTION_TOP + CAPTION_PAD_Y + i * CAPTION_LEADING
+            top = pill + CAPTION_PAD_Y + i * CAPTION_LEADING
             cv.text(g, cv.uid("caption"), row, 0, top, cv.width, CAPTION_LEADING, CAPTION_SIZE, color=INK, wrap="none")

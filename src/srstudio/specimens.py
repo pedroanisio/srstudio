@@ -45,6 +45,7 @@ from . import (
     stick,
     toon,
     toon_head,
+    toon_lyra,
     toon_rigs,
 )
 from .canvas import Canvas, flat_counter
@@ -55,8 +56,10 @@ __all__ = [
     "ARMS",
     "DRAWN",
     "EYES",
+    "GESTURES",
     "IGNORED",
     "MOUTHS",
+    "OWN_ARMS",
     "SPECIMENS",
     "WEAR",
     "DrawingChangedError",
@@ -122,6 +125,8 @@ NEWER_EYES = (*EYES, "sleepy")  # what the characters drawn since draw besides, 
 NEWER_MOUTHS = (*MOUTHS, "yawn", "scream", "puff")
 TRACED_MOUTHS = MOUTHS[:9]
 ARMS = ("desk", "type", "crossed", "sigh", "lean", "face", "face2")
+GESTURES = ("ready", "present", "empathy", "shrug", "folded", "firm", "panic", "facepalm", "tablet")  # Bento's own
+OWN_ARMS = {"toon-bento@2": GESTURES}  # a drawing whose hands are in its own poses, drawn after the shared arms
 WEAR = ("glasses", "sweat", "flush")
 PAPER_EYES = ("open", "side", "up", "half", "closed", "wide", "angry", "sad")
 PAPER_MOUTHS = ("flat", "smile", "frown", "o", "grin", "smug")
@@ -172,8 +177,18 @@ def _brush_toon(entry: registry.Entry) -> Canvas:
     return cv
 
 
+def _lyra_poses(start: float, step: float) -> list[toon.Pose]:
+    own = (*toon_lyra.MOODS, *toon_lyra.EYE_POSES)
+    return [toon_lyra.pose(start + i * step, name) for i, name in enumerate(own)]
+
+
+OWN_POSES: dict[str, Callable[[float, float], list[toon.Pose]]] = {"toon-lyra": _lyra_poses}  # beyond the shared names
+
+
 def _newer_toon(entry: registry.Entry) -> Canvas:
-    poses = _poses(NEWER_EYES, NEWER_MOUTHS, ARMS, WEAR)
+    poses = _poses(NEWER_EYES, NEWER_MOUTHS, (*ARMS, *OWN_ARMS.get(entry.name, ())), WEAR)
+    if entry.name in OWN_POSES:
+        poses += OWN_POSES[entry.name](len(poses) * STEP, STEP)
     seconds = len(poses) * STEP
     cv = _stage("toon", seconds)
     entry(cv, cv.comp, poses, seconds, _taps(poses), mouths=_track(VISEMES))
@@ -185,7 +200,7 @@ def _rigged(rig: toon_head.HeadRig) -> Canvas:
     poses = _poses(NEWER_EYES, NEWER_MOUTHS, ARMS, WEAR)
     seconds = len(poses) * STEP
     cv = _stage("toon", seconds)
-    toon_head.figure(cv, cv.comp, rig, poses, seconds, toon_head.reach(rig), _taps(poses), mouths=_track(VISEMES))
+    toon_head._draw_reach(cv, cv.comp, rig, poses, seconds, _taps(poses), mouths=_track(VISEMES))
     return cv
 
 
@@ -213,7 +228,8 @@ def _space(entry: registry.Entry) -> Canvas:
 
 
 def _blob(entry: registry.Entry) -> Canvas:
-    poses, eyes, mouths = tuple(blob.POSES), tuple(blob.EYES), tuple(blob.MOUTHS)
+    poses = tuple(pose for pose in blob.POSES if pose not in blob.POSES_SINCE_APPROVAL)
+    eyes, mouths = tuple(blob.EYES), tuple(blob.MOUTHS)
     count = max(len(poses), len(eyes), len(mouths))
     cues = [
         blob.Cue(i * STEP, poses[i % len(poses)], eyes[i % len(eyes)], mouths[i % len(mouths)]) for i in range(count)
@@ -227,7 +243,11 @@ def _blob(entry: registry.Entry) -> Canvas:
 def _actor(entry: registry.Entry) -> Canvas:
     cv = _stage("cutout", HOLD)
     perf = rig.Performance(mouth=_track(("closed", "open")), blinks=[(1.0, 1.1)], nods=[(0.0, 0.0), (1.0, 3.0)])
-    entry(cv).build(cv.comp, FEET[0], FEET[1], 1.0, perf)
+    actor = entry(cv)
+    # Approved specimens used an undrawn "closed" pose. Keep that historical vocabulary on this instance only;
+    # ordinary actors still reject it, and changing it to "rest" would change the approved drawing.
+    actor.mouth_poses = (*actor.mouth_poses, 'closed')
+    actor.build(cv.comp, FEET[0], FEET[1], 1.0, perf)
     return cv
 
 
@@ -242,7 +262,7 @@ def _anchor(entry: registry.Entry) -> Canvas:
         news_kit.perform(cv, cv.comp, who, 540.0, acts, 0.0, HOLD)
         return cv
     number = int(entry.name.split("@")[1])
-    mouths = news_inked.mouths_shown(HOLD, number) if number >= 4 else ()
+    mouths = news_inked.mouths_shown(HOLD, number, [at for at, _ in acts]) if number >= 4 else ()
     news_inked.perform(cv, cv.comp, who, 540.0, acts, 0.0, HOLD, mouths, number=number)
     return cv
 
@@ -262,15 +282,16 @@ def _moth(entry: registry.Entry) -> Canvas:
 
 
 def _clay(entry: registry.Entry) -> Canvas:
-    """Every face of a clay character, one plate at a time (ADR 0068)."""
-    from . import rafa_host
+    """Every face of a character shot on plates, one plate at a time (ADR 0068)."""
+    from . import pedro_host, rafa_host
 
+    host = pedro_host if entry.name == "pedro" else rafa_host
     cv = _stage("toon", HOLD)
-    faces = rafa_host.part_plates(entry.name)
+    faces = host.part_plates(entry.name)
     for n, plate in enumerate(faces):
         shown = cv.group(cv.comp, cv.uid("g"), opacity=0.0)
         cv.gate(shown, [(HOLD * n / len(faces), HOLD * (n + 1) / len(faces))])
-        rafa_host.place(cv, shown, plate)
+        host.place(cv, shown, plate)
     return cv
 
 
@@ -327,8 +348,9 @@ SPECIMENS: dict[str, Callable[[registry.Entry], Canvas]] = {
     "toon-cat": _traced_toon,
     **{f"toon-{name}": _brush_toon for name in TOON_BRUSH},
     "toon-fox@2": _newer_toon,
-    **dict.fromkeys(("toon-sloth", "toon-goat", "toon-hamster", "toon-bento"), _newer_toon),
+    **dict.fromkeys(("toon-sloth", "toon-goat", "toon-hamster", "toon-bento", "toon-lyra"), _newer_toon),
     **{f"toon-{name}@2": _newer_toon for name in TOON_REDRAWN},
+    "toon-bento@2": _newer_toon,
     **{f"collage-{name}": _paper for name in collage.LOOKS},
     **{f"gloss-{name}": _guest for name in ("nadia", "gus", "tamsin", "sunny")},
     **{f"saga-{name}": _space for name in ("gloom", "enforcer", "droid", "juno", "rook", "mabel")},
@@ -347,11 +369,14 @@ SPECIMENS: dict[str, Callable[[registry.Entry], Canvas]] = {
             "news-gus@4",
             "news-vera@5",
             "news-gus@5",
+            "news-vera@6",
+            "news-gus@6",
         ),
         _anchor,
     ),
     "host-lint": _moth,
     "rafa": _clay,
+    "pedro": _clay,
     "doodle": _inked,
     **{f"talking-{name}": _inked for name in ("printer", "router", "doorbell", "meter", "vacuum")},
     "stick-figure": _traced_stick,

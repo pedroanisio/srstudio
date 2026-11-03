@@ -30,8 +30,8 @@ from .canvas import Canvas
 from .head_motion import HeadStyle, Spring
 from .registry import register
 from .toon import Pose
+from .toon_cast import _CHARACTER_CONTRACT, CENTRE, FINE, INK, RACCOON_MASK, Layer, Look, Mouths, _spines, figure
 from .toon_cast import BEAR as OLD_BEAR
-from .toon_cast import CENTRE, FINE, INK, RACCOON_MASK, Layer, Look, Mouths, _spines, figure
 from .toon_cast import DOG as OLD_DOG
 from .toon_cast import FROG as OLD_FROG
 from .toon_cast import HEDGEHOG as OLD_HEDGEHOG
@@ -1113,6 +1113,7 @@ REDRAWN = {"dog": DOG, "frog": FROG, "bear": BEAR, "rabbit": RABBIT, "raccoon": 
     "toon-dog@2",
     summary="The dog drawn again: one smooth body, floppy ears over the head, pressed ink, a tilted head, "
     "soft paws, blinks and lip sync",
+    contract=_CHARACTER_CONTRACT,
 )
 def dog(
     cv: Canvas,
@@ -1134,6 +1135,7 @@ def dog(
     "toon-frog@2",
     summary="The frog drawn again: one smooth body, eyes on domes with round lids, a wide mouth, pressed "
     "ink, a tilted head, finger pads, blinks and lip sync",
+    contract=_CHARACTER_CONTRACT,
 )
 def frog(
     cv: Canvas,
@@ -1155,6 +1157,7 @@ def frog(
     "toon-bear@2",
     summary="The bear drawn again: one smooth body, round ears, pressed ink, a tilted head, heavy clawed "
     "paws, blinks and lip sync",
+    contract=_CHARACTER_CONTRACT,
 )
 def bear(
     cv: Canvas,
@@ -1176,6 +1179,7 @@ def bear(
     "toon-rabbit@2",
     summary="The rabbit drawn again: one smooth body, tall ears, front teeth, pressed ink, a tilted head, "
     "soft paws, blinks and lip sync",
+    contract=_CHARACTER_CONTRACT,
 )
 def rabbit(
     cv: Canvas,
@@ -1197,6 +1201,7 @@ def rabbit(
     "toon-raccoon@2",
     summary="The raccoon drawn again: one smooth body, a bandit mask, cheek tufts, black gloves, pressed "
     "ink, a tilted head, blinks and lip sync",
+    contract=_CHARACTER_CONTRACT,
 )
 def raccoon(
     cv: Canvas,
@@ -1218,6 +1223,7 @@ def raccoon(
     "toon-hedgehog@2",
     summary="The hedgehog drawn again: one smooth body, an uneven crest of spines, pressed ink, a tilted "
     "head, clawed paws, blinks and lip sync",
+    contract=_CHARACTER_CONTRACT,
 )
 def hedgehog(
     cv: Canvas,

@@ -28,16 +28,18 @@ from typing import Any
 from . import native, saga, saga_everyday, saga_sets, staging  # noqa: F401  (saga_everyday adds its sets and props)
 from .saga import SagaError
 from .saga_sets import Panel
-from .staging import CROSSFADE, SHAKE_PX, SHAKE_STEP, Move
+from .staging import CROSSFADE, SHAKE_PX, SHAKE_STEP, Move, Throw
 
 __all__ = [
     "Place",
     "Prop",
     "Move",
+    "Throw",
     "Stage",
     "Entry",
     "NARRATOR",
     "check",
+    "lurch_keys",
     "build",
     "DUCK",
     "MUSIC_GAIN",
@@ -59,7 +61,8 @@ PANS = {"gloom": -0.06, "rook": -0.05, "mabel": -0.05, "juno": 0.05, "seven": 0.
 class Place:
     """A cast member's feet at ``x``, ``y`` (frame pixels); ``behind`` puts them behind the set's front layer. Without
     ``y`` they stand where the set stands its cast: on :data:`~srstudio.saga_sets.FLOOR`, or behind the front layer
-    on its :data:`~srstudio.saga_sets.BEHIND` line."""
+    on its :data:`~srstudio.saga_sets.BEHIND` line. ``lurch`` throws the body about the feet: (second, pixels across,
+    degrees) keys in the frame's terms. ``mouth`` holds visemes on someone who is not speaking the take: a shout."""
 
     who: str
     x: float
@@ -69,7 +72,8 @@ class Place:
     behind: bool = False
     arm: saga.Arm | None = None  # lifted off the body, to reach a table or a mouth (Lord Gloom, Juno, Mabel)
     lean: tuple[tuple[float, float], ...] = ()  # (second, degrees) from the feet: positive toward its right of frame
-    mouth: tuple[tuple[float, str], ...] = ()  # (second, pose) for a mouth that moves with nothing said
+    lurch: tuple[tuple[float, float, float], ...] = ()
+    mouth: tuple[tuple[float, str], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -95,7 +99,8 @@ class Entry:
 @dataclass(frozen=True)
 class Stage:
     set: str = ""
-    options: Mapping[str, Any] = field(default_factory=dict)  # the location's events (stare, jump, walls, door...)
+    options: Mapping[str, Any] = field(default_factory=dict)  # the location's events (stare, jump, hit, walls, door...)
+    front: Mapping[str, Any] = field(default_factory=dict)  # the events of the set's front layer (hit, jab, ledge)
     cast: tuple[Place, ...] = ()
     panels: tuple[Panel, ...] = ()
     box: tuple[float, float, float, float] | None = None  # the hologram's box; None: saga_sets.HOLO_BOX
@@ -105,6 +110,27 @@ class Stage:
     shake: tuple[tuple[float, float], ...] = ()
     entry: Entry | None = None
     still: bool = False  # drawn as it stands at the take's start: nothing moves, no grain (a still opening)
+    thrown: Throw | None = None  # the whole cabin rolled by a hit (staging.throw)
+
+
+def lurch_keys(place: Place) -> tuple[list[tuple[float, float]], list[tuple[float, float]]]:
+    """``place.lurch`` as the x and rotation keys of the body it moves, which sits inside the placed, scaled and
+    perhaps flipped group: the frame's terms mirrored and unscaled, so a flipped pilot goes the same way on screen."""
+    mirror = -1.0 if place.flip else 1.0
+    across = [(t, round(mirror * dx / place.scale, 3)) for t, dx, _ in place.lurch]
+    return across, [(t, mirror * deg) for t, _, deg in place.lurch]
+
+
+def _check_acting(p: Place, take: Any, where: str, end: float) -> None:
+    times = [k[0] for k in p.lurch]
+    if times and (times != sorted(set(times)) or times[0] < 0 or times[-1] > end):
+        raise SagaError(f"{where}: {p.who}'s lurch keys must rise inside 0..{end}, got {times}")
+    if p.mouth:
+        if take.actor == p.who:
+            raise SagaError(f"{where}: {p.who} speaks this take, and a line drives the mouth")
+        saga.check_talk(p.mouth)
+        if p.mouth[-1][0] > end:
+            raise SagaError(f"{where}: {p.who}'s held mouth runs past the take's {end} s")
 
 
 def check(takes: Sequence[Any], stages: Mapping[str, Stage]) -> None:
@@ -128,10 +154,13 @@ def check(takes: Sequence[Any], stages: Mapping[str, Stage]) -> None:
                 raise SagaError(f"{where}: {p.who!r} is not in the cast {saga.CAST}")
             if p.behind and s.set not in saga_sets.FRONTS:
                 raise SagaError(f"{where}: {s.set!r} has no front layer to stand behind")
+            _check_acting(p, take, where, end)
             if p.arm is not None and p.who not in ARMED:
                 raise SagaError(f"{where}: {p.who} has no arm to lift; one of {sorted(ARMED)}")
-            if p.mouth and take.actor == p.who:
-                raise SagaError(f"{where}: {p.who} speaks here, so the take moves the mouth")
+            if p.lean and p.lurch:
+                raise SagaError(f"{where}: {p.who} both leans and lurches, and each turns the body: give one")
+        if s.front and s.set not in saga_sets.FRONTS:
+            raise SagaError(f"{where}: {s.set!r} has no front layer to take events")
         if len({p.who for p in s.cast}) != len(s.cast):
             raise SagaError(f"{where}: a cast member stands in two places")
         for prop in s.props:
@@ -147,6 +176,8 @@ def check(takes: Sequence[Any], stages: Mapping[str, Stage]) -> None:
             staging.check_move(s.move, end, where, SagaError)
         staging.check_spans(s.dark, end, where, SagaError)
         staging.check_spans(s.shake, end, where, SagaError, ordered=True)
+        if s.thrown is not None:
+            staging.check_throw(s.thrown, saga_sets.W, saga_sets.H, end=end, error=SagaError)
 
 
 def build(
@@ -179,23 +210,29 @@ def build(
         world = cv.group(g, cv.uid("g")) if legible else g
         saga_sets.finish(cv, world, grain=not s.still)
         shaken = staging.rig(cv, world, s.move, s.shake)
+        if s.thrown is not None:
+            shaken = staging.throw(cv, shaken, s.thrown)
         saga_sets.SETS[s.set](cv, shaken, end=end, **s.options)
 
         def cast(behind: bool, *, into=shaken, s=s, take=take, speech=speech, end=end) -> None:
             for p in s.cast:
                 if p.behind == behind:
-                    said = speech if take.actor == p.who else list(p.mouth)
+                    said = speech if take.actor == p.who else p.mouth
                     y = p.y if p.y is not None else saga_sets.BEHIND[s.set] if p.behind else saga_sets.FLOOR
                     lifted = {"arm": p.arm} if p.arm is not None else {}
                     body = saga.draw(
                         cv, into, p.who, at=(p.x, y), scale=p.scale, flip=p.flip, talk=said, end=end, **lifted
                     )
+                    if p.lurch:
+                        across, turned = lurch_keys(p)
+                        cv.keys(body, "x", across, hold=False)
+                        cv.keys(body, "rotation", turned, hold=False)
                     if p.lean:
                         cv.keys(body, "rotation", p.lean, kind="sine-in-out")
 
         cast(True)
         if s.set in saga_sets.FRONTS:
-            saga_sets.FRONTS[s.set](cv, shaken, end=end)
+            saga_sets.FRONTS[s.set](cv, shaken, end=end, **s.front)
         cast(False)
         for prop in s.props:
             saga_sets.PROPS[prop.name](cv, shaken, at=(prop.x, prop.y), end=end, **prop.options)

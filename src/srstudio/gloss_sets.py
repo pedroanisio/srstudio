@@ -3,7 +3,8 @@ gag is shown on, the exit door (painted on, or nested), the queue ticket, the ho
 buttons each reel (ADR 0030).
 
 Every location fills the 1080 × 1920 frame, draws both signature marks (ADR 0001) and takes its events on the
-shot's clock: the Waiting Room's display shows ``serving`` numbers, a door opens at each second of ``opens``.
+Canvas clock: composition time by default, shot-local time with ``Canvas.local_time=True``. The Waiting Room's
+display shows ``serving`` numbers, and a door opens at each second of ``opens``.
 Lettering that belongs to the scenery (a display's label, a sign, a room name) is drawn in strokes
 (:func:`srstudio.gloss.letters`) and numbers as seven-segment shapes, so the sets need no font and a camera move
 never carries a text layer out of the safe area. Words on the board, the hook and the notice are text, measured
@@ -18,6 +19,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from . import camera, checks, gloss, look, signature
+from ._gloss_set_contracts import contract
 from .canvas import Canvas
 from .gloss import GlossError, Talk
 from .registry import register
@@ -65,7 +67,7 @@ Spans = Sequence[tuple[float, float]]
 
 @dataclass(frozen=True)
 class Card:
-    """What the board shows from ``start`` (seconds on the shot's clock) until the next card: a small ``label``
+    """What the board shows from ``start`` (seconds on the Canvas clock) until the next card: a small ``label``
     over a title and an optional body, and, on a scored card, the ``points`` won or lost in a badge. The tone
     follows the points (gain ok, loss alert) unless one is named. A ``carried`` card is the one the shot before
     ended on: it is on from the cut (``start`` 0) and does not pop again."""
@@ -92,10 +94,12 @@ class Card:
 
 
 # -- text and numbers -------------------------------------------------------------------------------------------------
-def wrap(font: bytes, text: str, size: float, width: float, max_lines: int) -> list[str]:
+def wrap(
+    font: bytes, text: str, size: float, width: float, max_lines: int, *, keep_together: bool = False
+) -> list[str]:
     """:func:`srstudio.look.wrap`, refusing with :class:`GlossError`."""
     try:
-        return look.wrap(font, text, size, width, max_lines)
+        return look.wrap(font, text, size, width, max_lines, keep_together=keep_together)
     except look.FitError as e:
         raise GlossError(str(e)) from None
 
@@ -121,11 +125,15 @@ def digits_width(text: str, h: float) -> float:
     return len(text) * h * 0.62 - h * 0.1
 
 
+def _check_digits(text: str) -> None:
+    if not text or any(c not in _SEGMENTS for c in text):
+        raise GlossError(f"a seven-segment number is digits only, got {text!r}")
+
+
 def digits(cv: Canvas, parent, text: str, x: float, y: float, h: float, colour: str, *, ghost: str | None = None):
     """``text`` (digits only) as seven-segment numerals ``h`` tall, top-left at ``x``, ``y``; unlit segments in
     ``ghost`` when given, as an LED display shows them."""
-    if not text or any(c not in _SEGMENTS for c in text):
-        raise GlossError(f"a seven-segment number is digits only, got {text!r}")
+    _check_digits(text)
     t, w = h * 0.12, h * 0.52
     half = h / 2
     rects = {
@@ -275,6 +283,7 @@ def _bunting(cv: Canvas, g, y: float, sag: float, end: float) -> None:
     summary="The Plaza: a glossy pink checkerboard to a hazy horizon under a periwinkle-to-peach sky dome with "
     "its seams just showing, toy monuments on the skyline, bunting, floating blocks and twinkles; optionally a "
     "YOU ARE HERE sign pointing every way",
+    contract=contract('gloss-plaza'),
 )
 def plaza(cv: Canvas, parent, *, end: float, sign: bool = False) -> None:
     """The Plaza for ``end`` seconds; with ``sign`` a YOU ARE HERE signpost stands on the left."""
@@ -353,10 +362,12 @@ def _dome(cx: float, base: float, w: float, h: float) -> str:
     summary="The Activity Room: cold bevelled white panels under a glowing strip light, a dark observation window "
     "with someone's eye glowing in it, a big seven-segment room number, and a lit pink target pad on a glossy "
     "grey checker floor",
+    contract=contract('gloss-activity'),
 )
 def activity(cv: Canvas, parent, *, end: float, number: str = "07") -> None:
     """The Activity Room for ``end`` seconds; ``number`` (digits) is stencilled on the wall."""
     _check_end(end)
+    _check_digits(number)
     g = cv.group(parent, cv.uid("g"))
     cv.rect(g, 0, 0, W, 1000, cv.grad("gloss-lab-wall", [(0, "#e9e4f6"), (0.5, "#f7f4fd"), (1, "#ddd6ee")],
                                       (0, 0, 0, 1)))  # fmt: skip
@@ -404,15 +415,18 @@ def activity(cv: Canvas, parent, *, end: float, number: str = "07") -> None:
     summary="The Waiting Room: a mint wall over a lit wainscot, a glowing NOW SERVING display whose seven-segment "
     "number changes on cue, a clock with no hands, a YOUR WAIT MATTERS poster, a row of glossy moulded chairs, a "
     "ticket dispenser and a plastic plant",
+    contract=contract('gloss-waiting'),
 )
 def waiting(cv: Canvas, parent, *, end: float, serving: Sequence[tuple[float, str]] = ((0, "3"),)) -> None:
     """The Waiting Room for ``end`` seconds; the display shows each ``(second, number)`` of ``serving`` in turn."""
     _check_end(end)
     if not serving:
         raise GlossError("the NOW SERVING display needs at least one number")
-    _rising([t for t, _ in serving[1:]], end, "a NOW SERVING change")
+    _rising([t for t, _ in serving], end, "a NOW SERVING change")
     if serving[0][0] != 0:
         raise GlossError("the NOW SERVING display shows its first number from the start of the shot")
+    for _, number in serving:
+        _check_digits(number)
     g = cv.group(parent, cv.uid("g"))
     cv.rect(g, 0, 0, W, 1000, cv.grad("gloss-wait-wall", [(0, "#c3ebdf"), (0.6, "#dcf5ee"), (1, "#cdeee4")],
                                       (0, 0, 0, 1)))  # fmt: skip
@@ -473,11 +487,37 @@ def waiting(cv: Canvas, parent, *, end: float, serving: Sequence[tuple[float, st
 
 
 # -- props ------------------------------------------------------------------------------------------------------------
+@dataclass(frozen=True)
+class _CardLayout:
+    x: float
+    width: float
+    heading_height: float
+    title: list[str]
+    body: list[str]
+    height: float
+
+
+def _card_layout(c: Card, font: bytes, x: float, w: float, most: float) -> _CardLayout:
+    """Measure one complete card without allocating scene nodes or IDs."""
+    tx = x + 36 + (BADGE_W + 20 if c.points is not None else 0)
+    tw = x + w - 30 - tx
+    head = 40 if c.heading else 0
+    title = wrap(font, c.title, 48, tw, 2)
+    room = int((most - 2 * BOARD_PAD - head - 56 * len(title) - 8) // 46)
+    body = wrap(font, c.body, 38, tw, max(1, room)) if c.body else []
+    h = 2 * BOARD_PAD + head + 56 * len(title) + (8 + 46 * len(body) if body else 0)
+    h = max(h, BOARD_MIN if c.points is not None else 0)
+    if h > most:
+        raise GlossError(f"card {c.title!r} needs {h} px; the box gives {most}")
+    return _CardLayout(tx, tw, head, title, body, h)
+
+
 @register(
     "prop",
     "gloss-board",
     summary="The Joy Points board: a glossy cream panel that switches cards on the shot's clock, a small label over "
     "a toned title and wrapped body, and on a scored card a big +/− points badge that pops",
+    contract=contract('gloss-board', wrap=wrap),
 )
 def board(
     cv: Canvas,
@@ -507,6 +547,8 @@ def board(
             raise GlossError(f"card {c.title!r}: tone {c.tone!r} is not one of {sorted(TONES)}")
         if c.carried and (c.start != 0 or c is not cards[0]):
             raise GlossError(f"card {c.title!r}: a carried card is the first, on from the cut (start 0)")
+    cv.require_font("a Gloss board", GlossError)
+    layouts = [_card_layout(c, font, x, w, most) for c in cards]
     out = []
     starts = [c.start for c in cards] + [end]
     for i, (c, b) in enumerate(zip(cards, starts[1:], strict=False)):
@@ -514,16 +556,9 @@ def board(
         g = cv.group(parent, cv.uid("g"))
         cv.gate(g, [(a, b)])
         tone = c.colour
-        tx = x + 36 + (BADGE_W + 20 if c.points is not None else 0)
-        tw = x + w - 30 - tx
-        head = 40 if c.heading else 0
-        title = wrap(font, c.title, 48, tw, 2)
-        room = int((most - 2 * BOARD_PAD - head - 56 * len(title) - 8) // 46)
-        body = wrap(font, c.body, 38, tw, max(1, room)) if c.body else []
-        h = 2 * BOARD_PAD + head + 56 * len(title) + (8 + 46 * len(body) if body else 0)
-        h = max(h, BOARD_MIN if c.points is not None else 0)
-        if h > most:
-            raise GlossError(f"card {c.title!r} needs {h} px; the box gives {most}")
+        layout = layouts[i]
+        tx, tw, head = layout.x, layout.width, layout.heading_height
+        title, body, h = layout.title, layout.body, layout.height
         pop = cv.group(g, cv.uid("g"))
         camera.anchor(pop, x + w / 2, y + h / 2, place=True)
         pops = i == 0 and not c.carried
@@ -579,6 +614,7 @@ def _leaf(cv: Canvas, g, x: float, y: float, w: float, h: float, colour: str, pa
     "gloss-door",
     summary="The exit door under a red EXIT sign: painted on a freestanding board (it never opens), or real, "
     "swinging open on a smaller door inside, and that on a smaller one, until the last opens on a ticket dispenser",
+    contract=contract('gloss-door'),
 )
 def door(
     cv: Canvas,
@@ -658,10 +694,12 @@ def door(
     "prop",
     "gloss-ticket",
     summary="A queue ticket: a cream paper slip with torn edges and its number in plum seven-segment digits",
+    contract=contract('gloss-ticket'),
 )
 def ticket(cv: Canvas, parent, *, at: tuple[float, float], end: float, number: str, scale: float = 1.0):
     """A ticket centred on ``at`` showing ``number`` (digits), 300 wide at scale 1."""
     _check_end(end)
+    _check_digits(number)
     if not (checks.number(scale) and scale > 0):
         raise GlossError(f"a ticket's scale must be > 0, got {scale}")
     g = cv.group(parent, cv.uid("g"), x=at[0], y=at[1], scaleX=scale, scaleY=scale, rotation=-6)
@@ -679,13 +717,16 @@ def ticket(cv: Canvas, parent, *, at: tuple[float, float], end: float, number: s
     "graphic",
     "gloss-hook",
     summary="The hook: a small Sunny in the top-left corner asking the reel's question on a cream card beside it",
+    contract=contract('gloss-hook', wrap=wrap),
 )
 def hook(cv: Canvas, parent, text: str, *, end: float, font: bytes, talk: Talk = ()):
     """The question at the top of the safe area beside a small, speaking Sunny, from 0 to ``end``."""
     _check_end(end)
+    cv.require_font("a Gloss hook", GlossError)
+    gloss.check_talk(talk)
+    lines = wrap(font, text, 48, 600, 4)
     g = cv.group(parent, cv.uid("g"))
     cv.gate(g, [(0, end)])
-    lines = wrap(font, text, 48, 600, 4)
     h = 40 + 56 * len(lines)
     cv.apply(cv.rect(g, 206, 228, 706, h, PAPER, cv.ink, INK_W, radius=26), _card_shadow(cv))
     look.label(cv, g, "\n".join(lines), 236, 248, 650, 56 * len(lines), 48, TEXT, "start")
@@ -698,6 +739,7 @@ def hook(cv: Canvas, parent, text: str, *, end: float, font: bytes, talk: Talk =
     "gloss-notice",
     summary="The Plaza Notice that buttons every reel: a cream notice card on the pink checkerboard, Sunny reading "
     "it from the corner, the title in plum and the footnote typed out",
+    contract=contract('gloss-notice', wrap=wrap),
 )
 def notice(cv: Canvas, parent, title: str, body: str, *, end: float, font: bytes, talk: Talk = (), settle: float = 0.0):
     """A full-frame Plaza Notice: ``title``, then ``body`` typed out over the first seconds; Sunny speaks
@@ -706,14 +748,16 @@ def notice(cv: Canvas, parent, title: str, body: str, *, end: float, font: bytes
     _check_end(end)
     if not (checks.number(settle) and 0 <= settle < end):
         raise GlossError(f"a notice's words settle inside the shot (0..{end}), not at {settle}")
+    cv.require_font("a Gloss notice", GlossError)
+    gloss.check_talk(talk)
+    t_lines = wrap(font, title, 66, 700, 2)
+    b_lines = wrap(font, body, 46, 700, 9)
     g = cv.group(parent, cv.uid("g"))
     back = cv.group(g, cv.uid("g"))
     finish(cv, back)
     cv.rect(back, 0, 0, W, H, "#f4c9e6")
     _floor(cv, back, 0, "#f4c9e6", "#ffb3d6", vp=-400, step=60)
     _caption_shade(cv, back)
-    t_lines = wrap(font, title, 66, 700, 2)
-    b_lines = wrap(font, body, 46, 700, 9)
     h = 150 + 76 * len(t_lines) + 56 * len(b_lines) + 150  # label, title, body, the sign-off and Sunny's corner
     top = round((H - h) / 2 - 140)  # centred a little high: the caption band stays clear below it
     cv.apply(cv.rect(g, 90, top, 860, h, PAPER, cv.ink, INK_W * 1.5, radius=48), _card_shadow(cv))

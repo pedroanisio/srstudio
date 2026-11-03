@@ -11,6 +11,7 @@ the only sight of the airport they get. :func:`suitcases` go on the back seat. E
 
 from __future__ import annotations
 
+from . import _stick_transport_contracts as tc
 from . import checks, signature
 from .canvas import Canvas
 from .registry import register
@@ -65,7 +66,12 @@ STREET_Y = 1420  # the kerb
 HOUSE_WINDOW = (640.0, 720.0, 300.0, 300.0)  # x, y, w, h
 
 
-@register("location", "stick-home-street", tags=("street", "house", "suburb", "lawn", "exterior"))
+@register(
+    "location",
+    "stick-home-street",
+    contract=tc.contract('stick-home-street'),
+    tags=("street", "house", "suburb", "lawn", "exterior"),
+)
 def street(cv: Canvas, parent, *, tree: float = 1.0) -> None:
     """The house from the kerb, its lawn and the road; ``tree`` scales the tree, which is how years show."""
     if not (checks.number(tree) and tree > 0):
@@ -108,7 +114,9 @@ def window_frame(cv: Canvas, parent) -> None:
         box(cv, g, bx, by, bw, bh, TRIM)
 
 
-@register("prop", "stick-side-car", tags=("car", "exterior", "holiday", "luggage"))
+@register(
+    "prop", "stick-side-car", contract=tc.contract('stick-side-car'), tags=("car", "exterior", "holiday", "luggage")
+)
 def side_car(cv: Canvas, parent):
     """The car from the side, nose to the right, wheels on the origin's line, with the holiday on its roof."""
     g = _group(cv, parent)
@@ -125,7 +133,7 @@ def side_car(cv: Canvas, parent):
     return g
 
 
-@register("prop", "stick-suitcases", tags=("luggage", "holiday", "car"))
+@register("prop", "stick-suitcases", contract=tc.contract('stick-suitcases'), tags=("luggage", "holiday", "car"))
 def suitcases(cv: Canvas, parent, x: float, y: float):
     """Two suitcases and a pillow stacked on the back seat, standing on (``x``, ``y``)."""
     g = _group(cv, parent)
@@ -135,7 +143,7 @@ def suitcases(cv: Canvas, parent, x: float, y: float):
     return g
 
 
-@register("location", "stick-road-plan", tags=("road", "overhead", "u-turn"))
+@register("location", "stick-road-plan", contract=tc.contract('stick-road-plan'), tags=("road", "overhead", "u-turn"))
 def road_plan(cv: Canvas, parent, *, scars: int = 0) -> None:
     """A road from straight above with ``scars`` skid marks already on it, one for each U-turn before this one."""
     if not (isinstance(scars, int) and 0 <= scars <= 8):
@@ -156,7 +164,7 @@ def road_plan(cv: Canvas, parent, *, scars: int = 0) -> None:
     signature.code(cv, s, 40, 1885, 9, color="#2d4a1e")
 
 
-@register("prop", "stick-top-car", tags=("car", "overhead", "u-turn"))
+@register("prop", "stick-top-car", contract=tc.contract('stick-top-car'), tags=("car", "overhead", "u-turn"))
 def top_car(cv: Canvas, parent):
     """The car from straight above, nose up the frame, centred on the origin, the holiday on its roof."""
     g = _group(cv, parent)
@@ -168,7 +176,12 @@ def top_car(cv: Canvas, parent):
     return g
 
 
-@register("prop", "stick-stove-knob", tags=("kitchen", "stove", "insert", "fullscreen"))
+@register(
+    "prop",
+    "stick-stove-knob",
+    contract=tc.contract('stick-stove-knob'),
+    tags=("kitchen", "stove", "insert", "fullscreen"),
+)
 def stove_knob(cv: Canvas, parent):
     """The whole frame as the front of a stove: one great knob, turned to OFF."""
     cv.require_font("the knob's marks are set in it")
@@ -183,7 +196,9 @@ def stove_knob(cv: Canvas, parent):
     return g
 
 
-@register("prop", "stick-door-lock", tags=("door", "lock", "insert", "fullscreen"))
+@register(
+    "prop", "stick-door-lock", contract=tc.contract('stick-door-lock'), tags=("door", "lock", "insert", "fullscreen")
+)
 def door_lock(cv: Canvas, parent):
     """The whole frame as the front door: a deadbolt, thrown, and a word on it."""
     cv.require_font("the lock's mark is set in it")
@@ -200,7 +215,7 @@ def door_lock(cv: Canvas, parent):
     return g
 
 
-@register("location", "stick-road-ahead", tags=("road", "pov", "highway"))
+@register("location", "stick-road-ahead", contract=tc.contract('stick-road-ahead'), tags=("road", "pov", "highway"))
 def road_ahead(cv: Canvas, parent) -> None:
     """The open road from the driver's seat."""
     s = _group(cv, parent)
@@ -214,7 +229,7 @@ def road_ahead(cv: Canvas, parent) -> None:
     signature.code(cv, s, 40, 1885, 9, color="#2d4a1e")
 
 
-@register("prop", "stick-road-sign", tags=("road", "sign", "motorway"))
+@register("prop", "stick-road-sign", contract=tc.contract('stick-road-sign'), tags=("road", "sign", "motorway"))
 def road_sign(cv: Canvas, parent, end: float, *, text: str):
     """A green motorway sign reading ``text``, coming up over the road for ``end`` seconds."""
     cv.require_font("the sign is set in it")

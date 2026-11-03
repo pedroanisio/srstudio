@@ -26,7 +26,7 @@ from . import clay, host_kit, look, plates, rafa
 from .canvas import Canvas
 from .errors import SrstudioError
 from .head_motion import Channel, HeadPlan, HeadStyle, Spring
-from .plates import Camera, Patch, Placed, Plate
+from .plates import Camera, Patch, Placed, Plate, place
 from .rafa import Face
 from .toon_head import _animate
 
@@ -229,15 +229,8 @@ def mouth_plate(face: Face) -> Plate:
 
 
 def _value(channel: Channel, t: float) -> float:
-    """A channel at second ``t``: eased between its keys, which is close enough to the spring for a stepped pose."""
-    keys = channel.keys
-    if not keys or t <= keys[0][0]:
-        return keys[0][1] if keys else 0.0
-    for (a, va), (b, vb) in zip(keys, keys[1:], strict=False):
-        if t < b:
-            x = (t - a) / (b - a)
-            return va + (vb - va) * x * x * (3.0 - 2.0 * x)
-    return keys[-1][1]
+    """Evaluate the authored channel before replacement-pose quantization."""
+    return channel.sample(t)
 
 
 def _step(value: float, steps: Sequence[float]) -> float:
@@ -283,16 +276,17 @@ def faces(
     if not moods or moods[0][0] > 0.0:
         raise RafaHostError(f"a reel needs a mood from 0 s, got {moods[:1]!r}")
     plan = plan or HeadPlan()
+    plan.check_bounds(MOTION)
     lids = _blinks(end) if blink else {}
     shapes = _spoken(mouths, end)
     rows = []
-    for frame in range(round(end * FPS)):
+    for frame in range(math.ceil(round(end * FPS, 6))):  # the engine writes a frame for a part of one
         t, held = frame / FPS, (frame - frame % TWOS) / FPS
         gaze = _held(plan.gaze, t, "ahead")
         rows.append(
             Face(
                 mood=_held(moods, t, moods[0][1]),
-                gaze=gaze if gaze in rafa.GAZES else "ahead",
+                gaze="ahead" if gaze == "up" else gaze,  # explicit compatibility mapping: no upward plate
                 lid=lids.get(frame, "open"),
                 mouth=shapes.get(frame, "rest"),
                 turn=_step(_value(plan.turn, held), rafa.TURNS),
@@ -391,6 +385,8 @@ def perform(
 ):
     """Him, frame by frame from second ``start``: the pose plate of each frame, its eye patch and its mouth patch, in a
     group that breathes on ``plan``. ``root`` is the project the pictures go into."""
+    if plan is not None:
+        plan.check_bounds(MOTION, frozen=bool(cv._frozen))
     shelf = _Shelf(cv, Path(root))
     x, y = BREATH_ANCHOR
     man = cv.group(parent, cv.uid("rafa"), x=x, y=y, anchorX=x, anchorY=y)
@@ -467,10 +463,3 @@ def part_plates(name: str) -> tuple[Plate, ...]:
     if name in rafa.PROPS:
         return (_prop_alone(name),)
     return ()
-
-
-def place(cv: Canvas, parent, plate: Plate, *, y: float = 0.0):
-    """``plate`` as a picture in ``parent``, by name: a drawing's digest needs no render, and its file comes later."""
-    name = plates.digest(plate)
-    cv.assets.add_image(id=f"plate-{name[:20]}", src=f"plates/{name}.png", width=plate.width, height=plate.height)
-    return parent.add_layer(id=cv.uid("plate"), asset=f"plate-{name[:20]}", x=0, y=y)

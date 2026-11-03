@@ -104,3 +104,67 @@ def test_the_bespoke_recorders_share_the_recording_command_line(monkeypatch, tmp
     monkeypatch.setattr(module, "record", lambda *a, **k: got.append((a, k)))
     assert module.main([str(tmp_path), "--ffmpeg", "ff", *flags], {"K": "v"}) == 0
     assert got == [((tmp_path.resolve(), {"K": "v"}, "ff"), options)]
+
+
+def test_the_toon_recorder_can_place_the_beats_again_without_the_cloud(helpers, monkeypatch, tmp_path):
+    toon, _ = helpers
+    placed = []
+    monkeypatch.setattr(toon.sketch, "place_again", lambda sk, project, **k: placed.append((sk, project, k)))
+    monkeypatch.setattr(toon, "record_episode", lambda *a, **k: pytest.fail("no recording"))
+    assert toon.recorder("SKETCH", 7, "note", "Doc", mouth="MOUTH")([str(tmp_path), "--place-only"], {}) == 0
+    assert placed == [("SKETCH", tmp_path.resolve(), {"mouth": "MOUTH"})]
+
+
+FONT = "assets/fonts/cover.ttf"
+
+
+@pytest.fixture
+def news_project(tmp_path):
+    """A project folder holding its caption font where ``--init`` leaves one (DejaVu Sans Bold, the fixture font)."""
+    from srstudio.sample import SYSTEM_FONTS
+
+    (tmp_path / "assets" / "fonts").mkdir(parents=True)
+    (tmp_path / FONT).write_bytes(next(f for f in SYSTEM_FONTS if f.exists()).read_bytes())
+    return tmp_path
+
+
+def test_a_cover_headline_too_wide_stops_the_recording_before_a_take_is_paid_for(helpers, monkeypatch, news_project):
+    toon, _ = helpers
+    from srstudio.thumbnail import Thumbnail, ThumbnailError
+
+    order = []
+    monkeypatch.setattr(toon, "record_episode", lambda *a, **k: order.append("record"))
+    wide = Thumbnail("Twelve years, he said.", 1.0, "News Compiler", place="bottom")
+    main = toon.recorder("SKETCH", 7, "note", "Doc", cover=wide, cover_font=FONT)
+    with pytest.raises(ThumbnailError, match="wider than"):
+        main([str(news_project)], {})
+    assert order == []
+
+
+def test_a_cover_that_fits_lets_the_recording_run(helpers, monkeypatch, news_project):
+    toon, _ = helpers
+    from srstudio.thumbnail import Thumbnail
+
+    order = []
+    monkeypatch.setattr(toon, "record_episode", lambda *a, **k: order.append("record"))
+    fits = Thumbnail("Twelve\nyears", 1.0, "News Compiler", place="bottom")
+    assert toon.recorder("SKETCH", 7, "note", "Doc", cover=fits, cover_font=FONT)([str(news_project)], {}) == 0
+    assert order == ["record"]
+
+
+def test_a_cover_with_no_font_in_the_project_is_refused_by_name(helpers, monkeypatch, tmp_path):
+    toon, _ = helpers
+    from srstudio.thumbnail import Thumbnail, ThumbnailError
+
+    monkeypatch.setattr(toon, "record_episode", lambda *a, **k: pytest.fail("recorded without a cover check"))
+    thumb = Thumbnail("Fits", 1.0, "News Compiler", place="bottom")
+    with pytest.raises(ThumbnailError, match="cover.ttf"):
+        toon.recorder("SKETCH", 7, "note", "Doc", cover=thumb, cover_font=FONT)([str(tmp_path)], {})
+
+
+def test_a_cover_without_a_font_path_is_refused_when_the_recorder_is_made(helpers):
+    toon, _ = helpers
+    from srstudio.thumbnail import Thumbnail, ThumbnailError
+
+    with pytest.raises(ThumbnailError, match="cover_font"):
+        toon.recorder("SKETCH", 7, "note", "Doc", cover=Thumbnail("Fits", 1.0, "News Compiler"))

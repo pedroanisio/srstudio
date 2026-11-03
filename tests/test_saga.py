@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import shutil
 import subprocess
 import xml.etree.ElementTree as ET
@@ -802,3 +803,112 @@ def test_a_character_is_placed_at_a_numeric_scale_for_a_numeric_shot(scale, end)
     cv = canvas()
     with pytest.raises(SagaError, match="scale must be > 0|more than 0 s"):
         saga.juno(cv, cv.comp, at=(540, 1500), scale=scale, end=end)
+
+
+# -- the cockpit's events ---------------------------------------------------------------------------------------------
+def drawn_ids(cv: Canvas) -> list[str]:
+    return [n.get("id") for n in tree(cv).iter() if n.get("id")]
+
+
+def test_a_console_with_no_event_draws_exactly_as_it_did():
+    plain, again = canvas(), canvas()
+    sets.cockpit_front(plain, plain.comp, end=D)
+    sets.cockpit_front(again, again.comp, end=D, hit=None, jab=None, ledge=False)
+    assert plain.scene.to_bytes() == again.scene.to_bytes()
+    bare, windowed = canvas(), canvas()
+    sets.cockpit(bare, bare.comp, end=D)
+    sets.cockpit(windowed, windowed.comp, end=D, hit=None)
+    assert bare.scene.to_bytes() == windowed.scene.to_bytes()
+
+
+def test_the_hit_blooms_in_the_right_hand_pane_and_clear_of_the_show_bug():
+    cv = canvas()
+    sets.cockpit(cv, cv.comp, end=D, hit=0.0)
+    x0, y0, x1, y1 = sets.BLAST_BOX
+    assert x0 >= 540 and x1 <= sets.BUG_X
+    assert y0 >= 200 and y1 <= 1000
+    blast = next(n for n in tree(cv).iter("group") if n.get("id", "").startswith("saga-blast"))
+    assert float(blast.get("anchorX")) > 540
+
+
+def test_the_sparks_of_a_hit_fly_from_the_right_and_every_one_goes_out():
+    cv = canvas()
+    sets.cockpit_front(cv, cv.comp, end=D, hit=0.0)
+    root = tree(cv)
+    sparks = [n for n in root.iter() if n.get("id", "").startswith("saga-spark")]
+    assert len(sparks) >= 12
+    for s in sparks:
+        opacity = next(a for a in s if a.get("property") == "opacity" or a.get("attribute") == "opacity")
+        assert opacity is not None
+    wash = next(n for n in root.iter() if n.get("id", "").startswith("saga-hit-wash"))
+    assert wash is not None
+
+
+def test_the_ledge_sits_right_under_the_cactus_pot():
+    cv = canvas()
+    sets.cockpit_front(cv, cv.comp, end=D, ledge=True)
+    ledge = next(n for n in tree(cv).iter() if n.get("id", "").startswith("saga-ledge"))
+    assert float(ledge.get("y")) == sets.LEDGE_Y
+
+
+def test_a_jab_keeps_the_hand_on_the_ball_of_the_stick_on_every_frame():
+    jab = sets.Jab(at=0.2, sleeve="#efe2c4", hand=saga.SKIN["deep"], elbow=(404, 1040), scale=1.55)
+    for t, degrees in sets.jab_frames(jab, D):
+        assert math.dist(sets.hand_at(jab, t), sets.stick_grip(degrees)) < 0.25  # keys are rounded to 3 places
+        assert math.dist(sets.stick_grip(degrees), sets.stick_ball(degrees)) == pytest.approx(sets.GRIP)
+    rest = [d for t, d in sets.jab_frames(jab, D) if t < 0.1]
+    shoved = [d for t, d in sets.jab_frames(jab, D) if 0.26 <= t <= 0.4]
+    assert max(abs(d) for d in rest) < 5 and min(shoved) > 10  # it moves far enough to be seen
+
+
+def test_a_jab_that_falls_outside_the_shot_is_refused():
+    cv = canvas()
+    with pytest.raises(SagaError, match="jab"):
+        sets.cockpit_front(cv, cv.comp, end=1.0, jab=sets.Jab(1.5, "#efe2c4", saga.SKIN["deep"], (404, 1040), 1.55))
+
+
+def test_a_hit_that_falls_outside_the_shot_is_refused():
+    cv = canvas()
+    with pytest.raises(SagaError, match="hit"):
+        sets.cockpit(cv, cv.comp, end=1.0, hit=1.2)
+    with pytest.raises(SagaError, match="hit"):
+        sets.cockpit_front(cv, cv.comp, end=1.0, hit=-0.1)
+
+
+def test_a_pilot_thrown_by_a_hit_is_keyed_in_frame_terms_whichever_way_she_faces():
+    takes = [take("01", "sfx", "[HIT]", duration=1.2)]
+    lean = ((0.0, -30.0, -9.0), (1.0, 0.0, 0.0))
+    stage = Stage(
+        "cockpit",
+        cast=(
+            Place("rook", 330, behind=True, lurch=lean),
+            Place("juno", 760, flip=True, behind=True, lurch=lean, mouth=((0.1, "shout"), (0.9, "closed"))),
+        ),
+    )
+    reel.check(takes, {"01": stage})
+    rook, juno = reel.lurch_keys(stage.cast[0]), reel.lurch_keys(stage.cast[1])
+    assert rook == ([(0.0, -30.0), (1.0, 0.0)], [(0.0, -9.0), (1.0, 0.0)])
+    assert juno == ([(0.0, 30.0), (1.0, 0.0)], [(0.0, 9.0), (1.0, 0.0)])  # mirrored inside her flipped group
+
+
+@pytest.mark.parametrize(
+    "place, message",
+    [
+        (Place("juno", 760, flip=True, behind=True, lurch=((0.0, 0, 0), (9.0, 0, 0))), "lurch"),
+        (Place("juno", 760, flip=True, behind=True, mouth=((0.1, "whistle"),)), "viseme"),
+    ],
+)
+def test_a_lurch_or_a_held_mouth_that_does_not_fit_the_take_is_refused(place, message):
+    with pytest.raises(SagaError, match=message):
+        reel.check([take("01", "sfx", "[HIT]", duration=1.2)], {"01": Stage("cockpit", cast=(place,))})
+
+
+def test_a_held_mouth_never_overrides_a_line_the_pilot_is_speaking():
+    place = Place("juno", 760, flip=True, behind=True, mouth=((0.1, "shout"),))
+    with pytest.raises(SagaError, match="speaks"):
+        reel.check([take("01", "juno", "I know.")], {"01": Stage("cockpit", cast=(place,))})
+
+
+def test_a_front_event_needs_a_set_with_a_front():
+    with pytest.raises(SagaError, match="front"):
+        reel.check([take("01", "sfx", "[HIT]", duration=1.2)], {"01": Stage("desert", front={"ledge": True})})

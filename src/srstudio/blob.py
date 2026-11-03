@@ -24,6 +24,8 @@ import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 
+from . import _blob_drawing_contracts as bdc
+from . import _character_contracts as cc
 from . import checks, signature
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -41,6 +43,7 @@ __all__ = [
     "speaking",
     "MOUTHS",
     "POSES",
+    "POSES_SINCE_APPROVAL",
     "SEAT",
     "FLOOR",
     "SCALE",
@@ -371,6 +374,28 @@ def _lounging() -> Pose:
     return Pose("lounge", sit.head, {**sit.limbs, **arms}, sit.front, sit.face)
 
 
+def _on_the_floor() -> Pose:
+    """Sat on the floor facing left, with nothing under her: the sit pose with the hip on the ground and both legs out
+    along it, the far knee a little up."""
+    sit = _sitting((-170, -112), (-150, -108))
+    legs = {
+        "leg_l": Stroke((-10, -40), (-76, -48), (-140, -36), (-196, -14), *LEG),
+        "leg_r": Stroke((22, -32), (-40, -84), (-96, -78), (-136, -36), *LEG),
+    }
+    return Pose("floor", sit.head, {**sit.limbs, **legs}, sit.front, sit.face)
+
+
+def _phone_up(name: str, hand_l: Point, hand_r: Point, head: Point = (-40, -322)) -> Pose:
+    """The sit pose with a phone up at the chest, its screen to the camera: each elbow drops and comes back up, so the
+    arm keeps its length with the hands that near the body."""
+    sit = _sitting((-170, -112), (-150, -108), head=head)
+    arms = {
+        "arm_l": Stroke((-62, -205), (-32, -116), (hand_l[0] + 8, hand_l[1] + 70), hand_l, *ARM),
+        "arm_r": Stroke((-42, -198), (-12, -112), (hand_r[0] + 8, hand_r[1] + 66), hand_r, *ARM),
+    }
+    return Pose(name, sit.head, {**sit.limbs, **arms}, sit.front, sit.face)
+
+
 def _named(pose: Pose, name: str) -> Pose:
     return Pose(name, pose.head, pose.limbs, pose.front, pose.face)
 
@@ -444,6 +469,9 @@ POSES: dict[str, Pose] = {
         _named(_sitting((-166, -106), (-158, -118), head=(-36, -326)), "type-b"),
         _named(_sitting((-170, -112), (-150, -108), head=(-46, -308), face=(-28, 10)), "nod"),
         _lounging(),
+        _on_the_floor(),
+        _phone_up("phone-a", (-112, -176), (-82, -168)),
+        _phone_up("phone-b", (-106, -172), (-88, -176), head=(-36, -326)),  # a thumb working on it
         _showing(),
         _glancing(),
         _hugging(),
@@ -566,6 +594,8 @@ POSES: dict[str, Pose] = {
         ),
     )
 }
+# Poses added after the cast was approved. An approved drawing walks only the others, so a new pose moves no digest.
+POSES_SINCE_APPROVAL = frozenset({"floor", "phone-a", "phone-b"})
 
 
 # -- faces ------------------------------------------------------------------------------------------------
@@ -1151,6 +1181,55 @@ def speaking(cues: Sequence[Cue], spans: Sequence[tuple[float, float]], end: flo
     return settle(voiced, fps)
 
 
+def quieted(cues: Sequence[Cue], spans: Sequence[tuple[float, float]], end: float, fps: float = 15) -> list[Cue]:
+    """:func:`speaking`, with every hold split where a line starts and stops, so a figure on one long hold talks for
+    its line and is back on its own mouth the moment the line ends. Splitting moves nothing: a split cue only holds."""
+    later = []
+    for start, stop in spans:
+        if stop < start:
+            raise BlobError(f"a line ends before it starts: {start} to {stop}")
+        for at in (start, stop):
+            before = [c for c in cues if c.time <= at]
+            if not before:
+                raise BlobError(f"no cue stands at or before {at}, where a line starts or stops")
+            held = max(before, key=lambda c: c.time)
+            if held.time != at:
+                later.append(replace(held, time=at, ease=0.0, lift=0.0))
+    return speaking([*cues, *later], spans, end, fps)
+
+
+def walking(
+    points: Sequence[tuple[float, float]],
+    start: float,
+    stop: float,
+    *,
+    step: float = 0.22,
+    scale: float = 1.0,
+    flip: bool = False,
+    **kw,
+) -> list[Cue]:
+    """Cues that walk ``points`` (output pixels) from ``start``, landing on the last at ``stop``, a stride every
+    ``step`` seconds or the nearest that divides the time, each leg taking its share of the strides. ``kw`` goes to
+    every stride, as a face does. The figure stands where the first point is at ``start``: its own cue puts it there."""
+    if len(points) < 2:
+        raise BlobError(f"a walk takes at least two points, got {len(points)}")
+    if stop <= start:
+        raise BlobError(f"a walk stops after it starts, got {start} to {stop}")
+    if step <= 0:
+        raise BlobError(f"a stride takes a positive time, got {step}")
+    count = max(2, int((stop - start) / step + 1e-9))
+    legs = len(points) - 1
+    out = []
+    for k in range(1, count + 1):
+        along = k / count * legs
+        leg = min(int(along), legs - 1)
+        (ax, ay), (bx, by), part = points[leg], points[leg + 1], along - leg
+        spot = (ax + (bx - ax) * part, ay + (by - ay) * part)
+        pose = "walk-a" if k % 2 else "walk-b"
+        out.append(cue(start + (stop - start) * k / count, pose, spot, scale=scale, ease=step, flip=flip, **kw))
+    return out
+
+
 def mouth_track(frames: Sequence[Drawing], states: Sequence[tuple[float, str]] = ()) -> list[tuple[float, str]]:
     """The drawn mouth at every drawing and every mouth-state time: the shown cue's own mouth, or the song's while
     it sings."""
@@ -1286,6 +1365,7 @@ def blob(
     summary="Pip, the sprout-headed white blob: one interpolating rig (stand, step, walk, sit, type, nod, clasp, "
     "lean, groove, cheer, wave), eased in-betweens on a beat, six eyes, five mouths and a sung mouth that follows "
     "the soundtrack",
+    contract=cc.soft(Cue, tuple(POSES), tuple(EYES), MOUTHS, tuple(FEET), tuple(MOUTH_STATES)),
 )
 def pip(
     cv: Canvas,
@@ -1326,6 +1406,7 @@ def pip(
     "bo",
     summary="Bo, the boss: Pip's rig and pose sheet in a pale blue body with side-parted hair and square glasses, "
     "no blush; any cue Pip can perform, Bo can",
+    contract=cc.soft(Cue, tuple(POSES), tuple(EYES), MOUTHS, tuple(FEET), tuple(MOUTH_STATES)),
 )
 def bo(
     cv: Canvas,
@@ -1366,6 +1447,7 @@ def bo(
     summary="Juno, the colleague who already did the reading: Pip's rig and pose sheet in an apricot body with "
     "an auburn bun, scalloped bangs, a coral scrunchie and freckles; shaded, with catch-lights and lashes on every "
     "eye",
+    contract=cc.soft(Cue, tuple(POSES), tuple(EYES), MOUTHS, tuple(FEET), tuple(MOUTH_STATES)),
 )
 def juno(
     cv: Canvas,
@@ -1405,6 +1487,7 @@ def juno(
     "remy",
     summary="Remy from IT support: Pip's rig and pose sheet in a lavender body with a spiky tuft and a headset "
     "(padded band, ear cups with a status light, mic boom); shaded, with a gloss on the head and catch-lights",
+    contract=cc.soft(Cue, tuple(POSES), tuple(EYES), MOUTHS, tuple(FEET), tuple(MOUTH_STATES)),
 )
 def remy(
     cv: Canvas,
@@ -1457,7 +1540,12 @@ def _leg(cv: Canvas, g, x: float, top: float, bottom: float, w: float = 34, side
     _poly(cv, g, [(x, top), (x + w, top), (x + w, bottom), (x, bottom)], WOOD_FRONT)
 
 
-@register("prop", "soft-desk", summary="A wooden desk in a 3/4 view from above: top, front and side faces, square legs")
+@register(
+    "prop",
+    "soft-desk",
+    summary="A wooden desk in a 3/4 view from above: top, front and side faces, square legs",
+    contract=bdc.contract('soft-desk'),
+)
 def desk(cv: Canvas, parent, id: str = "soft-desk"):
     g = cv.group(parent, id)
     _leg(cv, g, 296, 1010, 1268, w=30, side=12)  # back right, behind the top
@@ -1471,7 +1559,12 @@ def desk(cv: Canvas, parent, id: str = "soft-desk"):
     return g
 
 
-@register("prop", "soft-chair", summary="A low wooden chair in a 3/4 view, facing left, slatted backrest on the right")
+@register(
+    "prop",
+    "soft-chair",
+    summary="A low wooden chair in a 3/4 view, facing left, slatted backrest on the right",
+    contract=bdc.contract('soft-chair'),
+)
 def chair(cv: Canvas, parent, id: str = "soft-chair"):
     g = cv.group(parent, id)
     _leg(cv, g, 842, 1285, 1420, w=20, side=8)  # back left
@@ -1500,7 +1593,12 @@ def keyboard() -> list[Point]:
     return [(x + px * k, y + py * k) for px, py in _DECK]
 
 
-@register("prop", "soft-laptop", summary="An open laptop on the soft desk: keyboard deck and the back of the lid")
+@register(
+    "prop",
+    "soft-laptop",
+    summary="An open laptop on the soft desk: keyboard deck and the back of the lid",
+    contract=bdc.contract('soft-laptop', keyboard=keyboard),
+)
 def laptop(cv: Canvas, parent, id: str = "soft-laptop"):
     x, y, k = LAPTOP
     g = cv.group(parent, id, x=x, y=y, scaleX=k, scaleY=k)
@@ -1522,6 +1620,7 @@ def laptop(cv: Canvas, parent, id: str = "soft-laptop"):
     "location",
     "soft-office",
     summary="The warm office in a 3/4 view: desk with laptop on the left, chair on the right, the signature cactus",
+    contract=bdc.contract('soft-office', keyboard=keyboard),
 )
 def office(cv: Canvas, parent, *, shots: Sequence[tuple[float, float]] | None = None, id: str = "soft-office"):
     g = cv.group(parent, id)
@@ -1578,6 +1677,7 @@ def sofa_seat() -> list[Point]:
     "soft-sofa",
     summary="A two-seat fabric sofa in a 3/4 view, facing left: backrest on the right, an arm at each end; "
     "on_sofa draws who sits on it before the near arm",
+    contract=bdc.contract('soft-sofa', sofa_seat=sofa_seat),
 )
 def sofa(cv: Canvas, parent, *, on_sofa: Callable[[object], object] | None = None, id: str = "soft-sofa"):
     g = cv.group(parent, id)
@@ -1665,6 +1765,7 @@ def _side_table(cv: Canvas, g, x: float, floor: float) -> Point:
     "soft-home",
     summary="The warm living room in the office's 3/4 view: a fabric sofa facing left on a rug, a floor lamp "
     "behind it, a side table with the signature cactus; on_sofa seats a character between the seat and the near arm",
+    contract=bdc.contract('soft-home', sofa_seat=sofa_seat),
 )
 def home(
     cv: Canvas,
@@ -1924,6 +2025,7 @@ def _meeting_table(cv: Canvas, g) -> None:
     "soft-swivel-chair",
     summary="An upholstered swivel chair facing left on a five-spoke chrome base; seated poses fit it like the "
     "office chair",
+    contract=bdc.contract('soft-swivel-chair', swivel_seat=swivel_seat),
 )
 def swivel_chair(cv: Canvas, parent, id: str = "soft-swivel-chair"):
     g = cv.group(parent, id)
@@ -2036,6 +2138,15 @@ def _clock(cv: Canvas, g) -> None:
     summary="A polished meeting room in the office's 3/4 view: sage walls, a plank floor and baseboards, a walnut "
     "table that takes the laptop, an upholstered swivel chair at the office chair's seat, a wall screen with a slide "
     "and a webcam, a wall clock, a side window whose light falls on the floor, and the signature cactus",
+    contract=bdc.contract(
+        'soft-meeting-room',
+        meeting_screen=meeting_screen,
+        meeting_table_top=meeting_table_top,
+        swivel_seat=swivel_seat,
+        keyboard=keyboard,
+        room_point=room_point,
+        wall_quad=wall_quad,
+    ),
 )
 def meeting_room(
     cv: Canvas,
@@ -2044,8 +2155,12 @@ def meeting_room(
     shots: Sequence[tuple[float, float]] | None = None,
     id: str = "soft-meeting-room",
     on_screen: Callable[[object], object] | None = None,
+    chair: bool = True,
 ):
-    """``on_screen`` (opt-in) draws a call over the screen's slide, in the flat frame of :func:`meeting_screen`."""
+    """``on_screen`` (opt-in) draws a call over the screen's slide, in the flat frame of :func:`meeting_screen`.
+    ``chair=False`` clears the swivel chair, for a scene that walks across the room's right side."""
+    if not isinstance(chair, bool):
+        raise BlobError(f"a meeting room has a chair or it does not, got {chair!r}")
     g = cv.group(parent, id)
     if shots is not None:
         cv.gate(g, shots)
@@ -2080,7 +2195,8 @@ def meeting_room(
         _quad(cv, light, patch, LIGHT_GLAZE, opacity=0.32)
     furniture = cv.group(g, f"{id}-furniture")
     _shadow(cv, furniture, *room_point(-400, 310), 360, 70, 0.1)
-    swivel_chair(cv, furniture, _part(id, "soft-meeting-room", "swivel-chair", "soft-swivel-chair"))
+    if chair:
+        swivel_chair(cv, furniture, _part(id, "soft-meeting-room", "swivel-chair", "soft-swivel-chair"))
     _meeting_table(cv, furniture)
     laptop(cv, furniture, id=f"{id}-laptop")
     top = room_point(-330, 200, TABLE_TOP)
@@ -2163,6 +2279,7 @@ def _counter(cv: Canvas, g) -> None:
     summary="A drip coffee machine on the break-room counter: tower, hood with a lit button, a glass carafe half "
     "full, and a mug steaming beside it",
     examples=('from srstudio import get\nmachine = get("prop", "soft-coffee-machine")(ep.cv, ep.comp)',),
+    contract=bdc.contract('soft-coffee-machine'),
 )
 def coffee_machine(cv: Canvas, parent, id: str = "soft-coffee-machine"):
     g = cv.group(parent, id)
@@ -2227,6 +2344,7 @@ FRIDGE_BOX = (330.0, 500.0, 6.0, 150.0, 620.0)  # along, out, up: its top clears
     "soft-fridge",
     summary="A rounded pastel fridge against the break-room wall: freezer and fridge doors, chrome handles, magnets "
     "and a sticky note",
+    contract=bdc.contract('soft-fridge'),
 )
 def fridge(cv: Canvas, parent, id: str = "soft-fridge"):
     g = cv.group(parent, id)
@@ -2263,6 +2381,7 @@ def fridge(cv: Canvas, parent, id: str = "soft-fridge"):
     "soft-stool",
     summary="A cushioned stool on a chrome stem with a foot ring, its seat at the office chair's height, so "
     "seated poses (lounge) fit it",
+    contract=bdc.contract('soft-stool'),
 )
 def stool(cv: Canvas, parent, id: str = "soft-stool"):
     g = cv.group(parent, id)
@@ -2313,6 +2432,7 @@ def _pendant(cv: Canvas, g, light, x: float, y: float, floor_y: float) -> None:
     "stone counter with a tiled splashback, a coffee machine and a steaming mug, wall cabinets, a window with a herb "
     "pot, a pastel fridge, a pendant lamp and its light, a stool at the office chair's seat height, and the "
     "signature cactus",
+    contract=bdc.contract('soft-break-room', room_point=room_point, wall_quad=wall_quad, floor_quad=floor_quad),
 )
 def break_room(cv: Canvas, parent, *, shots: Sequence[tuple[float, float]] | None = None, id: str = "soft-break-room"):
     g = cv.group(parent, id)

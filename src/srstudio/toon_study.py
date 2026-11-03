@@ -6,8 +6,8 @@ as asked; one row can be swept on cue, and a written note can stand on its right
 frame with one page, its key in the margin, and :func:`quiz_sheet` is a folded sheet from a school quiz with its
 result circled and a star stuck on it.
 
-Book and marker measure in reference screen pixels (:func:`srstudio.toon.fx`/``fy``); the two sheets, which play as
-full-frame inserts, in frame pixels. Every key is on the composition clock. Bad input is a
+Books use reference screen pixels (:func:`srstudio.toon.fx`/``fy``). The marker and the two sheet inserts use frame
+pixels, as do text sizes and measurement results. Every key is on the composition clock. Bad input is a
 :class:`srstudio.toon.ToonDataError`.
 """
 
@@ -17,7 +17,8 @@ import math
 import re
 from collections.abc import Callable, Mapping, Sequence
 
-from . import checks
+from . import _toon_detail_contracts as dc
+from . import anatomy_ledger, checks
 from .canvas import Canvas
 from .registry import register
 from .toon import FINE_W, INK_W, ToonDataError, fh, fx, fy
@@ -111,7 +112,7 @@ def _band(cv: Canvas, parent, left, top, width, colour, start: float | None, sec
         return
     g = cv.group(parent, id, x=left, y=top, anchorX=0, anchorY=0, start=start)
     cv.rect(g, 0, -tall * 0.3, width, tall, colour, radius=fh(3))
-    cv.keys(g, "scaleX", [(start, 0.02), (start + seconds, 1.0)], local=False)
+    cv.keys(g, "scaleX", [(start, 0.02), (start + seconds, 1.0)], hold=False, local=False)
 
 
 def _note_rows(note: Sequence[str], tall: float) -> list[tuple[float, str]]:
@@ -144,7 +145,12 @@ def _check_note(note: object, measure: Measure | None) -> None:
         raise ToonDataError(f"a note's rows fit {NOTE_WIDTH} reference pixels at {NOTE_SIZE}: {note!r}")
 
 
-@register("prop", "toon-open-book", summary="An open book propped on a surface, each row highlighted as asked")
+@register(
+    "prop",
+    "toon-open-book",
+    contract=dc.contract('toon-open-book'),
+    summary="An open book propped on a surface, each row highlighted as asked",
+)
 def open_book(
     cv: Canvas,
     parent,
@@ -211,7 +217,7 @@ def open_book(
         if note_sweep is not None:
             strip = cv.group(g, f"{id}-sweep-{k}", x=fh(NOTE_LEFT), y=top, anchorX=0, anchorY=0, start=note_sweep[1])
             cv.rect(strip, 0, 0, width + fh(6), NOTE_HIGH, note_sweep[0], radius=fh(3))
-            cv.keys(strip, "scaleX", [(note_sweep[1], 0.02), (note_sweep[1] + SWEEP, 1.0)], local=False)
+            cv.keys(strip, "scaleX", [(note_sweep[1], 0.02), (note_sweep[1] + SWEEP, 1.0)], hold=False, local=False)
         cv.text(
             g,
             cv.uid("note-text"),
@@ -227,7 +233,9 @@ def open_book(
         )
 
 
-@register("prop", "toon-shut-book", summary="The same book shut, lying on a surface")
+@register(
+    "prop", "toon-shut-book", contract=dc.contract('toon-shut-book'), summary="The same book shut, lying on a surface"
+)
 def shut_book(cv: Canvas, parent, at: tuple[float, float] = BOOK_AT, scale: float = 1.0, id: str = "shut-book") -> None:
     """The book shut and lying flat, its foot on reference ``at``, its pages' edge towards the viewer."""
     x, y = _point(at, "a book's foot")
@@ -242,7 +250,12 @@ def shut_book(cv: Canvas, parent, at: tuple[float, float] = BOOK_AT, scale: floa
         cv.rect(g, -wide + fh(14), -tall + fh(11) + k * fh(8), 2 * wide - fh(14), fh(1.2), "#c9c0ae")
 
 
-@register("prop", "toon-highlighter", summary="A paw moving a highlighter along a line")
+@register(
+    "prop",
+    "toon-highlighter",
+    contract=dc.contract('toon-highlighter'),
+    summary="A paw moving a highlighter along a line",
+)
 def highlighter(
     cv: Canvas,
     parent,
@@ -262,17 +275,21 @@ def highlighter(
     if any(not (checks.number(t) and checks.number(v)) for t, v in path) or times != sorted(set(times)):
         raise ToonDataError(f"a marker's path is (seconds, x) pairs at rising times, got {path!r}")
     g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    anatomy_ledger.loose_hand(cv, "toon-highlighter")
     tilt = cv.group(g, cv.uid("g"), rotation=28)
     cv.path(tilt, "M -11 -6 L 11 -6 L 18 -36 L -18 -36 Z", MARKER_BODY, cv.ink, FINE_W)
     cv.rect(tilt, -22, -176, 44, 142, MARKER_BODY, cv.ink, INK_W, radius=9)
     cv.rect(tilt, -22, -214, 44, 46, MARKER_CAP, cv.ink, INK_W, radius=9)
     cv.ellipse(tilt, -46, -136, 92, 78, paw, cv.ink, INK_W)
     if path:
-        cv.keys(g, "x", list(path), local=False)
+        cv.keys(g, "x", list(path), hold=False, local=False)
 
 
 @register(
-    "prop", "toon-study-page", summary="One page in close-up, every row highlighted, its colour key in the margin"
+    "prop",
+    "toon-study-page",
+    contract=dc.contract('toon-study-page'),
+    summary="One page in close-up, every row highlighted, its colour key in the margin",
 )
 def study_page(
     cv: Canvas,
@@ -348,7 +365,12 @@ def _star(cx: float, cy: float, r: float) -> str:
     return "M " + " L ".join(points) + " Z"
 
 
-@register("prop", "toon-quiz-sheet", summary="A folded sheet from an old school quiz, its result circled, a star on it")
+@register(
+    "prop",
+    "toon-quiz-sheet",
+    contract=dc.contract('toon-quiz-sheet'),
+    summary="A folded sheet from an old school quiz, its result circled, a star on it",
+)
 def quiz_sheet(
     cv: Canvas,
     parent,

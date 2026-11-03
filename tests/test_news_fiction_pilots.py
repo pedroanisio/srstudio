@@ -15,7 +15,7 @@ from types import ModuleType
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import Canvas, craft, news_head, news_kit, sketch
+from srstudio import Canvas, craft, news_head, news_inked, news_kit, sketch
 from srstudio.news_inked import BANNER_Y
 from srstudio.news_kit import TEXT_LEFT, NewsKitError
 from srstudio.sketch import Line, SketchError
@@ -34,6 +34,8 @@ REELS = {
     "where_to_eat": ("board", "cereal"),
     "missing_lid": ("plea", "sock"),
     "came_in_for": ("reason", "away"),
+    "leave_it_home": ("gone", "sixty"),
+    "same_way": ("phone", "phone"),
 }
 BANNER = (
     "ARCHITECTURAL REQUIREMENT: LLMs will always produce some form of error.",
@@ -355,3 +357,36 @@ def test_vera_stays_on_gus_from_the_turn_to_the_close():
     assert news_head.holds_of(pilot.ACTS, pilot.BEATS) == (
         news_head.Held("vera", "gus", starts["turn"], starts["close"]),
     )
+
+
+def test_the_map_holds_with_nothing_under_it_before_the_rain_arrives():
+    reel = load("leave_it_home")
+    starts = {beat.event: beat.start for beat in reel.BEATS if beat.event}
+    held = next(b for b in reel.BEATS if b.event == "cloud")
+    assert held.line is None
+    assert news_inked.FORECAST_DRIFT >= 1.2 and reel.rain_span(reel.BEATS)[0] == starts["cloud"]
+
+
+def test_the_setup_goes_straight_from_pour_to_left_it_at_home():
+    texts = [line.text for line in load("leave_it_home").LINES]
+    at = texts.index("He says the one day he does, it'll pour.")
+    assert texts[at + 1] == "This morning, he left it at home."
+
+
+def test_the_two_dots_hold_for_a_beat_with_nobody_speaking():
+    reel = load("same_way")
+    at = next(i for i, b in enumerate(reel.BEATS) if b.event == "dots")
+    assert reel.BEATS[at].line is None and reel.BEATS[at + 1].start - reel.BEATS[at].start >= 1.2
+    assert reel.LINES[reel.BEATS[at - 1].line].text == "They're laughing. Neither means it."
+
+
+def test_the_corridor_ends_on_the_turn_with_a_step_inside_the_last_line():
+    reel = load("same_way")
+    last = reel.BEATS[-1]
+    assert reel.LINES[last.line].text == "He's turning around." and last.event == "turn"
+    assert last.start + reel.LAST_STEP + news_inked.CORRIDOR_STEP < reel.END
+
+
+def test_vera_reads_it_flat_from_first_to_last():
+    reel = load("same_way")
+    assert {act.vera for act in reel.ACTS} == {reel.READ, reel.STILL}

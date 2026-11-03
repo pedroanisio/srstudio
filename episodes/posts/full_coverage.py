@@ -19,7 +19,7 @@ RELEASE = Release(
             "synthesized in code."
         ),
         hashtags=("#rentalcar", "#travel", "#relatable", "#animatedshorts", "#comedy"),
-        thumbnail=Thumbnail("What seagull?", 15.0, "Toon"),
+        thumbnail=Thumbnail("What seagull?", 16.3, "Toon"),
     ),
     tags=Tags("money-services", "institution", "tension", test="sp-hook_motion", arm="b"),
     style="Toon",

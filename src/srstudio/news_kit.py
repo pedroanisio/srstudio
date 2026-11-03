@@ -14,10 +14,10 @@ script, two voices and one graphic, so the kit holds what repeats:
   :func:`banner`, :func:`ticker`, :func:`source_card`, :func:`parody_tag`, :func:`captions`;
 * the sound: :func:`write_sting`.
 
-An episode is one of two kinds with a visible code, and they never mix: a real story carries a :class:`Source` and its
-card, a fictional one the BREAKING banner and the PARODY tag. :func:`check_copy` refuses bait in anything the show puts
-on screen. Text keeps to the Reels safe zone, :data:`TEXT_LEFT` to :data:`TEXT_RIGHT`, and the faces keep to the middle
-of the frame, between the captions at the top and the lower-third at the bottom.
+An episode is one of two kinds with a visible code: a real story carries a :class:`Source` and its card, a fictional
+one the BREAKING banner, and the PARODY tag can stand on both (ADR 0082). :func:`check_copy` refuses bait in anything
+the show puts on screen. Text keeps to the Reels safe zone, :data:`TEXT_LEFT` to :data:`TEXT_RIGHT`, and the faces keep
+to the middle of the frame, between the captions at the top and the lower-third at the bottom.
 """
 
 from __future__ import annotations
@@ -29,7 +29,9 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
-from . import checks, foley, look, signature, toon
+from . import _character_contracts as cc
+from . import _news_contracts as dc
+from . import checks, drawing_events, foley, look, signature, toon
 from .canvas import Canvas
 from .errors import SrstudioError
 from .fonts import GoogleFont
@@ -312,7 +314,12 @@ SWEEP = ((1.12, 4.56), (2.68, 6.1), (4.25, 7.7))  # when each row of screens lig
 SWEEP_LIGHT = 0.1  # the white over a screen at the top of its swell
 
 
-@register("location", "news-set", summary="The studio: a plum wall and a bright monitor wall behind the desk")
+@register(
+    "location",
+    "news-set",
+    contract=dc.contract('news-set'),
+    summary="The studio: a plum wall and a bright monitor wall behind the desk",
+)
 def studio(cv: Canvas, parent, end: float = 10.0) -> None:
     """The far plane: the wall, nine bright screens out of focus and a slow light that passes down them row by row, so
     the room is alive while the anchors hold still. The light is drawn on each screen, so it can never cross the bare
@@ -349,7 +356,12 @@ def _wave(x: float, y: float, seed: int) -> str:
     )
 
 
-@register("prop", "news-desk", summary="The anchors' long desk, its edge lit, a tangerine stripe across its front")
+@register(
+    "prop",
+    "news-desk",
+    contract=dc.contract('news-desk'),
+    summary="The anchors' long desk, its edge lit, a tangerine stripe across its front",
+)
 def desk(cv: Canvas, parent) -> None:
     """The midground's front: a top with a lit edge, a front that fills the frame's foot."""
     g = cv.group(parent, cv.uid("g"))
@@ -601,8 +613,9 @@ def eye_track(acts: Sequence[tuple[float, Pose]], end: float, period: float, pha
 def mouth_track(
     acts: Sequence[tuple[float, Pose]], visemes: Track, end: float, rate: float = MOUTH_RATE
 ) -> list[tuple[float, str]]:
-    """The mouth through the beats. A ``"talk"`` beat takes the viseme track, or on a silent master a plain open and
-    shut, and any other beat holds its expression whatever the track does."""
+    """The mouth through the beats. A ``"talk"`` beat takes the viseme track, opening on the state already due when it
+    starts (a beat lands on the heard word, the track leads it), or on a silent master a plain open and shut, and any
+    other beat holds its expression whatever the track does."""
     rows: list[tuple[float, str]] = []
     ends = [at for at, _ in acts[1:]] + [end]
     for (at, pose), stop in zip(acts, ends, strict=True):
@@ -611,7 +624,8 @@ def mouth_track(
             continue
         said = [(t, state) for t, state in visemes if at <= t < stop]
         if said:
-            rows += said if said[0][0] == at else [(at, "closed"), *said]
+            due = max(((t, state) for t, state in visemes if t < at), default=(at, "closed"))[1]
+            rows += said if said[0][0] == at else [(at, due), *said]
         elif visemes:
             rows.append((at, "closed"))
         else:
@@ -838,28 +852,32 @@ def perform(
         raise NewsKitError(f"the desk seats vera and gus, not {who!r}")
     if not acts or acts[0][0] > start:
         raise NewsKitError(f"an anchor needs a pose from {start} s, got {acts[:1]!r}")
-    size = scale if scale else 1.0
-    g = cv.group(parent, id or cv.uid("anchor"), x=x, y=DESK_Y, scaleX=size, scaleY=size)
-    arms = _spans([(at, pose.arms) for at, pose in acts], start, end)
-    eyes = eye_track(acts, end, 4.3 if who == "vera" else 2.4, 1.7 if who == "vera" else 0.9)
-    mouth = mouth_track(acts, mouths, end)
-    neck = dict(x=0.0, y=NECK_Y, anchorX=0.0, anchorY=CHIN_Y)  # the head turns on the neck, over the collar
-    if who == "vera":
-        _vera_body(cv, g, "#0f6466")
-        head = cv.group(g, cv.uid("g"), **neck)
-        _vera_head(cv, head, eyes, mouth, start, end)
-        _vera_arms(cv, g, "#0f6466", "#8a5636", arms)
-    else:
-        _gus_body(cv, g)
-        head = cv.group(g, cv.uid("g"), **neck)
-        _gus_head(cv, head, eyes, mouth, start, end)
-        _gus_arms(cv, g, "#f0c39a", arms)
-    cv.keys(head, "rotation", _head_keys(acts), hold=False, kind="sine-in-out", local=False)
-    return g
+    with drawing_events.drawing(vera if who == 'vera' else gus):
+        size = scale if scale else 1.0
+        g = cv.group(parent, id or cv.uid("anchor"), x=x, y=DESK_Y, scaleX=size, scaleY=size)
+        arms = _spans([(at, pose.arms) for at, pose in acts], start, end)
+        eyes = eye_track(acts, end, 4.3 if who == "vera" else 2.4, 1.7 if who == "vera" else 0.9)
+        mouth = mouth_track(acts, mouths, end)
+        neck = dict(x=0.0, y=NECK_Y, anchorX=0.0, anchorY=CHIN_Y)  # the head turns on the neck, over the collar
+        if who == "vera":
+            _vera_body(cv, g, "#0f6466")
+            head = cv.group(g, cv.uid("g"), **neck)
+            _vera_head(cv, head, eyes, mouth, start, end)
+            _vera_arms(cv, g, "#0f6466", "#8a5636", arms)
+        else:
+            _gus_body(cv, g)
+            head = cv.group(g, cv.uid("g"), **neck)
+            _gus_head(cv, head, eyes, mouth, start, end)
+            _gus_arms(cv, g, "#f0c39a", arms)
+        cv.keys(head, "rotation", _head_keys(acts), hold=False, kind="sine-in-out", local=False)
+        return g
 
 
 @register(
-    "character", "news-vera", summary="Vera Stillman, the straight anchor: silver bob, half-moon glasses, no reaction"
+    "character",
+    "news-vera",
+    summary="Vera Stillman, the straight anchor: silver bob, half-moon glasses, no reaction",
+    contract=cc.anchor(Pose, EYES, EXPRESSIONS, ARMS, VISEMES),
 )
 def vera(
     cv: Canvas,
@@ -875,7 +893,10 @@ def vera(
 
 
 @register(
-    "character", "news-gus", summary="Gus Bellows, the co-host who cannot let anything go: curls, loud jacket, a phone"
+    "character",
+    "news-gus",
+    summary="Gus Bellows, the co-host who cannot let anything go: curls, loud jacket, a phone",
+    contract=cc.anchor(Pose, EYES, EXPRESSIONS, ARMS, VISEMES),
 )
 def gus(
     cv: Canvas,
@@ -931,7 +952,9 @@ def _text(cv: Canvas, parent, text: str, x, y, w, h, size, colour, align: Any = 
     cv.text(parent, cv.uid("news-text"), text, x, y, round(w), round(h), size, color=colour, align=align, wrap="none")
 
 
-@register("graphic", "news-bug", summary="The show's name in the corner, on every frame")
+@register(
+    "graphic", "news-bug", contract=dc.contract('news-bug'), summary="The show's name in the corner, on every frame"
+)
 def bug(cv: Canvas, parent, start: float, end: float, measure: Measure, id: str = "news-bug") -> None:
     """The show's name in a tangerine chip, top left."""
     _span(start, end, "the bug")
@@ -941,7 +964,12 @@ def bug(cv: Canvas, parent, start: float, end: float, measure: Measure, id: str 
     _text(cv, g, SHOW, TEXT_LEFT, BUG_Y, wide, BUG_H, 40, PLUM_DEEP, "center")
 
 
-@register("graphic", "news-parody-tag", summary="The PARODY tag, which stays on screen for a whole fictional reel")
+@register(
+    "graphic",
+    "news-parody-tag",
+    contract=dc.contract('news-parody-tag'),
+    summary="The PARODY tag, which stays on screen for a whole fictional reel",
+)
 def parody_tag(cv: Canvas, parent, start: float, end: float, measure: Measure, id: str = "news-parody-tag") -> None:
     """PARODY in butter on plum, top right, opposite the show's name."""
     _span(start, end, "the PARODY tag")
@@ -953,7 +981,10 @@ def parody_tag(cv: Canvas, parent, start: float, end: float, measure: Measure, i
 
 
 @register(
-    "graphic", "news-source-card", summary="A real story's source: outlet, date and headline, then small in a corner"
+    "graphic",
+    "news-source-card",
+    contract=dc.contract('news-source-card'),
+    summary="A real story's source: outlet, date and headline, then small in a corner",
 )
 def source_card(
     cv: Canvas,
@@ -1000,7 +1031,12 @@ def source_card(
     _text(cv, corner, label, TEXT_RIGHT - w, BUG_Y + 6, w, BUG_H - 12, 34, PLUM_DEEP, "center")
 
 
-@register("graphic", "news-lower-third", summary="The lower-third: a mint kicker over one line of the story")
+@register(
+    "graphic",
+    "news-lower-third",
+    contract=dc.contract('news-lower-third'),
+    summary="The lower-third: a mint kicker over one line of the story",
+)
 def lower_third(
     cv: Canvas,
     parent,
@@ -1027,7 +1063,12 @@ def lower_third(
     _slide(cv, g, start, moves=slide)
 
 
-@register("graphic", "news-banner", summary="The moving BREAKING banner: it slides in, its chevrons never stop")
+@register(
+    "graphic",
+    "news-banner",
+    contract=dc.contract('news-banner'),
+    summary="The moving BREAKING banner: it slides in, its chevrons never stop",
+)
 def banner(
     cv: Canvas, parent, start: float, end: float, measure: Measure, id: str = "news-banner", slide: bool = True
 ) -> None:
@@ -1057,7 +1098,12 @@ def banner(
     _slide(cv, g, start, moves=slide)
 
 
-@register("graphic", "news-ticker", summary="The ticker running along the foot of the safe zone")
+@register(
+    "graphic",
+    "news-ticker",
+    contract=dc.contract('news-ticker'),
+    summary="The ticker running along the foot of the safe zone",
+)
 def ticker(
     cv: Canvas, parent, items: Sequence[str], start: float, end: float, measure: Measure, id: str = "news-ticker"
 ) -> None:
@@ -1080,7 +1126,12 @@ def ticker(
     _text(cv, g, "NEWS", 0, TICKER_Y, 150, TICKER_H, 42, PLUM_DEEP, "center")
 
 
-@register("graphic", "news-captions", summary="The show's dialogue captions: one or two lines, a colour per anchor")
+@register(
+    "graphic",
+    "news-captions",
+    contract=dc.contract('news-captions'),
+    summary="The show's dialogue captions: one or two lines, a colour per anchor",
+)
 def captions(
     cv: Canvas,
     parent,
@@ -1118,7 +1169,12 @@ def captions(
     return track
 
 
-@register("graphic", "news-phone", summary="Gus's phone, filling the frame, its messages arriving one at a time")
+@register(
+    "graphic",
+    "news-phone",
+    contract=dc.contract('news-phone'),
+    summary="Gus's phone, filling the frame, its messages arriving one at a time",
+)
 def phone_insert(
     cv: Canvas,
     parent,

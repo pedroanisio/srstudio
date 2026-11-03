@@ -7,8 +7,9 @@ the character (``Staging(desk=toon_house.ledge)``, or drawn per shot from ``dres
 signature on it as the desk has it (ADR 0001), in one of :data:`LEDGES`. :func:`key_line` letters a reel's premise in
 the band under the desk's top edge, so a viewer with the sound off has it from the first frame.
 
-Every measure is a reference screen pixel (:func:`srstudio.toon.fx`/``fy``), like the rest of the style, and every
-key is on the composition clock. Bad input is a :class:`srstudio.toon.ToonDataError`.
+Geometry uses reference screen pixels (:func:`srstudio.toon.fx`/``fy``); typography uses frame pixels.
+Animation keys use composition time; visibility bounds use the parent timeline.
+Bad input is a :class:`srstudio.toon.ToonDataError`.
 """
 
 from __future__ import annotations
@@ -16,7 +17,8 @@ from __future__ import annotations
 import re
 from collections.abc import Callable, Sequence
 
-from . import checks, signature
+from . import _toon_domestic_contracts as dc
+from . import anatomy_ledger, checks, signature
 from .canvas import Canvas
 from .registry import register
 from .toon import FINE_W, INK_W, ToonDataError, _path, fh, fx, fy
@@ -104,7 +106,10 @@ def _rise(times: Sequence[float], what: str) -> None:
 
 
 @register(
-    "prop", "toon-ledge", summary="A plain surface in the desk's place, in oak, white or steel, signed as the desk is"
+    "prop",
+    "toon-ledge",
+    contract=dc.contract('toon-ledge'),
+    summary="A plain surface in the desk's place, in oak, white or steel, signed as the desk is",
 )
 def ledge(cv: Canvas, parent, finish: str = "oak", inset: float = 0.0) -> None:
     """A surface with no laptop on it, in front of the character as the desk is, in one of :data:`LEDGES`, with the
@@ -127,6 +132,7 @@ def ledge(cv: Canvas, parent, finish: str = "oak", inset: float = 0.0) -> None:
 @register(
     "graphic",
     "toon-key-line",
+    contract=dc.contract('toon-key-line'),
     summary="The reel's premise in one short line, white on a dark bar in the band under the desk's top edge",
 )
 def key_line(
@@ -162,6 +168,7 @@ def _porch(cv: Canvas, g, x0: float, y0: float, x1: float, y1: float) -> None:
 @register(
     "location",
     "toon-hallway",
+    contract=dc.contract('toon-hallway'),
     summary="A hall with a white dado, family pictures and a teal front door at the right, shut or open on the night",
 )
 def hallway(cv: Canvas, parent, door: str = "shut") -> None:
@@ -213,6 +220,7 @@ def _flick(cv: Canvas, node, at: Sequence[float], up: float, down: float, end: f
 @register(
     "prop",
     "toon-horse",
+    contract=dc.contract('toon-horse'),
     summary="A horse's long face, front on, in a halter, its neck behind it: it blinks and looks straight at you",
 )
 def horse(
@@ -224,10 +232,12 @@ def horse(
     end: float = 0.0,
     blinks: Sequence[float] | None = None,
     id: str = "horse",
+    neck: float = 640.0,
 ) -> None:
     """The head centred on reference ``at``, about 420 tall at ``scale`` 1 (within :data:`SCALES`), the neck running
-    down behind it. Its lids drop at each of ``blinks`` (project seconds), every :data:`HORSE_BLINK` seconds from
-    ``start`` to ``end`` when ``blinks`` is None; a still (``end`` 0) never blinks."""
+    down behind it to ``neck`` below that point, shorter for a horse whose chest a car hides. Its lids drop at each
+    of ``blinks`` (project seconds), every :data:`HORSE_BLINK` seconds from ``start`` to ``end`` when ``blinks`` is
+    None. ``end`` 0 disables automatic blinks; explicit ``blinks`` still run. These times do not hide the horse."""
     if not (checks.number(scale) and SCALES[0] <= scale <= SCALES[1]):
         raise ToonDataError(f"a horse's scale is within {SCALES}, got {scale!r}")
     if not (isinstance(at, tuple | list) and len(at) == 2 and all(checks.number(v) for v in at)):
@@ -243,7 +253,7 @@ def horse(
     def local(points: Sequence[Point]) -> list[Point]:  # the brush works in reference pixels of the frame
         return [(p[0], p[1] + 70) for p in points]
 
-    _inked(cv, g, local([(-96, 40), (-132, 330), (-120, 640), (120, 640), (132, 330), (96, 40)]), COAT_DARK)
+    _inked(cv, g, local([(-96, 40), (-132, 330), (-120, neck), (120, neck), (132, 330), (96, 40)]), COAT_DARK)
     for side in (-1, 1):
         ear = [(side * 44, -176), (side * 78, -262), (side * 94, -160)]
         _inked(cv, g, local(ear), COAT)
@@ -299,7 +309,12 @@ def _point(at: object, what: str) -> tuple[float, float]:
     return float(at[0]), float(at[1])
 
 
-@register("prop", "toon-thermostat", summary="A wall thermostat whose two-digit reading changes on cue")
+@register(
+    "prop",
+    "toon-thermostat",
+    contract=dc.contract('toon-thermostat'),
+    summary="A wall thermostat whose two-digit reading changes on cue",
+)
 def thermostat(
     cv: Canvas,
     parent,
@@ -335,7 +350,12 @@ def thermostat(
                 color=THERMOSTAT_INK, wrap="none")  # fmt: skip
 
 
-@register("prop", "toon-finger", summary="A forearm and a pointing finger, its tip going where it is told")
+@register(
+    "prop",
+    "toon-finger",
+    contract=dc.contract('toon-finger'),
+    summary="A forearm and a pointing finger, its tip going where it is told",
+)
 def finger(
     cv: Canvas,
     parent,
@@ -382,7 +402,7 @@ def finger(
             cv.keys(g, axis, keys, hold=False, local=False)
 
 
-@register("prop", "toon-vent", summary="A wall vent with white slats")
+@register("prop", "toon-vent", contract=dc.contract('toon-vent'), summary="A wall vent with white slats")
 def vent(cv: Canvas, parent, at: Point = (452, 470), width: float = 180.0) -> None:
     """A vent centred on reference ``at``, ``width`` wide (120 to 240) and a little over half as tall."""
     x, y = _point(at, "a vent's place")
@@ -396,7 +416,12 @@ def vent(cv: Canvas, parent, at: Point = (452, 470), width: float = 180.0) -> No
         cv.rect(g, fx(x - width / 2 + 12), fy(ty - 3), fh(width - 24), fh(6), VENT_SLAT, cv.clear, 0, radius=fh(3))
 
 
-@register("location", "toon-bedroom", summary="A dark bedroom at night: a wooden headboard, a pillow, a moonlit window")
+@register(
+    "location",
+    "toon-bedroom",
+    contract=dc.contract('toon-bedroom'),
+    summary="A dark bedroom at night: a wooden headboard, a pillow, a moonlit window",
+)
 def bedroom(cv: Canvas, parent) -> None:
     """The wall at night, a window with the moon at the right above the pill's clearance, the headboard and the pillow
     behind the character. :func:`quilt` goes in front of the character."""
@@ -411,7 +436,12 @@ def bedroom(cv: Canvas, parent) -> None:
     cv.ellipse(g, fx(-30), fy(470), fh(390), fh(330), PILLOW, cv.ink, INK_W * 0.7)
 
 
-@register("prop", "toon-quilt", summary="A patched quilt in front of the character, a nightstand signed as the desk is")
+@register(
+    "prop",
+    "toon-quilt",
+    contract=dc.contract('toon-quilt'),
+    summary="A patched quilt in front of the character, a nightstand signed as the desk is",
+)
 def quilt(cv: Canvas, parent, pattern: str = "plum") -> None:
     """A quilt up to the character's chest in one of :data:`QUILTS`, with the nightstand holding the cactus and the
     code where the desk has them."""
@@ -445,7 +475,12 @@ CAN, CAN_DARK, DROP = "#3f8f8f", "#2c6c6e", "#8fcbe8"
 DROP_FALL, DROP_EVERY = 118.0, 0.36
 
 
-@register("prop", "toon-sink", summary="A counter seen from above with a sink, a pan left in it and what the pan grows")
+@register(
+    "prop",
+    "toon-sink",
+    contract=dc.contract('toon-sink'),
+    summary="A counter seen from above with a sink, a pan left in it and what the pan grows",
+)
 def sink(
     cv: Canvas, parent, stages: Sequence[tuple[float, str]] = (), end: float = 0.0, id: str = "sink", inset: float = 0.0
 ) -> None:
@@ -516,7 +551,12 @@ def _tiny_frog(cv: Canvas, g, start: float, end: float) -> None:
                 hold=False, local=False)  # fmt: skip
 
 
-@register("prop", "toon-day-card", summary="A tear-off card on the fridge counting days on cue")
+@register(
+    "prop",
+    "toon-day-card",
+    contract=dc.contract('toon-day-card'),
+    summary="A tear-off card on the fridge counting days on cue",
+)
 def day_card(
     cv: Canvas,
     parent,
@@ -549,7 +589,12 @@ def day_card(
                 wrap="none")  # fmt: skip
 
 
-@register("prop", "toon-watering-can", summary="A watering can in a dark glove, pouring")
+@register(
+    "prop",
+    "toon-watering-can",
+    contract=dc.contract('toon-watering-can'),
+    summary="A watering can in a dark glove, pouring",
+)
 def watering_can(
     cv: Canvas,
     parent,
@@ -561,6 +606,7 @@ def watering_can(
 ) -> None:
     """A can with its spout's rose near reference ``at``, tipped down and to the left, shown from ``start`` to ``end``
     (always, in a still), its drops falling from ``pour``."""
+    anatomy_ledger.loose_hand(cv, "toon-watering-can")
     x, y = _point(at, "a watering can's place")
     if not (checks.number(start) and checks.number(end) and checks.number(pour) and min(start, end, pour) >= 0):
         raise ToonDataError(f"a watering can's clock needs times >= 0, got {start}, {end}, {pour}")
@@ -595,7 +641,10 @@ TEE_MOUSTACHE = (
 
 
 @register(
-    "prop", "toon-tee", summary="A loud T-shirt front with an invented portrait in a heart, between a figure's arms"
+    "prop",
+    "toon-tee",
+    contract=dc.contract('toon-tee'),
+    summary="A loud T-shirt front with an invented portrait in a heart, between a figure's arms",
 )
 def tee(
     cv: Canvas,
@@ -631,7 +680,12 @@ def tee(
 BOW_TIE = "#1d1a26"
 
 
-@register("prop", "toon-bow-tie", summary="A black bow tie under a figure's chin, which makes anyone a waiter")
+@register(
+    "prop",
+    "toon-bow-tie",
+    contract=dc.contract('toon-bow-tie'),
+    summary="A black bow tie under a figure's chin, which makes anyone a waiter",
+)
 def bow_tie(cv: Canvas, parent, at: object, scale: float = 1.0, id: str = "bow-tie") -> None:
     """A bow tie whose knot is on reference ``at``, in the figure's own coordinates so it scales with the figure."""
     x, y = _point(at, "a bow tie's place")
@@ -675,7 +729,12 @@ TOWEL_FOLDS = ("M -112 -14 C -60 -2 40 -46 112 -36", "M -74 -62 C -30 -52 30 -76
 TOWEL_TAIL = "M 60 -86 C 92 -128 138 -124 150 -92 C 132 -86 112 -74 104 -52 Z"
 
 
-@register("location", "toon-bathroom", summary="A tiled shower wall with a chrome shower head and a shelf of bottles")
+@register(
+    "location",
+    "toon-bathroom",
+    contract=dc.contract('toon-bathroom'),
+    summary="A tiled shower wall with a chrome shower head and a shelf of bottles",
+)
 def bathroom(cv: Canvas, parent) -> None:
     """The wall of a shower, tile from edge to edge, the arm of the rose coming in from the right and three plain
     bottles on a shelf: :func:`shower_water` falls in front of the character from :data:`SHOWER_HEAD`, and a white
@@ -722,7 +781,12 @@ def water_dashes(foot: float, phase: int, stop: float = WATER_TO) -> list[tuple[
     return dashes
 
 
-@register("prop", "toon-shower-water", summary="Shower water falling in streaks while the tap is on, and only then")
+@register(
+    "prop",
+    "toon-shower-water",
+    contract=dc.contract('toon-shower-water'),
+    summary="Shower water falling in streaks while the tap is on, and only then",
+)
 def shower_water(
     cv: Canvas,
     parent,
@@ -768,7 +832,7 @@ def _worn(cv: Canvas, parent, at: object, scale: float, start, end, id: str, wha
     return cv.group(outer, cv.uid("g"), scaleX=fh(1), scaleY=fh(1))
 
 
-@register("prop", "toon-suds", summary="A heap of shampoo on someone's head")
+@register("prop", "toon-suds", contract=dc.contract('toon-suds'), summary="A heap of shampoo on someone's head")
 def suds(
     cv: Canvas,
     parent,
@@ -787,7 +851,7 @@ def suds(
         cv.ellipse(g, x - r / 6, y + r / 10, r / 3, r / 4, SUDS_SHADE)
 
 
-@register("prop", "toon-towel", summary="A towel wrapped round someone's head")
+@register("prop", "toon-towel", contract=dc.contract('toon-towel'), summary="A towel wrapped round someone's head")
 def towel(
     cv: Canvas,
     parent,

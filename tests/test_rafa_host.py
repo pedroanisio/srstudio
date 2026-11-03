@@ -120,7 +120,7 @@ def test_a_frame_list_covers_the_reel_with_a_face_for_every_frame():
 
 
 def test_his_head_moves_on_twos_and_only_on_plate_steps():
-    plan = HeadPlan(turn=Channel(((0.0, 0.0), (1.0, 5.3))), nod=Channel(((0.0, 0.0), (1.0, 3.1))))
+    plan = HeadPlan(turn=Channel(((0.0, 0.0), (1.0, 4.9))), nod=Channel(((0.0, 0.0), (1.0, 3.1))))
     rows = faces(1.2, plan=plan)
     assert all(row.turn in TURNS and row.nod in NODS for row in rows)
     assert {rows[1].turn, rows[1].nod} == {rows[0].turn, rows[0].nod}
@@ -216,3 +216,12 @@ def test_the_camera_and_light_never_change_between_his_plates():
     a, b = rafa_host.pose_plate(Face()), rafa_host.pose_plate(Face(turn=2.0, nod=1.5))
     assert a.camera == b.camera and a.lights == b.lights
     assert plates.digest(a) != plates.digest(b)
+
+
+def test_he_is_on_the_last_frame_of_a_reel_that_ends_between_frames() -> None:
+    """The engine writes a frame for a part of one, so a reel of 25.044 s has 752 frames at 30 fps, not 751."""
+    assert len(faces(25.044)) == 752
+
+
+def test_a_reel_that_ends_on_a_frame_gets_no_extra_one() -> None:
+    assert len(faces(25.6)) == 768  # 25.6 * 30 is 768.0000000000001 in a float

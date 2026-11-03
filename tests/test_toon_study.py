@@ -86,6 +86,40 @@ def test_a_note_is_written_on_the_right_page_and_swept_on_cue():
     assert fx(300) < left < right
 
 
+@pytest.mark.parametrize('note', [False, True])
+def test_book_sweeps_interpolate_across_the_row_instead_of_holding_until_the_end(note):
+    cv = canvas()
+    options = (
+        dict(note=('Hello',), note_sweep=(HIGHLIGHT, 1.0), measure=measure) if note else dict(sweep=(0, HIGHLIGHT, 1.0))
+    )
+    toon_study.open_book(cv, cv.comp, **options)
+    animations = list(cv.scene.iter('animate'))
+    assert len(animations) == 1
+    assert animations[0].defaultInterpolation == 'linear'
+    assert animations[0].timeBase is None
+
+
+def test_marker_path_interpolates_between_authored_frame_positions():
+    cv = canvas()
+    toon_study.highlighter(cv, cv.comp, (100, 900), '#c49a6c', ((1, 100), (2, 500)))
+    assert next(cv.scene.iter('animate')).defaultInterpolation == 'linear'
+
+
+def test_engine_samples_a_sweep_and_marker_between_their_keys(tmp_path, scene_render):
+    from support.acting import canvas as unlettered_canvas
+    from support.acting import evaluate
+
+    cv = unlettered_canvas()
+    toon_study.open_book(cv, cv.comp, sweep=(0, HIGHLIGHT, 1.0), id='book')
+    toon_study.highlighter(cv, cv.comp, (100, 900), '#c49a6c', ((1, 100), (1 + toon_study.SWEEP, 500)), id='marker')
+    path = tmp_path / 'sweep.scene.xml'
+    path.write_bytes(cv.scene.to_bytes())
+    for fraction in (0.25, 0.5, 0.75):
+        nodes = {n['id']: n for n in evaluate(scene_render, path, 1 + toon_study.SWEEP * fraction)}
+        assert nodes['book-sweep']['local'][0] == pytest.approx(0.02 + 0.98 * fraction)
+        assert nodes['marker']['local'][4] == pytest.approx(100 + 400 * fraction)
+
+
 @pytest.mark.parametrize(
     "kwargs",
     [

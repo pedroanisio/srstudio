@@ -32,7 +32,9 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
-from . import camera, checks, foley, head_motion, look, native, signature, sketch, toon
+from . import _character_contracts as cc
+from . import _presentation_contracts as dc
+from . import camera, checks, drawing_events, foley, head_motion, look, native, signature, sketch, toon
 from .canvas import Canvas
 from .errors import SrstudioError
 from .fonts import GoogleFont
@@ -367,7 +369,12 @@ def _coat(cv: Canvas, parent, i: int, x: float, half: float, foot: float, top: s
     _stroke(cv, parent, f"M {x} {y - 28} L {x} {y - 92} Q {x} {y - 116} {x + 20} {y - 110}", "#b9a68a", 7.0)
 
 
-@register("location", "host-wardrobe", summary="Inside a wardrobe: cedar boards, a rail of coats, a door left ajar")
+@register(
+    "location",
+    "host-wardrobe",
+    contract=dc.contract('host-wardrobe'),
+    summary="Inside a wardrobe: cedar boards, a rail of coats, a door left ajar",
+)
 def wardrobe(cv: Canvas, parent, end: float = 10.0) -> None:
     """The far plane: boards, the rail and the coats out of focus, the warm line of a door left ajar on the left, its
     light across the room and dust drifting through it, so the room is alive while he holds still. The set's one key
@@ -435,7 +442,12 @@ def _phone(cv: Canvas, parent) -> None:
     cv.rect(parent, 1000, top + 62, 34, 12, "#55526a", INK, 3.0, radius=4.0)  # the side button, which he reaches for
 
 
-@register("prop", "host-phone", summary="The plank in front of him and a phone lying on it, wider than he is")
+@register(
+    "prop",
+    "host-phone",
+    contract=dc.contract('host-phone'),
+    summary="The plank in front of him and a phone lying on it, wider than he is",
+)
 def shelf(cv: Canvas, parent) -> None:
     """The midground's front: a lit plank, its front edge at the frame's foot, with the phone flat on it."""
     g = cv.group(parent, cv.uid("g"))
@@ -849,57 +861,59 @@ def perform(
         raise HostKitError(f"Lint needs a pose from {start} s, got {acts[:1]!r}")
     plan = plan or HeadPlan()
     style = MOTION
-    seat = dict(x=540.0, y=SEAT_Y)
-    outer = cv.group(head_parent, cv.uid("lint"), **seat)
-    arm_outer = cv.group(arms_parent, cv.uid("lint-arms"), **seat)
-    for group in (outer, arm_outer):
-        cv.keys(
-            group,
-            "y",
-            [(t, SEAT_Y + v * PULL_PX) for t, v in _eased(acts, lambda p: p.pull)],
-            hold=False,
-            kind="sine-in-out",
-            local=False,
-        )
-    lean = cv.group(outer, cv.uid("lean"))
-    _animate(cv, lean, "rotation", plan.lean)
-    arm_lean = cv.group(arm_outer, cv.uid("lean"))
-    _animate(cv, arm_lean, "rotation", plan.lean)
-    breath = cv.group(lean, cv.uid("breath"))
-    _animate(cv, breath, "scaleY", plan.breath, style.breath_scale, 1.0)
-    wings = pull_spans or []
-    _wing(cv, breath, -1.0, wings)
-    _wing(cv, breath, 1.0, wings)
-    neck = dict(x=0.0, y=NECK_Y, anchorX=0.0, anchorY=NECK_Y)
-    turn = cv.group(breath, cv.uid("turn"), **neck)
-    tilt = _eased(acts, lambda p: p.head + p.pull * PULL_TILT)
-    merged = _merge(plan.turn, tilt)
-    cv.keys(turn, "rotation", merged, hold=False, kind="sine-in-out", local=False)
-    nod = cv.group(turn, cv.uid("nod"), **neck)
-    _animate(cv, nod, "rotation", plan.roll)
-    _animate(cv, nod, "y", plan.nod, 1.0, NECK_Y)
-    idle = cv.group(nod, cv.uid("idle"), **neck)
-    _animate(cv, idle, "rotation", plan.idle_roll)
-    _animate(cv, idle, "y", plan.idle_y, 1.0, NECK_Y)
-    lift = cv.group(idle, cv.uid("lift"))
-    _animate(cv, lift, "y", plan.breath, -style.breath_px)
-    head = cv.group(lift, cv.uid("head"), y=HEAD_Y)
-    _antennae(cv, head, acts, buzzes)
-    _skull(cv, head)
-    face = cv.group(head, cv.uid("face"))
-    _animate(cv, face, "x", plan.face_x)
-    _animate(cv, face, "y", plan.nod, 0.8)
-    _muzzle(cv, face)
-    _eyes(cv, face, acts, plan, end)
-    for state, spans in _spans(mouth_track(acts, mouths, end), start, end).items():
-        g = cv.group(face, cv.uid("g"), opacity=0.0)
-        cv.gate(g, spans)
-        _mouth(cv, g, state)
-    body = cv.group(breath, cv.uid("body"), y=BODY_DROP)
-    _body(cv, body)
-    _ruff(cv, body)
-    _arms(cv, arm_lean, _spans([(at, pose.arm) for at, pose in acts], start, end))
-    return outer
+    plan.check_bounds(style, frozen=bool(cv._frozen))
+    with drawing_events.drawing(lint):
+        seat = dict(x=540.0, y=SEAT_Y)
+        outer = cv.group(head_parent, cv.uid("lint"), **seat)
+        arm_outer = cv.group(arms_parent, cv.uid("lint-arms"), **seat)
+        for group in (outer, arm_outer):
+            cv.keys(
+                group,
+                "y",
+                [(t, SEAT_Y + v * PULL_PX) for t, v in _eased(acts, lambda p: p.pull)],
+                hold=False,
+                kind="sine-in-out",
+                local=False,
+            )
+        lean = cv.group(outer, cv.uid("lean"))
+        _animate(cv, lean, "rotation", plan.lean)
+        arm_lean = cv.group(arm_outer, cv.uid("lean"))
+        _animate(cv, arm_lean, "rotation", plan.lean)
+        breath = cv.group(lean, cv.uid("breath"))
+        _animate(cv, breath, "scaleY", plan.breath, style.breath_scale, 1.0)
+        wings = pull_spans or []
+        _wing(cv, breath, -1.0, wings)
+        _wing(cv, breath, 1.0, wings)
+        neck = dict(x=0.0, y=NECK_Y, anchorX=0.0, anchorY=NECK_Y)
+        turn = cv.group(breath, cv.uid("turn"), **neck)
+        tilt = _eased(acts, lambda p: p.head + p.pull * PULL_TILT)
+        merged = _merge(plan.turn, tilt)
+        cv.keys(turn, "rotation", merged, hold=False, kind="sine-in-out", local=False)
+        nod = cv.group(turn, cv.uid("nod"), **neck)
+        _animate(cv, nod, "rotation", plan.roll)
+        _animate(cv, nod, "y", plan.nod, 1.0, NECK_Y)
+        idle = cv.group(nod, cv.uid("idle"), **neck)
+        _animate(cv, idle, "rotation", plan.idle_roll)
+        _animate(cv, idle, "y", plan.idle_y, 1.0, NECK_Y)
+        lift = cv.group(idle, cv.uid("lift"))
+        _animate(cv, lift, "y", plan.breath, -style.breath_px)
+        head = cv.group(lift, cv.uid("head"), y=HEAD_Y)
+        _antennae(cv, head, acts, buzzes)
+        _skull(cv, head)
+        face = cv.group(head, cv.uid("face"))
+        _animate(cv, face, "x", plan.face_x)
+        _animate(cv, face, "y", plan.nod, 0.8)
+        _muzzle(cv, face)
+        _eyes(cv, face, acts, plan, end)
+        for state, spans in _spans(mouth_track(acts, mouths, end), start, end).items():
+            g = cv.group(face, cv.uid("g"), opacity=0.0)
+            cv.gate(g, spans)
+            _mouth(cv, g, state)
+        body = cv.group(breath, cv.uid("body"), y=BODY_DROP)
+        _body(cv, body)
+        _ruff(cv, body)
+        _arms(cv, arm_lean, _spans([(at, pose.arm) for at, pose in acts], start, end))
+        return outer
 
 
 def _merge(channel: Channel, tilt: Sequence[tuple[float, float]]) -> list[tuple[float, float]]:
@@ -950,6 +964,7 @@ def _eyes(cv: Canvas, face, acts: Sequence[tuple[float, Pose]], plan: HeadPlan, 
     "character",
     "host-lint",
     summary="Lint, a clothes moth in a cardigan he is also eating: plumed antennae, heavy lids, a large opinion",
+    contract=cc.anchor(Pose, EYES, EXPRESSIONS, ARMS, VISEMES, host=True),
 )
 def lint(cv: Canvas, parent, pose: Pose | None = None, start: float = 0.0, end: float = 2.0, mouths: Track = ()):
     """Lint in one pose, on his plank."""
@@ -1035,7 +1050,12 @@ def _pulled(rows: Sequence[tuple[float, Pose]], end: float) -> Spans:
     return spans
 
 
-@register("graphic", "host-punch", summary="The punch-in and punch-out framings: cuts about his face, on the beat")
+@register(
+    "graphic",
+    "host-punch",
+    contract=dc.contract('host-punch'),
+    summary="The punch-in and punch-out framings: cuts about his face, on the beat",
+)
 def punch(cv: Canvas, group, who: str, at: float, was: str, push: tuple[float, float] | None = None) -> None:
     """The framing ``who`` from second ``at``, cut from ``was``: a punch-in or a punch-out, a hold on the cut, the face
     the pivot so the eyes stay where they were. ``push`` eases to a scale over ``(seconds, scale)`` after the cut, for a
@@ -1092,7 +1112,12 @@ def _tag(cv: Canvas, parent, x: float, y: float, w: float, h: float) -> None:
             cv.rect(parent, left, y + 8 + k * 16, 4, 9, AMBER)
 
 
-@register("graphic", "host-label", summary="The on-screen keyword, on a woven care label at the top of the frame")
+@register(
+    "graphic",
+    "host-label",
+    contract=dc.contract('host-label'),
+    summary="The on-screen keyword, on a woven care label at the top of the frame",
+)
 def label(cv: Canvas, parent, text: str, start: float, end: float, measure: Measure, id: str | None = None) -> None:
     """Seven words or fewer in ink on the label, over the head, from ``start`` to ``end``."""
     _span(start, end, "a label")
@@ -1112,6 +1137,24 @@ def label(cv: Canvas, parent, text: str, start: float, end: float, measure: Meas
     cv.keys(g, "y", [(start, -14.0), (start + 0.16, 0.0)], hold=False, kind="cubic-out", local=False)
 
 
+def _said_as(token: str, left: Sequence[Word]) -> int:
+    """How many of the next words said make up caption ``token``: one that matches it, or, for a number, the run the
+    speech split at its separators ("4,000" said as "4" and "000"); 0 when they do not make it up."""
+    if left and sketch.normalize_words(left[0][2]) == sketch.normalize_words(token):
+        return 1
+    bare = re.sub(r"\W", "", token)
+    if not any(c.isdigit() for c in bare):
+        return 0
+    joined = ""
+    for n, (_, _, said) in enumerate(left, 1):
+        joined += re.sub(r"\W", "", said)
+        if joined == bare:
+            return n
+        if not bare.startswith(joined):
+            return 0
+    return 0
+
+
 def _timed(lines: Sequence[toon.Line], words: Sequence[Word]) -> list[list[tuple[float, str]]]:
     """Each cue's words with the second each is said: from the takes, or spread evenly through a silent master's cue.
     A word that is not the next one said is :class:`HostKitError`, so a caption can never run ahead of the voice, and
@@ -1126,9 +1169,11 @@ def _timed(lines: Sequence[toon.Line], words: Sequence[Word]) -> list[list[tuple
             continue
         row: list[tuple[float, str]] = []
         for token in tokens:
-            if not left or sketch.normalize_words(left[0][2]) != sketch.normalize_words(token):
+            parts = _said_as(token, left)
+            if not parts:
                 raise HostKitError(f"caption word {token!r} is not the next word said: {left[:1]!r}")
-            at, _, _ = left.pop(0)
+            at, _, _ = left[0]
+            del left[:parts]
             if not row and line.start - at > CAPTION_LATE + 1e-6:
                 raise HostKitError(f"caption {line.text!r} arrives {line.start - at:.3f} s after its voice")
             row.append((max(at, line.start), token))
@@ -1153,20 +1198,43 @@ def caption_cues(lines: Sequence[toon.Line], words: Sequence[Word] = (), skip: S
     return cues
 
 
+def _fits(words: Sequence[str]) -> bool:
+    return len(native.wrap(" ".join(words), CAPTION_LOOK.max_chars, CAPTION_LOOK.max_words)) <= CAPTION_LOOK.max_lines
+
+
+def packed(sentences: Sequence[Sequence[str]]) -> list[list[str]]:
+    """``sentences``, each a list of words, as the fewest cues that fit the band's rows: a sentence joins the cue
+    before it while the two fit together, so a short one never stands alone. A sentence too long on its own stays one
+    cue, for the track to refuse."""
+    cues: list[list[str]] = []
+    for sentence in sentences:
+        if cues and _fits([*cues[-1], *sentence]):
+            cues[-1].extend(sentence)
+        else:
+            cues.append(list(sentence))
+    return cues
+
+
 def _sentences(said: Sequence[native.Word]) -> list[list[native.Word]]:
-    """``said`` whole when it fits the band's rows, or else cut after each word that ends a sentence."""
-    text = " ".join(w.text for w in said)
-    if len(native.wrap(text, CAPTION_LOOK.max_chars, CAPTION_LOOK.max_words)) <= CAPTION_LOOK.max_lines:
+    """``said`` whole when it fits the band's rows, or else cut after words that end a sentence, into the fewest cues
+    that fit (:func:`packed`)."""
+    if _fits([w.text for w in said]):
         return [list(said)]
-    parts: list[list[native.Word]] = [[]]
+    sentences: list[list[str]] = [[]]
     for k, word in enumerate(said):
-        parts[-1].append(word)
+        sentences[-1].append(word.text)
         if word.text.endswith((".", "!", "?")) and k + 1 < len(said):
-            parts.append([])
-    return parts
+            sentences.append([])
+    words = iter(said)
+    return [[next(words) for _ in cue] for cue in packed(sentences)]
 
 
-@register("graphic", "host-captions", summary="Word-level engine captions on an ink band, the sung words in amber")
+@register(
+    "graphic",
+    "host-captions",
+    contract=dc.contract('host-captions'),
+    summary="Word-level engine captions on an ink band, the sung words in amber",
+)
 def captions(
     ep: Any, lines: Sequence[toon.Line], measure: Measure, words: Sequence[Word] = (), skip: Sequence[str] = ()
 ):
@@ -1188,7 +1256,12 @@ def captions(
     return bands, ep.native_captions(cues, look=CAPTION_LOOK, id="host-captions")
 
 
-@register("graphic", "host-sign-off", summary="The catchphrase on a large woven label, under the show's name")
+@register(
+    "graphic",
+    "host-sign-off",
+    contract=dc.contract('host-sign-off'),
+    summary="The catchphrase on a large woven label, under the show's name",
+)
 def sign_off(cv: Canvas, parent, phrase: str, start: float, end: float, measure: Measure, id: str = "host-sign-off"):
     """The label every episode closes on, under his chin: the show's name stitched small, the catchphrase large. It
     comes up with his first word and stays to the last frame. Returns its group."""
@@ -1206,7 +1279,12 @@ def sign_off(cv: Canvas, parent, phrase: str, start: float, end: float, measure:
     return g
 
 
-@register("graphic", "host-screen", summary="The phone, full frame: a chat's name and its messages, one at a time")
+@register(
+    "graphic",
+    "host-screen",
+    contract=dc.contract('host-screen'),
+    summary="The phone, full frame: a chat's name and its messages, one at a time",
+)
 def screen(
     cv: Canvas,
     parent,

@@ -3,8 +3,8 @@ ships of a chase, the hook card and the Handbook entry that buttons each reel (A
 
 Every location fills the 1080 × 1920 frame, draws both signature marks (ADR 0001) and takes its events as spans
 or seconds on the shot's clock: the cantina's patrons stare, the cockpit window jumps to hyperspace, the
-compactor's walls close and its door opens. The cockpit and the cantina have a front layer (the console, the bar)
-drawn after the cast who stand behind it.
+compactor's walls close and its door opens, a missile lands on the cockpit's right-hand side and a pilot jabs its
+stick. The cockpit and the cantina have a front layer (the console, the bar) drawn after the cast who stand behind it.
 
 Text is measured, never trusted to fit: :func:`wrap` (:func:`srstudio.look.wrap`) breaks a text into lines that the
 font draws within a width and refuses a text that needs more lines than the box holds, so a panel's lettering never
@@ -21,12 +21,23 @@ from dataclasses import dataclass
 from typing import Any
 
 from . import camera, checks, look, saga, signature
+from ._saga_set_contracts import contract
 from .canvas import Canvas
 from .registry import register
 from .saga import SagaError, Talk
 
 __all__ = [
     "Panel",
+    "GRIP",
+    "Jab",
+    "MAX_JAB_FRAMES",
+    "BLAST_BOX",
+    "BUG_X",
+    "LEDGE_Y",
+    "jab_frames",
+    "stick_ball",
+    "stick_grip",
+    "hand_at",
     "TONES",
     "FLOOR",
     "SAFE",
@@ -78,7 +89,95 @@ GRADE: dict[
 }
 ENTRY_CASE = "#e2622e"  # the Handbook's casing
 HOLO_BOX = (90, 232, 820, FLOOR - saga.HEIGHT - 20 - 232)  # x, y, w, most height: it ends above a standing head
+STICK_PIVOT = (540, 1450)  # where the console's stick leaves its base
+STICK_BALL = (602, 1210)  # the centre of its red ball, at rest
+MAX_JAB_FRAMES = 20_000  # cap includes the terminal sample at the fixed 24 Hz sampling rate
+GRIP = 44  # px down the shaft from the ball to the middle of a hand on the stick
+BUG_X = 926  # the show bug's left edge: the hit's fire stays left of it at rest
+BLAST_BOX = (566, 236, 866, 536)  # the right-hand pane above the pilot's seat, where a hit's fireball blooms
+HIT_LIGHT = "#ffb347"  # the light a hit throws in from the right
+SPARK_FROM = ((1000, 930), (1012, 1076))  # the wall and the console's edge on the side that was hit
+SPARKS = 20
+LEDGE_Y = 1250  # the top of the little shelf under the console's cactus
 Spans = Sequence[tuple[float, float]]
+
+
+@dataclass(frozen=True)
+class Jab:
+    """A pilot's arm on the console's stick, jabbing it at second ``at``: the sleeve and hand colours of the cast
+    member, the ``elbow`` where the forearm leaves the arm (frame pixels), and the ``scale`` she is drawn at."""
+
+    at: float
+    sleeve: str
+    hand: str
+    elbow: tuple[float, float]
+    scale: float
+
+    def __post_init__(self) -> None:
+        checks.positive(self.at, SagaError, f"a jab needs a positive numeric cue, got {self.at!r}")
+        if not self.at - 0.16 < self.at < self.at + 0.06 < self.at + 0.3 < self.at + 0.56:
+            raise SagaError("a jab needs distinct representable phase times")
+        checks.positive(self.scale, SagaError, f"a jab needs a positive scale, got {self.scale!r}")
+        if not checks.number(52 * self.scale):
+            raise SagaError("a jab scale overflows its forearm width")
+        if not (isinstance(self.elbow, tuple) and len(self.elbow) == 2 and all(map(checks.number, self.elbow))):
+            raise SagaError(f"a jab elbow needs two finite coordinates, got {self.elbow!r}")
+        rest = math.dist(hand_at(self, 0), self.elbow)
+        if not math.isfinite(rest) or rest == 0:
+            raise SagaError("a jab needs a finite, nonzero resting forearm length")
+
+
+def _stick_degrees(jab: Jab, t: float) -> float:
+    """The stick's lean at second ``t``: pulled back, shoved hard past upright, held, and let halfway back."""
+    pull, shove, held, back = jab.at - 0.16, jab.at + 0.06, jab.at + 0.3, jab.at + 0.56
+    if t <= pull:
+        return 0.0
+    if t <= jab.at:
+        return -6.0 * (t - pull) / (jab.at - pull)
+    if t <= shove:
+        return -6.0 + 26.0 * (t - jab.at) / (shove - jab.at)
+    if t <= held:
+        return 20.0
+    return 20.0 - 10.0 * min(1.0, (t - held) / (back - held))
+
+
+def _turn(point: tuple[float, float], degrees: float) -> tuple[float, float]:
+    """``point`` swung about the stick's pivot, clockwise on screen."""
+    if not checks.number(degrees):
+        raise SagaError(f"stick degrees must be finite and numeric, got {degrees!r}")
+    a, (px, py) = math.radians(degrees), STICK_PIVOT
+    dx, dy = point[0] - px, point[1] - py
+    return px + dx * math.cos(a) - dy * math.sin(a), py + dx * math.sin(a) + dy * math.cos(a)
+
+
+def stick_ball(degrees: float) -> tuple[float, float]:
+    """The centre of the stick's ball at a lean of ``degrees``."""
+    return _turn(STICK_BALL, degrees)
+
+
+def stick_grip(degrees: float) -> tuple[float, float]:
+    """Where a hand holds the shaft, :data:`GRIP` below the ball, at a lean of ``degrees``."""
+    (bx, by), (px, py) = STICK_BALL, STICK_PIVOT
+    along = GRIP / math.hypot(px - bx, py - by)
+    return _turn((bx + (px - bx) * along, by + (py - by) * along), degrees)
+
+
+def hand_at(jab: Jab, t: float) -> tuple[float, float]:
+    """The centre of the jabbing hand at second ``t``: always on the shaft."""
+    if not checks.number(t):
+        raise SagaError(f"a jab sample time must be finite and numeric, got {t!r}")
+    return stick_grip(_stick_degrees(jab, t))
+
+
+def jab_frames(jab: Jab, end: float) -> list[tuple[float, float]]:
+    """(second, degrees) at 24 Hz, through the first sample at or after positive ``end``.
+
+    The terminal sample counts toward :data:`MAX_JAB_FRAMES`; oversized requests fail before allocation.
+    """
+    checks.positive(end, SagaError, f"a jab sampling duration must be positive, got {end!r}")
+    if end > (MAX_JAB_FRAMES - 1) / 24:
+        raise SagaError(f"a jab may sample at most {MAX_JAB_FRAMES} frames including its terminal sample")
+    return [(round(i / 24, 4), round(_stick_degrees(jab, i / 24), 3)) for i in range(math.ceil(end * 24) + 1)]
 
 
 @dataclass(frozen=True)
@@ -95,10 +194,12 @@ class Panel:
 
 
 # -- text -------------------------------------------------------------------------------------------------------------
-def wrap(font: bytes, text: str, size: float, width: float, max_lines: int) -> list[str]:
+def wrap(
+    font: bytes, text: str, size: float, width: float, max_lines: int, *, keep_together: bool = False
+) -> list[str]:
     """:func:`srstudio.look.wrap`, refusing with :class:`SagaError`."""
     try:
-        return look.wrap(font, text, size, width, max_lines)
+        return look.wrap(font, text, size, width, max_lines, keep_together=keep_together)
     except look.FitError as e:
         raise SagaError(str(e)) from None
 
@@ -153,12 +254,136 @@ def _marks(cv: Canvas, g, cactus_at: tuple[float, float], code_at: tuple[float, 
     signature.code(cv, g, code_at[0], code_at[1], 14, color=colour)
 
 
+def _named(cv: Canvas, name: str) -> str:
+    """A serial id that still says what the group is, for the frame review and the tests."""
+    return f"{name}-{cv.uid('g')}"
+
+
+def _check_hit(hit: float | None, end: float) -> None:
+    if hit is not None and not (checks.number(hit) and 0 <= hit < end):
+        raise SagaError(f"a hit falls inside its shot of {end} s, got {hit}")
+
+
+def _blast(cv: Canvas, far, at: float, end: float) -> None:
+    """The fireball in the right-hand pane, inside :data:`BLAST_BOX`: it blooms at ``at``, burns and dies by ``end``,
+    throwing hull plates out of its middle."""
+    x0, y0, x1, y1 = BLAST_BOX
+    cx, cy, r = (x0 + x1) / 2, (y0 + y1) / 2, (x1 - x0) / 2
+    g = cv.group(far, _named(cv, "saga-blast"))
+    camera.anchor(g, cx, cy, place=True)
+    rnd = random.Random(1028)
+
+    def puffs(into, count: int, colour: str, reach: float, size: tuple[float, float]) -> None:
+        for k in range(count):
+            a, big = 2 * math.pi * (k + rnd.uniform(-0.3, 0.3)) / count, r * rnd.uniform(*size)
+            out = rnd.uniform(0.5, 1.0) * (reach * r - big)
+            px, py = cx + out * math.cos(a), cy + out * math.sin(a)
+            cv.ellipse(into, round(px - big, 1), round(py - big, 1), round(big * 2, 1), round(big * 2, 1), colour)
+
+    smoke = cv.group(g, _named(cv, "saga-smoke"))
+    puffs(smoke, 9, "#3a3546", 1.0, (0.26, 0.36))
+    cv.keys(smoke, "opacity", [(at, 0.0), (round(min(end, at + 0.35), 4), 0.95)], hold=False)
+    fire = cv.group(g, _named(cv, "saga-fire"))
+    puffs(fire, 11, "#ff5a1f", 0.95, (0.26, 0.4))
+    puffs(fire, 8, "#ffb02e", 0.62, (0.22, 0.32))
+    cv.keys(fire, "opacity", [(at, 1.0), (round(min(end, at + 0.4), 4), 1.0), (round(min(end, at + 0.85), 4), 0.0)],
+            hold=False)  # fmt: skip
+    core = cv.ellipse(g, cx - r * 0.34, cy - r * 0.34, r * 0.68, r * 0.68, "#fff4dc")
+    cv.keys(core, "opacity", [(at, 1.0), (round(min(end, at + 0.3), 4), 0.0)], hold=False)
+    grown = [(at, 0.55), (round(min(end, at + 0.12), 4), 1.0)]
+    cv.keys(g, "scaleX", grown, hold=False)
+    cv.keys(g, "scaleY", grown, hold=False)
+    fade = [(at, 1.0), (round(min(end, at + 0.5), 4), 1.0), (end, 0.0)]
+    cv.keys(g, "opacity", ([(0.0, 0.0)] if at > 0 else []) + fade, hold=False)
+    gone, dim = round(min(end, at + 0.7), 4), round(min(end, at + 0.45), 4)
+    for k in range(7):  # hull plates, dark against the fire and gone before the cut; turned in their points, since a
+        # rotated group moving inside the far plane's blur takes new GPU memory on every frame until the render dies
+        a = 2 * math.pi * (k + rnd.uniform(0, 0.6)) / 7
+        thrown = rnd.uniform(0.7, 0.95) * r
+        plate = cv.group(far, _named(cv, "saga-plate"), x=cx, y=cy)
+        turn = rnd.uniform(0, 2 * math.pi)
+        corners = ((-16, -10), (18, -14), (12, 12), (-12, 16))
+        turned = [
+            (x * math.cos(turn) - y * math.sin(turn), x * math.sin(turn) + y * math.cos(turn)) for x, y in corners
+        ]
+        cv.path(plate, "M" + " L".join(f"{x:.1f} {y:.1f}" for x, y in turned) + " Z", "#20242e", "#f2b84b", 2)
+        cv.keys(plate, "x", [(at, cx), (gone, round(cx + thrown * math.cos(a), 1))], hold=False)
+        cv.keys(plate, "y", [(at, cy), (gone, round(cy + thrown * math.sin(a), 1))], hold=False)
+        cv.keys(plate, "opacity", [(at, 1.0), (dim, 1.0), (gone, 0.0)], hold=False)
+
+
+def _sparks(cv: Canvas, g, at: float, end: float) -> None:
+    """Light from the side that was hit, over everything but the holograms, and sparks off its wall and console."""
+    wash = cv.group(g, _named(cv, "saga-hit-wash"))
+    light = cv.grad(
+        "saga-hit-light",
+        [(0, f"{HIT_LIGHT}00"), (0.35, f"{HIT_LIGHT}00"), (0.72, f"{HIT_LIGHT}40"), (1, f"{HIT_LIGHT}ff")],
+        (0, 0, 1, 0),
+    )
+    cv.rect(wash, -200, -200, W + 400, H + 400, light)
+    flare = [(at, 0.8), (round(min(end, at + 0.16), 4), 0.55), (round(min(end, at + 0.8), 4), 0.0)]
+    cv.keys(wash, "opacity", ([(0.0, 0.0)] if at > 0 else []) + flare, hold=False)
+    rnd = random.Random(4471)
+    for k in range(SPARKS):
+        x, y = SPARK_FROM[k % 2]
+        a, v = math.radians(rnd.uniform(150, 205)), rnd.uniform(320, 720)
+        life, late = rnd.uniform(0.4, 0.8), rnd.uniform(0.0, 0.14)
+        spark = cv.group(g, _named(cv, "saga-spark"), x=x, y=y)
+        cv.line(spark, 0, 0, round(-46 * math.cos(a), 1), round(-46 * math.sin(a), 1), "#ffe29a", 7)  # along its flight
+        steps = [i / 4 * life for i in range(5)]
+        path = [(x + v * math.cos(a) * s, y + v * math.sin(a) * s + 900 * s * s) for s in steps]
+        clock = [round(min(end, at + late + s), 4) for s in steps]
+        cv.keys(spark, "x", [(c, round(p[0], 1)) for c, p in zip(clock, path, strict=True)], hold=False)
+        cv.keys(spark, "y", [(c, round(p[1], 1)) for c, p in zip(clock, path, strict=True)], hold=False)
+        shown = [(clock[0], 1.0), (clock[-2], 1.0), (clock[-1], 0.0)]
+        cv.keys(
+            spark,
+            "opacity",
+            ([(0.0, 0.0), (round(clock[0] - 0.01, 4), 0.0)] if clock[0] > 0.01 else []) + shown,
+            hold=False,
+        )
+
+
+def _ledge(cv: Canvas, g) -> None:
+    """A small shelf bolted to the console's face, its top at :data:`LEDGE_Y`, under the cactus."""
+    shelf = cv.group(g, _named(cv, "saga-ledge"), y=LEDGE_Y)
+    for x in (112, 176):
+        cv.path(shelf, f"M{x} 12 L{x + 12} 12 L{x + 6} 40 Z", "#232733", cv.ink, 3)
+    cv.rect(shelf, 92, 0, 116, 14, "#3a4256", cv.ink, 4, radius=4)
+
+
+def _jabbing_arm(cv: Canvas, g, jab: Jab, frames: Sequence[tuple[float, float]]) -> None:
+    """The pilot's forearm over the console from ``jab.elbow`` to a hand that stays on the shaft on every frame."""
+    width, ink, radius = 52 * jab.scale, saga.INK_W * jab.scale, 26 * jab.scale
+    ex, ey = jab.elbow
+    grips = [stick_grip(d) for _, d in frames]
+    rest = math.dist(grips[0], jab.elbow)
+    arm = cv.group(g, _named(cv, "saga-arm"))
+    cv.apply(
+        arm, cv.effect("saga-form", "inner-shadow", **saga.FORM), cv.effect("saga-lift", "drop-shadow", **saga.LIFT)
+    )
+    fore = cv.group(arm, _named(cv, "saga-forearm"))
+    camera.anchor(fore, ex, ey, place=True)
+    cv.rect(fore, ex - width / 2, ey - width / 2, rest + width / 2, width, jab.sleeve, cv.ink, ink, radius=width / 2)
+    clock = [t for t, _ in frames]
+    turned = [round(math.degrees(math.atan2(y - ey, x - ex)), 3) for x, y in grips]
+    cv.keys(fore, "rotation", list(zip(clock, turned, strict=True)), hold=False)
+    stretch = [round(math.dist(p, jab.elbow) / rest, 4) for p in grips]
+    cv.keys(fore, "scaleX", list(zip(clock, stretch, strict=True)), hold=False)
+    hand = cv.group(arm, _named(cv, "saga-hand"), x=round(grips[0][0], 2), y=round(grips[0][1], 2))
+    cv.ellipse(hand, -radius, -radius, radius * 2, radius * 2, jab.hand, cv.ink, ink)
+    cv.ellipse(hand, -radius * 0.54, -radius * 0.77, radius * 0.7, radius * 0.54, "#ffffff", opacity=0.3)
+    cv.keys(hand, "x", [(t, round(p[0], 2)) for t, p in zip(clock, grips, strict=True)], hold=False)
+    cv.keys(hand, "y", [(t, round(p[1], 2)) for t, p in zip(clock, grips, strict=True)], hold=False)
+
+
 # -- locations --------------------------------------------------------------------------------------------------------
 @register(
     "location",
     "saga-space",
     summary="Deep space: a navy-to-violet void, twinkling stars, a nebula, a ringed "
     "planet and a small asteroid where someone left a potted cactus",
+    contract=contract('saga-space'),
 )
 def space(cv: Canvas, parent, *, end: float, planet: bool = True) -> None:
     """Open space for exteriors; props (the cube, ships) are drawn over it."""
@@ -185,6 +410,7 @@ def space(cv: Canvas, parent, *, end: float, planet: bool = True) -> None:
     "saga-bridge",
     summary="The Directorate's command bridge: a wide window on the stars, steel "
     "struts, a red alert strip and a row of blinking consoles",
+    contract=contract('saga-bridge'),
 )
 def bridge(cv: Canvas, parent, *, end: float) -> None:
     """The bridge; the cast stands on its deck at :data:`FLOOR`."""
@@ -223,6 +449,7 @@ def bridge(cv: Canvas, parent, *, end: float) -> None:
     "saga-cantina",
     summary="A desert cantina: adobe arches, hanging lamps, a bottle shelf and "
     "booths of shadowy patrons whose eyes glow when they all turn to stare",
+    contract=contract('saga-cantina'),
 )
 def cantina(cv: Canvas, parent, *, end: float, stare: Spans = ()) -> None:
     """The cantina behind the bar; the patrons' eyes light during ``stare``. The bar itself is
@@ -277,6 +504,7 @@ def cantina(cv: Canvas, parent, *, end: float, stare: Spans = ()) -> None:
     "saga-cantina-bar",
     summary="The cantina's bar counter in front of whoever serves behind it, "
     "dark wood with a brass rail and a card reader on a stalk",
+    contract=contract('saga-cantina-bar'),
 )
 def cantina_front(cv: Canvas, parent, *, end: float) -> None:
     """The bar counter, drawn after the cast behind it."""
@@ -294,6 +522,7 @@ def cantina_front(cv: Canvas, parent, *, end: float) -> None:
     "saga-desert",
     summary="A desert world at sunset: two suns, layered dunes, a domed hut with "
     "a potted cactus at its door and a dew-collecting tower",
+    contract=contract('saga-desert'),
 )
 def desert(cv: Canvas, parent, *, end: float, shade: bool = False) -> None:
     """The desert outside the hut; the cast stands on the near dune at :data:`FLOOR`. With ``shade`` the dune below
@@ -335,11 +564,14 @@ def desert(cv: Canvas, parent, *, end: float, shade: bool = False) -> None:
     "saga-cockpit",
     summary="A freighter cockpit seen from the nose: a windshield on the stars "
     "that streaks into hyperspace, and the pilots' headrests",
+    contract=contract('saga-cockpit'),
 )
-def cockpit(cv: Canvas, parent, *, end: float, jump: Spans = ()) -> None:
-    """The cockpit behind the pilots; the window streaks during ``jump``. The console is :func:`cockpit_front`."""
+def cockpit(cv: Canvas, parent, *, end: float, jump: Spans = (), hit: float | None = None) -> None:
+    """The cockpit behind the pilots; the window streaks during ``jump``, and at second ``hit`` a fireball blooms in
+    the right-hand pane. The console is :func:`cockpit_front`."""
     _check_end(end)
     spans = _check_spans(jump, end, "cockpit jump")
+    _check_hit(hit, end)
     g = cv.group(parent, cv.uid("g"))
     far = _far(cv, g)
     cv.rect(far, 0, 0, W, H, "#1a1d26")
@@ -362,6 +594,8 @@ def cockpit(cv: Canvas, parent, *, end: float, jump: Spans = ()) -> None:
                 5,
             )
         cv.gate(streaks, spans)
+    if hit is not None:
+        _blast(cv, far, hit, end)
     for x in (120, 540, 960):
         cv.path(g, f"M{x} 200 L{x + (540 - x) * 0.06} 1000", stroke="#2b3142", sw=22)
     cv.rect(g, 0, 1000, W, H - 1000, "#232733")
@@ -373,10 +607,21 @@ def cockpit(cv: Canvas, parent, *, end: float, jump: Spans = ()) -> None:
     "location",
     "saga-cockpit-console",
     summary="The cockpit's console in front of the pilots: switches, blinking lights, a throttle and a dashboard plant",
+    contract=contract(
+        'saga-cockpit-console', stick_ball=stick_ball, stick_grip=stick_grip, hand_at=hand_at, jab_frames=jab_frames
+    ),
 )
-def cockpit_front(cv: Canvas, parent, *, end: float) -> None:
-    """The console, drawn after the pilots; the signature marks live on it."""
+def cockpit_front(
+    cv: Canvas, parent, *, end: float, hit: float | None = None, jab: Jab | None = None, ledge: bool = False
+) -> None:
+    """The console, drawn after the pilots; the signature marks live on it. At second ``hit`` sparks fly and light
+    comes in from the right; ``jab`` puts a pilot's hand on the stick and jabs it; ``ledge`` stands the cactus on a
+    little shelf instead of on the console's face."""
     _check_end(end)
+    _check_hit(hit, end)
+    if jab is not None and not 0 < jab.at < end:
+        raise SagaError(f"a jab falls inside its shot of {end} s, got {jab.at}")
+    frames = jab_frames(jab, end) if jab is not None else ()
     g = cv.group(parent, cv.uid("g"))
     cv.path(g, "M-20 1060 L1100 1060 L1100 1920 L-20 1920 Z", "#2b3142", cv.ink, INK_W)
     cv.path(g, "M-20 1060 L1100 1060 L1060 1120 L20 1120 Z", "#3a4256", cv.ink, 4)
@@ -384,9 +629,20 @@ def cockpit_front(cv: Canvas, parent, *, end: float) -> None:
         light = cv.rect(g, 90 + k * 92, 1160, 40, 22, ("#5fd4ff", "#f2b84b", "#ff5a4f", "#7ee08a")[k % 4], radius=5)
         cv.keys(light, "opacity", [(round(t * 0.5 + k * 0.11, 3), (1, 0.25)[t % 2]) for t in range(int(end / 0.5) + 1)])
     cv.rect(g, 470, 1440, 140, 200, "#1a1d26", cv.ink, 5, radius=16)
-    cv.line(g, 540, 1450, 600, 1220, "#9aa3ad", 14)
-    cv.ellipse(g, 584, 1192, 36, 36, "#ff5a4f", cv.ink, 4)
+    stick = g
+    if jab is not None:
+        stick = cv.group(g, _named(cv, "saga-stick"))
+        camera.anchor(stick, *STICK_PIVOT, place=True)
+        cv.keys(stick, "rotation", frames, hold=False)
+    cv.line(stick, 540, 1450, 600, 1220, "#9aa3ad", 14)
+    cv.ellipse(stick, 584, 1192, 36, 36, "#ff5a4f", cv.ink, 4)
+    if ledge:
+        _ledge(cv, g)
     _marks(cv, g, (150, 1250), (760, 1500), 0.5, "#fff4dc")
+    if jab is not None:
+        _jabbing_arm(cv, g, jab, frames)
+    if hit is not None:
+        _sparks(cv, g, hit, end)
 
 
 @register(
@@ -394,6 +650,7 @@ def cockpit_front(cv: Canvas, parent, *, end: float) -> None:
     "saga-compactor",
     summary="A trash compactor: grimy riveted walls that close in, rubbish "
     "heaps, a dripping pipe and a door that slides open",
+    contract=contract('saga-compactor'),
 )
 def compactor(
     cv: Canvas,
@@ -452,11 +709,34 @@ def compactor(
 
 
 # -- props ------------------------------------------------------------------------------------------------------------
+@dataclass(frozen=True)
+class _PanelLayout:
+    x: float
+    width: float
+    title: list[str]
+    body: list[str]
+    height: float
+
+
+def _panel_layout(p: Panel, font: bytes, x: float, w: float, most: float) -> _PanelLayout:
+    """Measure a complete panel before allocating scene nodes or IDs."""
+    tx = x + 40 + (FACE_W + 24 if p.face else 0)
+    tw = x + w - 32 - tx
+    title = wrap(font, p.title, 50, tw, 2)
+    room = int((most - 2 * HOLO_PAD - 58 * len(title) - 8) // 48)
+    body = wrap(font, p.body, 40, tw, max(1, room)) if p.body else []
+    h = max(HOLO_MIN if p.face else 0, 2 * HOLO_PAD + 58 * len(title) + (8 + 48 * len(body) if body else 0))
+    if h > most:
+        raise SagaError(f"panel {p.title!r} needs {h} px; the box gives {most}")
+    return _PanelLayout(tx, tw, title, body, h)
+
+
 @register(
     "prop",
     "saga-holo",
     summary="A hologram panel: cyan glass with scanlines, a toned title, wrapped body text "
     "and an optional face on the call; switches panels on the shot's clock",
+    contract=contract('saga-holo', wrap=wrap, cast=saga.CAST),
 )
 def holo(
     cv: Canvas,
@@ -493,20 +773,17 @@ def holo(
             raise SagaError(f"panel {p.title!r}: tone {p.tone!r} is not one of {sorted(TONES)}")
         if p.face and p.face not in saga.CAST:
             raise SagaError(f"panel {p.title!r}: face {p.face!r} is not in the cast")
+    cv.require_font("a Saga hologram", SagaError)
+    layouts = [_panel_layout(p, font, x, w, most) for p in panels]
     out = []
     starts.append(end)
     for i, (p, (a, b)) in enumerate(zip(panels, zip(starts, starts[1:], strict=False), strict=True)):
         g = cv.group(parent, cv.uid("g"))
         cv.gate(g, [(a, b)])
         tone = TONES[p.tone]
-        tx = x + 40 + (FACE_W + 24 if p.face else 0)
-        tw = x + w - 32 - tx
-        title = wrap(font, p.title, 50, tw, 2)
-        room = int((most - 2 * HOLO_PAD - 58 * len(title) - 8) // 48)
-        body = wrap(font, p.body, 40, tw, max(1, room)) if p.body else []
-        h = max(HOLO_MIN if p.face else 0, 2 * HOLO_PAD + 58 * len(title) + (8 + 48 * len(body) if body else 0))
-        if h > most:
-            raise SagaError(f"panel {p.title!r} needs {h} px; the box gives {most}")
+        layout = layouts[i]
+        tx, tw = layout.x, layout.width
+        title, body, h = layout.title, layout.body, layout.height
         pop = cv.group(g, cv.uid("g"))
         camera.anchor(pop, x + w / 2, y + h / 2, place=True)
         if p.fade:  # judged at full opacity, the words are measured as read, never under a flicker or squashed
@@ -543,6 +820,7 @@ def holo(
     "saga-cube",
     summary="The Directorate's battle cube, a moon-sized box with panel seams and one "
     "small, circled exhaust hole; with a boom it bursts into fire and debris",
+    contract=contract('saga-cube'),
 )
 def cube_station(
     cv: Canvas, parent, *, at: tuple[float, float], size: float = 520, end: float, boom: float | None = None
@@ -550,6 +828,8 @@ def cube_station(
     """The cube centred on ``at``, ``size`` px across its front; ``boom`` (a second in the shot) blows it up with an
     orange fireball and drifting debris, never a white full-frame flash."""
     _check_end(end)
+    saga._check_prop_position(at)
+    checks.positive(size, SagaError, f"a cube size must be positive, got {size!r}")
     if boom is not None and not (checks.number(boom) and 0 <= boom < end):
         raise SagaError(f"the cube's boom falls inside the shot (0..{end}), got {boom}")
     cx, cy, s = at[0], at[1], size / 2
@@ -616,10 +896,13 @@ def cube_station(
     "saga-freighter",
     summary="Rook's freighter: a boxy, dented space van with one wonky fin, a "
     "glowing engine and a sticker asking how its piloting is",
+    contract=contract('saga-freighter'),
 )
 def freighter(cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0, end: float, flip: bool = False):
     """The freighter centred on ``at``, nose to the right (left with ``flip``)."""
     _check_end(end)
+    saga._check_prop_position(at)
+    checks.positive(scale, SagaError, f"a ship scale must be positive, got {scale!r}")
     g = cv.group(parent, cv.uid("g"), x=at[0], y=at[1], scaleX=-scale if flip else scale, scaleY=scale)
     cv.ellipse(g, -300, -50, 120, 100, cv.rgrad("saga-engine", [(0, "#ffd88a"), (1, "#ff5a4f00")]))
     cv.path(g, "M-220 -90 L160 -90 Q240 -80 260 0 Q240 80 160 90 L-220 90 Z", "#c9ced5", cv.ink, INK_W)
@@ -631,10 +914,18 @@ def freighter(cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0
     return g
 
 
-@register("prop", "saga-pebble", summary="A pebble on the sand that floats up, wobbling, when someone feels the Flow")
+@register(
+    "prop",
+    "saga-pebble",
+    summary="A pebble on the sand that floats up, wobbling, when someone feels the Flow",
+    contract=contract('saga-pebble'),
+)
 def pebble(cv: Canvas, parent, *, at: tuple[float, float], end: float, lift: float = 0.0, rise: float = 160):
     """A pebble resting on ``at`` that floats ``rise`` px up from ``lift`` (a second inside the shot)."""
     _check_end(end)
+    saga._check_prop_position(at)
+    if not checks.number(rise):
+        raise SagaError(f"a pebble rise must be finite and numeric, got {rise!r}")
     if not (checks.number(lift) and 0 <= lift < end):
         raise SagaError(f"the pebble lifts inside the shot (0..{end}), got {lift}")
     g = cv.group(parent, cv.uid("g"), x=at[0], y=at[1])
@@ -650,10 +941,17 @@ def pebble(cv: Canvas, parent, *, at: tuple[float, float], end: float, lift: flo
     return g
 
 
-@register("prop", "saga-fighter", summary="A Directorate fighter: a grey wedge with red running lights, in a hurry")
+@register(
+    "prop",
+    "saga-fighter",
+    summary="A Directorate fighter: a grey wedge with red running lights, in a hurry",
+    contract=contract('saga-fighter'),
+)
 def fighter(cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0, end: float, flip: bool = False):
     """A fighter centred on ``at``, nose to the right (left with ``flip``)."""
     _check_end(end)
+    saga._check_prop_position(at)
+    checks.positive(scale, SagaError, f"a ship scale must be positive, got {scale!r}")
     g = cv.group(parent, cv.uid("g"), x=at[0], y=at[1], scaleX=-scale if flip else scale, scaleY=scale)
     cv.path(g, "M-90 -60 L110 0 L-90 60 L-60 0 Z", "#5c6676", cv.ink, INK_W)
     cv.ellipse(g, -20, -12, 40, 24, "#1a1d24", cv.ink, 3)
@@ -666,14 +964,17 @@ def fighter(cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0, 
     "graphic",
     "saga-hook",
     summary="The hook: the Handbook in the top-left corner glowing as it asks the reel's question in gold beside it",
+    contract=contract('saga-hook', wrap=wrap),
 )
 def hook(cv: Canvas, parent, text: str, *, end: float, font: bytes, talk: Talk = ()):
     """The question at the top of the safe area beside a small Handbook, from 0 to ``end``."""
     _check_end(end)
+    cv.require_font("a Saga hook", SagaError)
+    saga.check_talk(talk)
+    lines = wrap(font, text, 50, 660, 3)
     g = cv.group(parent, cv.uid("g"))
     cv.gate(g, [(0, end)])
     saga.handbook(cv, g, at=(SAFE[0] + 8, 236), scale=0.5, talk=talk, end=end)
-    lines = wrap(font, text, 50, 660, 3)
     cv.rect(g, 206, 226, SAFE[2] - 200, 30 + 58 * len(lines), "#070914", radius=18, opacity=0.72)
     _text(cv, g, "\n".join(lines), 222, 240, 680, 58 * len(lines), 50, "#f2b84b", "start")
     return g
@@ -684,6 +985,7 @@ def hook(cv: Canvas, parent, text: str, *, end: float, font: bytes, talk: Talk =
     "saga-entry",
     summary="The Handbook entry that buttons every reel: the device held up on the "
     "stars, its screen typing out the entry's title and the dry footnote",
+    contract=contract('saga-entry', wrap=wrap),
 )
 def entry(
     cv: Canvas, parent, title: str, body: str, *, end: float, font: bytes, talk: Talk = (), legible: bool = False
@@ -692,6 +994,8 @@ def entry(
     gold, ``body`` typed out over the first seconds; the screen brightens while the narrator speaks. ``legible``
     leaves out the glass sheen laid over the words, so they keep their full contrast."""
     _check_end(end)
+    cv.require_font("a Saga entry", SagaError)
+    saga.check_talk(talk)
     t_lines, b_lines = wrap(font, title, 64, 700, 2), wrap(font, body, 50, 700, 8)
     screen_h = 40 + 50 + 76 * len(t_lines) + 24 + 60 * len(b_lines) + 50
     total = 50 + screen_h + 158

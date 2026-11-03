@@ -13,14 +13,15 @@ still in its place, and a registered part in neither table stops the build (:fun
 
 A framed part takes two renders: the first, at half scale with room around the frame, finds what the part covers
 (:func:`bounds`); the second scales the composition so that fills a square, and ``ffmpeg`` crops and resizes it. Files
-are named by the digest of the drawing (:func:`key`), so a part that did not change is not rendered again.
+use a drawing key (:func:`key`) bound to the renderer bytes and any printed-plate dependencies, so unchanged
+inputs are not rendered again. Drawing/approval identities remain independent of this rendered-artifact key.
 """
 
 from __future__ import annotations
 
 import hashlib
 import inspect
-import os
+import json
 import re
 import shutil
 import subprocess
@@ -28,8 +29,10 @@ import tempfile
 import xml.etree.ElementTree as ET
 from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from datetime import datetime, timezone
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import numpy as np
@@ -37,8 +40,10 @@ from sr_core.scene import Scene
 
 from . import (
     cel,
+    collage_forecast,
     collage_group,
     gloss_sets,
+    gpu,
     host_kit,
     ink_meter,
     ink_phone,
@@ -47,12 +52,15 @@ from . import (
     news_inked,
     news_kit,
     parts,
+    pedro_host,
     plates,
     rafa,
     rafa_host,
     readings,
     registry,
     saga_sets,
+    smallprint_kit,
+    smallprint_props,
     soft_props,
     specimens,
     stick,
@@ -142,6 +150,9 @@ class Plan:
     at: float
     key: str
     set: bool  # a location: the whole frame on its own stage colour, not framed
+    renderer_sha256: str | None = None
+    plate_inputs: tuple[plates.Plate, ...] | None = None
+    plate_keys: tuple[str, ...] | None = None
 
 
 FILLED = {
@@ -185,6 +196,13 @@ def _on_flat(cv: Canvas, parent: Any, ctx: Context) -> Any:
 def _on_area(cv: Canvas, parent: Any, ctx: Context) -> Any:
     _maps(ctx)
     return map_kit.equal_area(cv, parent, 99.0, 21.0, 1.6, 0.0, SECONDS)
+
+
+def _far_side(cv: Canvas, parent: Any, e: registry.Entry, ctx: Context) -> None:
+    """The far side on the world map it lies over, turned all the way over by the second shown."""
+    _maps(ctx)
+    map_kit.flat(cv, parent, 0.0, 0.0, 0.0, 0.0, SECONDS)
+    e(cv, parent, 0.0, 0.0, (0.5, SECONDS / 2), SECONDS)
 
 
 def part(*args, **kwargs) -> Draw:
@@ -247,12 +265,17 @@ def _punched(cv: Canvas, g: object, e: registry.Entry, ctx: Context) -> None:
 
 def _plated(cv: Canvas, g: object, e: registry.Entry, ctx: Context) -> None:
     """A part that is one path-traced plate, on the stage (ADR 0068)."""
-    plate = rafa_host.part_plates(e.name)[0]
+    plate = plates_of(e.name)[0]
     rafa_host.place(cv, g, plate, y=(rafa_host.HEIGHT - plate.height) / 2)
 
 
+def plates_of(name: str) -> tuple[plates.Plate, ...]:
+    """Every path-traced plate the part ``name`` shows (ADR 0068): Rafa's, Pedro's or Small Print's (ADR 0195)."""
+    return (*rafa_host.part_plates(name), *pedro_host.part_plates(name), *smallprint_props.part_plates(name))
+
+
 RECIPES: dict[str, Recipe] = {
-    **dict.fromkeys((*rafa.ROOMS, *rafa.PROPS), Recipe(_plated)),
+    **dict.fromkeys((*rafa.ROOMS, *rafa.PROPS, *smallprint_props.STATES, "smallprint-tears"), Recipe(_plated)),
     # -- locations -------------------------------------------------------------------------------------------------
     "cel-room": Recipe(_cel_room),
     "stick-yard": Recipe(_yard),
@@ -293,6 +316,8 @@ RECIPES: dict[str, Recipe] = {
     "collage-chart": Recipe(part(300, 700, 480, 360, (0.2, 0.5, 1.0))),
     "collage-food": Recipe(part("taco", 540, 960, 400)),
     "collage-phone": Recipe(part(380, 680, 320, 560)),
+    "collage-big-type": Recipe(part(380, 680, 320, 560, pages=((0.0, "GARY LOOKS"),))),
+    "collage-article": Recipe(part(190, 480, 700, 960, "LOCAL MAN HAS NOT CALLED HIS MOTHER")),
     "collage-bubble": Recipe(part("Dear Son.", 240, 860, 600, 200, size=64)),
     "collage-alarm-clock": Recipe(part(300, 840, 480, "11:40")),
     "collage-cereal-box": Recipe(part(370, 720, 340, 480)),
@@ -306,6 +331,23 @@ RECIPES: dict[str, Recipe] = {
     "collage-snapshot": Recipe(part(360, 760, 360)),
     "collage-gust": Recipe(part((200, 1200), (800, 700), 0.0, SECONDS)),
     "collage-bill": Recipe(part("RENT", 540, 960)),
+    "collage-handset": Recipe(part(540, 960)),
+    "collage-desk-phone": Recipe(part(540, 1300, 460, "PARIS", size=56)),
+    "collage-resume": Recipe(part(540, 960, 520)),
+    "collage-fork": Recipe(part(540, 960, tilt=20.0)),
+    "collage-gravy-boat": Recipe(part(540, 1200, 460)),
+    "collage-tiny-cup": Recipe(part(540, 1100, 200)),
+    "collage-wine-glass": Recipe(part(540, 1200, 420)),
+    "collage-bank-card": Recipe(part(540, 960, 520, "GARY")),
+    "collage-receipt": Recipe(part(540, 960, torn=True)),
+    "collage-wallet": Recipe(part(540, 960)),
+    "collage-counter": Recipe(part(1300)),
+    "collage-till": Recipe(part(540, 1200, 420, "PAID", size=64)),
+    "collage-stool": Recipe(part(540, 1000, 480)),
+    "collage-towel": Recipe(part(540, 700)),
+    "collage-ring-corner": Recipe(part()),
+    "collage-eye-twitch": Recipe(part("brent", (0.2, 0.8)), at=0.25),  # the lid is down for 0.09 s at each time
+    "location-chip": Recipe(part(), at=0.5),  # its one stop is over at the default second
     "collage-confetti": Recipe(part(0.0, SECONDS)),
     "collage-arm": Recipe(part("deb", (760, 1500), (420, 900))),
     "collage-tv": Recipe(part(300, 700, 480)),
@@ -361,6 +403,14 @@ RECIPES: dict[str, Recipe] = {
     "soft-necktie": Recipe(part(540, 900)),
     "soft-shovel": Recipe(part(540, 960)),
     "soft-time-card": Recipe(part((soft_props.TimeState("2031", 0.0, SECONDS),), (380, 800, 320, 118))),
+    "soft-book": Recipe(part(540, 960, scale=2.0)),
+    "soft-bowling-ball": Recipe(part(540, 960, scale=2.0)),
+    "soft-brick": Recipe(part(540, 960, scale=2.0)),
+    "soft-coin-bag": Recipe(part(540, 960, scale=2.0)),
+    "soft-yogurt": Recipe(part(540, 960, scale=2.0)),
+    "soft-tongs": Recipe(part(540, 1160, scale=2.0)),
+    "soft-hush-finger": Recipe(part(640, 960, scale=3.0)),
+    "soft-rumble": Recipe(part(540, 960, ((0.0, SECONDS),), scale=2.0)),
     "stick-cockpit": Recipe(part((stick.RigKey(0, "drive"),), SECONDS)),
     "stick-laptop": Recipe(part(540, 960, title="Sent", rows=("Re: budget", "Re: lunch"), badge="40")),
     "stick-phone": Recipe(part(sender="Boss", text="One more thing...")),
@@ -387,6 +437,9 @@ RECIPES: dict[str, Recipe] = {
     "stick-snow-cap": Recipe(part(540, 960, 2)),
     "stick-marathon": Recipe(part(SECONDS)),
     "stick-coffee-counter": Recipe(part()),
+    "stick-light-string": Recipe(part(140, 800, 940, 800, SECONDS, on=0.5)),
+    "stick-worktop": Recipe(part(140, 940, 800)),
+    "stick-smart-speaker": Recipe(part(540, 1100, scale=2.0, glow=((0.5, SECONDS),))),
     "stick-side-car": Recipe(part()),
     "stick-suitcases": Recipe(part(540, 960)),
     "stick-top-car": Recipe(part()),
@@ -394,6 +447,32 @@ RECIPES: dict[str, Recipe] = {
     "stick-door-lock": Recipe(part()),
     "stick-road-sign": Recipe(part(SECONDS, text="AIRPORT 2")),
     "stick-mug": Recipe(part(540, 960)),
+    "stick-caller": Recipe(part(540, 960, "MOM", scale=2.0)),
+    "stick-manual-page": Recipe(part(9, "argument", bubble="YOU SAID YOU MEASURED")),
+    "stick-screws": Recipe(part(400, 960, scale=3.0)),
+    "stick-drill": Recipe(part(480, 960, scale=3.0)),
+    "stick-wardrobe": Recipe(part(335, 1400, "half")),
+    "stick-planks": Recipe(part(240, 1300)),
+    "stick-wall-brackets": Recipe(part(330, 900, scale=2.0)),
+    "stick-folded-bedding": Recipe(part(540, 1100, scale=2.0)),
+    "stick-sparks": Recipe(part(540, 960, SECONDS, scale=3.0)),
+    "stick-slipper": Recipe(part(540, 960, scale=3.0)),
+    "stick-trash-truck": Recipe(part(40, 1100)),
+    "stick-wheelie-bin": Recipe(part(540, 1100, scale=1.5)),
+    "stick-box": Recipe(part(540, 1100, scale=2.0)),
+    "stick-receipt": Recipe(part(540, 300, 1200)),
+    "stick-duffel": Recipe(part(540, 960, scale=2.0)),
+    "stick-book": Recipe(part(540, 960, scale=3.0)),
+    "stick-queue": Recipe(part(SECONDS, turn=SECONDS / 2)),
+    "stick-foil-note": Recipe(part("FOR THE MAN AT SECURITY. YOU LOOK THIN.")),
+    "stick-foil-parcel": Recipe(part(540, 960, scale=2.0)),
+    "stick-scan-belt": Recipe(part()),
+    "stick-robe": Recipe(part((stick.RigKey(0, "stand"),), SECONDS, stick.STANDING)),
+    "stick-spoon": Recipe(part((700, 800), (480, 1100), full=True)),
+    "stick-plate": Recipe(part(540, 1100, heap=3)),
+    "stick-xray": Recipe(part(SECONDS, (("chicken", 540.0, 600.0, 1.2), ("rolling-pin", 540.0, 1100.0, 1.2)))),
+    "stick-headset": Recipe(part(540, 960)),
+    "stick-poster": Recipe(part(240, 500, 600, 500, "STRETCH WITH NOOR", size=78)),
     "stick-arm-cast": Recipe(part((480, 800), (640, 1000))),
     "stick-neck-brace": Recipe(part(540, 960)),
     "stick-parrot": Recipe(part(540, 960)),
@@ -411,6 +490,7 @@ RECIPES: dict[str, Recipe] = {
     "toon-card-reader": Recipe(part(((0.0, "TAP CARD", "idle"),))),
     "toon-phone": Recipe(lettered(PHONE_SCREENS)),
     "toon-speaker": Recipe(part(((0.0, "listen"),), SECONDS)),
+    "toon-bandage": Recipe(part(0.0, SECONDS, SimpleNamespace(eyes=((200.0, 300.0), (360.0, 300.0))))),
     "mind-name-card": Recipe(lettered("A Long Name", 0.0, 0.2, SECONDS)),
     "mind-evidence-card": Recipe(
         lettered(
@@ -426,6 +506,11 @@ RECIPES: dict[str, Recipe] = {
     "mind-memory-shelf": Recipe(lettered(("One", "Two", "Three"))),
     "mind-two-lines": Recipe(lettered(("Guessed", 0.5, ""), ("Happened", 0.25, ""), 0.0, SECONDS)),
     "mind-lens": Recipe(part((540.0, 900.0), 0.0, SECONDS)),
+    "mind-stamp": Recipe(
+        lambda cv, g, e, ctx: e(cv, g, ("A line of evidence.",), "Source, 2026", 0.0, SECONDS, ctx.measure)
+    ),
+    "mind-zipper": Recipe(part(0.0, SECONDS), at=SECONDS / 2),
+    "mind-named": Recipe(lambda cv, g, e, ctx: e(cv, g, "A Long Name", 0.0, SECONDS, ctx.measure)),
     "map-globe": Recipe(lambda cv, g, e, ctx: e(cv, g, -20.0, 30.0, 0.0, SECONDS, spin=_SPIN) if _maps(ctx) else None),
     "map-flat": Recipe(lambda cv, g, e, ctx: e(cv, g, -30.0, 45.0, 1.6, 0.0, SECONDS) if _maps(ctx) else None),
     "map-equal-area": Recipe(lambda cv, g, e, ctx: e(cv, g, 99.0, 21.0, 1.6, 0.0, SECONDS) if _maps(ctx) else None),
@@ -439,6 +524,13 @@ RECIPES: dict[str, Recipe] = {
         lambda cv, g, e, ctx: e(cv, _on_area(cv, g, ctx), {"inside": (0.0, 0.5), "rest": (0.0, 0.5)}, _HOT)
     ),
     "map-ring": Recipe(part(map_kit.ring_px(3300.0, 1.6), 0.0, SECONDS)),
+    "map-far-side": Recipe(_far_side, at=SECONDS * 0.75),  # over by half time, and gone at SECONDS itself
+    "map-clock": Recipe(part(540.0, 960.0, 300.0, 10.0, 0.0, SECONDS)),
+    "map-daylight": Recipe(
+        lambda cv, g, e, ctx: e(
+            cv, g, _on_flat(cv, g, ctx), (_ROME,), datetime(2026, 6, 18, tzinfo=timezone.utc), 0.0, SECONDS
+        )
+    ),
     "map-stamp": Recipe(lettered("A line of evidence. Source, 2026.", 0.0, SECONDS)),
     "map-captions": Recipe(
         lambda cv, g, e, ctx: e(cv, g, (toon.Line("1", "A caption.", 0.0, SECONDS, "narrator"),), ctx.measure, {})
@@ -455,6 +547,34 @@ RECIPES: dict[str, Recipe] = {
     "news-lower-third": Recipe(lettered("THE KICKER", "ONE LINE OF THE STORY", 0.0, SECONDS)),
     "news-missing-card": Recipe(lettered("ONE LID", 0.0, SECONDS)),
     "news-live-door": Recipe(lettered("KITCHEN", 0.0, SECONDS, shut=SECONDS / 2)),
+    "news-money-app": Recipe(
+        lettered("MY MONEY", "$11.00", "WITHDRAW", "SUSPENDED", 0.0, SECONDS, refused_at=SECONDS / 2)
+    ),
+    "news-oven-clock": Recipe(
+        lettered("MY OVEN", "7:42", "1 HOUR OFF", "CORRECT", 0.0, SECONDS, right_at=SECONDS / 2)
+    ),
+    "news-forecast-map": Recipe(
+        lettered(
+            "FORECAST",
+            "HIM",
+            "DRY DAYS",
+            ((0.0, "63"), (SECONDS * 0.8, "64")),
+            0.0,
+            SECONDS,
+            rain=(SECONDS * 0.2, SECONDS * 0.7),
+        )
+    ),
+    "news-corridor-map": Recipe(
+        lettered(
+            "THE CORRIDOR",
+            "SIDESTEPS",
+            ((0.0, 240.0, 480.0), (SECONDS / 3, 460.0, 480.0), (SECONDS * 2 / 3, 240.0, 480.0)),
+            ((0.0, 240.0, 240.0), (SECONDS / 3, 460.0, 240.0), (SECONDS * 2 / 3, 240.0, 240.0)),
+            ((0.0, "1"), (SECONDS / 3, "2"), (SECONDS * 2 / 3, "3")),
+            0.0,
+            SECONDS,
+        )
+    ),
     "news-banner": Recipe(lettered(0.0, SECONDS)),
     "news-ticker": Recipe(lettered(("ONE ITEM", "ANOTHER ITEM"), 0.0, SECONDS)),
     "news-phone": Recipe(lettered("The Chat", (news_kit.Bubble("7:15", "five minutes away"),), 0.0, SECONDS)),
@@ -471,12 +591,17 @@ RECIPES: dict[str, Recipe] = {
     "host-sign-off": Recipe(lettered("You know what you did.", 0.0, SECONDS)),
     "host-screen": Recipe(lettered("The Group Chat", (host_kit.Bubble("haha"),), 0.0, SECONDS)),
     "host-punch": Recipe(_punched),
+    "smallprint-card": Recipe(lettered("Why do onions make you cry?", 0.0, SECONDS)),
+    "smallprint-stamp": Recipe(lettered(smallprint_kit.Stamp("IT'S A GAS", "Imai et al., Nature, 2002"), 0.0, SECONDS)),
     "toon-tee": Recipe(part((180, 660))),
     "toon-bow-tie": Recipe(part((180, 640))),
     "toon-stars": Recipe(part(5)),
+    "toon-tv-menu": Recipe(lettered("EPISODE 8", 0.92)),
+    "toon-remote": Recipe(part((296.0, 600.0), scale=2.0)),
     "toon-shower-water": Recipe(part(((0.0, SECONDS),))),
     "toon-suds": Recipe(part((540, 700))),
     "toon-towel": Recipe(part((540, 700))),
+    "toon-swung-arm": Recipe(part((300.0, 700.0), "#a8764f", ((0.0, 200.0),), 0.0, SECONDS)),
     "toon-open-book": Recipe(part({0: "#ffe14d", 1: "#ffe14d", 9: "#ff9ec4"})),
     "toon-shut-book": Recipe(part()),
     "toon-highlighter": Recipe(part((540.0, 960.0), "#c49a6c")),
@@ -543,7 +668,39 @@ RECIPES: dict[str, Recipe] = {
         ("My dad works from home.", "He wears a tie on top."), title="My Dad", by="Sam", shown=2)),
     "toon-toast": Recipe(part((toon_props.Toast(0.0, SECONDS, "Fern", "Are you free?"),))),
     "toon-board-text": Recipe(part("LOGO v1")),
+    "toon-scribble": Recipe(part(((0.0, SECONDS),))),
+    "toon-soup-tubs": Recipe(part(((0.0, 3),), end=SECONDS)),
     "toon-badge": Recipe(part("Fern calling", 0.0, SECONDS, lambda text: 16.0 * len(text))),
+    "glasses-glint": Recipe(part(((506.0, 942.0), (576.0, 942.0)), scale=1.0), at=0.5),
+    "collage-cake-slice": Recipe(part(540.0, 960.0, (1.0, 2.0))),
+    "collage-eye-chart": Recipe(part(200.0, 500.0, ("TOP ROW", "SECOND ROW"), (1.0, 2.0), end=SECONDS)),
+    "collage-lens-frame": Recipe(part(540.0, 960.0)),
+    "collage-sensor-tap": Recipe(part(540.0, 960.0, ((0.0, SECONDS),))),
+    "collage-spinach": Recipe(part(540.0, 960.0, 300.0)),
+    "collage-full-glass": Recipe(part(540.0, 1100.0)),
+    "collage-water-jug": Recipe(part(540.0, 1100.0)),
+    "collage-doctor-scale": Recipe(part(540.0, 1500.0, 1.0, 900.0, SECONDS)),
+    "collage-weather-map": Recipe(part(300.0, 500.0, 480.0, 680.0, arrow="EXES")),
+    "collage-thread": Recipe(
+        part(
+            310.0,
+            420.0,
+            460.0,
+            800.0,
+            contact="DON'T",
+            clock=((0.0, "8:59"), (0.5, "9:00")),
+            messages=(collage_forecast.Message("HEY", 0.5),),
+        )
+    ),
+    "toon-paper-insert": Recipe(part("Invoice", ("Labor", "Parts", "The last guy"), 0.0, SECONDS)),
+    "toon-mosquito": Recipe(part(((0.0, 150.0, 400.0), (SECONDS / 2, 300.0, 500.0), (SECONDS, 300.0, 500.0)), SECONDS)),
+    "toon-tasting-spoons": Recipe(part(tuple(0.1 * k for k in range(9)), end=SECONDS)),
+    "soft-star-card": Recipe(part(540.0, 960.0, tap=0.5, scale=1.6)),
+    "soft-mug": Recipe(part(540.0, 960.0, scale=2.0)),
+    "soft-mail-screen": Recipe(part(540.0, 960.0, scale=3.0)),
+    "soft-mail-list": Recipe(part(540.0, 960.0, marked=2, scale=3.0)),
+    "soft-call-screen": Recipe(part(540.0, 960.0, scale=3.0)),
+    "soft-battery-screen": Recipe(part(540.0, 960.0, scale=3.0)),
 }  # fmt: skip
 RECIPES.update(  # a kit's second version takes the same arguments, so it takes the same recipe
     {
@@ -594,11 +751,24 @@ REFUSED: dict[str, Refused] = {
 
 def font_of(style: Style, episodes: Path) -> bytes | None:
     """The bytes of a style's font, as the first project that holds it has them; ``None`` for a style with no font."""
-    if style.font is None:
-        return None
-    for found in sorted(Path(episodes).glob(f"*/{style.font.src}")):
+    return None if style.font is None else _held(style.font.src, episodes)
+
+
+def _held(src: str, episodes: Path) -> bytes:
+    """The bytes of the file at ``src`` in the first project that has one."""
+    for found in sorted(Path(episodes).glob(f"*/{src}")):
         return found.read_bytes()
-    raise SpecimenRenderError(f"no project in {episodes} holds {style.font.src}")
+    raise SpecimenRenderError(f"no project in {episodes} holds {src}")
+
+
+def print_fonts(episodes: Path, work: Path) -> Path:
+    """A folder with the font plates print in. A build reads fonts from its projects and nothing else, so what it
+    draws does not depend on who started it or where: the catalog's service sets no fonts variable."""
+    name = plates.PRINT_FONT[2]
+    folder = work / "fonts"
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / name).write_bytes(_held(f"assets/{name}", episodes))
+    return folder
 
 
 def style_of(entry: registry.Entry) -> Style:
@@ -761,13 +931,14 @@ def rgb(colour: str) -> tuple[int, int, int]:
 def _render(engine: Path, document: bytes, at: float, out: Path) -> None:
     source = out.with_suffix(".scene.xml")
     source.write_bytes(document)
-    run = subprocess.run(
-        [str(engine), "render", source.name, "-t", f"{at:g}", "-o", out.name],
-        cwd=out.parent,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    with gpu.held():
+        run = subprocess.run(
+            [str(engine), "render", source.name, "-t", f"{at:g}", "-o", out.name],
+            cwd=out.parent,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
     if run.returncode != 0:
         raise SpecimenRenderError(f"{out.stem}: scene-render failed: {run.stdout[-400:]} {run.stderr[-400:]}")
     source.unlink()
@@ -789,7 +960,27 @@ def _resize(png: Path, out: Path, crop: str, scale: str) -> None:
     )
 
 
-def render_one(plan_: Plan, engine: Path, folder: Path) -> None:
+def _check_renderer(engine: Path, expected: str) -> None:
+    if plates._engine_digest(engine) != expected:
+        raise SpecimenRenderError(
+            'renderer changed during the catalog build',
+            code='catalog.renderer.changed',
+            path='engine',
+            actual=str(engine),
+            expected=expected,
+            remedy='Keep the renderer immutable for this build, then retry.',
+        )
+
+
+def render_one(plan_: Plan, engine: Path, folder: Path, fonts: Path) -> None:
+    expected = plan_.renderer_sha256 or plates._engine_digest(engine)
+    _check_renderer(engine, expected)
+
+    def draw(document: bytes, at: float, out: Path) -> None:
+        _check_renderer(engine, expected)
+        _render(engine, document, at, out)
+        _check_renderer(engine, expected)
+
     style = style_of(plan_.entry)
     project = ET.fromstring(plan_.document).find("project")
     assert project is not None  # framed() refuses a document without one before anything is rendered
@@ -797,24 +988,46 @@ def render_one(plan_: Plan, engine: Path, folder: Path) -> None:
     name = plan_.entry.name
     work = folder / "work" / style.slug
     work.mkdir(parents=True, exist_ok=True)
-    for plate in rafa_host.part_plates(name):
-        plates.render(plate, engine=engine, cache=work / "plates", fonts=Path(os.environ.get("SRSTUDIO_FONTS", "")))
+    definitions = plan_.plate_inputs
+    if definitions is None:
+        definitions = plates_of(name)
+    if plan_.plate_keys is not None and len(plan_.plate_keys) != len(definitions):
+        raise SpecimenRenderError('bound plate keys do not match the specimen dependencies')
+    for index, plate in enumerate(definitions):
+        cache = work / 'plates'
+        rendered = plates.render(plate, engine=engine, cache=cache, fonts=fonts)
+        if plan_.plate_keys is not None and rendered.stem != plan_.plate_keys[index]:
+            raise SpecimenRenderError(
+                'plate inputs changed after binding the specimen cache',
+                code='catalog.inputs.changed',
+                path=f'plates[{index}]',
+                actual=rendered.stem,
+                expected=plan_.plate_keys[index],
+                remedy='Keep fonts, plate definitions and renderer inputs immutable for the build, then retry.',
+            )
+        # Specimen documents use stable drawing references; select the renderer-
+        # owned artifact explicitly instead of treating those names as cache hits.
+        target = cache / f'{plates.digest(plate)}.png'
+        with tempfile.TemporaryDirectory(dir=cache) as scratch:
+            staged = Path(scratch) / target.name
+            shutil.copyfile(rendered, staged)
+            staged.chmod(plates.FILE_MODE)
+            staged.replace(target)
     trial = work / f"{plan_.key}.trial.png"
     final = folder / f"{plan_.key}.png"
     if plan_.set:
         document = framed(plan_.document, background=style.palettes[0].background)
-        _render(engine, document, plan_.at, trial)
+        draw(document, plan_.at, trial)
         stage = rgb(style.palettes[0].background)
         if bounds(pixels_of(trial, width, height), stage) is None:
             raise SpecimenRenderError(f"{name}: the set drew nothing at {plan_.at:g} s")
         _resize(trial, final.with_suffix(".tmp.png"), "", f"{SIZE}:-2")
+        _check_renderer(engine, expected)
         final.with_suffix(".tmp.png").replace(final)
         trial.unlink()
         return
     # half scale, centred: what a part draws past the edge of the frame is still measured
-    _render(
-        engine, framed(plan_.document, background=BACKGROUND, x=width / 4, y=height / 4, scale=0.5), plan_.at, trial
-    )
+    draw(framed(plan_.document, background=BACKGROUND, x=width / 4, y=height / 4, scale=0.5), plan_.at, trial)
     box = bounds(pixels_of(trial, width, height), rgb(BACKGROUND))
     if box is None:
         raise SpecimenRenderError(f"{name}: the recipe drew nothing at {plan_.at:g} s")
@@ -833,8 +1046,9 @@ def render_one(plan_: Plan, engine: Path, folder: Path) -> None:
         y=height / 2 - scale * (y0 + y1) / 2,
         scale=scale,
     )
-    _render(engine, document, plan_.at, trial)
+    draw(document, plan_.at, trial)
     _resize(trial, final.with_suffix(".tmp.png"), f"crop={side}:{side},", f"{SIZE}:{SIZE}")
+    _check_renderer(engine, expected)
     final.with_suffix(".tmp.png").replace(final)
     trial.unlink()
 
@@ -846,16 +1060,46 @@ def _size(plan_: Plan) -> tuple[int, int]:
     return SIZE, round(SIZE * style.height / style.width / 2) * 2
 
 
+def _failure(plan_: Plan, exc: BaseException) -> str:
+    """Why ``plan_`` failed, under its part's name: most errors do not know which part they stopped."""
+    name, text = plan_.entry.name, str(exc)
+    return text if text.startswith(f"{name}:") else f"{name}: {text}"
+
+
 def render_all(engine: Path, cache: Path, episodes: Path) -> Shelf:
-    """Every part's specimen and every refusal. Only a drawing with no file yet is rendered."""
+    """Every part's specimen and refusal, cached for its renderer and printed-plate dependencies."""
     if not shutil.which("ffmpeg"):
         raise SpecimenRenderError("specimens need ffmpeg")
-    folder = Path(cache).resolve() / "specimens"
+    engine = Path(engine).resolve()
+    engine_digest = plates._engine_digest(engine)
+    folder = Path(cache).resolve() / "specimens" / engine_digest
     plans, refused = plan(episodes, folder / "work")
+    bound = []
+    fonts = print_fonts(episodes, folder / "work")
+    for item in plans:
+        definitions = plates_of(item.entry.name)
+        dependencies = []
+        for definition in definitions:
+            inputs, source, prints = plates._prepare(definition, engine, fonts)
+            dependencies.append(inputs.key('plate', source, tuple(prints.values())))
+        data = {
+            'schema': 'srstudio.specimen-render/1.0.0',
+            'drawing': item.key,
+            'engine': engine_digest,
+            'plates': sorted(dependencies),
+        }
+        key_ = hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
+        bound.append(
+            replace(
+                item, key=key_, renderer_sha256=engine_digest, plate_inputs=definitions, plate_keys=tuple(dependencies)
+            )
+        )
+    plans = bound
+    _check_renderer(engine, engine_digest)
     missing = {p.key: p for p in plans if not (folder / f"{p.key}.png").exists()}
     with ThreadPoolExecutor(WORKERS) as pool:
-        running = [(p, pool.submit(render_one, p, Path(engine).resolve(), folder)) for p in missing.values()]
-    failed = [str(f.exception()) for _, f in running if f.exception() is not None]
+        running = [(p, pool.submit(render_one, p, engine, folder, fonts)) for p in missing.values()]
+    failed = [_failure(p, exc) for p, f in running if (exc := f.exception()) is not None]
     if failed:
         raise SpecimenRenderError(f"{len(failed)} specimens failed:\n" + "\n".join(failed))
     done = {p.entry.name: Specimen(p.entry.name, folder / f"{p.key}.png", *_size(p)) for p in plans}
@@ -895,22 +1139,28 @@ def poster(packages: Path, slug: str, engine: Path, cache: Path) -> Path:
     if duration <= 0:
         raise SpecimenRenderError(f"package {slug}: {scene.name} has no duration")
     at = round(duration * POSTER_AT, 3)
-    folder = Path(cache).resolve() / "posters"
-    out = folder / f"{slug}-{poster_key(scene, at)}.jpg"
+    engine = Path(engine).resolve()
+    engine_digest = plates._engine_digest(engine)
+    folder = Path(cache).resolve() / "posters" / engine_digest
+    rendered_key = hashlib.sha256(f'{engine_digest}|{poster_key(scene, at)}'.encode()).hexdigest()
+    out = folder / f"{slug}-{rendered_key}.jpg"
     if out.exists():
         return out
     folder.mkdir(parents=True, exist_ok=True)
     frame = folder / f"{out.stem}.frame.png"
-    run = subprocess.run(
-        [str(Path(engine).resolve()), "render", scene.name, "-t", f"{at:g}", "-o", str(frame)],
-        cwd=scene.parent,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    with gpu.held():
+        run = subprocess.run(
+            [str(Path(engine).resolve()), "render", scene.name, "-t", f"{at:g}", "-o", str(frame)],
+            cwd=scene.parent,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
     if run.returncode != 0 or not frame.exists():
         raise SpecimenRenderError(f"package {slug}: scene-render failed: {run.stdout[-400:]} {run.stderr[-400:]}")
+    _check_renderer(engine, engine_digest)
     _resize(frame, folder / f"{out.stem}.tmp.jpg", "", f"{POSTER_WIDTH}:-2")
+    _check_renderer(engine, engine_digest)
     (folder / f"{out.stem}.tmp.jpg").replace(out)
     frame.unlink()
     return out

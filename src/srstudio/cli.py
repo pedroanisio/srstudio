@@ -2,8 +2,8 @@
 Font; ``srstudio build`` runs an episode, ``srstudio usage`` measures which parts the episodes use, ``srstudio lipsync``
 scores the mouths over aligned takes, ``srstudio craft`` measures camera moves and pauses, ``srstudio overlap`` finds
 lines another episode already said, ``srstudio page`` rebuilds the catalog site, ``srstudio serve`` serves it,
-``srstudio parts`` lists the part versions and checks the pins, and ``srstudio enhance`` shows the auto-enhance mode
-and ledger."""
+``srstudio parts`` lists the part versions and checks the pins, ``srstudio enhance`` shows the auto-enhance mode and
+ledger, and ``srstudio strict`` lists the reels shipped with findings proven false."""
 
 from __future__ import annotations
 
@@ -17,11 +17,16 @@ import sys
 from contextlib import nullcontext
 from dataclasses import asdict
 from pathlib import Path
+from typing import NoReturn
 
 from sr_core.scene import SchemaValueError
 
 from . import (
+    anatomy,
+    anatomy_gate,
+    anatomy_ledger,
     auto_enhance,
+    bible_cli,
     catalog_page,
     catalog_server,
     catalog_specimens,
@@ -32,28 +37,60 @@ from . import (
     interview,
     lip_proof,
     lipsync,
+    master,
+    music,
+    outbox,
     overlap,
     parts,
+    proof,
     registry,
     releases,
+    scopes,
     show,
     show_numbers,
+    strict_gate,
+    text_rules,
     usage,
 )
 from .episode import SceneCheckError
-from .errors import SrstudioError
+from .errors import SrstudioError, diagnostic
+from .frame_gates import FrameGateError
+from .framegraph import FrameGraphError
+from .layout import LayoutError, find_engine
+from .social import MANIFEST, DeliveryError, read_manifest
 from .soundtrack import INK_MOUTH
 from .styles import STYLES
+from .takes import refuse_rehearsal as refuse_takes_rehearsal
 from .thumbnail import ShowCover
 from .timeline import Timeline
 
 
-def _load_plugins(modules, command: str) -> bool:
+def _error(command: str, error: BaseException, json_output: bool = False) -> None:
+    if json_output:
+        print(json.dumps(diagnostic(error, command=command), allow_nan=False, ensure_ascii=False), file=sys.stderr)
+    else:
+        print(f'srstudio {command}: {error}', file=sys.stderr)
+
+
+def _load_plugins(modules, command: str, json_output: bool = False) -> bool:
     for module in modules:
         try:
             importlib.import_module(module)
         except ImportError as exc:
-            print(f"srstudio {command}: cannot import plugin {module!r}: {exc}", file=sys.stderr)
+            _error(
+                command,
+                SrstudioError(
+                    f'cannot import plugin {module!r}: {exc}',
+                    code='plugin.import',
+                    path='plugins',
+                    actual=module,
+                    remedy='Install the plugin or remove it from --plugins.',
+                ),
+                json_output,
+            )
+            return False
+        except SrstudioError as exc:
+            _error(command, exc, json_output)
             return False
     return True
 
@@ -69,7 +106,25 @@ def _version_text(info: registry.PartVersionDetails | None) -> str:
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(prog="srstudio")
+    arguments = list(sys.argv[1:] if argv is None else argv)
+
+    class Parser(argparse.ArgumentParser):
+        def error(self, message: str) -> NoReturn:
+            if '--json' in arguments:
+                _error(
+                    self.prog.removeprefix('srstudio '),
+                    SrstudioError(
+                        message,
+                        code='cli.arguments',
+                        path='argv',
+                        remedy=f'Check the arguments with {self.prog} --help.',
+                    ),
+                    True,
+                )
+                self.exit(2)
+            super().error(message)
+
+    parser = Parser(prog="srstudio")
     sub = parser.add_subparsers(dest="cmd", required=True)
     cat = sub.add_parser(
         "catalog",
@@ -80,21 +135,37 @@ def main(argv=None):
     cat.add_argument("--style", choices=sorted(STYLES), help="only the parts of one style (shared parts included)")
     cat.add_argument("--json", action="store_true")
     cat.add_argument("--plugins", nargs="*", default=(), help="extra modules to import before listing")
-    cat.add_argument("--usage", type=Path, help="a report from srstudio usage: show the episodes each part is used in")
+    catalog_mode = cat.add_mutually_exclusive_group()
+    catalog_mode.add_argument(
+        "--usage", type=Path, help="a report from srstudio usage: show the episodes each part is used in"
+    )
+    catalog_mode.add_argument(
+        '--contract-coverage', action='store_true', help='report declared semantics and argument shapes by kind'
+    )
     detail = sub.add_parser("inspect", help="show a part's signature, callback slots, documentation and usage")
     detail.add_argument("kind", choices=registry.KINDS)
     detail.add_argument("name")
     detail.add_argument("--json", action="store_true")
     detail.add_argument("--plugins", nargs="*", default=(), help="extra modules to import before inspection")
-    number = sub.add_parser("number", help="the show's numbers: set the count, claim a reel's number, list (ADR 0074)")
-    number.add_argument("action", choices=("list", "base", "claim"))
-    number.add_argument("value", nargs="?", help="base: the count; claim: the reel's slug")
-    number.add_argument("--series", default="", help="the series, as Saga")
-    number.add_argument("--ledger", type=Path, default=_ledger_default(), help="the ledger file")
-    enhance = sub.add_parser(
-        "enhance", help="the auto-enhance mode, its ledger and the kinds of enhancement (ADR 0056)"
+    number = sub.add_parser(
+        "number", help="the show's numbers: set the count, claim or release a reel's number, list (ADR 0074, ADR 0080)"
     )
-    enhance.add_argument("action", nargs="?", choices=("status", "kinds", "on", "off"), default="status")
+    number.add_argument("action", choices=("list", "base", "claim", "release"))
+    number.add_argument("value", nargs="?", help="base: the count; claim, release: the reel's slug")
+    number.add_argument("--series", default="", help="the series, as Saga")
+    number.add_argument("--brief", default="", help="claim: the brief the reel was made to, as send-v1")
+    number.add_argument("--post-by", default="", help="claim: the day a timely reel is due, as 2026-11-02")
+    number.add_argument("--not-before", default="", help="claim: the first day a timely reel may post, as 2026-11-20")
+    number.add_argument("--ledger", type=Path, default=_ledger_default(), help="the ledger file")
+    strict = sub.add_parser("strict", help="list the reels shipped with findings proven false (ADR 0078)")
+    strict.add_argument("--scripts", type=Path, default=_scripts_default(), help="the episodes folder")
+    strict.add_argument("--delivery", type=Path, default=_delivery_default(), help="the delivery folder")
+    bodies = sub.add_parser("anatomy", help="list what is published against the anatomy and text rules (ADR 0147)")
+    bodies.add_argument("--manifest", type=Path, nargs="*", default=None, help="the delivery manifests to read")
+    enhance = sub.add_parser(
+        "enhance", help="the auto-enhance mode, its ledger, its kinds and a check of this branch's claims (ADR 0056)"
+    )
+    enhance.add_argument("action", nargs="?", choices=("status", "kinds", "check", "on", "off"), default="status")
     enhance.add_argument("--scripts", type=Path, default=_scripts_default(), help="folder of episode scripts")
     versions = sub.add_parser("parts", help="list each part's versions, print a digest, check the pins")
     versions.add_argument("--json", action="store_true")
@@ -114,6 +185,41 @@ def main(argv=None):
     lip.add_argument("--master", type=Path, help="the final mp4; with --out, pull each instant's frame")
     lip.add_argument("--out", type=Path, help="folder for the frames")
     lip.add_argument("--crop", help="ffmpeg crop of each frame, w:h:x:y")
+    encoded = sub.add_parser(
+        "master", help="encode a reel's master and install it write-once: a re-run never replaces it (ADR 0170)"
+    )
+    encoded.add_argument("scene", type=Path, help="the reel's <slug>.scene.xml")
+    encoded.add_argument("--out-dir", type=Path, help="what the output paths are relative to (default: the folder "
+                         "SRSTUDIO_RENDERS is in)")  # fmt: skip
+    encoded.add_argument(
+        "--engine", type=Path, default=os.environ.get("SRSTUDIO_ENGINE") or shutil.which("scene-render")
+    )
+    encoded.add_argument("--next", action="store_true", help="write beside a master already there, as <slug>-v2.mp4")
+    encoded.add_argument("engine_args", nargs="*", help="after --: the engine's own, as -- --strict --hw software")
+    levels = sub.add_parser(
+        "scopes", help="a master's levels: illegal, out-of-gamut and oversaturated samples fail at 0 (ADR 0172)"
+    )
+    levels.add_argument("videos", type=Path, nargs="+", metavar="video")
+    levels.add_argument(
+        "--engine", type=Path, default=os.environ.get("SRSTUDIO_ENGINE") or shutil.which("scene-render")
+    )
+    measured = sub.add_parser("proof", help="a master's measures (ffprobe, ebur128) and a sheet of frames to look at")
+    measured.add_argument("video", type=Path)
+    measured.add_argument("--at", type=float, action="append", default=[], help="a moment to look at, in seconds")
+    measured.add_argument("--sheet", type=Path, help="write the frames, in one row, to this image")
+    measured.add_argument("--arm", choices=("a", "b"), help="fail unless the master shows this sp-hook_motion arm")
+    measured.add_argument("--json", action="store_true")
+    beat = sub.add_parser("beat", help="measure a recorded track's tempo and where its bars open")
+    beat.add_argument("audio", type=Path, help="any file ffmpeg reads; the bar line needs at least eight bars")
+    beat.add_argument("--seconds", type=float, help="measure only the first seconds")
+    beat.add_argument("--beats-per-bar", type=int, default=4)
+    beat.add_argument("--near", type=float, default=120.0, help="the tempo to lean toward: settles double or half time")
+    beat.add_argument("--json", action="store_true")
+    split = sub.add_parser("arms", help="how an A/B test's releases split, and what keeps the split from being fair")
+    split.add_argument("test", choices=releases.TESTS)
+    split.add_argument("--order", type=Path, help="the delivery order: a file of slugs, one a line")
+    split.add_argument("--share", type=float, default=0.5, help="the part of the test on arm a, if not half")
+    split.add_argument("--scripts", type=Path, default=_scripts_default(), help="folder of episode scripts")
     styles = sub.add_parser("styles", help="list the named styles: frame, clock, palettes, parts")
     styles.add_argument("--json", action="store_true")
     font = sub.add_parser("fonts", help="Google Fonts: fetch, verify and pin a face for captions")
@@ -140,6 +246,7 @@ def main(argv=None):
     page.add_argument(
         "--packages", type=Path, default=packages, required=not packages, help="folder of <name>-<version> packages"
     )
+    bible_cli.add_parser(sub)
     cards = sub.add_parser("cards", help="write the cast's story cards, drawn through the engine")
     cards.add_argument("out", type=Path, help="the folder the <name>.png files go in")
     cards.add_argument("--fonts", type=Path, default=os.environ.get("SRSTUDIO_FONTS"), help="the pinned fonts folder")
@@ -190,14 +297,14 @@ def main(argv=None):
     record.add_argument("--scripts", type=Path, default=_scripts_default(), help="folder of episode scripts")
     record.add_argument("slug")
     record.add_argument("options", nargs=argparse.REMAINDER, help="the project and the recorder's own options")
-    args = parser.parse_args(argv)
+    args = parser.parse_args(arguments)
     if args.cmd == "inspect":
-        if not _load_plugins(args.plugins, "inspect"):
+        if not _load_plugins(args.plugins, "inspect", getattr(args, "json", False)):
             return 2
         try:
             info = registry.describe(args.kind, args.name)
         except (registry.RegistryError, registry.NotRegisteredError) as exc:
-            print(f"srstudio inspect: {exc}", file=sys.stderr)
+            _error("inspect", exc, getattr(args, "json", False))
             return 2
         if args.json:
             print(json.dumps(info, indent=2, ensure_ascii=False))
@@ -217,19 +324,47 @@ def main(argv=None):
         return 0
     if args.cmd == "number":
         return _number(args)
+    if args.cmd == "strict":
+        return _strict(args)
+    if args.cmd == "anatomy":
+        return _anatomy(args)
     if args.cmd == "enhance":
         return _enhance(args.action, args.scripts.resolve().parent)
     if args.cmd == "lip-proof":
         return _lip_proof(args)
+    if args.cmd == "beat":
+        return _beat(args)
+    if args.cmd == "proof":
+        return _proof(args)
+    if args.cmd == "master":
+        return _master(args)
+    if args.cmd == "scopes":
+        return _scopes(args)
+    if args.cmd == "arms":
+        return _arms(args)
     if args.cmd == "parts":
         return _parts(args)
     if args.cmd == "catalog":
-        if not _load_plugins(args.plugins, "catalog"):
+        if not _load_plugins(args.plugins, "catalog", getattr(args, "json", False)):
             return 2
+        if args.contract_coverage:
+            coverage = registry.contract_coverage(args.style, kind=args.kind)
+            if args.json:
+                print(json.dumps(coverage, indent=2, ensure_ascii=False))
+            else:
+                for kind, counts in coverage['kinds'].items():
+                    print(
+                        f"{kind}: {counts['explicit_contracts']}/{counts['registered']} explicit contracts; "
+                        f"{counts['shape_complete']} complete argument shapes; "
+                        f"{counts['with_units']} with units, {counts['with_clocks']} with clocks, "
+                        f"{counts['with_anchors']} with anchors"
+                    )
+                print(coverage['qualification'])
+            return 0
         try:
             measured = usage.Report.read(args.usage) if args.usage else None
         except usage.UsageError as exc:
-            print(f"srstudio catalog: {exc}", file=sys.stderr)
+            _error("catalog", exc, getattr(args, "json", False))
             return 2
         rows = registry.entries(args.kind, args.style)
         if args.json:
@@ -262,11 +397,13 @@ def main(argv=None):
         try:
             got = fonts.install(fonts.GoogleFont(args.family, args.weight, args.italic), args.into)
         except fonts.FontError as exc:
-            print(f"srstudio fonts: {exc}", file=sys.stderr)
+            _error("fonts", exc, getattr(args, "json", False))
             return 2
         style = " italic" if got.italic else ""
         print(f"{got.path}  {got.family} {got.weight}{style}  {got.license}  sha256 {got.sha256}")
         return 0
+    if args.cmd == "bible":
+        return bible_cli.run(args)
     if args.cmd == "cards":
         return _cards(args)
     if args.cmd == "page":
@@ -288,7 +425,7 @@ def main(argv=None):
                 proof_root=args.proof_root,
             )
         except (catalog_page.CatalogError, usage.UsageError) as exc:
-            print(f"srstudio page: {exc}", file=sys.stderr)
+            _error("page", exc, getattr(args, "json", False))
             return 2
         print(f"{args.site}  {len(built.cards)} episodes: {', '.join(c.slug for c in built.cards)}")
         drawn, made = len(built.pictures.stills), built.pictures.made
@@ -298,7 +435,7 @@ def main(argv=None):
         try:
             catalog_server.serve(args.site, args.host, args.port)
         except (catalog_server.ServeError, OSError) as exc:
-            print(f"srstudio serve: {exc}", file=sys.stderr)
+            _error("serve", exc, getattr(args, "json", False))
             return 2
         return 0
     if args.cmd == "usage":
@@ -312,7 +449,7 @@ def main(argv=None):
             runs, missing = usage.discover(args.episodes, args.packages, args.scripts, extra, skip=args.skip)
             report = usage.measure(runs, args.work, missing)
         except usage.UsageError as exc:
-            print(f"srstudio usage: {exc}", file=sys.stderr)
+            _error("usage", exc, getattr(args, "json", False))
             return 2
         report.write(args.out)
         for kind in ("character", "location", "prop"):
@@ -341,7 +478,7 @@ def main(argv=None):
                 for name, style in (("INK_MOUTH", INK_MOUTH), ("SPEECH_MOUTH", lipsync.SPEECH_MOUTH))
             }
         except (OSError, ValueError, KeyError) as exc:
-            print(f"srstudio lipsync: {exc}", file=sys.stderr)
+            _error("lipsync", exc, getattr(args, "json", False))
             return 2
         print(f"{len(takes)} takes")
         for name, result in scores.items():
@@ -358,7 +495,7 @@ def main(argv=None):
                 scene = args.project / f"{args.project.name}.scene.xml"
                 print(f"{len(frames.at_size(scene, listed, args.out, args.engine))} frames in {args.out}")
         except (frames.FrameError, SrstudioError) as exc:
-            print(f"srstudio frames: {exc}", file=sys.stderr)
+            _error("frames", exc, getattr(args, "json", False))
             return 2
         return 0
     if args.cmd == "craft":
@@ -369,7 +506,7 @@ def main(argv=None):
                 video = render if render is not None and render.is_file() else None
                 reports.append(craft.measure(project, video=video, threshold=args.threshold))
         except (craft.CraftError, ValueError) as exc:
-            print(f"srstudio craft: {exc}", file=sys.stderr)
+            _error("craft", exc, getattr(args, "json", False))
             return 2
         if args.json:
             print(json.dumps([r.to_dict() for r in reports], indent=2))
@@ -409,7 +546,7 @@ def main(argv=None):
             lines = overlap.read_lines(overlap.project_script(args.project))
             found = overlap.overlaps(lines, overlap.scripts(args.episodes, skip=args.project.name), args.least)
         except overlap.OverlapError as exc:
-            print(f"srstudio overlap: {exc}", file=sys.stderr)
+            _error("overlap", exc, getattr(args, "json", False))
             return 2
         for hit in found:
             print(f"{hit.slug}: {hit.words} ({hit.line!r} / {hit.other!r})")
@@ -420,7 +557,7 @@ def main(argv=None):
         try:
             recorder = _episode_script(args.scripts, args.slug, "_audio")
         except releases.ReleaseError as exc:
-            print(f"srstudio record: {exc}", file=sys.stderr)
+            _error("record", exc, getattr(args, "json", False))
             return 2
         if recorder is None:
             print(f"srstudio record: no episode {args.slug!r} in {args.scripts}", file=sys.stderr)
@@ -431,7 +568,7 @@ def main(argv=None):
         try:
             episode = _episode_script(args.scripts, script, "")
         except releases.ReleaseError as exc:
-            print(f"srstudio build: {exc}", file=sys.stderr)
+            _error("build", exc, getattr(args, "json", False))
             return 2
         number = None
         if episode is None and "-" in script and not script.endswith(".py"):
@@ -444,6 +581,7 @@ def main(argv=None):
         try:
             if args.root and "--voice" in args.options:
                 interview.refuse_rehearsal(Path(args.root))
+                refuse_takes_rehearsal(Path(args.root))
             with usage.recorded(Path(args.root)) if args.root else nullcontext(), show.stamping(number):
                 if script.endswith(".py"):
                     sys.path.insert(
@@ -452,13 +590,85 @@ def main(argv=None):
                     runpy.run_path(script, run_name="__main__")
                 else:
                     runpy.run_module(script, run_name="__main__")
+            if args.root:
+                return _anatomy_frames(Path(args.root))
         except (SceneCheckError, parts.PartError) as exc:
             print(exc, file=sys.stderr)
             return 1
         except (SrstudioError, SchemaValueError, OSError) as exc:
-            print(f"srstudio build: {exc}", file=sys.stderr)
+            _error("build", exc, getattr(args, "json", False))
             return 1
         return 0
+
+
+def _arms(args: argparse.Namespace) -> int:
+    order = args.order.read_text().split() if args.order else []
+    try:
+        loaded = releases.load(args.scripts / "posts")
+        problems = releases.arm_problems(loaded, args.test, order, args.share)
+    except releases.ReleaseError as exc:
+        _error("arms", exc, getattr(args, "json", False))
+        return 1
+    for arm, slugs in releases.arms(loaded, args.test).items():
+        print(f"{arm} {len(slugs):>3}  {' '.join(slugs)}")
+    for problem in problems:
+        print(f"srstudio arms: {problem}", file=sys.stderr)
+    return 1 if problems else 0
+
+
+def _beat(args: argparse.Namespace) -> int:
+    try:
+        read = music.reading(args.audio, seconds=args.seconds, beats_per_bar=args.beats_per_bar, near=args.near)
+    except music.MusicError as exc:
+        _error("beat", exc, args.json)
+        return 1
+    groove = read.groove
+    if args.json:
+        print(json.dumps({**asdict(groove), "bars": round(read.bars, 2), "sure": read.sure}))
+    else:
+        print(f"{groove.bpm:g} BPM, {groove.beats_per_bar} beats to the bar, a bar opens at {groove.offset:g} s")
+    if not read.sure:
+        print(f"srstudio beat: only {read.bars:.1f} bars heard, the bars may open on another beat", file=sys.stderr)
+    return 0
+
+
+def _proof(args: argparse.Namespace) -> int:
+    try:
+        made = proof.report(args.video, args.at, args.sheet, arm=args.arm)
+    except proof.ProofError as exc:
+        _error("proof", exc, getattr(args, "json", False))
+        return 1
+    if args.json:
+        print(json.dumps(made))
+    else:
+        print(" ".join(f"{k}={v}" for k, v in made.items()))
+    return 0
+
+
+def _master(args: argparse.Namespace) -> int:
+    renders = os.environ.get("SRSTUDIO_RENDERS")
+    out_dir = args.out_dir or (Path(renders).parent if renders else None)
+    if out_dir is None or args.engine is None:
+        print("srstudio master: set --out-dir and --engine, or SRSTUDIO_RENDERS and SRSTUDIO_ENGINE", file=sys.stderr)
+        return 2
+    try:
+        done = master.encode(args.scene, out_dir, engine=args.engine, args=args.engine_args, next_name=args.next)
+    except SrstudioError as exc:
+        _error("master", exc)
+        return 2
+    print(done.output.rstrip())
+    for path in done.paths:
+        print(f"master: {path}")
+    return done.returncode
+
+
+def _scopes(args: argparse.Namespace) -> int:
+    if args.engine is None:
+        print("srstudio scopes: set --engine or SRSTUDIO_ENGINE", file=sys.stderr)
+        return 2
+    said, status = scopes.lines(args.videos, args.engine)
+    print("\n".join(said))
+    return status
 
 
 def _lip_proof(args: argparse.Namespace) -> int:
@@ -466,7 +676,7 @@ def _lip_proof(args: argparse.Namespace) -> int:
         picks = lip_proof.instants(args.project, count=args.count)
         made = lip_proof.frames(picks, args.master, args.out, crop=args.crop) if args.master and args.out else []
     except lip_proof.LipProofError as exc:
-        print(f"srstudio lip-proof: {exc}", file=sys.stderr)
+        _error("lip-proof", exc, getattr(args, "json", False))
         return 2
     for pick in picks:
         flag = "  <- vowel on a shut mouth" if pick.suspect else ""
@@ -492,7 +702,7 @@ def _parts(args: argparse.Namespace) -> int:
             print(f"{len(measured.episodes)} episodes measured, {verdict}")
             return 1 if drift else 0
     except (ValueError, usage.UsageError, catalog_specimens.SpecimenRenderError) as exc:
-        print(f"srstudio parts: {exc}", file=sys.stderr)
+        _error("parts", exc, getattr(args, "json", False))
         return 2
     table = parts.load()
     if args.json:
@@ -526,17 +736,20 @@ def _enhance(action: str, repo: Path) -> int:
             print(f"{kind:<10} {what}")
         return 0
     try:
-        if action != "status":
-            auto_enhance.set_mode(repo, on=action == "on")
-        print(f"auto-enhance: {'on' if auto_enhance.enabled(repo) else 'off'}")
-        rows = auto_enhance.ledger(repo) if action == "status" else []
+        if action == "check":
+            rows = auto_enhance.unsound(repo)
+        else:
+            if action != "status":
+                auto_enhance.set_mode(repo, on=action == "on")
+            print(f"auto-enhance: {'on' if auto_enhance.enabled(repo) else 'off'}")
+            rows = auto_enhance.ledger(repo) if action == "status" else []
     except auto_enhance.EnhanceError as exc:
-        print(f"srstudio enhance: {exc}", file=sys.stderr)
+        _error("enhance", exc)
         return 2
     for row in rows:
         verdict = "; ".join(row.problems) or "counts"
         print(f"{row.commit[:7]} {','.join(row.slugs)} [{','.join(row.kinds)}] {row.subject}: {verdict}")
-    return 0
+    return 1 if action == "check" and rows else 0
 
 
 def _cards(args) -> int:
@@ -550,7 +763,7 @@ def _cards(args) -> int:
             args.out, cast_card.Lettering.installed(args.fonts), args.engine, frozenset(args.only)
         )
     except SrstudioError as exc:
-        print(f"srstudio cards: {exc}", file=sys.stderr)
+        _error("cards", exc, getattr(args, "json", False))
         return 1
     for path in written:
         print(path)
@@ -584,7 +797,10 @@ def _ledger_default() -> Path:
 
 
 def _claimed(slug: str, claim: show_numbers.Claim) -> str:
-    return f"{slug} #{claim.number}" + (f" {claim.series} #{claim.series_number}" if claim.series else "")
+    series = f" {claim.series} #{claim.series_number}" if claim.series else ""
+    return f"{slug} #{claim.number}{series}" + "".join(
+        f" {tag}" for tag in (claim.brief, claim.post_by, claim.not_before) if tag
+    )
 
 
 def _number(args: argparse.Namespace) -> int:
@@ -596,11 +812,19 @@ def _number(args: argparse.Namespace) -> int:
         elif args.action == "claim":
             if not args.value:
                 raise show_numbers.NumberError("claim takes the reel's slug")
-            print(_claimed(args.value, show_numbers.claim(args.ledger, args.value, args.series)))
+            held = show_numbers.claim(args.ledger, args.value, args.series, args.brief, args.post_by, args.not_before)
+            print(_claimed(args.value, held))
+            return 0
+        elif args.action == "release":
+            if not args.value:
+                raise show_numbers.NumberError("release takes the reel's slug")
+            root = args.ledger.resolve().parent.parent  # the ledger sits under the folder the renders and outbox are in
+            shown = outbox.delivered_names(root / "renders" / "ig", root / "outbox")
+            print(f"released {_claimed(args.value, show_numbers.release_claim(args.ledger, args.value, shown))}")
             return 0
         ledger = show_numbers.read(args.ledger)
-    except show_numbers.NumberError as exc:
-        print(f"srstudio number: {exc}", file=sys.stderr)
+    except SrstudioError as exc:
+        _error("number", exc, getattr(args, "json", False))
         return 2
     print(f"base {'not set' if ledger.base is None else ledger.base}")
     for series, base in sorted(ledger.series.items()):
@@ -617,6 +841,81 @@ def _show_number(scripts: Path, slug: str) -> int | None:
         return None
     cover = releases.load(scripts / "posts")[slug].post.thumbnail
     return cover.number if isinstance(cover, ShowCover) else None
+
+
+def _delivery_default() -> Path:
+    return Path(os.environ.get("SRSTUDIO_RENDERS") or "generated/renders") / "ig"
+
+
+def _strict(args: argparse.Namespace) -> int:
+    try:
+        if not (args.delivery / MANIFEST).is_file():
+            raise DeliveryError(f"no delivery manifest in {args.delivery}")
+        known = releases.load(args.scripts / "posts")
+        lines = strict_gate.listing(
+            strict_gate.read_all(args.scripts / "strict", known), known, read_manifest(args.delivery)
+        )
+    except (DeliveryError, releases.ReleaseError) as exc:
+        print(f"srstudio strict: {exc}", file=sys.stderr)
+        return 2
+    print("\n".join(lines))
+    return 0
+
+
+def _anatomy_frames(project: Path) -> int:
+    """The rules that read the frames, on what was just built: rule 2 of the anatomy rules and the timing of a text.
+    Measuring takes the engine, so a build with no engine says it did not measure, and the first delivery still does
+    (ADR 0148, ADR 0150). 1 for a fault."""
+    scenes = _picture_scenes(project)
+    if not scenes:
+        return 0
+    try:
+        engine = find_engine()
+    except LayoutError as exc:
+        print(f"srstudio build: the frames were not measured: {exc}", file=sys.stderr)
+        return 0
+    faults = [fault for scene in scenes for fault in _measured(project, scene, engine)]
+    return 1 if faults else 0
+
+
+def _measured(project: Path, scene: Path, engine: Path) -> list[object]:
+    """What the frames of ``scene`` show against the frame rules, each printed; a rule the engine cannot read says so
+    and leaves the other to answer."""
+    slug = scene.name.removesuffix(".scene.xml")
+    faults: list[object] = []
+    for rule, read in (
+        ("anatomy", lambda: anatomy_gate.after_build(project, slug, scene, engine)),
+        ("text", lambda: text_rules.after_build(slug, scene, engine)),
+    ):
+        try:
+            faults += read()
+        except (FrameGraphError, FrameGateError) as exc:
+            print(f"srstudio build: the {rule} frames were not measured: {exc}", file=sys.stderr)
+    for fault in faults:
+        print(f"{slug}: {fault}", file=sys.stderr)
+    return faults
+
+
+def _picture_scenes(project: Path) -> list[Path]:
+    """The scenes of ``project`` that draw a picture: the one named after the project when there is one, else every
+    scene but a narrated reel's sound (``<slug>.audio.scene.xml``), which has no frames to measure."""
+    named = project / f"{project.name}.scene.xml"
+    if named.is_file():
+        return [named]
+    return sorted(p for p in project.glob("*.scene.xml") if not p.name.endswith(".audio.scene.xml"))
+
+
+def _anatomy(args: argparse.Namespace) -> int:
+    renders = _delivery_default().parent
+    manifests = args.manifest or [renders / "ig" / MANIFEST, renders.parent / "pilots" / "news" / "manifest.json"]
+    try:
+        rows = (*anatomy_ledger.exemptions(), *text_rules.exemptions())
+        lines = anatomy_gate.listing(rows, anatomy_gate.published(manifests))
+    except anatomy.AnatomyError as exc:
+        print(f"srstudio anatomy: {exc}", file=sys.stderr)
+        return 2
+    print("\n".join(lines))
+    return 0
 
 
 def _run_script(script: Path, argv: list[str]) -> int:

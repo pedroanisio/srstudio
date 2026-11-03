@@ -225,8 +225,15 @@ def test_a_stage_refuses_an_arm_on_a_cast_member_with_none_to_lift():
 
 def test_a_stage_refuses_a_mouth_on_the_one_already_speaking():
     stages = {"01": Stage("hut", cast=(Place("mabel", 300, behind=True, mouth=((0.0, "open"),)),))}
-    with pytest.raises(SagaError, match="the take moves the mouth"):
+    with pytest.raises(SagaError, match="a line drives the mouth"):
         saga_reel.check([take()], stages)
+
+
+def test_a_stage_refuses_a_lean_and_a_lurch_on_one_body():
+    leaning = Place("mabel", 300, lean=((0.0, 0.0), (0.5, 4.0)), lurch=((0.0, 0.0, 0.0), (0.5, 10.0, 3.0)))
+    with pytest.raises(SagaError, match="both leans and lurches"):
+        saga_reel.check([take()], {"01": Stage("returns", cast=(leaning,))})
+    saga_reel.check([take()], {"01": Stage("returns", cast=(Place("mabel", 300, lean=((0.0, 0.0), (0.5, 4.0))),))})
 
 
 def test_an_entry_that_is_the_next_line_of_the_last_does_not_rise_again():

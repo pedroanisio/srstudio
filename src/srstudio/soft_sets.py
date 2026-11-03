@@ -9,16 +9,20 @@ goes dark (``dark``), so a reel moves the world and leaves the cast alone.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable, Sequence
 from typing import NamedTuple
 
-from . import checks, look, signature
+from . import _soft_scene_contracts as dc
+from . import checks, fonts, look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
+from .graphics import captions as _captions
 from .registry import register
 from .soft_props import bench as park_bench
 
-__all__ = ["CAPTIONS", "FINISH", "Dim", "Light", "Shot", "SoftSetError", "bedroom", "finish", "park", "playroom"]
+__all__ = ["CAPTIONS", "FINISH", "Dim", "Light", "Shot", "SoftSetError", "bedroom", "finish", "hall_light", "park"]
+__all__ += ["MOST_SPACES", "caption_band", "caption_look", "captions", "playroom"]
 
 WIDTH, HEIGHT = 1080, 1920
 Slot = Callable[[object], object] | None
@@ -26,7 +30,9 @@ Stages = Sequence[tuple[float, int]]
 
 CAPTIONS = dict(
     x=80, y=250, width=840, height=180, size=58, color="#1A1714", stroke="#FFFFFF", stroke_width=7, shadow=None
-)  # the Soft style's caption look (ADR 0048), for ``Episode.captions``
+)  # the Soft style's caption look (ADR 0048); a new reel draws it with :func:`captions`, which keeps its words apart
+MOST_SPACES = 4  # the most spaces :func:`captions` sets between two words
+_LINE_HEIGHT = (_captions.__kwdefaults__ or {})["line_height"]  # what graphics.captions sets a line in
 FINISH: dict[str, dict[str, float | str]] = {  # warm corners and a soft lift on what is bright; no grain, no blur
     "vignette": dict(amount=0.22, radius=0.95, softness=0.8, color="#3B2A1E"),
     "bloom": dict(threshold=0.9, radius=16, intensity=0.14),
@@ -41,19 +47,53 @@ BARK, BARK_DARK = "#8A6242", "#6B4A30"
 
 
 NIGHT, NIGHT_CLEAR = "#0B1026FB", "#0B102600"  # the engine composites in linear light: a lit wall needs 98 % to go dark
-LIGHTS = ("day", "phone", "dark")
+LIGHTS = ("day", "phone", "lamp", "dark")
+LAMP_GLOW = "#E08A2E5C"  # the amber a bulb leaves on a wall, between its clear middle and the dark
 FLICKER = (1.0, 0.93, 0.98, 0.9, 1.0, 0.95, 0.91, 0.99)  # a screen's light changing with what is on it
+LAMP_DARK = "#0B1026D8"  # a lamp's dark stays short of NIGHT: the corners of a lamplit room are there
+LAMP_REACH = 1600.0  # px from a lamp to the edge of its pool
+LAMP_BOX = 4000.0  # px from a lamp to the edge of the painted square: past its reach it is all LAMP_DARK
+HALL_X, HALL_SWUNG_X = -300.0, -760.0  # px of a hall's light left of the frame: open, and with the door nearly to
 FLICKER_STEP = 0.14  # seconds a flicker value holds
 OVER = 600  # px a room runs past the frame on every side
+NIGHT_WINDOW = "#F2C46A"
+NIGHT_STARS = (
+    (70, 90, 3),
+    (210, 160, 2),
+    (330, 70, 3),
+    (470, 190, 2),
+    (620, 110, 3),
+    (760, 60, 2),
+    (880, 170, 3),
+    (1010, 100, 2),
+    (120, 330, 2),
+    (980, 340, 3),
+    (60, 560, 2),
+    (1030, 590, 2),
+)
+LAMP_POST = (668.0, 640.0, 1200.0)  # the post's x, the top of its pole and its foot on the lawn, right of the tree
+PARK_GLOW = "#A8682C48"  # a street lamp's amber, thinner than a room's: there is no wall to catch it
+PARK_DARK = "#0B1026CC"  # a park at night stays short of NIGHT: the cast is out in it
+PARK_REACH = 1500.0  # px from the lamp to the edge of its pool
 
 
 class Light(NamedTuple):
-    """From ``time``, the room is lit by ``state``: ``day``, ``dark``, or a ``phone`` pooled on (``x``, ``y``)."""
+    """From ``time``, the room is lit by ``state``: ``day``, ``dark``, or a ``phone`` or ``lamp`` at (``x``, ``y``)."""
 
     time: float
     state: str
     x: float = 540.0
     y: float = 1040.0
+
+
+def hall_light(opens: float, shuts: float, *, y: float = 1300.0, swing: float = 0.25) -> list[Light]:
+    """The rows of a door off the left of the frame: the hall comes in at ``opens``, thins as the door swings to over
+    ``swing`` seconds, and the room is dark at ``shuts``. A bedroom's lights go on from these."""
+    if not all(checks.number(v) for v in (opens, shuts, y, swing)) or opens < 0 or swing <= 0:
+        raise SoftSetError(f"a hall light opens and swings at finite times, got {opens!r}, {shuts!r}, {swing!r}")
+    if shuts - swing <= opens:
+        raise SoftSetError(f"a door open at {opens} cannot swing {swing} s and shut by {shuts}")
+    return [Light(opens, "lamp", HALL_X, y), Light(shuts - swing, "lamp", HALL_SWUNG_X, y), Light(shuts, "dark")]
 
 
 class Shot(NamedTuple):
@@ -78,6 +118,52 @@ class Dim(NamedTuple):
 
 class SoftSetError(SrstudioError, ValueError):
     """A Soft set asked for something it cannot draw."""
+
+
+def caption_look(font: bytes, texts: Sequence[str], **over) -> dict:
+    """:data:`CAPTIONS` with ``over``, and as many spaces between two words (``word_space``) as ``font``, the reel's
+    caption face, needs for every gap of ``texts`` to keep at least an outline's width of background between the two
+    outlined words (:func:`srstudio.fonts.word_gaps`): with less, the outlines meet and the words read as one.
+    Refused when :data:`MOST_SPACES` cannot part them, or a line once spaced, with its outline, is wider than the box
+    (the engine would wrap it onto a line the box has no room for)."""
+    style = {**CAPTIONS, **over}
+    size, outline, width = style["size"], style["stroke_width"], style["width"]
+    for count in range(1, MOST_SPACES + 1):
+        spaced = [re.sub(r" +", " " * count, text) for text in texts]
+        closed = [g for text in spaced for g in fonts.word_gaps(font, text, size, outline=outline) if g.px < outline]
+        if not closed:
+            break
+    else:
+        worst = min(closed, key=lambda g: g.px)
+        raise SoftSetError(
+            f"{MOST_SPACES} spaces leave {worst.px:.1f} px between {worst.left!r} and {worst.right!r} outlined "
+            f"{outline} px wide; the words need at least the outline's width"
+        )
+    for text in spaced:
+        for line in text.split("\n"):
+            if (wide := fonts.text_width(font, line, size) + 2 * outline) > width:
+                raise SoftSetError(
+                    f"caption line {line!r} is {wide:.0f} px wide with {count} spaces between words and its outline, "
+                    f"wider than the caption box ({width} px): break it by hand or split the caption"
+                )
+    return {**style, "word_space": count}
+
+
+def caption_band(text: str, **over) -> tuple[float, float]:
+    """The top and bottom, in frame pixels, of the lines of ``text`` in :data:`CAPTIONS` with ``over``, their outline
+    included: the engine centres the lines in the box, each ``size`` times the line height tall. What sits above a
+    caption (an opening line) ends above the top."""
+    style = {**CAPTIONS, **over}
+    lines = (text.count("\n") + 1) * style["size"] * float(style.get("line_height", _LINE_HEIGHT))
+    middle = style["y"] + style["height"] / 2
+    return middle - lines / 2 - style["stroke_width"], middle + lines / 2 + style["stroke_width"]
+
+
+def captions(ep, specs: Sequence[tuple[float, float, str, str]], font: bytes, **over) -> list:
+    """The Soft caption layer: ``ep.captions(specs)`` in :func:`caption_look`, measured in ``font`` (the bytes of the
+    reel's caption face), so outlined words never run together. The specs, and the words said, stay as written; only
+    the drawn lines get the spaces. Reels published before it drew ``ep.captions(specs, **CAPTIONS)`` and keep it."""
+    return ep.captions(specs, **caption_look(font, [text for _, _, text, _ in specs], **over))
 
 
 def finish(cv: Canvas, parent, id: str = "soft-finish"):
@@ -149,8 +235,11 @@ def _tree(cv: Canvas, parent, stage: int, x: float, foot: float, id: str):
     return g
 
 
-def _skyline(cv: Canvas, far, rows: list[tuple[float, float, int]], id: str, ground: float) -> None:
-    """The town behind the park, a size taller at each stage; the far plane, so it never carries a word."""
+def _skyline(
+    cv: Canvas, far, rows: list[tuple[float, float, int]], id: str, ground: float, night: bool = False
+) -> None:
+    """The town behind the park, a size taller at each stage; the far plane, so it never carries a word. At ``night``
+    its towers go dark and a few of their windows stay lit."""
     towers = (
         ((120, 170, 90), (260, 130, 110), (760, 150, 120), (900, 190, 90)),
         ((70, 300, 100), (230, 210, 110), (720, 260, 120), (880, 340, 110)),
@@ -164,12 +253,54 @@ def _skyline(cv: Canvas, far, rows: list[tuple[float, float, int]], id: str, gro
         g = cv.group(far, f"{id}-town-{stage}")
         cv.gate(g, spans)
         for k, (x, h, w) in enumerate(row):
+            if night:
+                cv.rect(g, x, ground - h, w, h, "#2C3158" if k % 2 else "#252A4C", radius=8)
+                for floor in range(1, min(h // 44, 6)):
+                    cv.rect(g, x + 14 + (k + floor) % 3 * 26, ground - h + floor * 40, 16, 20, NIGHT_WINDOW, radius=3)
+                continue
             cv.rect(g, x, ground - h, w, h, "#B8C6D2" if k % 2 else "#A9B9C8", radius=8)
+
+
+def _night_sky(cv: Canvas, g, id: str) -> None:
+    """The sky of a park at night, over the frame's width: a few stars, none of them low enough to sit in a head."""
+    stars = cv.group(g, f"{id}-stars")
+    for x, y, r in NIGHT_STARS:
+        cv.ellipse(stars, x - r, y - r, 2 * r, 2 * r, "#F4F1DE")
+
+
+def _lamp_post(cv: Canvas, g, id: str) -> None:
+    """A park's lamp on the lawn behind the bench, lit: the light of a park at night comes from here."""
+    lamp = cv.group(g, f"{id}-lamp")
+    x, top, foot = LAMP_POST
+    cv.rect(lamp, x - 9, top, 18, foot - top, "#2A2D3A", cv.ink, INK_LINE, radius=6)
+    cv.rect(lamp, x - 26, foot - 18, 52, 22, "#2A2D3A", cv.ink, INK_LINE, radius=8)
+    cv.rect(lamp, x - 40, top - 16, 80, 20, "#2A2D3A", cv.ink, INK_LINE, radius=8)
+    cv.ellipse(lamp, x - 34, top - 4, 68, 54, "#FFE7A8", cv.ink, INK_LINE)
+
+
+def _park_dark(cv: Canvas, g, id: str) -> None:
+    """The dark of a park at night, over the room and the cast: clear under the lamp, amber past that, dark at the
+    edge of its reach. It rides in the room, so a shot cuts in on the pool as it does on the bench."""
+    dark = cv.group(g, f"{id}-dark")
+    cx, cy = LAMP_POST[0], LAMP_POST[1] + 80
+    stops = [(0.0, NIGHT_CLEAR), (0.34, NIGHT_CLEAR), (0.62, PARK_GLOW), (1.0, PARK_DARK)]
+    pool = cv.rgrad("soft-park-pool", stops, (0.5, 0.5, PARK_REACH / (2 * LAMP_BOX)))
+    cv.rect(dark, cx - LAMP_BOX, cy - LAMP_BOX, 2 * LAMP_BOX, 2 * LAMP_BOX, pool)
+
+
+def planter(cv: Canvas, parent) -> None:
+    """The planter in the frame's bottom right corner, with the cactus in it and the code on it (ADR 0001), for a
+    foreground the camera does not move."""
+    cv.rect(parent, 846, 1752, 260, 190, "#B67B4E", cv.ink, INK_LINE, radius=14)
+    cv.rect(parent, 830, 1736, 290, 36, "#C98C5C", cv.ink, INK_LINE, radius=12)
+    signature.cactus(cv, parent, 968, 1744, 0.72)
+    signature.code(cv, parent, 880, 1800, 15, color="#F3DFCF")
 
 
 @register(
     "location",
     "soft-park",
+    contract=dc.contract('soft-park'),
     summary="A park drawn straight on for a close shot: sky, a town out of focus, a lawn and a path, a tree that grows "
     "from a staked sapling to a crown wider than the frame, a town that rises behind it, and the signature cactus in a "
     "planter at the frame's corner",
@@ -181,23 +312,43 @@ def park(
     growth: Stages = ((0.0, 0),),
     seated: Sequence[tuple[float, float]] = (),
     cast: Slot = None,
+    shots: Sequence[Shot] = (Shot(0.0),),
+    night: bool = False,
     id: str = "soft-park",
 ):
     """The park: ``growth`` is (time, stage) rows from 0, a stage indexing the tree's :data:`TREES`, and the town
     rises with it; ``seated`` limits the bench to those spans (none: no bench); ``cast`` draws the cast between the
-    set and the foreground planter."""
+    set and the foreground planter. ``shots`` are rows from 0 in rising time: they cut in on everything but the
+    foreground, which holds the signature marks. A single shot holds its framing; the default leaves the park
+    as it was drawn. ``night`` draws it after dark, lit by a lamp behind the bench; the marks stay in the foreground
+    and the far plane stays out of focus."""
+    if not isinstance(night, bool):
+        raise SoftSetError(f"night is True or False, got {night!r}")
     rows = _stages("growth", growth, len(TREES))
-    g = cv.group(parent, id)
-    sky = cv.grad("soft-park-sky", [(0.0, "#BFDDEE"), (0.62, "#EAF2E8"), (1.0, "#F6EBD6")], (0, 0, 0, 1))
+    framing = _framing(shots)
+    whole = cv.group(parent, id)
+    g = whole if len(shots) == 1 and shots[0] == Shot(0.0) else _framed(cv, whole, f"{id}-room", framing)
+    if night:
+        sky = cv.grad("soft-park-night-sky", [(0.0, "#0D1230"), (0.62, "#1B2148"), (1.0, "#3B3060")], (0, 0, 0, 1))
+    else:
+        sky = cv.grad("soft-park-sky", [(0.0, "#BFDDEE"), (0.62, "#EAF2E8"), (1.0, "#F6EBD6")], (0, 0, 0, 1))
     cv.rect(g, 0, 0, WIDTH, HORIZON + 8, sky)
+    if night:
+        _night_sky(cv, g, id)
     far = look.depth(cv, g, "soft-park-far", FAR_BLUR)
     town = [(a, b, min(s, 3)) for a, b, s in rows]
-    _skyline(cv, far, town, id, HORIZON + 20)
-    cv.ellipse(far, -160, HORIZON - 120, 620, 240, "#A5C79E")
-    cv.ellipse(far, 620, HORIZON - 150, 640, 300, "#9CC096")
-    lawn = cv.grad("soft-park-lawn", [(0.0, "#B9D6A0"), (1.0, "#8FBB7C")], (0, 0, 0, 1))
+    _skyline(cv, far, town, id, HORIZON + 20, night)
+    cv.ellipse(far, -160, HORIZON - 120, 620, 240, "#22304A" if night else "#A5C79E")
+    cv.ellipse(far, 620, HORIZON - 150, 640, 300, "#1E2B44" if night else "#9CC096")
+    if night:
+        lawn = cv.grad("soft-park-night-lawn", [(0.0, "#3B5B52"), (1.0, "#2A4340")], (0, 0, 0, 1))
+    else:
+        lawn = cv.grad("soft-park-lawn", [(0.0, "#B9D6A0"), (1.0, "#8FBB7C")], (0, 0, 0, 1))
     cv.rect(g, 0, HORIZON, WIDTH, HEIGHT - HORIZON, lawn)
-    cv.path(g, f"M 400 {HORIZON:g} L 680 {HORIZON:g} L 1000 1920 L 80 1920 Z", "#EFE0C4")
+    path_fill = "#6C6878" if night else "#EFE0C4"
+    cv.path(g, f"M 400 {HORIZON:g} L 680 {HORIZON:g} L 1000 1920 L 80 1920 Z", path_fill)
+    if night:
+        _lamp_post(cv, g, id)
     for stage in dict.fromkeys(s for _, _, s in rows):
         tree = _tree(cv, g, stage, 540.0, TREE_FOOT, f"{id}-tree-{stage}")
         cv.gate(tree, _spans_of(rows, stage))
@@ -205,18 +356,18 @@ def park(
         park_bench(cv, _gated(cv, g, f"{id}-benched", seated), 540, BENCH_SEAT)
     if cast is not None:
         cast(g)
-    front = cv.group(g, f"{id}-front")
-    cv.ellipse(front, -120, 1740, 330, 300, "#6F9D62")  # a bush the camera looks past
-    cv.rect(front, 846, 1752, 260, 190, "#B67B4E", cv.ink, INK_LINE, radius=14)  # the planter
-    cv.rect(front, 830, 1736, 290, 36, "#C98C5C", cv.ink, INK_LINE, radius=12)
-    signature.cactus(cv, front, 968, 1744, 0.72)
-    signature.code(cv, front, 880, 1800, 15, color="#F3DFCF")
-    return g
+    if night:
+        _park_dark(cv, g, id)
+    front = cv.group(whole, f"{id}-front")
+    cv.ellipse(front, -120, 1740, 330, 300, "#3A5A48" if night else "#6F9D62")  # a bush the camera looks past
+    planter(cv, front)
+    return whole
 
 
 @register(
     "location",
     "soft-bedroom",
+    contract=dc.contract('soft-bedroom'),
     summary="A bed seen from its foot: headboard, pillows and a duvet; a phone can be the only light in the room",
 )
 def bedroom(
@@ -237,8 +388,9 @@ def bedroom(
     _rising("lights", [row.time for row in lights])
     if any(row.state not in LIGHTS for row in lights):
         raise SoftSetError(f"a light is one of {LIGHTS}, got {[row.state for row in lights]!r}")
+    framing = _framing(shots)
     g = cv.group(parent, id)
-    room = _framed(cv, g, f"{id}-room", shots)
+    room = _framed(cv, g, f"{id}-room", framing)
     cv.rect(room, 0, 0, WIDTH, HEIGHT, cv.grad("soft-bedroom-wall", [(0.0, "#E8DCC8"), (1.0, "#D9C7AE")], (0, 0, 0, 1)))
     far = look.depth(cv, room, "soft-bedroom-far", FAR_BLUR)
     cv.rect(far, 742, 118, 280, 420, "#BFDDEE", "#F5EEDF", 16, radius=8)  # the window, out of focus
@@ -266,6 +418,7 @@ def bedroom(
 @register(
     "location",
     "soft-playroom",
+    contract=dc.contract('soft-playroom'),
     summary="A child's room straight on: a window of sky, a door, a rug and a toy crate in the foreground",
 )
 def playroom(
@@ -283,8 +436,9 @@ def playroom(
         fine = all(checks.number(v) for v in dim) and dim.start >= 0 and dim.fade > 0
         if not fine or dim.end < dim.start + dim.fade:
             raise SoftSetError(f"a dim starts, fades and then ends, got {dim!r}")
+    framing = _framing(shots)
     g = cv.group(parent, id)
-    room = _framed(cv, g, f"{id}-room", shots)
+    room = _framed(cv, g, f"{id}-room", framing)
     wall = cv.grad("soft-playroom-wall", [(0.0, "#F4E6C9"), (1.0, "#EFD9B4")], (0, 0, 0, 1))
     cv.rect(room, -OVER, -OVER, WIDTH + 2 * OVER, 1660 + OVER, wall)  # a shot may frame past the room's edge
     floor = cv.grad("soft-playroom-floor", [(0.0, "#C79A6B"), (1.0, "#B3855A")], (0, 0, 0, 1))
@@ -331,25 +485,44 @@ def _rising(name: str, times: Sequence[float]) -> None:
         raise SoftSetError(f"{name} run from 0 in rising time, got {list(times)!r}")
 
 
-def _framed(cv: Canvas, parent, id: str, shots: Sequence[Shot]):
-    """A group in ``parent`` that holds each shot until the next: a shot cuts, it never moves."""
+def _framing(shots: Sequence[Shot]) -> dict[str, list[tuple[float, float]]]:
+    """Validate and resolve framing before a room allocates nodes or invokes its slots."""
     _rising("shots", [row.time for row in shots])
     if not all(checks.number(row.scale) and row.scale > 0 for row in shots):
         raise SoftSetError(f"a shot's scale is a positive number, got {[row.scale for row in shots]!r}")
+    if not all(checks.number(row.x) and checks.number(row.y) for row in shots):
+        raise SoftSetError("shots frame finite x and y coordinates, excluding booleans")
+    times = [round(float(row.time), 6) for row in shots]
+    if any(b <= a for a, b in zip(times, times[1:], strict=False)):
+        raise SoftSetError("shots need distinct rising times at six-decimal serialization precision")
+    values = {
+        "x": [(s.time, 540 - s.x * s.scale) for s in shots],
+        "y": [(s.time, 960 - s.y * s.scale) for s in shots],
+        "scaleX": [(s.time, s.scale) for s in shots],
+        "scaleY": [(s.time, s.scale) for s in shots],
+    }
+    if not all(checks.number(value) for keys in values.values() for _, value in keys):
+        raise SoftSetError("shots produce nonfinite frame transforms; reduce coordinates or scale")
+    return values
+
+
+def _framed(cv: Canvas, parent, id: str, framing: dict[str, list[tuple[float, float]]]):
+    """Emit validated static framing or held cuts without moving the room's foreground."""
     room = cv.group(parent, id)
-    if len(shots) > 1:
-        for prop, values in (
-            ("x", [(s.time, 540 - s.x * s.scale) for s in shots]),
-            ("y", [(s.time, 960 - s.y * s.scale) for s in shots]),
-            ("scaleX", [(s.time, s.scale) for s in shots]),
-            ("scaleY", [(s.time, s.scale) for s in shots]),
-        ):
+    if len(framing["x"]) > 1:
+        for prop, values in framing.items():
             cv.keys(room, prop, values)
+    else:
+        for prop, values in framing.items():
+            value = values[0][1]
+            if value != (1 if prop.startswith("scale") else 0):
+                setattr(room, prop, value)
     return room
 
 
 def _lights(cv: Canvas, g, lights: Sequence[Light], id: str) -> None:
-    """The dark over the room: nothing by day, a pool that flickers around a phone, or all of it."""
+    """The dark over the room: nothing by day, a pool that flickers around a phone, a warm one that holds still
+    around a lamp, or all of it."""
     pool = cv.rgrad("soft-bedroom-pool", [(0.0, NIGHT_CLEAR), (0.12, NIGHT_CLEAR), (0.34, NIGHT)])
     for k, row in enumerate(lights):
         if row.state == "day":
@@ -360,10 +533,19 @@ def _lights(cv: Canvas, g, lights: Sequence[Light], id: str) -> None:
         if row.state == "dark":
             cv.rect(night, 0, 0, WIDTH, HEIGHT, NIGHT)
             continue
+        if row.state == "lamp":
+            cv.rect(night, row.x - LAMP_BOX, row.y - LAMP_BOX, 2 * LAMP_BOX, 2 * LAMP_BOX, _lamplight(cv))
+            continue
         lit = cv.group(night, f"{id}-flicker-{k + 1}")  # a gate holds its group's opacity: the flicker sits inside it
         cv.rect(lit, row.x - 2000, row.y - 2000, 4000, 4000, pool)
         beats = int(min(end - row.time, 60.0) / FLICKER_STEP) + 1
         cv.keys(lit, "opacity", [(row.time + n * FLICKER_STEP, FLICKER[n % len(FLICKER)]) for n in range(beats)])
+
+
+def _lamplight(cv: Canvas) -> str:
+    """A bulb's pool: clear where it falls, amber at its edge and dark past that, with the room still readable."""
+    stops = [(0.0, NIGHT_CLEAR), (0.2, NIGHT_CLEAR), (0.46, LAMP_GLOW), (1.0, LAMP_DARK)]
+    return cv.rgrad("soft-bedroom-lamp", stops, (0.5, 0.5, LAMP_REACH / (2 * LAMP_BOX)))
 
 
 def _gated(cv: Canvas, parent, id: str, spans: Sequence[tuple[float, float]]):

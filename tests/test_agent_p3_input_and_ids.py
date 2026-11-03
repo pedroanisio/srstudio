@@ -65,7 +65,7 @@ def test_default_style_counter_is_retry_stable(tmp_path):
 
 
 def test_documented_timeline_examples_load_and_have_expected_semantics(tmp_path):
-    docs = (Path(__file__).resolve().parents[1] / 'docs' / 'authoring-reference.md').read_text()
+    docs = (Path(__file__).resolve().parents[1] / 'docs' / 'authoring-timelines.md').read_text()
     assert '## Timeline input formats' in docs
     section = docs.split('## Timeline input formats', 1)[1].split('\n## ', 1)[0]
     examples = re.findall(r'```json\n(.*?)\n```', section, re.DOTALL)
@@ -80,7 +80,7 @@ def test_documented_timeline_examples_load_and_have_expected_semantics(tmp_path)
     assert t.takes and t.takes[0].audio and t.takes[1].start == t.takes[0].end
     assert len(c.phrases) >= 1 and not c.takes and not c.cuts
     readme = (Path(__file__).resolve().parents[1] / 'README.md').read_text()
-    assert 'authoring-reference.md#timeline-input-formats' in readme
+    assert 'authoring-timelines.md#timeline-input-formats' in readme
 
 
 def test_outer_failure_rewinds_successful_inner_transaction(project):

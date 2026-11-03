@@ -74,7 +74,7 @@ F = stick.Face
 AT_ROAD = (0.0, 0.0)  # both of them, facing the camera on the hood
 DEV_LOOK = stick.Look(tie="#c0453b")  # dressed for the wedding
 NOOR_LOOK = ws.NOOR
-CAR_MARKS = ws.Marks(0.5, (700.0, 1385.0), 13.0, "#d7dae0")  # the code on the dash, clear of the captions
+CAR_MARKS = dict(cactus=0.5, code=(700.0, 1385.0, 13.0, "#d7dae0"))  # the code on the dash, clear of the captions
 DEV_SURE = F("open", "raised", "smile", AT_ROAD)
 DEV_ROAD = F("open", "flat", "flat", AT_ROAD)
 DEV_SAYS = F("open", "raised", "flat", (0.1, 0.45))  # at the phone

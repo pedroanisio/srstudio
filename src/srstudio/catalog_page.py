@@ -50,7 +50,7 @@ from dataclasses import dataclass, field
 from importlib.resources import files
 from pathlib import Path
 
-from . import catalog_data, catalog_server, catalog_specimens, catalog_versions, checks, digest, parts, registry
+from . import catalog_data, catalog_server, catalog_specimens, catalog_versions, checks, digest, gpu, parts, registry
 from .catalog_data import CatalogError, GalleryEntry, Line, Still
 from .styles import STYLES, Style
 from .usage import PILOTS, Report, pilot_projects
@@ -138,10 +138,20 @@ def _text(where: str, value: object) -> str:
     return value
 
 
+def _unique(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    """An object whose keys are all different; JSON alone keeps the last of a repeated key and drops the rest."""
+    doc: dict[str, object] = {}
+    for key, value in pairs:
+        if key in doc:
+            raise ValueError(f"{key!r} twice in one object")
+        doc[key] = value
+    return doc
+
+
 def load_notes(path: Path) -> Notes:
-    """Curated text for the page. Unknown fields and wrong types are refused, not ignored."""
+    """Curated text for the page. Unknown fields, wrong types and repeated keys are refused, not ignored."""
     try:
-        doc = json.loads(Path(path).read_text(encoding="utf-8"))
+        doc = json.loads(Path(path).read_text(encoding="utf-8"), object_pairs_hook=_unique)
     except (OSError, ValueError) as exc:
         raise CatalogError(f"{path}: {exc}") from None
     top = _fields(str(path), doc, {"schema", "episodes", "styles"}, {"gallery", "parts"})
@@ -1040,7 +1050,8 @@ def pose_sheet(engine: Path, cache: Path) -> list[tuple[str, Path]]:
     doc = folder / "poses.scene.xml"
     doc.write_bytes(scene.to_bytes())
     for i, (_, png) in enumerate(pngs):
-        _cache(png.resolve(), [str(engine), "render", str(doc), "-f", str(i), "-o"])
+        with gpu.held():
+            _cache(png.resolve(), [str(engine), "render", str(doc), "-f", str(i), "-o"])
     return pngs
 
 
