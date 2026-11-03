@@ -167,12 +167,12 @@ def stage(take) -> None:
     elif take.shot == "crowd":
         frame = camera(g, "open")
         lobby(frame, end, outside=lambda m: walker(m, ((0.0, FAR + 0.03),), end, STRANGER, SHY))
-        holder(frame, sd.shaking(0.0, end, STRAINED), end)
+        holder(frame, sd.shaking(0.0, end, STRAINED, published=True), end)
         crowd(frame, end, take.start - t.takes[3].start)
     elif take.shot == "time":
         frame = camera(g, "time")
         lobby(frame, end, night=DUSK, clock=1.6, outside=lambda m: sd.snow(cv, m, end, x=100, y=240, w=600, h=1260))
-        holder(frame, sd.shaking(0.0, end, FROZEN, rate=8), end)
+        holder(frame, sd.shaking(0.0, end, FROZEN, rate=8, published=True), end)
         marks = (end * 0.3, end * 0.6, end)
         for k, (a, b) in enumerate(zip(marks, marks[1:], strict=False)):
             cap = cv.group(frame, cv.uid("settled"))
@@ -181,7 +181,7 @@ def stage(take) -> None:
     elif take.shot == "race":
         frame = camera(g, "open")
         lobby(frame, end, night=DAWN, outside=lambda m: sd.marathon(cv, m, end * 0.75))
-        holder(frame, sd.shaking(0.0, end, FROZEN, rate=8), end, cap=3)
+        holder(frame, sd.shaking(0.0, end, FROZEN, rate=8, published=True), end, cap=3)
     elif take.shot == "old":
         sd.street(cv, g, end, night=PALE)
         sd.jogger(cv, g, end, look=STRANGER_OLD, face=OLD_SHY, rate=3.0, at=LENS_AT, scale=LENS_SCALE,
@@ -191,7 +191,11 @@ def stage(take) -> None:
         lobby(frame, end, night=PALE,
               outside=lambda m: walker(m, ((0.0, 0.55), (end, 0.8)), end, STRANGER_OLD, OLD_SHY, rate=3.0))  # fmt: skip
         drop = end - GIVE
-        keys = [stick.RigKey(0, "hold-a", HOPE), *sd.shaking(0.3, drop, HOPE), stick.RigKey(drop, "sag", GONE)]
+        keys = [
+            stick.RigKey(0, "hold-a", HOPE),
+            *sd.shaking(0.3, drop, HOPE, published=True),
+            stick.RigKey(drop, "sag", GONE),
+        ]
         holder(frame, keys, end)
         for name, span in (("hold", (0, drop)), ("sag", (drop, end))):
             settled = cv.group(frame, cv.uid("settled"))

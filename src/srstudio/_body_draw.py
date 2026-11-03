@@ -13,6 +13,7 @@ from ._body_solve import footprint
 from ._body_types import BodyPose, BodyProfile, fail, scalar
 from ._transaction import scene_transaction
 from .canvas import Canvas
+from .held_keys import HeldKeyError, held_key, project_fps
 from .limbs.errors import LimbError
 from .limbs.math3d import Vec3
 from .limbs.projection import Camera
@@ -132,15 +133,23 @@ def place(window: BodyWindow, cv: Canvas, parent, *, camera: Camera, at: float, 
     plan.window(window.start, window.end)
     if at + window.end - window.start > 600:
         raise fail('interval', None, 'a placed interval ending by 600 seconds')
-    times = {0.0, plan.duration, *(round(i / fps, 6) for i in range(math.ceil(plan.duration * fps)))}
-    times.update(t for step in plan.score.steps for t in (step.start, step.end))
-    if len(times) - 1 > MAX_FRAMES:
-        raise fail('frames', len(times) - 1, f'at most {MAX_FRAMES} body frames', 'body.budget')
-    ordered = sorted(times)
+    try:
+        rate = project_fps(cv.scene)
+    except HeldKeyError as exc:
+        raise fail('canvas', str(exc), 'a canvas whose project states its frame rate') from exc
+    # Each drawing is keyed half a project frame before the first frame that shows it (ADR 0216); of two changes
+    # before one frame, the frame shows the later.
+    changes = {0.0, *(i / fps for i in range(math.ceil(plan.duration * fps)))}
+    changes.update(t for step in plan.score.steps for t in (step.start, step.end) if 0 <= t < plan.duration)
+    shown = {held_key(t, rate): t for t in sorted(changes)}
+    keys = sorted(k for k in shown if k < plan.duration)
+    if len(keys) > MAX_FRAMES:
+        raise fail('frames', len(keys), f'at most {MAX_FRAMES} body frames', 'body.budget')
+    edges = [*keys, plan.duration]
     frames, count = [], 0
     try:
-        for a, b in zip(ordered, ordered[1:], strict=False):
-            primitives = geometry(plan.sample(a), plan.profile, camera, style)
+        for a, b in zip(edges, edges[1:], strict=False):
+            primitives = geometry(plan.sample(shown[a]), plan.profile, camera, style)
             count += 1 + sum(2 if p.kind == 'line' else 1 for p in primitives)
             if count > MAX_NODES:
                 raise fail('nodes', count, f'at most {MAX_NODES} emitted nodes', 'body.budget')
