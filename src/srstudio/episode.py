@@ -384,6 +384,9 @@ class EpisodeSpec:
     # -- the frame's edge ---------------------------------------------------------------------------
     loudness: str | None = None  # the mix's integrated target for this reel; None: the style's
     bleed: bool = False  # far planes blurred past the frame's edge (srstudio.look.sheet); False redraws published reels
+    # held keys half a frame before the frame that first shows them (srstudio.held_keys, ADR 0216): every new reel
+    # sets it; False keeps the six-decimal key times every reel built so far was drawn with, frozen with them
+    held_frames: bool = False
 
     def __post_init__(self) -> None:
         st = self.style
@@ -480,6 +483,7 @@ class Episode:
             local_time=spec.local_time,
             signature=Signature(spec.signature_code) if spec.signature else None,
             bleed=spec.bleed,
+            held_frames=spec.held_frames,
         )
         self._mix: AudioMix | None = None
         self._cover_hidden: list[tuple[str, str, str]] = []  # (id, property, value) overridden in the cover variant

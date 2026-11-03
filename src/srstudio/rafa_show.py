@@ -113,6 +113,7 @@ class Show:
     push: tuple[float, float] = (2.4, 1.05)  # (seconds, scale) of the opening move; a scale of 1.0 is a still opening
     room: str = "rafa-kitchen"
     bleed: bool = False  # far planes blurred past the frame's edge (srstudio.look.sheet): every new reel sets it
+    held_frames: bool = False  # held keys half a frame before their frame (ADR 0216): every new reel sets it
 
     @property
     def output(self) -> str:
@@ -294,6 +295,7 @@ def run(show: Show, argv: Sequence[str], env=os.environ) -> None:
         output=show.output,
         crf="25",
         bleed=show.bleed,
+        held_frames=show.held_frames,
     )
     ep = build(root, staging, set(argv[2:]))
     if ep is not None:  # None: --init wrote the project files

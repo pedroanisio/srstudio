@@ -387,3 +387,13 @@ def test_a_long_fold_page_turns_from_the_count_to_sheets_four_times_the_last():
     turn = min(float(g.get("start")) for g in sheets)
     assert all(float(g.get("end")) == turn for g in counts), "the count gives the page to the sheets"
     assert max(float(g.get("start")) for g in sheets) <= turn + 0.6 * (8.0 - turn)
+
+
+@pytest.mark.parametrize("held_frames", [False, True])
+def test_the_show_hands_its_held_frames_to_the_staging(monkeypatch, tmp_path, held_frames):
+    """A delivered episode keeps its six-decimal keys; a new one asks for held_frames (ADR 0216)."""
+    seen = []
+    monkeypatch.setattr(sp, "build", lambda root, staging, flags: seen.append(staging))
+    env = {"SRSTUDIO_ENGINE": "e", "SRSTUDIO_RENDERS": str(tmp_path), "SRSTUDIO_FONTS": str(tmp_path)}
+    sp.run(replace(SHOW, held_frames=held_frames), ["show", str(tmp_path), "--init"], env)
+    assert seen[0].held_frames is held_frames

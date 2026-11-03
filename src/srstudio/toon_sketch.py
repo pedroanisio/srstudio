@@ -152,6 +152,7 @@ class Staging:
     """Per character: ``(cv, body, appearance, beats)`` keys that shot's body group on the project clock, about the
     character's seat, so a figure can bend, sink or sway while its set stays put."""
     bleed: bool = False  # far planes blurred past the frame's edge (srstudio.look.sheet): every new reel sets it
+    held_frames: bool = False  # held keys half a frame before their frame (ADR 0216): every new reel sets it
 
 
 def figure_group(cv: Canvas, parent, framing: tuple[float, float] | None):
@@ -278,6 +279,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
             output=staging.output,
             safe_area=staging.safe_area,
             bleed=staging.bleed,
+            held_frames=staging.held_frames,
             output_options=dict(
                 codec="h264",
                 container="mp4",

@@ -276,3 +276,22 @@ def test_a_reel_captions_in_its_series_look_unless_it_names_its_own(project):
     assert CALLS["stage"]["look"] is tidy
     own = native.CaptionLook(min_last=3)
     assert dataclasses.replace(tidy_reel, captions=own).look() is own
+
+
+class _Built(Exception):
+    pass
+
+
+@pytest.mark.parametrize("held_frames", [False, True])
+def test_a_reel_hands_its_held_frames_to_the_episode(monkeypatch, tmp_path, held_frames):
+    """Every new reel sets held_frames (ADR 0216); a delivered one keeps the default, so it rebuilds byte for byte."""
+    seen = []
+
+    def episode(spec):
+        seen.append(spec)
+        raise _Built
+
+    monkeypatch.setattr(series, "Episode", episode)
+    with pytest.raises(_Built):
+        series.build(reel(held_frames=held_frames), str(tmp_path / "reel.py"), argv=["reel", str(tmp_path)])
+    assert seen[0].held_frames is held_frames

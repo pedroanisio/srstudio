@@ -42,13 +42,22 @@ HEAD_RADIUS = 92.0  # a head's reach from its middle, hair and all, on the uncut
 
 
 def spec(
-    root: str | Path, slug: str, number: str, title: str, description: str, seed: int, *, bleed: bool = False
+    root: str | Path,
+    slug: str,
+    number: str,
+    title: str,
+    description: str,
+    seed: int,
+    *,
+    bleed: bool = False,
+    held_frames: bool = False,
 ) -> EpisodeSpec:
-    """A Stick reel on its take timeline, word captions burned in and no music bed. ``bleed``: see
-    :attr:`srstudio.episode.EpisodeSpec.bleed`; every new reel sets it."""
+    """A Stick reel on its take timeline, word captions burned in and no music bed. ``bleed`` and ``held_frames``:
+    see :class:`srstudio.episode.EpisodeSpec`; every new reel sets both."""
     return EpisodeSpec(
         slug=slug,
         bleed=bleed,
+        held_frames=held_frames,
         number=number,
         title=title,
         description=description,

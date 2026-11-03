@@ -4,7 +4,7 @@ generated-by: Claude Code (Claude Opus 5.5)
 
 # ADR 0216: A held change is keyed half a frame before its frame
 
-- Status: proposed (2026-11-02)
+- Status: proposed (2026-11-02, amended 2026-11-03)
 - Back to the [library README](../../README.md)
 
 ## Context
@@ -63,10 +63,46 @@ asks the engine which drawing frames 0 to 11 show, with and without a time offse
 - Patch each call site with its own offset. The defect came from each site choosing its own key times; one helper
   keeps the rule in one place and testable.
 
+## Every held key a canvas writes
+
+`Canvas.keys` writes each key at `round(t, 6)`, and every gate (`Canvas.gate`) goes through it. So an exact frame
+time from a frame list, such as `plate_host.runs` or `rafa_host._runs` from 0, reaches the scene rounded and
+stalls on the composition clock with no offset at all. Measured on the published scenes with `scene-render eval`,
+comparing each frame against the same instant 2 microseconds later (any held difference is a change the frame
+should have shown):
+
+| scene | frames | stalled |
+| --- | --- | --- |
+| `unwritten-rules-how-are-you` (Rafa reel, 30 fps) | 768 | 78 |
+| `unwritten-rules-door` (Rafa show, 30 fps) | 781 | 79 |
+| `penny-drop` (Small Print, 30 fps) | 681 | 82 |
+| `one-more-episode` (News, 30 fps) | 767 | 3 |
+| `gloss-exit` (Gloss, 24 fps) | 556 | 5 |
+| `hold-the-door`, `good-you`, `did-you-pack` (Stick, 24 fps) | 472, 478, 650 | 3, 2, 2 |
+| `saga-free-tier` (Saga, 24 fps) | 666 | 1 |
+| `bin-day` (Stick, 24 fps) | 690 | 0 |
+
+Built again as new reels, `did-you-pack` has no stalled frame and `penny-drop` none either (its only differences
+left are a 10 ms linear blink ramp that starts on a frame, which moves the instant 2 microseconds later by 0.15 px).
+Every stalled key is a six-decimal hold key at a frame time that rounded up, on the composition clock or on the
+local clock of a shot that starts at 0: in the sequenced reels every stall is in the first shot. No built reel has a
+`timeOffset`.
+
+A canvas built with `held_frames=True` writes each held key (`hold`, or `kind="hold"`) at `held_key(t, fps)` with the
+project's rate, and of two changes one frame would show it keeps the later. Interpolated keys keep `round(t, 6)`.
+`EpisodeSpec.held_frames` hands it to the canvas, and `toon_sketch.Staging`, `collage_sketch.Staging`,
+`series.Reel`, `rafa_show.Show`, `smallprint.Show` and `stick_reel.spec` carry it, `False` by default as `bleed` is:
+every new reel sets it, and a reel already built keeps its keys, so its scene rebuilds byte for byte. A key on a
+shot's local clock is placed on that clock's frames, which are the reel's frames when the shot starts on one; a
+shot that starts between frames shows the change on the nearest frame, half a frame early at most.
+
+`framegraph.evaluate` sent its times to the engine as `{time:.6f}`, and `text_rules` read its frames at six-decimal
+times, so a gate sampled the same rounded instants and saw each change on the frame the keys meant, not the one
+the render showed. It sends each time to its last digit, and `text_rules` reads at the engine's frame times
+`k / fps`.
+
 ## Consequences
 
-New body, face-blend, named-gaze and shaking drawings show every frame its own drawing. No published episode
-draws a body or a face blend or calls `named_gaze`; Hold the Door is pinned as above. Exact frame-start keys
-elsewhere (the plate hosts' `runs` from 0, the composition and scene-motion raster frames, built with exact
-fractions) are shown correctly at global time but would stall under a clock offset; they are left as they are
-because their published output must not move, and new grid-keyed held paths use `held_keys`.
+New body, face-blend, named-gaze and shaking drawings, and every held key of a canvas built with `held_frames`,
+show each frame its own state, on the composition clock and under a clock offset. Delivered reels keep their stalls,
+because their scenes are frozen. A gate that reads frames through `framegraph.evaluate` sees what the render shows.

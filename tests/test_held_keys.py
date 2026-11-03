@@ -244,3 +244,105 @@ def test_the_engine_shows_every_frame_its_own_body_drawing(tmp_path, at):
     first = round(at * 30)
     for k in range(12):
         assert _shown(scene, first + k) == [frames[k].id], f"frame {first + k}"
+
+
+def _visible(scene: Path, frame: int) -> list[str]:
+    """The gated drawings frame ``frame`` shows: drawn, and opaque in the world."""
+    run = subprocess.run(
+        [str(ENGINE), "eval", scene.name, "--frame", str(frame), "--format", "json"],
+        cwd=scene.parent,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    nodes = json.loads(run.stdout)["result"]["nodes"]
+    return [
+        n["id"]
+        for n in nodes
+        if str(n.get("id", "")).startswith("body-frame") and n.get("draw") and n.get("world_opacity", 0) > 0.5
+    ]
+
+
+# -- the canvas: every held key a new reel writes -------------------------------------------------------------------
+def key_times(animate) -> list[float]:
+    return [float(k.time) for k in animate.iter("key")]
+
+
+def framed_canvas(held_frames: bool, fps: str = "30") -> Canvas:
+    scene = Scene(version="auto")
+    scene.add_project(width=360, height=640, fps=fps, duration=2, background="#FFFFFF")
+    return Canvas(scene, font_asset=None, held_frames=held_frames)
+
+
+def test_a_published_canvas_keeps_its_six_decimal_keys():
+    """Published reels rebuild byte for byte: their gates keep ``round(t, 6)``, frame-late at 2 / 30 and all."""
+    cv = framed_canvas(False)
+    gate = cv.gate(cv.group(cv.comp, "g"), [(2 / 30, 1.0)])
+    assert key_times(gate) == [0.0, 0.066667, 1.0]
+
+
+@pytest.mark.parametrize("fps", ["30", "24", "30000/1001"])
+def test_a_new_canvas_keys_every_held_change_half_a_frame_early(fps):
+    cv = framed_canvas(True, fps)
+    rate = Fraction(fps)
+    spans = [(float(k / rate), float((k + 1) / rate)) for k in range(1, 40, 3)]
+    gate = cv.gate(cv.group(cv.comp, "g"), spans)
+    times = key_times(gate)
+    assert off_frame(times, float(rate)) == []
+    assert times[1] == float(Fraction(1, 2) / rate)  # frame 1 first shows it
+
+
+def test_a_new_canvas_keeps_a_change_between_frames_on_the_frame_that_first_shows_it():
+    cv = framed_canvas(True)
+    keys = cv.keys(cv.group(cv.comp, "g"), "x", [(0, 0), (0.07, 10), (0.5, 20)])
+    assert key_times(keys) == [0.0, 2.5 / 30, 14.5 / 30]  # 0.07 s first shows on frame 3, 0.5 s on frame 15
+
+
+def test_two_changes_inside_one_frame_leave_the_later_one():
+    cv = framed_canvas(True)
+    keys = cv.keys(cv.group(cv.comp, "g"), "x", [(0, 0), (0.035, 1), (0.06, 2)])
+    assert [(float(k.time), k.value) for k in keys.iter("key")] == [(0.0, "0"), (1.5 / 30, "2")]
+
+
+@pytest.mark.parametrize("kind", [{"hold": False}, {"kind": "sine-in-out"}])
+def test_a_new_canvas_leaves_interpolated_keys_where_they_are(kind):
+    cv = framed_canvas(True)
+    keys = cv.keys(cv.group(cv.comp, "g"), "x", [(0, 0), (2 / 30, 10)], **kind)
+    assert key_times(keys) == [0.0, 0.066667]
+
+
+def test_a_named_hold_is_a_held_key_too():
+    cv = framed_canvas(True)
+    keys = cv.keys(cv.group(cv.comp, "g"), "x", [(0, 0), (2 / 30, 10)], kind="hold")
+    assert key_times(keys) == [0.0, 1.5 / 30]
+
+
+def test_a_new_canvas_without_a_frame_rate_is_refused_and_left_unchanged():
+    cv = Canvas(Scene(version="auto"), font_asset=None, held_frames=True)
+    g = cv.group(cv.comp, "g")
+    before = cv.scene.to_bytes()
+    with pytest.raises(held_keys.HeldKeyError, match="frame rate"):
+        cv.gate(g, [(0.1, 0.2)])
+    assert cv.scene.to_bytes() == before
+
+
+@pytest.mark.skipif(ENGINE is None, reason="needs the engine")
+@pytest.mark.parametrize("held_frames", [True, False])
+@pytest.mark.parametrize("at", [0.0, 1.1])
+def test_the_engine_shows_each_gated_drawing_on_its_own_frame(tmp_path, held_frames, at):
+    """Thirty drawings gated one frame each, as a plate host gates its frame list, on the composition clock and
+    under a 1.1 s clock offset. A new canvas shows each on its frame; a published one stalls where the engine says."""
+    cv = framed_canvas(held_frames)
+    shot = cv.group(cv.comp, "shot", start=at, end=at + 1.5, timeOffset=at) if at else cv.comp
+    for k in range(30):
+        g = cv.group(shot, f"body-frame-{k:04d}", opacity=0.0)
+        cv.rect(g, 0, 0, 10, 10, "#000000")
+        cv.gate(g, [(k / 30, (k + 1) / 30)])
+    scene = tmp_path / "gated.scene.xml"
+    scene.write_bytes(cv.scene.to_bytes(layout="pretty"))
+    first = round(at * 30)
+    late = [k for k in range(30) if _visible(scene, first + k) != [f"body-frame-{k:04d}"]]
+    if held_frames:
+        assert late == []
+    else:
+        assert late  # the published keys stall: what ADR 0216 records
