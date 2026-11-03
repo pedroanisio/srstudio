@@ -9,6 +9,7 @@ an unmarked office block, ringed in red pen. Neither letters anything. Bad input
 from __future__ import annotations
 
 from . import checks
+from ._toon_story_contracts import contract
 from .canvas import Canvas
 from .registry import register
 from .toon import FINE_W, INK_W, ToonDataError, _d, _path, fh, fx, fy
@@ -40,7 +41,11 @@ def _cue(value: object, what: str) -> None:
 
 
 @register(
-    "prop", "toon-smoke-detector", summary="A smoke detector on the ceiling, its light turning red on cue", style="toon"
+    "prop",
+    "toon-smoke-detector",
+    summary="A smoke detector on the ceiling, its light turning red on cue",
+    style="toon",
+    contract=contract('toon-smoke-detector'),
 )
 def smoke_detector(
     cv: Canvas, parent, at: Point = (150.0, 70.0), red: float | None = None, scale: float = 1.0
@@ -94,7 +99,11 @@ def smoke_detector(
 
 
 @register(
-    "prop", "toon-folder", summary="A manila folder from above, opening on a photograph of a building", style="toon"
+    "prop",
+    "toon-folder",
+    summary="A manila folder from above, opening on a photograph of a building",
+    style="toon",
+    contract=contract('toon-folder'),
 )
 def folder(cv: Canvas, parent, at: Point = (300.0, 430.0), opened: float | None = None, scale: float = 1.0) -> object:
     """A folder centred on reference ``at``, shut, or open on its photograph from ``opened``. Returns its group."""

@@ -14,6 +14,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from . import checks, signature
+from ._stick_story_contracts import contract
 from .canvas import Canvas
 from .registry import register
 from .stick import Gradient, RigPose, StickDataError, _group, _seat, box, oval, paint, shape
@@ -160,7 +161,12 @@ def _cabin(cv: Canvas, parent) -> None:
     signature.code(cv, parent, 760, 1520, 13, color="#d7dae0")  # on the dash, above the captions
 
 
-@register("location", "stick-rough-road", tags=("car", "road", "gravel", "grass", "field", "fence", "driver", "view"))
+@register(
+    "location",
+    "stick-rough-road",
+    tags=("car", "road", "gravel", "grass", "field", "fence", "driver", "view"),
+    contract=contract('stick-rough-road'),
+)
 def ahead(cv: Canvas, parent, end: float, *, surface: str = "street", fence: float | None = None) -> None:
     """The road from the driver's seat, ``surface`` running at the camera and the frame shaking as it gets worse; with
     ``fence`` (seconds into the shot) a wooden fence comes up across the field and the car stops at it then."""
@@ -258,7 +264,12 @@ def _sofa(cv: Canvas, parent, x: float, y: float, _end: float) -> None:
 ICONS = {"arrow": _arrow, "spin": _spin, "flag": _flag, "fence": _gate, "couch": _sofa}
 
 
-@register("prop", "stick-nav-insert", tags=("car", "phone", "map", "navigation", "directions", "font", "insert"))
+@register(
+    "prop",
+    "stick-nav-insert",
+    tags=("car", "phone", "map", "navigation", "directions", "font", "insert"),
+    contract=contract('stick-nav-insert'),
+)
 def nav_insert(cv: Canvas, parent, end: float, *, screen: str = "straight", buzz: Sequence[float] = ()) -> None:
     """The phone in its mount, filling the frame against the dash and the road: an invented map and one instruction
     from :data:`SCREENS`, shaking a little at each time in ``buzz`` (seconds on the shot clock)."""

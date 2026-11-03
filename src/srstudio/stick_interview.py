@@ -12,6 +12,7 @@ same."""
 from __future__ import annotations
 
 from . import checks, signature
+from ._stick_story_contracts import contract
 from .canvas import Canvas
 from .look import sheet
 from .registry import register
@@ -119,7 +120,12 @@ def _chair(cv: Canvas, parent, x: float, side: int) -> None:
     shape(cv, parent, f"M {x - 90} 1560 L {x} 1500 L {x + 90} 1560", sw=14, stroke=CHAIR_DARK)
 
 
-@register("location", "stick-interview-room", tags=("office", "interview", "door", "window", "plant", "chairs"))
+@register(
+    "location",
+    "stick-interview-room",
+    tags=("office", "interview", "door", "window", "plant", "chairs"),
+    contract=contract('stick-interview-room'),
+)
 def room(cv: Canvas, parent, end: float) -> None:
     """The room behind the desk: the wall, the door between the chairs, a window with the city out of focus, a plant
     the two chairs at :data:`LEFT_AT` and :data:`RIGHT_AT`, and the top of the desk, for a :func:`page` and hands to lie
@@ -187,7 +193,12 @@ def drawer_handle(amount: float) -> tuple[float, float]:
     return x + w / 2, y + DRAWER_OUT * amount + h * (1 + DRAWER_GROW * amount) / 2
 
 
-@register("prop", "stick-interview-desk", tags=("office", "interview", "desk", "drawer", "pillow", "menus", "font"))
+@register(
+    "prop",
+    "stick-interview-desk",
+    tags=("office", "interview", "desk", "drawer", "pillow", "menus", "font"),
+    contract=contract('stick-interview-desk'),
+)
 def desk(cv: Canvas, parent, end: float, *, opens: float | None = None, is_open: bool = False) -> None:
     """The desk from its long side, drawers to the camera, the marks on it: the bottom drawer shut, ``is_open`` with a
     pillow, a blanket and a stack of delivery menus in it, or shut until ``opens`` and then sliding out."""
@@ -223,7 +234,7 @@ def desk(cv: Canvas, parent, end: float, *, opens: float | None = None, is_open:
         _drawer(s, frame, (step + 1) / DRAWER_STEPS)
 
 
-@register("prop", "stick-desk-page", tags=("office", "paper", "resume", "page"))
+@register("prop", "stick-desk-page", tags=("office", "paper", "resume", "page"), contract=contract('stick-desk-page'))
 def page(cv: Canvas, parent, x: float, y: float, *, face_down: bool = False, ringed: bool = False):
     """A sheet lying on the desk, ``x``, ``y`` its middle, seen low from the front: scrawled lines, or its blank back
     ``face_down``, and one line ringed in red."""
@@ -240,7 +251,12 @@ def page(cv: Canvas, parent, x: float, y: float, *, face_down: bool = False, rin
     return g
 
 
-@register("prop", "stick-resume-insert", tags=("office", "resume", "insert", "page", "ring", "font"))
+@register(
+    "prop",
+    "stick-resume-insert",
+    tags=("office", "resume", "insert", "page", "ring", "font"),
+    contract=contract('stick-resume-insert'),
+)
 def resume_insert(cv: Canvas, parent, end: float, *, line: str = "CONSULTING") -> None:
     """A resume filling the frame on the desk: a heading, grey lines where the details are, and ``line`` ringed in red
     by hand. It names nobody."""

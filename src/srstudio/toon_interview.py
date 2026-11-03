@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from . import checks
+from ._toon_story_contracts import contract
 from .canvas import Canvas
 from .registry import register
 from .toon import FINE_W, INK_W, ToonDataError, _d, _path, fh, fx, fy
@@ -58,7 +59,11 @@ def _scale(scale: object) -> float:
 
 
 @register(
-    "prop", "toon-wall-sign", summary="A company's name on a wall plaque, in the set, read on a phone", style="toon"
+    "prop",
+    "toon-wall-sign",
+    summary="A company's name on a wall plaque, in the set, read on a phone",
+    style="toon",
+    contract=contract('toon-wall-sign'),
 )
 def wall_sign(cv: Canvas, parent, text: str = "DUNMORE GROUT SUPPLY") -> object:
     """``text`` (1 to :data:`SIGN_MAX` characters) on a dark plaque across the top of the wall. Returns its group."""
@@ -75,7 +80,11 @@ def wall_sign(cv: Canvas, parent, text: str = "DUNMORE GROUT SUPPLY") -> object:
 
 
 @register(
-    "prop", "toon-blind", summary="A slatted blind over the room's window, up or coming down on cue", style="toon"
+    "prop",
+    "toon-blind",
+    summary="A slatted blind over the room's window, up or coming down on cue",
+    style="toon",
+    contract=contract('toon-blind'),
 )
 def blind(cv: Canvas, parent, drop: tuple[float, float] | None = None, down: bool = False) -> object:
     """A blind on :data:`BLIND_BOX`: rolled up under its rail, falling over the ``drop`` span, or ``down`` from the
@@ -101,7 +110,13 @@ def blind(cv: Canvas, parent, drop: tuple[float, float] | None = None, down: boo
     return g
 
 
-@register("prop", "toon-tissue-box", summary="A box of tissues on the desk, one standing up out of it", style="toon")
+@register(
+    "prop",
+    "toon-tissue-box",
+    summary="A box of tissues on the desk, one standing up out of it",
+    style="toon",
+    contract=contract('toon-tissue-box'),
+)
 def tissue_box(cv: Canvas, parent, at: Point = (300.0, TOP_Y), scale: float = 1.0) -> object:
     """A tissue box whose foot is on reference ``at``. Returns its group."""
     x, y = _point(at, "a tissue box")
@@ -120,7 +135,11 @@ def tissue_box(cv: Canvas, parent, at: Point = (300.0, TOP_Y), scale: float = 1.
 
 
 @register(
-    "prop", "toon-sample-tray", summary="A shallow tray of little sample bars, for a trade's samples", style="toon"
+    "prop",
+    "toon-sample-tray",
+    summary="A shallow tray of little sample bars, for a trade's samples",
+    style="toon",
+    contract=contract('toon-sample-tray'),
 )
 def sample_tray(
     cv: Canvas,
@@ -161,7 +180,13 @@ def sample_tray(
     return g
 
 
-@register("prop", "toon-paper", summary="A resume lying on the desk, unlettered, its lines a scrawl", style="toon")
+@register(
+    "prop",
+    "toon-paper",
+    summary="A resume lying on the desk, unlettered, its lines a scrawl",
+    style="toon",
+    contract=contract('toon-paper'),
+)
 def paper(cv: Canvas, parent, at: Point = (300.0, 830.0), scale: float = 1.0) -> object:
     """A sheet lying flat on the desk's top, seen low, centred on reference ``at``. Returns its group."""
     x, y = _point(at, "a sheet")

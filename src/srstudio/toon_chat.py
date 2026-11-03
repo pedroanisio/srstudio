@@ -13,6 +13,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from . import checks
+from ._toon_story_contracts import contract
 from .canvas import Canvas
 from .registry import register
 from .toon import FINE_W, INK_W, ToonDataError, fh, fx, fy
@@ -114,6 +115,7 @@ def _clear(what: str, box: Box) -> None:
     "prop",
     "toon-chat-phone",
     summary="A phone whose invented chat window fills on cue, its back to the viewer until it is turned round",
+    contract=contract('toon-chat-phone'),
 )
 def chat_phone(
     cv: Canvas,
@@ -166,7 +168,12 @@ def chat_phone(
     return g
 
 
-@register("prop", "toon-chat-chip", summary="One short line landing over a phone in a white chip, with a pop")
+@register(
+    "prop",
+    "toon-chat-chip",
+    summary="One short line landing over a phone in a white chip, with a pop",
+    contract=contract('toon-chat-chip'),
+)
 def chat_chip(
     cv: Canvas,
     parent,

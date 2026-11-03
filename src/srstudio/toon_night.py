@@ -12,6 +12,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from . import checks, signature, toon_cars
+from ._toon_story_contracts import contract
 from .canvas import Canvas
 from .registry import register
 from .toon import FINE_W, ToonDataError, fh, fx, fy
@@ -77,7 +78,12 @@ def _lights_on(readings: Sequence[tuple[float, float, str]], lit_from: float | N
     return next((a for a, _, _ in readings if a >= lit_from), None)
 
 
-@register("location", "toon-night-cabin", summary="A car's cabin at night seen from the dash: roof, back window, seats")
+@register(
+    "location",
+    "toon-night-cabin",
+    summary="A car's cabin at night seen from the dash: roof, back window, seats",
+    contract=contract('toon-night-cabin'),
+)
 def night_cabin(cv: Canvas, parent) -> None:
     """The cabin, for two characters drawn over it, on :data:`SEATS`."""
     g = cv.group(parent, cv.uid("g"))
@@ -95,7 +101,12 @@ def _vent(cv: Canvas, g, x: float, y: float, w: float = 128.0, h: float = 54.0) 
         cv.rect(g, fx(x + 10), fy(y + 12 + 12 * k), fh(w - 20), fh(4), VENT_SLAT, cv.clear, 0, radius=0)
 
 
-@register("prop", "toon-night-dash", summary="A dark dashboard in front of the seats, marks where a desk has them")
+@register(
+    "prop",
+    "toon-night-dash",
+    summary="A dark dashboard in front of the seats, marks where a desk has them",
+    contract=contract('toon-night-dash'),
+)
 def night_dash(cv: Canvas, parent, close: bool = False) -> None:
     """The dash in front of the characters; ``close``, the same dash filling the frame above its lip too, for a shot
     that has come down to it."""
@@ -113,7 +124,12 @@ def night_dash(cv: Canvas, parent, close: bool = False) -> None:
     signature.code(cv, g, fx(580), fy(866), 14, color=DASH_CODE, opacity=0.9, align="end")
 
 
-@register("prop", "toon-call-chip", summary="A dashboard call readout: a name and a running timer, dim until lit")
+@register(
+    "prop",
+    "toon-call-chip",
+    summary="A dashboard call readout: a name and a running timer, dim until lit",
+    contract=contract('toon-call-chip'),
+)
 def call_chip(
     cv: Canvas,
     parent,

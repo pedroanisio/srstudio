@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from . import checks
+from ._cutout_story_contracts import contract
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -125,6 +126,7 @@ def _check_stack(hats, scale, topple) -> None:
     "hat-stack",
     style="cutout",
     summary="A column of hats, each landing on the last with a squash, that sways and topples as one",
+    contract=contract('hat-stack'),
 )
 def hat_stack(
     cv: Canvas,
@@ -164,7 +166,13 @@ def hat_stack(
     return root
 
 
-@register("prop", "tiny-hat", style="cutout", summary="A very small round hat, the size of a walnut on a grown head")
+@register(
+    "prop",
+    "tiny-hat",
+    style="cutout",
+    summary="A very small round hat, the size of a walnut on a grown head",
+    contract=contract('tiny-hat'),
+)
 def tiny_hat(cv: Canvas, parent, x=540, y=800, *, scale: float = 1.0, id: str = "tiny-hat"):
     """The brim's middle sits on (``x``, ``y``), 58 wide and 30 tall at scale 1."""
     checks.positive(scale, CutoutHatsError, f"scale must be a positive number, got {scale!r}")

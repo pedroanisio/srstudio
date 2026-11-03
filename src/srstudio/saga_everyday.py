@@ -12,6 +12,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from . import checks, saga_sets
+from ._saga_everyday_contracts import contract
 from .canvas import Canvas
 from .registry import register
 from .saga import SagaError
@@ -72,6 +73,7 @@ def _key(cv: Canvas, node, prop: str, rows: Sequence[tuple[float, float]], kind:
     "saga-hut",
     summary="Inside the family's desert hut: warm plaster, a round window on two suns, a shelf of jars with the "
     "cactus on its end",
+    contract=contract('saga-hut'),
 )
 def hut(cv: Canvas, parent, *, end: float) -> None:
     """The hut; the cast stands behind its table (:func:`hut_table`) on :data:`saga_sets.BEHIND`."""
@@ -101,6 +103,7 @@ def hut(cv: Canvas, parent, *, end: float) -> None:
     "location",
     "saga-hut-table",
     summary="The hut's kitchen table, drawn after the family who sit behind it: a scrubbed top and a plank front",
+    contract=contract('saga-hut-table'),
 )
 def hut_table(cv: Canvas, parent, *, end: float) -> None:
     """The table, drawn after the cast behind it; what stands on it is a prop drawn after this."""
@@ -113,7 +116,7 @@ def hut_table(cv: Canvas, parent, *, end: float) -> None:
         cv.line(g, x, TABLE_FRONT + 6, x, TABLE_BOTTOM - 6, "#3a2012", 5)
 
 
-@register("prop", "saga-plate", summary="A plain plate, seen from the table's edge")
+@register("prop", "saga-plate", summary="A plain plate, seen from the table's edge", contract=contract('saga-plate'))
 def plate(cv: Canvas, parent, *, at: tuple[float, float], end: float, width: float = 180) -> None:
     _check_end(end)
     x, y = at
@@ -123,7 +126,12 @@ def plate(cv: Canvas, parent, *, at: tuple[float, float], end: float, width: flo
     cv.ellipse(g, x - width * 0.34, y - 11, width * 0.68, 22, "#cfc6ae", opacity=0.8)
 
 
-@register("prop", "saga-cup", summary="A clay cup with no handle, tea running into it, a little steam off it after")
+@register(
+    "prop",
+    "saga-cup",
+    summary="A clay cup with no handle, tea running into it, a little steam off it after",
+    contract=contract('saga-cup'),
+)
 def cup(
     cv: Canvas,
     parent,
@@ -169,7 +177,12 @@ def ration_bar(cv: Canvas, hand, *, until: float | None = None) -> None:
     cv.line(g, -10, 34, 10, 34, "#4e5834", 4)
 
 
-@register("prop", "saga-ration-bar", summary="A foil ration bar put down on a plate, one end bitten at")
+@register(
+    "prop",
+    "saga-ration-bar",
+    summary="A foil ration bar put down on a plate, one end bitten at",
+    contract=contract('saga-ration-bar'),
+)
 def bar_down(cv: Canvas, parent, *, at: tuple[float, float], end: float, since: float = 0.0) -> None:
     _check_end(end)
     x, y = at
@@ -180,7 +193,12 @@ def bar_down(cv: Canvas, parent, *, at: tuple[float, float], end: float, since: 
     cv.rect(g, -46, -20, 26, 32, "#c9c2a8", cv.ink, 3)
 
 
-@register("prop", "saga-wince", summary="Three red pain ticks at a jaw, shown in the spans it hurts")
+@register(
+    "prop",
+    "saga-wince",
+    summary="Three red pain ticks at a jaw, shown in the spans it hurts",
+    contract=contract('saga-wince'),
+)
 def wince(cv: Canvas, parent, *, at: tuple[float, float], end: float, spans: Sequence[tuple[float, float]]) -> None:
     _check_end(end)
     held = _check_spans(spans, end, "a wince")
@@ -193,7 +211,12 @@ def wince(cv: Canvas, parent, *, at: tuple[float, float], end: float, spans: Seq
         cv.line(g, x + dx, y + dy, x + ex, y + ey, "#e0352b", 8)
 
 
-@register("prop", "saga-tooth", summary="One tooth that drops from a mouth to where it lands, with a small bounce")
+@register(
+    "prop",
+    "saga-tooth",
+    summary="One tooth that drops from a mouth to where it lands, with a small bounce",
+    contract=contract('saga-tooth'),
+)
 def tooth(
     cv: Canvas,
     parent,
@@ -222,6 +245,7 @@ def tooth(
     "prop",
     "saga-benefits",
     summary="A hologram on a shelf puck, kept like a graduation photo: the Directorate's benefits card",
+    contract=contract('saga-benefits'),
 )
 def benefits(cv: Canvas, parent, *, at: tuple[float, float], end: float, since: float | None = None) -> None:
     """The puck on the shelf at ``at``; from ``since`` (a second of the shot, 0 already on) the card above it."""
@@ -250,6 +274,7 @@ def benefits(cv: Canvas, parent, *, at: tuple[float, float], end: float, since: 
     "prop",
     "saga-form",
     summary="A Directorate application, filled in and stamped, that slides over a table with a pen on top",
+    contract=contract('saga-form'),
 )
 def form(
     cv: Canvas,
@@ -296,6 +321,7 @@ def pen(cv: Canvas, hand, *, since: float) -> None:
     "location",
     "saga-returns",
     summary="A Directorate returns desk on the bridge: a window on the stars, a RETURNS sign and a number board",
+    contract=contract('saga-returns'),
 )
 def returns(cv: Canvas, parent, *, end: float) -> None:
     """The returns bay; the cast stands on its deck at :data:`saga_sets.FLOOR`, the clerk behind its desk."""
@@ -325,6 +351,7 @@ def returns(cv: Canvas, parent, *, end: float) -> None:
     "location",
     "saga-returns-desk",
     summary="The returns counter, drawn after the clerk behind it: a steel top, a coupon printer and a dark front",
+    contract=contract('saga-returns-desk'),
 )
 def returns_desk(cv: Canvas, parent, *, end: float) -> None:
     """The counter from :data:`DESK_EDGE` to the frame's right, its top at :data:`DESK_TOP`."""
@@ -343,6 +370,7 @@ def returns_desk(cv: Canvas, parent, *, end: float) -> None:
     "prop",
     "saga-basket",
     summary="A wire basket of battle-station wreckage, a bent panel hanging off its front with the hole in it",
+    contract=contract('saga-basket'),
 )
 def basket(cv: Canvas, parent, *, at: tuple[float, float], end: float) -> None:
     """The basket's rim centred on ``at``; :func:`hole_of` says where the panel's hole lands."""
@@ -372,7 +400,12 @@ def hole_of(at: tuple[float, float]) -> tuple[float, float]:
     return at[0] + HOLE[0], at[1] + HOLE[1]
 
 
-@register("prop", "saga-coupon", summary="A tiny printed coupon, on a track of its own, that can shrink to nothing")
+@register(
+    "prop",
+    "saga-coupon",
+    summary="A tiny printed coupon, on a track of its own, that can shrink to nothing",
+    contract=contract('saga-coupon'),
+)
 def coupon(cv: Canvas, parent, *, at: tuple[float, float], end: float, track: Track) -> None:
     """A coupon at ``at`` moved by ``track``, rows of (second, x, y, scale), hidden before its first and at scale 0."""
     _check_end(end)
@@ -401,7 +434,12 @@ def _hole(box: tuple[float, ...], radius: float = 12.0) -> str:
     )
 
 
-@register("prop", "saga-dim", summary="The room darkening over whatever is drawn before it, and coming back")
+@register(
+    "prop",
+    "saga-dim",
+    summary="The room darkening over whatever is drawn before it, and coming back",
+    contract=contract('saga-dim'),
+)
 def dim(
     cv: Canvas,
     parent,

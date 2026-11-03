@@ -47,7 +47,7 @@ def test_remaining_collage_contracts_keep_the_real_drawings_and_return_one_compl
 
 
 def test_every_remaining_collage_builder_is_exercised():
-    assert len(ENTRIES) == 33 and {e.name for e in ENTRIES} == set(OPTIONS)
+    assert len(ENTRIES) == 34 and {e.name for e in ENTRIES} == set(OPTIONS)
 
 
 @pytest.mark.parametrize('name', list(collage_sets.SETS))

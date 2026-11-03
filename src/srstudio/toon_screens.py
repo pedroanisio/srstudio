@@ -9,6 +9,7 @@ a :class:`srstudio.toon.ToonDataError`.
 from __future__ import annotations
 
 from . import checks
+from ._toon_story_contracts import contract
 from .canvas import Canvas
 from .registry import register
 from .toon import FINE_W, INK_W, LAPTOP, LAPTOP_BASE, ToonDataError, _d, _path, fh, fx, fy
@@ -29,7 +30,13 @@ def _span(start: object, end: object, what: str) -> tuple[float, float]:
     return float(start), float(end)
 
 
-@register("prop", "toon-laptop-lid", summary="The back of a laptop lid on the desk, that shuts on cue", style="toon")
+@register(
+    "prop",
+    "toon-laptop-lid",
+    summary="The back of a laptop lid on the desk, that shuts on cue",
+    style="toon",
+    contract=contract('toon-laptop-lid'),
+)
 def lid(cv: Canvas, parent, shut: float | None = None) -> object:
     """The lid and foot :func:`srstudio.toon.desk` draws, without the desk, so it stands on any surface; at ``shut``
     it folds down onto its hinge in :data:`SHUT_TIME` seconds. Returns its group."""
@@ -45,7 +52,11 @@ def lid(cv: Canvas, parent, shut: float | None = None) -> object:
 
 
 @register(
-    "graphic", "toon-notice", summary="One line from a system, in a white card under the desk's edge", style="toon"
+    "graphic",
+    "toon-notice",
+    summary="One line from a system, in a white card under the desk's edge",
+    style="toon",
+    contract=contract('toon-notice'),
 )
 def notice(
     cv: Canvas,

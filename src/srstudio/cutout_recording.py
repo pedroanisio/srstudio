@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from . import checks
+from ._cutout_story_contracts import contract
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -48,7 +49,13 @@ def _at(at) -> None:
     checks.non_negative(at, CutoutRecordingError, f"a time is a number of at least 0, got {at!r}")
 
 
-@register("prop", "recording-window", style="cutout", summary="An invented recording window: red dot and a countdown")
+@register(
+    "prop",
+    "recording-window",
+    style="cutout",
+    summary="An invented recording window: red dot and a countdown",
+    contract=contract('recording-window'),
+)
 def recording_window(
     cv: Canvas, parent, *, seconds: int = 30, end: float = 20.0, stop: float | None = None, id: str = "recording-window"
 ):
@@ -88,7 +95,13 @@ def recording_window(
     return g
 
 
-@register("prop", "meter-panel", style="cutout", summary="Up to four labelled bars that move at the reel's times")
+@register(
+    "prop",
+    "meter-panel",
+    style="cutout",
+    summary="Up to four labelled bars that move at the reel's times",
+    contract=contract('meter-panel'),
+)
 def meter_panel(
     cv: Canvas,
     parent,
@@ -124,7 +137,9 @@ def meter_panel(
     return g
 
 
-@register("prop", "face-box", style="cutout", summary="Four corner marks round a tracked face")
+@register(
+    "prop", "face-box", style="cutout", summary="Four corner marks round a tracked face", contract=contract('face-box')
+)
 def face_box(
     cv: Canvas,
     parent,
@@ -149,7 +164,13 @@ def face_box(
     return g
 
 
-@register("prop", "green-tick", style="cutout", summary="A green disc with a tick that lands at the reel's time")
+@register(
+    "prop",
+    "green-tick",
+    style="cutout",
+    summary="A green disc with a tick that lands at the reel's time",
+    contract=contract('green-tick'),
+)
 def green_tick(cv: Canvas, parent, x=900, y=500, *, at: float = 0.0, scale: float = 1.0, id: str = "green-tick"):
     """Centred on (``x``, ``y``), 160 across at scale 1, off until ``at``, then popped in and kept."""
     _at(at)
@@ -163,7 +184,13 @@ def green_tick(cv: Canvas, parent, x=900, y=500, *, at: float = 0.0, scale: floa
     return g
 
 
-@register("prop", "cereal-bowl", style="cutout", summary="A bowl of cereal, seen from the side, about half eaten")
+@register(
+    "prop",
+    "cereal-bowl",
+    style="cutout",
+    summary="A bowl of cereal, seen from the side, about half eaten",
+    contract=contract('cereal-bowl'),
+)
 def cereal_bowl(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str = "cereal-bowl"):
     """Its foot's middle stands on (``x``, ``y``), 190 wide at scale 1."""
     _scale(scale)
@@ -177,7 +204,9 @@ def cereal_bowl(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str
     return g
 
 
-@register("prop", "spoon", style="cutout", summary="A plain spoon, its bowl at the grip's far end")
+@register(
+    "prop", "spoon", style="cutout", summary="A plain spoon, its bowl at the grip's far end", contract=contract('spoon')
+)
 def spoon(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, rotation: float = 0, id: str = "spoon"):
     """The grip is on (``x``, ``y``) and it points up, ``rotation`` degrees round; 170 long at scale 1."""
     _scale(scale)
@@ -188,7 +217,13 @@ def spoon(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, rotation: flo
     return g
 
 
-@register("prop", "room-door", style="cutout", summary="A plain white room door in its frame, opening inwards")
+@register(
+    "prop",
+    "room-door",
+    style="cutout",
+    summary="A plain white room door in its frame, opening inwards",
+    contract=contract('room-door'),
+)
 def room_door(
     cv: Canvas, parent, x=520, y=960, *, opens: float | None = None, scale: float = 1.0, id: str = "room-door"
 ):

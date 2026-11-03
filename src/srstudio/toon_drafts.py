@@ -13,6 +13,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from . import checks
+from ._toon_story_contracts import contract
 from .canvas import Canvas
 from .registry import register
 from .toon import FINE_W, INK_W, ToonDataError, _d, _path, fh, fx, fy
@@ -110,7 +111,11 @@ def _note(cv: Canvas, parent, x: float, y: float, degrees: float, text: str, **t
 
 
 @register(
-    "prop", "toon-laptop-screen", summary="A laptop's screen under the desk's edge, its draft changing", style="toon"
+    "prop",
+    "toon-laptop-screen",
+    summary="A laptop's screen under the desk's edge, its draft changing",
+    style="toon",
+    contract=contract('toon-laptop-screen'),
 )
 def laptop_screen(cv: Canvas, parent, drafts: Sequence[Draft] = (Draft(0.0, 2.0, "DRAFT 1", "Hi Joan"),)) -> object:
     """Each of ``drafts`` in turn, spans rising, on one screen. Returns its group."""
@@ -138,7 +143,11 @@ def laptop_screen(cv: Canvas, parent, drafts: Sequence[Draft] = (Draft(0.0, 2.0,
 
 
 @register(
-    "prop", "toon-stuck-notes", summary="Crossed-out sticky notes piling up on a kitchen, one at a time", style="toon"
+    "prop",
+    "toon-stuck-notes",
+    summary="Crossed-out sticky notes piling up on a kitchen, one at a time",
+    style="toon",
+    contract=contract('toon-stuck-notes'),
 )
 def stuck_notes(cv: Canvas, parent, notes: Sequence[Note] = (Note(0.0, "Dear Joan"),)) -> object:
     """Each of ``notes`` on the next of :data:`SPOTS`, going up at its second. Returns their group."""
@@ -154,7 +163,13 @@ def stuck_notes(cv: Canvas, parent, notes: Sequence[Note] = (Note(0.0, "Dear Joa
     return g
 
 
-@register("prop", "toon-magnifier", summary="A magnifying glass with a brass ring and a wooden handle", style="toon")
+@register(
+    "prop",
+    "toon-magnifier",
+    summary="A magnifying glass with a brass ring and a wooden handle",
+    style="toon",
+    contract=contract('toon-magnifier'),
+)
 def magnifier(cv: Canvas, parent, at: Point = (300.0, 400.0), scale: float = 1.0) -> object:
     """A glass whose lens is centred on reference ``at``, its handle down and to the left. Returns its group."""
     x, y = float(at[0]), float(at[1])
@@ -170,7 +185,13 @@ def magnifier(cv: Canvas, parent, at: Point = (300.0, 400.0), scale: float = 1.0
     return g
 
 
-@register("graphic", "toon-exclaim", summary="An exclamation mark as a shape, at any size, with no font", style="toon")
+@register(
+    "graphic",
+    "toon-exclaim",
+    summary="An exclamation mark as a shape, at any size, with no font",
+    style="toon",
+    contract=contract('toon-exclaim'),
+)
 def exclaim(cv: Canvas, parent, at: Point = (300.0, 400.0), height: float = 300.0, colour: str = "#23232b") -> object:
     """A mark ``height`` reference pixels tall, centred on ``at``. Returns its group."""
     if not (checks.number(height) and height > 0):
@@ -191,6 +212,7 @@ def exclaim(cv: Canvas, parent, at: Point = (300.0, 400.0), height: float = 300.
     "toon-corkboard",
     summary="A corkboard sliding in, a mark pinned at its center and notes around it",
     style="toon",
+    contract=contract('toon-corkboard'),
 )
 def corkboard(cv: Canvas, parent, texts: Sequence[str] = GREETINGS, slide: tuple[float, float] | None = None) -> object:
     """A board on :data:`BOARD` with :func:`exclaim` pinned at its center and each of ``texts`` crossed out around it;

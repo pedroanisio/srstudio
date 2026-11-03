@@ -13,6 +13,7 @@ from collections.abc import Callable, Sequence
 from typing import NamedTuple
 
 from . import checks, collage_sets
+from ._collage_home_contracts import contract
 from .canvas import Canvas
 from .collage import CAPTION_BOTTOM, INK, Point, _cut, _paper, _smooth, draw_shapes
 from .errors import SrstudioError
@@ -157,7 +158,12 @@ def hook_card(
     return g
 
 
-@register("prop", "collage-wall-tv", summary="A flat paper TV on the wall with an empty screen a reel fills")
+@register(
+    "prop",
+    "collage-wall-tv",
+    summary="A flat paper TV on the wall with an empty screen a reel fills",
+    contract=contract('collage-wall-tv'),
+)
 def wall_tv(cv: Canvas, parent, x: float, y: float, w: float) -> Screen:
     """A TV ``w`` wide with its top-left at ``x, y``; draw into :attr:`Screen.image`, clipped to the screen."""
     h = _size(w, "a TV's width") * 0.62
@@ -171,7 +177,12 @@ def wall_tv(cv: Canvas, parent, x: float, y: float, w: float) -> Screen:
     return Screen(g, image, sw, sh)
 
 
-@register("prop", "collage-hard-hat", summary="A yellow builder's hard hat with a ridge and a short brim")
+@register(
+    "prop",
+    "collage-hard-hat",
+    summary="A yellow builder's hard hat with a ridge and a short brim",
+    contract=contract('collage-hard-hat'),
+)
 def hard_hat(cv: Canvas, parent, x: float, y: float, w: float = 420.0, tilt: float = 0.0) -> object:
     """A hat ``w`` across its brim, the brim's centre at ``x, y``, for a head or a table."""
     k = round(_size(w, "a hat's width") / 420.0, 4)
@@ -182,7 +193,12 @@ def hard_hat(cv: Canvas, parent, x: float, y: float, w: float = 420.0, tilt: flo
     return g
 
 
-@register("prop", "collage-kayak", summary="A red paper kayak with its cockpit and a paddle across it")
+@register(
+    "prop",
+    "collage-kayak",
+    summary="A red paper kayak with its cockpit and a paddle across it",
+    contract=contract('collage-kayak'),
+)
 def kayak(cv: Canvas, parent, x: float, y: float, w: float = 560.0, tilt: float = 0.0) -> object:
     """A kayak ``w`` long, centred on ``x, y``."""
     k = round(_size(w, "a kayak's length") / 560.0, 4)
@@ -197,7 +213,12 @@ def kayak(cv: Canvas, parent, x: float, y: float, w: float = 560.0, tilt: float 
     return g
 
 
-@register("prop", "collage-school-desk", summary="A child's school desk on two legs, seen from the front")
+@register(
+    "prop",
+    "collage-school-desk",
+    summary="A child's school desk on two legs, seen from the front",
+    contract=contract('collage-school-desk'),
+)
 def school_desk(cv: Canvas, parent, x: float, y: float, w: float = 240.0) -> object:
     """A desk ``w`` wide, its feet centred on ``x, y``."""
     k = round(_size(w, "a desk's width") / 240.0, 4)
@@ -214,7 +235,12 @@ def school_desk(cv: Canvas, parent, x: float, y: float, w: float = 240.0) -> obj
     return g
 
 
-@register("prop", "collage-staircase", summary="A short flight of paper stairs rising to the right, with a handrail")
+@register(
+    "prop",
+    "collage-staircase",
+    summary="A short flight of paper stairs rising to the right, with a handrail",
+    contract=contract('collage-staircase'),
+)
 def staircase(cv: Canvas, parent, x: float, y: float, w: float, h: float, steps: int = 6) -> object:
     """A flight ``w`` by ``h`` with its foot's left corner at ``x, y``, rising to the right in ``steps`` steps."""
     _size(w, "a staircase's width")
@@ -232,7 +258,12 @@ def staircase(cv: Canvas, parent, x: float, y: float, w: float, h: float, steps:
     return g
 
 
-@register("prop", "collage-pay-envelope", summary="A sealed manila pay envelope with a stamp across it, nothing else")
+@register(
+    "prop",
+    "collage-pay-envelope",
+    summary="A sealed manila pay envelope with a stamp across it, nothing else",
+    contract=contract('collage-pay-envelope'),
+)
 def pay_envelope(
     cv: Canvas, parent, x: float, y: float, w: float = 560.0, stamp: str = "CONFIDENTIAL", size: float = 60.0
 ) -> object:
@@ -254,7 +285,12 @@ def pay_envelope(
     return g
 
 
-@register("prop", "collage-headset", summary="A call-centre headset: a band over the head, one earcup, a boom mic")
+@register(
+    "prop",
+    "collage-headset",
+    summary="A call-centre headset: a band over the head, one earcup, a boom mic",
+    contract=contract('collage-headset'),
+)
 def headset(cv: Canvas, parent, cx: float, cy: float, rx: float = 220.0, ry: float = 205.0) -> object:
     """A headset on a head centred on ``cx, cy`` with radii ``rx`` and ``ry``, as :data:`srstudio.collage.HEAD_Y`."""
     _size(rx, "a head's width")
@@ -268,7 +304,12 @@ def headset(cv: Canvas, parent, cx: float, cy: float, rx: float = 220.0, ry: flo
     return g
 
 
-@register("prop", "collage-desk-lamp", summary="One bare lamp on a stalk with its pool of light")
+@register(
+    "prop",
+    "collage-desk-lamp",
+    summary="One bare lamp on a stalk with its pool of light",
+    contract=contract('collage-desk-lamp'),
+)
 def desk_lamp(cv: Canvas, parent, x: float, y: float, h: float = 300.0) -> object:
     """A lamp ``h`` tall, its base centred on ``x, y``."""
     k = round(_size(h, "a lamp's height") / 300.0, 4)
@@ -282,7 +323,12 @@ def desk_lamp(cv: Canvas, parent, x: float, y: float, h: float = 300.0) -> objec
     return g
 
 
-@register("prop", "collage-dead-plant", summary="A dead plant in a pot: brown stalks, one leaf left hanging")
+@register(
+    "prop",
+    "collage-dead-plant",
+    summary="A dead plant in a pot: brown stalks, one leaf left hanging",
+    contract=contract('collage-dead-plant'),
+)
 def dead_plant(cv: Canvas, parent, x: float, y: float, h: float = 300.0) -> object:
     """A pot and its dead plant ``h`` tall, the pot's foot centred on ``x, y``."""
     k = round(_size(h, "a plant's height") / 300.0, 4)
@@ -294,7 +340,12 @@ def dead_plant(cv: Canvas, parent, x: float, y: float, h: float = 300.0) -> obje
     return g
 
 
-@register("prop", "collage-cereal-bowl", summary="A bowl of cereal, seen from the side, with the milk showing")
+@register(
+    "prop",
+    "collage-cereal-bowl",
+    summary="A bowl of cereal, seen from the side, with the milk showing",
+    contract=contract('collage-cereal-bowl'),
+)
 def cereal_bowl(cv: Canvas, parent, x: float, y: float, w: float = 300.0) -> object:
     """A bowl ``w`` wide, its foot centred on ``x, y``."""
     k = round(_size(w, "a bowl's width") / 300.0, 4)
@@ -307,7 +358,7 @@ def cereal_bowl(cv: Canvas, parent, x: float, y: float, w: float = 300.0) -> obj
     return g
 
 
-@register("prop", "collage-spoon", summary="A paper spoon, its bowl at the top")
+@register("prop", "collage-spoon", summary="A paper spoon, its bowl at the top", contract=contract('collage-spoon'))
 def spoon(cv: Canvas, parent, x: float, y: float, length: float = 300.0, tilt: float = 0.0) -> object:
     """A spoon ``length`` long, the end of its handle at ``x, y``, turned ``tilt`` degrees about that end."""
     k = round(_size(length, "a spoon's length") / 300.0, 4)
@@ -317,7 +368,7 @@ def spoon(cv: Canvas, parent, x: float, y: float, length: float = 300.0, tilt: f
     return g
 
 
-@register("prop", "collage-pen", summary="A ballpoint pen, its tip at the bottom")
+@register("prop", "collage-pen", summary="A ballpoint pen, its tip at the bottom", contract=contract('collage-pen'))
 def pen(cv: Canvas, parent, x: float, y: float, length: float = 240.0, tilt: float = 0.0, colour: str = "#1d3557"):
     """A pen ``length`` long with its tip at ``x, y``, turned ``tilt`` degrees about the tip."""
     k = round(_size(length, "a pen's length") / 240.0, 4)
@@ -327,7 +378,12 @@ def pen(cv: Canvas, parent, x: float, y: float, length: float = 240.0, tilt: flo
     return g
 
 
-@register("prop", "collage-menu-card", summary="A tall folded restaurant menu held closed, no brand")
+@register(
+    "prop",
+    "collage-menu-card",
+    summary="A tall folded restaurant menu held closed, no brand",
+    contract=contract('collage-menu-card'),
+)
 def menu_card(cv: Canvas, parent, x: float, y: float, w: float = 300.0, h: float = 420.0, tilt: float = 0.0) -> object:
     """A menu ``w`` by ``h``, centred on ``x, y``, its cover lettered MENU."""
     _size(w, "a menu's width")
@@ -339,7 +395,12 @@ def menu_card(cv: Canvas, parent, x: float, y: float, w: float = 300.0, h: float
     return g
 
 
-@register("prop", "collage-order-pad", summary="A waiter's spiral order pad, a blank page and a short scrawl")
+@register(
+    "prop",
+    "collage-order-pad",
+    summary="A waiter's spiral order pad, a blank page and a short scrawl",
+    contract=contract('collage-order-pad'),
+)
 def order_pad(cv: Canvas, parent, x: float, y: float, w: float = 240.0, tilt: float = 0.0, *, lines: int = 3) -> object:
     """A pad ``w`` wide, centred on ``x, y``, with ``lines`` of unreadable scrawl on its page."""
     h = _size(w, "a pad's width") * 1.32
@@ -378,7 +439,12 @@ def _sauce(cv: Canvas, g) -> None:
 DISH_DRAW = {"steak": _steak, "salad": _salad, "sauce": _sauce, "empty": lambda cv, g: None}
 
 
-@register("prop", "collage-plate", summary="A plate seen from a little above, with a steak, a salad or sauce on it")
+@register(
+    "prop",
+    "collage-plate",
+    summary="A plate seen from a little above, with a steak, a salad or sauce on it",
+    contract=contract('collage-plate'),
+)
 def plate(cv: Canvas, parent, x: float, y: float, w: float = 400.0, dish: str = "empty") -> object:
     """A plate ``w`` wide, centred on ``x, y``, with ``dish`` (one of :data:`DISHES`) on it."""
     k = round(_size(w, "a plate's width") / 400.0, 4)
@@ -391,7 +457,12 @@ def plate(cv: Canvas, parent, x: float, y: float, w: float = 400.0, dish: str = 
     return g
 
 
-@register("prop", "collage-chair-back", summary="The tall wooden back of a dining chair, seen from the front")
+@register(
+    "prop",
+    "collage-chair-back",
+    summary="The tall wooden back of a dining chair, seen from the front",
+    contract=contract('collage-chair-back'),
+)
 def chair_back(cv: Canvas, parent, x: float, y: float, w: float = 460.0, h: float = 760.0) -> object:
     """A chair back ``w`` by ``h``, its top centred on ``x, y``."""
     _size(w, "a chair's width")
@@ -419,7 +490,12 @@ def chair_back(cv: Canvas, parent, x: float, y: float, w: float = 460.0, h: floa
     return g
 
 
-@register("prop", "collage-wall-hole", summary="A rough hole knocked through a wall: torn plaster, bare studs, dark")
+@register(
+    "prop",
+    "collage-wall-hole",
+    summary="A rough hole knocked through a wall: torn plaster, bare studs, dark",
+    contract=contract('collage-wall-hole'),
+)
 def wall_hole(cv: Canvas, parent, x: float, y: float, w: float = 300.0, h: float = 340.0) -> object:
     """A hole ``w`` by ``h``, centred on ``x, y``: the torn edge, the void behind it and two studs."""
     _size(w, "a hole's width")
@@ -436,7 +512,12 @@ def wall_hole(cv: Canvas, parent, x: float, y: float, w: float = 300.0, h: float
     return g
 
 
-@register("prop", "collage-snowy-window", summary="A window pane full of winter: pale sky, a white sill, falling snow")
+@register(
+    "prop",
+    "collage-snowy-window",
+    summary="A window pane full of winter: pale sky, a white sill, falling snow",
+    contract=contract('collage-snowy-window'),
+)
 def snowy_window(cv: Canvas, parent, x: float, y: float, w: float, h: float, *, flakes: Sequence[Point] = ()) -> object:
     """A pane ``w`` by ``h`` with its top-left at ``x, y``, laid over a set's window; ``flakes`` are fractions of it."""
     _size(w, "a window's width")
@@ -452,7 +533,12 @@ def snowy_window(cv: Canvas, parent, x: float, y: float, w: float, h: float, *, 
     return g
 
 
-@register("prop", "collage-tissue-box", summary="A box of tissues with one standing up out of its slot")
+@register(
+    "prop",
+    "collage-tissue-box",
+    summary="A box of tissues with one standing up out of its slot",
+    contract=contract('collage-tissue-box'),
+)
 def tissue_box(cv: Canvas, parent, x: float, y: float, w: float = 280.0) -> object:
     """A box ``w`` wide, its foot centred on ``x, y``."""
     k = round(_size(w, "a box's width") / 280.0, 4)
@@ -464,7 +550,12 @@ def tissue_box(cv: Canvas, parent, x: float, y: float, w: float = 280.0) -> obje
     return g
 
 
-@register("prop", "collage-wall-clock", summary="A round wall clock whose hands point at the time it is given")
+@register(
+    "prop",
+    "collage-wall-clock",
+    summary="A round wall clock whose hands point at the time it is given",
+    contract=contract('collage-wall-clock'),
+)
 def wall_clock(cv: Canvas, parent, x: float, y: float, r: float = 90.0, time: str = "9:00") -> WallClock:
     """A clock of radius ``r`` centred on ``x, y``, showing ``time`` as ``"9:50"``."""
     _size(r, "a clock's radius")
@@ -484,7 +575,12 @@ def wall_clock(cv: Canvas, parent, x: float, y: float, r: float = 90.0, time: st
     return WallClock(g, hour, minute)
 
 
-@register("prop", "collage-toothbrush-mug", summary="A mug with one toothbrush standing in it")
+@register(
+    "prop",
+    "collage-toothbrush-mug",
+    summary="A mug with one toothbrush standing in it",
+    contract=contract('collage-toothbrush-mug'),
+)
 def toothbrush_mug(cv: Canvas, parent, x: float, y: float, h: float = 150.0, colour: str = "#e63946") -> object:
     """A mug ``h`` tall with a toothbrush in it, the foot centred on ``x, y``."""
     k = round(_size(h, "a mug's height") / 150.0, 4)
@@ -497,7 +593,12 @@ def toothbrush_mug(cv: Canvas, parent, x: float, y: float, h: float = 150.0, col
     return g
 
 
-@register("prop", "collage-napkin", summary="A white napkin tucked in at the collar, a triangle on the chest")
+@register(
+    "prop",
+    "collage-napkin",
+    summary="A white napkin tucked in at the collar, a triangle on the chest",
+    contract=contract('collage-napkin'),
+)
 def napkin(cv: Canvas, parent, x: float, y: float, w: float = 320.0) -> object:
     """A napkin ``w`` wide, its tucked edge centred on ``x, y``."""
     k = round(_size(w, "a napkin's width") / 320.0, 4)

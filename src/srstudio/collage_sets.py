@@ -601,6 +601,7 @@ def bus_stop(cv: Canvas, parent) -> object:
     "location",
     "collage-booth",
     summary="A windowless call booth: foam tiles on three close walls, a ledge, the cactus on a small shelf",
+    contract=contract('collage-booth', signature_box=signature_box, marks_box=marks_box, zoom_pivot=zoom_pivot),
 )
 def booth(cv: Canvas, parent) -> object:
     g = cv.group(parent, cv.uid("g"))

@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from . import checks
+from ._toon_story_contracts import contract
 from .canvas import Canvas
 from .registry import register
 from .toon import FINE_W, INK_W, ToonDataError, _d, _path, fh, fx, fy
@@ -43,7 +44,13 @@ def _swing_keys(start: float, end: float) -> list[tuple[float, float]]:
     return keys + [(round(end, 3), side * SWING)]
 
 
-@register("prop", "toon-necktie", summary="A striped necktie, held up by its knot and swinging, or worn", style="toon")
+@register(
+    "prop",
+    "toon-necktie",
+    summary="A striped necktie, held up by its knot and swinging, or worn",
+    style="toon",
+    contract=contract('toon-necktie'),
+)
 def necktie(
     cv: Canvas,
     parent,
@@ -86,7 +93,11 @@ def necktie(
 
 
 @register(
-    "prop", "toon-lanyard", summary="A company lanyard with a white card, unlettered, worn over a chest", style="toon"
+    "prop",
+    "toon-lanyard",
+    summary="A company lanyard with a white card, unlettered, worn over a chest",
+    style="toon",
+    contract=contract('toon-lanyard'),
 )
 def lanyard(
     cv: Canvas,

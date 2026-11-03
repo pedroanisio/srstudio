@@ -45,6 +45,7 @@ ROOM_NAMES = (
     'supermarket',
     'dining-room',
     'bus-stop',
+    'booth',
 )
 ROOM = drawing(
     constraints=(
@@ -52,7 +53,7 @@ ROOM = drawing(
         'Fixed 1080x1920 room layout. Some background fills use Canvas dimensions, but furniture and signature '
         'positions do not reflow. Returns one untranslated group containing the backdrop and sharp signature shelf.',
         'Backdrop overscans by 1.04 around frame center and has a 3-pixel blur, painted light and vignette. '
-        'The signature shelf is outside that effect group. Bedroom omits the warm light overlay. '
+        'The signature shelf is outside that effect group. Bedroom and booth omit the warm light overlay. '
         'Draw actors and foreground props separately; no actor, content callback, camera or physical lighting '
         'is supplied.',
         'The newsroom globe, clocks, lamps, sky and furniture are static drawings. Use signature_box and marks_box '

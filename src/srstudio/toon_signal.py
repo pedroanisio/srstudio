@@ -12,6 +12,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from . import checks
+from ._toon_story_contracts import contract
 from .canvas import Canvas
 from .readings import Reading
 from .registry import register
@@ -53,7 +54,12 @@ def _box(what: str, box: tuple[float, float, float, float], band: bool = False) 
         raise ToonDataError(f"a {what} spanning {box} sits on the signature marks")
 
 
-@register("prop", "toon-climb-chair", summary="A kitchen chair from behind, its back hiding who stands on it")
+@register(
+    "prop",
+    "toon-climb-chair",
+    summary="A kitchen chair from behind, its back hiding who stands on it",
+    contract=contract('toon-climb-chair'),
+)
 def climb_chair(cv: Canvas, parent, at: tuple[float, float] = (210.0, 806.0)) -> None:
     """The chair from behind, the middle of its feet at reference ``at``, in a group a keyed rotation can tip."""
     x, y = at
@@ -73,7 +79,12 @@ def climb_chair(cv: Canvas, parent, at: tuple[float, float] = (210.0, 806.0)) ->
                 radius=fh(6))  # fmt: skip
 
 
-@register("prop", "toon-table-legs", summary="A desk's front turned into a table: an apron, two legs, the floor behind")
+@register(
+    "prop",
+    "toon-table-legs",
+    summary="A desk's front turned into a table: an apron, two legs, the floor behind",
+    contract=contract('toon-table-legs'),
+)
 def table_legs(cv: Canvas, parent) -> None:
     """Over a ledge's front: an apron under the top, the wall and floor seen under it, and two turned legs."""
     y0, y1 = TABLE_APRON, FRAME[3] + 4.0
@@ -87,7 +98,12 @@ def table_legs(cv: Canvas, parent) -> None:
     cv.rect(g, fx(-10.0), fy(y0 - 4.0), fh(612.0), fh(8.0), cv.ink, cv.clear, 0, radius=0)
 
 
-@register("prop", "toon-raised-phone", summary="A forearm holding a phone up, its signal bars on a clock")
+@register(
+    "prop",
+    "toon-raised-phone",
+    summary="A forearm holding a phone up, its signal bars on a clock",
+    contract=contract('toon-raised-phone'),
+)
 def raised_phone(
     cv: Canvas,
     parent,
@@ -142,7 +158,12 @@ def raised_phone(
         cv.ellipse(g, fx(x - 38.0 + finger * 26.0), fy(y - 34.0), fh(24.0), fh(30.0), colour, cv.ink, FINE_W)
 
 
-@register("prop", "toon-upload-chip", summary="An upload's figure and its bar, each reading held to be read")
+@register(
+    "prop",
+    "toon-upload-chip",
+    summary="An upload's figure and its bar, each reading held to be read",
+    contract=contract('toon-upload-chip'),
+)
 def upload_chip(
     cv: Canvas,
     parent,
@@ -190,7 +211,12 @@ def _sandwich(cv: Canvas, g, bitten: bool) -> None:
         cv.rect(g, fh(-60.0 + bite), fh(y), fh(120.0 - bite), fh(h), colour, edge, FINE_W, radius=fh(6))
 
 
-@register("prop", "toon-sandwich-broom", summary="A broom held head up with a sandwich balanced on it")
+@register(
+    "prop",
+    "toon-sandwich-broom",
+    summary="A broom held head up with a sandwich balanced on it",
+    contract=contract('toon-sandwich-broom'),
+)
 def broom(
     cv: Canvas,
     parent,

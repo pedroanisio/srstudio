@@ -14,6 +14,7 @@ from collections.abc import Callable, Sequence
 from typing import NamedTuple
 
 from . import checks, look, signature
+from ._soft_home_contracts import contract
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -115,6 +116,7 @@ def _window(cv: Canvas, room, g, rows: Rows, id: str) -> None:
     "soft-den",
     summary="A living room straight on at any hour: a sofa under a window whose blind and daylight are keyed, night "
     "pooled in a screen's blue, and the signature cactus on a side table out of the dark",
+    contract=contract('soft-den'),
 )
 def den(
     cv: Canvas,
@@ -190,6 +192,7 @@ def _flat(cv: Canvas, g, x: float, room: Room, door_x: float, sofa_x: float, id:
     "soft-flats",
     summary="Two homes cut in two: side by side with one wall between them, a sofa and a door in each, for a pair who "
     "are not in the same room; a shot cuts in on either",
+    contract=contract('soft-flats'),
 )
 def flats(
     cv: Canvas,
@@ -224,6 +227,7 @@ def flats(
     "soft-restaurant",
     summary="A restaurant's door at dusk, straight on: lit glass, a plain striped awning and a pavement that runs far "
     "below the frame, so a tilt finds what the cast is standing in",
+    contract=contract('soft-restaurant'),
 )
 def doorway(
     cv: Canvas,
@@ -282,6 +286,7 @@ def doorway(
     "soft-television",
     summary="A television on a low cabinet with no face: a blue screen, voice bars that move while it talks and a "
     "countdown of one digit at a time",
+    contract=contract('soft-television'),
 )
 def television(
     cv: Canvas,
@@ -329,7 +334,12 @@ def television(
     return g
 
 
-@register("prop", "soft-chip-bag", summary="An open foil bag of chips with no brand on it, leaning where it was left")
+@register(
+    "prop",
+    "soft-chip-bag",
+    summary="An open foil bag of chips with no brand on it, leaning where it was left",
+    contract=contract('soft-chip-bag'),
+)
 def chip_bag(cv: Canvas, parent, x: float, y: float, *, scale: float = 1, id: str = "soft-chip-bag"):
     """A bag 170 wide, its foot's middle on (``x``, ``y``)."""
     if not (checks.number(scale) and scale > 0):
@@ -342,7 +352,7 @@ def chip_bag(cv: Canvas, parent, x: float, y: float, *, scale: float = 1, id: st
     return g
 
 
-@register("prop", "soft-chip", summary="One chip, held up as evidence")
+@register("prop", "soft-chip", summary="One chip, held up as evidence", contract=contract('soft-chip'))
 def chip(cv: Canvas, parent, x: float = 0, y: float = 0, *, scale: float = 1, id: str = "soft-chip"):
     """A chip 70 wide, centred on (``x``, ``y``)."""
     if not (checks.number(scale) and scale > 0):
@@ -354,7 +364,12 @@ def chip(cv: Canvas, parent, x: float = 0, y: float = 0, *, scale: float = 1, id
     return g
 
 
-@register("prop", "soft-blanket", summary="A checked blanket around the shoulders, for a person who is not going out")
+@register(
+    "prop",
+    "soft-blanket",
+    summary="A checked blanket around the shoulders, for a person who is not going out",
+    contract=contract('soft-blanket'),
+)
 def blanket(
     cv: Canvas,
     parent,
@@ -379,7 +394,12 @@ def blanket(
     return g
 
 
-@register("prop", "soft-scarf", summary="A wound scarf with one end hanging, for a person who has gone out after all")
+@register(
+    "prop",
+    "soft-scarf",
+    summary="A wound scarf with one end hanging, for a person who has gone out after all",
+    contract=contract('soft-scarf'),
+)
 def scarf(
     cv: Canvas, parent, x: float = 0, y: float = 0, *, scale: float = 1, color: str = "#C8473E", id: str = "soft-scarf"
 ):
@@ -394,7 +414,12 @@ def scarf(
     return g
 
 
-@register("prop", "soft-slippers", summary="A pair of fluffy house slippers on the ground, worn to a restaurant")
+@register(
+    "prop",
+    "soft-slippers",
+    summary="A pair of fluffy house slippers on the ground, worn to a restaurant",
+    contract=contract('soft-slippers'),
+)
 def slippers(
     cv: Canvas,
     parent,
@@ -425,6 +450,7 @@ def slippers(
     "graphic",
     "soft-hook-card",
     summary="A white card with a dark outline and a few words on it, shown for a span: a hook a time card cannot hold",
+    contract=contract('soft-hook-card'),
 )
 def hook_card(
     cv: Canvas,

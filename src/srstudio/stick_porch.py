@@ -20,6 +20,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from . import checks, signature
+from ._stick_story_contracts import contract
 from .canvas import Canvas
 from .look import sheet
 from .registry import register
@@ -160,7 +161,12 @@ def _yard(cv: Canvas, parent) -> None:
         box(cv, parent, side, FENCE_Y - 74, width, 11, FENCE)
 
 
-@register("location", "stick-hall", tags=("home", "hall", "doorway", "front-door", "yard", "fence", "exterior"))
+@register(
+    "location",
+    "stick-hall",
+    tags=("home", "hall", "doorway", "front-door", "yard", "fence", "exterior"),
+    contract=contract('stick-hall'),
+)
 def hall(cv: Canvas, parent, end: float) -> None:
     """A house's front hall from inside, the doorway standing where :mod:`srstudio.stick_door` keeps it and a front yard
     beyond: wall and dado, two coats on their pegs, the shelf with the cactus, boards and a runner. Draw who is outside
@@ -219,7 +225,12 @@ def _leaf(cv: Canvas, parent, edge: float) -> None:
     oval(cv, parent, edge - 42, KNOB_Y - 15, 30, 30, KNOB, stroke=cv.ink, sw=4)
 
 
-@register("prop", "stick-front-door", tags=("home", "door", "front-door", "swing", "panelled"))
+@register(
+    "prop",
+    "stick-front-door",
+    tags=("home", "door", "front-door", "swing", "panelled"),
+    contract=contract('stick-front-door'),
+)
 def front_door(cv: Canvas, parent, end: float, *, opens: float | None = None) -> None:
     """A panelled front door hinged on the left jamb of the doorway: standing open at :data:`DOOR_BACK`, or, given
     ``opens`` (seconds into the shot), shut until then and swinging in through :data:`SWING_STEPS` drawn frames."""
@@ -301,7 +312,12 @@ def _hook(cv: Canvas, parent) -> None:
     shape(cv, parent, "M -66 158 L -84 124 L -42 136 Z", STEEL, 6, stroke=cv.ink)
 
 
-@register("prop", "stick-tow-truck", tags=("truck", "tow", "hook", "reversing", "vehicle", "beacon"))
+@register(
+    "prop",
+    "stick-tow-truck",
+    tags=("truck", "tow", "hook", "reversing", "vehicle", "beacon"),
+    contract=contract('stick-tow-truck'),
+)
 def tow_truck(
     cv: Canvas, parent, end: float, *, path: Sequence[tuple[float, float]] | None = None, drop: float | None = None
 ):

@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from . import checks
+from ._toon_story_contracts import contract
 from .canvas import Canvas
 from .registry import register
 from .toon import FINE_W, INK_W, ToonDataError, fh, fx, fy
@@ -68,7 +69,12 @@ def _point(at: object, what: str) -> tuple[float, float]:
     return float(at[0]), float(at[1])
 
 
-@register("prop", "toon-cable-drawer", summary="A drawer in a counter's front, yanked open on a knot of cables")
+@register(
+    "prop",
+    "toon-cable-drawer",
+    summary="A drawer in a counter's front, yanked open on a knot of cables",
+    contract=contract('toon-cable-drawer'),
+)
 def cable_drawer(
     cv: Canvas,
     parent,
@@ -120,7 +126,12 @@ def _scaled(d: str, k: float, dy: float) -> str:
     return " ".join(out)
 
 
-@register("prop", "toon-gray-cable", summary="One gray cable with a plug, held at its top, that goes where it is moved")
+@register(
+    "prop",
+    "toon-gray-cable",
+    summary="One gray cable with a plug, held at its top, that goes where it is moved",
+    contract=contract('toon-gray-cable'),
+)
 def gray_cable(
     cv: Canvas, parent, moves: Sequence[tuple[float, float, float]], start: float, end: float, *, id: str | None = None
 ):
@@ -148,7 +159,12 @@ def gray_cable(
     return g
 
 
-@register("prop", "toon-kitchen-bin", summary="A plain gray kitchen bin in the foreground, open at the top")
+@register(
+    "prop",
+    "toon-kitchen-bin",
+    summary="A plain gray kitchen bin in the foreground, open at the top",
+    contract=contract('toon-kitchen-bin'),
+)
 def kitchen_bin(cv: Canvas, parent, at: tuple[float, float] = BIN_AT):
     """The bin with its foot at reference ``at``. Returns its front, for what lands in it to go behind."""
     x, y = _point(at, "bin")
@@ -160,7 +176,12 @@ def kitchen_bin(cv: Canvas, parent, at: tuple[float, float] = BIN_AT):
     return g
 
 
-@register("prop", "toon-fridge-light", summary="A fridge door's lit display, that goes dark with the power")
+@register(
+    "prop",
+    "toon-fridge-light",
+    summary="A fridge door's lit display, that goes dark with the power",
+    contract=contract('toon-fridge-light'),
+)
 def fridge_light(
     cv: Canvas, parent, off: float | None = None, on: float | None = None, *, at: tuple[float, float] = FRIDGE_LIGHT_AT
 ):
@@ -179,7 +200,12 @@ def fridge_light(
     return g
 
 
-@register("location", "toon-hill-window", summary="A window at night on a hill, its street lights go out in a row")
+@register(
+    "location",
+    "toon-hill-window",
+    summary="A window at night on a hill, its street lights go out in a row",
+    contract=contract('toon-hill-window'),
+)
 def hill_window(cv: Canvas, parent, out: Sequence[float] = (), on: float | None = None):
     """The window, wall around it, on the hill at night. Each street light of :data:`STREET`, from the top of the hill
     down, goes out at its second of ``out`` (none listed: it stays on), and all of them and the houses' windows, which
