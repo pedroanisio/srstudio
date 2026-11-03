@@ -15,17 +15,18 @@ from support.composition_sequences import held_sequence, sequence
 
 BACKENDS = ['plates', 'proxy']
 
-# Preparation identities recorded before the resource table existed.
+# Preparation identities recorded before the resource table existed. An identity includes the style's facts, its
+# parts list among them (composition preflight), so a part added to the style moves every pin here.
 PREPARED = {
     'plates': (
-        '8b99961fc10da815402c5ee4cd156a9a8291c0ad9b81d43c6683f80c766c053d',
-        '175c7ad5e1a0aaa2f45bf3ff20fc930773f32dbb1b36ed841a5ff70ca6105df2',
-        '1db5305d1d90b22debf06d3c511cc2abe8cfd2c4fa01f0b16dc164ea7dd181c9',
+        '736bf9e0e2a45cf8ef754f773346fa3ceee07025f63d6ba5438c7d57832d1cb1',
+        '804f6a03a4c18034f0b65928e11a50e4a25f080b65a8810014b9b62a76e8ea7e',
+        '6d787e9f757e0713d94c6f3aa1f6aa051f7def59acaa15e07d07e78a8475d6cf',
     ),
     'proxy': (
-        '9a8a227c85c9e66e49e87217ee89a2cb4aba1961cf7e8d86ab5273e1278d3d2b',
-        'b478b0d54bfb1eced428f86422fb4ad5470b0723bb7752d86b996d936967253c',
-        '62cce4b1a1b00c8a32e00255b675331e2dfa3dbb6ab2f4d4a5d7751dfb56ce2d',
+        '2a9cf8e0e4797710a5f6af9f7c2a28644bfb3420b6df0ffa7f637e79151518fe',
+        'c7266ef3ef9fcd6dfe01a9ea3df62f1348557b896dacd8560ce1d3a880281b9a',
+        '60342cde4f76096c71929877032282e76bf23daab265cca09efdddbe8aaf0744',
     ),
 }
 
