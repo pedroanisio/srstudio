@@ -69,7 +69,7 @@ still passes up to `social.PUBLISHED_HASHTAG_LIMIT`, and `check` does not ask.
   before tags existed leave it `None`. A reel in a second A/B test adds `also=(("sp-speakers", "a"),)`, and a reel on
   the send test adds `send_to=` and `send_line=`
   ([ADR 0080](../docs/decisions/0080-a-brief-in-episode-json-and-giving-a-claim-back.md)).
-  [episodes/instagram_posts.py](../episodes/instagram_posts.py) derives its `POSTS` map from the releases; each episode
+  [episodes/instagram_posts.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/instagram_posts.py) derives its `POSTS` map from the releases; each episode
   script calls `ep.instagram(POSTS[slug])` before `ep.finish()`, so a build leaves `ig.txt` next to the scene.
   Recreations credit the original author in the caption itself.
 - Every post designs its **cover**: `InstagramPost(thumbnail=Thumbnail(headline, at, kicker, focus, zoom, place))`

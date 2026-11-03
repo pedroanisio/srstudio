@@ -154,7 +154,7 @@ parts. Remove a part from the list when its item is added; the test fails on an 
 
 ## Keeping it up to date
 
-[`tools/systemd/`](../../tools/systemd/) has a user path unit that runs the command above whenever one of these
+[`tools/systemd/`](https://github.com/pedroanisio/srstudio-episodes/tree/develop/tools/systemd) has a user path unit that runs the command above whenever one of these
 changes:
 
 - a file in `generated/renders`;

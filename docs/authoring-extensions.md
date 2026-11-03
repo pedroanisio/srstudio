@@ -35,7 +35,7 @@ Kinds are `character`, `location`, `prop`, `graphic`. A new location is complete
 of the [Signature](authoring-delivery.md#signature) convention. Registering the same kind and name twice raises `RegistryError`;
 use `@register("prop", "tip_jar", replace=True)` when intentionally replacing a builder.
 Parts from another package are listed with
-`srstudio catalog --plugins my_package.parts`. A new episode is a script like the ones in [episodes/](../episodes):
+`srstudio catalog --plugins my_package.parts`. A new episode is a script like the ones in [episodes/](https://github.com/pedroanisio/srstudio-episodes/tree/develop/episodes):
 it takes the project folder as its first argument and is run with `python3 episode.py PROJECT`,
 `srstudio build episode.py PROJECT` or, once it has a release, `srstudio build <slug> PROJECT`. Its recorder
 (`<script>_audio.py`, front end `srstudio.recording.main`) runs with `srstudio record <slug> PROJECT`
