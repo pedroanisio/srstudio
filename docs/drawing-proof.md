@@ -223,8 +223,8 @@ compares the projected native shoulder with the spatial sleeve in all 67
 intervals at 1080×1920. Its maximum axis residual is below 0.0032 pixel.
 This measures geometry registration, not raster contact masks. That component
 still uses sliding feet; the supported-body replacement below adds sole
-constraints and steps. The cup's world hold after release does not model
-physical support. Candidate geometry and palette still require
+constraints and steps. Its cup's world hold after release does not model
+physical support; the supported candidate adds fixed rests. Candidate geometry and palette still require
 the complete acceptance review.
 
 The [attached preview](../../generated/sdk-attached-hand/v4/index.html) uses
@@ -257,7 +257,7 @@ clock. Both painter windows use the original six-second path clock, avoiding
 rounding differences between locally offset path keys and global foot keys.
 The three-second depth replacement remains an explicit cut. At the default
 12-fps world cadence, the complete plan has 80 intervals and 196 raw render
-jobs, with 178,661 planned nodes and 6,692,351,952 bytes of working storage.
+jobs, with 178,661 planned nodes and 6,825,052,696 bytes of working storage.
 These are planned costs, not observed peak memory or a completed cold render.
 
 The native trunk faces each camera, so it turns at the four-second camera cut.
@@ -282,7 +282,16 @@ At the 12 planted-sole observations in these frames, the last covered pixel
 center in the projected anchor column is within 0.835 pixel vertically of that
 anchor. The report records the local floor/interior checks and edge threshold;
 this sampled measurement does not establish every frame's contact mask.
-Physical cup support, shared rig form lighting and the full animated acceptance
+
+In `body_scene`, the cup stands on a fixed rest in each painter window. This is
+Codex's `drawing_cup_support`: the rest's top is the cup's actual base at
+pickup (1.2 seconds) or at the early release (3.6 seconds), and its foot is on
+the floor. Both rests stay fixed in world space through the four-second camera cut.
+A bounded rigid shoulder swing keeps the carried cup from entering a rest; bone
+lengths and the finger/cup registration are unchanged. The rests add one
+declared palette, which adds 132,700,744 bytes to the planned working storage.
+`tests/test_drawing_supported_cup.py` covers contact, the floor, world fixity
+and that palette. Shared rig form lighting and the full animated acceptance
 matrix remain open.
 
 ### Native information in the combined scene

@@ -33,7 +33,8 @@ every shot. A tilted sole has no frontal paw drawing. It raises an error
 instead of being flattened.
 
 At the default 12-fps cadence, the complete plan has 80 intervals and 196 raw
-render jobs. It plans 178,661 nodes and 6,692,351,952 bytes of working storage.
+render jobs. It plans 178,661 nodes and 6,692,351,952 bytes of working storage
+before the cup rests are added.
 The 500,000-node and 8-GiB caps are unchanged.
 
 Rejected alternatives:

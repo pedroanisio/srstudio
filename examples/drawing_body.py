@@ -12,10 +12,10 @@ from dataclasses import dataclass, replace
 from functools import cache
 
 from examples.acting_continuity import carry_motion
-from examples.drawing_attached import attached_mesh, attached_performance, attached_scene
+from examples.drawing_attached import attached_performance, attached_scene
+from examples.drawing_cup_support import supported_mesh, supported_recipe
 from examples.drawing_figure import SCALE as WORLD_SCALE
 from examples.drawing_figure import _transform, figure_source
-from examples.drawing_hand import hand_recipe
 from examples.drawing_proof import SIZE, sample, schedule
 from examples.drawing_world import WorldStudy
 
@@ -294,8 +294,8 @@ def body_transform(time: float) -> c.Transform:
 
 
 def candidate_mesh(time: float) -> tuple[clay.Mesh, ...]:
-    """The spatial arm and cup on the supported root, driven by the retimed carry."""
-    return attached_mesh(time, placement=body_transform, motion=candidate_carry())
+    """The spatial arm, cup and fixed cup rest on the supported root, driven by the retimed carry."""
+    return supported_mesh(time, placement=body_transform, motion=candidate_carry())
 
 
 def foot_transform(leg: body.LegPose, time: float) -> c.Transform:
@@ -328,7 +328,9 @@ def body_scene(*, fps: int = 12, size: tuple[int, int] = SIZE) -> WorldStudy:
     for frame in schedule(fps=fps, size=size, events=events):
         meshes = candidate_mesh(frame.time)
         vertices.extend((float(x), float(y), float(-z)) for mesh in meshes for x, y, z in mesh.vertices)
-        source = c.proxy_source('hand', meshes, hand_recipe(), basis='clay', lighting='scene', meters_per_unit=0.01)
+        source = c.proxy_source(
+            'hand', meshes, supported_recipe(), basis='clay', lighting='scene', meters_per_unit=0.01
+        )
         if not snapshots or source != snapshots[-1].source:
             snapshots.append(c.RasterFrame(frame.time, source))
     hand = c.RasterSequence('hand', 6, tuple(snapshots))
@@ -336,6 +338,8 @@ def body_scene(*, fps: int = 12, size: tuple[int, int] = SIZE) -> WorldStudy:
     hand_binding = replace(
         next(binding for binding in timeline.base.bindings if binding.id == 'hand'),
         part='candidate.hybrid-supported-hand-cup',
+        # Preparation retains a light/ID scene per tone set; the rest adds one set.
+        memory_bytes=64 * 1024**2 + size[0] * size[1] * (64 * len(supported_recipe().tones) + 512),
         bounds=c.Bounds((min(xs), min(ys), min(zs)), (max(xs), max(ys), max(zs))),
         plates=c.raster_jobs(hand, width=size[0], height=size[1], memory_bytes=64 * 1024**2 + size[0] * size[1] * 64),
         candidate=c.CandidateSource('toon', c.raster_sequence_digest(hand)),
