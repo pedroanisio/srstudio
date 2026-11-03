@@ -195,7 +195,7 @@ mouth). A `Look` holds the coat colours, the silhouette, the eye and mouth place
 `figure_shapes(look, eyes, mouth, arms, frame)` returns the layers for one expression (every `EYES` × `MOUTHS` ×
 `ARMS` is tested to stay inside the character's corner), and `dog`/`frog` take the same poses, duration and
 keystrokes as `toon.cat`, plus `enter=` for a character that comes on later. Rex (the dog) and Fern (the frog) are
-the cast of the [first Toon sketches](episode-history.md#toon-sketches-the-report-t3-logo-bigger-t4-and-quick-question-t5).
+the cast of the [first Toon sketches](#toon-sketches-the-report-t3-logo-bigger-t4-and-quick-question-t5).
 
 Two more characters carry opt-in polish fields on their `Look` ([docs/decisions/0020-toon-lip-synced-cast.md](decisions/0020-toon-lip-synced-cast.md)):
 `toon-bear` (brown coat, round ears lined in cream, a pale muzzle and belly) and `toon-rabbit` (pale coat, tall
@@ -360,3 +360,212 @@ nonempty `limbs` replacement tracks are unsupported.
 ([docs/decisions/0143-bento-hands-are-a-pair.md](decisions/0143-bento-hands-are-a-pair.md)). A `Gesture` holds
 `toon_bento.Paw` records, each naming its `Arm` and `Facing`; a paw on the other arm's sleeve, or two on one arm, is
 refused when the gesture is built.
+
+## Toon sketches: *The Report* (T3), *Logo Bigger* (T4) and *Quick Question* (T5)
+
+The coworkers' episodes are short comedies written as data and cut between the two characters
+([docs/decisions/0015-toon-sketches.md](../docs/decisions/0015-toon-sketches.md)).
+[src/srstudio/sketch.py](../src/srstudio/sketch.py) defines a `Sketch`: its `Speaker`s (an ElevenLabs premade voice
+each and the Toon character one plays, or none for a voice heard on a speaker), its `Line`s (one request each) and
+its `Beat`s (every change of caption, on-screen character, expression or prop event at its scripted time, a spoken
+beat naming the line and the word it starts on). `check` refuses an inconsistent sketch; `cues` (the caption script,
+each cue carrying its line's speaker so `toon.captions(tints=)` colours the pill by who speaks), `appearances` (one
+stretch of one character on screen, its poses counted from its entrance) and `events` (`"toast:0"`,
+`"clock:09:05"`, `"logo:2.3"`, `"pop"`, `"hangup"`) are what the build draws. `record` says every line in its
+speaker's voice through `srstudio.voice`, confirms each voice by name, hears each take back with speech-to-text
+(the run stops on any misheard line), places the lines at the speakers' own pace and moves the beats onto the heard
+words (`place`); the placed beats are written to `voiced/beats.json` and read back typed by `load_beats`. The
+same run turns each take's character timestamps into its character's viseme track (`visemes`, sampled at
+`VISEME_RATE` over the part of the take that was kept, joined in order by `extend_track`) and writes
+`voiced/mouths.json`, read back typed by `load_mouths` (known characters, known visemes, rising seconds within the
+project).
+
+[src/srstudio/toon_props.py](../src/srstudio/toon_props.py) holds the sets and props the sketches play with, all in
+the style's reference pixels: `toon-meeting` (a mint room with a whiteboard where the window was), `toon-mug`
+(steam in the spans asked), `toon-clock` (hour and minute hands that jump to each `(second, "HH:MM")`),
+`toon-notes` (up to four sticky notes lettered on the laptop lid), `toon-toast` (a phone notification that slides
+in and shakes with the buzz; `gated=True` letters the card only once it has landed, so a camera push never leaves
+its lettering wholly off frame, where the strict encode's contrast check fails it), `toon-board-text`, `toon-logo` (a sun that scales about its centre to each asked
+size over 0.3 s, `scale_keys`, with a drop shadow through a span) and `toon-badge` (the call status under the
+pill). `toon_cast.sticky_note` and the `stickers=` parameter of `dog`/`frog` stick a note on a character's forehead
+that follows its sigh and lean. `foley.buzz` and `foley.tones` (`STING`, `CHIME`) are the phone and the sting, as
+deterministic as the keyboard.
+
+[srstudio.toon_sketch](../src/srstudio/toon_sketch.py) is the build the Toon sketches share: `build` draws one gated
+group per appearance (set and props behind the character, the character on its poses, the desk, the props in
+front), tints the pills, refuses a caption too wide for one pill (`fit_captions`), checks that `voiced/beats.json`
+and `narration.json` agree, draws the mouths from `voiced/mouths.json` (refusing one whose end differs from the
+beats'), and adds the voices and effects; `record_episode` is the ElevenLabs run plus the
+keyboard between the lines, a buzz under every toast and the sting on the hangup. Each sketch is a data module
+with its `SKETCH`, a `validate` for what its events ask of the props, and a `dress` for its shots:
+[episodes/the_report_data.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/the_report_data.py) (Fern asks where the report is; Rex has never heard of
+it; his own reminders buzz in; the notes and the one on his forehead have been there from the first frame;
+"...What report?") and [episodes/logo_bigger_data.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/logo_bigger_data.py) (a client on speaker wants the
+logo bigger until it is the size of the building, then popping, then smaller; the original pops; "Invoice sent.")
+and [episodes/quick_question_data.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/quick_question_data.py) (T5 *Quick Question*: Pip the rabbit has a
+quick question for Bruno the bear; first some context, March, then Dave; his clock jumps from 9:02 to 9:48 and his
+coffee goes cold; the question is when the stand-up is, and it is on the board behind her; "Oh. Quick
+follow-up."). *Quick Question* records with `record_episode(mouth=)` set to the Toon reading plus the English
+spelling, closed bilabials, lead and bridged joins of `srstudio.lipsync`.
+
+```bash
+python3 episodes/the_report.py PROJECT --init                                # script.json, assets/poses.json, Comic Neue pinned
+python3 episodes/the_report.py PROJECT                                       # the silent master on the scripted timing
+SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/the_report_audio.py PROJECT          # the recording: audio/, voiced/, narration.json
+python3 episodes/the_report.py PROJECT --voice                               # the narrated master
+scene-render encode PROJECT/the-report.scene.xml -o /abs/path/the-report.mp4
+```
+
+`logo_bigger.py`, `logo_bigger_audio.py`, `quick_question.py`, `quick_question_audio.py`, `whose_milk.py`,
+`whose_milk_audio.py`, `out_of_office.py`, `out_of_office_audio.py`, `date_night.py`, `date_night_audio.py`,
+`in_network.py`, `in_network_audio.py`, `split_it.py` and `split_it_audio.py` take the same arguments.
+
+*Whose Milk?* (T6, [episodes/whose_milk_data.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/whose_milk_data.py)) is the first sketch in the office
+kitchen. Fern (Matilda) and Rex (Charlie) argue over the milk in the fridge, labelled Rex, 2019. The note on the
+fridge escalates through `note:` events (WHOSE MILK?, IT MOVED., WHOSE YOGURT?). Each new note is cut in full frame
+with `toon_sets.note_insert` for its beat, and the last one holds to the end as the button. Rex's coffee brews
+behind him in every one of his shots.
+
+*Out of Office* (T7, [episodes/out_of_office_data.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/out_of_office_data.py)) brings Pip (Alice) and Bruno
+(Bill) back, and it is the first sketch in the home office at night. Bruno is on vacation, out-of-office on. He has
+answered every email to say so, personally. The tear-off calendar behind him loses its pages on `page:` events, only
+in his shots. His boss's reply and, as the button, his own auto-reply arrive as `toast:` events, drawn larger with
+`toon_props.toasts(size=)`. The desk lamp lights his laptop, and the plant stands in front of its glow, right of his
+paws.
+
+*Date Night* (T8, [episodes/date_night_data.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/date_night_data.py)) takes the Toon home: Mae (a
+rabbit, Sarah) is in the kitchen and Otto (a bear, Daniel) in the home office next door, on a video call. He has
+sent her a calendar invite for dinner. Its agenda, her status as optional and, as the button, a shared spreadsheet
+of apartments arrive on her phone as `toast:` events, and the fridge carries the date. The tear-off calendar
+behind him jumps from OCT 29 to JUN 30 on the `page:` event of the punchline, the month their lease ends.
+
+*In Network* (T9, [episodes/in_network_data.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/in_network_data.py)) is a phone call to an insurer. Gil (a
+frog, Chris) is in the home office at night; Dana (a dog, Jessica) is in claims, in the new call-centre cubicle
+(`toon_sets.call_centre`), and wears the new headset sticker (`toon_cast.headset`). Is a broken arm covered? Which
+arm? They cover the right. The claims arrive on his phone as `toast:` events. Her CALLS WAITING board climbs on
+`tick:` events, only in her shots, and jumps to 999 in the hold before her punchline: try again in January, fresh
+deductible. After the sting, his calendar jumps to JAN 1 and the button is the callback toast, a new claim.
+
+*Split It* (T10, [episodes/split_it_data.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/split_it_data.py)) is the end of a dinner. Brock (a bear,
+Roger) wants to split the bill evenly; Mia (a rabbit, River) had a side salad and water, he had three lobsters and
+the wine. It is the first sketch in the new restaurant (`toon_dinner.restaurant`), and its staging swaps the office
+desk for the dinner table with the new `Staging(desk=toon_dinner.table)` option (the default stays `toon.desk`).
+Each side of the table is laid with `toon_dinner.dishes`, and the card reader (`toon_dinner.card_reader`) changes
+screen on `reader:` events: DECLINED for him, APPROVED for her. Her payment, his transfer of $6.50 and, as the
+punchline, what it is for (half her salad) arrive on her phone as `toast:` events; the button is his last toast,
+"Same place Friday?".
+
+Two more staging options serve the opening A/B test (a still first second against a moving one). A sketch may open
+on a silent, uncaptioned beat and caption its first line later: the build checks the caption script against the
+sketch's first cue, not against second 0, so a still opening holds the frame unchanged until the first word. And
+`Staging(camera=)` moves each shot: it is called with the dressed `Shot` (its beats are the ones drawn, scripted or
+voiced) and the shot's group (set, character, desk and props; the captions stay still), and the group is named
+`shot-NNN` so `srstudio craft` counts its moves as camera. Without it, shots keep their anonymous ids and every earlier sketch
+rebuilds byte-identical.
+
+## Toon dinner: the restaurant, the table, the dishes and the card reader
+
+`srstudio.toon_dinner` draws the restaurant set in the Toon line. `restaurant(cv, parent, special=(dish, price))`
+is the wall with a seascape, a lit sconce, wainscot, a leather banquette and a chalk SPECIALS board.
+`table(cv, parent)` is a tablecloth that takes the desk's place in a sketch and carries the signature marks.
+`dishes(cv, parent, items, id=)` lays `(kind, x[, at])` items (salad, water, lobster, shells, wine, glass, empty,
+check), each appearing at `at` when given. `card_reader(cv, parent, states, at=, id=)` shows one screen per
+`(start, text, tone)` state, with tones `idle`, `bad` and `good`. Bad data raises `ToonDataError`.
+
+## Toon sets: the office kitchen and the home office at night
+
+[src/srstudio/toon_sets.py](../src/srstudio/toon_sets.py) adds two backdrops and four props, drawn more finely than
+the first sets ([ADR 0022](../docs/decisions/0022-toon-kitchen-and-home-sets.md)). Objects are inked with the brush,
+so their outlines swell and taper like the characters'. Surfaces carry light: a highlight on glass, steel and
+glaze, a soft shadow under each object, and glows drawn as radial gradients. Everything is placed in reference
+pixels and keyed on the composition clock. Looping motion runs from 0 to `end` (`cycle_keys`) and is left out when
+`end` is 0, so a still frame is the same either way.
+
+| Part | What it is | Motion |
+|---|---|---|
+| `toon-kitchen` | butter wall, mint cabinets, subway tiles with a glint each, a counter at `COUNTER_Y`, a tall fridge with magnets | a `note=` (1 to `NOTE_MAX` = 14 characters) on the fridge door |
+| `toon-home` | dusk-violet wall, a night window with a cratered moon, the city skyline, a gathered curtain, string lights, a bookshelf | stars twinkle, bulbs pulse, lit windows go out and come back, until `end` |
+| `toon-coffee-machine` | a drip machine on the counter: carafe, coffee, steel glint | in each `brewing` span: the light blinks, drops fall, steam sways |
+| `toon-desk-lamp` | an angled teal lamp at the desk's right, its head over the laptop | its cone and pool of light show in the `lit` spans (`None`: always on) |
+| `toon-plant` | a terracotta pot with five glossy leaves; `at` and `scale` | the leaves sway until `end` |
+| `toon-calendar` | a tear-off wall calendar in the clock's place | at each `(second, "OCT 28")` in `pages` the page above tears, tips and falls |
+| `toon-note-insert` | a full-frame close-up of the fridge note, lettered at 128 px so it reads on a phone | shown from `start` to `end` under a slow push |
+| `toon-call-centre` | a cubicle: a pale office wall, a flecked fabric partition, a YOUR CALL MATTERS poster, a CALLS WAITING LED board in the window's place | one count at a time from `waiting` (`(second, count)`, from 0, up to `WAITING_MAX`); the board's lamp blinks until `end`; `legible=True` letters the label lighter (`LED_LABEL`) so it passes a strict encode's contrast check |
+
+The signature marks stay on `toon.desk`, which is in front of every Toon shot. The new sets draw neither mark, and
+the defaults of the lamp and the plant stand clear of the desk's cactus. *Whose Milk?* uses the kitchen, the coffee
+machine and the note insert.
+
+`toon_cast.headset(look, mic=True)` (`toon-headset`) fits a headset to any brush-drawn look from its silhouette: a
+band just over the crown, ear cups at eye height and a boom to a mic beside the mouth. It is a list of layers, like
+`toon_cast.sticky_note`, passed to the figure with `stickers=` so it leans and sighs with the character.
+
+## Toon rooms: a living room at night and a service counter, lit over time
+
+[src/srstudio/toon_rooms.py](../src/srstudio/toon_rooms.py) adds two backdrops whose light a sketch drives
+([ADR 0043](../docs/decisions/0043-lit-toon-rooms.md)). Each room has a main light and a screen. A light runs through
+cues `(second, state)` from 0. The states are:
+
+- `on` and `off`;
+- `flicker`, a stutter that repeats until the next cue;
+- `dim`, a fade to `DIM` over `FADE` seconds.
+
+A screen's cue may also name a colour from `SCREEN_COLOURS` (blue, white, red, green, amber, purple). The colour holds
+until a cue changes it. Cues are plain data:
+
+```python
+toon_rooms.dress(shot, "lounge", {"lamp": [[0, "on"], [4.5, "flicker"]], "tv": [[0, "on", "blue"], [3, "on", "red"]]})
+```
+
+The light shows on the sources themselves, in the set behind the character. It also reaches the character: a sketch
+built with `Staging(lit=True)` gets a light layer in every shot, between the character and the desk. In that layer, a
+shade multiplies the frame darker as the main light goes down, and glows add each light's colour over the
+character's side of the frame. The desk, with the signature on it, is drawn after the light layer, so no light state
+changes it. Tests render each state and compare the signature's pixels.
+
+| Part | What it is | Lights and motion |
+|---|---|---|
+| `toon-lounge` | deep teal striped wall, a shelf above the pill with a router and the library's smart speaker (`toon-speaker` at scale 0.5), a floor lamp at the left, a wall TV over a media console, a plum sofa behind the character | `lamp` (main) and `tv` (screen, default blue); the router's lights blink until `end`; the speaker's ring follows `speaker=` (`(second, state)`, default off) |
+| `toon-counter` | mint wall and wainscot, ceiling tiles with two fluorescent fixtures, a TAKE A NUMBER sign with its dispenser, a NOW SERVING board, an orange plastic chair | `tubes` (main) and `board` (screen, default red); the board shows one ticket at a time from `serving=` (`(second, "A17")`, from 0) |
+
+`toon_rooms.ROOMS` names each room's lights, its defaults and the boxes its objects keep clear of the figure, the pill
+and the desk. `toon_rooms.stage(cv, back, light, name, lights, end)` draws a room outside a sketch.
+
+## Toon everyday props: the phone, the speaker, the receipt, the queue and the form
+
+[src/srstudio/toon_everyday.py](../src/srstudio/toon_everyday.py) adds five props for everyday tech, money and
+services, job search and dating ([ADR 0042](../docs/decisions/0042-toon-everyday-props.md)). Each stands at `at`
+(reference pixels) and `scale` (0.9 to 2.0; the speaker, which carries no lettering, from 0.5), takes states keyed from 0 in rising seconds, and returns its
+footprint. A footprint that leaves the frame, enters the caption band or touches `SIGNATURE_BOX`, the desk's
+signature marks, raises `ToonDataError`, as does text that does not fit its box in the style's font (`measure=`,
+the sketch's `Shot.measure`).
+
+| Part | What it is | Motion |
+|---|---|---|
+| `toon-phone` | a phone, held (`hand=`) or set down, with typed `Screen`s: `notify`, `code`, `profile`, `declined`, `loading`, `off` | one screen at a time; a notification buzzes the phone; the loading bar fills to `fill` |
+| `toon-speaker` | a smart speaker with a light ring and a halo | `off`, `listen`, `think` (a light chasing round), `speak` (pulsing), `error` (red), until `end` |
+| `toon-receipt` | a receipt strip under a printer slot: a header, `(name, price)` rows, a total | unrolls from `start` at `pace` seconds a row; each row shows as the paper passes it |
+| `toon-take-a-number` | a ticket dispenser on a pole under a NOW SERVING display, the customer's `ticket` in it | the display changes at each `(second, number)` |
+| `toon-clipboard` | a form on a clipboard: a title and up to five `Field(label, value, at)` rows | each value is written in at its second; a `(second, text, tone)` stamp lands with a pop |
+
+No episode draws them yet, so the catalog's notes need no gallery item for them.
+
+## Lyra and Retro Orbit: flat print parts
+
+[src/srstudio/toon_plate.py](../src/srstudio/toon_plate.py) draws a mid-century poster as brush shapes: `shape` turns an
+absolute path into a closed `Shape`, `Frame` places a plate inside a part, and `clip` and `inside` stand in for a clip
+path. A plate keeps its literal colours on any canvas palette.
+
+[src/srstudio/toon_orbit.py](../src/srstudio/toon_orbit.py) adds two 9:16 locations, `planetarium_salon` and
+`starlight_terrace`, and five props: `telescope`, `moon_globe`, `saturn_model`, `field_notebook`, `signal_clicker`.
+Signs are live text in the two fonts of `Lettering`, Bebas Neue and DM Sans, installed with `fonts.install`; with no
+`Lettering` they stand blank. `print_finish` is the one grain, and it fits `Staging.finish`. Neither set signs a shot,
+so a reel there gives its shots a `Staging.desk` that does.
+
+[src/srstudio/toon_lyra.py](../src/srstudio/toon_lyra.py) is `lyra`, an owl who presents astronomy. `MOODS` and
+`EYE_POSES` are typed data; `pose(start, name)` writes a pose in either, and `mood()` and `eye_pose()` refuse an unknown
+name. She is lip synced through her beak, and `LYRA_RIG` is her head rig, with `mood_plan` turning her head from mood
+to mood. Her moods go through the rig, not through `toon_cast.figure`, which holds to the shared names.
+
+Lyra and her rig are approved. The two locations and five props are proposed, so a reel cannot use them until they are
+decided. The reasons and where the port differs from the pack are in [docs/decisions/0063-lyra-retro-orbit.md](decisions/0063-lyra-retro-orbit.md).

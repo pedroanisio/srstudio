@@ -63,13 +63,13 @@ From the workspace root, first measure which parts the episodes use (see the
 [library README](../../README.md#the-parts)), then build the page:
 
 ```bash
-(cd srstudio && ../.venv/bin/srstudio usage --episodes ../generated/episodes --packages ../generated/packages \
-    --scripts episodes --work _tmp/usage-work --out ../generated/catalog/usage.json)
+(cd srstudio-episodes && ../.venv/bin/srstudio usage --episodes ../generated/episodes --packages ../generated/packages \
+    --scripts episodes --work ../generated/catalog/usage-work --out ../generated/catalog/usage.json)
 .venv/bin/srstudio page \
     --base generated/catalog/packages-base.html \
     --episodes generated/episodes --renders generated/renders \
     --notes srstudio/docs/catalog/notes.json --usage generated/catalog/usage.json \
-    --releases srstudio/episodes/posts \
+    --releases srstudio-episodes/episodes/posts \
     --cache generated/catalog/cache --engine generated/bin/scene-render --packages generated/packages \
     --site generated/catalog/site
 .venv/bin/srstudio serve generated/catalog/site   # http://127.0.0.1:8765/
@@ -79,7 +79,7 @@ From the workspace root, first measure which parts the episodes use (see the
 loopback unless told otherwise. It answers the byte ranges a browser needs to seek a video. Opening `index.html`
 from disk is not supported.
 
-- `--releases` is the folder of release files (`srstudio/episodes/posts`), which says which reels pin which version.
+- `--releases` is the folder of release files (`srstudio-episodes/episodes/posts`), which says which reels pin which version.
   Without it the page says the pins were not read.
 - `--proof-root` is where a version record's proof paths start, by default the working directory. A proof that is not
   on the machine keeps its path on the page, with no link.
@@ -176,7 +176,7 @@ written and the previous report stays. When the report changes, `srstudio-catalo
 them once:
 
 ```bash
-cd srstudio/tools/systemd
+cd srstudio-episodes/tools/systemd
 systemctl --user link "$PWD/srstudio-catalog.path" "$PWD/srstudio-catalog.service" "$PWD/srstudio-catalog-web.service" \
     "$PWD/srstudio-usage.path" "$PWD/srstudio-usage.service"
 systemctl --user enable --now srstudio-catalog.path srstudio-catalog-web.service srstudio-usage.path

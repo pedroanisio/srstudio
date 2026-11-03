@@ -14,7 +14,10 @@ from support.authoring_docs import anchors, fences
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / 'docs'
 LAYOUT = json.loads((ROOT / 'tests/data/authoring-reference-layout.json').read_text())
-OWNERS = sorted({s['owner'] for s in LAYOUT['sections']} - {'authoring-reference.md'})
+# The episode history moved to srstudio-episodes with the reels it records (ADR 0220); its sections and recipes are
+# held there by tests/test_docs.py, and only the index's links to it are checked here.
+EPISODE_HISTORY = 'https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md'
+OWNERS = sorted({s['owner'] for s in LAYOUT['sections']} - {'authoring-reference.md', EPISODE_HISTORY})
 EXTRA_GUIDES = ['authoring-audio.md']
 
 
@@ -25,6 +28,14 @@ def test_task_index_routes_to_focused_guides_without_embedded_recipes():
     assert '<!-- diagnostic-repair:start -->' not in text
     assert '```python' not in text
     assert 'Episode history' in text
+    assert f']({EPISODE_HISTORY})' in text
+    assert not (DOCS / 'episode-history.md').exists()
+
+
+def test_every_owner_is_a_guide_here_or_the_episode_history():
+    assert {s['owner'] for s in LAYOUT['sections']} == {'authoring-reference.md', EPISODE_HISTORY, *OWNERS}
+    assert all(not urlsplit(owner).scheme and (DOCS / owner).is_file() for owner in OWNERS)
+    assert EPISODE_HISTORY in {s['owner'] for s in LAYOUT['sections']}
 
 
 @pytest.mark.parametrize('section', LAYOUT['sections'], ids=lambda s: s['anchor'])
@@ -34,6 +45,7 @@ def test_legacy_bookmarks_resolve_to_their_owned_sections(section):
     if section['owner'] != 'authoring-reference.md':
         destination = section['owner'] + '#' + section['anchor']
         assert f']({destination})' in index
+    if section['owner'] in OWNERS:
         assert section['anchor'] in anchors((DOCS / section['owner']).read_text())
 
 

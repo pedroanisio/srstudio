@@ -60,7 +60,7 @@ window of one source performance; it does not restart the speech or facial clock
 Finish with [scene verification](authoring-verification.md) and
 [delivery](authoring-delivery.md).
 
-The [Five Years case study](episode-history.md#new-episodes-with-generated-audio-five-years-06)
+The [Five Years case study](https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md#new-episodes-with-generated-audio-five-years-06)
 retains its original commands and production decisions. Current interface and
 failure tests are in [recording](../tests/test_recording.py),
 [voice](../tests/test_voice.py), [narration](../tests/test_narration.py),
