@@ -4,15 +4,11 @@ The scores are written by agents, so they are model output: they are parsed from
 and refused with a reason. Nothing here decides what is funny; the delivery commands' own tests are in
 ``tests/test_social.py`` and ``tests/test_publish_pilots.py``."""
 
-from pathlib import Path
-
 import pytest
 
 from srstudio import comedy_floor
 from srstudio.comedy_floor import ComedyError, Scores, notes_shortfall, read, refuse, shortfall
 from srstudio.social import DeliveryError
-
-SKILL = Path(__file__).resolve().parent.parent / ".claude/skills/funny-reels/SKILL.md"
 
 
 def notes(*lines: str, body: str = "# Notes\n") -> str:
@@ -24,10 +20,6 @@ BOTH = ("comedy-author: 15", "comedy-reviewer: 14")
 
 def test_the_floor_is_fourteen_of_twenty():
     assert (comedy_floor.FLOOR, comedy_floor.TOP) == (14, 20)
-
-
-def test_the_skill_states_the_floor_the_gate_holds():
-    assert f"{comedy_floor.FLOOR}/{comedy_floor.TOP}" in SKILL.read_text()
 
 
 def test_two_scores_are_read_from_the_frontmatter():

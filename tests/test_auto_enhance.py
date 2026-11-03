@@ -261,11 +261,6 @@ def test_every_kind_is_described():
     assert len(auto_enhance.KINDS) >= 10 and all(auto_enhance.KINDS.values())
 
 
-def test_the_skill_lists_every_kind():
-    text = (REPO / auto_enhance.SKILL).read_text(encoding="utf-8")
-    assert not [kind for kind in auto_enhance.KINDS if f"`{kind}`" not in text]
-
-
 def scripts(repo: Path) -> list[str]:
     (repo / "episodes").mkdir(exist_ok=True)
     return ["--scripts", str(repo / "episodes")]

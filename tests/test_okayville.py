@@ -6,19 +6,17 @@ both, whichever video it would end up in. Pixels and text put together at run ti
 """
 
 import re
-import sys
 from dataclasses import asdict
 from pathlib import Path
 
 import pytest
 
-from srstudio.social import HASHTAG_LIMIT, InstagramPost
+from srstudio.social import InstagramPost
 from srstudio.thumbnail import Thumbnail
 
 ROOT = Path(__file__).resolve().parent.parent
 RETIRED = re.compile(rb"tuxmeme", re.IGNORECASE)
-TREES = ("src", "episodes", "pilots", "examples", "tools/govern/processes")  # what a reel is drawn and captioned from
-SKILL = ROOT / ".claude/skills/funny-reels/SKILL.md"
+TREES = ("src", "examples")  # what the library draws and captions with; srstudio-episodes checks the reels
 GUIDES = tuple(str(p.relative_to(ROOT)) for p in sorted((ROOT / "docs").glob("authoring-*.md"))) + (
     "docs/episode-history.md",
     "docs/slack-channel.md",
@@ -39,22 +37,12 @@ def said(post: InstagramPost) -> str:
     return "\n".join((post.text(), str(asdict(post.thumbnail) if post.thumbnail else ""), str(post.extra)))
 
 
-def shipped_releases() -> dict:
-    sys.path.insert(0, str(ROOT / "episodes"))
-    try:
-        import instagram_posts as posts
-    finally:
-        sys.path.pop(0)
-    return posts.RELEASES
-
-
 def test_no_source_a_reel_is_built_from_carries_the_old_name():
     assert carrying(ROOT, TREES) == GUARDS
 
 
 def test_the_search_reads_the_trees_it_claims():
-    assert (ROOT / "episodes/instagram_posts.py").is_file() and (ROOT / "src/srstudio/social.py").is_file()
-    assert (ROOT / "pilots").is_dir() and (ROOT / "tools/govern/processes/reel.json").is_file()
+    assert (ROOT / "src/srstudio/social.py").is_file() and (ROOT / "examples").is_dir()
 
 
 @pytest.mark.parametrize("line", ["@tuxmeme", "follow @TuxMeme on Instagram", 'CREDIT = "tuxmeme"'])
@@ -76,18 +64,6 @@ def test_the_search_skips_nothing_but_bytecode_and_build_records(tmp_path):
 def test_the_guides_an_author_copies_from_do_not_carry_the_old_name():
     for guide in GUIDES:
         assert not RETIRED.search((ROOT / guide).read_bytes()), guide
-    assert not RETIRED.search(SKILL.read_text().split("\n---\n", 1)[1].encode())  # the changelog above is history
-
-
-def test_the_skill_states_the_handle_the_brand_and_the_limit():
-    skill = SKILL.read_text()
-    assert "@okayville.tv" in skill and "everyday life, animated" in skill and f"{HASHTAG_LIMIT} hashtags" in skill
-
-
-def test_no_release_says_the_old_name():
-    releases = shipped_releases()
-    assert releases
-    assert [slug for slug, r in releases.items() if RETIRED.search(said(r.post).encode())] == []
 
 
 @pytest.mark.parametrize(

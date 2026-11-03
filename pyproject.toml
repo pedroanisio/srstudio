@@ -29,7 +29,7 @@ srstudio = ["py.typed", "assets/**/*"]  # typed API and assets read through impo
 [tool.ruff]
 line-length = 120
 target-version = "py310"
-src = ["src", "tests", "episodes"]
+src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP"]

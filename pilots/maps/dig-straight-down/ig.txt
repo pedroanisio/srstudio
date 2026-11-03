@@ -1,8 +1,0 @@
-Where would you come up if you dug straight through the Earth?
-
-Maps #3. For about 80% of people, in the sea: 79.8% on GHS-POP 2025 and 80.0% on WorldPop 2025, opposite Natural Earth's land. Only 13% of the land has land opposite. A city here is one coordinate, not its whole footprint, and Beijing is not all of China: Chengdu lands in the sea and Xi'an in Chile.
-Source: GHS-POP 2025, antipodes computed against Natural Earth 10m land.
-
-GHS-POP R2023A, European Commission JRC, CC BY 4.0. Coordinates: GeoNames (geonames.org), CC BY 4.0. Made with Natural Earth. Voices: ElevenLabs premade.
-
-#maps #geography #antipodes #didyouknow

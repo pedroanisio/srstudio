@@ -39,7 +39,6 @@ __all__ = [
     "BASE_RIG",
     "CLOTHES_AND_PROPS",
     "PUBLISHED",
-    "REPO",
     "RULE",
     "RULING",
     "BaseRig",
@@ -53,7 +52,6 @@ __all__ = [
     "script_of",
 ]
 
-REPO = Path(__file__).resolve().parent.parent.parent
 BASE_RIG = ("hair", "glasses", "neck")
 CLOTHES_AND_PROPS = ("tie", "apron", "cap", "sunhat", "brows")
 RULING = "a recurring figure's base rig stays as published, and only clothes and props change per reel."

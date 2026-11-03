@@ -72,7 +72,6 @@ def test_the_standing_figure_stands_on_the_floor_clear_of_the_desk(built):
 def test_the_study_is_never_a_release():
     text = SCRIPT.read_text()
     assert "InstagramPost" not in text and "register" not in text and "post" not in text.split('"""', 2)[2]
-    assert not list((ROOT / "episodes").rglob("dance_stick*"))
 
 
 def test_master_needs_the_engine(tmp_path):
