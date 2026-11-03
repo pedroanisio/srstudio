@@ -12,7 +12,7 @@ Run commands from the srstudio repository root.
 
 ## New episodes with generated audio: *Five Years* (06)
 
-[episodes/five_years.py](../episodes/five_years.py) is the first episode made on the library rather than ported to it.
+[episodes/five_years.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/five_years.py) is the first episode made on the library rather than ported to it.
 
 ```bash
 python3 episodes/five_years_audio.py PROJECT --key-stdin < key   # resolve, speech check, trims, dialogue.json
@@ -64,7 +64,7 @@ edge-on moment).
 
 ## Cutout episode with generated audio: *Tip Screen* (12)
 
-[episodes/tip_screen.py](../episodes/tip_screen.py) brings Ava and Milo from episode 05 back to the café. Milo asks for
+[episodes/tip_screen.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/tip_screen.py) brings Ava and Milo from episode 05 back to the café. Milo asks for
 a black coffee, Ava swivels the tip tablet, and Milo sets down a tablet of his own: "how would you like to tip me for
 ordering?" They tap "thirty" at each other until closing, and the scorecard nets it out at nothing.
 
@@ -86,7 +86,7 @@ contact sheet is checked by eye, and the cover variant hides the burned captions
 
 ## Cutout crossover in the park: *Culture Fit* (14)
 
-[episodes/culture_fit.py](../episodes/culture_fit.py) seats Milo (episodes 05 and 09) next to the boss from the
+[episodes/culture_fit.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/culture_fit.py) seats Milo (episodes 05 and 09) next to the boss from the
 interview series on a park bench. Milo has sent two hundred applications; the boss interviews a pigeon on his lunch
 break, hires it, and explains why: "He works for crumbs." Milo makes a counter-offer.
 
@@ -106,7 +106,7 @@ lettering sits right of x 920); captions and cards are placed inside `layout.VER
 
 ## Cutout episode in the conference room: *Market Rate* (16)
 
-[episodes/market_rate.py](../episodes/market_rate.py) brings back the candidate from the interview series, a year into
+[episodes/market_rate.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/market_rate.py) brings back the candidate from the interview series, a year into
 the job. Alone in the conference room, he asks the boss on the speakerphone for a raise and gets a title instead
 ("Does Senior pay more?" "It's longer."). Then his own job turns up online, paying more, for external talent only.
 
@@ -124,7 +124,7 @@ the `password-card` graphic, the endorsement the `notification` graphic at 2.25�
 
 ## Cutout episode in the elevator: *Elevator Pitch* (18)
 
-[episodes/elevator_pitch.py](../episodes/elevator_pitch.py) puts the employee from *Market Rate* in the elevator with the
+[episodes/elevator_pitch.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/elevator_pitch.py) puts the employee from *Market Rate* in the elevator with the
 boss: "Working from home? Elevator pitch. You've got till my floor." At floor 4 the doors open on Kevin, the pigeon
 from *Culture Fit*, who is fully remote ("He negotiated. You took a title."). At floor 9: "Kevin, your call." Coo.
 
@@ -151,7 +151,7 @@ The pigeon is `cast.pigeon` in a walking group that comes forward through the do
 
 ## Cutout crossover finale: *Going Down* (20)
 
-[episodes/going_down.py](../episodes/going_down.py) closes the office series. Floor 9, going down. "Am I being fired?"
+[episodes/going_down.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/going_down.py) closes the office series. Floor 9, going down. "Am I being fired?"
 "No. Your role is being sunset." "So I'm fired." "You're going fully remote. From your couch. Forever." At floor 4
 Kevin, the pigeon from *Culture Fit*, walks in with a pink slip in his beak: "He flew in for this. He's Head of People
 now." The slip lands at the boss's feet, lettered ERIC. "Kevin... is my role being sunset?" A 1.3 s hold, then a
@@ -177,7 +177,7 @@ x 920; captions and cards are placed inside x 80–920 by hand.
 
 ## Cutout episode at the café counter: *Cup Fee* (22)
 
-[episodes/cup_fee.py](../episodes/cup_fee.py) brings Ava and Milo back to the café. "One black coffee. Three bucks."
+[episodes/cup_fee.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/cup_fee.py) brings Ava and Milo back to the café. "One black coffee. Three bucks."
 Then a fee for the cup, the lid fee, a service fee ("for serving you") and, when Milo offers cash, a cash fee, each
 a beep and a higher total on the card reader. "How much is the actual coffee?" "Oh, the coffee's free." "Then what
 are the three bucks for?" "The coffee fee." The tip tablet from *Tip Screen* swivels round to him.
@@ -206,7 +206,7 @@ captions are placed inside x 80–920 by hand.
 
 ## Cutout episode on the park bench: *Storage Full* (23)
 
-[episodes/storage_full.py](../episodes/storage_full.py) puts Milo on the park bench from *Culture Fit*. A pigeon walks
+[episodes/storage_full.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/storage_full.py) puts Milo on the park bench from *Culture Fit*. A pigeon walks
 up the path and does a backflip. "No way. Do that again!" The phone: "Storage full." It offers fourteen photos of the
 same sunset ("Still full."), then the wedding video. Milo and the pigeon look at each other. "...Yes." "Recording."
 The pigeon flies off, and a message from his wife asks for the wedding video.
@@ -225,7 +225,7 @@ the park.
 
 ## Cutout episode across the interview desk: *Name a Number* (24)
 
-[episodes/name_a_number.py](../episodes/name_a_number.py) brings the interviewer and the applicant from *Five Years*
+[episodes/name_a_number.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/name_a_number.py) brings the interviewer and the applicant from *Five Years*
 back for the salary talk, where whoever names a number first loses. "So. What number did you have in mind?" "What's
 the range?" "What would make you happy?" "What would make you happy?" "I asked first." "The ad said competitive."
 "Extremely competitive." "Competitive with what?" "Other ads." They both write it down: the offer says LESS THAN
@@ -257,7 +257,7 @@ published interview project rebuilds byte for byte.
 
 ## Cutout episode in the elevator: *Neighbor Names* (25)
 
-[episodes/neighbor_names.py](../episodes/neighbor_names.py) puts the applicant from *Five Years* in the elevator with
+[episodes/neighbor_names.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/neighbor_names.py) puts the applicant from *Five Years* in the elevator with
 Rosa, his neighbor of seven years, whose name he never learned. "Morning!" "Morning... you!" "Seven years in this
 building, huh?" "Seven years!" "Can I ask you something I should know by now?" "Anything, dear." "Where did you get
 that cardigan?" "I made it." Her name is stitched on it; his parcel's label says DEV 7C. The doors open on a third
@@ -283,7 +283,7 @@ frame, which the SA01 text check refuses; captions are placed inside x 80–920 
 
 ## Cutout episode at the home printer: *Out of Cyan* (26)
 
-[episodes/out_of_cyan.py](../episodes/out_of_cyan.py) sits Rosa at her desk with one black page to print and a printer
+[episodes/out_of_cyan.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/out_of_cyan.py) sits Rosa at her desk with one black page to print and a printer
 that reads LOW ON CYAN. "It's black and white." It answers in pages: a ransom note in cut-out letters, WE HAVE YOUR
 DOCUMENT, then BRING CYAN. COME ALONE. She pays $64 at a shop till, and it wants OFFICIAL CYAN. She pays $89, and it
 wants the magenta too, with an instant photo of her page tied to a chair. "Don't hurt it." She pays $98. The display
@@ -320,7 +320,7 @@ has approved them. `srstudio parts` shows such a part with `-` as its default.
 
 ## Cutout episode in the break room: *I'm Quitting* (27)
 
-[episodes/im_quitting.py](../episodes/im_quitting.py) stands the applicant at the coffee machine, already mid-rant. "That's
+[episodes/im_quitting.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/im_quitting.py) stands the applicant at the coffee machine, already mid-rant. "That's
 it. I'm quitting. Today." His friend, eyes on his own mug: "Mm." The same shot, a new mug, a bigger plant, and the wall
 board reads 2,190 days since "today". "This time I mean it." "Mm." Twelve years in, a planner lands on the counter. "You
 said Friday." "Which Friday?" Every Friday in it is circled. "Twelve years of them." A banner, a gold watch. "Forty
@@ -349,7 +349,7 @@ mug, the plant and the board. The voices are Will and Eric; the captions are Not
 
 ## Cutout episode in the hiring office: *Entry Level* (28)
 
-[episodes/entry_level.py](../episodes/entry_level.py) opens on an interviewer and the ad on his desk: ENTRY LEVEL, 10 YEARS'
+[episodes/entry_level.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/entry_level.py) opens on an interviewer and the ad on his desk: ENTRY LEVEL, 10 YEARS'
 EXPERIENCE. "It's entry level, so just ten years." "I'm 22." "Have you tried starting earlier?" The desk bell brings a
 crayon CV with small shoes swinging under it: "Been in the role since nursery." "Promising." Milo: "This software came
 out in 2024." "We need twenty years in it." A crib, a CV over its rail: "I've been networking since the womb."
@@ -375,7 +375,7 @@ Parts added for it, in `srstudio.cutout_hiring`, all recorded `proposed` until t
 
 ## Cutout episode at the barber's: *Just a Trim* (29)
 
-[episodes/just_a_trim.py](../episodes/just_a_trim.py) opens on Rosa in a barber's mirror, a lawnmower parked behind her and
+[episodes/just_a_trim.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/just_a_trim.py) opens on Rosa in a barber's mirror, a lawnmower parked behind her and
 a hedge trimmer on the shelf. "Just a trim, please." "Sure." A cape covers the mirror; a hedge trimmer is heard, then a
 lawnmower. The barber steps in front of the glass: "Bit off the sides?" Hair falls past the lens in sheets. "...Sure."
 The engine stops, the cloth drops, and the head in the mirror is not hers. Two seconds of nothing. "How's that?" The
@@ -393,7 +393,7 @@ approved character in the mirror, with Rosa's voice and mouth. New parts live in
 
 ## Cutout episode at the store: *Just One Thing* (30)
 
-[episodes/just_one_thing.py](../episodes/just_one_thing.py) is already walking when it starts, with a very small basket: "I
+[episodes/just_one_thing.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/just_one_thing.py) is already walking when it starts, with a very small basket: "I
 only need light bulbs." The basket is a cart: a lamp, three candles, a plant. "We do need a plant." A bigger cart: a
 ladder, a kayak. "It was on sale." Bigger again: a paddle, a life ring. "That's just safety." At the till the screen
 says $412, then rolls on while the receipt runs down the frame, and Milo is proud of it. At home, in the dark, sitting
@@ -411,7 +411,7 @@ It moves from the first frame (arm B of the `sp-hook_motion` test). New parts li
 
 ## Ink episode: *The Router* (Ink 02)
 
-[episodes/the_router.py](../episodes/the_router.py) is the first original Ink episode: the internet is down and the router
+[episodes/the_router.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/the_router.py) is the first original Ink episode: the internet is down and the router
 would rather be rebooted by hand. Twenty takes as a shot sequence (desk, human close, router on its shelf, wide).
 
 ```bash
@@ -420,7 +420,7 @@ python3 episodes/the_router.py PROJECT                                          
 scene-render encode PROJECT/the-router.scene.xml --out-dir OUT                    # OUT/renders/the-router.mp4
 ```
 
-[episodes/the_router_audio.py](../episodes/the_router_audio.py) makes one request per take through `srstudio.voice`
+[episodes/the_router_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/the_router_audio.py) makes one request per take through `srstudio.voice`
 (typed parse, alignment spells the line, audible, right length), confirms each voice id is the premade voice it names,
 and requires ElevenLabs speech-to-text to hear every line as scripted; three interjections were respelled until it did.
 Each verified clip is trimmed, levelled and conformed to one 48 kHz mono WAV per take under `audio/`, checked to the
@@ -430,10 +430,10 @@ from `ELEVENLABS_API_KEY` and never written. Parts added: `talking-router`, `ink
 
 ## Ink episode: *Not a Robot* (Ink 03)
 
-[episodes/not_a_robot.py](../episodes/not_a_robot.py): one form before lunch, and the captcha escalates from traffic
+[episodes/not_a_robot.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/not_a_robot.py): one form before lunch, and the captcha escalates from traffic
 lights to sad traffic lights to "every moment you felt truly alive", fails the human for hesitating like one, and the
 router welcomes him home. Fourteen takes through `srstudio.takes` (human, captcha and router voices), with the
-screens as data in `SCREENS` ([episodes/not_a_robot_audio.py](../episodes/not_a_robot_audio.py)).
+screens as data in `SCREENS` ([episodes/not_a_robot_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/not_a_robot_audio.py)).
 
 ```bash
 SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/not_a_robot_audio.py PROJECT   # takes, checked by speech-to-text
@@ -448,11 +448,11 @@ Parts added (`srstudio.ink_captcha`): `ink-captcha`, a verification card with a 
 
 ## Ink episode: *Message Failed* (Ink 04)
 
-[episodes/message_failed.py](../episodes/message_failed.py): a text about the boss goes to the boss. The router from
+[episodes/message_failed.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/message_failed.py): a text about the boss goes to the boss. The router from
 *The Router* drops the Wi-Fi so it fails, then retries it because it hates failing; the boss types, agrees, and the
 router offers a reply. Fourteen takes through `srstudio.takes` (human and router voices, two effects), with the chats
 as data in `SCREENS` and the router's power beats in `ROUTER_BEATS`
-([episodes/message_failed_audio.py](../episodes/message_failed_audio.py)).
+([episodes/message_failed_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/message_failed_audio.py)).
 
 ```bash
 SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/message_failed_audio.py PROJECT   # takes, checked by speech-to-text
@@ -468,11 +468,11 @@ cactus. A contact, bubble, status or typing span the screen cannot show, or a ch
 
 ## Ink episode: *U Up?* (Ink 05)
 
-[episodes/u_up.py](../episodes/u_up.py): two in the morning, the human from *The Router* has texted his ex. The router
+[episodes/u_up.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/u_up.py): two in the morning, the human from *The Router* has texted his ex. The router
 will not unsend it: it does not fail any more, it has grown (a callback to *Message Failed*). She asks who this is,
 then remembers the forty dollars, and the router has already paid them from his account, with a memo. Twelve takes
 through `srstudio.takes` (human and router voices, two effects), the chats as data in `SCREENS`, under the contact
-"Do Not Text" ([episodes/u_up_audio.py](../episodes/u_up_audio.py)). It reuses `ink-phone`, `ink-closeup` and the
+"Do Not Text" ([episodes/u_up_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/u_up_audio.py)). It reuses `ink-phone`, `ink-closeup` and the
 router shots; no new parts.
 
 ```bash
@@ -482,12 +482,12 @@ python3 episodes/u_up.py PROJECT                                           # sce
 
 ## Ink episode: *Premium Suction* (Ink 06)
 
-[episodes/premium_suction.py](../episodes/premium_suction.py): the robot vacuum has stopped in the middle of the floor,
+[episodes/premium_suction.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/premium_suction.py): the robot vacuum has stopped in the middle of the floor,
 because its free trial ended. Suction is monthly, the kitchen premium, the corners platinum; what is free is the map
 of the home, which it sells. The landlord texts: he saw the map, and rent goes up in May. He liked the second
 bedroom, which is the closet. Deleting it is premium. Fourteen takes go through `srstudio.takes`: the human (Chris,
 as in the earlier Ink episodes), the vacuum (Lily) and one effect
-([episodes/premium_suction_audio.py](../episodes/premium_suction_audio.py)). The vacuum's moves and displays are data
+([episodes/premium_suction_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/premium_suction_audio.py)). The vacuum's moves and displays are data
 in `VACUUM`, the map's in `MAPS`, the chat in `SCREENS`.
 
 The new parts are in [src/srstudio/ink_vacuum.py](../src/srstudio/ink_vacuum.py):
@@ -507,12 +507,12 @@ python3 episodes/premium_suction.py PROJECT                                     
 
 ## Ink episode: *Home Sick* (Ink 07)
 
-[episodes/home_sick.py](../episodes/home_sick.py): it is Monday, 2:14 PM, and the human is home early with sunglasses on
+[episodes/home_sick.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/home_sick.py): it is Monday, 2:14 PM, and the human is home early with sunglasses on
 his forehead. His video doorbell will not let him in, because the resident is home sick today. He got better? Then
 he is late for work. The doorbell asks the street's group chat who he is, from his own account: never seen him,
 nope, and, after a hold, his boss: that's my employee. Face recognized, welcome home; the boss texts him, feeling
 better? Nice tan. Thirteen takes go through `srstudio.takes`: the human (Chris), the doorbell (George) and three
-message dings ([episodes/home_sick_audio.py](../episodes/home_sick_audio.py)). The face box's tags are data in `LENS`,
+message dings ([episodes/home_sick_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/home_sick_audio.py)). The face box's tags are data in `LENS`,
 the doorbell's verdicts in `DOORBELL`, the chats in `SCREENS`.
 
 The new parts are in [src/srstudio/ink_doorbell.py](../src/srstudio/ink_doorbell.py):
@@ -535,13 +535,13 @@ python3 episodes/home_sick.py PROJECT                                           
 
 ## Ink episode: *Pay to Park* (Ink 08)
 
-[episodes/pay_to_park.py](../episodes/pay_to_park.py): the human holds a coin up to a parking meter whose slot is taped
+[episodes/pay_to_park.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/pay_to_park.py): the human holds a coin up to a parking meter whose slot is taped
 over. Coins? How retro. The meter sends him through its app: download it, create an account (full name, email, shoe
 size), choose a password with a capital, a symbol and a childhood memory. Biscuit. That memory is already in use.
 Enable location; he is right in front of it. Minimum session two hours, rate your parking experience, and "Session
 started!" as the tow truck lifts his car. The hold music stops dead as it drives off, and he says thank you. Fourteen
 takes go through `srstudio.takes`: the human (Chris), the meter (Laura), two effects and a hold-music bed
-([episodes/pay_to_park_audio.py](../episodes/pay_to_park_audio.py)). The app's screens are data in `SCREENS` and the
+([episodes/pay_to_park_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/pay_to_park_audio.py)). The app's screens are data in `SCREENS` and the
 meter's readings in `DISPLAYS`; a cue there is a word of the take's line, resolved on the recorded words, or seconds
 into the take. Take 06's `heard=("Biskit",)` is an operator-approved speech-to-text spelling (2026-10-29).
 
@@ -566,11 +566,11 @@ python3 episodes/pay_to_park.py PROJECT                                         
 
 ## Soft style episode: *Focus Mode* (07)
 
-[episodes/focus_mode_audio.py](../episodes/focus_mode_audio.py) declares seven sung lines and a record scratch as
+[episodes/focus_mode_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/focus_mode_audio.py) declares seven sung lines and a record scratch as
 `<generated>` ElevenLabs items. The engine resolves and pins them, speech-to-text must hear each line as written,
 and each line is placed on its beat of `Groove(bpm=120)`. A line that would run into the next stops the build. The
 script then synthesises the groove on the same grid: bars 0–5 play, bars 6–7 rest for the deadline, and the groove
-creeps back in bars 8–9. [episodes/focus_mode.py](../episodes/focus_mode.py) places Pip's cues on that grid (typing on
+creeps back in bars 8–9. [episodes/focus_mode.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/focus_mode.py) places Pip's cues on that grid (typing on
 eighths, sway, wiggle, hands-behind-head groove, freeze, a planted-foot side-step out of frame) with eased
 in-betweens (four drawings before a beat, two before an eighth; the scratch cuts without any), arcs on sitting and
 standing, overshoot on dance landings and a contact shadow, and burns the lyrics at the top in Poppins inside
@@ -589,12 +589,12 @@ resolves and pins the items, checks each line with speech-to-text, places the li
 the groove, pins the caption font and writes `dialogue.json`. The refactor leaves episode 07's `dialogue.json`
 byte-identical.
 
-[episodes/camera_off_audio.py](../episodes/camera_off_audio.py) is the second song. It has ten lines in two voices:
+[episodes/camera_off_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/camera_off_audio.py) is the second song. It has ten lines in two voices:
 Pip (Will) sings, and the boss (Eric) talks from the call. It also has a mouse click, a call chime and a groove. Polite
 hat and keys play in bars 0–2, the whole groove in bars 4–7, and the meeting music returns in bars 10–11. The music
 rests while the camera goes off and while the boss asks.
 
-In [episodes/camera_off.py](../episodes/camera_off.py), Pip nods along on the beat (`nod`), clicks the camera off,
+In [episodes/camera_off.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/camera_off.py), Pip nods along on the beat (`nod`), clicks the camera off,
 grooves, cheers (`cheer-a/b`) and waves at nobody (`wave-a/b`). He freezes on the chime, then scrambles back to type
 on the eighths. A call badge over the laptop shows what the meeting sees: CAM ON, CAM OFF, SHARE?, SHARING. Boss lines
 are captioned in blue. The video is 24.4 s.
@@ -606,12 +606,12 @@ python3 episodes/camera_off.py PROJECT && scene-render encode PROJECT/camera-off
 
 ## Soft style episode: *Day Off* (11)
 
-[episodes/day_off_audio.py](../episodes/day_off_audio.py) is an instrumental `Song`: six 4-second chunks composed at
+[episodes/day_off_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/day_off_audio.py) is an instrumental `Song`: six 4-second chunks composed at
 120 bpm with no vocals, and Pip's six lines spoken by Will on the bar grid. Two effects sit on the grid with them: a
 calendar ping and a meeting-ended chime. An earlier sung version failed its speech-to-text checks repeatedly.
 Spoken lines over a composed bed passed on the first composition seed.
 
-In [episodes/day_off.py](../episodes/day_off.py), Pip spends Saturday in `blob.home`. His hands keep typing on nothing
+In [episodes/day_off.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/day_off.py), Pip spends Saturday in `blob.home`. His hands keep typing on nothing
 (seeded keyboard foley on the eighths), he nods along to the lamp, and he books a meeting with the sofa. The meeting
 runs over and he extends it. The calendar is a `soft_props.status_badge`
 ([src/srstudio/soft_props.py](../src/srstudio/soft_props.py), graphic `soft-status-badge`): pill states that pop in
@@ -626,12 +626,12 @@ python3 episodes/day_off.py PROJECT && scene-render encode PROJECT/day-off.scene
 
 ## Soft style episode: *Unlimited PTO* (13)
 
-[episodes/unlimited_pto_audio.py](../episodes/unlimited_pto_audio.py) is an instrumental `Song` with two speakers on
+[episodes/unlimited_pto_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/unlimited_pto_audio.py) is an instrumental `Song` with two speakers on
 the bar grid: Bo (Eric, the boss of episode 08) and Pip (Will). It has three decline blips and an approval chime,
 and a composed bed of six 4-second chunks: office-pop while Bo sells unlimited vacation, one held pad for the hold
 before the punchline, and a steel-drum groove for the button.
 
-In [episodes/unlimited_pto.py](../episodes/unlimited_pto.py), Bo is on screen for the first time, in the polished
+In [episodes/unlimited_pto.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/unlimited_pto.py), Bo is on screen for the first time, in the polished
 `blob.meeting_room`. Every one of his cues is mirrored (`Cue(flip=True)`), so he faces Pip across the room. Pip
 stands up from the swivel chair to ask (Friday, Friday afternoon, lunch) and drops back at each decline. The
 request badge (`soft_props.status_badge`) shows each ask in amber, then DECLINED struck through in red, and finally
@@ -645,12 +645,12 @@ SRSTUDIO_ENGINE=scene-render python3 episodes/unlimited_pto.py PROJECT && scene-
 
 ## Soft style episode: *Return to Office* (15)
 
-[episodes/return_to_office_audio.py](../episodes/return_to_office_audio.py) is an instrumental `Song`: Pip (Will) and
+[episodes/return_to_office_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/return_to_office_audio.py) is an instrumental `Song`: Pip (Will) and
 Bo (Eric) on the bar grid, six effects (a call chime, a seagull, the call ending and three motion-sensor light
 switches) and a composed bed in six chunks: office-pop for the welcome, steel drums for Bali, a held pad before the
 punchline, almost nothing for the lights.
 
-In [episodes/return_to_office.py](../episodes/return_to_office.py), Pip stands alone in `blob.meeting_room` on day one
+In [episodes/return_to_office.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/return_to_office.py), Pip stands alone in `blob.meeting_room` on day one
 back, and Bo calls in from a beach on the wall screen. The room takes the call through an opt-in slot,
 `blob.meeting_room(on_screen=)`: `blob.meeting_screen()` gives the screen picture as a flat frame (its top-left, size
 and the `skewY` that lays it along the back wall), and the slot draws into it, masked to the picture; without it the
@@ -667,12 +667,12 @@ SRSTUDIO_ENGINE=scene-render python3 episodes/return_to_office.py PROJECT && sce
 
 ## Soft style episode: *Smart Lamp* (17)
 
-[episodes/smart_lamp_audio.py](../episodes/smart_lamp_audio.py) is an instrumental `Song` with three voices: Juno
+[episodes/smart_lamp_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/smart_lamp_audio.py) is an instrumental `Song` with three voices: Juno
 (Laura), Pip (Will) and the smart lamp (Matilda), four effects (a wake-up blip, two order chimes and an error bloop)
 and a composed bed in five chunks: a domestic sitcom groove for the argument, a shopping-channel bounce for the
 orders, a held pad before the proposal and a short outro.
 
-In [episodes/smart_lamp.py](../episodes/smart_lamp.py), Pip sits on the sofa in `blob.home` and Juno stands at the left.
+In [episodes/smart_lamp.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/smart_lamp.py), Pip sits on the sofa in `blob.home` and Juno stands at the left.
 The floor lamp is the third character through an opt-in slot, `blob.home(lamp_talk=)`: a list of `(start, end)`
 spans, in order and apart (a `BlobError` otherwise), during which a halo, a lit shade and an orange rim glow; without
 it the room is drawn as before. `blob.LAMP_SHADE` is the shade's point in the room, so the camera anchors on it and
@@ -686,12 +686,12 @@ SRSTUDIO_ENGINE=scene-render python3 episodes/smart_lamp.py PROJECT && scene-ren
 
 ## Soft style episode: *The Cake* (19)
 
-[episodes/the_cake_audio.py](../episodes/the_cake_audio.py) is an instrumental `Song` with three voices: Juno (Laura),
+[episodes/the_cake_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/the_cake_audio.py) is an instrumental `Song` with three voices: Juno (Laura),
 Pip (Will) and Bo (Eric), three effects (a party blower, a plate turned on the counter and a sad trombone) and a
 composed bed in five chunks: an office sitcom groove for the collection, an office-party groove for Bo's entrance, a
 held pad for the pause before the cake turns, the party groove deflated, and an outro.
 
-In [episodes/the_cake.py](../episodes/the_cake.py), Juno and Pip are in the polished break room (`blob.break_room`) and
+In [episodes/the_cake.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/the_cake.py), Juno and Pip are in the polished break room (`blob.break_room`) and
 Bo glides in from the left carrying the cake. The cake is a new prop, `soft_props.cake`: a frosted round cake on a
 plate with one candle and iced lettering (up to two lines of twelve characters) on the front. With `back=` and
 `turn_at=` it turns half round on its plate (`CAKE_TURN`) and shows the back lettering. `lettering=` limits the
@@ -706,9 +706,9 @@ SRSTUDIO_ENGINE=scene-render python3 episodes/the_cake.py PROJECT && scene-rende
 
 ## Soft style episode: *Hang Out*
 
-The first Soft reel with no music: [episodes/hang_out_audio.py](../episodes/hang_out_audio.py) records through
+The first Soft reel with no music: [episodes/hang_out_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/hang_out_audio.py) records through
 `srstudio.interview` (Juno is Laura, Pip is Will, the old lines the same voices taken slower), and the build writes its
-foley with `srstudio.foley`. [episodes/hang_out.py](../episodes/hang_out.py) is staged for a close shot in `soft_sets`,
+foley with `srstudio.foley`. [episodes/hang_out.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/hang_out.py) is staged for a close shot in `soft_sets`,
 frontal sets for a cast at about twice `blob.SCALE`: `soft_sets.park` takes `growth=`, so the tree between them goes from
 a staked sapling to a crown wider than the frame while the town rises and the two-shot never changes. Its props are
 `soft_props.phone` (held with `blob.held`, which rides a group between the hands), `soft_props.bench`, `soft_props.cane`
@@ -721,7 +721,7 @@ srstudio build hang-out PROJECT && scene-render encode PROJECT/hang-out.scene.xm
 
 ## Soft style episode: *Early Night*
 
-A narrator goes on announcing an early night while the hour card runs away from him. [episodes/early_night.py](../episodes/early_night.py)
+A narrator goes on announcing an early night while the hour card runs away from him. [episodes/early_night.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/early_night.py)
 is a bed seen from its foot, `soft_sets.bedroom`: rows of `Light` take the room from one flickering pool around a phone to
 black and then to day, and rows of `Shot` cut in on everything but the nightstand, which keeps the signature marks in the
 last frame, a single open eye. What is on her phone is drawn at full frame with `soft_props.shovel` and `soft_props.hive`.
@@ -734,7 +734,7 @@ srstudio build early-night PROJECT && scene-render encode PROJECT/early-night.sc
 
 ## Soft style episode: *Why*
 
-Five whys to the edge of what anyone knows, in [episodes/why.py](../episodes/why.py). `soft_sets.playroom` is a room straight
+Five whys to the edge of what anyone knows, in [episodes/why.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/why.py). `soft_sets.playroom` is a room straight
 on, with a window of sky and a door; its `Shot` rows cut between one fixed close-up of Pip and a close-up of Bo that comes
 in a little more each time, and `Dim` takes the light out of the room when he sits down. The first and last shots are the
 same room with the sizes swapped, with `soft_props.necktie` and
@@ -749,7 +749,7 @@ srstudio build why PROJECT && scene-render encode PROJECT/why.scene.xml --out-di
 
 The fourth style comes from the silent package `mushroom-training-2.0.0` (a recreation of an Under Studio
 workplace-training cartoon: a mushroom at a desk, teal caption boxes with hand lettering, a slow camera push).
-[episodes/mushroom_training.py](../episodes/mushroom_training.py) rebuilds its `scene.xml` element for element and its
+[episodes/mushroom_training.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/mushroom_training.py) rebuilds its `scene.xml` element for element and its
 SRT byte for byte from the package's own data: `script.json` (timed captions with their lettering boxes and glyph
 paths), `assets/camera.json` and `assets/room-camera.json` (measured camera samples every 0.25 s), `assets/poses.json`
 (which drawing is held when) and `assets/pose-NN.json` (the traced contours of each drawing). Nothing in the library
@@ -765,7 +765,7 @@ scene-render encode scene.xml -o /abs/path/mushroom-training.mp4                
 ### Narrated master
 
 The silent build is the fidelity reference; a narrated master is the same scene with an ElevenLabs voice-over
-(premade voice *Alice*) and keyboard foley on the mix. [episodes/mushroom_training_audio.py](../episodes/mushroom_training_audio.py)
+(premade voice *Alice*) and keyboard foley on the mix. [episodes/mushroom_training_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/mushroom_training_audio.py)
 reads the caption script and speaks each caption through `srstudio.voice` (typed parse, alignment check,
 speech-to-text that must hear the scripted words, voice id confirmed by name) at the narrator's own pace: nothing
 is asked again faster and nothing is time-stretched. `srstudio.narration.plan_relaxed` places the clips: a line
@@ -797,7 +797,7 @@ scene-render encode PROJECT/scene.xml -o /abs/path/mushroom-training.mp4    # h2
 The fifth style comes from the silent package `check-with-my-team-1.0.0` (a recreation of a `@theaifilmmaker`
 cartoon: a stick figure at a laptop says they will check with their team, and the team turns out to be a person and
 three AI assistants, stick figures with logo badges for heads, dancing in a garden).
-[episodes/check_with_my_team.py](../episodes/check_with_my_team.py) rebuilds its `scene.xml` element for element and its
+[episodes/check_with_my_team.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/check_with_my_team.py) rebuilds its `scene.xml` element for element and its
 SRT byte for byte from the package's own data: `script.json` (timed captions with their sizes), `assets/poses.json`
 (141 traced poses at 12 fps: the seated figure's legs, head and ink plates, or the dancers' measured head centres,
 head angle, body and head plates), `assets/icons.json` (the badge drawings around their traced centres),
@@ -809,7 +809,7 @@ not the library's; the character art, dialogue and lettering are adapted from th
 author's.
 
 `--voice` builds the same picture as `scene.silent.xml` and dubs into `scene.xml` what
-[episodes/check_with_my_team_audio.py](../episodes/check_with_my_team_audio.py) wrote: one ElevenLabs take cut at its
+[episodes/check_with_my_team_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/check_with_my_team_audio.py) wrote: one ElevenLabs take cut at its
 word boundaries and placed phrase by phrase on the captions (`srstudio.phrasing`), and an ElevenLabs Music song at
 the dance's measured 152 bpm whose drop lands on the cut to the garden (`dub.beat_offset`, `dub.music_bed`). The
 voiced scene ends at frame 230, where the package's recording starts over, so it loops without a repeat.
@@ -823,7 +823,7 @@ python3 episodes/check_with_my_team.py PROJECT --voice             # scene.xml w
 
 ### An original Stick episode: *Screen Share* (R2)
 
-[episodes/screen_share.py](../episodes/screen_share.py) is the first Stick episode drawn rather than traced
+[episodes/screen_share.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/screen_share.py) is the first Stick episode drawn rather than traced
 ([ADR 0009](../docs/decisions/0009-stick-rig.md), [ADR 0012](../docs/decisions/0012-stick-looks-and-call.md)). Dev, a
 `stick-rig` figure, sits in the `stick-room` through a video call that shares too much, a disconnect that comes just
 in time, and a "got a sec?" on a Friday. `stick.rig` poses a figure from `RigKey`s, seated (`SEATED`) or standing
@@ -833,7 +833,7 @@ tie. `stick.call` is the call: the boss's shared inbox above the captions, one r
 tiles below. `stick.camera` cuts to a close shot or pushes in; `stick-card` letters each beat's hook in Inter; the
 captions page the words (`subtitles.chunk_words`) with a width check, their outline drawn as a layer of its own
 (`captions(outline="layer")`, or `"none"` over the call's dark screen) so the contrast check measures the white
-against the ink: the encode reports no contrast warning. [episodes/screen_share_audio.py](../episodes/screen_share_audio.py) voices the nine lines with ElevenLabs and
+against the ink: the encode reports no contrast warning. [episodes/screen_share_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/screen_share_audio.py) voices the nine lines with ElevenLabs and
 keeps a take only when its transcript matches the script.
 
 ```bash
@@ -843,7 +843,7 @@ python3 episodes/screen_share.py PROJECT        # screen-share.scene.xml + SRT, 
 
 ### An original Stick episode in a car: *Repeat After Me* (R3)
 
-[episodes/repeat_after_me.py](../episodes/repeat_after_me.py) puts Dev behind the wheel on the drive home. He makes
+[episodes/repeat_after_me.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/repeat_after_me.py) puts Dev behind the wheel on the drive home. He makes
 the viewer repeat his vows to stop working after hours, until the passenger seat gives him away
 ([ADR 0018](../docs/decisions/0018-stick-car-and-voiced-takes.md)).
 
@@ -864,7 +864,7 @@ blending, and per-node motion blur.
 The words come one at a time, as spoken (`stick.word_cues` + `stick-words`). The mouth uses
 `lipsync.SPEECH_MOUTH` through `stick.rig(mouth=)`.
 
-[episodes/repeat_after_me_audio.py](../episodes/repeat_after_me_audio.py) is a `srstudio.takes.Script`: seven lines in
+[episodes/repeat_after_me_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/repeat_after_me_audio.py) is a `srstudio.takes.Script`: seven lines in
 the premade voice Will, a phone-buzz effect and an instrumental bed from the ElevenLabs Music API. Each take must be
 heard as scripted, and the bed must hold no words and cover the episode. `screen_share_audio.py` uses the same
 pipeline.
@@ -876,7 +876,7 @@ python3 episodes/repeat_after_me.py PROJECT     # repeat-after-me.scene.xml + SR
 
 ### An original Stick episode at the store: *Unexpected Item* (R4)
 
-[episodes/unexpected_item.py](../episodes/unexpected_item.py): Dev buys one avocado at the self-checkout. The kiosk
+[episodes/unexpected_item.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/unexpected_item.py): Dev buys one avocado at the self-checkout. The kiosk
 wants it in the bagging area, calls it unexpected, wants it out, wants it back, and calls for help; the supervisor
 reads his month off the screen and makes him employee of the month. He asks whether he gets paid, which is an
 unexpected item too. On Saturday he wears the apron and says the kiosk's line to the next shopper.
@@ -893,7 +893,7 @@ The store is `srstudio.stick_shop`:
   an item; `SHOPPER_AT` and `CLERK_AT` (mirrored) stand `STANDING` poses either side of the counter.
 
 `stick.Look(apron=)` dresses the torso in a shop apron under the tie; it is off by default, so earlier episodes
-rebuild byte for byte. [episodes/unexpected_item_audio.py](../episodes/unexpected_item_audio.py) is a `takes.Script`
+rebuild byte for byte. [episodes/unexpected_item_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/unexpected_item_audio.py) is a `takes.Script`
 in three premade voices (Laura for the kiosk, Will, Alice), a scanner beep and a supermarket music bed, with the
 screens per take in `SCREENS`.
 
@@ -904,7 +904,7 @@ python3 episodes/unexpected_item.py PROJECT     # unexpected-item.scene.xml + SR
 
 ### An original Stick episode in a flat for rent: *The Viewing* (R5)
 
-[episodes/the_viewing.py](../episodes/the_viewing.py): flat hunting, day 41. The kitchen has a toilet in it, the window
+[episodes/the_viewing.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/the_viewing.py): flat hunting, day 41. The kitchen has a toilet in it, the window
 is painted on, and the bed folds down out of the wall with Gary asleep in it: he comes with the lease. Two grand a
 month, each. Dev takes it and is applicant forty-seven; Gary, asleep, is forty-six.
 
@@ -922,7 +922,7 @@ The word captions take three options, off by default so earlier episodes rebuild
 `stick.word_cues(size=)` letters the cues smaller so more quick words join a readable cue, `borrow=True` lets a cue
 shorter than `min_seconds` take time from the next cue of its take, and `stick.words(scrim=)` darkens the band behind
 the words over a bright set. With them the encode reports no legibility or contrast warning.
-[episodes/the_viewing_audio.py](../episodes/the_viewing_audio.py) is a `takes.Script` in three premade voices (Will,
+[episodes/the_viewing_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/the_viewing_audio.py) is a `takes.Script` in three premade voices (Will,
 Lily for the agent, Callum for Gary), a bed-drop effect and a lounge-house bed.
 
 ```bash
@@ -932,7 +932,7 @@ python3 episodes/the_viewing.py PROJECT     # the-viewing.scene.xml + SRT, 25.12
 
 ### An original Stick episode at the gym: *Cancel Anytime* (R6)
 
-[episodes/cancel_anytime.py](../episodes/cancel_anytime.py): Theo wants to cancel his gym membership. The sign says
+[episodes/cancel_anytime.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/cancel_anytime.py): Theo wants to cancel his gym membership. The sign says
 anytime, with an asterisk: in person (he is here), on a Tuesday (it is Tuesday), before sunrise (it is still dark),
 with a note from his trainer, whom he has never met. Any other way? A death certificate. Whose? They are flexible.
 Then the sun comes up in the window, and Brooke at the desk sees him next week.
@@ -949,7 +949,7 @@ The gym is `srstudio.stick_gym`:
 `stick.word_cues(tail=True)` (off by default, so earlier episodes rebuild byte for byte) mends a take's last cue
 when it is shorter than `min_seconds`: it joins the cue before it when the joined words fit the width, and otherwise
 takes that cue's last words. It needs `min_seconds`. With it the encode reports no legibility or contrast warning.
-[episodes/cancel_anytime_audio.py](../episodes/cancel_anytime_audio.py) is a `takes.Script` in two premade voices
+[episodes/cancel_anytime_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/cancel_anytime_audio.py) is a `takes.Script` in two premade voices
 (Callum for Theo, Jessica for Brooke) and a 120 BPM gym-pop bed.
 
 ```bash
@@ -959,7 +959,7 @@ python3 episodes/cancel_anytime.py PROJECT     # cancel-anytime.scene.xml + SRT,
 
 ### An original Stick episode at school: *What My Dad Does* (R7)
 
-[episodes/what_my_dad_does.py](../episodes/what_my_dad_does.py): parent-teacher night. Dev perches on a child's chair,
+[episodes/what_my_dad_does.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/what_my_dad_does.py): parent-teacher night. Dev perches on a child's chair,
 knees above his hip, while the teacher reads his son's essay: Dad works from home, a tie on top and no pants; his job
 is saying "I think you're on mute"; at three he has Focus Time, and Focus Time snores. Dev has an answer for each.
 Last line: Dad says he works from home. Mom says he's just home. What did he get? An A. His mom helped.
@@ -978,7 +978,7 @@ The classroom is `srstudio.stick_school`:
   `note` that appears at `note_at`, and the crayon drawing of Dad. A page that would run ahead of the reading, or
   letter more than it can hold, raises `StickDataError`.
 
-[episodes/what_my_dad_does_audio.py](../episodes/what_my_dad_does_audio.py) is a `takes.Script` in two premade voices
+[episodes/what_my_dad_does_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/what_my_dad_does_audio.py) is a `takes.Script` in two premade voices
 (Will for Dev, Sarah for the teacher), one chalk effect and a 120 BPM pizzicato bed; `PAGES` says, per essay take,
 how many lines are up, which is marked and the spoken word the highlighter starts on.
 
@@ -989,7 +989,7 @@ python3 episodes/what_my_dad_does.py PROJECT     # what-my-dad-does.scene.xml + 
 
 ### An original Stick episode at the airport: *Group 9* (R8)
 
-[episodes/group_nine.py](../episodes/group_nine.py): gate B9. Sam asks if Group 9 is boarding. After the luggage; his
+[episodes/group_nine.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/group_nine.py): gate B9. Sam asks if Group 9 is boarding. After the luggage; his
 bag is Group 4, and it's doing great. An upgrade? Same seat, you just pay. The plane can't leave without him?
 Everyone says that. He puts on the cap: he's the pilot, and pilots are Group 9. Button: row 38, between two
 neighbours who own both armrests, this is your captain speaking from the middle seat.
@@ -1010,7 +1010,7 @@ The airport is `srstudio.stick_airport`:
 `stick.Look(cap=)` (a `#rrggbb` colour; `None`, the default, draws no cap) puts a peaked cap with a badge on the
 head. `stick.word_cues(balance=True)` (off by default) splits each take where its shortest cue lasts longest within
 the width limit, the fewest cues on a tie, instead of filling cues greedily from the left; it needs `width` and
-refuses `tail`. [episodes/group_nine_audio.py](../episodes/group_nine_audio.py) is a `takes.Script` in two premade
+refuses `tail`. [episodes/group_nine_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/group_nine_audio.py) is a `takes.Script` in two premade
 voices (Liam for Sam, Matilda for the agent) and a 120 BPM airport-lounge bed; `NOW` says which group the sign calls
 on each gate take, and `CAPPED` the take from which Sam wears the cap.
 
@@ -1021,7 +1021,7 @@ python3 episodes/group_nine.py PROJECT     # group-nine.scene.xml + SRT, 25.625 
 
 ### An original Stick episode in the car: *The Exit* (R9)
 
-[episodes/the_exit.py](../episodes/the_exit.py): Dev has missed the exit, and he and Noor run their oldest argument in
+[episodes/the_exit.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/the_exit.py): Dev has missed the exit, and he and Noor run their oldest argument in
 shorthand. "Your sister's wedding." "Your mum's birthday." "The tent." "The tent." Dead air. "Sorry." "Sorry." Then
 it dawns on them: they are not going to her sister's. Her sister texts; Noor puts the phone face down.
 
@@ -1036,7 +1036,7 @@ The car from the front is `srstudio.stick_windshield`:
   wipers, the pillars and the hood with the code. The phone cannot buzz in its mount once it is down.
 - `COUPLE` holds the couple's looks under their short names (`dev`, and `noor`: a bun and glasses).
 
-[episodes/the_exit_audio.py](../episodes/the_exit_audio.py) is a `takes.Script` in two premade voices: Will for Dev,
+[episodes/the_exit_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/the_exit_audio.py) is a `takes.Script` in two premade voices: Will for Dev,
 as in R3, and Jessica for Noor. It has two effects and a 120 BPM car-radio bed, hushed (`gloss_reel.hush`) through
 the dead air. It also holds the staging: `PARTS`, both figures' poses per take; `SETTLE`, the beat after a line
 lands; and `CAMERAS`, framed as follows:
@@ -1053,7 +1053,7 @@ python3 episodes/the_exit.py PROJECT     # the-exit.scene.xml + SRT, 17.792 s
 
 ### An original Stick episode at a door: *Hold the Door* (R10)
 
-[episodes/hold_the_door.py](../episodes/hold_the_door.py): Dev holds the door for a stranger far too far away, so the
+[episodes/hold_the_door.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/hold_the_door.py): Dev holds the door for a stranger far too far away, so the
 stranger has to jog for it. Others overtake him, day turns to night, snow settles, a marathon passes. Years later the
 stranger is three steps away when Dev's arm gives out.
 
@@ -1070,7 +1070,7 @@ The set is `srstudio.stick_door`:
 
 ### An original Stick episode in a kitchen: *Take My Phone* (R11)
 
-[episodes/take_my_phone.py](../episodes/take_my_phone.py): she hands her friend her phone and tells her not to let her
+[episodes/take_my_phone.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/take_my_phone.py): she hands her friend her phone and tells her not to let her
 text him. Twenty seconds later she wants it back. The friend runs, sits on it, freezes it, locks it up and swallows
 the key. She has already lifted the friend's own phone.
 
@@ -1082,7 +1082,7 @@ again fail the flash check, because each head's outline sweeps the same pixels m
 
 ### An original Stick episode at the coffee machine: *Good, You* (R12)
 
-[episodes/good_you.py](../episodes/good_you.py): "How was your weekend?" "Good, you?" "Good." Every Monday, through a
+[episodes/good_you.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/good_you.py): "How was your weekend?" "Good, you?" "Good." Every Monday, through a
 cast, a neck brace, a parrot, a small fire and a headstone, and through the Friday a meteor lands outside the window.
 Repeated lines are one recording, so the deadpan cannot drift.
 
@@ -1092,7 +1092,7 @@ of the figures, and what the weeks leave: `stick-arm-cast`, `stick-neck-brace`, 
 
 ### An original Stick episode on the road: *The Stove* (R13)
 
-[episodes/the_stove.py](../episodes/the_stove.py): Dev and Noor leave for the airport and turn back for the stove, for
+[episodes/the_stove.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/the_stove.py): Dev and Noor leave for the airport and turn back for the stove, for
 the door, and for an iron they do not own. The sign says Airport 2. The neighbour ages, the tree grows, the children
 grow up in the window, and in the last car she asks about the stove.
 
@@ -1105,11 +1105,11 @@ with a tree that grows and a window (`in_window()`, `window_frame()`), `stick-si
 
 The sixth style recreates a the.nope.cat reel from a screen recording: a blue cartoon cat at a laptop answers an
 "anonymous" employee survey out loud while each phrase appears in a white pill at the top of the frame.
-[episodes/employee_survey_data.py](../episodes/employee_survey_data.py) is the reel as data: `SENTENCES` (what the
+[episodes/employee_survey_data.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/employee_survey_data.py) is the reel as data: `SENTENCES` (what the
 narrator records, one request each), `SEGMENTS` (every change of caption or expression at its reference time, each
 spoken one naming the sentence and the word it starts on), `cues()` and `poses()` (which derive `script.json` and
 `assets/poses.json` from the segments) and `place_segments()` (which moves the segments onto a narration).
-[episodes/employee_survey.py](../episodes/employee_survey.py) draws it with the Toon parts: `toon.room` (a gradient
+[episodes/employee_survey.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/employee_survey.py) draws it with the Toon parts: `toon.room` (a gradient
 wall, the window, the chair back), `toon.cat` (one group per pose run holding a body traced from the recording for
 the pose's arms, the eyes in one of nine kinds and the mouth in one of nine), `toon.desk` (the laptop lid and the
 desk) and `toon.captions` (each cue in the style's font inside a pill measured with `fonts.text_width`). The cat's
@@ -1129,7 +1129,7 @@ python3 episodes/employee_survey.py PROJECT           # the silent master on the
 
 ### Narrated master
 
-[episodes/employee_survey_audio.py](../episodes/employee_survey_audio.py) records the 21 sentences through
+[episodes/employee_survey_audio.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/employee_survey_audio.py) records the 21 sentences through
 `srstudio.voice` (premade voice *Brian*, typed parse, alignment check, speech-to-text that must hear the scripted
 words, voice id confirmed by name) at the narrator's own pace, nothing quickened. Two sentences are interrupted by
 the survey in the reference ("Do you have any feed—", "mark an X where you s—"): the whole sentence is recorded
@@ -1190,11 +1190,11 @@ and `narration.json` agree, draws the mouths from `voiced/mouths.json` (refusing
 beats'), and adds the voices and effects; `record_episode` is the ElevenLabs run plus the
 keyboard between the lines, a buzz under every toast and the sting on the hangup. Each sketch is a data module
 with its `SKETCH`, a `validate` for what its events ask of the props, and a `dress` for its shots:
-[episodes/the_report_data.py](../episodes/the_report_data.py) (Fern asks where the report is; Rex has never heard of
+[episodes/the_report_data.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/the_report_data.py) (Fern asks where the report is; Rex has never heard of
 it; his own reminders buzz in; the notes and the one on his forehead have been there from the first frame;
-"...What report?") and [episodes/logo_bigger_data.py](../episodes/logo_bigger_data.py) (a client on speaker wants the
+"...What report?") and [episodes/logo_bigger_data.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/logo_bigger_data.py) (a client on speaker wants the
 logo bigger until it is the size of the building, then popping, then smaller; the original pops; "Invoice sent.")
-and [episodes/quick_question_data.py](../episodes/quick_question_data.py) (T5 *Quick Question*: Pip the rabbit has a
+and [episodes/quick_question_data.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/quick_question_data.py) (T5 *Quick Question*: Pip the rabbit has a
 quick question for Bruno the bear; first some context, March, then Dave; his clock jumps from 9:02 to 9:48 and his
 coffee goes cold; the question is when the stand-up is, and it is on the board behind her; "Oh. Quick
 follow-up."). *Quick Question* records with `record_episode(mouth=)` set to the Toon reading plus the English
@@ -1212,33 +1212,33 @@ scene-render encode PROJECT/the-report.scene.xml -o /abs/path/the-report.mp4
 `whose_milk_audio.py`, `out_of_office.py`, `out_of_office_audio.py`, `date_night.py`, `date_night_audio.py`,
 `in_network.py`, `in_network_audio.py`, `split_it.py` and `split_it_audio.py` take the same arguments.
 
-*Whose Milk?* (T6, [episodes/whose_milk_data.py](../episodes/whose_milk_data.py)) is the first sketch in the office
+*Whose Milk?* (T6, [episodes/whose_milk_data.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/whose_milk_data.py)) is the first sketch in the office
 kitchen. Fern (Matilda) and Rex (Charlie) argue over the milk in the fridge, labelled Rex, 2019. The note on the
 fridge escalates through `note:` events (WHOSE MILK?, IT MOVED., WHOSE YOGURT?). Each new note is cut in full frame
 with `toon_sets.note_insert` for its beat, and the last one holds to the end as the button. Rex's coffee brews
 behind him in every one of his shots.
 
-*Out of Office* (T7, [episodes/out_of_office_data.py](../episodes/out_of_office_data.py)) brings Pip (Alice) and Bruno
+*Out of Office* (T7, [episodes/out_of_office_data.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/out_of_office_data.py)) brings Pip (Alice) and Bruno
 (Bill) back, and it is the first sketch in the home office at night. Bruno is on vacation, out-of-office on. He has
 answered every email to say so, personally. The tear-off calendar behind him loses its pages on `page:` events, only
 in his shots. His boss's reply and, as the button, his own auto-reply arrive as `toast:` events, drawn larger with
 `toon_props.toasts(size=)`. The desk lamp lights his laptop, and the plant stands in front of its glow, right of his
 paws.
 
-*Date Night* (T8, [episodes/date_night_data.py](../episodes/date_night_data.py)) takes the Toon home: Mae (a
+*Date Night* (T8, [episodes/date_night_data.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/date_night_data.py)) takes the Toon home: Mae (a
 rabbit, Sarah) is in the kitchen and Otto (a bear, Daniel) in the home office next door, on a video call. He has
 sent her a calendar invite for dinner. Its agenda, her status as optional and, as the button, a shared spreadsheet
 of apartments arrive on her phone as `toast:` events, and the fridge carries the date. The tear-off calendar
 behind him jumps from OCT 29 to JUN 30 on the `page:` event of the punchline, the month their lease ends.
 
-*In Network* (T9, [episodes/in_network_data.py](../episodes/in_network_data.py)) is a phone call to an insurer. Gil (a
+*In Network* (T9, [episodes/in_network_data.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/in_network_data.py)) is a phone call to an insurer. Gil (a
 frog, Chris) is in the home office at night; Dana (a dog, Jessica) is in claims, in the new call-centre cubicle
 (`toon_sets.call_centre`), and wears the new headset sticker (`toon_cast.headset`). Is a broken arm covered? Which
 arm? They cover the right. The claims arrive on his phone as `toast:` events. Her CALLS WAITING board climbs on
 `tick:` events, only in her shots, and jumps to 999 in the hold before her punchline: try again in January, fresh
 deductible. After the sting, his calendar jumps to JAN 1 and the button is the callback toast, a new claim.
 
-*Split It* (T10, [episodes/split_it_data.py](../episodes/split_it_data.py)) is the end of a dinner. Brock (a bear,
+*Split It* (T10, [episodes/split_it_data.py](https://github.com/pedroanisio/srstudio-episodes/blob/develop/episodes/split_it_data.py)) is the end of a dinner. Brock (a bear,
 Roger) wants to split the bill evenly; Mia (a rabbit, River) had a side salad and water, he had three lobsters and
 the wine. It is the first sketch in the new restaurant (`toon_dinner.restaurant`), and its staging swaps the office
 desk for the dinner table with the new `Staging(desk=toon_dinner.table)` option (the default stays `toon.desk`).
