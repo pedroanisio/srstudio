@@ -110,7 +110,10 @@ sequence's `timeOffset`/`timeScale` clock in the engine's float order, and reads
 is meant for frame `k` when its written time is within a hundredth of a frame of its own timeline's grid and it lands
 within the same slack of `k / fps` in the reel; it is late when the engine's float time at frame `k`, on the change's
 own clock, is still below it. A change keyed between frames, as `held_frames=True` keys it, is meant for no frame and
-is never late; neither is a shot's change when the shot starts between the reel's frames. A normalized time base, a
+is never late; neither is a shot's change when the shot starts between the reel's frames. A change written off its
+own grid whose time, added to where its shot starts, is a frame's time to a millionth of a frame is meant for that
+frame: `saga-friday-deploy`'s shot 5 starts at 8.715 s and blinks at 1.91 s on its own clock, 10.625 s in all, frame
+255 at 24 fps, and the engine reads frame 255 at local 1.9099999999999984 and shows the blink on frame 256. A normalized time base, a
 marker, a clock that stops or runs back and a layer's media clock over drawn nodes are refused, not passed.
 
 `instagram_posts.py deliver` refuses a release on its first delivery whose scene holds one, beside the other

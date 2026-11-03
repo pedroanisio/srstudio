@@ -12,8 +12,10 @@ A change is meant for frame ``k`` when it is written on the frame grid, within :
 frame of its own timeline, and lands there in the reel: within the same slack of frame ``k``'s sample time. A change
 keyed for a shot's own frame lands between the reel's frames when the shot starts between them, and is shown on the
 next frame as written; one half a frame off the grid, as a new canvas keys it, is meant for no frame time. Neither is
-late. A timing the gate cannot follow (a normalized time base, a marker, a stopped or reversed clock, a media clock
-over drawn nodes) is refused rather than passed.
+late. A change written off its own grid whose time, added to where its shot starts, is a frame's time to float
+rounding is meant for that frame: 0.02 + 0.28 is frame 9 at 30 fps, and the engine, reading frame 9 at local
+0.27999999999999997, shows it on frame 10. A timing the gate cannot follow (a normalized time base, a marker, a
+stopped or reversed clock, a media clock over drawn nodes) is refused rather than passed.
 """
 
 from __future__ import annotations
@@ -36,6 +38,9 @@ __all__ = ["Late", "late_changes", "late_defects", "refusal"]
 HELD = frozenset({"hold", "step"})  # interpolations that keep a key's value until the next key
 _NOT_NODES = frozenset({"animate", "key", "textAnimator", "transition"})  # elements, not nodes: no window, no clock
 _SHOWN = 6  # late changes a refusal lists by name; the frames it names are all of them
+_NOISE = Fraction(
+    1, 10**6
+)  # of a frame: float rounding, not timing. A sum of written times this close to a frame is it
 
 
 @dataclass(frozen=True)
@@ -202,11 +207,11 @@ def _unclocked(chain: list[_Node], t: Fraction) -> Fraction:
     return t
 
 
-def _on_grid(time: Fraction, rate: Fraction) -> int | None:
-    """The frame ``time`` is written for, within :data:`SLACK` of it, or None."""
+def _on_grid(time: Fraction, rate: Fraction, slack: Fraction = Fraction(SLACK)) -> int | None:
+    """The frame ``time`` is written for, within ``slack`` of a frame of it, or None."""
     frames = time * rate
     nearest = round(frames)
-    return nearest if abs(frames - nearest) <= Fraction(SLACK) else None
+    return nearest if abs(frames - nearest) <= slack else None
 
 
 def late_changes(document: bytes) -> list[Late]:
@@ -229,10 +234,10 @@ def late_changes(document: bytes) -> list[Late]:
         for node in _walk(top):
             chain = _ancestors(node)
             for change in _changes(node):
-                if _on_grid(Fraction(change.written), rate) is None:
-                    continue  # meant for no frame of its own timeline
-                at = Fraction(change.value) + (Fraction(node.start) if change.local else 0)
-                frame = _on_grid(_unclocked(chain, at), rate)
+                at = _unclocked(chain, Fraction(change.value) + (Fraction(node.start) if change.local else 0))
+                written = _on_grid(Fraction(change.written), rate) is not None
+                # meant for a frame: written on its own timeline's frames, or summed to one by the shot it is in
+                frame = _on_grid(at, rate) if written else _on_grid(at, rate, _NOISE)
                 if frame is None or not 0 <= frame < count:
                     continue  # lands between the reel's frames, or outside them
                 shown = _clocked(chain, (frame * rate.denominator) / rate.numerator)

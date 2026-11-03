@@ -123,6 +123,19 @@ def test_a_shot_off_the_frame_grid_moves_its_keys_off_it():
     assert frames(scene(f'<sequence id="shots">{shots}</sequence>')) == []
 
 
+def test_a_key_off_its_shots_grid_that_sums_to_a_frame_time_is_late():
+    """Shot b starts at 0.02 and keys 0.28 on its own clock, neither on a frame, but together frame 9's 0.3; the
+    engine reads frame 9 at local ``0.3 - 0.02 = 0.27999999999999997``, before the key, and shows it on frame 10."""
+    shots = box("a", end="0.02") + box("b", held(["0.28"], base="local"), end="1")
+    assert frames(scene(f'<sequence id="shots">{shots}</sequence>')) == [9]
+
+
+def test_a_key_off_its_shots_grid_that_lands_just_after_a_frame_is_not_meant_for_it():
+    """0.021 + 0.28 lands 0.001 s after frame 9: a change keyed after the frame, shown on the next one as written."""
+    shots = box("a", end="0.021") + box("b", held(["0.28"], base="local"), end="1")
+    assert frames(scene(f'<sequence id="shots">{shots}</sequence>')) == []
+
+
 def test_a_cut_just_after_its_frame_is_late_on_both_sides():
     shots = box("a", end="1.033334") + box("b", end="0.9125")
     late = held_gate.late_changes(scene(f'<sequence id="shots">{shots}</sequence>'))
@@ -230,6 +243,10 @@ ENGINE_CASES = {
     + box("r", held(["0.066667"], base="local"), end="0.5")
     + "</sequence>",
     "windows": box("w", start="0.066667", end="0.766667"),
+    "float sum": '<sequence id="shots">'
+    + box("p", end="0.02")
+    + box("q", held(["0.28", "0.68"], base="local"), end="1.5")
+    + "</sequence>",
 }
 
 
