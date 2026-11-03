@@ -134,3 +134,22 @@ def test_drawing_refusal_is_reported_at_the_external_ownership_boundary(route):
     assert caught.value.to_dict()['path'] == 'external_arms'
     assert isinstance(caught.value.__cause__, ToonDataError)
     assert cv.scene.to_bytes() == before and not cv.limbs
+
+
+def test_external_ownership_refuses_a_figure_that_draws_both_its_own_arms():
+    cv = stage()
+    before = cv.scene.to_bytes()
+    poses = (Pose(0, eyes='neutral', mouth='neutral', arms='desk'),)
+    with pytest.raises(HeadMotionError) as caught:
+        toon_head.figure(
+            cv,
+            cv.comp,
+            replace(BENTO_RIG_2, drawn_as=None),
+            poses,
+            2,
+            HeadPlan.still(),
+            external_arms=('right',),
+            arms=lambda trunk, front: None,
+        )
+    assert caught.value.to_dict()['path'] == 'external_arms'
+    assert cv.scene.to_bytes() == before and not cv.limbs

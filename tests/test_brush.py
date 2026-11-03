@@ -253,3 +253,13 @@ def test_ellipse_shift_rotate_flip_and_bounds():
 def test_bad_measures_are_refused(call, match):
     with pytest.raises(brush.BrushError, match=match):
         call()
+
+
+def test_a_stroke_takes_any_profile_of_its_width():
+    class Half:
+        def at(self, s: float) -> float:
+            return 0.5
+
+    half = brush.stroke([(0.0, 0.0), (100.0, 0.0)], 20.0, Half())
+    full = brush.stroke([(0.0, 0.0), (100.0, 0.0)], 10.0, brush.Pressure(1.0, 1.0, 0.0, 0.0, 1.0))
+    assert half == full  # half the weight at every point is the same band as half the weight

@@ -29,6 +29,7 @@ import math
 import random
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Protocol
 
 from . import checks
 from .errors import SrstudioError
@@ -38,6 +39,7 @@ __all__ = [
     "Point",
     "Shape",
     "Pressure",
+    "Profile",
     "EVEN",
     "TAPERED",
     "spline",
@@ -86,6 +88,12 @@ class Pressure:
         """The width factor ``s`` of the way along the stroke, in 0..1."""
         base = self.start + (self.end - self.start) * s + self.swell * math.sin(math.pi * s)
         return max(0.15, base + self.wobble * math.sin(2 * math.pi * self.waves * s + 0.7))
+
+
+class Profile(Protocol):
+    """Anything that gives a stroke's width factor ``s`` of the way along it, as :meth:`Pressure.at` does."""
+
+    def at(self, s: float) -> float: ...
 
 
 EVEN = Pressure(1.0, 1.0, 0.0, 0.08, 2.0)  # an even line with a breath in it
@@ -240,9 +248,9 @@ def _dedupe(path: Sequence[Point]) -> list[Point]:
     return out
 
 
-def stroke(points: Sequence[Point], weight: float, pressure: Pressure = TAPERED, steps: int = 8) -> Shape:
+def stroke(points: Sequence[Point], weight: float, pressure: Profile = TAPERED, steps: int = 8) -> Shape:
     """A brush line through ``points``: a filled band ``weight`` wide at full pressure, its width following
-    ``pressure`` along the way, with round ends."""
+    ``pressure`` (a :class:`Pressure`, or any :class:`Profile`) along the way, with round ends."""
     weight = _positive(weight, "weight")
     path = _dedupe(spline(_points(points, 2, "stroke"), False, steps))
     if len(path) < 2:
