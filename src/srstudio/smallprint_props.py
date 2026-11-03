@@ -621,7 +621,7 @@ PLACES: dict[str, tuple[float, float, float, float, float]] = {  # x, y, z, yaw,
     "smallprint-phone": (-60.0, -248.0, -84.0, -14.0, 1.0),  # at his right, clear of his chin
     "smallprint-bowl": (16.0, -248.0, -80.0, 0.0, 1.0),
     "smallprint-wall": (2.0, -248.0, -70.0, -8.0, 1.0),
-    "smallprint-goldfish": (8.0, -248.0, -78.0, 0.0, 1.2),
+    "smallprint-goldfish": (8.0, -248.0, -78.0, 0.0, 1.0),
     "smallprint-apple": (6.0, -248.0, -80.0, -4.0, 1.0),
     "smallprint-can": (58.0, -248.0, -80.0, 0.0, 0.8),  # under his frame-right hand, clear of his chin
 }
