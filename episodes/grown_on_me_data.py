@@ -65,7 +65,7 @@ NARRATION = "Voiced with ElevenLabs premade voices Sarah (Mae), Bill (Bruno) and
 NOTE = "ElevenLabs premade voices Sarah, Bill and Brian at their natural pace; no reference-voice cloning."
 MAE = toon_voices.speaker("mae", "Sarah", "rabbit")
 BRUNO = toon_voices.speaker("bruno", "Bill", "bear")
-TRAILER = toon_voices.speaker("trailer", "Brian", None, "big")  # the TV, heard and never seen
+TRAILER = toon_voices.speaker("narrator", "Brian", None, "big")  # the TV's trailer voice, never seen: a bible role
 TINTS = toon_voices.tinted(MAE, BRUNO, TRAILER)
 TWO, MAE_C, BRUNO_C, MENU = (
     "hamster",
@@ -93,7 +93,7 @@ STING_GLOW = 0.4  # seconds the white flash of the loud trailer lasts
 BLACKOUT, BLACKOUT_INK = 0.62, "#07080d"  # the room once the TV is off: this much of near-black over the screen's night
 
 LINES = (
-    Line("trailer", "This winter. The Quiet Ferry."),
+    Line("narrator", "This winter. The Quiet Ferry."),
     Line("mae", "This one."),
     Line("bruno", "Sure. Fine."),
     Line("mae", "Fine."),
@@ -103,11 +103,11 @@ LINES = (
     Line("mae", "It's got subtitles."),
     Line("bruno", "So?"),
     Line("mae", "So I'd have to watch it."),
-    Line("trailer", "One man. One last job."),
+    Line("narrator", "One man. One last job."),
     Line("mae", "We've seen this."),
     Line("bruno", "I haven't."),
     Line("bruno", "Ooh. What about this one?"),
-    Line("trailer", "This winter. The Quiet Ferry."),
+    Line("narrator", "This winter. The Quiet Ferry."),
     Line("mae", "That's the first one I said."),
     Line("bruno", "It's grown on me."),
     Line("mae", "Fine."),

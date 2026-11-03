@@ -1142,6 +1142,26 @@ def grown(kit):
     kit["study"].bind(before)
 
 
+def test_grown_on_mes_speakers_are_names_or_roles_of_the_cast_bible(grown):
+    """First delivery refuses a speaker the bible does not know (ADR 0069); the TV's voice is the role narrator."""
+    from srstudio import bible, bible_check
+
+    sys.path.insert(0, str(ROOT / "episodes"))
+    try:
+        from posts.grown_on_me import RELEASE
+    finally:
+        sys.path.remove(str(ROOT / "episodes"))
+    library = bible.load(ROOT / "bible")
+    world = bible_check.world_of_release(RELEASE)
+    for sk in (grown.SKETCH, grown.VARIANT):
+        unknown = [
+            s.name
+            for s in sk.speakers
+            if not library.is_role(s.name) and not any(c.world == world for c in library.named(s.name))
+        ]
+        assert not unknown, f"{sk.slug}: {unknown} are neither characters of {world} nor roles of the bible"
+
+
 def _placed(sk, takes: float = 0.5):
     """The sketch placed as its recording would place it: each line said at its scripted beat, ``takes`` long."""
     starts = {b.line: b.start for b in sk.beats if b.line is not None}
