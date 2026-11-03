@@ -41,10 +41,9 @@ def place_only(root: Path, sk: sketch.Sketch) -> int:
 
 
 def written(root: Path) -> dict[str, bytes]:
-    """The beats, the foley and the mix's inputs a record or a re-placement leaves. The takes the client said are its
-    cache, and ``voiced/mouths.json`` is left out: a re-placement reads the lips from the kept letters on a sampling
-    grid that starts at the kept take, where a record samples from the start of the whole take."""
-    names = ["narration.json", *(f"voiced/{n}" for n in ("beats.json", "script.json", "poses.json"))]
+    """The beats, the lips, the foley and the mix's inputs a record or a re-placement leaves; the takes the client said
+    are its cache."""
+    names = ["narration.json", *(f"voiced/{n}" for n in ("beats.json", "script.json", "poses.json", "mouths.json"))]
     names += [str(p.relative_to(root)) for p in sorted((root / "audio").glob("*.wav"))]
     return {name: (root / name).read_bytes() for name in names}
 
