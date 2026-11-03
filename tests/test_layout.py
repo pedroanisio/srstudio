@@ -589,3 +589,16 @@ def test_an_episode_checks_its_overlays_with_the_engine_it_finds(project, tmp_pa
     out = ep.finish(strict=False)
     with pytest.raises(LayoutError, match="episode-slate"):
         ep.check_overlays(out, ["episode-slate"])
+
+
+def test_the_engine_comes_from_the_environment_it_is_given(tmp_path, monkeypatch):
+    from srstudio.layout import find_engine
+
+    binary = tmp_path / "scene-render"
+    binary.write_text("#!/bin/sh\n")
+    binary.chmod(0o700)
+    monkeypatch.setenv("SRSTUDIO_ENGINE", str(tmp_path / "not-this-one"))
+    assert find_engine(env={"SRSTUDIO_ENGINE": str(binary)}) == binary
+    assert find_engine(env={"PATH": str(tmp_path)}) == binary
+    with pytest.raises(LayoutError, match="SRSTUDIO_ENGINE"):
+        find_engine(env={})  # neither the process's SRSTUDIO_ENGINE nor its PATH stands in for the given environment

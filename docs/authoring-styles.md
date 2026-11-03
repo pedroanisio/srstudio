@@ -25,9 +25,9 @@ the style is not drawn in is a `StyleError`. The names and the reasoning are in
 [docs/decisions/0025-saga-style.md](../docs/decisions/0025-saga-style.md),
 [docs/decisions/0030-gloss-style.md](../docs/decisions/0030-gloss-style.md) and
 [docs/decisions/0026-collage-style.md](../docs/decisions/0026-collage-style.md); `srstudio styles` lists
-all nine. The table compares the first seven; [Collage](episode-history.md#collage-style-grown-ups-losing-to-brainrot) and
-[Gloss](episode-history.md#gloss-style-a-cheerful-forever-plaza-in-nine-episodes-g1g9)
-are described in the episode history.
+all nine. The table compares the first seven; [Collage](#collage-style-grown-ups-losing-to-brainrot) and
+[Gloss](#gloss-style-a-cheerful-forever-plaza-in-nine-episodes-g1g9)
+are described below.
 
 | | **Cutout** — `CUTOUT` (default) | **Ink** — `INK` | **Soft** — `SOFT` | **Cel** — `CEL` | **Stick** — `STICK` | **Toon** — `TOON` | **Saga** — `SAGA` |
 |---|---|---|---|---|---|---|---|
@@ -226,3 +226,144 @@ mode 700, files mode 600.
 Who gets a card: a character is cast when the same name sits on the same drawing in five or more reels, in an everyday
 world. Count from the releases and `srstudio usage`. A one-reel character is not cast, and sealed worlds such as Saga
 and Gloss are not everyday life. Ava is the one exception, at four reels, because the Okayville request named her.
+
+## Saga style: a space-opera parody in seven episodes (S1–S7)
+
+The galaxy's grandeur is the setup; the turn is that it runs on the systems the viewer suffers at work, and a
+deadpan field guide, the *Handbook*, gets the last word ([docs/decisions/0025-saga-style.md](../docs/decisions/0025-saga-style.md)).
+Everything is original: no franchise names, characters, crawl or theme.
+
+- **Cast**, [src/srstudio/saga.py](../src/srstudio/saga.py): Lord Gloom (a visor whose red glow is the mouth),
+  Enforcer Seven and Gary (helmets with a mic light), Juno, Rook and Elder Mabel (visemes and blinks; Mabel has
+  glasses and a cane), and a bar droid whose smile bar glows. Each figure is lit from the upper left: an inner
+  shadow and a soft drop shadow (`saga.FORM`, `saga.LIFT`), drawn shadow sides, a gold rim and a contact shadow.
+- **Sets and props**, [src/srstudio/saga_sets.py](../src/srstudio/saga_sets.py): space, bridge, cantina (with its bar
+  as a front layer), desert, cockpit (with its console) and trash compactor; the hologram `holo`, the battle cube,
+  a freighter, a fighter, a pebble; the hook card and the Handbook `entry`. Each location blurs its far plane by
+  `DEPTH_BLUR` and keeps the floor, the cast and both signature marks sharp; `finish` grades a shot with `GRADE`.
+- **Staging as data**, [src/srstudio/saga_reel.py](../src/srstudio/saga_reel.py): one `Stage` per recorded take
+  (set, `Place`s, panels, props, a `Move`, blackouts, shakes, or an `Entry`). `check` refuses a staging that does
+  not fit the recording before anything is drawn; `build` draws it, hooks the first take, crossfades into the
+  entry, captions and mixes.
+
+An episode is two files: `episodes/saga_<name>_audio.py` (its takes and stages; run it to record through
+`srstudio.takes`, every line heard back by speech-to-text, no retries) and a three-line `episodes/saga_<name>.py`
+that builds it. srstudio-episodes' `tests/test_saga_episodes.py` holds all seven to the format: the narrator's hook question first, a
+hold of at least 1.2 s before the button, the Handbook entry last, and a staging that fits at other speaking rates.
+
+| # | Episode | The turn |
+|---|---|---|
+| S1 | *Known Issue* | the battle cube's fatal hole sat in the backlog for nine years |
+| S2 | *Annual Review* | an enforcer who never hit anything is enforcer of the year |
+| S3 | *Group Chat* | the big reveal was already in the family group chat |
+| S4 | *Card Reader* | a smuggler meets the tip screen |
+| S5 | *Update* | mid-chase, the jump drive installs an update |
+| S6 | *Free Tier* | the energy that binds the galaxy, on the free plan |
+| S7 | *Open Plan* | the compactor walls closing in are a workspace upgrade |
+
+S13 *The Code* (the weapon's two-factor code went to the phone on the target planet) and S14 *Take-Home* (an
+unpaid interview task is launched as the station that rejected her) use the opt-in switches of the ADR's
+2026-10-30 amendment: a `still` opening shot that holds every frame of the first second, and `fade` panels and
+entries whose text passes the strict encode. S15 *Call Juno* (the smart speaker calls the dark lord instead of
+the granddaughter, and he gets mothered), S16 *Travel Notice* (the most feared man in the galaxy has his card frozen
+over a coffee and washes dishes), S17 *Typing* (from the next seat, "we need to talk", then a typing indicator; it
+is about snacks) and S18 *Friday Deploy* (one tiny fix at five on a Friday, and the only one who can roll it back
+is on leave) use them too; S15's desert darkens under the captions with the second amendment's `shade` switch.
+
+## Gloss style: a cheerful forever-plaza in nine episodes (G1–G9)
+
+The relentless cheer is the setup; the turn is that it is a system you cannot leave, only rate, score and wait in,
+narrated by a calm orb host in the deadpan of a facility announcement while a Joy Points board scores every small act
+([docs/decisions/0030-gloss-style.md](../docs/decisions/0030-gloss-style.md)). Everything is original: the Plaza,
+Sunny, the guests and the Joy Points are the library's own.
+
+- **Cast**, [src/srstudio/gloss.py](../src/srstudio/gloss.py): glossy vinyl peg dolls Nadia (a NEW sticker that
+  peels), Gus (a wind-up key that unwinds) and Tamsin (a spring base that bounces), and Sunny, a floating orb with
+  a screen face that scans and wears a tie as the manager. Faces and poses are tracks on the shot's clock; the vinyl
+  is rounded from each silhouette (`gloss.FORM`, `gloss.RIM`) with gradient highlights (`gloss.haze`) and seated by
+  contact shadows. `gloss.LIFT`, a soft drop shadow, is applied only by `gloss.finish(..., lift=True)`, which no
+  shipped part calls.
+- **Sets and props**, [src/srstudio/gloss_sets.py](../src/srstudio/gloss_sets.py): the Plaza, the Activity Room and
+  the Waiting Room (far planes softened by `DEPTH_BLUR`, lettering in strokes, a caption shade at the foot of the
+  frame); the Joy Points `board` of `Card`s, the painted-on `door`, the queue `ticket`; the `hook` card and the
+  Plaza `notice` that buttons each reel. `finish` grades a shot's world with `GRADE`; the board and the notice card
+  stay ungraded and crisp. A `Card(carried=True)` stays on across a cut without popping again.
+- **Staging as data**, [src/srstudio/gloss_reel.py](../src/srstudio/gloss_reel.py): one `Stage` per recorded take
+  (set, `Place`s, cards, props, one camera `Move`, shake, blackout, or a `Notice`), checked against the takes before
+  anything is drawn. The music ducks `DUCK` dB under every line and a further `HUSH` dB through every pause between
+  lines (`hush`), so the hold before a punchline is quiet; the camera is the `gloss-<take>-angle` group, which
+  `srstudio craft` reports.
+
+An episode is two files: `episodes/gloss_<name>_audio.py` (its takes and stages; run it to record through
+`srstudio.takes` via `episodes/_gloss.py`, every line heard back by speech-to-text, no retries) and a short
+`episodes/gloss_<name>.py` that builds it. srstudio-episodes' `tests/test_gloss_episodes.py` holds every reel to the format: Sunny's
+hook question first, a hold of at least 1.2 s before the button, the Plaza notice last.
+
+**A still opening.** A reel may open on a still first second (arm A of the `sp-hook_motion` test) with
+`Reel(still=1.0)`. The recording (`takes.Script.still`) puts that much silence at the head of the first take, so the
+first word comes after it and the timeline still runs contiguous from zero. The build then holds the first shot and
+the hook on their first frame until then: it draws a copy of each inside `Canvas.frozen()`, where every key keeps
+only its value at 0 s, and shows the running shot from the first word on. `gloss_reel.still_opening` refuses a
+staging that would change the shot inside the still second (a card, move, blackout, shake, walk, face or pose
+before the first word) and a notice as the first shot; a frozen drawing refuses expressions and text animators, which
+it cannot hold still. Without `still`, recordings and builds are as before. Two other designs were rejected. A
+timeline that starts its first take late breaks the contiguous-from-zero rule every take timeline keeps. An output
+segment that freezes the first frame would make the encoded file a second longer than the scene whose clock the
+captions, markers and craft checks read.
+
+**Captions from G8 on.** G8 and later caption in `gloss_reel.LOOK_INK`: the lines wrap and hold as in
+`gloss_reel.LOOK`, in solid dark letters (the sung word too) outlined thinly in their own color. The engine's contrast
+check compares the pixels a caption changes most with the set behind them. A white letter in a dark outline lightens
+some of those pixels and darkens the others, and on the light Gloss sets that averages to 1.00:1, so the strict encode
+refused the house look (the published *Terms* fails it the same way under the current engine). A centered outline
+passed but filled the white letters in, and a plum sung word measured under 3:1 on the notice's darker floor. G1–G7
+keep the looks they shipped with. A reel that runs long can ask for its own encoder quality, `Reel(crf="20")`, over
+the series output, to keep its master under the size cap; *Fewer Meetings* does.
+
+| # | Episode | The turn |
+|---|---|---|
+| G1 | *Orientation* | the exit is painted on, and it arrives "in a future update" |
+| G2 | *Joy Points* | points can be redeemed for more points, and the balance does not roll over |
+| G3 | *Trust Exercise* | nobody catches anyone; catching was not in the budget |
+| G4 | *Feedback* | the guests' complaint about the plaza is answered with more plaza |
+| G5 | *Exit* | behind the exit door is a waiting room, and waiting is the attraction |
+| G6 | *Wellness* | the manager is the same orb in a tie; wellbeing is the top priority, ranked fourth |
+| G7 | *Terms* | declining the terms is added to the terms; real is also premium |
+| G8 | *Fewer Meetings* | the meeting about fewer meetings schedules more; meetings are reduced to one, this one, and it does not end (opens still) |
+| G9 | *Notifications* | saying no to notifications is a notification; turning them off is coming soon, and you will be notified |
+
+## Collage style: grown-ups losing to brainrot
+
+Paper cut-out people on painted sets give up their dignity to *BOWLHEADS*, an invented kids' show starring Flush,
+a singing porcelain toilet. The style is decided in
+[docs/decisions/0026-collage-style.md](../docs/decisions/0026-collage-style.md). The series bible (the world, the family at its centre and a card per character) is
+[docs/decisions/0036-collage-series-bible.md](../docs/decisions/0036-collage-series-bible.md).
+
+- **Cast and sets**, [src/srstudio/collage.py](../src/srstudio/collage.py) and
+  [src/srstudio/collage_sets.py](../src/srstudio/collage_sets.py): ten characters as data (`collage.LOOKS`, drawn by
+  `collage.DRAWERS`), twelve painted rooms (`collage_sets.SETS`), and the paper sign, chart and TV props.
+- **The build**, [src/srstudio/collage_sketch.py](../src/srstudio/collage_sketch.py): a `Staging` per episode turns a
+  sketch's beats into one shot per appearance, with crash zooms, the sting, Kai's beep, lip sync and tinted
+  caption pills. `Staging.cast` decides who is drawn in a shot. `Staging.still` holds the first shot still for
+  that many seconds (the `sp-hook_motion` test's still arm): no grain, and `Staging.opening` draws its cast keying
+  nothing (`collage.figure(still=True)`). `Staging.bitrate` sets the master's average video bitrate, encoded in
+  two passes (the rate factor alone, as published, by default).
+- **Camera-safe zooms and call buttons**: `collage_sets.zoom_pivot` moves a zoom's pivot off a face only as far as
+  keeps the set's whole signature in frame; `collage_sets.call_buttons` turns a shot into the far side of a video
+  call.
+- **Group shots**, [src/srstudio/collage_group.py](../src/srstudio/collage_group.py): `Lineup` puts several of the
+  cast on one set, each in a fixed `Place`, the listeners holding their reactions while the speaker plays its
+  beats; outside its spans it draws the speaker alone.
+- **The family photo's props**, [src/srstudio/collage_photo.py](../src/srstudio/collage_photo.py): the self-timer
+  on a stack of books, the viewfinder's countdown, the sofa front, the flash and the printed photo.
+- **Everyday props**, [src/srstudio/collage_everyday.py](../src/srstudio/collage_everyday.py): food, a phone with a
+  screen the scene writes on, message bubbles, a bedside clock, a cereal box, a duvet and a tablecloth, a salt
+  shaker, chip bags and chips, a certificate, a snapshot, a gust of air, walking bills, confetti that can turn and
+  fall back up, an arm on its own, a thumbs-up, and `chew`, which keeps a mouth working while a character eats.
+- **A change of room and the extra sounds**: `Staging.setting` picks a shot's set from the beats (a reel that moves
+  from the sofa to the bed), and rows can start on a later word of a line, `(line, word, caption)`. Beats also take
+  `swat`, `ding`, `crunch` and `hiss:<seconds>`, written by `sound_effects` from `srstudio.foley`.
+
+An episode is `episodes/<name>_data.py` (the lines, the timed beats and the `Staging`), `episodes/<name>.py`
+(the build) and `episodes/<name>_audio.py` (the ElevenLabs recording, every line heard back by speech-to-text, no
+retries). Its release is `episodes/posts/<name>.py`.

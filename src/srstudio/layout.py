@@ -538,9 +538,15 @@ class _ShapeIndex:
         return shape
 
 
-def find_engine(explicit: Path | str | None = None) -> Path:
-    """The scene-render binary: ``explicit``, else ``$SRSTUDIO_ENGINE``, else ``scene-render`` on the ``PATH``."""
-    found = explicit or os.environ.get("SRSTUDIO_ENGINE") or shutil.which("scene-render")
+def find_engine(explicit: Path | str | None = None, env: Mapping[str, str] | None = None) -> Path:
+    """The scene-render binary: ``explicit``, else ``$SRSTUDIO_ENGINE``, else ``scene-render`` on the ``PATH``.
+
+    ``env`` stands in for the process environment when given: its ``SRSTUDIO_ENGINE`` and ``PATH`` are the ones read.
+    """
+    if env is None:
+        found = explicit or os.environ.get("SRSTUDIO_ENGINE") or shutil.which("scene-render")
+    else:
+        found = explicit or env.get("SRSTUDIO_ENGINE") or shutil.which("scene-render", path=env.get("PATH", ""))
     if not found:
         raise LayoutError("no scene-render engine: pass one or set SRSTUDIO_ENGINE")
     if not Path(found).is_file():

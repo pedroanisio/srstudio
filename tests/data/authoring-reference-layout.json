@@ -1,8 +1,12 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "generated_by": {
     "tool": "OpenAI Codex",
     "model": "GPT-6"
+  },
+  "updated_by": {
+    "tool": "Claude Code",
+    "model": "Claude Opus 5.5"
   },
   "legacy_source_commit": "a5a85bf8",
   "sections": [
@@ -119,252 +123,252 @@
     {
       "title": "New episodes with generated audio: *Five Years* (06)",
       "anchor": "new-episodes-with-generated-audio-five-years-06",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Cutout episode with generated audio: *Tip Screen* (12)",
       "anchor": "cutout-episode-with-generated-audio-tip-screen-12",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Cutout crossover in the park: *Culture Fit* (14)",
       "anchor": "cutout-crossover-in-the-park-culture-fit-14",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Cutout episode in the conference room: *Market Rate* (16)",
       "anchor": "cutout-episode-in-the-conference-room-market-rate-16",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Cutout episode in the elevator: *Elevator Pitch* (18)",
       "anchor": "cutout-episode-in-the-elevator-elevator-pitch-18",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Cutout crossover finale: *Going Down* (20)",
       "anchor": "cutout-crossover-finale-going-down-20",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Cutout episode at the café counter: *Cup Fee* (22)",
       "anchor": "cutout-episode-at-the-café-counter-cup-fee-22",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Cutout episode on the park bench: *Storage Full* (23)",
       "anchor": "cutout-episode-on-the-park-bench-storage-full-23",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Cutout episode across the interview desk: *Name a Number* (24)",
       "anchor": "cutout-episode-across-the-interview-desk-name-a-number-24",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Interview episodes with a Google caption face",
       "anchor": "interview-episodes-with-a-google-caption-face",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Cutout episode in the elevator: *Neighbor Names* (25)",
       "anchor": "cutout-episode-in-the-elevator-neighbor-names-25",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Cutout episode at the home printer: *Out of Cyan* (26)",
       "anchor": "cutout-episode-at-the-home-printer-out-of-cyan-26",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Cutout episode in the break room: *I'm Quitting* (27)",
       "anchor": "cutout-episode-in-the-break-room-im-quitting-27",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Cutout episode in the hiring office: *Entry Level* (28)",
       "anchor": "cutout-episode-in-the-hiring-office-entry-level-28",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Cutout episode at the barber's: *Just a Trim* (29)",
       "anchor": "cutout-episode-at-the-barbers-just-a-trim-29",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Cutout episode at the store: *Just One Thing* (30)",
       "anchor": "cutout-episode-at-the-store-just-one-thing-30",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Ink episode: *The Router* (Ink 02)",
       "anchor": "ink-episode-the-router-ink-02",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Ink episode: *Not a Robot* (Ink 03)",
       "anchor": "ink-episode-not-a-robot-ink-03",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Ink episode: *Message Failed* (Ink 04)",
       "anchor": "ink-episode-message-failed-ink-04",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Ink episode: *U Up?* (Ink 05)",
       "anchor": "ink-episode-u-up-ink-05",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Ink episode: *Premium Suction* (Ink 06)",
       "anchor": "ink-episode-premium-suction-ink-06",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Ink episode: *Home Sick* (Ink 07)",
       "anchor": "ink-episode-home-sick-ink-07",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Ink episode: *Pay to Park* (Ink 08)",
       "anchor": "ink-episode-pay-to-park-ink-08",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Soft style episode: *Focus Mode* (07)",
       "anchor": "soft-style-episode-focus-mode-07",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Soft style episode: *Camera Off* (08)",
       "anchor": "soft-style-episode-camera-off-08",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Soft style episode: *Day Off* (11)",
       "anchor": "soft-style-episode-day-off-11",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Soft style episode: *Unlimited PTO* (13)",
       "anchor": "soft-style-episode-unlimited-pto-13",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Soft style episode: *Return to Office* (15)",
       "anchor": "soft-style-episode-return-to-office-15",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Soft style episode: *Smart Lamp* (17)",
       "anchor": "soft-style-episode-smart-lamp-17",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Soft style episode: *The Cake* (19)",
       "anchor": "soft-style-episode-the-cake-19",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Soft style episode: *Hang Out*",
       "anchor": "soft-style-episode-hang-out",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Soft style episode: *Early Night*",
       "anchor": "soft-style-episode-early-night",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Soft style episode: *Why*",
       "anchor": "soft-style-episode-why",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Cel style package: *Work Training Be Like*",
       "anchor": "cel-style-package-work-training-be-like",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Narrated master",
       "anchor": "narrated-master",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Stick style package: *Check With My Team*",
       "anchor": "stick-style-package-check-with-my-team",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "An original Stick episode: *Screen Share* (R2)",
       "anchor": "an-original-stick-episode-screen-share-r2",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "An original Stick episode in a car: *Repeat After Me* (R3)",
       "anchor": "an-original-stick-episode-in-a-car-repeat-after-me-r3",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "An original Stick episode at the store: *Unexpected Item* (R4)",
       "anchor": "an-original-stick-episode-at-the-store-unexpected-item-r4",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "An original Stick episode in a flat for rent: *The Viewing* (R5)",
       "anchor": "an-original-stick-episode-in-a-flat-for-rent-the-viewing-r5",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "An original Stick episode at the gym: *Cancel Anytime* (R6)",
       "anchor": "an-original-stick-episode-at-the-gym-cancel-anytime-r6",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "An original Stick episode at school: *What My Dad Does* (R7)",
       "anchor": "an-original-stick-episode-at-school-what-my-dad-does-r7",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "An original Stick episode at the airport: *Group 9* (R8)",
       "anchor": "an-original-stick-episode-at-the-airport-group-9-r8",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "An original Stick episode in the car: *The Exit* (R9)",
       "anchor": "an-original-stick-episode-in-the-car-the-exit-r9",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "An original Stick episode at a door: *Hold the Door* (R10)",
       "anchor": "an-original-stick-episode-at-a-door-hold-the-door-r10",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "An original Stick episode in a kitchen: *Take My Phone* (R11)",
       "anchor": "an-original-stick-episode-in-a-kitchen-take-my-phone-r11",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "An original Stick episode at the coffee machine: *Good, You* (R12)",
       "anchor": "an-original-stick-episode-at-the-coffee-machine-good-you-r12",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "An original Stick episode on the road: *The Stove* (R13)",
       "anchor": "an-original-stick-episode-on-the-road-the-stove-r13",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Toon style package: *Anonymous Employee Survey*",
       "anchor": "toon-style-package-anonymous-employee-survey",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Narrated master",
       "anchor": "narrated-master-1",
-      "owner": "episode-history.md"
+      "owner": "https://github.com/pedroanisio/srstudio-episodes/blob/develop/docs/episode-history.md"
     },
     {
       "title": "Toon coworkers: brush-drawn characters",
@@ -379,42 +383,42 @@
     {
       "title": "Toon sketches: *The Report* (T3), *Logo Bigger* (T4) and *Quick Question* (T5)",
       "anchor": "toon-sketches-the-report-t3-logo-bigger-t4-and-quick-question-t5",
-      "owner": "episode-history.md"
+      "owner": "authoring-parts.md"
     },
     {
       "title": "Toon dinner: the restaurant, the table, the dishes and the card reader",
       "anchor": "toon-dinner-the-restaurant-the-table-the-dishes-and-the-card-reader",
-      "owner": "episode-history.md"
+      "owner": "authoring-parts.md"
     },
     {
       "title": "Toon sets: the office kitchen and the home office at night",
       "anchor": "toon-sets-the-office-kitchen-and-the-home-office-at-night",
-      "owner": "episode-history.md"
+      "owner": "authoring-parts.md"
     },
     {
       "title": "Toon rooms: a living room at night and a service counter, lit over time",
       "anchor": "toon-rooms-a-living-room-at-night-and-a-service-counter-lit-over-time",
-      "owner": "episode-history.md"
+      "owner": "authoring-parts.md"
     },
     {
       "title": "Toon everyday props: the phone, the speaker, the receipt, the queue and the form",
       "anchor": "toon-everyday-props-the-phone-the-speaker-the-receipt-the-queue-and-the-form",
-      "owner": "episode-history.md"
+      "owner": "authoring-parts.md"
     },
     {
       "title": "Saga style: a space-opera parody in seven episodes (S1–S7)",
       "anchor": "saga-style-a-space-opera-parody-in-seven-episodes-s1s7",
-      "owner": "episode-history.md"
+      "owner": "authoring-styles.md"
     },
     {
       "title": "Gloss style: a cheerful forever-plaza in nine episodes (G1–G9)",
       "anchor": "gloss-style-a-cheerful-forever-plaza-in-nine-episodes-g1g9",
-      "owner": "episode-history.md"
+      "owner": "authoring-styles.md"
     },
     {
       "title": "Collage style: grown-ups losing to brainrot",
       "anchor": "collage-style-grown-ups-losing-to-brainrot",
-      "owner": "episode-history.md"
+      "owner": "authoring-styles.md"
     },
     {
       "title": "Signature",
@@ -574,242 +578,17 @@
       "sha256": "45f01ab70183b6617440448ca0d2a3714c531a1d99130b7e83da35e754254a82"
     },
     {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "54bc81dd6a69dcf863cb29002acf02fab6bb9134ce3cf6f1ae6e0cd623937e4b"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "ae86d8788328c1e295b096fa988834bb37f4bae6304bab231a0b26390676a19c"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "b503ba8ce074b058c00859b178b8674cba6d9ebd0f27e81db598869af349a33a"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "751bc733b8f3ebaa332b22c3204745978c079bd2dcf0a49b7e8381a5a96cec2d"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "02519539a0d2889e22a79e6eb7335b465a9fb1c4788edef28a0d41672dad1ac7"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "1cf3cabd8ac9ba1a72e67f14e0dcb18e4e4e729aa1476187c0873d79399939d2"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "9357a820168670551d63143827e0495a7c5ae41a18fe05c56cc4c710f89f9248"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "10dcc235eaf95e7f59582b5c0e0cc8b90afa14cde10fd6ac20739575930fe8c9"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "bbf4aad978b646500dc1f629b661096fecc332f22bf93827e5ec151140289469"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "f757a782adb3bc292bad27c37331069889b2fd5555d4147c79071d2597d8c43e"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "365b72259c831b2184e38c5a54a871d01c4cfcd2814ea344923748f02833294a"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "3482443ac0bd2f9ad17a74616adbe1e8005e93e1c90f95ecc735434c06536fda"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "ccdd2a956f3d66ed578d2feee77800f9acdbe15227cadf6634b6d27d272858f6"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "543c13b2c77f2b520563c5469612f18f90ffb3c0791ebe78c3bcc66cdae5f3fc"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "5349374f588c4f2064b602bccc672cf14b7829fdbbf31f17cc3f70d59074abb3"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "77153a3de9afa421c870feb1a20d9493f9ce70f1e00507d2ddb718db27cd9d20"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "082e118c1fcea229fc269252b7373addd8365cde269b254b71dd0e508f9deea2"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "e45b8e551b09f1b65aeeaa8221585f6d3e04ad250ef75658dae9ae27ee224cb3"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "17ee80409a603a685fe4c4bf67e869cc3264178d4a213044ac62de6fea8d590a"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "01d357fd99594e85857ece35bfc3316a9e3486e4f624ba2e44973c43627b76a5"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "ae31827ee1c62d2a74acabe8229bb5504061a3c9953d99b08fde3c7917e9a982"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "b2648d0ee9d47a872ca6239a0cd4b013b326d349c31d0ee92ef8f66b402b89bf"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "a35b8faaa87515c4236c5a1182298b61cd22d5913303b11c5060f6a652594b6f"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "85c68e8b261ef1971ff89bac6daec16257342c486ab9331210281574ca7b6bd6"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "8c3b6fa29016654f70312a5fbb18762081f4c2a7abf540632b32a5a07d7db816"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "cab356ba1df99a3e26e816d39bdd2b639ef7239f836cee98fffd2820d4d0b726"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "1196c26da440f98ad25b4210193eeac0b6855dcfccf03915a8ddc356abbd80e2"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "f6d1d35a2a95fc0eb38c18976b44b6a0afbb0bb52664ba63826029a7ae297bb3"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "b9eadfbd46556aaece3f538f79bf7cb4ab049f68713b9ad51a7f909565904ede"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "130a1ed442ea06454f1b120b24dac494e56f27c102cead891a5a7df540acc14a"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "e7b444983cda3af92e32274348c816adfe8bc8c43e2ea309c7c659a54dd2d754"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "44436b791e71bf974838010e265add11ad3a3ce7f23b00969e80962e81a54fd0"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "33e5d0d938671bcda68b034997fa51aa865fdc50f19304b38057e8bc87d6a865"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "ce3093687d4c1ea2ed4ee38520a17f9e62a5b771f197e5fa29be0c08a31d98b4"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "ccac67dce059a45a9889ec5a0a0442a75355e726ed4715579d2718a73aee475e"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "c9d64d4be37a63029e0ae325e9d86de38879dec7db6db380b9db5237049b5ad1"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "e15497eeb6f2ddaf7c9ccd2469f67e32029f8e1f148cb24f8e5aaaabff0425d9"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "aabf93ab9ae3d3b8beee536c8fc56c2c7e3ded1781b9a6d081e409a3a47d8734"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "11c90aa3a9143919c03fda1d834de754bd417dad611d16521a8548903398e86c"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "d55855bc707bac418089e8454855563907d2b8a7f35bd460f0c124d2b46d459b"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "b4f933dc6d21234e3c656a868bfa8f6d1a1fcd8f87fe440330294350650df7c5"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "44870f2803eb7893a8c4bf6c775e72234de6626e60f4c1e358b12cace1e5cd23"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "83d7496bf96c651bad44b5ab9920e6a8be7dfe8467b37c9ddc009839036329ad"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "f331d9d71b8aa3d01283107425aa3c6b7872b0275f3560aec87e7bbb6c45e82c"
-    },
-    {
-      "owner": "episode-history.md",
-      "language": "bash",
-      "sha256": "dc59ffa2b0458e8d850113c31b687d140cf262c24d8dfb9817d5e9bd504c16c5"
-    },
-    {
       "owner": "authoring-parts.md",
       "language": "python",
       "sha256": "c8f83a11e59069e8c69adcac5634583be2ac859d47ce5f98a74531aef2399945"
     },
     {
-      "owner": "episode-history.md",
+      "owner": "authoring-parts.md",
       "language": "bash",
       "sha256": "8ae9f6e1d546a0f73bab2e06ee560f8e890dbc24ad2969bd6a6810a7bc35d5cb"
     },
     {
-      "owner": "episode-history.md",
+      "owner": "authoring-parts.md",
       "language": "python",
       "sha256": "e182a7875a4f30d84f3b91d76b230195e67b45f6d85c0bf3887bf7cce598b30b"
     }

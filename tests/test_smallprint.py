@@ -394,7 +394,9 @@ def test_the_show_hands_its_held_frames_to_the_staging(monkeypatch, tmp_path, he
     """A delivered episode keeps its six-decimal keys; a new one asks for held_frames (ADR 0216)."""
     seen = []
     monkeypatch.setattr(sp, "build", lambda root, staging, flags: seen.append(staging))
-    env = {"SRSTUDIO_ENGINE": "e", "SRSTUDIO_RENDERS": str(tmp_path), "SRSTUDIO_FONTS": str(tmp_path)}
+    engine = tmp_path / "scene-render"
+    engine.write_text("#!/bin/sh\n")  # the engine must exist (layout.find_engine); --init renders nothing with it
+    env = {"SRSTUDIO_ENGINE": str(engine), "SRSTUDIO_RENDERS": str(tmp_path), "SRSTUDIO_FONTS": str(tmp_path)}
     sp.run(replace(SHOW, held_frames=held_frames), ["show", str(tmp_path), "--init"], env)
     assert seen[0].held_frames is held_frames
 

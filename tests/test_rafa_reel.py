@@ -134,3 +134,59 @@ def test_the_stage_draws_him_once_gates_each_prop_and_cuts_the_push_back_on_the_
     rows = scale_keys(nodes(cv)["rafa-world"])
     assert rows[0] == (0.0, 1.0) and rows[1] == (2.4, 1.05)
     assert rows[-1] == (pytest.approx(rafa_reel.cut(3.0)), 1.0)
+
+
+# -- where a reel renders, read from its environment -----------------------------------------------------------------
+
+
+def _engine(folder: Path) -> Path:
+    binary = folder / "scene-render"
+    binary.write_text("#!/bin/sh\n")
+    binary.chmod(0o700)
+    return binary
+
+
+def test_the_renders_come_from_the_environment(tmp_path):
+    engine = _engine(tmp_path)
+    renders = rafa_reel.Renders.from_env(
+        {"SRSTUDIO_ENGINE": str(engine), "SRSTUDIO_RENDERS": str(tmp_path / "renders"), "SRSTUDIO_FONTS": "fonts"}
+    )
+    assert renders == rafa_reel.Renders(engine, tmp_path / "plates", Path("fonts"))
+    plated = rafa_reel.Renders.from_env({"PATH": str(tmp_path), "SRSTUDIO_PLATES": "cache", "SRSTUDIO_FONTS": "fonts"})
+    assert plated == rafa_reel.Renders(engine, Path("cache"), Path("fonts"))
+
+
+def test_a_reel_without_an_engine_says_how_to_supply_one(tmp_path):
+    from srstudio.layout import LayoutError
+
+    with pytest.raises(LayoutError, match="SRSTUDIO_ENGINE"):
+        rafa_reel.Renders.from_env({"SRSTUDIO_RENDERS": str(tmp_path), "SRSTUDIO_FONTS": str(tmp_path), "PATH": ""})
+    with pytest.raises(LayoutError, match="no such engine"):
+        rafa_reel.Renders.from_env(
+            {"SRSTUDIO_ENGINE": str(tmp_path / "e"), "SRSTUDIO_RENDERS": "r", "SRSTUDIO_FONTS": "f"}
+        )
+
+
+@pytest.mark.parametrize(
+    ("env", "named"),
+    [
+        ({"SRSTUDIO_RENDERS": "renders"}, "SRSTUDIO_FONTS"),
+        ({"SRSTUDIO_FONTS": "fonts"}, "SRSTUDIO_RENDERS or SRSTUDIO_PLATES"),
+        ({"SRSTUDIO_FONTS": "", "SRSTUDIO_PLATES": "cache"}, "SRSTUDIO_FONTS"),
+    ],
+)
+def test_a_reel_without_its_fonts_or_its_plate_cache_names_the_setting(tmp_path, env, named):
+    with pytest.raises(RafaReelError, match=named):
+        rafa_reel.Renders.from_env({"SRSTUDIO_ENGINE": str(_engine(tmp_path)), **env})
+
+
+@pytest.mark.parametrize("module", ["rafa_show", "smallprint"])
+def test_a_show_run_without_an_engine_raises_the_typed_error(module, tmp_path):
+    import importlib
+
+    from srstudio.errors import SrstudioError
+
+    show = SimpleNamespace(validate_sketch=lambda: None)
+    env = {"SRSTUDIO_RENDERS": str(tmp_path), "SRSTUDIO_FONTS": str(tmp_path), "PATH": ""}
+    with pytest.raises(SrstudioError, match="SRSTUDIO_ENGINE"):
+        importlib.import_module(f"srstudio.{module}").run(show, ["show", str(tmp_path), "--init"], env)

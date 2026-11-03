@@ -18,9 +18,8 @@ ROOT = Path(__file__).resolve().parent.parent
 RETIRED = re.compile(rb"tuxmeme", re.IGNORECASE)
 TREES = ("src", "examples")  # what the library draws and captions with; srstudio-episodes checks the reels
 GUIDES = tuple(str(p.relative_to(ROOT)) for p in sorted((ROOT / "docs").glob("authoring-*.md"))) + (
-    "docs/episode-history.md",
     "docs/slack-channel.md",
-)  # Keep checking every guide an author copies from after the reference split.
+)  # Every guide an author copies from; srstudio-episodes checks its own docs/, the episode history among them.
 RECORDS = ("notes.md", "sources.md")  # what a pilot's author wrote down about its build: never drawn or captioned
 GUARDS = ["src/srstudio/cast_card.py"]  # holds the name to refuse it on a card: test_cast_card proves that refusal
 
