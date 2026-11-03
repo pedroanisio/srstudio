@@ -5,8 +5,9 @@ from pathlib import Path
 
 import pytest
 
+import tiers
 from fakes import make_mp3
-from srstudio import outbox
+from srstudio import gpu, outbox
 from srstudio.sample import Line, write_sample_project
 
 LINES = [
@@ -55,6 +56,87 @@ def packages() -> Path:
     if not env or not Path(env).is_dir():
         pytest.skip("set SRSTUDIO_PACKAGES to the folder of extracted .vpkg projects")
     return Path(env)
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--write-tiers",
+        metavar="PATH",
+        help="after a passing run of the whole suite, write the measured tier table (ADR 0221) to PATH",
+    )
+
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "slow: runs in the full tier only, not in the five-minute gate (ADR 0221)")
+    if config.getoption("--write-tiers"):
+        _TIERS.watch_gpu()
+
+
+def pytest_collection_modifyitems(config, items):
+    """Mark ``slow`` every test that asks for the engine or that the measured table lists (ADR 0221)."""
+    measured = tiers.load()
+    for item in items:
+        if tiers.full(item.nodeid, set(getattr(item, "fixturenames", ())), measured):
+            item.add_marker(pytest.mark.slow)
+
+
+def pytest_deselected(items):
+    _TIERS.deselected += len(items)
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_protocol(item, nextitem):
+    _TIERS.gpu = False
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    if call.when == "teardown" and item.config.getoption("--write-tiers"):
+        item.user_properties.append(("tiers.gpu", _TIERS.gpu))
+    yield
+
+
+def pytest_runtest_logreport(report):
+    _TIERS.seconds[report.nodeid] = _TIERS.seconds.get(report.nodeid, 0.0) + report.duration
+    if report.when == "teardown":
+        _TIERS.gpu_of[report.nodeid] = dict(report.user_properties).get("tiers.gpu", False)
+
+
+def pytest_sessionfinish(session, exitstatus):
+    path = session.config.getoption("--write-tiers")
+    if not path or hasattr(session.config, "workerinput"):
+        return
+    if (
+        exitstatus != 0
+        or _TIERS.deselected
+        or session.config.getoption("keyword")
+        or session.config.getoption("markexpr")
+    ):
+        raise pytest.UsageError("--write-tiers needs a passing run of the whole suite, nothing deselected")
+    runs = {node: tiers.Run(seconds, _TIERS.gpu_of.get(node, False)) for node, seconds in _TIERS.seconds.items()}
+    Path(path).write_text(tiers.render(runs))
+
+
+class _Tiers:
+    """What a ``--write-tiers`` run measures. Workers flag a test that took the GPU lock; the controller adds up."""
+
+    def __init__(self) -> None:
+        self.gpu = False
+        self.deselected = 0
+        self.seconds: dict[str, float] = {}
+        self.gpu_of: dict[str, bool] = {}
+
+    def watch_gpu(self) -> None:
+        taken = gpu._take
+
+        def take(*args, **kwargs):
+            self.gpu = True
+            return taken(*args, **kwargs)
+
+        gpu._take = take
+
+
+_TIERS = _Tiers()
 
 
 @pytest.fixture(scope="session")

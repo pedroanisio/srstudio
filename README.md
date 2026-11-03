@@ -271,14 +271,14 @@ Batches and pilot sets run as `govern` lanes, so their state and token cost live
 
 ## Verification
 
-Run the local checks from the repository root:
+Run the gate on a commit from the repository root:
 
 ```bash
-python -m pytest --cov=srstudio --cov-branch
-ruff check .
-ruff format --check .
-mypy src
+tools/gate.sh <sha>          # format, lint, types and every test not marked slow, in at most five minutes
+tools/gate.sh --full <sha>   # every test, the engine renders included, and a fresh tier table
 ```
+
+The gate runs the suite in parallel (`pytest -n auto`) and fails when it takes longer than its five-minute budget. A test is marked `slow`, and runs only in the full tier, when it asks for the engine or when `tests/tiers.json` lists it: the full tier measured it over two seconds, or saw it take the GPU. The full tier passes before develop moves to main. See [ADR 0221](docs/decisions/0221-a-five-minute-gate.md).
 
 The configured coverage gate is 80%. Some integration tests require additional local inputs and skip when they are unavailable:
 

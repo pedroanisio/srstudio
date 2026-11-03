@@ -10,7 +10,7 @@ dependencies = ["sr-core @ git+https://github.com/pedroanisio/sr-core@c4ff576544
 [project.optional-dependencies]
 validate = ["sr-core[validate]"]   # level-2 checks (XSD + Schematron through lxml)
 fast = ["numpy"]                  # legacy extra; Shapely also installs NumPy
-test = ["pytest", "pytest-cov", "ruff", "mypy", "types-shapely"]
+test = ["pytest", "pytest-cov", "pytest-xdist", "ruff", "mypy", "types-shapely"]
 
 [project.scripts]
 srstudio = "srstudio.cli:main"
