@@ -27,7 +27,7 @@ import numpy as np
 from pedro_drive_plates import PLATES
 from sr_core.scene import Scene
 
-from srstudio import Canvas, files, flat_counter, gpu, pedro_host, plates, wire_car_prop, wire_jet_prop
+from srstudio import Canvas, files, flat_counter, gpu, layout, pedro_host, plates, wire_car_prop, wire_jet_prop
 from srstudio.canvas import VOID
 from srstudio.errors import SrstudioError
 
@@ -127,7 +127,8 @@ class Piece:
     def __init__(self, root: Path) -> None:
         self.root = root
         scene = Scene(version="auto")
-        scene.add_project(width=W, height=H, fps=str(FPS), duration=DURATION, background=VOID.background)
+        project = scene.add_project(width=W, height=H, fps=str(FPS), duration=DURATION, background=VOID.background)
+        layout.VERTICAL.declare(scene, project)  # every scene declares its safe area (ADR 0218)
         self.cv = Canvas(scene, VOID, font_asset="caption-font", width=W, height=H, namer=flat_counter("k"))
         self.frames = round(DURATION * FPS)
         self.travel = distance(self.frames)

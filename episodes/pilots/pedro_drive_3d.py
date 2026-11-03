@@ -44,7 +44,7 @@ from pedro_drive import (
 from pedro_drive_plates import PLATES
 from sr_core.scene import Scene
 
-from srstudio import Canvas, clay, flat_counter, gpu, look, pedro, pedro_host, plates, wire_mesh
+from srstudio import Canvas, clay, flat_counter, gpu, layout, look, pedro, pedro_host, plates, wire_mesh
 from srstudio.canvas import VOID
 
 TONES = ("#6a5c92", "#7a6aa0", "#5c5488", "#8a6aa0", "#4f4a7c")
@@ -95,7 +95,7 @@ class Build:
         self.root = root
         self.raw = raw
         scene = Scene(version="auto")
-        scene.add_project(
+        project = scene.add_project(
             width=W,
             height=H,
             fps=str(FPS),
@@ -105,6 +105,7 @@ class Build:
             antialias3d=4,
             seed=1031,
         )
+        layout.VERTICAL.declare(scene, project)  # every scene declares its safe area (ADR 0218)
         self.cv = Canvas(scene, VOID, font_asset="caption-font", width=W, height=H, namer=flat_counter("k"))
         self.scene = scene
         self.mats = scene.add_materials()

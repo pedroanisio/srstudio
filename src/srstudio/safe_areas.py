@@ -1,0 +1,246 @@
+"""What is built without a safe area, and why: the closed lists of ADR 0218.
+
+arc4d3, Slack 1793678456.387679: "Every scene declares its safe area, not only multi-character dances, and the overlay
+check refuses a scene without one." An episode the library builds declares its style's area unless it names its own
+(:class:`~srstudio.episode.EpisodeSpec`), and a reel's first delivery is refused when its scene declares none
+(:mod:`srstudio.safe_area_gate`). Two things stay without one, and only these:
+
+- :data:`PUBLISHED_WITHOUT`: the reels delivered before the rule whose scenes declared none. Published content is
+  frozen, so their builds stay byte for byte as they went out. A slug here is a scene's, not a video name. The list can
+  only shrink: a reel delivered after the rule declares its area.
+- :data:`UNDELIVERED`: the scene builders outside :class:`~srstudio.episode.Episode` whose scenes are never posted: a
+  still, a catalog page, a proof, an example, an intermediate document another scene uses. Each says what it is. A
+  builder that is not on it declares its area, and a test holds the list to the code both ways.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Literal
+
+__all__ = ["PUBLISHED_WITHOUT", "PUBLISHED_WITHOUT_ORDER", "UNDELIVERED", "Undelivered", "UndeliveredKind"]
+
+UndeliveredKind = Literal["catalog", "example", "fixture", "intermediate", "proof", "still"]
+
+
+@dataclass(frozen=True)
+class Undelivered:
+    """A file that writes a scene project of its own, the ``kind`` of scene it is, and ``why`` it is never posted."""
+
+    path: str
+    kind: UndeliveredKind
+    why: str
+
+
+# From the delivery manifests on 2026-11-03 (generated/renders/ig/delivery.json and the pilots' manifests), each video's
+# built scene read for project/@safeArea; and the six packaged reels, whose scenes are in their packages.
+PUBLISHED_WITHOUT_ORDER: tuple[str, ...] = (
+    "accept-all",
+    "any-news",
+    "any-questions",
+    "anythings-fine",
+    "arrive-early",
+    "baby-monitor",
+    "best-angle",
+    "big-font",
+    "book-a-table",
+    "book-report",
+    "brand-refresh",
+    "breaking-news",
+    "call-your-mother",
+    "came-in-for",
+    "cancel-anytime",
+    "cant-afford-to-save",
+    "change-blindness",
+    "choice-blindness",
+    "cleaning-fee",
+    "cold-front",
+    "culture-fit",
+    "cup-fee",
+    "date-night",
+    "different-reasons",
+    "do-you-floss",
+    "dont-move",
+    "employee-survey",
+    "entry-level",
+    "everyday-breaking",
+    "extra-hour",
+    "family-size",
+    "fast-at-math",
+    "fee-for-asking",
+    "final-broadcast",
+    "first-date",
+    "fluent",
+    "four-coats",
+    "frequency-illusion",
+    "friday-sync",
+    "full-coverage",
+    "further-north",
+    "get-your-mother",
+    "give-it-twelve",
+    "going-down",
+    "goldfish-funeral",
+    "good-you",
+    "graded-date",
+    "gritty-reboot",
+    "group-nine",
+    "heard-back",
+    "hold-the-door",
+    "home-anyway",
+    "home-sick",
+    "honesty-interview",
+    "i-cleaned",
+    "i-was-watching",
+    "ill-get-this",
+    "im-quitting",
+    "in-network",
+    "inside-the-circle",
+    "intervention",
+    "it-autoplayed",
+    "its-gone",
+    "its-listening",
+    "its-soaking",
+    "just-a-trim",
+    "just-one-thing",
+    "learning-styles",
+    "leave-it-home",
+    "left-at-door",
+    "like-family",
+    "loaded-right",
+    "logo-bigger",
+    "long-goodbye",
+    "low-balance",
+    "message-failed",
+    "missed-you",
+    "missing-lid",
+    "more-tired",
+    "multitasking",
+    "my-machine",
+    "my-manager",
+    "nail-hole",
+    "neighbor-names",
+    "network-names",
+    "nine-alarms",
+    "no-thanks",
+    "nobody-died",
+    "not-a-robot",
+    "november-first",
+    "on-my-way",
+    "one-more-episode",
+    "only-your-aunt",
+    "out-of-cyan",
+    "out-of-office",
+    "pajama-day",
+    "password-expired",
+    "pay-to-park",
+    "payday",
+    "peak-end-rule",
+    "planning-fallacy",
+    "practice-round",
+    "premium-suction",
+    "pressure-interview",
+    "quick-question",
+    "real-roast",
+    "regards-dad",
+    "repeat-after-me",
+    "reply-all",
+    "representative",
+    "safe-from-you",
+    "same-way",
+    "scan-the-code",
+    "scene",
+    "screen-share",
+    "seabird-jet-lag",
+    "security-question",
+    "shower-argument",
+    "someone-else",
+    "sorry-what",
+    "space-haiku",
+    "split-it",
+    "spotlight-effect",
+    "still-typing",
+    "storage-full",
+    "take-my-phone",
+    "take-one",
+    "text-me",
+    "texts-back",
+    "the-boat",
+    "the-boxes",
+    "the-card",
+    "the-chirp",
+    "the-exit",
+    "the-family-photo",
+    "the-lore",
+    "the-noise",
+    "the-profiles",
+    "the-reference",
+    "the-report",
+    "the-router",
+    "the-stove",
+    "the-viewing",
+    "the-will",
+    "therapy-session",
+    "they-voted-no",
+    "third-snore",
+    "thought-leader",
+    "thought-of-you",
+    "tip-screen",
+    "trial-shift",
+    "turn-this-car",
+    "u-up",
+    "unexpected-item",
+    "voice-note",
+    "what-my-dad-does",
+    "whats-your-split",
+    "where-to-eat",
+    "who-touched-it",
+    "whose-milk",
+    "wifi-password",
+    "you-too",
+    "your-lasagna",
+    "your-rent",
+)
+PUBLISHED_WITHOUT = frozenset(PUBLISHED_WITHOUT_ORDER)
+
+UNDELIVERED: tuple[Undelivered, ...] = (
+    Undelivered("examples/acting_blends.py", "example", "an SDK example rendered for its readers, never posted"),
+    Undelivered("examples/acting_continuity.py", "example", "an SDK example rendered for its readers, never posted"),
+    Undelivered("examples/acting_gallery.py", "example", "an SDK example rendered for its readers, never posted"),
+    Undelivered("examples/acting_transitions.py", "example", "an SDK example rendered for its readers, never posted"),
+    Undelivered("examples/body_steps.py", "example", "an SDK example rendered for its readers, never posted"),
+    Undelivered(
+        "examples/composition_preflight.py", "example", "an SDK example rendered for its readers, never posted"
+    ),
+    Undelivered("examples/drawing_figure.py", "example", "an SDK example rendered for its readers, never posted"),
+    Undelivered("examples/drawing_information.py", "example", "an SDK example rendered for its readers, never posted"),
+    Undelivered("examples/drawing_proof.py", "example", "a drawing proof the operator judges, never posted"),
+    Undelivered("examples/limbs_bimanual.py", "example", "an SDK example rendered for its readers, never posted"),
+    Undelivered("examples/limbs_cast.py", "example", "an SDK example rendered for its readers, never posted"),
+    Undelivered("examples/limbs_contact.py", "example", "an SDK example rendered for its readers, never posted"),
+    Undelivered("examples/limbs_evaluate.py", "example", "an SDK example rendered for its readers, never posted"),
+    Undelivered("examples/limbs_gallery.py", "example", "an SDK example rendered for its readers, never posted"),
+    Undelivered("examples/limbs_quality.py", "example", "an SDK example rendered for its readers, never posted"),
+    Undelivered("examples/sdk_showreel.py", "example", "an SDK example rendered for its readers, never posted"),
+    Undelivered("examples/target_gaze.py", "example", "an SDK example rendered for its readers, never posted"),
+    Undelivered("src/srstudio/_acting_compile.py", "proof", "an acting score compiled for review, never posted"),
+    Undelivered("src/srstudio/_benchmark_fixtures.py", "fixture", "a benchmark's input, never rendered for anyone"),
+    Undelivered("src/srstudio/bible_diagram.py", "catalog", "a diagram page of the cast bible"),
+    Undelivered("src/srstudio/cast_card.py", "still", "a cast card: one still image, no overlay over a moving picture"),
+    Undelivered("src/srstudio/catalog_page.py", "catalog", "the catalog's pose sheet"),
+    Undelivered("src/srstudio/catalog_specimens.py", "catalog", "a part drawn alone for the catalog"),
+    Undelivered(
+        "src/srstudio/generated.py",
+        "intermediate",
+        "the 16 by 16 audio document the engine resolves takes in; it draws nothing",
+    ),
+    Undelivered(
+        "src/srstudio/plates.py",
+        "intermediate",
+        "a background plate the reel's own scene places, and that scene declares the area",
+    ),
+    Undelivered("src/srstudio/specimens.py", "catalog", "a part drawn alone for the catalog"),
+    Undelivered(
+        "src/srstudio/thumbnail.py", "still", "a cover: one still image, with its own headline rules (ADR 0013)"
+    ),
+    Undelivered("tools/creationbot_avatar.py", "still", "the bot's avatar: one still image"),
+)

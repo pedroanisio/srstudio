@@ -56,6 +56,7 @@ from .canvas import (
 )
 from .errors import SrstudioError
 from .fonts import GoogleFont
+from .layout import SQUARE, VERTICAL, SafeArea
 from .lipsync import SPEECH_MOUTH
 from .soundtrack import CAFE_MOUTH, INK_MOUTH, OFFICE_MOUTH, SOFT_MOUTH, MouthStyle, PhonemeStyle
 
@@ -127,6 +128,7 @@ class Style:
     accessibility: Mapping[str, Any] = field(default_factory=dict)  # metadata/accessibility defaults
     silent: bool = False  # no speech: no mouth model is required, and EpisodeSpec.mouth_style resolves to None
     mix: Mix = Mix()  # the master Episode.audio builds unless the episode passes its own levels
+    safe_area: SafeArea = VERTICAL  # what a new episode declares unless it names its own (ADR 0218)
 
     def __post_init__(self) -> None:
         if not self.palettes:
@@ -246,6 +248,7 @@ INK = Style(
     namer=shared_counter,
     accessibility=dict(flashCheck="error", contrastCheck="warn", legibilityCheck="warn", minTextSize="2%"),
     mix=Mix(loudness="-14", bit_depth=None),
+    safe_area=SQUARE,  # a square frame: title-safe
 )
 
 SOFT = Style(

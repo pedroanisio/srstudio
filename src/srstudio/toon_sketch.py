@@ -55,6 +55,7 @@ from . import (
     toon_rigs,
 )
 from .canvas import Canvas
+from .episode import FROM_STYLE
 from .layout import SafeArea
 from .narration import effect_cues, manifest_duration, narration_cues, require_consent
 from .provider import KEY_ENV
@@ -146,7 +147,7 @@ class Staging:
     the camera's reach, from the first frame until ``said``, when the first spoken line stops
     (:func:`srstudio.sketch.first_line_end`): its take on a recording, the next line's start on the scripted clock.
     What it returns is kept off the cover."""
-    safe_area: SafeArea | None = None  # declared on the project, for a show that keeps its text inside one
+    safe_area: SafeArea | None = FROM_STYLE  # declared on the project: the style's unless a show names its own
     loudness: str | None = None  # the master's integrated LUFS, when a reel departs from its style's
     moves: Mapping[str, Callable[[Canvas, Any, Any, Sequence[Any]], None]] = field(default_factory=dict)
     """Per character: ``(cv, body, appearance, beats)`` keys that shot's body group on the project clock, about the

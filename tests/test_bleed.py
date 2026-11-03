@@ -19,6 +19,7 @@ from sr_core.scene import Scene
 
 from srstudio import Episode, EpisodeSpec, camera, get, look, mind_kit, stick_door, stick_reel, toon_sketch
 from srstudio.canvas import MONO, Canvas, flat_counter
+from srstudio.episode import FROM_STYLE
 from srstudio.look import LookError
 
 WIDTH, HEIGHT = 1080, 1920
@@ -190,7 +191,7 @@ def test_a_sketch_asks_for_bleed_through_its_staging(monkeypatch, tmp_path):
     data = SimpleNamespace(slug="s", title="t", beats=(), end=1.0)
     staging = SimpleNamespace(
         sketch=data, heads=(), versions={}, bleed=True, description="d", narration="n", accessibility="a", seed=1,
-        style=mind_kit.MIND, output="o.mp4", safe_area=None, crf="21",
+        style=mind_kit.MIND, output="o.mp4", safe_area=FROM_STYLE, crf="21",
     )  # fmt: skip
     with pytest.raises(Stop):
         toon_sketch.build(tmp_path, staging, ())

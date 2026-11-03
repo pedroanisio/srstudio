@@ -16,6 +16,7 @@ import pytest
 from srstudio import Episode, EpisodeSpec, frame_gates, parts, releases, show_numbers, sketch, social, thumbnail
 from srstudio.comedy_floor import ComedyError, Scores
 from srstudio.releases import Release, ReleaseError, Tags
+from srstudio.safe_area_gate import undeclared as undeclared_safe_area
 from srstudio.social import (
     CAPTION_LIMIT,
     COVER_NAME,
@@ -1164,8 +1165,59 @@ def _new_reel(posts, monkeypatch, tmp_path, repo, comedy=ON_THE_FLOOR, hashtags=
     monkeypatch.setattr(posts.releases, "doubled_captions", lambda *a, **kw: [])
     monkeypatch.setattr(posts.releases, "caption_on_cover", lambda *a, **kw: [])
     monkeypatch.setattr(posts.strict_gate, "strict_defects", lambda *a, **kw: [])
+    monkeypatch.setattr(posts.safe_area_gate, "undeclared", lambda *a, **kw: [])
     monkeypatch.setattr(posts, "publish", lambda *a, **kw: ["written"])
     return renders
+
+
+def _safe_area_reel(posts, monkeypatch, tmp_path, scene: bytes):
+    """A new reel past every other gate, whose built scene is ``scene``; the safe-area gate runs for real."""
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path, ON_THE_FLOOR)
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    monkeypatch.setattr(posts.safe_area_gate, "undeclared", undeclared_safe_area)
+    monkeypatch.setattr(posts.frame_gates, "signature_hidden", lambda *a, **kw: [])
+    monkeypatch.setattr(posts.figure_gates, "figure_defects", lambda *a, **kw: [])
+    monkeypatch.setattr(posts.anatomy_gate, "hand_defects", lambda *a, **kw: [])
+    monkeypatch.setattr(posts.anatomy_gate, "body_defects", lambda *a, **kw: [])
+    monkeypatch.setattr(posts.text_rules, "timing_defects", lambda *a, **kw: [])
+    project = tmp_path / "episodes" / "new-reel"
+    project.mkdir(parents=True)
+    (project / "new-reel.scene.xml").write_bytes(scene)
+    return renders
+
+
+DECLARED_SCENE = (
+    b'<scene><project width="1080" height="1920" fps="24" duration="2" safeArea="vertical-safe"/>'
+    b'<safeAreas><safeArea id="vertical-safe" top="0.14" right="0.08" bottom="0.2" left="0.08"/></safeAreas></scene>'
+)
+
+
+def test_a_first_delivery_whose_scene_declares_no_safe_area_is_refused_before_it_writes(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _safe_area_reel(posts, monkeypatch, tmp_path, b'<scene><project width="1080" height="1920"/></scene>')
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
+    with pytest.raises(frame_gates.FrameGateError, match="New_Reel: its scene declares no safe area"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+    argv = ["deliver", str(renders / "ig"), str(renders), "--fonts", str(tmp_path), "--engine", "engine"]
+    with pytest.raises(SystemExit, match="deliver: the frame gates refuse: New_Reel: its scene declares no safe area"):
+        posts.main([*argv, "--only", "New_Reel"])
+
+
+def test_a_first_delivery_whose_scene_declares_its_safe_area_delivers(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _safe_area_reel(posts, monkeypatch, tmp_path, DECLARED_SCENE)
+    assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"]) == [
+        "written"
+    ]
+
+
+def test_a_published_reel_whose_scene_declares_no_safe_area_is_never_read(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _safe_area_reel(posts, monkeypatch, tmp_path, b"<scene/>")
+    monkeypatch.setattr(posts, "read_manifest", lambda out: {"New_Reel": {}})
+    assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"]) == [
+        "written"
+    ]
 
 
 def test_a_first_delivery_without_an_enhancement_is_refused_before_it_writes(monkeypatch, tmp_path):

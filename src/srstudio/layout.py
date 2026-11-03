@@ -52,6 +52,11 @@ class LayoutError(SrstudioError, RuntimeError):
         self.crossings = list(crossings)
 
 
+class UndeclaredSafeAreaError(LayoutError):
+    """A scene that declares no safe area. Every scene declares one (ADR 0218): the overlay check has no region to
+    hold a graphic to without it, and the engine none to hold the text to."""
+
+
 @dataclass(frozen=True)
 class Box:
     x0: float
@@ -122,6 +127,9 @@ class SafeArea:
 # The engine's documented production region for a 1080 × 1920 frame: x 80–920, y 220–1420 (its presets are
 # approximations with no platform source; the engine README recommends explicit insets).
 VERTICAL = SafeArea("vertical-safe", top=0.1146, right=0.1481, bottom=0.2604, left=0.0741)
+# A square frame has no platform interface over it to keep clear of: the SMPTE ST 2046-1 title-safe area, the middle
+# 90 % of each side, keeps text off the edge a display may crop (ADR 0218).
+SQUARE = SafeArea("square-safe", top=0.05, right=0.05, bottom=0.05, left=0.05)
 
 
 # -- path data --------------------------------------------------------------------------------------------
@@ -468,13 +476,24 @@ def crossings_at(
 # -- the engine audit -----------------------------------------------------------------------------------
 
 
+def declared_safe_area(document: bytes) -> SafeArea:
+    """The safe area a scene ``document`` declares and makes its project's. A document that declares none is an
+    :class:`UndeclaredSafeAreaError`; one that does not parse, or names an area it does not declare, a
+    :class:`LayoutError`."""
+    try:
+        root = ET.fromstring(document)
+    except ET.ParseError as exc:
+        raise LayoutError(f"not a scene document: {exc}") from None
+    return _document_area(root)[0]
+
+
 def _document_area(root: ET.Element) -> tuple[SafeArea, float, float, Fraction, float]:
     project = root.find("project")
     if project is None:
         raise LayoutError("the document has no <project>")
     area_id = project.get("safeArea")
     if not area_id:
-        raise LayoutError("the project declares no safe area (project/@safeArea)")
+        raise UndeclaredSafeAreaError("the project declares no safe area (project/@safeArea)")
     element = next((e for e in root.iterfind("safeAreas/safeArea") if e.get("id") == area_id), None)
     if element is None:
         raise LayoutError(f"no <safeArea id={area_id!r}>")

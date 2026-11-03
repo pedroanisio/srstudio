@@ -19,7 +19,8 @@ Anything in ``gdrive:srstudio/ready-to-publish`` can be posted to @okayville.tv,
 remote are the only ones it accepts, and a slug with a folder under another series' ``pilots/`` in this repository is
 refused. A new pilot of a comedy series needs ``comedy-author`` and ``comedy-reviewer`` in the frontmatter of its
 ``notes.md``, the lower at the floor or above (ADR 0064); a series in :data:`NOT_COMEDY` owes none. A new pilot of any
-series carries at most five hashtags in its ``ig.txt`` (ADR 0065). A refused run stages and uploads nothing and exits
+series carries at most five hashtags in its ``ig.txt`` (ADR 0065), and its packed scene declares a safe area
+(ADR 0218). A refused run stages and uploads nothing and exits
 2, as does a failed upload.
 """
 
@@ -32,7 +33,7 @@ import re
 import sys
 from pathlib import Path
 
-from srstudio import auto_enhance, comedy_floor, outbox, social
+from srstudio import auto_enhance, comedy_floor, outbox, safe_area_gate, social
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import instagram_posts as posts  # noqa: E402
@@ -231,6 +232,18 @@ def overtagged(ready: list[outbox.Bundle], remote: str, rclone: str) -> None:
             raise PilotError(str(e)) from e
 
 
+def undeclared(ready: list[outbox.Bundle], remote: str, rclone: str) -> None:
+    """Refuse a new pilot whose packed scene declares no safe area (ADR 0218); a pilot already on Drive stays as it went
+    out. Drive is read only for a pilot that is refused, so a clean set needs no rclone."""
+    packages = {p.name: dict(zip(p.names, p.files, strict=True))[PACKAGE] for p in ready}
+    found = {slug: why for slug, path in packages.items() if (why := safe_area_gate.package_defect(path, slug))}
+    if found:
+        on_drive = delivered(remote, rclone)
+        refused = {slug: why for slug, why in found.items() if slug not in on_drive}
+        if refused:
+            raise PilotError("; ".join(f"{slug}: {why}" for slug, why in sorted(refused.items())))
+
+
 def left_behind(pilot: outbox.Bundle, root: Path) -> list[str]:
     """What is in the pilot's folder and not delivered, as ``slug/name``."""
     chosen = {f.name for f in pilot.files}
@@ -266,6 +279,7 @@ def main(argv: list[str] | None = None) -> int:
         overtagged(ready, remote, args.rclone)
         unfunny(ready, args.series, remote, args.rclone)
         unenhanced(ready, remote, args.rclone)
+        undeclared(ready, remote, args.rclone)
         stage.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         stage.parent.chmod(0o700)
         manifest = outbox.stage(ready, stage, manifest=MANIFEST)
