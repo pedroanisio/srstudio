@@ -13,12 +13,15 @@ means the same model gives the same bytes on every build, so a mesh can be named
 
 from __future__ import annotations
 
+import enum
+import functools
 import hashlib
 import math
 from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import cached_property
+from typing import Concatenate, ParamSpec, TypeVar
 
 import numpy as np
 
@@ -26,10 +29,12 @@ from . import checks
 from .errors import SrstudioError
 
 __all__ = [
+    "Caps",
     "ClayError",
     "Mesh",
     "Model",
     "bezier",
+    "first_caps",
     "normal_tile",
     "obj_bytes",
     "planar",
@@ -93,6 +98,23 @@ def obj_bytes(mesh: Mesh) -> bytes:
     return mesh.obj
 
 
+_P = ParamSpec("_P")
+_R = TypeVar("_R")
+
+
+def first_caps(build: Callable[Concatenate[Model, _P], _R]) -> Callable[Concatenate[Model, _P], _R]:
+    """``build(m, ...)`` baking its tube caps :attr:`Caps.FIRST`: the builder of an approved version that was approved
+    before the cap fix. The model's winding comes back as it was, and ``pinned_caps`` names the winding kept."""
+
+    @functools.wraps(build)
+    def pinned(m: Model, /, *args: _P.args, **kwargs: _P.kwargs) -> _R:
+        with m.caps(Caps.FIRST):
+            return build(m, *args, **kwargs)
+
+    pinned.pinned_caps = Caps.FIRST  # type: ignore[attr-defined]
+    return pinned
+
+
 def bezier(points: Sequence[Point], n: int = 32) -> np.ndarray:
     """``n`` samples along the Bézier curve of ``points``, by de Casteljau."""
     p = np.array(points, float)
@@ -142,10 +164,21 @@ def _sheet(rows: int, cols: int, wrap: bool) -> list[tuple[int, int, int]]:
     return tris
 
 
+class Caps(enum.Enum):
+    """How a tube's starting cap is wound. ``OUTWARD`` agrees with the cap's normal, and every new drawing takes it.
+    ``FIRST`` is the winding the drawings approved before that fix were baked with: an approved version keeps the mesh
+    bytes it was approved with (ADR 0047), so its builders bake ``FIRST`` and a new version of the part takes
+    ``OUTWARD``. Only the starting cap's triangle order differs; vertices and normals are the same."""
+
+    FIRST = "first"
+    OUTWARD = "outward"
+
+
 class Model:
     """Shapes baked as they are built: see the module's notes. Meshes come out merged by material, in a fixed order."""
 
     def __init__(self) -> None:
+        self.caps_winding = Caps.OUTWARD
         self._spin = np.eye(3)
         self._shift = np.zeros(3)
         self._scale = 1.0
@@ -160,6 +193,17 @@ class Model:
             yield self
         finally:
             self._spin, self._shift, self._scale = held
+
+    @contextmanager
+    def caps(self, winding: Caps) -> Iterator[Model]:
+        """Build with tube caps wound ``winding`` (:class:`Caps`), and wind them as before afterwards."""
+        if not isinstance(winding, Caps):
+            raise ClayError(f"a cap winding is one of {[c.name for c in Caps]}, got {winding!r}")
+        held, self.caps_winding = self.caps_winding, winding
+        try:
+            yield self
+        finally:
+            self.caps_winding = held
 
     def _add(self, material: str, verts: np.ndarray, normals: np.ndarray, tris, uvs: np.ndarray | None = None) -> None:
         if not (isinstance(material, str) and material):
@@ -257,8 +301,10 @@ class Model:
             normals.append(_unit(tangent, "a tube") * (-1.0 if row == 0 else 1.0))
             cap = [(hub, row * sides + i, row * sides + (i + 1) % sides) for i in range(sides)]
             # The starting cap faces against the path tangent. Its normal and
-            # triangle winding must agree, including after OBJ axis conversion.
-            tris += [(a, c, b) for a, b, c in cap] if row == 0 else cap
+            # triangle winding must agree, including after OBJ axis conversion;
+            # Caps.FIRST keeps the order approved drawings were baked with.
+            outward = row == 0 and self.caps_winding is Caps.OUTWARD
+            tris += [(a, c, b) for a, b, c in cap] if outward else cap
         self._add(material, np.array(verts), np.array(normals), tris)
 
     def rod(self, material: str, a: Point, b: Point, r: float) -> None:

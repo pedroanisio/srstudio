@@ -12,7 +12,7 @@ from collections.abc import Callable, Sequence
 
 import numpy as np
 
-from .clay import ClayError, Model
+from .clay import ClayError, Model, first_caps
 
 __all__ = ["blazer", "body", "contour", "jacket", "puffer", "tee"]
 
@@ -377,11 +377,13 @@ def _tee_surface(m: Model) -> None:
     m.tube("shirt", list(_neckline()), 0.62, 60, 7)
 
 
+@first_caps
 def tee(m: Model) -> None:
     """Him in the black tee alone."""
     _tee_surface(m)
 
 
+@first_caps
 def blazer(m: Model) -> None:
     """The tee, and the blazer over it."""
     _tee_surface(m)
@@ -390,6 +392,7 @@ def blazer(m: Model) -> None:
     _lapels(m)
 
 
+@first_caps
 def puffer(m: Model) -> None:
     """The quilted puffer: a neck, the tee, the jacket, its zip, seams and collar."""
     _neck(m)
@@ -400,6 +403,7 @@ def puffer(m: Model) -> None:
     _collar(m)
 
 
+@first_caps
 def body(m: Model) -> None:
     """Everything of him below the head, as he stands by default: the tee and the blazer."""
     blazer(m)
