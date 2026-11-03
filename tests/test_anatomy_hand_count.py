@@ -166,7 +166,8 @@ def test_a_figure_seen_counts_its_hands_behind_the_set():
 def project(tmp_path):
     project = tmp_path / "a-b"
     project.mkdir()
-    (project / "a-b.scene.xml").write_bytes(b"<scene/>")
+    scene = b'<scene><project width="1080" height="1920" fps="24" duration="1"/></scene>'
+    (project / "a-b.scene.xml").write_bytes(scene)
     return project
 
 
