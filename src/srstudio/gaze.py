@@ -19,6 +19,7 @@ from . import checks
 from ._curves import progress
 from .errors import SrstudioError
 from .head_motion import GAZES
+from .held_keys import held_key
 
 MAX_KEYS = 1000
 MAX_SAMPLES = 20000
@@ -287,8 +288,13 @@ def named_gaze(plan: GazePlan, mapping: NamedGazeMapping) -> tuple[tuple[float, 
                 f'error <= {mapping.max_error} eye radii',
                 'gaze.mapping',
             )
+        # A held eye state is keyed half a frame before the frame that first shows it; of two changes before one
+        # frame, the frame shows the later (ADR 0216).
+        at = held_key(sample.time, plan.spec.fps)
+        if result and result[-1][0] == at:
+            result.pop()
         if not result or name != result[-1][1]:
-            result.append((sample.time, name))
+            result.append((at, name))
     return tuple(result)
 
 

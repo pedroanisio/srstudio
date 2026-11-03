@@ -32,7 +32,7 @@ import numpy as np
 from . import figure_record, fonts, framegraph, gpu, show, show_numbers
 from .figure_gates import figures_on
 from .figure_record import Figure
-from .frame_gates import FrameGateError, _duration, sample_times
+from .frame_gates import FrameGateError, _duration, _fps, sample_times
 from .framegraph import Box, Drawing, Frame, FrameGraphError
 from .releases import Release
 from .show_numbers import Ledger
@@ -322,7 +322,7 @@ def show_defects(
             continue
         try:
             drawn = framegraph.drawings(document)
-            frames = list(framegraph.evaluate(engine, scene, sample_times(_duration(document))))
+            frames = list(framegraph.evaluate(engine, scene, sample_times(_duration(document), fps=_fps(document))))
             drift += [
                 Drift(video, w) for w in frame_defects(frames, drawn, cover.number, figures, _texts(document, project))
             ]

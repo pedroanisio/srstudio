@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 from . import checks
 from ._curves import progress
 from .errors import SrstudioError
+from .held_keys import held_key
 from .toon_cast import Layer, _eye, _mouth
 
 if TYPE_CHECKING:
@@ -197,20 +198,16 @@ class FaceTrack:
                     if layers != expected:
                         raise _fail('blend.endpoints', None, 'exact endpoint geometry of the bound rig')
                 verified.add(pair)
-            # The grid is anchored at performance zero, never at a shot/crop boundary.
-            times = sorted(
-                {
-                    blend.start,
-                    blend.end,
-                    *(
-                        round(i / self.fps, 6)
-                        for i in range(math.floor(blend.start * self.fps) + 1, math.ceil(blend.end * self.fps))
-                        if blend.start < round(i / self.fps, 6) < blend.end
-                    ),
-                }
-            )
+            # The grid is anchored at performance zero, never at a shot/crop boundary. Frame i's drawing is keyed
+            # half a frame before it and drawn at its own time, i / fps (ADR 0216).
+            shown = {blend.start: blend.start}
+            for i in range(math.floor(blend.start * self.fps), math.ceil(blend.end * self.fps) + 1):
+                key = held_key(i / self.fps, self.fps)
+                if blend.start < key and i / self.fps < blend.end:
+                    shown[key] = i / self.fps
+            times = [*sorted(shown), blend.end]
             for start, end in zip(times, times[1:], strict=False):
-                layers = blender.layers(blend.sample(start))
+                layers = blender.layers(blend.sample(shown[start]))
                 coordinates += _validate_layers(layers)
                 if coordinates > MAX_COORDINATES:
                     raise _fail('face.coordinates', coordinates, f'at most {MAX_COORDINATES}', 'face_blend.budget')

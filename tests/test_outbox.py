@@ -613,6 +613,23 @@ def test_the_command_stages_a_frozen_video_at_the_drawing_it_was_frozen_at(deliv
     assert "2 ready, 0 held back" in capsys.readouterr().out
 
 
+def test_the_command_finds_a_numbered_master_by_the_package_of_its_project(tmp_path, monkeypatch, capsys):
+    """A write-once master is published as ``<slug>-vN``; its package is packed from the project, named by the slug."""
+    renders = tmp_path / "renders"
+    renders.mkdir()
+    items = {"a-v2": Item(post("A"), tall(renders / "a-v2.mp4"))}
+    out = tmp_path / "ig"
+    publish(items, out, font=FONT, engine=engine())
+    package = tmp_path / "a-1.0.0.vpkg.zip"
+    package.write_bytes(b"PK\x05\x06" + b"\0" * 18)
+    publish_drive = command(monkeypatch, items)
+    monkeypatch.setattr(publish_drive.posts, "VIDEOS", {"a": "a-v2"})
+    assert publish_drive.packages_for(["a-v2"], [tmp_path]) == {"a-v2": package}
+    assert publish_drive.main([*where(out, tmp_path, tmp_path), "--stage-only"]) == 0
+    assert "1 ready, 0 held back" in capsys.readouterr().out
+    assert (tmp_path / "outbox" / "a-v2" / package.name).is_file()
+
+
 def test_the_command_stages_each_released_arm_beside_its_video(delivered, tmp_path, monkeypatch, capsys):
     items, out, _ = delivered
     args = [*where(out, tmp_path, tmp_path), "--stage-only"]

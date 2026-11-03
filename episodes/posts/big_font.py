@@ -32,7 +32,7 @@ RELEASE = Release(
         send_line="Tell your brother I can read that.",
     ),
     style="Collage",
-    video="big-font-v2",  # the keeper: the first master ran a caption under the bug at 16.20 s
+    video="big-font-v4",  # the keeper: v3 showed held changes a frame late on frames 136 and 154 (ADR 0216)
     parts={
         "collage-arm": 1,
         "collage-big-type": 1,

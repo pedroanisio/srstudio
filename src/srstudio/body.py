@@ -85,7 +85,7 @@ class BodyPlan:
             },
             'drawing': {
                 'styles': ['solid', 'wire'],
-                'sampling': 'held at fps on the original clock plus contact events',
+                'sampling': 'held at fps on the original clock plus contact events, keyed half a project frame early',
                 'max_frames': MAX_FRAMES,
                 'max_nodes': MAX_NODES,
                 'drawing_approval': None,

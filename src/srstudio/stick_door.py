@@ -21,6 +21,7 @@ from collections.abc import Sequence
 from . import _stick_scene_contracts as sc
 from . import checks, signature, stick_reel
 from .canvas import Canvas
+from .held_keys import held_key
 from .look import sheet
 from .registry import register
 from .stick import Face, Gradient, Look, RigKey, RigPose, StickDataError, _group, _seat, box, oval, paint, rig, shape
@@ -369,12 +370,29 @@ def jogger(cv: Canvas, parent, end: float, *, look: Look, face: Face, rate: floa
     return g
 
 
-def shaking(start: float, end: float, face: Face, *, rate: float = 12.0) -> list[RigKey]:
-    """The holding arm trembling from ``start`` to ``end``: :data:`HOLD`'s two tired poses, ``rate`` swaps a second."""
+def shaking(
+    start: float, end: float, face: Face, *, rate: float = 12.0, fps: int = 30, published: bool = False
+) -> list[RigKey]:
+    """The holding arm trembling from ``start`` to ``end``: :data:`HOLD`'s two tired poses, ``rate`` swaps a second.
+
+    The first pose holds from ``start``; each swap after it is keyed half a frame before the first frame of the
+    ``fps`` reel that shows it (ADR 0216), and a swap that no frame shows is left out. ``published`` keeps the
+    four-decimal swap times hold_the_door was published with, one swap in six of which lands after its frame at 12
+    a second."""
     if not end > start:
         raise StickDataError(f"a shaking arm runs some time, got {start} to {end}")
     count = math.ceil((end - start) * rate)
-    return [RigKey(round(start + i / rate, 4), "hold-a" if i % 2 == 0 else "hold-b", face) for i in range(count)]
+    if published:
+        return [RigKey(round(start + i / rate, 4), "hold-a" if i % 2 == 0 else "hold-b", face) for i in range(count)]
+    keys = [RigKey(start, "hold-a", face)]
+    for i in range(1, count):
+        at = max(start, held_key(start + i / rate, fps))
+        if at >= end:
+            break
+        if keys[-1].start >= at:
+            keys.pop()
+        keys.append(RigKey(at, "hold-a" if i % 2 == 0 else "hold-b", face))
+    return keys
 
 
 @register("prop", "stick-snow-cap", contract=sc.contract('stick-snow-cap'), tags=("snow", "winter", "weather"))

@@ -207,7 +207,7 @@ def project(
     root.mkdir(parents=True)
     shapes = '<shape id="bg" shape="rect" width="1200" height="2100" fill="#101010"/>'
     shapes += f'<shape id="k1" shape="rect" width="489" height="{bottom - 841}" fill="#ff0000"/>'
-    (root / "a-b.scene.xml").write_text(f'<scene><project duration="1"/>{shapes}</scene>')
+    (root / "a-b.scene.xml").write_text(f'<scene><project fps="24" duration="1"/>{shapes}</scene>')
     if record:
         figure_record.write(root, [Figure("toon-hamster", ("k1",))])
     common: dict = {"kind": "shape", "parent": None, "world_opacity": 1.0, "draw": True}
