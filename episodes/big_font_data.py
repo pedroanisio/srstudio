@@ -92,6 +92,7 @@ CAPTION_MIN = 0.92  # every card and every page up past the 0.84 s reading minim
 PAGE_MIN = 0.92
 FIRST = LINES[0].text
 LEAD = 1.3  # the read of the first line takes 0.96 s and the opening line needs 2.18 s up: he reads from here
+PUSH = 1.06  # the silent lead-in moves: the first shot pushes in across it, as a first line would (L7, arm b)
 BEATS, END = timed(
     LINES,
     (
@@ -108,9 +109,9 @@ BEATS, END = timed(
         (1.1, "gary", (5, 2, "He gets sad."), "sad", "frown", "down", "reveal:sad"),
         (0.55, "gary", "", "half", "flat", "hold", "reveal:own"),  # the hold: his phone comes up, away from her
         (0.95, "gary", "", "half", "flat", "free-right", "reveal:brent"),  # what he typed: his hand is the insert's
-        (1.2, "rosa", "", "half", "flat", "free"),  # the second hold: she types on
+        (1.2, "rosa", "", "half", "flat", "free", "zoom"),  # the second hold: she types on, and the camera lands on her
         (1.3, "rosa", (6, 0, LAST), "half", "smug", "free"),
-        (1.0, "gary", (6, 6, "that."), "wide", "flat", "hold"),  # the cut on "that", his thumbs stopped
+        (1.0, "gary", (6, 6, "that."), "wide", "flat", "hold", "sting"),  # the cut on "that", his thumbs stopped
     ),
     tail=TAIL,
 )
@@ -306,6 +307,7 @@ STAGING = Staging(
     dress=dress,
     cast=casting,
     bleed=True,
+    first_shot_push=PUSH,
     keep_signature=True,
     sounds=sounds,
     bitrate=BITRATE,
