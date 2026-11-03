@@ -24,7 +24,7 @@ import numpy as np
 
 from . import figure_record, framegraph
 from .figure_record import Figure
-from .frame_gates import FrameGateError, _duration, sample_times
+from .frame_gates import FrameGateError, _duration, _fps, sample_times
 from .framegraph import SOLID_OPACITY, Box, Drawing, Frame, FrameGraphError
 from .releases import Release
 from .social import Drift
@@ -313,7 +313,7 @@ def figure_defects(
             continue
         document = scene.read_bytes()
         try:
-            frames = framegraph.evaluate(engine, scene, sample_times(_duration(document)))
+            frames = framegraph.evaluate(engine, scene, sample_times(_duration(document), fps=_fps(document)))
             drift += [Drift(video, why) for why in _defects(frames, framegraph.drawings(document), figures)]
         except FrameGraphError as e:
             raise FrameGateError(f"{video}: {e}") from e

@@ -18,10 +18,11 @@ import json
 import re
 import xml.etree.ElementTree as ET
 from collections.abc import Iterable, Iterator, Mapping, Sequence
+from fractions import Fraction
 from pathlib import Path
 from typing import NamedTuple
 
-from . import breaks, framegraph
+from . import breaks, framegraph, held_keys
 from .framegraph import Drawing, Frame, FrameGraphError
 from .releases import Release
 from .social import DeliveryError, Drift
@@ -51,7 +52,6 @@ SAMPLE_EVERY = 0.5  # seconds between measured frames: a shot lasts longer than 
 MARK_SEEN = 0.75  # of a mark's box, on the frame and not behind anything, for that frame to count as showing it
 MIN_SHOWN = 0.5  # of the running time with both marks seen: "most". Why this number is in ADR 0073
 MARK_SCALE = 2.0  # frame pixels to a mask pixel: a mark is small
-_LAST = 0.05  # seconds before the end: inside a reel's last frame at any rate it renders at
 
 
 class FrameGateError(DeliveryError):
@@ -210,9 +210,25 @@ def _duration(document: bytes) -> float:
     return float(project.get("duration", ""))
 
 
-def sample_times(duration: float, every: float = SAMPLE_EVERY) -> list[float]:
-    """Every ``every`` seconds of a reel of ``duration`` seconds, from 0, and its end: the frame a reel closes on."""
-    return [*(i * every for i in range(int(duration / every) + 1) if i * every < duration - _LAST), duration - _LAST]
+def _fps(document: bytes) -> Fraction:
+    """The frame rate of the scene ``document``, exactly: the rate its frames are rendered at."""
+    project = _root(document).find("project")
+    try:
+        rate = Fraction(project.get("fps", "") if project is not None else "")
+    except (ValueError, ZeroDivisionError):
+        rate = Fraction(0)
+    if not 0 < rate <= held_keys.MAX_FPS:
+        raise FrameGateError("a scene with no frame rate has no frames to sample")
+    return rate
+
+
+def sample_times(duration: float, every: float = SAMPLE_EVERY, *, fps: int | Fraction) -> list[float]:
+    """The frame nearest every ``every`` seconds of a reel of ``duration`` seconds, from 0, and the reel's last frame,
+    which it closes on: each at the frame's own time, ``k / fps`` as the engine renders it (ADR 0216)."""
+    last = held_keys.frame_count(duration, fps) - 1
+    rate = float(Fraction(fps))
+    frames = sorted({*(min(round(i * every * rate), last) for i in range(int(duration / every) + 1)), last})
+    return [held_keys.frame_time(k, fps) for k in frames]
 
 
 def _seen(frame: Frame, index: int, drawn: Mapping[str, Drawing]) -> bool:
@@ -256,7 +272,7 @@ def signature_hidden(
             continue
         document = scene.read_bytes()
         try:
-            frames = framegraph.evaluate(engine, scene, sample_times(_duration(document)))
+            frames = framegraph.evaluate(engine, scene, sample_times(_duration(document), fps=_fps(document)))
             shown = signature_shown(frames, framegraph.drawings(document))
         except FrameGraphError as e:
             raise FrameGateError(f"{video}: {e}") from e

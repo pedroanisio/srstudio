@@ -1,12 +1,14 @@
 """Both signature marks are seen for most of a new reel's running time, measured on the engine's frames (ADR 0073)."""
 
 import json
+import math
 import stat
+from fractions import Fraction
 from pathlib import Path
 
 import pytest
 
-from srstudio import frame_gates
+from srstudio import frame_gates, held_keys
 from srstudio.frame_gates import FrameGateError, Shown, sample_times, signature_hidden, signature_shown
 from srstudio.framegraph import Drawing, Frame, Node
 from srstudio.releases import Release
@@ -60,9 +62,27 @@ def test_the_marks_need_not_be_seen_in_the_same_shot_for_each_count_but_both_cou
     assert signature_shown(frames, DRAWN) == Shown(2, 1, 1, 0)
 
 
-def test_the_samples_cover_the_reel_and_stay_inside_it():
-    assert sample_times(1.2) == [0.0, 0.5, 1.0, 1.15]
-    assert sample_times(1.0) == [0.0, 0.5, 0.95]
+def test_the_samples_cover_the_reel_and_close_on_its_last_frame():
+    assert sample_times(1.2, fps=24) == [0.0, 0.5, 1.0, 28 / 24]  # 1.2 s is 28.8 frames: the last is frame 28
+    assert sample_times(1.0, fps=30) == [0.0, 0.5, 29 / 30]
+    assert sample_times(27.083333333333332, fps=24)[-2:] == [27.0, 649 / 24]  # 650 frames, to a nanosecond
+
+
+@pytest.mark.parametrize("fps", [24, 30, Fraction(30000, 1001), 25])
+@pytest.mark.parametrize("duration", [0.01, 1.0, 2.5, 10.05, 27.083333333333332])
+def test_every_sample_is_a_frame_the_reel_renders(fps, duration):
+    """Each sample is the time of the frame shown then, ``k / fps`` as the engine divides it, and the last is the
+    reel's own last frame: a time between frames, or after the last, is never rendered."""
+    times = sample_times(duration, fps=fps)
+    last = math.ceil(Fraction(duration) * Fraction(fps) - Fraction(1, 10**9)) - 1
+    frames = [round(Fraction(t) * Fraction(fps)) for t in times]
+    assert times == [held_keys.frame_time(k, Fraction(fps)) for k in frames]
+    assert frames == sorted(set(frames)) and frames[0] == 0 and frames[-1] == last
+
+
+def test_the_samples_need_a_frame_rate():
+    with pytest.raises(held_keys.HeldKeyError, match="frame rate"):
+        sample_times(1.0, fps=0)
 
 
 def printed(*nodes: dict) -> str:
@@ -76,7 +96,7 @@ def project(tmp_path: Path, shown: bool) -> tuple[dict, Path, Path]:
     root.mkdir(parents=True)
     shapes = '<shape id="c1" shape="rect" width="9" height="9" fill="#00ff00"/>'
     shapes += '<shape id="s1" shape="rect" width="9" height="9" fill="#00ff00"/>'
-    (root / "a-b.scene.xml").write_text(f'<scene><project duration="1"/>{shapes}</scene>')
+    (root / "a-b.scene.xml").write_text(f'<scene><project fps="24" duration="1"/>{shapes}</scene>')
     common: dict = {"world_opacity": 1.0, "draw": True}
     cactus, code = {"world": [1, 0, 0, 1, 10, y], **common}, {"world": [1, 0, 0, 1, 50, y], **common}
     frames = printed(
@@ -116,6 +136,14 @@ def test_an_engine_that_cannot_measure_the_reel_refuses_it(tmp_path):
     releases, episodes, _ = project(tmp_path, shown=True)
     with pytest.raises(FrameGateError, match="The_Video: cannot run the engine"):
         signature_hidden(releases, episodes, {"a-b": "The_Video"}, tmp_path / "no-engine")
+
+
+@pytest.mark.parametrize("fps", ['', ' fps="0"', ' fps="fast"'])
+def test_a_scene_with_no_frame_rate_cannot_be_sampled(tmp_path, fps):
+    (tmp_path / "a-b").mkdir()
+    (tmp_path / "a-b" / "a-b.scene.xml").write_text(f'<scene><project duration="1"{fps}/></scene>')
+    with pytest.raises(FrameGateError, match="no frame rate"):
+        signature_hidden({"a-b": Release("a-b", POST)}, tmp_path, {"a-b": "a-b"}, "engine")
 
 
 def test_a_scene_with_no_duration_cannot_be_sampled(tmp_path):

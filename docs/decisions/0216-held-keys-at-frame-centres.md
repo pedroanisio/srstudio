@@ -132,8 +132,21 @@ from the 2-microsecond probe of the table above, both checked with `eval`:
 A `did-you-pack` rebuilt with `held_frames=False`, byte-identical to the published scene, is refused with "held keys:
 4 held changes show a frame late, on frames 34, 40"; rebuilt with `held_frames=True`, it passes.
 
+## Frame-gate samples are frames the reel renders
+
+`frame_gates.sample_times` closed on `duration - 0.05`, an instant no frame is rendered at: a 27.0833 s reel at
+24 fps renders its last frame at 649 / 24 = 27.0417 s, and the gates judged 27.0333 s. Each sample is now a frame's
+own time `k / fps`: the frame nearest each step from 0 (half a second for the frame gates), and the reel's last frame,
+`held_keys.frame_count(duration, fps) - 1`, which it closes on. The signature, figure, body and show gates and
+`text_rules`' timing scan pass the scene's own rate; a scene with no rate has no frames to sample and is a
+`FrameGateError`.
+
+Run over the 186 delivered reels with a scene, the timing, signature, figure, body and show gates give every reel the
+same verdict with the old closing sample and the new one, so no published reel's gate result changes.
+
 ## Consequences
 
 New body, face-blend, named-gaze and shaking drawings, and every held key of a canvas built with `held_frames`,
 show each frame its own state, on the composition clock and under a clock offset. Delivered reels keep their stalls,
-because their scenes are frozen. A gate that reads frames through `framegraph.evaluate` sees what the render shows.
+because their scenes are frozen; a first delivery with one is refused. A gate that reads frames through
+`framegraph.evaluate` sees what the render shows.
