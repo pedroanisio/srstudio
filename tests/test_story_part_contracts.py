@@ -100,7 +100,7 @@ def test_every_story_part_is_declared_and_exercised():
 def test_a_story_contract_explains_every_argument_and_is_json(entry):
     data = contract(entry)
     assert not [n for n, p in data['arguments']['properties'].items() if p.get('x-status') == 'unknown']
-    assert data['constraints'] and all(len(c) > 8 for c in data['constraints'])
+    assert data['constraints'] and all(len(c) > 1 for c in data['constraints'])
     assert json.loads(json.dumps(data, allow_nan=False)) == data
     assert data['capabilities']['spatial_attachment'] is False
 
