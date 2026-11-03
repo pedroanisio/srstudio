@@ -334,7 +334,7 @@ _CONTRACTS: dict[str, PartContract] = {
         ('start', PARENT_START),
         ('end', PARENT_END),
         clock='composition',
-        constraints=('swinging sways the rotation about the knot over 0<=start<end. No font.'),
+        constraints=('swinging sways the rotation about the knot over 0<=start<end. No font.',),
     ),
     'toon-lanyard': group(
         ('at', point('The top middle of the card.')),
