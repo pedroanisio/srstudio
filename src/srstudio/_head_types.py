@@ -196,6 +196,11 @@ def limit(style: HeadStyle, name: str) -> float:
     }[name]
 
 
+def _within(channel: Channel, bounds: tuple[float, float], allowed: float) -> bool:
+    """Whether ``channel``, whose response spans ``bounds``, keys included, stays inside ``+/-allowed``."""
+    return _finite(*bounds) and max(abs(v) for v in (*bounds, *(v for _, v in channel.keys))) <= allowed + 1e-6
+
+
 @dataclass(frozen=True)
 class HeadPlan:
     """Everything a head does in a shot. ``lean`` turns the body about the seat, ``turn`` and ``roll`` the head about
@@ -292,7 +297,7 @@ class HeadPlan:
                 channel = Channel(((0.0, held),))
             allowed = limit(style, name)
             bounds = _channel_bounds(channel)
-            if not _finite(*bounds) or max(abs(v) for v in (*bounds, *(v for _, v in channel.keys))) > allowed + 1e-6:
+            if not _within(channel, bounds, allowed):
                 raise HeadMotionError(
                     f'{name}: curve response bound {bounds} exceeds style bound +/-{allowed:g}; '
                     'reduce the excursion or adjust curve/timing (for springs, increase damping)',
