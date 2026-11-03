@@ -36,12 +36,21 @@ REMOTE = "gdrive:srstudio/ready-to-publish"
 PACKAGE_OF = {"honesty-interview-recreated": "honesty-interview", "Printer_Recreation": "printer-recreation"}
 
 
+def package_name(name: str) -> str:
+    """The name a video's package is shipped under: a received one's from PACKAGE_OF, an original's its project slug,
+    which a write-once master (``<slug>-v2``) does not share with its video."""
+    if name in PACKAGE_OF:
+        return PACKAGE_OF[name]
+    slug_of = {video: slug for slug, video in posts.VIDEOS.items()}
+    return slug_of.get(name, name)
+
+
 def packages_for(names, folders) -> dict[str, Path]:
     """The latest package of every published video that has one, from the first of ``folders`` that holds it."""
     found = {}
     for name in names:
         for folder in folders:
-            path = outbox.latest_package(folder, PACKAGE_OF.get(name, name))
+            path = outbox.latest_package(folder, package_name(name))
             if path is not None:
                 found[name] = path
                 break
