@@ -595,7 +595,7 @@ POSES: dict[str, Pose] = {
     )
 }
 # Poses added after the cast was approved. An approved drawing walks only the others, so a new pose moves no digest.
-POSES_SINCE_APPROVAL = frozenset({"floor", "phone-a", "phone-b"})
+POSES_SINCE_APPROVAL = frozenset({"floor", "phone-a", "phone-b", "sit-show", "sit-back", "hug"})
 
 
 # -- faces ------------------------------------------------------------------------------------------------
