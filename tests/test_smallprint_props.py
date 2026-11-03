@@ -161,6 +161,9 @@ def test_a_tear_plate_turns_with_his_head_and_holds_his_own_body():
         (lambda: sp.onion(clay.Model(), "diced-up"), "onion's states"),
         (lambda: sp.roll(clay.Model(), "unrolled"), "one state"),
         (lambda: sp.tears(clay.Model(), "sobbing"), "one state"),
+        (lambda: sp.phone(clay.Model(), "ringing"), "phone's states"),
+        (lambda: sp.bowl(clay.Model(), "dry"), "bowl's states"),
+        (lambda: sp.wall(clay.Model(), "fog"), "wall's states"),
         (lambda: sp.draw(clay.Model(), "rafa-mug", "x"), "worktop props"),
         (lambda: sp.worktop("smallprint-roll", "roll", "garage"), "his rooms"),
         (lambda: sp._skin_z(400.0, 0.0), "no skin"),
@@ -185,3 +188,79 @@ def test_the_catalog_shows_each_part_from_its_own_plate_and_nothing_for_another_
     (tears,) = sp.part_plates("smallprint-tears")
     assert plates.digest(tears) == plates.digest(sp.tear_plate(0.0, 0.0))
     assert sp.part_plates("rafa-mug") == ()
+
+
+def materials_of(plate) -> dict[str, np.ndarray]:
+    rows: dict[str, list[np.ndarray]] = {}
+    for item in plate.placed:
+        for mesh in item.meshes:
+            rows.setdefault(mesh.material, []).append(mesh.vertices)
+    return {name: np.concatenate(v) for name, v in rows.items()}
+
+
+def test_the_phone_shows_a_red_dot_while_it_records_and_the_take_while_it_plays():
+    def made(state):
+        m = clay.Model()
+        sp.phone(m, state)
+        return {mesh.material: mesh for mesh in m.meshes()}
+
+    recording, playing = made("recording"), made("playing")
+    assert "red" in recording and "mint" not in recording
+    assert "mint" in playing and "red" not in playing
+    bars = playing["mint"].vertices
+    assert np.ptp(bars[:, 0]) > 18.0 and np.ptp(bars[:, 1]) > 15.0, "a row of bars across the screen, of many heights"
+    screen = recording["screen"].vertices
+    for mark in (recording["red"], playing["mint"]):
+        assert mark.vertices[:, 2].max() < screen[:, 2].min(), "the marks sit on the screen's face, to the lens"
+
+
+def test_the_soaking_hand_is_under_the_water_inside_the_bowl_and_the_wrinkled_one_is_out_with_ridged_tips():
+    x, y, z, _, _ = sp.PLACES["smallprint-bowl"]
+    soaking = materials_of(sp.worktop("smallprint-bowl", "soaking"))
+    water_top = soaking["water"][:, 1].min()
+    hand = soaking["flesh"]
+    assert (hand[:, 1] > water_top).all(), "every bit of his hand is under the water's surface"
+    assert (np.hypot(hand[:, 0] - x, hand[:, 2] - z) < 30.0).all(), "and inside the bowl's rim"
+    assert "lip" not in soaking
+    wrinkled = materials_of(sp.worktop("smallprint-bowl", "wrinkled"))
+    out = wrinkled["flesh"]
+    assert (np.hypot(out[:, 0] - x, out[:, 2] - z) > 30.0).all(), "out of the bowl, on the worktop"
+    ridges = wrinkled["lip"]
+    assert abs(ridges[:, 0].mean() - out[:, 0].mean()) < 15.0 and ridges[:, 1].max() <= y
+    m = clay.Model()
+    sp.wrinkles(m, 0.0, 0.0, 0.0)
+    assert len(m.meshes()) == 1 and len(m.meshes()[0].vertices) % 15 == 0, "three ridges on each of five tips"
+
+
+def test_his_hand_moves_only_for_the_states_that_say_so():
+    for (prop, state), (kind, _) in sp.HANDS.items():
+        assert state in sp.STATES[prop] and kind in ("dip", "wrinkled")
+    a, b = (materials_of(sp.worktop("smallprint-phone", state))["flesh"] for state in sp.PHONE_STATES)
+    np.testing.assert_array_equal(a, b)
+    c, d = (materials_of(sp.worktop("smallprint-bowl", state))["flesh"] for state in sp.BOWL_STATES)
+    assert c.shape != d.shape or not np.allclose(c, d)
+
+
+def test_on_snow_the_land_goes_white_and_the_wall_stays_as_it_was():
+    def made(state):
+        m = clay.Model()
+        sp.wall(m, state)
+        return {mesh.material: mesh.vertices for mesh in m.meshes()}
+
+    land, snow = made("land"), made("snow")
+    assert "snow" not in land and "snow" in snow
+    np.testing.assert_array_equal(land["wallstone"], snow["wallstone"])
+    assert snow["wallstone"][:, 1].min() < snow["snow"][:, 1].min(), "the wall stands up out of the snow"
+    stone, ground = (sp.materials()[name].color for name in ("wallstone", "land"))
+    assert _contrast(stone, ground) < 1.3, "on bare land the wall is the land's own colour"
+    assert _contrast(stone, sp.materials()["snow"].color) > 1.8, "on snow it stands out"
+
+
+def _contrast(a: str, b: str) -> float:
+    def lum(colour: str) -> float:
+        rgb = [int(colour[i : i + 2], 16) / 255 for i in (1, 3, 5)]
+        lin = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in rgb]
+        return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]
+
+    hi, lo = sorted((lum(a), lum(b)), reverse=True)
+    return (hi + 0.05) / (lo + 0.05)

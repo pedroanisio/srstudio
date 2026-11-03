@@ -397,3 +397,96 @@ def test_the_show_hands_its_held_frames_to_the_staging(monkeypatch, tmp_path, he
     env = {"SRSTUDIO_ENGINE": "e", "SRSTUDIO_RENDERS": str(tmp_path), "SRSTUDIO_FONTS": str(tmp_path)}
     sp.run(replace(SHOW, held_frames=held_frames), ["show", str(tmp_path), "--init"], env)
     assert seen[0].held_frames is held_frames
+
+
+def panel_root(name: str, first: float = 1.0, last: float = 8.0) -> ET.Element:
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="30", duration=last + 1.0)
+    cv = Canvas(scene, font_asset="fraunces")
+    sp.PANELS[name](cv, cv.group(cv.comp, "panel", start=first, end=last), first, last, lambda t, s: 0.52 * s * len(t))
+    return ET.fromstring(scene.to_bytes(layout="pretty"))
+
+
+def groups(root: ET.Element, prefix: str) -> list[ET.Element]:
+    return [g for g in root.iter() if (g.get("id") or "").startswith(prefix)]
+
+
+def keyed(group: ET.Element, prop: str) -> list[tuple[float, float]]:
+    return [(float(k.get("time")), float(k.get("value"))) for a in group if a.get("property") == prop for k in a]
+
+
+def laps(group: ET.Element) -> list[float]:
+    """The seconds between a travelling group's returns to its start: one per lap it runs."""
+    rows = keyed(group, "x")
+    starts = [t for (t, v), (_, before) in zip(rows[1:], rows, strict=False) if v < before]
+    return [b - a for a, b in zip(starts, starts[1:], strict=False)]
+
+
+def test_through_the_skull_the_voice_travels_in_bigger_slower_pulses_than_through_the_air():
+    root = panel_root("voice-routes")
+    air, bone = groups(root, "sp-air"), groups(root, "sp-bone")
+    assert air and bone
+    width = lambda g: float(next(e for e in g if e.get("shape") == "ellipse").get("width"))  # noqa: E731
+    assert min(map(width, bone)) > 1.5 * max(map(width, air)), "the low end is the big dot"
+    for dots in (air, bone):
+        assert max(t for g in dots for t, _ in keyed(g, "x")) >= 7.0, "they keep coming while the page is up"
+    lap = lambda g: keyed(g, "x")[8][0] - keyed(g, "x")[0][0]  # noqa: E731
+    assert lap(bone[0]) > lap(air[0])
+
+
+def test_what_you_hear_swells_deeper_than_what_a_phone_hears():
+    root = panel_root("voice-air")
+    waves = groups(root, "sp-wave")
+    assert len(waves) == 2
+
+    def swing(g):
+        d = next(e for e in g if e.get("shape") == "path").get("path")
+        ys = [float(part.split()[1]) for part in d[1:].split(" L")]
+        return max(ys) - min(ys)
+
+    yours, phone = map(swing, waves)
+    assert yours > 2.0 * phone, "the skull's deep swell is under your own voice and not under the phone's"
+    words = " ".join(t.get("text") or "" for t in root.iter() if t.tag.endswith("text"))
+    assert "what you hear" in words and "what a phone hears" in words
+
+
+def test_the_vessels_narrow_and_only_then_the_skin_folds_over_a_tip_that_shrinks():
+    root = panel_root("finger-nerves")
+    vessels = groups(root, "sp-vessel")
+    assert len(vessels) == 2
+    narrowed = [keyed(v, "scaleX") for v in vessels]
+    assert all(rows[-1][1] < 0.5 and rows[0][1] == 1.0 for rows in narrowed)
+    begins = min(t for rows in narrowed for (t, v), (_, w) in zip(rows, rows[1:], strict=False) if w < v)
+    (ridges,) = groups(root, "sp-ridges")
+    shows = min(t for t, v in keyed(ridges, "opacity") if v > 0.0)
+    assert shows > begins, "the ridges follow the squeeze"
+    (tip,) = groups(root, "sp-tip")
+    assert ridges in list(tip), "the ridges lie on the tip and shrink with it"
+    assert keyed(tip, "scaleX")[-1][1] < 1.0
+
+
+def test_in_2013_wrinkled_fingers_finish_first_and_in_2014_they_keep_level():
+    marbles = groups(panel_root("wet-grip", 1.0, 12.0), "sp-marble")
+    assert len(marbles) == 4
+    wrinkled13, smooth13, wrinkled14, smooth14 = (laps(g)[0] for g in marbles)
+    assert wrinkled13 == pytest.approx(smooth13 * (1 - sp.GRIP_GAP), abs=0.02), "12 per cent less time (2013)"
+    assert wrinkled14 == pytest.approx(smooth14), "no difference (2014)"
+
+
+@pytest.mark.parametrize("name", ["wall-orbit", "wall-colour"])
+def test_the_wall_is_drawn_in_nearly_the_land_s_own_colour(name):
+    root = panel_root(name)
+    strokes = {e.get("stroke") for e in root.iter() if e.get("shape") == "path"}
+    fills = {e.get("fill") for e in root.iter()}
+    assert sp.WALLSTONE in strokes and sp.LAND in fills
+    assert _contrast(sp.WALLSTONE, sp.LAND) < 1.3
+
+
+def test_the_station_goes_round_while_the_page_is_up():
+    (station,) = groups(panel_root("wall-orbit"), "sp-station")
+    assert len(laps(station)) >= 1 and max(t for t, _ in keyed(station, "x")) >= 7.0
+
+
+def _contrast(a: str, b: str) -> float:
+    hi, lo = sorted((_luminance(a), _luminance(b)), reverse=True)
+    return (hi + 0.05) / (lo + 0.05)

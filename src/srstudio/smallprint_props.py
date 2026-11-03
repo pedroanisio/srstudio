@@ -28,20 +28,25 @@ from .registry import register
 
 __all__ = [
     "GRIPS",
+    "HANDS",
     "PLACES",
     "STATES",
     "PropError",
+    "bowl",
     "draw",
     "finished",
     "materials",
     "onion",
     "paper",
     "part_plates",
+    "phone",
     "roll",
     "tear_plate",
     "tears",
     "tower",
+    "wall",
     "worktop",
+    "wrinkles",
 ]
 
 _CLAY_TILE = 70.0  # rafa's clay tile, so a new prop carries the same thumb marks at the same size
@@ -53,6 +58,12 @@ OWN = {  # what is new in his world: name, colour, roughness, metallic, clay-fin
     "onionflesh": ("#F0E5C6", 0.42, 0.0, True),
     "board": ("#D7B183", 0.6, 0.0, True),
     "tear": ("#BFE2F0", 0.03, 0.0, False),
+    "bowl": ("#E9DCC4", 0.45, 0.0, True),
+    "water": ("#8CC7DD", 0.18, 0.0, False),
+    "marble": ("#4F86A8", 0.08, 0.0, False),
+    "land": ("#C9A97C", 0.62, 0.0, True),
+    "wallstone": ("#B99C72", 0.62, 0.0, True),
+    "snow": ("#F6F4EE", 0.5, 0.0, True),
 }
 
 
@@ -245,6 +256,122 @@ def onion(m: Model, state: str = "whole-up") -> None:
     m.box("black", (40.0, spine - 3.0, -6.0), (16.0, 5.0, 4.0), 2.0)
 
 
+# -- the phone ---------------------------------------------------------------------------------------------------------
+PHONE_STATES = ("recording", "playing")
+_WAVE = (5.0, 9.0, 14.0, 8.0, 17.0, 11.0, 6.0, 13.0, 9.0)  # the playback's bars, tallest in the middle of the take
+
+
+@register(
+    "prop",
+    "smallprint-phone",
+    summary="A phone standing on the worktop, its screen to the lens, recording or playing a take back",
+    contract=_contract(
+        "smallprint-phone",
+        PHONE_STATES,
+        "recording shows a red dot on the screen; playing shows the take as a row of bars. No brand, no lettering.",
+    ),
+)
+def phone(m: Model, state: str = "recording") -> None:
+    """A plain phone upright in a little stand, its screen to the lens: a red dot while it records, the take as a row
+    of bars while it plays back. Nothing on it is lettered or branded."""
+    if state not in PHONE_STATES:
+        raise PropError(f"the phone's states are {PHONE_STATES}, got {state!r}")
+    m.box("cream", (0.0, -3.0, 4.0), (30.0, 6.0, 18.0), 2.0)
+    m.box("case", (0.0, -34.0, 0.0), (28.0, 56.0, 3.6), 3.5)
+    m.box("screen", (0.0, -34.0, -1.9), (24.5, 50.0, 0.4), 2.5)
+    if state == "recording":
+        m.ell("red", (0.0, -36.0, -2.6), (6.0, 6.0, 0.4))
+        m.box("white", (0.0, -50.0, -2.3), (12.0, 1.6, 0.3), 0.3)
+    else:
+        for k, tall in enumerate(_WAVE):
+            m.box("mint", (-10.0 + k * 2.5, -36.0, -2.45), (1.4, tall * 1.2, 0.4), 0.3)
+
+
+# -- the bowl of water -----------------------------------------------------------------------------------------------
+BOWL_STATES = ("soaking", "wrinkled")
+BOWL_RIM = 20.0  # how high the bowl's rim stands over the worktop
+_MARBLES = ((-10.0, 6.0), (2.0, 10.0), (11.0, -2.0), (-4.0, -8.0))  # x, z inside the bowl
+
+
+@register(
+    "prop",
+    "smallprint-bowl",
+    summary="A bowl of water with marbles in it, his fingers soaking in it or out of it, wrinkled",
+    contract=_contract(
+        "smallprint-bowl",
+        BOWL_STATES,
+        "soaking puts his hand in the water, hidden under its surface; wrinkled has it out on the worktop, its "
+        "fingertips ridged (wrinkles) and two drops beside it.",
+    ),
+)
+def bowl(m: Model, state: str = "soaking") -> None:
+    """A clay bowl filled near its rim with water and a few marbles; out of the water, on ``wrinkled``, two drops on the
+    worktop where his hand came out. Where his hand is, :func:`worktop` decides (:data:`HANDS`)."""
+    if state not in BOWL_STATES:
+        raise PropError(f"the bowl's states are {BOWL_STATES}, got {state!r}")
+    m.lid("bowl", (0.0, -BOWL_RIM, 0.0), (30.0, BOWL_RIM, 30.0), 0.5, lower=True)
+    m.ell("bowl", (0.0, -BOWL_RIM, 0.0), (31.5, 1.8, 31.5))  # its rim
+    m.ell("water", (0.0, -BOWL_RIM - 1.3, 0.0), (28.5, 1.0, 28.5))  # its top just over the rim's, as the bowl is full
+    for x, z in _MARBLES:
+        m.ell("marble", (x, -BOWL_RIM - 1.6, z), (3.4, 3.4, 3.4))
+    if state == "wrinkled":
+        for x, z in ((36.0, 2.0), (42.0, 8.0)):
+            m.ell("water", (x, -0.4, z), (2.6, 0.6, 2.2))
+
+
+def wrinkles(m: Model, x: float, y: float, z: float) -> None:
+    """Ridges across the tips of :func:`srstudio.rafa.rest`'s hand at ``x, y, z``: three over each finger's tip and
+    three over the thumb's, lying on the skin's top where the lens sees them. His hand is his own drawing; this lies on
+    it, as the tears lie on his face."""
+    tips = [(x + 10 - i * 6.4 - 2, y - 3.2, z - 10 + abs(i - 1.3) * 2.1, 3.1) for i in range(4)]
+    tips.append((x - 22, y - 3.5, z - 3, 3.5))
+    for tx, ty, tz, r in tips:
+        for dz in (-1.4, 0.0, 1.4):
+            arc = [(tx + r * math.cos(a), ty - r * math.sin(a) - 0.15, tz + dz) for a in np.linspace(0.35, 2.8, 7)]
+            m.tube("lip", arc, 0.6, n=10, sides=8)
+
+
+# -- the model wall --------------------------------------------------------------------------------------------------
+WALL_STATES = ("land", "snow")
+_WALL_RUN = ((-38.0, 10.0), (-24.0, -4.0), (-8.0, 2.0), (6.0, -10.0), (22.0, -2.0), (36.0, -14.0))  # x, z of its bends
+
+
+@register(
+    "prop",
+    "smallprint-wall",
+    summary="A model of a long wall snaking over hills, the same colour as its land, or standing out on fresh snow",
+    contract=_contract(
+        "smallprint-wall",
+        WALL_STATES,
+        "land: the wall and its hills in two near-identical earth tones; snow: the same, the land under snow.",
+    ),
+)
+def wall(m: Model, state: str = "land") -> None:
+    """A board of rolling land with a crenellated wall snaking across it and two watchtowers, both of the same earth,
+    so it is hard to pick out; on ``snow`` the land lies under snow and the wall stands out dark. No one place's
+    landmark is copied: a long wall over hills."""
+    if state not in WALL_STATES:
+        raise PropError(f"the wall's states are {WALL_STATES}, got {state!r}")
+    ground = "snow" if state == "snow" else "land"
+    m.box("land", (0.0, -2.0, 0.0), (96.0, 4.0, 52.0), 1.6)
+    for x, z, w, h in ((-26.0, 12.0, 30.0, 7.0), (14.0, 14.0, 36.0, 9.0), (34.0, -12.0, 22.0, 5.0)):
+        m.ell(ground, (x, -3.0, z), (w / 2, h, 9.0))
+    if state == "snow":
+        m.box("snow", (0.0, -4.2, 0.0), (95.0, 0.6, 51.0), 0.3)
+    for (ax, az), (bx, bz) in zip(_WALL_RUN, _WALL_RUN[1:], strict=False):
+        run = math.hypot(bx - ax, bz - az)
+        yaw = math.degrees(math.atan2(bz - az, bx - ax))
+
+        def course(s: Model, run: float = run) -> None:
+            s.box("wallstone", (0.0, -4.0, 0.0), (run + 2.0, 8.0, 3.2), 0.4)
+            for k in range(int(run // 3.5)):
+                s.box("wallstone", (-run / 2 + 1.75 + k * 3.5, -9.0, 0.0), (1.8, 2.0, 3.2), 0.2)
+
+        _turned(m, course, _spin(0.0, -yaw), ((ax + bx) / 2, -4.0, (az + bz) / 2))
+    for x, z in (_WALL_RUN[1], _WALL_RUN[4]):
+        m.box("wallstone", (x, -10.0, z), (7.0, 12.0, 7.0), 0.6)
+
+
 def fist(m: Model, x: float, y: float, z: float) -> None:
     """His frame-right hand closed round a handle that lies across the lens: :func:`srstudio.rafa.hold` turned on its
     side, so the hand is his own drawing."""
@@ -310,24 +437,40 @@ STATES: dict[str, tuple[str, ...]] = {
     "smallprint-paper": PAPER_STATES,
     "smallprint-roll": ("roll",),
     "smallprint-onion": ONION_STATES,
+    "smallprint-phone": PHONE_STATES,
+    "smallprint-bowl": BOWL_STATES,
+    "smallprint-wall": WALL_STATES,
 }
 _DRAW: dict[str, Callable[..., None]] = {
     "smallprint-tower": tower,
     "smallprint-paper": paper,
     "smallprint-roll": roll,
     "smallprint-onion": onion,
+    "smallprint-phone": phone,
+    "smallprint-bowl": bowl,
+    "smallprint-wall": wall,
 }
 PLACES: dict[str, tuple[float, float, float, float, float]] = {  # x, y, z, yaw, scale on the worktop
     "smallprint-tower": (-62.0, -248.0, -80.0, -10.0, 1.4),  # at his right, clear of his face and mouth
     "smallprint-paper": (40.0, -248.0, -80.0, -12.0, 1.6),
     "smallprint-roll": (34.0, -248.0, -80.0, -6.0, 1.0),
     "smallprint-onion": (30.0, -248.0, -78.0, -6.0, 1.0),
+    "smallprint-phone": (-60.0, -248.0, -84.0, -14.0, 1.0),  # at his right, clear of his chin
+    "smallprint-bowl": (16.0, -248.0, -80.0, 0.0, 1.0),
+    "smallprint-wall": (2.0, -248.0, -70.0, -8.0, 1.0),
 }
 GRIPS: dict[str, tuple[str, tuple[float, float, float]]] = {  # his hand: a kind, and where (the knife's moves)
     "smallprint-tower": ("rest", (82.0, -248.0, -70.0)),
     "smallprint-paper": ("rest", (80.0, -248.0, -70.0)),
     "smallprint-roll": ("rest", (80.0, -248.0, -74.0)),
     "smallprint-onion": ("fist", (78.0, -252.0, -84.0)),
+    "smallprint-phone": ("rest", (34.0, -248.0, -78.0)),
+    "smallprint-bowl": ("rest", (72.0, -248.0, -70.0)),
+    "smallprint-wall": ("rest", (80.0, -248.0, -72.0)),
+}
+HANDS: dict[tuple[str, str], tuple[str, tuple[float, float, float]]] = {  # a state that moves his hand: kind, where
+    ("smallprint-bowl", "soaking"): ("dip", (21.0, -256.0, -86.0)),  # in the water, under its surface
+    ("smallprint-bowl", "wrinkled"): ("wrinkled", (72.0, -248.0, -70.0)),
 }
 
 
@@ -348,14 +491,19 @@ def worktop(prop: str, state: str, where: str = "rafa-kitchen") -> Plate:
     x, y, z, yaw, scale = PLACES.get(prop, (0.0, 0.0, 0.0, 0.0, 1.0))
     with model.at(x, y, z, yaw=yaw, scale=scale):
         draw(model, prop, state)
-    kind, (hx, hy, hz) = GRIPS[prop]
+    kind, (hx, hy, hz) = HANDS.get((prop, state), GRIPS[prop])
     if kind == "fist":  # the knife rides up and down, and his fist with it
         hy = y - KNIFE_LIFT[state.split("-")[1]] - 4.0
         rafa.reach(model, (hx + 12.0, hy + 2.0, hz + 20.0))
         fist(model, hx, hy, hz)
+    elif kind == "dip":  # his forearm over the rim, the hand under the water
+        rafa.reach(model, (hx + 14.0, y - BOWL_RIM - 3.0, hz + 18.0))
+        rafa.rest(model, hx, hy, hz)
     else:
         rafa.reach(model, (hx + 5.0, hy - 9.0, hz + 22.0))
         rafa.rest(model, hx, hy, hz)
+        if kind == "wrinkled":
+            wrinkles(model, hx, hy, hz)
     rafa.near(model, where)
     meshes = tuple(finished(mesh) for mesh in model.meshes())
     lights = plates.stage_lights(warm=True, room=False, rim=True)  # as rafa_host.foreground lights his worktop

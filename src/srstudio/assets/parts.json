@@ -15864,6 +15864,57 @@
           "rig": null
         }
       ]
+    },
+    "smallprint-phone": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-03",
+          "note": "A phone on a stand on his worktop, its screen recording with a red dot or playing the take back as bars, as replacement plates. First drawn for Small Print's voice-recording question.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5af0e8d61db990de58b1f00bc8006de35e7b474db4963fac687689f8dc81a9c5",
+          "rig": null
+        }
+      ]
+    },
+    "smallprint-bowl": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-03",
+          "note": "A bowl of water and marbles on his worktop with his hand soaking in it, or out with wrinkled fingertips and drips, as replacement plates; his own rig is not changed. First drawn for Small Print's wrinkly-fingers question.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "904993f4e9fac47670a3a251f03690fe927131b826b09f612acaf42adceaf1da",
+          "rig": null
+        }
+      ]
+    },
+    "smallprint-wall": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-03",
+          "note": "A model of a crenellated wall with two towers running over hills of the same earth colour, on bare land or under snow, as replacement plates on his worktop. First drawn for Small Print's great-wall-space question.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "60402541a487652e69b6f624dd9655d9537a8360cd5c86a7117ba5d53ba4b4ea",
+          "rig": null
+        }
+      ]
     }
   }
 }

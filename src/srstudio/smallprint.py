@@ -24,6 +24,8 @@ from functools import cached_property, lru_cache, partial
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+
 from . import (
     camera,
     host_kit,
@@ -41,6 +43,7 @@ from . import (
     toon,
 )
 from . import foley as synth
+from . import smallprint_kit as kit
 from .fonts import text_width
 from .head_motion import HeadPlan
 from .layout import VERTICAL
@@ -708,6 +711,207 @@ def _knife(cv, g, edge: str, top: float, drops: int, first: float, last: float) 
         cv.keys(dot, "y", [key for at in starts for key in ((at, 0.0), (at + fall, 90.0))], hold=False, local=False)
 
 
+# -- batch 2: the voice, the fingers, the wall ------------------------------------------------------------------------
+SKIN, NAIL, NERVE, BLOOD, AIR = "#E9B48F", "#F6DCC8", "#E0AD49", "#C0473A", "#6FB7DA"
+LAND, WALLSTONE = "#C9A97C", "#B99C72"  # the model wall's two earths (smallprint_props), drawn flat on the page
+
+
+def _sawtooth(first: float, last: float, period: float, start: float, end: float) -> list[tuple[float, float]]:
+    """Keys that run a value from ``start`` to ``end`` over every ``period`` while the panel is up, and jump back."""
+    rows, t = [], first
+    while t < last:
+        rows += [(t, start), (t + period - 0.01, end), (t + period, start)]
+        t += period
+    return rows
+
+
+def _along(
+    cv,
+    g,
+    name: str,
+    points: Sequence[tuple[float, float]],
+    first: float,
+    last: float,
+    period: float,
+    radius: float,
+    fill: str,
+    count: int,
+) -> None:
+    """``count`` dots travelling the polyline ``points`` one after another, a lap every ``period`` seconds."""
+    pts = np.asarray(points, float)
+    steps = np.r_[0.0, np.cumsum(np.hypot(*np.diff(pts, axis=0).T))]
+    for k in range(count):
+        dot = cv.group(g, cv.uid(name), x=0.0, y=0.0)
+        cv.ellipse(dot, -radius, -radius, 2 * radius, 2 * radius, fill, stroke=INK, sw=3.0)
+        xs, ys, t = [], [], first - k * period / count
+        while t < last:
+            for u in np.linspace(0.0, 1.0, 9):
+                at = t + u * period
+                if first <= at <= last:
+                    x = float(np.interp(u * steps[-1], steps, pts[:, 0]))
+                    y = float(np.interp(u * steps[-1], steps, pts[:, 1]))
+                    xs.append((round(at, 4), x))
+                    ys.append((round(at, 4), y))
+            t += period
+        cv.keys(dot, "x", xs or [(first, float(pts[0, 0]))], hold=False, local=False)
+        cv.keys(dot, "y", ys or [(first, float(pts[0, 1]))], hold=False, local=False)
+
+
+def _wave(x0: float, x1: float, y: float, parts: Sequence[tuple[float, float]]) -> str:
+    """A path from ``x0`` to ``x1`` about ``y``: the sum of sines, each (amplitude, wavelength) in pixels."""
+    xs = np.arange(x0, x1 + 1.0, 6.0)
+    ys = np.full_like(xs, y)
+    for a, w in parts:
+        ys += a * np.sin(2 * math.pi * (xs - x0) / w)
+    return "M" + " L".join(f"{x:.0f} {v:.1f}" for x, v in zip(xs, ys, strict=True))
+
+
+def _head(cv, g) -> tuple[float, float]:
+    """A head in profile facing frame right, its ear and the spiral of the inner ear; returns the inner ear's centre."""
+    cv.path(
+        g,
+        "M300 860 C200 820 150 700 160 560 C170 380 300 270 460 270 C600 270 690 360 700 470 L760 560 L700 590 "
+        "L712 640 L690 690 L700 760 C640 800 560 800 520 800 L520 900 Z",
+        fill=NAIL,
+        stroke=INK,
+        sw=6.0,
+    )
+    cv.line(g, 664, 664, 704, 664, INK, 5.0)  # the lips' parting
+    cv.path(g, "M340 520 C300 500 290 600 330 620 C350 630 360 600 350 590", fill=SKIN, stroke=INK, sw=5.0)
+    cx, cy = 420.0, 560.0
+    spiral = "M" + " L".join(
+        f"{cx + (4 + 3.2 * a) * math.cos(a):.1f} {cy + (4 + 3.2 * a) * math.sin(a):.1f}" for a in np.linspace(0, 12, 60)
+    )
+    cv.path(g, spiral, fill="#00000000", stroke=STAMP, sw=5.0)
+    return cx, cy
+
+
+def voice_routes(cv, g, first: float, last: float, measure: Measure) -> None:
+    """Your voice reaching your own inner ear two ways at once: small quick dots out of the mouth and round through
+    the air to the ear, and big slow ones straight through the head, the low end the skull carries."""
+    sheet(cv, g)
+    cx, cy = _head(cv, g)
+    air = [(712, 664), (820, 700), (870, 790), (800, 870), (560, 890), (300, 870), (250, 760), (318, 600)]
+    for (ax, ay), (bx, by) in zip(air, air[1:], strict=False):
+        for u in np.linspace(0.0, 0.8, 4):
+            cv.line(g, ax + (bx - ax) * u, ay + (by - ay) * u, ax + (bx - ax) * (u + 0.12), ay + (by - ay) * (u + 0.12),
+                    RULED, 4.0)  # fmt: skip
+    _along(cv, g, "sp-air", air, first, last, 1.4, 11.0, AIR, 6)
+    _along(cv, g, "sp-bone", [(690, 664), (560, 610), (cx + 30, cy + 10)], first, last, 1.8, 22.0, COPPER, 3)
+    label(cv, g, "air", 790, 580, 130, 70, 52.0, INK, "start")
+    label(cv, g, "skull", 470, 410, 220, 70, 52.0, STAMP, "start")
+
+
+def voice_air(cv, g, first: float, last: float, measure: Measure) -> None:
+    """What you hear and what a recording keeps: the same voice, with the skull's deep swell under it, and without."""
+    sheet(cv, g)
+    rows = (
+        ("what you hear", 470.0, ((26.0, 90.0), (70.0, 520.0)), 9.0),
+        ("what a phone hears", 820.0, ((26.0, 90.0),), 5.0),
+    )
+    for text, y, parts, sw in rows:
+        size = min(56.0, 56.0 * (RIGHT - LEFT) / measure(text, 56.0))
+        label(cv, g, text, LEFT, y - 230.0, RIGHT - LEFT, 76, size, INK, "start")
+        wave = cv.group(g, cv.uid("sp-wave"), x=0.0)
+        cv.path(
+            wave, _wave(-560.0, 1640.0, y, parts), fill="#00000000", stroke=COPPER if len(parts) > 1 else AIR, sw=sw
+        )
+        cv.keys(wave, "x", _sawtooth(first, last, 1.3, 0.0, -520.0), hold=False, local=False)
+    cv.rect(g, 860, 720, 70, 130, INK, radius=12.0)  # the phone, listening
+    cv.rect(g, 868, 732, 54, 100, AIR, radius=6.0)
+
+
+def finger_nerves(cv, g, first: float, last: float, measure: Measure) -> None:
+    """A fingertip in water: signals running up its nerve, the vessels beside it narrowing, and the skin over the
+    shrinking tip folding into ridges."""
+    sheet(cv, g)
+    tip = pivot(cv, g, "sp-tip", 500.0, 900.0)
+    cv.rect(tip, 300, 300, 400, 640, SKIN, stroke=INK, sw=6.0, radius=200.0)
+    cv.rect(tip, 380, 330, 240, 180, NAIL, stroke=INK, sw=4.0, radius=80.0)
+    squeeze = first + 0.8
+    cv.keys(tip, "scaleX", [(first, 1.0), (squeeze, 1.0), (squeeze + 1.4, 0.93)], hold=False, local=False)
+    for x in (400.0, 600.0):
+        vessel = pivot(cv, g, "sp-vessel", x, 730.0)
+        cv.rect(vessel, x - 22, 560, 44, 340, BLOOD, stroke=INK, sw=3.0, radius=20.0)
+        cv.keys(vessel, "scaleX", [(first, 1.0), (squeeze, 1.0), (squeeze + 1.2, 0.35)], hold=False, local=False)
+    nerve = [(500, 900), (480, 820), (520, 740), (480, 650), (500, 560)]
+    cv.path(g, "M" + " L".join(f"{x} {y}" for x, y in nerve), fill="#00000000", stroke=NERVE, sw=10.0)
+    _along(cv, g, "sp-signal", nerve, first, last, 0.9, 12.0, NERVE, 3)
+    ridges = cv.group(tip, cv.uid("sp-ridges"), opacity=0.0)
+    for k in range(6):
+        y = 540.0 + k * 60.0
+        cv.path(ridges, f"M330 {y} Q360 {y - 26} 390 {y} M610 {y} Q640 {y - 26} 670 {y}", fill="#00000000",
+                stroke=INK, sw=5.0)  # fmt: skip
+    cv.keys(ridges, "opacity", [(squeeze + 0.6, 0.0), (squeeze + 1.4, 1.0)], hold=False, local=False)
+    label(cv, g, "nerve", 720, 640, 200, 64, 46.0, INK, "start")
+    label(cv, g, "vessels", 80, 640, 210, 64, 46.0, STAMP, "end")
+
+
+GRIP_GAP = 0.12  # the share of time wrinkled fingers saved on wet marbles (Kareklas et al., 2013)
+LAP = 1.6  # seconds a smooth finger's marble takes to cross the page
+
+
+def wet_grip(cv, g, first: float, last: float, measure: Measure) -> None:
+    """Two tests of the grip idea: marbles moved by wrinkled and by smooth fingers. In 2013 the wrinkled ones finished
+    first, by about an eighth; in 2014 the two kept level."""
+    sheet(cv, g)
+    for year, top, gap in (("2013", 270.0, GRIP_GAP), ("2014", 610.0, 0.0)):
+        label(cv, g, year, LEFT, top, 220, 90, 72.0, STAMP if gap else INK, "start")
+        for lane, (who, period) in enumerate((("wrinkled", LAP * (1 - gap)), ("smooth", LAP))):
+            y = top + 140.0 + lane * 110.0
+            label(cv, g, who, LEFT, y - 32.0, 250, 64, 46.0, INK, "start")
+            cv.line(g, 350, y + 32, 900, y + 32, RULED, 5.0)
+            cv.ellipse(g, 856, y - 22, 64, 64, PAPER, stroke=INK, sw=5.0)
+            marble = cv.group(g, cv.uid("sp-marble"), x=0.0)
+            cv.ellipse(marble, 350, y - 22, 56, 56, "#4F86A8", stroke=INK, sw=4.0)
+            cv.keys(marble, "x", _sawtooth(first, last, period, 0.0, 510.0), hold=False, local=False)
+
+
+def _earth(cv, g, crest: float) -> None:
+    """The ground's curve, its crest at ``crest``, in the wall's land colour, cut off above the stamp's line."""
+    cv.ellipse(g, -900, crest, 2880, 2400, LAND, stroke=INK, sw=6.0)
+    cv.rect(g, 0, kit.STAMP_Y - 30.0, rafa_host.WIDTH, rafa_host.HEIGHT, PAPER)
+
+
+def wall_orbit(cv, g, first: float, last: float, measure: Measure) -> None:
+    """A station going round over the curve of the ground, its sight line sweeping the land, and the wall on the land a
+    hair-thin line in nearly the land's own colour."""
+    sheet(cv, g)
+    _earth(cv, g, 760.0)
+    cv.path(g, "M120 800 C260 780 300 820 420 790 S640 770 760 800 S900 790 980 810", fill="#00000000",
+            stroke=WALLSTONE, sw=3.0)  # fmt: skip
+    station = cv.group(g, cv.uid("sp-station"), x=0.0)
+    cv.rect(station, 500, 380, 80, 34, SHADE, stroke=INK, sw=4.0, radius=6.0)
+    cv.rect(station, 420, 386, 70, 22, AIR, stroke=INK, sw=3.0)
+    cv.rect(station, 590, 386, 70, 22, AIR, stroke=INK, sw=3.0)
+    for k in range(9):
+        y = 430.0 + k * 38.0
+        cv.line(station, 540, y, 540, y + 18, STAMP, 4.0)
+    cv.keys(station, "x", _sawtooth(first, last, 3.2, -300.0, 300.0), hold=False, local=False)
+    label(cv, g, "low orbit", LEFT, 280, 400, 70, 50.0, INK, "start")
+    label(cv, g, "the wall", 560, 850, 360, 64, 46.0, INK, "end")
+    cv.line(g, 640, 856, 600, 812, INK, 4.0)  # pointing at the line the wall is
+
+
+def wall_colour(cv, g, first: float, last: float, measure: Measure) -> None:
+    """Why it hides: a piece of the wall and a heap of the dirt beside it, the same colour, and a lens sweeping the
+    land where the wall runs."""
+    sheet(cv, g)
+    cv.rect(g, 140, 400, 260, 150, WALLSTONE, stroke=INK, sw=5.0)
+    for k in range(5):
+        cv.rect(g, 150 + k * 52, 360, 32, 44, WALLSTONE, stroke=INK, sw=4.0)
+    cv.path(g, "M620 550 Q760 330 900 550 Z", fill=LAND, stroke=INK, sw=5.0)
+    label(cv, g, "=", 440, 400, 140, 130, 110.0, STAMP, "center")
+    label(cv, g, "wall", 140, 580, 260, 70, 52.0, INK, "center")
+    label(cv, g, "dirt", 620, 580, 280, 70, 52.0, INK, "center")
+    cv.rect(g, 80, 720, 920, 180, LAND, stroke=INK, sw=5.0, radius=12.0)
+    cv.path(g, "M100 830 C260 800 360 850 500 810 S760 790 980 830", fill="#00000000", stroke=WALLSTONE, sw=10.0)
+    lens = cv.group(g, cv.uid("sp-lens"), x=0.0)
+    cv.ellipse(lens, 120, 740, 150, 150, "#00000000", stroke=INK, sw=8.0)
+    cv.line(lens, 250, 870, 300, 930, INK, 12.0)
+    cv.keys(lens, "x", _sawtooth(first, last, 2.6, 0.0, 640.0), hold=False, kind=None, local=False)
+
+
 PANELS: dict[str, Callable[..., None]] = {
     "penny-fall": penny_fall,
     "lightning": lightning,
@@ -715,6 +919,12 @@ PANELS: dict[str, Callable[..., None]] = {
     "long-strip": long_strip,
     "onion-gas": onion_gas,
     "onion-fix": onion_fix,
+    "voice-routes": voice_routes,
+    "voice-air": voice_air,
+    "finger-nerves": finger_nerves,
+    "wet-grip": wet_grip,
+    "wall-orbit": wall_orbit,
+    "wall-colour": wall_colour,
 }
 
 
