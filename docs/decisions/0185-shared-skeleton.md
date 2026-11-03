@@ -31,7 +31,13 @@ rotations on it with forward kinematics, and bridges to the records `body` and `
 parent, offset, rest, solid and controls with their limits and signs, and the forward kinematics that place them.
 `be0aabc` left srlocations' mannequin and `interchange` untouched. `9db12ca` changed both (balance, walk paths, Mixamo
 names, `JOINTS_VERSION` 1.0.0, a corrected hands-on-hips pose) but not the table, whose digest srlocations' own test
-holds at `88629dcb422eb384`:
+holds at `88629dcb422eb384`. srstudio checks the invariant itself: `tools/skeleton_export.py`, run in srlocations'
+interpreter from the pinned export, records srlocations' joints (names, parents, sides, offsets, controls with their
+turns, signs and limits) and every joint's world place on eight poses drawn with seed 185 within the limits
+([record](../../tests/data/skeleton/srlocations-reference.json)). `tests/test_skeleton_reference.py` recomputes the
+digest from `humanoid.json` and `motion_bridge`'s held table, converts srlocations' joints to srstudio's axes and units
+and requires `humanoid.json` to equal them, and requires srstudio's forward kinematics to place every joint where
+srlocations does to 1e-9 m. A pin move re-runs the tool; a record that changes beyond its commit is a table change, not a pin move:
 
 | Field | Holds |
 |---|---|
