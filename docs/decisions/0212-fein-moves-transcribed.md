@@ -31,8 +31,8 @@ library of fitted pattern parameters, and compose from it through the same chore
 
 ### What a transcribed move is
 
-Each window of the reference becomes one `dance.Move` named `fein-NN`, `support` `feet`, both feet planted through a
-loop of four beats: the measured span fills the first two beats as the strike onto the hit, the other two are the slow
+Each window of the reference becomes one `dance.Move` named `fein-NN`, `support` `feet`, both feet declared in contact
+through a loop of four beats (a declaration only, see the known defect below): the measured span fills the first two beats as the strike onto the hit, the other two are the slow
 return. Every moved joint carries one `sine` pattern of a quarter cycle a beat (bias, amplitude, phase and snap), on
 the same canonical targets the presets use: hips, chest and neck on all three axes, each upper arm's lift, swing and
 twist with the forearm's stretch, each upper leg's swing and spread with the lower leg's stretch. Nothing moves the
@@ -96,6 +96,23 @@ pairs there has an area under the curve of 0.90 on few pairs). A cluster seen fr
 move: 78 of them. For each, the window is the first member whose track the estimator holds through the window with a
 steady torso.
 
+### Known defect: the feet are not planted
+
+A move's contacts declare both feet on the floor, and nothing makes that true. `dance_pose` adds the patterns to the
+rest pose and does not solve the legs against the floor, and no pattern moves the root, so a bent knee lifts its foot
+instead of lowering the hips. Measured on every move at 12 samples a beat, in head radii, against each ankle's place
+at rest:
+
+| Library, skeleton | Foot drift, median / max | Lowest foot above the floor, median / max |
+|---|---|---|
+| `fein`, realistic | 4.36 / 8.50 | 1.51 / 3.29 |
+| `fein`, stick | 3.91 / 7.51 | 1.32 / 2.92 |
+| `fein`, cartoon | 1.06 / 2.09 | 0.36 / 0.80 |
+| `moves` (the five standing presets), realistic | 0.47 / 1.64 | 0.08 / 0.18 |
+
+The transcribed moves therefore float on the realistic and stick skeletons, and no test reads a foot's place. They
+are not fit to compose from until the root's height comes from the feet.
+
 ## Rejected alternatives
 
 - **A style record only (ADR 0203).** The faithful reading of the standing rule. It yields no moves to compose from.
@@ -135,7 +152,7 @@ The run over the whole record, 78 windows, ten workers:
 | Swing per moving pattern, radians (median / 90th percentile) | 0.26 / 0.76 |
 | Times a move was seen (min / median / max) | 2 / 3 / 14 |
 | Dancers seen doing it | 2 in 36 moves, 3 in 17, 4 in 15, 5 to 9 in 10 |
-| Tracks the windows come from | 19, the two lead dancers' tracks holding 29 |
+| Tracks the windows come from | 19, two of them holding 29 |
 
 Thirteen windows (`fein-02`, `03`, `04`, `11`, `13`, `19`, `31`, `35`, `41`, `46`, `50`, `53`, `66`) are not the
 cluster's first member: the estimator lost that member's track or misread its torso inside the window, and a later
