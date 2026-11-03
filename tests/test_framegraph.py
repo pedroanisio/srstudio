@@ -2,6 +2,7 @@
 
 import json
 import stat
+import subprocess
 from pathlib import Path
 
 import numpy as np
@@ -158,11 +159,59 @@ def fake_engine(tmp_path: Path, body: str) -> Path:
 
 def test_each_time_is_one_frame_from_the_scenes_folder(tmp_path):
     (tmp_path / "out").write_text(printed())
-    engine = fake_engine(tmp_path, 'test -f s.scene.xml && case "$4" in 0.500000|1.000000) cat ../out;; esac')
+    engine = fake_engine(tmp_path, 'test -f s.scene.xml && case "$4" in 0.5|1.0) cat ../out;; esac')
     project = tmp_path / "p"
     project.mkdir()
     (project / "s.scene.xml").write_text("<scene/>")
     assert len(list(evaluate(engine, project / "s.scene.xml", [0.5, 1.0]))) == 2
+
+
+def test_a_time_reaches_the_engine_to_the_last_digit(tmp_path):
+    """A frame time rounded to the microsecond can land after the frame: round(2 / 30, 6) is past 2 / 30, so a gate
+    reading it would see a change the render shows a frame later."""
+    (tmp_path / "out").write_text(printed())
+    engine = fake_engine(tmp_path, 'echo "$4" >> ../asked; cat ../out')
+    project = tmp_path / "p"
+    project.mkdir()
+    (project / "s.scene.xml").write_text("<scene/>")
+    times = [2 / 30, 35 / 30, 1 / 3, 1e-05]
+    assert len(list(evaluate(engine, project / "s.scene.xml", times))) == len(times)
+    assert [float(asked) for asked in (tmp_path / "asked").read_text().split()] == times
+
+
+OFFSET_SCENE = """<?xml version="1.0" encoding="UTF-8"?>
+<scene version="1.1">
+  <project width="320" height="120" fps="30" duration="2" background="#000000"/>
+  <composition>
+    <group id="shot" start="1.1" end="2" timeOffset="1.1">
+      <group id="before" start="0" end="0.06666666666666667">
+        <shape id="before-r" shape="rect" width="40" height="40"/>
+      </group>
+      <group id="after" start="0.06666666666666667" end="0.9">
+        <shape id="after-r" shape="rect" width="40" height="40"/>
+      </group>
+    </group>
+  </composition>
+</scene>
+"""
+
+
+def test_a_frame_under_a_clock_offset_is_read_as_the_render_shows_it(scene_render, tmp_path):
+    """Frame 35 under a 1.1 s offset runs at local 35 / 30 - 1.1, just before 2 / 30: the render shows the change a
+    frame late, and the frame read at 35 / 30 shows the same."""
+    scene = tmp_path / "s.scene.xml"
+    scene.write_text(OFFSET_SCENE)
+    printed_frame = subprocess.run(
+        [str(scene_render), "eval", scene.name, "--frame", "35", "--format", "json"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    rendered = {n.id for n in read_frame(printed_frame).nodes}
+    [frame] = evaluate(scene_render, scene, [35 / 30])
+    assert "before" in rendered and "after" not in rendered
+    assert {n.id for n in frame.nodes} == rendered
 
 
 def test_an_engine_that_refuses_a_frame_is_a_typed_error(tmp_path):

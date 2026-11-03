@@ -370,10 +370,12 @@ def read_frame(printed: str) -> Frame:
 
 def evaluate(engine: str | Path, scene: Path, times: Iterable[float]) -> Iterator[Frame]:
     """The frame of ``scene`` at each of ``times``, seconds, from the engine. It runs from the scene's folder, where
-    the scene's relative paths resolve."""
+    the scene's relative paths resolve. Each time goes to the engine to its last digit: frame ``k`` renders at
+    ``k / fps`` exactly, and a time rounded to the microsecond can land after a change the render shows a frame later
+    (ADR 0216)."""
     scene = Path(scene)
     for time in times:
-        command = [str(engine), "eval", scene.name, "--time", f"{time:.6f}", "--format", "json"]
+        command = [str(engine), "eval", scene.name, "--time", repr(float(time)), "--format", "json"]
         try:
             run = subprocess.run(command, cwd=scene.parent, capture_output=True, text=True, check=False)
         except OSError as e:
