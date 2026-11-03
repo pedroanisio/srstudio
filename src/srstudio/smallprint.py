@@ -250,6 +250,24 @@ class Show:
                 f"the show runs {SHORTEST} to {LONGEST} s, this comes to {length:.1f} s at {PACE} words a second"
             )
 
+    def check_fit(self, measure: Measure) -> None:
+        """Every caption row, wrapped as the engine wraps it, fits the width of the safe area in ``measure`` (the
+        caption font's text width at a size, with the look's stroke on each side), or :class:`ScriptError` naming each
+        row that does not. :meth:`validate` counts characters only; this is the build's own measure, run on the data,
+        so a line too wide is rewritten before its take is paid for rather than after."""
+        region = VERTICAL.region(rafa_host.WIDTH, rafa_host.HEIGHT)
+        room = region.x1 - region.x0
+        wide = []
+        for beat in self.beats:
+            for sentence in captioned(beat.line):
+                text = sentence.upper() if CAPTION_LOOK.upper else sentence
+                for row in native.wrap(text, CAPTION_LOOK.max_chars, CAPTION_LOOK.max_words):
+                    px = measure(row, CAPTION_LOOK.size) + 2 * CAPTION_LOOK.stroke_width
+                    if px > room:
+                        wide.append(f"{beat.id}: {row!r} is {px:.0f} px")
+        if wide:
+            raise ScriptError(f"caption rows wider than the safe area's {room:.0f} px: {'; '.join(wide)}")
+
     def _check(self, beat: Beat) -> None:
         host_kit.check_copy(beat.line)
         if beat.mood not in rafa.MOODS:
@@ -1223,8 +1241,18 @@ def shared_sounds(show: Show, beats, end: float, root: Path, seed: int) -> list[
 
 def audio_main(show: Show, doc: str | None, foley_of: Callable[..., list[dict]]) -> Callable[..., int]:
     """The ``main`` of an episode's recording script: Will says every line, one take a line. The post's cover is laid
-    out in the font the build installs before any take is paid for, so a headline too wide for the frame stops the
-    recording, not the delivery after the master."""
+    out, and every caption row measured (:meth:`Show.check_fit`), in the font the build installs before any take is
+    paid for, so a headline or a caption too wide for the frame stops the recording, not the build or the delivery
+    after it."""
+    font = host_kit.HOST.font.src if host_kit.HOST.font else ""
+
+    def fits(project: Path) -> None:
+        try:
+            data = (project / font).read_bytes()
+        except OSError as e:
+            raise ScriptError(f"the caption font {font} is not in {project}: {e.strerror}") from None
+        show.check_fit(partial(text_width, data))
+
     return recorder(
         show.sketch,
         SEED,
@@ -1234,7 +1262,8 @@ def audio_main(show: Show, doc: str | None, foley_of: Callable[..., list[dict]])
         validate=show.validate_sketch,
         foley_of=foley_of,
         cover=show.post.thumbnail,
-        cover_font=host_kit.HOST.font.src if host_kit.HOST.font else "",
+        cover_font=font,
+        check=fits,
     )
 
 

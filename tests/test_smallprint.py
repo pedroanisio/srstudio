@@ -654,8 +654,9 @@ def project_with_font(root: Path) -> Path:
 
 
 def with_cover(headline: str) -> Show:
+    """SHOW with a cover, its last line short enough for the fixture font's wider letters."""
     post = InstagramPost(title="Goldfish", description="d", thumbnail=Thumbnail(headline, 1.0, "Small Print #7"))
-    return replace(SHOW, post=post)
+    return replace(with_beat(7, line="So the penny is the safe one up there."), post=post)
 
 
 @NEEDS_FONT
@@ -675,3 +676,32 @@ def test_the_recording_refuses_a_cover_whose_font_is_not_installed(monkeypatch, 
     monkeypatch.setattr(toon_sketch, "record_episode", lambda *a, **k: pytest.fail("a take was recorded"))
     with pytest.raises(ThumbnailError, match="is not in"):
         sp.audio_main(with_cover("Goldfish\n3 seconds?"), None, lambda *a, **k: [])([str(tmp_path)], {})
+
+
+def display(text: str, size: float) -> float:
+    """A display face's widths: m and w twice as wide as every other character."""
+    return size * sum(1.0 if ch in "mwMW" else 0.5 for ch in text)
+
+
+def test_a_caption_row_that_fits_by_characters_but_not_by_pixels_is_refused():
+    """ "Hi, buddy. Remember me?" kept validate's 23 characters; in Fraunces it was 871 px of the 840 allowed."""
+    SHOW.check_fit(display)
+    buddy = with_beat(1, line="Hi, buddy. Remember me?")
+    buddy.validate()
+    with pytest.raises(ScriptError, match=r"try: 'Hi, buddy. Remember me\?' is 844 px"):
+        buddy.check_fit(display)
+
+
+@NEEDS_FONT
+def test_the_recording_refuses_a_caption_too_wide_before_any_take(monkeypatch, tmp_path):
+    taken = []
+    monkeypatch.setattr(toon_sketch, "record_episode", lambda *a, **k: taken.append(a) or {})
+    project = project_with_font(tmp_path)
+    fits = with_cover("Goldfish\n3 seconds?")
+    buddy = replace(fits, beats=tuple(replace(b, line="Hi, buddy. Remember me?") if b.id == "try" else b
+                                     for b in fits.beats))  # fmt: skip
+    with pytest.raises(ScriptError, match="Hi, buddy"):
+        sp.audio_main(buddy, None, lambda *a, **k: [])([str(project)], {})
+    assert taken == []
+    sp.audio_main(fits, None, lambda *a, **k: [])([str(project)], {})
+    assert len(taken) == 1
