@@ -105,11 +105,17 @@ def test_frozen_runs_are_consecutive_frames_under_the_share(shares, expected):
     assert master_gate.runs(shares, master_gate.FROZEN_SHARE, master_gate.FROZEN_RUN) == expected
 
 
-def stem(path: Path, gap: float, depth_db: float = 20.0, seconds: float = 4.0, rate: int = 8000) -> Path:
+def stem(
+    path: Path, gap: float, depth_db: float = 20.0, seconds: float = 4.0, rate: int = 8000, fade: float = 0.0
+) -> Path:
+    """A 220 Hz bed with a ``gap`` at 1.5 s ``depth_db`` down, faded out linearly over its last ``fade`` s, as
+    :func:`srstudio.takes.record` cuts a bed."""
     t = np.arange(round(seconds * rate)) / rate
     x = 0.3 * np.sin(2 * np.pi * 220 * t)
     a = round(1.5 * rate)
     x[a : a + round(gap * rate)] *= 10 ** (-depth_db / 20)
+    if fade:
+        x *= np.clip((seconds - t) / fade, 0.0, 1.0)
     pcm = np.repeat(np.round(x * 32767).astype("<i2")[:, None], 2, axis=1)
     with wave.open(str(path), "wb") as w:
         w.setnchannels(2)
@@ -124,6 +130,14 @@ def stem(path: Path, gap: float, depth_db: float = 20.0, seconds: float = 4.0, r
 )
 def test_a_bed_is_constant_without_a_half_second_ten_db_down(tmp_path, gap, depth, constant):
     assert master_gate.constant_bed(stem(tmp_path / "m.wav", gap, depth)) is constant
+
+
+def test_the_beds_fade_out_is_its_ending_not_a_gap(tmp_path):
+    faded = stem(tmp_path / "m.wav", 0.0, fade=2.0)  # linear: its last 0.63 s are 10 dB down or more
+    assert master_gate.constant_bed(faded) is False
+    assert master_gate.constant_bed(faded, fade=2.0) is True
+    assert master_gate.constant_bed(stem(tmp_path / "g.wav", 0.6, fade=2.0), fade=2.0) is False
+    assert master_gate.constant_bed(stem(tmp_path / "s.wav", 0.0, fade=1.0)) is True  # the default fade: 0.32 s down
 
 
 def test_a_bed_that_cannot_be_read_is_an_error(tmp_path):
@@ -187,8 +201,8 @@ def test_read_finds_the_master_the_timeline_and_the_bed(clips, tmp_path):
     renders.mkdir()
     (renders / "New_Reel.mp4").write_bytes(clips["clean"].read_bytes())
     (episodes / "new-reel" / "audio").mkdir(parents=True)
-    stem(episodes / "new-reel" / "audio" / "music.wav", 0.0)
-    timeline = GATED | {"music": {"file": "audio/music.wav"}}
+    stem(episodes / "new-reel" / "audio" / "music.wav", 0.0, fade=2.0)
+    timeline = GATED | {"music": {"file": "audio/music.wav", "fade": 2.0}}
     (episodes / "new-reel" / "timeline.json").write_text(json.dumps(timeline))
     release = Release("new-reel", InstagramPost(title="t", description="d"), video="New_Reel")
     readings = master_gate.read({"new-reel": release}, episodes, renders, {"new-reel": "New_Reel"})

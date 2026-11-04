@@ -190,9 +190,10 @@ def loudness_range(video: Path, *, ffmpeg: str = "ffmpeg") -> float:
     return float(found[-1])
 
 
-def constant_bed(stem: Path) -> bool:
+def constant_bed(stem: Path, *, fade: float = 0.0) -> bool:
     """Whether the music ``stem`` plays across its whole length with no gap of :data:`BED_GAP` at least
-    :data:`BED_DROP` under its median level, in :data:`BED_WINDOW` windows."""
+    :data:`BED_DROP` under its median level, in :data:`BED_WINDOW` windows. Its last ``fade`` seconds are the fade-out
+    :func:`srstudio.takes.record` cuts the bed with: an ending, not a gap."""
     try:
         with wave.open(str(stem), "rb") as w:
             if w.getsampwidth() != 2:
@@ -203,7 +204,7 @@ def constant_bed(stem: Path) -> bool:
         raise MasterError(f"{stem.name}: {exc}") from None
     mono = pcm.reshape(-1, channels).mean(axis=1)
     step = max(1, round(BED_WINDOW * rate))
-    count = mono.size // step
+    count = max(0, mono.size - round(max(fade, 0.0) * rate)) // step
     if count == 0:
         raise MasterError(f"{stem.name}: no audio")
     rms = np.sqrt(np.mean(mono[: count * step].reshape(count, step) ** 2, axis=1))
@@ -218,17 +219,17 @@ def constant_bed(stem: Path) -> bool:
 
 
 def measure(
-    video: Path, *, stem: Path | None = None, first_word: float | None = None, ffmpeg: str = "ffmpeg",
-    ffprobe: str = "ffprobe",
+    video: Path, *, stem: Path | None = None, fade: float = 0.0, first_word: float | None = None,
+    ffmpeg: str = "ffmpeg", ffprobe: str = "ffprobe",
 ) -> Measured:  # fmt: skip
-    """Every measure of the master ``video``; ``stem`` is the recorded music bed, if any."""
+    """Every measure of the master ``video``; ``stem`` is the recorded music bed, if any, faded out over ``fade``."""
     shares = changes(video, ffmpeg=ffmpeg, ffprobe=ffprobe)
     return Measured(
         tuple(runs(shares, FROZEN_SHARE, FROZEN_RUN)),
         tuple(runs(shares, STILL_SHARE, STILL_RUN)),
         opening(video, ffmpeg=ffmpeg),
         loudness_range(video, ffmpeg=ffmpeg),
-        None if stem is None else constant_bed(stem),
+        None if stem is None else constant_bed(stem, fade=fade),
         first_word,
     )
 
@@ -302,6 +303,12 @@ def _first_word(timeline: Mapping[str, Any]) -> float | None:
     return None
 
 
+def _fade(timeline: Mapping[str, Any]) -> float:
+    music = timeline.get("music")
+    fade = music.get("fade") if isinstance(music, Mapping) else None
+    return float(fade) if isinstance(fade, int | float) and not isinstance(fade, bool) and fade > 0 else 0.0
+
+
 def _waivers(timeline: Mapping[str, Any]) -> dict[str, str]:
     section = timeline.get("prosody")
     waive = section.get("waive", ()) if isinstance(section, Mapping) else ()
@@ -321,7 +328,7 @@ def judge(
     binding = isinstance(timeline, Mapping) and "prosody" in timeline
     known = timeline if isinstance(timeline, Mapping) else {}
     try:
-        m = measure(master, stem=stem, first_word=_first_word(known), ffmpeg=ffmpeg, ffprobe=ffprobe)
+        m = measure(master, stem=stem, fade=_fade(known), first_word=_first_word(known), ffmpeg=ffmpeg, ffprobe=ffprobe)
     except MasterError as exc:
         return Reading(video, binding, error=str(exc))
     found, info = findings(m, _waivers(known))

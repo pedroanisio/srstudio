@@ -31,7 +31,8 @@ Three more measures are reported as information and never fail:
 
 - still runs (under 0.5% of pixels) over 2 s;
 - a constant bed, where the reel's recorded music stem has no gap of at least 0.5 s that is 10 dB under its median
-  level (100 ms windows);
+  level (100 ms windows). The stem is `music.file` in `timeline.json`, which `takes.record` writes for a script's bed,
+  cut to the reel's length. Its fade-out (`music.fade`) is its ending, so it is not counted as a gap;
 - the first word in `timeline.json`, when it starts inside the silence the master measured.
 
 The policy is ADR 0234 (d)'s option A:
