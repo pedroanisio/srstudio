@@ -9,6 +9,9 @@ unrolls, its rows of items and prices showing as the paper passes them; a longer
 :func:`take_a_number` is the deli-counter dispenser on its pole, a ticket sticking out of it, under a NOW SERVING
 display whose number changes on cue. :func:`clipboard` holds a printed form (a job application, a sign-in sheet):
 its title, labelled rows whose handwritten values are filled in on cue, and a stamp that lands across it.
+:func:`phone_face` is a big phone whose screen wakes into a simple invented face (no brand, no real search
+engine): a search bar typing on cue, eyes that look and narrow, a mouth on a lip-sync track, a lean toward the glass,
+and old searches flickering on as pills round it in the frame.
 
 The phone, speaker, receipt, dispenser and clipboard stand at reference ``at`` (:func:`srstudio.toon.fx`/``fy``),
 drawn ``scale`` times their size, and return a reference footprint including their motion allowance.
@@ -30,6 +33,7 @@ from . import _toon_detail_contracts as dc
 from . import anatomy_ledger, checks
 from .canvas import Align, Canvas
 from .registry import register
+from .text_rules import MINIMUM
 from .toon import CAPTION_H, CAPTION_TOP, FINE_W, INK_W, REF_TOP, REF_W, SCALE, ToonDataError, fh, fx, fy
 from .toon_props import BUZZ_SHAKE
 
@@ -56,10 +60,13 @@ __all__ = [
     "STAMP_TONES",
     "TV_MENU_HEAD",
     "TV_MENU_LABEL",
+    "Chip",
     "Field",
+    "Query",
     "Screen",
     "clipboard",
     "phone",
+    "phone_face",
     "receipt",
     "remote",
     "tv_browse",
@@ -1010,3 +1017,302 @@ def clipboard(
         anatomy_ledger.loose_hand(cv, "toon-clipboard")
         _ellipse(cv, g, -89, -130, 24, 40, hand, FINE_W)
     return box
+
+
+# -- the phone with a face --------------------------------------------------------------------------------------------
+@dataclass(frozen=True)
+class Query:
+    """What the search bar holds from ``at`` (project seconds) until the next query: ``text`` (a newline breaks it
+    onto the bar's second line), its letters appearing over ``typing`` seconds (0: all at once)."""
+
+    at: float
+    text: str
+    typing: float = 0.0
+
+
+@dataclass(frozen=True)
+class Chip:
+    """An old search that flickers on at ``at`` behind the face and stays: ``text`` (one or two lines) in a pill whose
+    centre is at ``(x, y)``, reference units about the phone's point at its scale (it may spill off the screen into
+    the room), tilted ``tilt`` degrees."""
+
+    at: float
+    text: str
+    x: float
+    y: float
+    tilt: float = 0.0
+
+
+FACE_W, FACE_H = 250.0, 420.0  # the body, reference units, standing on its point
+FACE_SCREEN = (-113.0, -406.0, 226.0, 390.0)  # x, y, w, h inside the bezel
+FACE_BG, FACE_LINE, FACE_DARK = "#1f2c5c", "#d8e6ff", "#0f1633"
+FACE_BAR, FACE_RESULT = "#eef3ff", "#3a4a80"
+QUERY_SLOT = Slot(-96.0, -394.0, 192.0, 76.0, 34, SCREEN_INK, "start")
+FACE_CENTRE = (0.0, -190.0)  # the face's middle, reference units about the phone's point
+FACE_EYES = (-46.0, 46.0)  # the eyes' centres across
+FACE_EYE_Y, FACE_EYE_W, FACE_EYE_H = -232.0, 54.0, 66.0
+FACE_PUPIL = 24.0
+FACE_MOUTH_Y = -138.0
+FACE_LOOKS: dict[str, tuple[float, float]] = {
+    "ahead": (0.0, 0.0), "up": (0.0, -1.0), "down": (0.0, 1.0), "left": (-1.0, 0.0), "right": (1.0, 0.0),
+    "up-left": (-0.7, -0.7), "up-right": (0.7, -0.7),
+}  # fmt: skip
+LOOK_REACH = 13.0  # reference units a pupil moves to look
+GLANCE = 0.12  # seconds the pupils or the lids take to move, and the least time between two of their cues
+WAKE = 0.2  # seconds the results take to give way to the face
+LEAN = 0.3  # how much bigger the face grows at a full lean
+LEAN_EASE = 0.25  # seconds a lean takes, and the least time between two
+FACE_VISEMES = ("closed", "open", "round", "teeth")  # the lip-sync mouths (srstudio.toon_cast.VISEMES)
+CHIP_SIZE = 30  # frame pixels before the phone's scale
+CHIP_TEXT_W, CHIP_PAD = 170.0, 8.0  # the widest pill's lettering, and the room round it, reference units
+CHIP_LINE = CHIP_SIZE * LEADING / SCALE  # one line's height, reference units
+CHIP_ICON_R = CHIP_LINE * 0.3
+CHIP_FLICKER = ((0.0, 0.0), (0.04, 1.0), (0.08, 0.25), (0.12, 1.0))  # seconds after it comes, opacity
+CHIP_INK, CHIP_FILL, CHIP_ICON = "#1b1b2a", "#f4f7ff", "#7d88a8"
+PHONE_FACE_BOX: Box = (-FACE_W / 2, -FACE_H - 4.0, FACE_W / 2, 8.0)
+PHONE_FACE_SCALES = (0.9, 1.6)
+
+
+def _cues(rows: Sequence, what: str, names: Sequence[str] | None = None, gap: float = 0.0) -> list:
+    """``(second, value)`` rows from 0 in rising seconds, at least ``gap`` apart: a value from ``names``, or a
+    fraction 0 to 1 when ``names`` is None."""
+    out: list[tuple[float, object]] = []
+    for k, row in enumerate(rows):
+        if not (isinstance(row, tuple | list) and len(row) == 2):
+            raise ToonDataError(f"{what} {k}: a (second, value) pair, got {row!r}")
+        t, value = row
+        if not (checks.number(t) and t >= 0):
+            raise ToonDataError(f"{what} {k}: a second is a number >= 0, got {t!r}")
+        if out and t - out[-1][0] < max(gap, 1e-9):
+            raise ToonDataError(f"{what}s are in rising seconds at least {gap} s apart: {t} after {out[-1][0]}")
+        if names is None:
+            if not (checks.number(value) and 0 <= value <= 1):
+                raise ToonDataError(f"{what} {k}: a fraction from 0 to 1, got {value!r}")
+        elif value not in names:
+            raise ToonDataError(f"{what} {k}: one of {list(names)}, got {value!r}")
+        out.append((float(t), value))
+    return out
+
+
+def _queries(queries: Sequence[Query], measure: Measure) -> list[Query]:
+    if not queries:
+        raise ToonDataError("a phone with a face needs at least one query in its bar")
+    for k, q in enumerate(queries):
+        if not isinstance(q, Query):
+            raise ToonDataError(f"query {k}: a Query, got {q!r}")
+        if not (checks.number(q.typing) and q.typing >= 0):
+            raise ToonDataError(f"query {k}: typing takes 0 seconds or more, got {q.typing!r}")
+        QUERY_SLOT.fit(measure, q.text, f"query {k}")
+    times = _rising([q.at for q in queries], "query")
+    for k in range(len(queries) - 1):
+        if times[k] + queries[k].typing > times[k + 1]:
+            raise ToonDataError(f"query {k} is still being typed when query {k + 1} replaces it at {times[k + 1]} s")
+    return list(queries)
+
+
+def _chip_size(c: Chip, measure: Measure) -> tuple[float, float]:
+    """The pill's width and height, reference units, its lettering measured to fit."""
+    lines = c.text.split("\n") if isinstance(c.text, str) else []
+    if not (1 <= len(lines) <= 2):
+        raise ToonDataError(f"a chip holds one or two lines, got {c.text!r}")
+    Slot(0.0, 0.0, CHIP_TEXT_W, len(lines) * CHIP_LINE + 1.0, CHIP_SIZE).fit(measure, c.text, "a chip")
+    text_w = max(measure(line, CHIP_SIZE) for line in lines) / SCALE
+    return text_w + 3 * CHIP_PAD + 2 * CHIP_ICON_R, len(lines) * CHIP_LINE + 2 * CHIP_PAD
+
+
+def _chips(
+    chips: Sequence[Chip], measure: Measure, clear: float | None, at: tuple[float, float], scale: float
+) -> list[tuple[Chip, float, float, Box]]:
+    """``chips`` with their sizes and reference footprints: each in time order, seen before ``clear``, its turned
+    pill inside the frame, out of the caption band and off the signature marks."""
+    out: list[tuple[Chip, float, float, Box]] = []
+    for k, c in enumerate(chips):
+        if not isinstance(c, Chip):
+            raise ToonDataError(f"chip {k}: a Chip, got {c!r}")
+        if not all(checks.number(v) for v in (c.at, c.x, c.y, c.tilt)) or c.at < 0 or abs(c.tilt) > 30:
+            raise ToonDataError(f"chip {k}: at >= 0, a point and a tilt within 30 degrees, got {c!r}")
+        if out and c.at < out[-1][0].at:
+            raise ToonDataError(f"chip {k} comes at {c.at} s, before the chip listed before it")
+        if clear is not None and c.at + MINIMUM > clear:
+            raise ToonDataError(f"chip {k} comes at {c.at} s, less than {MINIMUM:.4g} s, the reading minimum, before "
+                                f"the chips clear at {clear} s")  # fmt: skip
+        w, h = _chip_size(c, measure)
+        a = math.radians(c.tilt)
+        cos, sin = math.cos(a), math.sin(a)
+        corners = [
+            (at[0] + scale * (c.x + dx * cos - dy * sin), at[1] + scale * (c.y + dx * sin + dy * cos))
+            for dx in (-w / 2, w / 2)
+            for dy in (-h / 2, h / 2)
+        ]
+        xs, ys = [p[0] for p in corners], [p[1] for p in corners]
+        box = (min(xs), min(ys), max(xs), max(ys))
+        shown = tuple(round(v, 1) for v in box)
+        if box[0] < FRAME[0] or box[1] < FRAME[1] or box[2] > FRAME[2] or box[3] > FRAME[3]:
+            raise ToonDataError(f"chip {k} ({c.text!r}) spans {shown}, leaving the frame")
+        if _overlaps(box, CAPTION_BAND) or _overlaps(box, SIGNATURE_BOX):
+            raise ToonDataError(f"chip {k} ({c.text!r}) spans {shown}, into the caption band or the signature marks")
+        out.append((c, w, h, box))
+    return out
+
+
+def _eased(rows: Sequence[tuple[float, float]], ease: float, start: float) -> list[tuple[float, float]]:
+    """Keys that hold each value until the next cue and move to it over ``ease`` seconds."""
+    keys: list[tuple[float, float]] = [(0.0, start)]
+    for t, value in rows:
+        if t == 0:
+            keys = [(0.0, value)]
+        else:
+            keys += [(t, keys[-1][1]), (round(t + ease, 6), value)]
+    return keys
+
+
+def _held(cv: Canvas, node, rows: Sequence[tuple[float, object]], on: object) -> None:
+    keys: list[tuple[float, float]] = []
+    for t, value in rows:
+        _emit(keys, t, 1.0 if value == on else 0.0)
+    cv.keys(node, "opacity", keys, local=False)
+
+
+def _mouths(cv: Canvas, g, id: str, mouth: Sequence[tuple[float, str]]) -> None:
+    """One drawing per viseme, the one said shown; closed until the first."""
+    rows = list(mouth) if mouth and mouth[0][0] == 0 else [(0.0, "closed"), *mouth]
+    y = FACE_MOUTH_Y
+    for viseme in FACE_VISEMES:
+        m = cv.group(g, f"{id}-mouth-{viseme}")
+        _held(cv, m, rows, viseme)
+        if viseme == "closed":
+            _line(cv, m, [(-34, y), (34, y)], 9.0, FACE_LINE)
+        elif viseme == "open":
+            cv.ellipse(m, fh(-32), fh(y - 22), fh(64), fh(44), FACE_DARK, FACE_LINE, 8.0)
+        elif viseme == "round":
+            cv.ellipse(m, fh(-17), fh(y - 19), fh(34), fh(38), FACE_DARK, FACE_LINE, 8.0)
+        else:
+            cv.rect(m, fh(-34), fh(y - 15), fh(68), fh(30), FACE_LINE, FACE_LINE, 8.0, radius=fh(8))
+            _line(cv, m, [(-30, y), (30, y)], 4.0, FACE_DARK)
+
+
+def _face(cv: Canvas, g, id: str, looks, lids, mouth, leans) -> None:
+    cx, cy = FACE_CENTRE
+    face = cv.group(g, f"{id}-face", x=fh(cx), y=fh(cy), anchorX=fh(cx), anchorY=fh(cy))  # the anchor sits at x, y
+    grow = _eased([(t, round(1.0 + LEAN * float(a), 4)) for t, a in leans], LEAN_EASE, 1.0)
+    for axis in ("scaleX", "scaleY"):
+        cv.keys(face, axis, grow, hold=False, kind="sine-in-out", local=False)
+    for side, ex in enumerate(FACE_EYES):
+        x0, y0 = ex - FACE_EYE_W / 2, FACE_EYE_Y - FACE_EYE_H / 2
+        _ellipse(cv, face, x0, y0, FACE_EYE_W, FACE_EYE_H, FACE_LINE, 0)
+        pupil = cv.group(face, f"{id}-pupil-{side}")
+        for k, prop in ((0, "x"), (1, "y")):
+            moves = [(t, round(fh(FACE_LOOKS[name][k] * LOOK_REACH), 2)) for t, name in looks]
+            cv.keys(pupil, prop, _eased(moves, GLANCE, 0.0), hold=False, kind="sine-in-out", local=False)
+        _ellipse(
+            cv, pupil, ex - FACE_PUPIL / 2, FACE_EYE_Y - FACE_PUPIL / 2, FACE_PUPIL, FACE_PUPIL * 1.1, FACE_DARK, 0
+        )
+        lid = cv.group(face, f"{id}-lid-{side}", y=fh(y0 - 2), anchorY=fh(y0 - 2))
+        shut = [(t, max(float(f), 0.001)) for t, f in lids]
+        cv.keys(lid, "scaleY", _eased(shut, GLANCE, 0.001), hold=False, local=False)
+        _rect(cv, lid, x0 - 4, y0 - 2, FACE_EYE_W + 8, FACE_EYE_H + 4, FACE_BG, 0)
+    _mouths(cv, face, id, mouth)
+
+
+def _chip(cv: Canvas, parent, id: str, c: Chip, w: float, h: float) -> None:
+    chip = cv.group(parent, id, x=fh(c.x), y=fh(c.y), rotation=c.tilt)
+    cv.keys(chip, "opacity", [(0.0, 0.0), *((round(c.at + dt, 6), v) for dt, v in CHIP_FLICKER)], local=False)
+    _rect(cv, chip, -w / 2, -h / 2, w, h, CHIP_FILL, FINE_W * 0.5, radius=min(h / 2, 16))
+    r = CHIP_ICON_R
+    ix = -w / 2 + CHIP_PAD + r
+    cv.ellipse(chip, fh(ix - r), fh(-r), fh(2 * r), fh(2 * r), cv.clear, CHIP_ICON, 3.0)
+    _line(cv, chip, [(ix, -r * 0.6), (ix, 0), (ix + r * 0.5, 0)], 3.0, CHIP_ICON)
+    tx = ix + r + CHIP_PAD
+    cv.text(chip, cv.uid("phone-face-chip"), c.text, fh(tx), fh(-h / 2 + CHIP_PAD), int(fh(w / 2 - tx)) + 2,
+            int(fh(h - 2 * CHIP_PAD)) + 2, CHIP_SIZE, color=CHIP_INK, align="start", wrap="none")  # fmt: skip
+
+
+def _bar(cv: Canvas, g, id: str, shown: Sequence[Query], measure: Measure) -> None:
+    """The search bar and the query in it, each until the next, typed on its own clock. A query's box is as wide as
+    its widest row, not the slot: the engine measures a text box, not its letters, against a declared safe area, so a
+    camera move that grows the phone pushes a slot-wide box out of it long before the words leave."""
+    _rect(cv, g, -104, -398, 208, 84, FACE_BAR, 0, radius=22)
+    for k, q in enumerate(shown):
+        nxt = shown[k + 1].at if k + 1 < len(shown) else None
+        qg = cv.group(g, f"{id}-query-{k}")
+        _shown(cv, qg, q.at, nxt)
+        s = QUERY_SLOT
+        wide = min(math.ceil(max(measure(row, s.size) for row in q.text.split("\n"))) + 2, int(fh(s.w)))
+        layer = cv.text(qg, cv.uid("phone-face-text"), q.text, fh(s.x), fh(s.y), wide, int(fh(s.h)), s.size,
+                        color=s.color, align=s.align, wrap="none")  # fmt: skip
+        if q.typing > 0:
+            cv.animate_text(layer, "typewriter", presetStart=q.at, presetDuration=q.typing)
+
+
+@register(
+    "prop",
+    "toon-phone-face",
+    contract=dc.contract('toon-phone-face'),
+    summary="A big phone whose screen wakes into a simple face: a search bar typing on cue, eyes that look and narrow, "
+    "a mouth on a lip-sync track, a lean toward the glass, and old searches that flicker on behind the face",
+)
+def phone_face(
+    cv: Canvas,
+    parent,
+    queries: Sequence[Query],
+    *,
+    measure: Measure,
+    wake: float,
+    looks: Sequence[tuple[float, str]] = ((0.0, "ahead"),),
+    lids: Sequence[tuple[float, float]] = ((0.0, 0.0),),
+    mouth: Sequence[tuple[float, str]] = (),
+    leans: Sequence[tuple[float, float]] = (),
+    chips: Sequence[Chip] = (),
+    clear: float | None = None,
+    at: tuple[float, float] = (330.0, 1000.0),
+    scale: float = 1.0,
+    id: str = "phone-face",
+) -> Box:
+    """The phone standing with its base at reference ``at``, its screen facing the viewer. Its bar holds ``queries``
+    (from 0 in rising seconds, each typed before the next). Until ``wake`` the screen shows result rows; from it, the
+    face: pupils on ``looks`` (``(second, look)``, one of :data:`FACE_LOOKS`), lids lowered by ``lids`` (``(second,
+    fraction)``, 0 open, 1 shut), both cues at least :data:`GLANCE` apart, the mouth on ``mouth`` (``(second,
+    viseme)`` from :data:`FACE_VISEMES`, a lip-sync track), and the face grown toward the glass by ``leans``
+    (``(second, amount)``, 0 to 1, at least :data:`LEAN_EASE` apart). ``chips`` flicker on behind the face, over the
+    screen or spilling off it, and stay until ``clear`` (the end when None). Returns its footprint."""
+    box = _place("phone with a face", at, scale, PHONE_FACE_BOX, PHONE_FACE_SCALES)
+    shown = _queries(queries, measure)
+    if not (checks.number(wake) and wake >= 0):
+        raise ToonDataError(f"the face wakes at a second >= 0, got {wake!r}")
+    looks_ = _cues(looks, "look", tuple(FACE_LOOKS), gap=GLANCE)
+    lids_ = _cues(lids, "lid", gap=GLANCE)
+    mouth_ = _cues(mouth, "mouth", FACE_VISEMES)
+    leans_ = _cues(leans, "lean", gap=LEAN_EASE)
+    if clear is not None and not (checks.number(clear) and clear > 0):
+        raise ToonDataError(f"the chips clear at a second > 0, got {clear!r}")
+    placed = _chips(chips, measure, clear, at, scale)
+    x, y = at
+    g = cv.group(parent, id, x=fx(x), y=fy(y), scaleX=scale, scaleY=scale)
+    _ellipse(cv, g, -FACE_W / 2 + 6, -6, FACE_W - 12, 14, SHADOW, 0, opacity=0.2)
+    _rect(cv, g, -FACE_W / 2, -FACE_H, FACE_W, FACE_H, PHONE_BODY, INK_W * 0.8, radius=30)
+    sx, sy, sw, sh = FACE_SCREEN
+    _rect(cv, g, sx, sy, sw, sh, FACE_BG, 0, radius=18)
+    results = cv.group(g, f"{id}-results")
+    gone = [(wake, 1.0), (wake + WAKE, 0.0)] if wake > 0 else [(0.0, 0.0)]
+    cv.keys(results, "opacity", [(0.0, 1.0), *gone] if wake > 0 else gone, hold=False, local=False)
+    for k in range(4):
+        _rect(cv, results, -96, -290 + 62 * k, 192 - 40 * (k % 2), 22, FACE_RESULT, 0, radius=11)
+        _rect(cv, results, -96, -262 + 62 * k, 120, 12, FACE_RESULT, 0, radius=6, opacity=0.6)
+    _bar(cv, g, id, shown, measure)
+    _rect(cv, g, -18, -FACE_H + 8, 36, 6, PHONE_EDGE, 0, radius=3)  # the earpiece
+    if placed:
+        behind = cv.group(g, f"{id}-chips")
+        if clear is not None:
+            cv.keys(behind, "opacity", [(0.0, 1.0), (clear, 0.0)], local=False)
+        for k, (c, w, h, _) in enumerate(placed):
+            _chip(cv, behind, f"{id}-chip-{k}", c, w, h)
+    awake = cv.group(g, f"{id}-awake")
+    cv.keys(awake, "opacity", [(0.0, 0.0), (wake, 0.0), (wake + WAKE, 1.0)] if wake > 0 else [(0.0, 1.0)],
+            hold=False, local=False)  # fmt: skip
+    _face(cv, awake, id, looks_, lids_, mouth_, leans_)
+    return (
+        min([box[0], *(b[0] for *_, b in placed)]),
+        min([box[1], *(b[1] for *_, b in placed)]),
+        max([box[2], *(b[2] for *_, b in placed)]),
+        max([box[3], *(b[3] for *_, b in placed)]),
+    )

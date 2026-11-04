@@ -68,6 +68,60 @@ _CONTRACTS = {
             'hand=None draws a contact shadow; a #rrggbb hand draws a thumb instead, without a rig binding.',
         ),
     ),
+    'toon-phone-face': footprint(
+        (
+            'queries',
+            P(
+                items=P(
+                    fields=(
+                        ('at', COMP_TIME),
+                        ('text', P(description='The bar text; a newline breaks it onto the second line.')),
+                        ('typing', P(unit='seconds', role='duration', minimum=0)),
+                    )
+                )
+            ),
+        ),
+        ('measure', MEASURE),
+        ('wake', COMP_TIME),
+        (
+            'looks',
+            P(
+                items=P(
+                    prefix_items=(COMP_TIME, P(enum=('ahead', 'up', 'down', 'left', 'right', 'up-left', 'up-right')))
+                )
+            ),
+        ),
+        ('lids', P(items=P(prefix_items=(COMP_TIME, FRACTION)))),
+        ('mouth', P(items=P(prefix_items=(COMP_TIME, P(enum=('closed', 'open', 'round', 'teeth')))))),
+        ('leans', P(items=P(prefix_items=(COMP_TIME, FRACTION)))),
+        (
+            'chips',
+            P(
+                items=P(
+                    fields=(
+                        ('at', COMP_TIME),
+                        ('text', P(description='One or two lines, each measured to fit the pill.')),
+                        ('x', P(unit='reference pixels', space='part-local')),
+                        ('y', P(unit='reference pixels', space='part-local')),
+                        ('tilt', P(unit='degrees', minimum=-30, maximum=30)),
+                    )
+                )
+            ),
+        ),
+        ('clear', P(unit='seconds', timebase='composition', description='When the chips go; None keeps them.')),
+        ('at', point('Phone base.')),
+        ('scale', P(unit='ratio', minimum=0.9, maximum=1.6)),
+        ('id', ID),
+        constraints=(
+            FONT,
+            'Nonempty Query records begin at zero in rising seconds; each is typed before the next replaces it.',
+            'Typing uses the native typewriter text animator, presetStart=at on the layer clock: draw it in a shot '
+            'that starts at zero.',
+            'looks and lids are at least 0.12 s apart and leans at least 0.25 s apart; each eases to its value.',
+            'Chips sit behind the face, about the phone\'s point at its scale; each turned pill is footprint-checked.',
+            'An invented interface: no brand, logo or real search engine look.',
+        ),
+    ),
     'toon-tv-menu': group(
         ('seen', P(unit='ratio', maximum=1, description='Static watched fraction, strictly greater than zero.')),
         ('measure', MEASURE),

@@ -1300,6 +1300,7 @@
     "toon-remote": {"title": "Controle remoto"},
     "toon-tv-menu": {"title": "Menu de TV"},
     "toon-tv-browse": {"title": "Lista de filmes na TV"},
+    "toon-phone-face": {"title": "Celular com cara"},
     "stick-receipt": {"title": "Nota comprida"},
     "stick-box": {"title": "Caixa de entrega"},
     "trial-tag": {"title": "Crachá de teste"},
@@ -9203,6 +9204,18 @@
         "at": 15.0
       },
       "text": "Um controle sem marca, pequeno o bastante para uma pata, e o clique que pausa a mentira."
+    },
+    {
+      "section": "props",
+      "name": "Celular com cara",
+      "parts": [
+        "toon-phone-face"
+      ],
+      "shot": {
+        "episode": "my-phone-searches",
+        "at": 6.9
+      },
+      "text": "Uma tela sem marca que acorda num rosto, digita a busca e espalha as antigas por trás dele."
     },
     {
       "section": "props",
