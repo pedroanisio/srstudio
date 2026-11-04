@@ -49,6 +49,7 @@ from .smallprint_kit import (
     source_chip,
     stamp,
     stamp_layout,
+    stamp_reach,
 )
 
 __all__ = [
@@ -59,6 +60,8 @@ __all__ = [
     "STILL_FOR",
     "STILL_PX",
     "SAFE_TOP",
+    "LANDS",
+    "stamp_row",
     "Box",
     "Move",
     "Shot",
@@ -97,6 +100,7 @@ CLEAR_PX = 12.0  # the least gap between two words on screen
 MASK = 4  # the share is measured on a raster this many times coarser than the frame
 W, H = rafa_host.WIDTH, rafa_host.HEIGHT
 SAFE_TOP = VERTICAL.region(W, H).y0  # the top of the reel's safe area: no word above it, landing or landed
+LANDS = 1.06  # the least scale a stamp comes down from onto its place
 
 Box = tuple[float, float, float, float]  # x0, y0, x1, y1 in frame pixels
 
@@ -323,13 +327,20 @@ def stamp_time(shot: Shot, said: float | None, first: float) -> float:
     return max(first, (first if said is None else said) + STAMP_LEAD)
 
 
+def stamp_row(shot: Shot, stamped: Stamp, measure: Measure) -> float:
+    """The stamp's top row: the shot's ``stamp_top``, or low enough that the turned stamp, coming down from
+    :data:`LANDS` times its size, stays under the safe area's top."""
+    reach, half = stamp_reach(stamped, measure)
+    return max(shot.stamp_top, math.ceil(SAFE_TOP + LANDS * reach - half))
+
+
 def words(shot: Shot, stamped: Stamp | None, landed: float, measure: Measure) -> list[tuple[str, Box, float, float]]:
     """The shot's words on screen as (name, frame box, from, until): the headline until ``landed``, then the stamp
     and the paper chip its source rows sit on."""
     head = headline_box(shot, measure)
     if stamped is None:
         return [("headline", head, -math.inf, math.inf)]
-    _, box, sources, _ = stamp_layout(stamped, measure, shot.stamp_top)
+    _, box, sources, _ = stamp_layout(stamped, measure, stamp_row(shot, stamped, measure))
     return [("headline", head, -math.inf, landed), ("stamp", box, landed, math.inf),
             *([("source", source_chip(sources), landed, math.inf)] if sources else [])]  # fmt: skip
 
@@ -471,7 +482,8 @@ def draw(cv, parent, shot: Shot, first: float, last: float, renders: Renders, ro
     landed = stamp_time(shot, said, first) if stamped is not None else last
     _headline(cv, g, shot, first, landed, measure)
     if stamped is not None:
-        stamp(cv, g, stamped, landed, last, measure, top=shot.stamp_top, chip=True, ceiling=SAFE_TOP)
+        top = stamp_row(shot, stamped, measure)
+        stamp(cv, g, stamped, landed, last, measure, top=top, chip=True, ceiling=SAFE_TOP)
     return g
 
 

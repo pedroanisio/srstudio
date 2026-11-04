@@ -33,6 +33,7 @@ __all__ = [
     "label",
     "stamp",
     "source_chip",
+    "stamp_reach",
     "stamp_layout",
     "wrap",
 ]
@@ -148,6 +149,15 @@ def stamp_layout(
     return size, (cx - half_w, cy - half_h, cx + half_w, cy + half_h), sources, rows
 
 
+def stamp_reach(finding: Stamp, measure: Measure) -> tuple[float, float]:
+    """How far :func:`stamp`'s turned text box reaches above its middle (its half height on the frame, as the engine
+    measures a text layer against the safe area) and the stamp's own half height."""
+    size, _, _, _ = stamp_layout(finding, measure)
+    wide, tall = measure(finding.text, size) + 80.0, size * 1.6
+    turn = math.radians(abs(TILT))
+    return (round(wide) * math.sin(turn) + round(tall) * math.cos(turn)) / 2, tall / 2
+
+
 CHIP_PAD = (18.0, 6.0)  # the paper chip under a source reaches this far past its rows, across and down
 
 
@@ -182,8 +192,6 @@ def stamp(
     it lands near the top. Returns its group."""
     if end <= start:
         raise ScriptError(f"the stamp needs time on screen, got {start}..{end}")
-    if ceiling is not None and ceiling > top:
-        raise ScriptError(f"a stamp at row {top} is already over its ceiling at row {ceiling}")
     room = RIGHT - LEFT
     size, _, sources, rows = stamp_layout(finding, measure, top)
     wide, tall = measure(finding.text, size) + 80.0, size * 1.6
@@ -197,7 +205,10 @@ def stamp(
     label(cv, g, finding.text, x, top, wide, tall, size, STAMP, "center")
     lands = min(LANDS_FROM, room / spread(finding.text, size, measure))
     if ceiling is not None:
-        lands = min(lands, (cy - ceiling) / (round(tall) / 2))  # the text layer is as tall as its box, rounded
+        reach, _ = stamp_reach(finding, measure)
+        if cy - reach < ceiling:
+            raise ScriptError(f"a stamp at row {top} reaches over its ceiling at row {ceiling}")
+        lands = min(lands, (cy - ceiling) / reach)
     cv.pop_in(g, start, from_=lands, over=0.94, rise=0.09, settle=0.2)
     cv.keys(g, "opacity", [(start, 0.0), (start + 0.06, 1.0)], hold=False, local=False)
     source = cv.group(parent, cv.uid("smallprint-source"), start=start + 0.2, end=end)

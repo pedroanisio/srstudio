@@ -248,9 +248,11 @@ def test_a_stamp_landing_in_the_headline_s_place_never_leaves_the_safe_area_as_i
     group = next(e for e in root.iter() if (e.get("id") or "").startswith("smallprint-stamp"))
     biggest = max(float(k.get("value")) for a in group if a.get("property") == "scaleY" for k in a)
     text = next(e for e in root.iter() if e.tag.endswith("text") and e.get("text") == finding.text)
-    top = float(group.get("y")) - biggest * float(text.get("height")) / 2
-    assert top >= sc.SAFE_TOP - 1e-6
-    assert biggest > 1.0  # it still comes down onto its place
+    turn = math.radians(abs(float(group.get("rotation"))))
+    w, h = float(text.get("width")), float(text.get("height"))
+    reach = (w * math.sin(turn) + h * math.cos(turn)) / 2  # the turned text box, as the engine measures it
+    assert float(group.get("y")) - biggest * reach >= sc.SAFE_TOP - 1e-6
+    assert biggest >= sc.LANDS - 1e-6  # it still comes down onto its place
 
 
 def test_a_stamp_placed_over_its_own_ceiling_is_refused():
@@ -258,4 +260,4 @@ def test_a_stamp_placed_over_its_own_ceiling_is_refused():
     scene.add_project(width=1080, height=1920, fps="30", duration=3.0)
     cv = Canvas(scene, font_asset="fraunces")
     with pytest.raises(ScriptError, match="over its ceiling"):
-        stamp(cv, cv.comp, FOUND, 0.5, 2.0, measure, top=200.0, ceiling=sc.SAFE_TOP)
+        stamp(cv, cv.comp, FOUND, 0.5, 2.0, measure, top=sc.STAMP_TOP, ceiling=sc.SAFE_TOP)
