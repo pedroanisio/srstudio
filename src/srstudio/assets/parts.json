@@ -15983,6 +15983,54 @@
           "rig": null
         }
       ]
+    },
+    "toon-leo": {
+      "kind": "character",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-04",
+          "note": "Leo, a light grey koala of about twenty in a mustard hoodie, one of two best friends on a couch: big round ears fluffed white at the rim, a large dark nose, small eyes that carry small expressions, a controller held in both paws. First drawn for the Between Friends pilot. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "generated/character-proofs/between-friends/index.html",
+          "approval": null,
+          "drawing": "8e531ae11ded3d5c8f8d773beb7c23112fbd0addd3f39dd3c0f201e143f98652",
+          "rig": {
+            "date": "2026-11-04",
+            "note": "Leo's head on its own neck, the whole head over the hood: quick and a little over-sure, his nod overshooting. The grips draw through it. Proposed: awaiting the operator's decision.",
+            "status": "proposed",
+            "proof": "generated/character-proofs/between-friends/index.html",
+            "approval": null,
+            "drawing": "fafbbe8eee85769194e05fe446ffffab8a285f3037b50c3fb9dcb72987624731"
+          }
+        }
+      ]
+    },
+    "toon-sam": {
+      "kind": "character",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-04",
+          "note": "Sam, a sea otter of about twenty in a teal long-sleeved tee, Leo's best friend: a cream flat-crowned head, small brown ears set low, a wide muzzle pad with whisker dots, a controller held in both paws. First drawn for the Between Friends pilot. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "generated/character-proofs/between-friends/index.html",
+          "approval": null,
+          "drawing": "28712f28257041b1c2467e4848a0bef9d10b7cacbf918aee21749bc49e372b0c",
+          "rig": {
+            "date": "2026-11-04",
+            "note": "Sam's head on its own neck, the whole head over the collar: slow and easy, his nod a shift that drifts back. The grips draw through it. Proposed: awaiting the operator's decision.",
+            "status": "proposed",
+            "proof": "generated/character-proofs/between-friends/index.html",
+            "approval": null,
+            "drawing": "b8886bb27e9735407e7bb02d55a3da5431713c64a414333a5d860cbc6af92ad1"
+          }
+        }
+      ]
     }
   }
 }

@@ -118,6 +118,8 @@ from . import (  # noqa: F401  (registers builders)
     toon_everyday,
     toon_extras,
     toon_flat,
+    toon_friends,
+    toon_gamepad,
     toon_head,
     toon_homeware,
     toon_house,

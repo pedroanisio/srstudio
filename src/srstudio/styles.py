@@ -419,6 +419,8 @@ TOON = Style(
         "toon_screens",
         "toon_world",
         "toon_flat",
+        "toon_friends",
+        "toon_gamepad",
         "toon_sets",
         "toon_signal",
         "toon_study",

@@ -569,3 +569,28 @@ to mood. Her moods go through the rig, not through `toon_cast.figure`, which hol
 
 Lyra and her rig are approved. The two locations and five props are proposed, so a reel cannot use them until they are
 decided. The reasons and where the port differs from the pack are in [docs/decisions/0063-lyra-retro-orbit.md](decisions/0063-lyra-retro-orbit.md).
+
+## Leo and Sam: two friends holding controllers, proposed
+
+[src/srstudio/toon_gamepad.py](../src/srstudio/toon_gamepad.py) adds a generic game controller held in both paws.
+`Player` is a critter in a top whose own arm kinds are the four `GRIPS`: `pad` (both thumbs on the sticks),
+`pad-press` (the right thumb on a button), `pad-lap` (lowered, thumbs off) and `pad-up` (lifted). Each is a typed
+`Hold`. The paws are a pair: `GRIP` is drawn for the frame's left arm and reflected for the right, so both thumbs point
+in over the top edge.
+
+[src/srstudio/toon_friends.py](../src/srstudio/toon_friends.py) is `toon-leo`, a koala in a mustard hoodie, and
+`toon-sam`, a sea otter in a teal tee, with `LEO_RIG` and `SAM_RIG`. Their builders draw through the rig held still,
+so a pose names a grip wherever it names an arm:
+
+```python
+from srstudio import toon_friends, toon_head
+from srstudio.head_motion import HeadPlan
+from srstudio.toon import Pose
+
+poses = [Pose(0.0, "half", "flat", "pad"), Pose(2.0, "down", "flat", "pad-lap")]
+toon_head.figure(cv, parent, toon_friends.LEO_RIG, poses, 4.0, HeadPlan.still())
+```
+
+Both characters and both rigs are proposed, so `toon_rigs.rig_of` refuses them and no reel can use them until the
+operator decides. `toon.parse_poses` still holds to the shared arm kinds, so a sketch cannot name a grip yet. The
+reasons are in [docs/decisions/0228-a-controller-held-in-both-paws.md](decisions/0228-a-controller-held-in-both-paws.md).
