@@ -133,6 +133,11 @@ or leave them out to turn the check off for that take:
 `Direction(waive=(Waiver("punch_gap", "the silence is the joke", (1.0, 2.6)),))`. The
 reel's pace and its median turn gap are waived on `Script.waive` or `Reel.waive`.
 
+At first delivery, `srstudio.prosody_gate` lists every reel's findings, with each waiver's
+reason, in the delivery report. A reel whose `timeline.json` has a `prosody` section is
+refused on any finding that is not waived. A reel recorded before the gate has no
+section, so it reads "unmeasured" and is never refused.
+
 The generated-asset path uses `srstudio.generated.Generated` and
 `scene-render resolve`. The `srstudio-elevenlabs` provider requires
 `SRSTUDIO_ALLOW_CLOUD=1`; resolution pins the resulting file's SHA-256. Keep those

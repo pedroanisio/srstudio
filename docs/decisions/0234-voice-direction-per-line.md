@@ -5,7 +5,8 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 # ADR 0234: Voice direction per line
 
 - Status: proposed (2026-11-04). Slice (a): the model, the direction schema and the holds. Slice (b): Text to
-  Dialogue, cut back into one take per line. Slice (c): the takes measured and ranked, and the prosody gate.
+  Dialogue, cut back into one take per line. Slice (c): the takes measured and ranked, and the prosody gate. Slice
+  (d): the gate at first delivery.
 - Deciders: the operator; ordered by arc4d3 (Slack, 4 Nov); written by Claude Opus 5.5 in Claude Code
 - Follows [ADR 0031](0031-shared-look-and-caption-primitives.md) and [ADR 0170](0170-approved-files-are-write-once.md)
 - Back to the [library README](../../README.md)
@@ -134,6 +135,20 @@ bounds, the waiver moves a ranged target; without them, the check is off for tha
 with its reason. `reel_pace` and `turn_median` are waived on `Script.waive` or `Reel.waive`. `punchline` and `waive` change nothing in
 the request: a take whose direction only carries them is sent as an undirected take, with the same cache key.
 
+**At first delivery (slice d).** arc4d3 ruled on 4 Nov that the prosody findings are advisory from the day the
+gate lands, listed in every first-delivery report, and refuse only scripts started after it. `srstudio.prosody_gate`
+reads `episodes/<slug>/timeline.json` for each first delivery:
+
+- **Unmeasured.** A timeline with no `prosody` section, or no timeline, reads "unmeasured" and is listed, never
+  refused. `takes.record` writes the section since slice (c) and nothing before it did, so the section is the marker
+  for a reel recorded to the gate. Reels recorded on an earlier library, such as the Juno & Pip episodes 4 to 6 and
+  the News pair arc4d3 named, carry none.
+- **Refused.** A reel with the section is refused on any finding no stated reason waives. The gate runs
+  `prosody.gate` again with today's targets and does not trust the recorded `passed`, which can be stale or edited.
+  A section or timeline it cannot read refuses the reel.
+- **Waived.** A waived finding is listed with its reason. `deliver` prints the report, and the delivery post to the
+  reviewer quotes it. The Instagram caption (`ig.txt`) is public and never carries a waiver.
+
 ## Consequences
 
 - Every published take keeps its request and cache key. A test pins two keys computed before this change.
@@ -150,7 +165,8 @@ the request: a take whose direction only carries them is sent as an undirected t
   reel's median with a 0.7 s ceiling per gap, the punchline flag to 0.5 and 2.0 s with the button counted as a
   punchline, the stress margins to the line's median word and median pitch, and added the spread, flat and delivery
   checks and the loudest word on key lines.
-- The gate is not wired into the delivery gates. Wiring it in would stop reels that are recording now.
+- A reel recorded before the gate and recorded again after it carries the section and is judged; the marker is the
+  recording, not the date the script was written.
 - On the real three-turn dialogue, Christopher's emphasised "discipline" measured -0.8 dB against his line's median
   word and -3.3 semitones against its median pitch, so the capitals did not lift it. "What do you feed him?" ran at
   6.8 words a second. All three lines measured a pitch spread of 1.2 to 1.5 semitones, two of them under the 1.5
