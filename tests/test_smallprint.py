@@ -702,6 +702,29 @@ def test_the_young_sunflower_follows_the_sun_east_to_west_and_turns_back_east_in
     assert all(w in words for w in ("east", "west", "night", "young sunflower"))
 
 
+def test_every_word_over_the_night_sky_sits_on_a_paper_tag_drawn_over_the_dark():
+    root = panel_root("sun-track", 1.0, 9.0)
+    (night,) = groups(root, "sp-night")
+    sky = next(s for s in night if s.get("shape") == "rect")
+    nx, ny, nw, nh = (float(sky.get(k)) for k in ("x", "y", "width", "height"))
+    texts = {e.get("id"): e for e in root.iter() if e.tag.endswith("text")}
+    order = list(root.iter())
+    over = 0
+    for i, layer in enumerate(order):
+        text = texts.get(layer.get("asset")) if layer.tag.endswith("layer") else None
+        if text is None:
+            continue
+        x, y, w, h = float(layer.get("x")), float(layer.get("y")), float(text.get("width")), float(text.get("height"))
+        if x + w <= nx or x >= nx + nw or y + h <= ny or y >= ny + nh:
+            continue
+        over += 1
+        (tag,) = [s for s in order[:i] if s.get("shape") == "rect"][-1:]
+        tx, ty, tw, th = (float(tag.get(k)) for k in ("x", "y", "width", "height"))
+        assert tag.get("fill") == sp.PAPER and tag is not sky, f"{text.get('text')!r} is drawn on the dark"
+        assert tx <= x + 1 and ty <= y and tx + tw >= x + w - 1 and ty + th >= y + h, f"{text.get('text')!r} overhangs"
+    assert over == 3, "night, east and west all stand in the sky"
+
+
 def test_grown_sunflowers_facing_east_warm_faster_and_get_five_times_the_bees_of_one_turned_west():
     root = panel_root("east-warm")
     bees = groups(root, "sp-bee")

@@ -1334,8 +1334,11 @@ def sun_track(cv, g, first: float, last: float, measure: Measure) -> None:
     cv.rect(night, 80, 400, 840, 500, NIGHT, radius=24.0)
     cv.rect(night, 410, 416, 180, 72, PAPER, stroke=INK, sw=3.0, radius=36.0)  # a tag, so the word reads on paper
     label(cv, night, "night", 410, 420, 180, 60, 46.0, INK, "center")
-    label(cv, g, "east", LEFT + 20, 780, 200, 60, 46.0, STAMP, "start")
-    label(cv, g, "west", RIGHT - 220, 780, 200, 60, 46.0, STAMP, "end")
+    for word, x in (("east", LEFT + 20.0), ("west", RIGHT - 20.0)):  # on paper tags, so they read in the night too
+        wide = measure(word, 46.0) + 40.0
+        left = x if word == "east" else x - wide
+        cv.rect(g, left, 776, wide, 68, PAPER, stroke=INK, sw=3.0, radius=34.0)
+        label(cv, g, word, left, 780, wide, 60, 46.0, STAMP, "center")
     arc = [(500.0 - 320.0 * math.cos(u), 760.0 - 300.0 * math.sin(u)) for u in np.linspace(0.0, math.pi, 9)]
     for x, y in arc[1:-1]:
         cv.ellipse(g, x - 6, y - 6, 12, 12, RULED)
