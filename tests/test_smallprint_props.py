@@ -400,3 +400,56 @@ def test_his_fist_knocks_the_stale_loaf_and_the_warmed_one_steams_with_no_cracks
     assert "steam" in warm and "stalecrust" not in warm and "crumb" not in warm
     assert warm["steam"][:, 1].max() < warm["crust"][:, 1].min(), "the steam rises off the top"
     assert warm["flesh"][:, 1].max() == pytest.approx(sp.PLACES["smallprint-bread"][1], abs=1.0), "his hand rests"
+
+
+def test_the_flies_sit_on_the_bare_horse_and_hang_over_the_striped_coat_without_touching_it():
+    bare, coated = (materials_of(sp.worktop("smallprint-horse", state)) for state in sp.HORSE_STATES)
+    y, scale = sp.PLACES["smallprint-horse"][1], sp.PLACES["smallprint-horse"][4]
+    back = y + (sp.HORSE_BACK - sp.HORSE_BODY[1]) * scale  # the top of his back
+    assert bare["fly"][:, 1].max() > back, "on him, not over him"
+    assert "coat" not in bare and "coatstripe" not in bare
+    coat = np.concatenate([coated["coat"], coated["coatstripe"]])
+    assert coated["fly"][:, 1].max() < coat[:, 1].min(), "over the coat, every one clear of it"
+    assert coated["wing"][:, 1].max() < coat[:, 1].min()
+    stripes = coated["coatstripe"]
+    assert np.ptp(stripes[:, 0]) > 0.5 * np.ptp(coated["coat"][:, 0]), "stripes run the coat's length"
+    ink, white = (sp.materials()[name].color for name in ("coatstripe", "coat"))
+    assert _contrast(ink, white) > 4.5, "black on white, a zebra's stripes"
+
+
+def test_the_grown_sunflower_faces_east_and_the_lit_lamp_to_its_west_does_not_turn_it():
+    dark, lit = (materials_of(sp.worktop("smallprint-sunflower", state)) for state in sp.SUNFLOWER_STATES)
+    for parts in (dark, lit):
+        seeds, petals, lamp = parts["seedhead"], parts["petal"], parts["lampbody"]
+        assert seeds[:, 0].mean() < petals[:, 0].mean() - 0.5, "its middle is to the east (frame left) of its petals"
+        assert lamp[:, 0].min() > seeds[:, 0].max(), "the lamp stands to its west"
+    assert np.allclose(dark["seedhead"], lit["seedhead"]) and np.allclose(dark["petal"], lit["petal"]), (
+        "a grown sunflower does not turn to the light"
+    )
+    assert "bulb" in lit and "bulb" not in dark and "bulboff" in dark, "the lamp is off, then on"
+    y = sp.PLACES["smallprint-sunflower"][1]
+    pool = lit["bulb"][np.abs(lit["bulb"][:, 1] - y) < 1.0]
+    assert len(pool) and np.ptp(pool[:, 0]) > 20.0, "and lights the worktop under it"
+    below = lit["bulb"][(lit["bulb"][:, 1] > y - 32.0) & (lit["bulb"][:, 1] < y - 4.0)]  # under the bulb, off the top
+    assert len(below), "drawn rays fall from the bulb towards the worktop, so it reads as on above the caption"
+
+
+def test_the_mars_globe_is_red_with_a_white_cap_and_a_scratch_shows_grey_under_it_to_the_lens():
+    red, scratched = (materials_of(sp.worktop("smallprint-mars", state)) for state in sp.MARS_STATES)
+    assert "marsinside" not in red, "unscratched, it is red all over"
+    for name in ("marsred", "marsdark", "marscap", "stand"):
+        assert np.allclose(red[name], scratched[name]), f"the scratch changes nothing else: {name}"
+    globe, cap = red["marsred"], red["marscap"]
+    assert cap[:, 1].max() < globe[:, 1].mean(), "the cap is on top"
+    gouge = scratched["marsinside"]
+    on_globe = gouge[gouge[:, 1] < globe[:, 1].max() - 2.0]
+    assert len(on_globe) and on_globe[:, 2].mean() < globe[:, 2].mean(), "the gouge is on the side to the lens"
+    y = sp.PLACES["smallprint-mars"][1]
+    crumbs = gouge[np.abs(gouge[:, 1] - y) < 4.0]
+    assert len(crumbs), "and grey crumbs lie on the worktop in front of it"
+
+    def redness(name: str) -> float:
+        r, g, b = (int(sp.materials()[name].color[i : i + 2], 16) for i in (1, 3, 5))
+        return r - (g + b) / 2
+
+    assert redness("marsinside") < 0.25 * redness("marsred"), "markedly less red under the surface"
