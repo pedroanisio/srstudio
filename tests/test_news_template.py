@@ -130,6 +130,23 @@ def test_the_bands_words_keep_inside_the_safe_column_except_the_crawl():
     assert all(b[1] >= SAFE.x0 - 0.5 and b[3] <= SAFE.x1 + 0.5 for b in words), words
 
 
+@pytest.mark.parametrize("wide", [0.42, 0.5], ids=["narrow", "wide"])
+def test_every_band_word_fits_its_box_at_the_measure_given(wide):
+    def sized(text: str, size: float) -> float:
+        return wide * size * len(text)
+
+    cv = canvas()
+    card = news_template.CardPlan(large=(0.0, 2.5), credit=2.5)
+    news_template.band(cv, cv.comp, ticker=TICKER, lowers=LOWERS, end=9.0, measure=sized, source=SOURCE, card=card)
+    fiction = canvas()
+    news_template.band(fiction, fiction.comp, ticker=TICKER, lowers=LOWERS, end=9.0, measure=sized, parody=True)
+    for drawn in (cv, fiction):
+        root = ET.fromstring(drawn.scene.to_bytes())
+        for t in root.iter("text"):
+            rows = t.get("text", "").split("\n")
+            assert max(sized(row, float(t.get("size", "0"))) for row in rows) <= float(t.get("width", "0")), rows
+
+
 def test_no_parody_tag_on_a_real_story():
     cv = canvas()
     with pytest.raises(NewsKitError, match="PARODY"):
@@ -153,6 +170,32 @@ def test_the_band_stands_down_under_an_insert():
     ]
     assert windows
     assert not any(a < 5.0 and b > 4.0 for a, b in windows), windows
+
+
+def test_the_storys_line_fills_the_line_row_whenever_no_lower_is_up():
+    cv = canvas()
+    card = news_template.CardPlan(large=(0.0, 2.0), credit=2.0)
+    lowers = (Lower(4.0, 6.0, "VERA STILLMAN, ANCHOR", "AI AGENTS: FOUR RIDES"),)
+    news_template.band(
+        cv,
+        cv.comp,
+        ticker=TICKER,
+        lowers=lowers,
+        end=9.0,
+        measure=measure,
+        source=SOURCE,
+        card=card,
+        line="FOUR AI RIDES",
+        inserts=((7.0, 8.0),),
+    )
+    root = ET.fromstring(cv.scene.to_bytes())
+    rows = sorted(
+        (float(g.get("start", "0")), float(g.get("end", "0")))
+        for g in root.iter("group")
+        if g.get("id", "").startswith(("news-band-lower", "news-band-line"))
+    )
+    assert rows == [(2.0, 4.0), (4.0, 6.0), (6.0, 7.0), (8.0, 9.0)]
+    assert "FOUR AI RIDES" in _texts(cv, "news-band-line")
 
 
 # -- the framing ------------------------------------------------------------------------------------------------------

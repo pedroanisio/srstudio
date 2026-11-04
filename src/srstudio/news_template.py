@@ -115,7 +115,7 @@ ROW_A, ROW_A_H = BAND_TOP + 10.0, 44.0  # the label and the kicker, as chips
 ROW_B, ROW_B_H = ROW_A + ROW_A_H + 6.0, 62.0  # the story's one line
 TICKER_Y, TICKER_H = ROW_B + ROW_B_H + 6.0, 48.0
 CHIP_SIZE, LINE_SIZE, LINE_LEAST, TICKER_SIZE = 30.0, 52.0, 36.0, 32.0
-TAB_W = 300.0  # the ticker's tab, which carries the show's name
+TAB_PAD = 36.0  # the ticker's tab past the show's name it carries, its point included
 CARD_LINE, CARD_LEAST_SIZE = 48.0, 34.0  # the large card's headline, two lines at most
 CARD_BOX = (0.0, BAND_TOP, FRAME_W, float(BAND_FOOT))  # where the large card is: the band, edge to edge
 CARD_LEAST = 2.0  # seconds a large card must stay up to be read; less, and only the credit shows
@@ -601,6 +601,7 @@ def band(
     source: Source | None = None,
     card: CardPlan | None = None,
     parody: bool = False,
+    line: str | None = None,
     inserts: Sequence[Span] = (),
     safe: SafeArea | None = VERTICAL,
     id: str = "news-band",
@@ -610,7 +611,8 @@ def band(
     A real story has a ``source``: its large card fills the band through ``card.large``, and its credit stands at the
     right of the label row from ``card.credit``. A fictional one has none and wears BREAKING at the left of that row,
     and with ``parody`` the PARODY tag at its right; :class:`NewsKitError` refuses the tag on a real story. Each of
-    ``lowers`` puts its kicker on the label row and its line under it. The ticker runs under them from the end of the
+    ``lowers`` puts its kicker on the label row and its line under it; whenever none is up, ``line``, the story's own,
+    stands in that row, so the band never shows an empty one. The ticker runs under them from the end of the
     large card, its tab carrying the show's name. Nothing is drawn while an insert is up. Returns the band's group."""
     if parody and source is not None:
         raise NewsKitError("no PARODY tag on a real story: the tag is for a story the show made up")
@@ -685,8 +687,17 @@ def band(
             g = window("lower", a, b)
             _chip(cv, g, start_x, w, MINT, kicker, PLUM_DEEP)
             news_kit._text(cv, g, lines[0], left, ROW_B, right - left, ROW_B_H, size, CREAM)
+    # the story's line, wherever no lower is up
+    if line is not None:
+        standing, standing_size = news_kit._fit(measure, check_copy(line), LINE_SIZE, LINE_LEAST, right - left, 1)
+        taken = [*inserts, *((lower.start, lower.end) for lower in lowers)]
+        for a, b in _clipped(after, end, taken):
+            g = window("line", a, b)
+            news_kit._text(cv, g, standing[0], left, ROW_B, right - left, ROW_B_H, standing_size, CREAM)
     # the ticker, from the end of the large card
     one = "   /   ".join(check_copy(item) for item in ticker) + "   /   "
+    name_w = math.ceil(measure(news_kit.SHOW, TICKER_SIZE)) + 4
+    tab = left + name_w + TAB_PAD
     for a, b in _clipped(after, end, inserts):
         g = window("ticker", a, b)
         cv.rect(g, -20, TICKER_Y, FRAME_W + 40, TICKER_H, CREAM)
@@ -696,16 +707,16 @@ def band(
         news_kit._text(
             cv, crawl, many, 0, TICKER_Y, math.ceil(measure(many, TICKER_SIZE)) + 40, TICKER_H, TICKER_SIZE, PLUM_DEEP
         )
-        cv.keys(crawl, "x", [(a, TAB_W), (b, TAB_W - TICKER_SPEED * (b - a))], hold=False, local=False)
+        cv.keys(crawl, "x", [(a, tab), (b, tab - TICKER_SPEED * (b - a))], hold=False, local=False)
         cv.path(
             g,
-            f"M -20 {TICKER_Y} L {TAB_W - 24} {TICKER_Y} L {TAB_W} {TICKER_Y + TICKER_H / 2} L {TAB_W - 24} "
+            f"M -20 {TICKER_Y} L {tab - 24} {TICKER_Y} L {tab} {TICKER_Y + TICKER_H / 2} L {tab - 24} "
             f"{TICKER_Y + TICKER_H} L -20 {TICKER_Y + TICKER_H} Z",
             TANGERINE,
             cv.clear,
             0,
         )
-        news_kit._text(cv, g, news_kit.SHOW, left, TICKER_Y, TAB_W - 40 - left, TICKER_H, TICKER_SIZE, PLUM_DEEP)
+        news_kit._text(cv, g, news_kit.SHOW, left, TICKER_Y, name_w, TICKER_H, TICKER_SIZE, PLUM_DEEP)
     return root
 
 
