@@ -53,6 +53,7 @@ from . import (  # noqa: F401  (registers builders)
     ink_meter,
     ink_phone,
     ink_vacuum,
+    inked_friends,
     layout,
     lipsync,
     locations,

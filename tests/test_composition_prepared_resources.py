@@ -19,14 +19,14 @@ BACKENDS = ['plates', 'proxy']
 # parts list among them (composition preflight), so a part added to the style moves every pin here.
 PREPARED = {
     'plates': (
-        '736bf9e0e2a45cf8ef754f773346fa3ceee07025f63d6ba5438c7d57832d1cb1',
-        '804f6a03a4c18034f0b65928e11a50e4a25f080b65a8810014b9b62a76e8ea7e',
-        '6d787e9f757e0713d94c6f3aa1f6aa051f7def59acaa15e07d07e78a8475d6cf',
+        'b93c5c9e1ab6fe25d523015fcd5fe90f88cf6927b5291628de5e3ac114b63ea5',
+        'c5e407728825c4e26175e3f48834a21a99895ac5bc8a42c564bf3df4101e4f85',
+        'd273f803b0729a82c66170c15cab05a834c672f24b07650acd2e49e78bedee94',
     ),
     'proxy': (
-        '2a9cf8e0e4797710a5f6af9f7c2a28644bfb3420b6df0ffa7f637e79151518fe',
-        'c7266ef3ef9fcd6dfe01a9ea3df62f1348557b896dacd8560ce1d3a880281b9a',
-        '60342cde4f76096c71929877032282e76bf23daab265cca09efdddbe8aaf0744',
+        '13a8175ec39169cec0066e75183597ccc26ca5c3a96f23ca4e99cda8d31f7537',
+        '5a381743e4973dc37dd97a2ab29efc1caf6c900bbb967812426b385d519e050d',
+        '7b17d838749a4056d187554171b9cec6e658e01d11e33410e36b459a0f85810f',
     ),
 }
 

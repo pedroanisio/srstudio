@@ -90,6 +90,12 @@ _PLAYER = _paired(
     Side.LEFT,
     Facing.PALM,
 )
+_FRIENDS = _paired(
+    "inked_friends.GRIP: one grip drawn for the frame's left arm, reflected for the right (ADR 0231)",
+    "pad-grip",
+    Side.LEFT,
+    Facing.BACK,
+)
 _RAFA = _paired("the arm picks the thumb's side in rafa.pair and rafa._hand", "rafa-hand", Side.LEFT, Facing.BACK)
 _COLLAGE = _paired("collage._hand takes a contract hand and draws its thumb there", "pose", Side.LEFT, Facing.BACK)
 _STROKE = _thumbless("arms end in a stroke's round cap")
@@ -126,6 +132,8 @@ CHARACTERS: Final = MappingProxyType(
         "gloss-nadia": _BALL,
         "gloss-sunny": _BALL,
         "gloss-tamsin": _BALL,
+        "friends-leo": _FRIENDS,
+        "friends-sam": _FRIENDS,
         "host-lint": _thumbless("a fur mitten on a sleeve, the same shape either way round"),
         "juno": _SOFT,
         "manager": _single(
@@ -197,6 +205,8 @@ BODIES: Final = MappingProxyType(
         "gloss-nadia": _DOLL,
         "gloss-sunny": _DOLL,
         "gloss-tamsin": _DOLL,
+        "friends-leo": _DESK,  # seated: the couch cuts them at the waist
+        "friends-sam": _DESK,
         "host-lint": _DESK,
         "juno": _LEGS,
         "manager": _DESK,

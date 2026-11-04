@@ -16031,6 +16031,40 @@
           }
         }
       ]
+    },
+    "friends-leo": {
+      "kind": "character",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-04",
+          "note": "Leo, a young man of about twenty inked the News way, one of two best friends on a couch: a round soft face, a dark brown fringe swept to one side, brown eyes, rosy cheeks, a sage-green hoodie with cream drawstrings, a controller held in both hands and a phone in one for the insert beat. His own looks run from flat-proud to hurt (brows up in the middle, eyes down) to a soft real smile; breath, blinks and a drift of the head keep him alive in a held shot. First drawn for the Between Friends pilot. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "generated/character-proofs/between-friends/index.html",
+          "approval": null,
+          "drawing": "d68f3bff55731d9d61c11d7abd5b5f920b1d46d117945b0d0fd8628697e90345",
+          "rig": null
+        }
+      ]
+    },
+    "friends-sam": {
+      "kind": "character",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-04",
+          "note": "Sam, a young man of about twenty inked the News way, Leo's best friend and the cool one: a longer face with a squared jaw, a short black crop with a clean line, deep brown skin, straight thick brows, an open denim shirt over a white tee, a controller held in both hands. His looks run from an easy neutral to a dry side-eye, gentle concern and a heavy-lidded deadpan, and he nods. First drawn for the Between Friends pilot. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "generated/character-proofs/between-friends/index.html",
+          "approval": null,
+          "drawing": "4b1adffa2926c68480c3f6d52d4632a6450252d506057db384d6510ddd99eb7a",
+          "rig": null
+        }
+      ]
     }
   }
 }

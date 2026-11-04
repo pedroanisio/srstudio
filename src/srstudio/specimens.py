@@ -37,6 +37,7 @@ from . import (
     collage,
     gloss,
     host_kit,
+    inked_friends,
     news_inked,
     news_kit,
     parts,
@@ -276,7 +277,20 @@ def _actor(entry: registry.Entry) -> Canvas:
     return cv
 
 
+def _friend(entry: registry.Entry) -> Canvas:
+    """Leo or Sam through every look, mouth and hold of his, with a nod, a shrug, a swallow and a blush (ADR 0231)."""
+    who = entry.name.removeprefix("friends-")
+    beats = inked_friends.specimen_beats(who, HOLD * 2)
+    cv = _stage("toon", HOLD * 2)
+    mouths = _track(inked_friends.VISEMES)
+    inked_friends.perform(cv, cv.comp, who, beats, HOLD * 2, moves=inked_friends.SPECIMEN_MOVES, mouths=mouths)
+    return cv
+
+
 def _anchor(entry: registry.Entry) -> Canvas:
+    """A figure inked the News way: an anchor through his poses, or one of the two friends (ADR 0231)."""
+    if entry.name.startswith("friends-"):
+        return _friend(entry)
     cv = _stage("toon", HOLD)
     who = entry.name.removeprefix("news-").split("@")[0]
     acts = tuple(
@@ -401,6 +415,8 @@ SPECIMENS: dict[str, Callable[[registry.Entry], Canvas]] = {
         ),
         _anchor,
     ),
+    "friends-leo": _anchor,
+    "friends-sam": _anchor,
     "host-lint": _moth,
     "rafa": _clay,
     "pedro": _clay,

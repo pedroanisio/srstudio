@@ -382,6 +382,7 @@ TOON = Style(
     mouths={},
     parts=(
         "host_kit",
+        "inked_friends",
         "map_kit",
         "mind_kit",
         "news_inked",

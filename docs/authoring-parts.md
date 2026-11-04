@@ -594,3 +594,21 @@ toon_head.figure(cv, parent, toon_friends.LEO_RIG, poses, 4.0, HeadPlan.still())
 Both characters and both rigs are proposed, so `toon_rigs.rig_of` refuses them and no reel can use them until the
 operator decides. `toon.parse_poses` still holds to the shared arm kinds, so a sketch cannot name a grip yet. The
 reasons are in [docs/decisions/0230-a-controller-held-in-both-paws.md](decisions/0230-a-controller-held-in-both-paws.md).
+
+## Leo and Sam inked the News way, proposed
+
+[src/srstudio/inked_friends.py](../src/srstudio/inked_friends.py) draws `friends-leo` and `friends-sam`, two friends of
+about twenty in the News inked drawing, each holding a generic controller in both hands. A timeline is a list of
+`Beat`s, each naming a `Look` (lids, gaze, and the inner and outer ends of the brows), a mouth from `MOUTHS` and a hold
+from `HOLDS`; `Moves` adds nods, shrugs, swallows and a flush. Breath, head drift and blinks run under every beat.
+`screen_light` lights the people from the TV through the `people` matte, so the room keeps its own light:
+
+```python
+from srstudio import inked_friends as f
+
+beats = [f.Beat(0.0, "level"), f.Beat(3.0, "hurt", "pressed", "pad-lap", tilt=-3.0)]
+f.perform(cv, cv.comp, "leo", beats, 8.0, x=280, y=1090, scale=1.5, moves=f.Moves(swallows=(4.0,)))
+```
+
+Both are proposed, so no reel can use them until the operator decides. The reasons are in
+[docs/decisions/0231-two-friends-inked-the-news-way.md](decisions/0231-two-friends-inked-the-news-way.md).
