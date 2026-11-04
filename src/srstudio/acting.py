@@ -106,6 +106,7 @@ class ActingRig:
     version: str = '1.0.0'
 
     def describe(self) -> dict:
+        from ._acting_discovery import controls
         from ._acting_transitions import describe_continuity, describe_policy
 
         return {
@@ -114,6 +115,7 @@ class ActingRig:
             'version': self.version,
             'family': self.family,
             'clock': 'performance seconds',
+            **controls(self),
             'capabilities': {
                 'expression': True,
                 'expression_blend': self.head_rig is not None and self.head_rig.face_blender is not None,
@@ -297,6 +299,8 @@ class PerformancePlan:
 
         Limb geometry may be drawn on held frames at its configured sampling rate; the
         returned spatial pose is the continuous source sample, not a rendered-pixel claim.
+        Cropped tracks hold their terminal pose, contacts and prop frames for the
+        rest of the performance, matching character placement.
         """
         if not checks.number(time) or not 0 <= time <= self.duration:
             raise _error('time', time, f'a finite performance second in 0..{self.duration}')
@@ -306,7 +310,7 @@ class PerformancePlan:
             gaze = self.clip.target_gaze.sample(time)
         limbs = []
         for track in self.limbs:
-            t = max(0, time - track.options.offset)
+            t = track._source_time(time, end=self.duration)
             motion = track.motion
             limbs.append(
                 LimbState(

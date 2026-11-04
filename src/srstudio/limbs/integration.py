@@ -52,6 +52,10 @@ class LimbTrack:
         if self.deformation == "skin" and (self.backend == "baked" or self.occlusion or self.correctives):
             raise LimbError("skin tracks require native planar IK without layered or artist-corrected contours")
 
+    def _source_time(self, time: float, *, end: float) -> float:
+        """Map character seconds to the source, holding the first and cropped last poses."""
+        return min(_motion_duration(self.motion, self.options, end), max(0, time - self.options.offset))
+
     def draw(self, cv: Canvas, layers: LayerTargets, *, id: str) -> Compiled:
         if self.occlusion:
             return bake(

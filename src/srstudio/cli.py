@@ -99,7 +99,7 @@ def _load_plugins(modules, command: str, json_output: bool = False) -> bool:
             )
             if json_output:
                 payload = diagnostic(error, command=command)
-                payload['context'].update(logs)
+                payload['context'].update({name: text for name, text in logs.items() if text})
                 print(json.dumps(payload, allow_nan=False, ensure_ascii=False), file=sys.stderr)
             else:
                 _error(command, error)
@@ -714,7 +714,7 @@ def main(argv=None):
             return status
 
 
-class _BuildLookupError(Exception):
+class _BuildLookupError(SrstudioError):
     """Carry an input-resolution failure and its original diagnostic to JSON mode."""
 
     def __init__(self, error: SrstudioError):

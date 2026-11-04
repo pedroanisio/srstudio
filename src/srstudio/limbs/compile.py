@@ -10,6 +10,7 @@ from dataclasses import dataclass, field, replace
 from fractions import Fraction
 from typing import Any
 
+from .. import build_report
 from ..canvas import Canvas
 from .adapters import Appearance, adapter_for
 from .correctives import ContourCorrection
@@ -18,7 +19,7 @@ from .geometry import Part, ProjectedPose, project_pose, ribbon
 from .math3d import number
 from .motion import Motion, Sample, sample_motion
 from .projection import Affine, Camera
-from .validation import MotionReport, QualityProfile, audit, motion_diagnostics
+from .validation import MotionReport, QualityProfile, audit, motion_diagnostics, sampling_evidence
 
 _CAMERA = Camera()
 _APPEARANCE = Appearance()
@@ -253,6 +254,11 @@ def bake(
         raise LimbError(f"limb bake budget exceeded: {count} frames, at most {estimate} nodes", code="budget")
     plan_key = (options, hold_until, tuple(occlusion))
     plan = prepared.plans.get(plan_key)
+    provenance = {'track': id, 'style': style, 'fps': options.fps, 'offset': options.offset, 'duration': duration}
+    if plan is not None:
+        build_report.motion_quality(
+            options.quality, sampling=sampling_evidence(plan.samples, provenance), measured=plan.report, cached=True
+        )
     if plan is None:
         times = tuple(i / options.fps for i in range(count)) + ((duration,) if trailing else ())
         samples = tuple(prepared.sample(motion, t, track=id) for t in times)
@@ -261,7 +267,7 @@ def bake(
         for rule in occlusion:
             if rule.end > duration + 1e-9 or not any(fnmatch.fnmatchcase(name, rule.part) for name in names):
                 raise LimbError(f"occlusion part {rule.part!r} does not resolve or its time exceeds the bake")
-        report = audit(samples, poses, motion.arm, quality=options.quality)
+        report = audit(samples, poses, motion.arm, quality=options.quality, provenance=provenance)
         assignments_list = []
         hidden = 0
         for pose in poses:

@@ -74,9 +74,22 @@ See [ADR 0211](decisions/0211-explicit-external-toon-arms.md).
 `srstudio.acting` compiles a bounded score once, then places windows of that same
 performance into shots. `BENTO` and `gloss_actor("nadia")` expose explicit artistic
 emotion mappings through `describe()`; inspect capabilities before generating intent.
+The descriptor's `vocabulary` lists valid `eyes`, expression `mouths`, `gestures`,
+named `gaze` and speech `visemes`. Empty lists indicate unsupported controls:
+Gloss expressions have no independent mouth field, and Sunny has no arm gestures.
+`channels` gives each numeric control's input path, minimum, maximum and unit.
+Head rotations use degrees; `nod`, `face_x` and `idle_y` use the rig's reference
+pixels; breath is normalized 0–1. Bounds come from the selected rig's style;
+combined motion and transitions still undergo runtime validation.
 These names describe the author's intent, not a measured emotion or a universal
 biomechanical model. Gloss supports its existing face, mouth, gesture and guest limb
 controls; directed head motion, gaze and listening require a capable Toon head rig.
+
+`PerformancePlan.sample(t)` and window samples use the same limb interval as
+character drawing. A track's `BakeOptions.offset` holds its initial pose before
+the offset; `duration` crops its source and holds that terminal pose, contact
+state and prop frames through the performance end. Within that interval samples
+are continuous source poses; the drawing holds poses at the configured frame rate.
 
 <!-- acting:start -->
 ```python

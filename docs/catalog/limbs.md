@@ -77,6 +77,27 @@ with explicit `arm`, `hand`, `played` and `fps` fields. Unit rotations are prese
 drift. The existing 5 MiB file limit also applies, so a large in-memory sequence may need splitting for persistence.
 Ordinary procedural motions retain `srstudio.limbs/1.3.0`.
 
+Export the keyed document shape with `srstudio schema limbs-keyed --version 1.0.0 --json`.
+The schema includes nested anatomy and solved-pose records, closed objects and array limits.
+Runtime parsing still checks sample times, unit quaternions, anatomical consistency
+and the cumulative decoding budget. This round trip works from an installed SDK:
+
+<!-- keyed-document:start -->
+```python
+from srstudio import document_schemas
+from srstudio.limbs import HUMAN, ArmProfile
+from srstudio.limbs.motion import Motion
+from srstudio.limbs.serialization import motion_dict, parse_motion
+
+schema = document_schemas.get("limbs-keyed", version="1.0.0")
+source = Motion(ArmProfile(), HUMAN)
+played = source.keyed(tuple(source.sample(i / 24) for i in range(24)), fps=24)
+document = motion_dict(played)
+restored = parse_motion(document)
+assert motion_dict(restored) == document
+```
+<!-- keyed-document:end -->
+
 ## Preserve authored wrist turns
 
 `HandControl.forearm_twist` is an angle in radians, including authored whole turns when `ArmProfile.twist_limit`
@@ -316,6 +337,15 @@ segment. `policy="warn"` preserves these findings in the report and compiler dia
 Derivatives require evidence: speed needs two samples, acceleration three, jerk four. An enabled limit with
 too few samples produces `quality.evidence`, rather than passing on a default zero. Reports without a quality
 profile retain zero defaults for unavailable measurements; those zeros are not proof of stillness.
+
+`srstudio build --json --require-check motion-quality build.py` requires these audits
+to pass. Results include the selected profile and policy, actual sampling interval,
+track/style/fps where supplied by the compiler, metrics and structured findings.
+Warn-policy breaches produce failed evidence but allow the build to continue unless
+the check is required. Error-policy failures preserve their evidence before refusing
+emission. Unselected or empty profiles are skipped. See the
+[build evidence contract](../authoring-verification.md) for cached preflight results
+and the distinction between sampled limits and visual review.
 
 ### Versioned reference envelopes
 

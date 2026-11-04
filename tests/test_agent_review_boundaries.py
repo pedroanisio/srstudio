@@ -132,6 +132,27 @@ def test_plugin_logs_and_failures_keep_json_streams_parseable(tmp_path, command,
         assert isinstance(json.loads(process.stdout), dict)
 
 
+@pytest.mark.parametrize('stream', [None, 'stdout', 'stderr'])
+def test_plugin_failure_omits_empty_log_fields(tmp_path, monkeypatch, capsys, stream):
+    name = 'quiet_review_plugin'
+    chatter = '' if stream is None else f'print("detail", file=sys.{stream})\n'
+    (tmp_path / f'{name}.py').write_text(
+        'import sys\nfrom srstudio.errors import SrstudioError\n'
+        + chatter
+        + 'raise SrstudioError("invalid plugin", code="plugin.input", path="option")\n'
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+    assert cli.main(['catalog', '--summary', '--plugins', name, '--json']) == 2
+    output = capsys.readouterr()
+    assert output.out == ''
+    error = json.loads(output.err)
+    assert error['code'] == 'plugin.input' and error['path'] == 'option'
+    expected = {'command': 'catalog'}
+    if stream is not None:
+        expected[stream] = 'detail\n'
+    assert error['context'] == expected
+
+
 @pytest.mark.parametrize('channel', ['speech', 'heard'])
 @pytest.mark.parametrize(
     'field, values, suffix, actual',

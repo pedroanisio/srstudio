@@ -258,7 +258,24 @@ def bake_interaction(
             )
             for s, view in zip(samples, cameras, strict=True)
         )
-        reports.append((participant.name, audit(samples, poses, participant.motion.arm, quality=options.quality)))
+        reports.append(
+            (
+                participant.name,
+                audit(
+                    samples,
+                    poses,
+                    participant.motion.arm,
+                    quality=options.quality,
+                    provenance={
+                        'track': participant.name,
+                        'style': participant.style,
+                        'fps': options.fps,
+                        'offset': options.offset,
+                        'duration': duration,
+                    },
+                ),
+            )
+        )
         for frame, pose in zip(frames, poses, strict=True):
             for part in pose.parts:
                 frame.append(

@@ -120,6 +120,29 @@ and optional `rotation: [w,x,y,z]`; a root key has `time`, `root` and optional
 numbers are refused. Parse first, then compile for support validation. The
 [study's input generator](../examples/body_steps.py) is an executable JSON example.
 
+Agents can export the structural JSON Schema with
+`srstudio schema body --version 1.1.0 --json`, including from an installed package.
+`document_schemas.get("body", version="1.1.0")` returns the same schema. Parse and
+compile after structural validation to enforce geometry, support and work limits:
+
+<!-- body-document:start -->
+```python
+from srstudio import body, document_schemas
+
+schema = document_schemas.get("body", version="1.1.0")
+document = {
+    "schema": "srstudio.body/1.1.0", "duration": 2,
+    "roots": [{"time": 0, "root": {"origin": [0, -0.88, 0]}}],
+    "stance": [
+        {"side": "left", "frame": {"origin": [-0.12, 0, 0]}},
+        {"side": "right", "frame": {"origin": [0.12, 0, 0]}},
+    ],
+}
+plan = body.compile_body(body.parse_body(document))
+assert all(leg.planted for leg in plan.sample(1).legs)
+```
+<!-- body-document:end -->
+
 `plan.window(start, end).place(...)` provides `solid` and `wire` candidate drawings.
 The static `Camera` projects world geometry into the parent's pixel coordinates.
 The diagnostic view shows soles, joint centers, the support polygon and mass
@@ -129,7 +152,9 @@ must explicitly map its anatomy and shoulder frames without retaining duplicate
 legacy legs. No drawing approval transfers from another character.
 
 Drawing holds poses at 1–120 fps on the source grid and includes exact contact
-boundaries. Each drawing is keyed half a project frame before the first frame that
+boundaries. Source events are mapped through placement, sequence and ancestor
+offset/scale clocks before quantizing to the project's frame grid. Each drawing
+is keyed half a project frame before the first frame that
 shows it ([ADR 0216](decisions/0216-held-keys-at-frame-centres.md)), so a rounded
 or offset key time never repeats the previous drawing; the canvas's project must
 state its frame rate. Cuts reuse those samples instead of restarting a step. The complete

@@ -40,6 +40,7 @@ This also applies to builders that finish with `sys.exit(0)` or `sys.exit()`.
 | --- | --- |
 | `sdk` | SDK scene checks invoked through `Episode`; findings remain attached. |
 | `schema` | XSD/Schematron checks, available with `srstudio[validate]`. |
+| `motion-quality` | Sampled limb audits against explicitly selected `QualityProfile` limits. |
 | `usage` | This build wrote the parts, figures and anatomy usage records; setup-only restoration is skipped. |
 | `anatomy` | Post-build anatomy frame rules completed for the selected scenes. |
 | `text` | Post-build text frame rules completed for the selected scenes. |
@@ -56,9 +57,33 @@ files directly must explicitly record each completed publication with
 `srstudio.build_report.artifact('scene', scene_path)` to include it in post-build frame checks. This records
 an output, not SDK validation; it does not make `sdk` or `schema` pass.
 
+### Requiring sampled motion limits
+
+Select a `QualityProfile` in each limb track's or compiler's `BakeOptions.quality`,
+then run `srstudio build --json --require-check motion-quality build.py`.
+Each result's `evidence` contains the full profile (name, limits, policy and optional
+calibration scope), `sampling`, and the measured `report` with structured
+`quality_findings`. Compiler sampling names the track, style, fps, source duration
+and placement offset. The start/end and minimum/maximum interval describe the
+samples actually audited, including short final intervals; they are motion seconds.
+
+A warn-policy breach records `failed` while permitting emission. Requiring the
+check makes that build exit nonzero. Error-policy breaches record their metrics and
+findings before raising; scope or geometric refusals retain a structured `error`.
+No audit, no selected profile, or a profile without limits produces `skipped`.
+Insufficient samples for an enabled derivative limit produce failed evidence.
+Every recorded audit must pass when the check is required, including preflight.
+
+Emission may reuse numeric preparation validated against identical inputs;
+`evidence.cached=true` identifies that reuse and retains its profile and sampling
+provenance, including when preparation happened before this build capture. Existing
+files never satisfy the check. These are sampled limb limits: whole-body dynamics,
+continuous collision safety, temporal realism and visual approval need separate
+checks and rendered review.
+
 ### Reading results and retrying
 
-These JSON excerpts show selected fields; real results include all five check entries and execution details.
+These JSON excerpts show selected fields; real results include all six check entries and execution details.
 On exit zero, read stdout. Here SDK validation passed but no anatomy measurement ran:
 
 ```json

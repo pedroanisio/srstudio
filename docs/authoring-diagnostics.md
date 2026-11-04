@@ -19,14 +19,14 @@ diagnostic payload limits. The SDK exposes those same findings through `SceneChe
 
 For `catalog --json` and `inspect --json`, plugin import logs are also captured so neither output stream is
 contaminated. Successful discovery omits these logs; a failed import retains up to 4096 characters per stream
-in the diagnostic's `context`. Ordinary Python exceptions and plugin-requested exits become `plugin.import`
+in the diagnostic's `context`, omitting empty streams. Ordinary Python exceptions and plugin-requested exits become `plugin.import`
 with `path=plugins` and the module name as `actual`; existing SDK exceptions keep their diagnostic codes.
 
 Build success results additionally report `artifacts` and `checks` under `srstudio.build/1.1.0`.
 Failure diagnostics include the same evidence in `context.build`. Each named check has a status
 (`passed`, `failed`, or `skipped`) and execution details. A skipped check is not verified; an uninstrumented
 custom check is not inferred to have passed. Use `--require-check sdk`, `schema`, `usage`, `anatomy`, or
-`text` before the script, repeating the option as needed. A missing or skipped required check produces
+`text` or `motion-quality` before the script, repeating the option as needed. A missing or skipped required check produces
 `build.required_checks`, with the unmet statuses in `actual`. See [verification](authoring-verification.md).
 
 [Library README](../README.md) · [Authoring task index](authoring-reference.md)

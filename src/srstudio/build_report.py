@@ -1,17 +1,20 @@
-"""Scoped build evidence: record executed checks and published artifacts, never infer from old files."""
+"""Scoped build evidence: executed checks and published artifacts, never inferred from old files (ADR 0229)."""
 
 from __future__ import annotations
 
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from .errors import SrstudioError
 
-CHECKS = ('sdk', 'schema', 'usage', 'anatomy', 'text')
+if TYPE_CHECKING:
+    from .limbs.validation import MotionReport, QualityProfile
+
+CHECKS = ('sdk', 'schema', 'usage', 'anatomy', 'text', 'motion-quality')
 Status = Literal['passed', 'failed', 'skipped']
 
 
@@ -79,3 +82,44 @@ def artifact(kind: str, path: Path) -> None:
         row = {'kind': kind, 'path': str(path.resolve())}
         if row not in report.artifacts:
             report.artifacts.append(row)
+
+
+def motion_quality(
+    profile: QualityProfile | None,
+    *,
+    sampling: dict[str, Any],
+    measured: MotionReport | None = None,
+    error: SrstudioError | None = None,
+    cached: bool = False,
+) -> None:
+    """Record sampled limits, including refusals and preflight evidence reused by emission."""
+    report = _active.get()
+    if report is None:
+        return
+    if profile is None:
+        status, reason = 'skipped', 'No motion quality profile was selected.'
+    elif error is not None:
+        status, reason = 'failed', str(error)
+    elif not any(
+        f.name.startswith('max_') and f.name != 'max_collision_checks' and getattr(profile, f.name) is not None
+        for f in fields(profile)
+    ):
+        status, reason = 'skipped', 'The selected profile declares no quality limits.'
+    elif measured is None:
+        status, reason = 'skipped', 'No sampled motion audit was completed.'
+    else:
+        status = 'failed' if measured.quality_findings else 'passed'
+        reason = 'Sampled numeric limits only; perceptual realism and visual quality require review.'
+    report.results['motion-quality'].append(
+        {
+            'status': status,
+            'reason': reason,
+            'evidence': {
+                'profile': asdict(profile) if profile is not None else None,
+                'sampling': dict(sampling),
+                'cached': cached,
+                'report': measured.to_dict() if measured is not None else None,
+                'error': error.to_dict() if error is not None else None,
+            },
+        }
+    )

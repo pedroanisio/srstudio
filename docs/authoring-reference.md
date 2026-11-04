@@ -21,6 +21,7 @@ a similar character or pass contract JSON directly to a builder.
 | Start a project and check its dependencies | `srstudio init ROOT --json`; `srstudio doctor --json` | Run the returned build argument array, including its explicit project root. |
 | Discover a bounded set of parts | `srstudio catalog --summary --json`; `registry.search()` | Page with `next_offset`; capability filters match explicit true declarations only. |
 | Generate a JSON acting score | `srstudio schema acting --version 1.2.0 --json`; `document_schemas.get()` | Structural schema first, `srstudio.acting.parse_score` next, then rig-specific compilation. |
+| Generate a body or solved-limb document | `srstudio schema body --version 1.1.0 --json`; `srstudio schema limbs-keyed --version 1.0.0 --json` | Validate structure, parse with the catalog's named parser, then compile to check geometry and budgets. |
 | Decide whether a build is sufficiently verified | [Agent verification recipes](authoring-verification.md) | Read `checks` and `artifacts`; use `--require-check` to refuse skipped or failed verification. |
 | Discover a character, prop or location | `srstudio inspect KIND NAME --json`; [agent contracts](authoring-discovery.md#agent-contracts) | Read declared units, vocabularies, versions and runtime bindings; unknown fields remain unknown. |
 | Place different character families | [Character clips](authoring-clips.md#character-clips-one-placement-and-timing-boundary) | One local performance clock and an explicit project interval; adapters enforce family capabilities. |

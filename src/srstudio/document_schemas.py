@@ -1,4 +1,4 @@
-"""Data document schemas, separate from contracts describing Python call signatures.
+"""Data document schemas, separate from contracts describing Python call signatures (ADR 0228).
 
 Schemas constrain JSON structure. Parsers still check finite values, equal-length
 alignment arrays, ordering and Python integer representation; compilation checks
@@ -11,10 +11,33 @@ from dataclasses import fields
 from typing import Any
 
 from ._acting_parse import BLEND_SCHEMA, POLICY_SCHEMA, SCHEMA
+from ._body_parse import LEGACY_SCHEMA as BODY_LEGACY_SCHEMA
+from ._body_parse import SCHEMA as BODY_SCHEMA
 from .acting import HeadTarget
 from .errors import SrstudioError
+from .limbs._motion_keyed import SCHEMA as KEYED_SCHEMA
 
 VERSIONS = tuple(s.rsplit('/', 1)[1] for s in (SCHEMA, POLICY_SCHEMA, BLEND_SCHEMA))
+_FORMATS = {
+    'acting': (
+        VERSIONS,
+        'srstudio.acting.parse_score',
+        'srstudio.acting.compile_performance',
+        'docs/authoring-acting.md',
+    ),
+    'body': (
+        tuple(s.rsplit('/', 1)[1] for s in (BODY_LEGACY_SCHEMA, BODY_SCHEMA)),
+        'srstudio.body.parse_body',
+        'srstudio.body.compile_body',
+        'docs/authoring-body.md',
+    ),
+    'limbs-keyed': (
+        (KEYED_SCHEMA.rsplit('/', 1)[1],),
+        'srstudio.limbs.serialization.parse_motion',
+        'srstudio.limbs.compile.compile_motion',
+        'docs/catalog/limbs.md',
+    ),
+}
 
 
 class DocumentSchemaError(SrstudioError, ValueError):
@@ -26,13 +49,14 @@ def catalog() -> dict[str, Any]:
         'schema': 'srstudio.document-schemas/1.0.0',
         'documents': [
             {
-                'name': 'acting',
-                'versions': list(VERSIONS),
-                'default_version': VERSIONS[-1],
-                'parser': 'srstudio.acting.parse_score',
-                'compiler': 'srstudio.acting.compile_performance',
-                'guide': 'docs/authoring-acting.md',
+                'name': name,
+                'versions': list(versions),
+                'default_version': versions[-1],
+                'parser': parser,
+                'compiler': compiler,
+                'guide': guide,
             }
+            for name, (versions, parser, compiler, guide) in _FORMATS.items()
         ],
     }
 
@@ -51,8 +75,9 @@ def _nullable(value: dict[str, Any]) -> dict[str, Any]:
 
 def get(name: str, *, version: str | None = None) -> dict[str, Any]:
     """Return a fresh JSON Schema 2020-12 document; default to the latest supported version."""
-    version = VERSIONS[-1] if version is None else version
-    for path, actual, allowed in (('name', name, ('acting',)), ('version', version, VERSIONS)):
+    versions = _FORMATS.get(name, ((), '', '', ''))[0] if isinstance(name, str) else ()
+    version = versions[-1] if version is None and versions else version
+    for path, actual, allowed in (('name', name, tuple(_FORMATS)), ('version', version, versions)):
         if actual not in allowed:
             raise DocumentSchemaError(
                 f'unknown schema {path}: {actual!r}',
@@ -62,6 +87,19 @@ def get(name: str, *, version: str | None = None) -> dict[str, Any]:
                 expected=list(allowed),
                 remedy='Choose a document and version from srstudio schema --json.',
             )
+    assert version is not None
+    if name != 'acting':
+        from ._motion_schemas import body_schema, keyed_schema
+
+        document = body_schema(version) if name == 'body' else keyed_schema(version)
+        return {
+            '$schema': 'https://json-schema.org/draft/2020-12/schema',
+            '$id': f'urn:srstudio:{name}:{version}',
+            'title': f'srstudio {name} {version}',
+            'x-parser': _FORMATS[name][1],
+            'x-validation': 'runtime-required',
+            **document,
+        }
     number = {'type': 'number'}
     label = {'type': 'string', 'minLength': 1, 'maxLength': 128}
     expression = _object({'eyes': label, 'mouth': _nullable(label)}, ('eyes',))

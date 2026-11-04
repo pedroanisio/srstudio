@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, replace
+from typing import Any
 
+from .. import build_report
 from .errors import Diagnostic, LimbError
 from .geometry import ProjectedPose
 from .math3d import Vec3, number
@@ -146,7 +148,11 @@ class QualityProfile:
 
     def check_scope(self, motion: Motion, style: str, fps: int) -> None:
         if self.scope is not None:
-            self.scope.check(motion, style, fps)
+            try:
+                self.scope.check(motion, style, fps)
+            except LimbError as exc:
+                build_report.motion_quality(self, sampling={'style': style, 'fps': fps}, error=exc)
+                raise
 
 
 @dataclass(frozen=True)
@@ -213,7 +219,53 @@ class MotionReport:
         return result
 
 
+def sampling_evidence(samples: tuple[Sample, ...], provenance: dict[str, Any] | None = None) -> dict[str, Any]:
+    intervals = [b.time - a.time for a, b in zip(samples, samples[1:], strict=False)]
+    return {
+        **(provenance or {}),
+        'clock': 'motion seconds',
+        'samples': len(samples),
+        'start': samples[0].time if samples else None,
+        'end': samples[-1].time if samples else None,
+        'min_interval': min(intervals, default=None),
+        'max_interval': max(intervals, default=None),
+    }
+
+
 def audit(
+    samples: tuple[Sample, ...],
+    poses: tuple[ProjectedPose, ...],
+    profile: ArmProfile,
+    *,
+    hidden_parts: int = 0,
+    nodes: int = 0,
+    quality: QualityProfile | None = None,
+    provenance: dict[str, Any] | None = None,
+) -> MotionReport:
+    """Measure sampled geometry and record build evidence before a quality refusal can escape."""
+    if quality is not None and not isinstance(quality, QualityProfile):
+        raise LimbError('quality must be a QualityProfile')
+    sampling = sampling_evidence(samples, provenance)
+    try:
+        report = _audit(samples, poses, profile, hidden_parts=hidden_parts, nodes=nodes, quality=quality)
+    except LimbError as exc:
+        build_report.motion_quality(quality, sampling=sampling, error=exc)
+        raise
+    build_report.motion_quality(quality, sampling=sampling, measured=report)
+    if quality is not None and report.quality_findings and quality.policy == 'error':
+        first = report.quality_findings[0]
+        context: dict[str, str | int | float] = {'field': first.metric, 'profile': quality.name, 'limit': first.limit}
+        if first.actual is not None:
+            context['measured'] = first.actual
+        if first.time is not None:
+            context['time'] = first.time
+        raise LimbError(
+            first.diagnostic().message, code=first.code, residual=first.diagnostic().residual, context=context
+        )
+    return report
+
+
+def _audit(
     samples: tuple[Sample, ...],
     poses: tuple[ProjectedPose, ...],
     profile: ArmProfile,
@@ -321,16 +373,6 @@ def audit(
                     part if metric == 'max_penetration' else None,
                 )
             )
-    if findings and quality.policy == 'error':
-        first = findings[0]
-        context: dict[str, str | int | float] = {'field': first.metric, 'profile': quality.name, 'limit': first.limit}
-        if first.actual is not None:
-            context['measured'] = first.actual
-        if first.time is not None:
-            context['time'] = first.time
-        raise LimbError(
-            first.diagnostic().message, code=first.code, residual=first.diagnostic().residual, context=context
-        )
     return replace(report, quality_profile=quality.name, quality_findings=tuple(findings))
 
 

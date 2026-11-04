@@ -13,7 +13,9 @@ from ._body_solve import footprint
 from ._body_types import BodyPose, BodyProfile, fail, scalar
 from ._transaction import scene_transaction
 from .canvas import Canvas
-from .held_keys import HeldKeyError, held_key, project_fps
+from .frame_gates import FrameGateError
+from .held_gate import Clock, clocks
+from .held_keys import HeldKeyError, project_fps
 from .limbs.errors import LimbError
 from .limbs.math3d import Vec3
 from .limbs.projection import Camera
@@ -111,6 +113,28 @@ def emit(cv: Canvas, parent, primitives: tuple[Primitive, ...]) -> None:
             cv.path(parent, d, p.color, INK, 2)
 
 
+def _source_clock(cv: Canvas, parent, at: float, source_start: float) -> Clock:
+    """Prospective drawing clock, without allocating or attaching scene nodes.
+
+    Sequence placement shifts every descendant's authored times by the same delta.
+    A frame's local zero is that shifted zero, beneath both parent and body clocks.
+    """
+    if isinstance(parent, Composition):
+        placed, delta = Clock(0), 0.0
+    else:
+        composition = next(c for c in cv.scene.iter('composition') if any(n is parent for n in c.iter()))
+        placed = clocks(composition)[id(parent)]
+        attrs = parent.attributes()
+        delta = placed.start - float(attrs.get('start', 0))
+        offset, scale = float(attrs.get('timeOffset', 0)), float(attrs.get('timeScale', 1))
+        if offset or scale != 1:
+            placed = Clock(placed.start, (*placed.chain, (placed.start, offset, scale)))
+    chain = placed.chain
+    if at != source_start:
+        chain = (*chain, (at + delta, at - source_start, 1))
+    return Clock(delta, chain)
+
+
 def place(window: BodyWindow, cv: Canvas, parent, *, camera: Camera, at: float, fps: int, style: str, id: str | None):
     from .body import compile_body
 
@@ -135,13 +159,14 @@ def place(window: BodyWindow, cv: Canvas, parent, *, camera: Camera, at: float, 
         raise fail('interval', None, 'a placed interval ending by 600 seconds')
     try:
         rate = project_fps(cv.scene)
-    except HeldKeyError as exc:
-        raise fail('canvas', str(exc), 'a canvas whose project states its frame rate') from exc
+        clock = _source_clock(cv, parent, at, window.start)
+    except (HeldKeyError, FrameGateError) as exc:
+        raise fail('canvas', str(exc), 'a project frame rate and finite forward numeric ancestor clocks') from exc
     # Each drawing is keyed half a project frame before the first frame that shows it (ADR 0216); of two changes
     # before one frame, the frame shows the later.
     changes = {0.0, *(i / fps for i in range(math.ceil(plan.duration * fps)))}
     changes.update(t for step in plan.score.steps for t in (step.start, step.end) if 0 <= t < plan.duration)
-    shown = {held_key(t, rate): t for t in sorted(changes)}
+    shown = {clock.held(t, rate, local=True): t for t in sorted(changes)}
     keys = sorted(k for k in shown if k < plan.duration)
     if len(keys) > MAX_FRAMES:
         raise fail('frames', len(keys), f'at most {MAX_FRAMES} body frames', 'body.budget')

@@ -264,16 +264,22 @@ def _limbs(cv: Canvas, tracks: tuple[LimbTrack, ...], end: float) -> None:
         prepare_tracks(cv, tracks, end)
 
 
-def _poses(clip: ToonClip, end: float) -> None:
+def toon_pose_vocabulary(rig: HeadRig) -> tuple[set[str], set[str], set[str]]:
+    """The authored pose names shared by clip validation and agent discovery."""
     from .toon_bento import EYE_STATES, GESTURES, MOODS, MOUTH_KINDS, SHARED_EYES, SHARED_MOUTHS, Bento
 
-    _sequence(clip.poses, 'poses', nonempty=True)
     eyes, mouths, arms = set(EYES), set(MOUTHS), set(ARMS)
-    if isinstance(clip.rig.look.drawing, Bento):
+    if isinstance(rig.look.drawing, Bento):
         eyes = {'hearts', *MOODS, *EYE_STATES, *SHARED_EYES}
         eyes.update(f'{mood}/{state}' for mood in MOODS for state in EYE_STATES)
         mouths = {'none', *MOUTH_KINDS, *SHARED_MOUTHS}
         arms.update(GESTURES)
+    return eyes, mouths, arms
+
+
+def _poses(clip: ToonClip, end: float) -> None:
+    _sequence(clip.poses, 'poses', nonempty=True)
+    eyes, mouths, arms = toon_pose_vocabulary(clip.rig)
     for index, pose in enumerate(clip.poses):
         if not isinstance(pose, Pose):
             raise _fail(f'poses[{index}]', pose, 'a typed Toon Pose')

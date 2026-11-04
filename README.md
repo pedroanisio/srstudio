@@ -153,6 +153,8 @@ with `passed`, `failed`, or `skipped` status. Failure diagnostics retain this ev
 `context.build`. Add `--require-check sdk --require-check anatomy` before `SCRIPT` to refuse
 success when those checks are skipped or fail. Pass `ROOT` explicitly to enable usage recording
 and frame checks. See the [agent verification recipes](docs/authoring-verification.md).
+For limb builds, select `BakeOptions.quality` and require `motion-quality` to retain
+profile limits, sampling provenance and findings in the build result. A missing profile is skipped.
 `parts --digest NAME --json` returns the name, version and digest; `parts --usage REPORT --json`
 returns the measured episode count, pin drift and `ok`. `parts --refused --json` filters the table.
 
@@ -185,6 +187,9 @@ JSON authoring documents have separate schemas: `srstudio schema --json` lists f
 `srstudio schema acting --version 1.2.0 --json` exports the score's JSON Schema. Python callers use
 `srstudio.document_schemas.get('acting', version='1.2.0')`. Parse with `acting.parse_score`, then compile
 against the chosen rig: a structural schema cannot certify timing, alignment relationships or capabilities.
+The same discovery command exports `body` (1.0.0/1.1.0) and `limbs-keyed` (1.0.0), with parser and
+compiler entry points in the catalog. `ActingRig.describe()` supplies valid intent vocabularies
+and numeric channel units/bounds for the selected rig.
 
 Core Cutout props, locations and graphics also declare placement units, clocks, return shapes and callback
 semantics. Selected props publish local drawing anchors. Run `srstudio catalog --contract-coverage --json` to

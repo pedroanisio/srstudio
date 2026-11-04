@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from bisect import bisect_right
 from dataclasses import dataclass
 
@@ -71,6 +72,37 @@ class Camera:
     near: float = 0.01
 
     def __post_init__(self) -> None:
+        for path, value, expected in (
+            ('camera.view', self.view, Frame),
+            ('camera.view.origin', getattr(self.view, 'origin', None), Vec3),
+            ('camera.view.rotation', getattr(self.view, 'rotation', None), Quaternion),
+        ):
+            if type(value) is not expected:
+                raise LimbError(
+                    f'{path} must be a {expected.__name__}',
+                    code='projection',
+                    path=path,
+                    actual=value,
+                    expected=expected.__name__,
+                    remedy='Construct Camera(view=Frame(origin=Vec3(...), rotation=Quaternion(...))).',
+                )
+        for path, value, components in (
+            ('camera.view.origin', self.view.origin, ('x', 'y', 'z')),
+            ('camera.view.rotation', self.view.rotation, ('w', 'x', 'y', 'z')),
+        ):
+            try:
+                values = [number(getattr(value, n), n) for n in components]
+                if len(values) == 4 and abs(math.hypot(*values) - 1) > 1e-9:
+                    raise LimbError('rotation must be a unit quaternion')
+            except LimbError as exc:
+                raise LimbError(
+                    str(exc),
+                    code='projection',
+                    path=path,
+                    actual=value,
+                    expected='finite coordinates and a unit rotation quaternion',
+                    remedy='Rebuild the view using Vec3 and Quaternion constructors.',
+                ) from exc
         if self.projection not in ("orthographic", "perspective"):
             raise LimbError("camera projection must be orthographic or perspective")
         for n in ("distance", "focal", "scale", "near"):
