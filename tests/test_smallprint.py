@@ -777,3 +777,66 @@ def test_the_voiced_build_draws_takes_in_step(monkeypatch, tmp_path):
 def test_a_recording_that_is_not_one_is_refused(recorded):
     with pytest.raises(ScriptError):
         SHOW.check_recorded(recorded)
+
+
+def test_a_feather_you_move_yourself_fills_the_tickle_bar_less_and_says_predicted():
+    root = panel_root("tickle-predict")
+    else_bar, you_bar = groups(root, "sp-tickle-bar")
+    assert keyed(you_bar, "scaleX")[-1][1] < 0.5 * keyed(else_bar, "scaleX")[-1][1]
+    assert "predicted" in words_on(root)
+    for feather in groups(root, "sp-feather"):
+        assert max(t for t, _ in keyed(feather, "rotation")) >= 7.5, "both feathers wiggle while the page is up"
+
+
+def test_the_tickly_bar_climbs_a_step_with_every_turn_of_the_delay_dial():
+    root = panel_root("tickle-robot", 1.0, 12.0)
+    (bar,) = groups(root, "sp-tickly-bar")
+    levels = [v for _, v in keyed(bar, "scaleX")]
+    lap = levels[: 2 * len(sp.TICKLY)]
+    assert lap[1::2] == list(sp.TICKLY) and lap[1::2] == sorted(lap[1::2]), "longer delay, more tickly"
+    assert "delay" in words_on(root) and "tickly" in words_on(root)
+    (hand,) = groups(root, "sp-clock-hand")
+    assert keyed(hand, "rotation")[-1][1] >= 360.0 * 6
+
+
+def test_the_snowflake_and_the_mint_leaf_open_the_same_gate_in_turn():
+    root = panel_root("mint-sensor", 1.0, 9.0)
+    (flake,) = groups(root, "sp-snowflake")
+    (leaf,) = groups(root, "sp-leaf")
+    gates = groups(root, "sp-gate")
+    assert len(gates) == 2
+    flake_in = [t for t, v in keyed(flake, "x") if v != 0.0]
+    leaf_in = [t for t, v in keyed(leaf, "x") if v != 0.0]
+    assert flake_in and leaf_in and min(flake_in) < min(leaf_in), "first the cold, then the menthol"
+    opened = [t for t, v in keyed(gates[0], "rotation") if v != 0.0]
+    assert any(abs(t - a) < 0.2 for t in opened for a in flake_in) and any(
+        abs(t - a) < 0.2 for t in opened for a in leaf_in
+    ), "one gate opens for both"
+    assert "cold!" in words_on(root) and "menthol" in words_on(root)
+
+
+def test_with_the_sensor_switched_on_the_same_water_feels_colder_than_it_is():
+    root = panel_root("mint-primed")
+    (water,) = groups(root, "sp-water-column")
+    (felt,) = groups(root, "sp-felt-column")
+    assert {v for _, v in keyed(water, "scaleY")} == {sp.WATER_LEVEL}, "the water itself does not change"
+    assert min(v for _, v in keyed(felt, "scaleY")) == sp.FELT_LEVEL < sp.WATER_LEVEL
+
+
+def test_as_the_bread_cools_every_starch_strand_lines_up():
+    root = panel_root("bread-starch")
+    strands = groups(root, "sp-strand")
+    assert len(strands) == 12
+    scattered = {keyed(s, "rotation")[0][1] for s in strands}
+    assert len(scattered) > 6, "every which way while it is warm"
+    for strand in strands:
+        assert keyed(strand, "rotation")[1][1] == 0.0, "lined up in rows"
+    (cool,) = groups(root, "sp-cool-column")
+    assert keyed(cool, "scaleY")[1][1] < keyed(cool, "scaleY")[0][1], "while the thermometer drops"
+
+
+def test_the_fridge_loaf_goes_stale_faster_than_the_counter_one_and_no_ratio_is_drawn():
+    root = panel_root("bread-fridge")
+    counter, fridge = groups(root, "sp-stale-bar")
+    assert max(v for _, v in keyed(fridge, "scaleX")) > max(v for _, v in keyed(counter, "scaleX"))
+    assert not any(ch.isdigit() for ch in words_on(root)), "the sources say faster, not by how much"

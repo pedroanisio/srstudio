@@ -1183,6 +1183,263 @@ def can_bubbles(cv, g, first: float, last: float, measure: Measure) -> None:
     label(cv, g, "bubbles", LEFT, 410, 210, 60, 42.0, INK, "start")
 
 
+# -- batch 3: the feather, the mint, the loaf --------------------------------------------------------------------------
+FEATHER, LEAF, CRUMB, CRUST, ICE = "#E9806E", "#5E9E5A", "#EAD7AE", "#B97A3E", "#BFE3F2"
+FELT = {"someone else": 0.92, "you": 0.28}  # how full each tickle bar fills: yours is the one turned down
+WIGGLE_LAP = 0.32  # seconds a drawn feather takes to wiggle there and back
+
+
+def _wiggle(first: float, last: float, lap: float, swing: float) -> list[tuple[float, float]]:
+    """Rotation keys that rock a group by ``swing`` degrees either side, a lap every ``lap`` seconds, while it is up."""
+    rows, t = [], first
+    while t < last:
+        rows += [(round(t, 4), -swing), (round(t + lap / 2, 4), swing)]
+        t += lap
+    return rows
+
+
+def _quill(cv, parent, x: float, y: float, long: float, turn: float = 0.0) -> None:
+    """A feather drawn flat, its quill's root at ``x, y``, pointing up (``turn`` degrees from up, clockwise)."""
+    a = math.radians(turn)
+    tip = (x + long * math.sin(a), y - long * math.cos(a))
+    nx, ny = math.cos(a), math.sin(a)  # across the vane
+    mid = (x + 0.6 * long * math.sin(a), y - 0.6 * long * math.cos(a))
+    w = long * 0.2
+    cv.path(parent, f"M{x + 0.25 * (tip[0] - x):.1f} {y + 0.25 * (tip[1] - y):.1f} "
+            f"Q{mid[0] + nx * w:.1f} {mid[1] + ny * w:.1f} {tip[0]:.1f} {tip[1]:.1f} "
+            f"Q{mid[0] - nx * w:.1f} {mid[1] - ny * w:.1f} {x + 0.25 * (tip[0] - x):.1f} "
+            f"{y + 0.25 * (tip[1] - y):.1f} Z", fill=FEATHER, stroke=INK, sw=4.0)  # fmt: skip
+    cv.line(parent, x, y, tip[0], tip[1], INK, 4.0)
+
+
+def _palm(cv, parent, cx: float, cy: float, wide: float) -> None:
+    """An open palm seen from above, the fingers to frame left."""
+    cv.ellipse(parent, cx - wide / 2, cy - wide * 0.24, wide * 0.62, wide * 0.48, SKIN, stroke=INK, sw=5.0)
+    for k in range(4):
+        y = cy - wide * 0.2 + k * wide * 0.12
+        cv.rect(parent, cx - wide / 2 - wide * 0.3, y, wide * 0.4, wide * 0.1, SKIN, stroke=INK, sw=4.0,
+                radius=wide * 0.05)  # fmt: skip
+    cv.rect(parent, cx + wide * 0.06, cy - wide * 0.16, wide * 0.44, wide * 0.32, SKIN, stroke=INK, sw=5.0,
+            radius=wide * 0.1)  # fmt: skip
+
+
+def tickle_predict(cv, g, first: float, last: float, measure: Measure) -> None:
+    """The same feather on the same palm twice: moved by someone else, the tickle bar fills; moved by you, it stays
+    low, marked predicted, the touch your brain saw coming and turned down (Blakemore, Wolpert and Frith, 1998)."""
+    sheet(cv, g)
+    for who, top in (("someone else", 270.0), ("you", 610.0)):
+        size = min(52.0, 52.0 * 420.0 / measure(who, 52.0))
+        label(cv, g, who, LEFT, top, 420, 70, size, INK, "start")
+        label(cv, g, "tickle", 530, top, RIGHT - 530, 70, 44.0, INK, "start")
+        _palm(cv, g, 280.0, top + 220.0, 260.0)
+        feather = pivot(cv, g, "sp-feather", 400.0, top + 90.0)  # held above, its tip brushing the palm's middle
+        _quill(cv, feather, 400.0, top + 90.0, 190.0, 225.0)
+        cv.keys(feather, "rotation", _wiggle(first, last, WIGGLE_LAP, 14.0), hold=False, kind="sine-in-out",
+                local=False)  # fmt: skip
+        cv.rect(g, 530, top + 100, RIGHT - 530, 64, PAPER, stroke=INK, sw=5.0, radius=14.0)
+        bar = pivot(cv, g, "sp-tickle-bar", 536.0, top + 132.0)
+        cv.rect(bar, 536, top + 106, RIGHT - 542, 52, COPPER, radius=10.0)
+        cv.keys(bar, "scaleX", [(first, 0.02), (min(first + 1.2, last), FELT[who])], hold=False, kind="cubic-out",
+                local=False)  # fmt: skip
+        if who == "you":
+            label(cv, g, "predicted", 530, top + 180, RIGHT - 530, 64, 46.0, STAMP, "start")
+
+
+DELAY_LAP = 1.6  # seconds the delay dial takes to turn once: each turn, a longer delay and a tickle bar a step higher
+TICKLY = (0.2, 0.45, 0.7, 0.95)  # the bar's steps, longer delay to longer: it rose with the delay (1999)
+
+
+def tickle_robot(cv, g, first: float, last: float, measure: Measure) -> None:
+    """The London robots: a hand pushing one robot's handle, the move running down a wire through a delay dial to a
+    second robot that strokes a palm, and a tickly bar that climbs a step with every longer delay (Blakemore, Frith and
+    Wolpert, 1999)."""
+    sheet(cv, g)
+    for x in (140.0, 620.0):  # the two robots' bases
+        cv.rect(g, x, 520, 220, 90, SHADE, stroke=INK, sw=5.0, radius=12.0)
+    arm_a = pivot(cv, g, "sp-robot-arm", 250.0, 530.0)
+    cv.line(arm_a, 250, 530, 250, 360, INK, 14.0)
+    cv.ellipse(arm_a, 222, 330, 56, 56, STAMP, stroke=INK, sw=4.0)
+    cv.ellipse(arm_a, 190, 300, 70, 56, SKIN, stroke=INK, sw=4.0)  # the hand on the handle
+    _palm(cv, g, 760.0, 800.0, 220.0)
+    arm_b = pivot(cv, g, "sp-robot-arm", 730.0, 600.0)
+    cv.line(arm_b, 730, 600, 730, 690, INK, 14.0)
+    _quill(cv, arm_b, 730.0, 680.0, 110.0, 180.0)  # its tip on the palm
+    swings = _wiggle(first, last, 0.8, 16.0)
+    cv.keys(arm_a, "rotation", swings, hold=False, kind="sine-in-out", local=False)
+    cv.keys(arm_b, "rotation", swings, hold=False, kind="sine-in-out", local=False)
+    wire = [(360.0, 565.0), (620.0, 565.0)]
+    cv.line(g, 360, 565, 620, 565, RULED, 6.0)
+    _clock(cv, g, 480.0, 420.0, 80.0, first, last, DELAY_LAP)
+    cv.line(g, 480, 500, 480, 565, RULED, 6.0)
+    _along(cv, g, "sp-move", wire, first, last, 1.2, 12.0, COPPER, 3)
+    label(cv, g, "delay", 380, 270, 200, 64, 48.0, INK, "center")
+    label(cv, g, "tickly", LEFT, 862, 220, 60, 46.0, INK, "start")
+    cv.rect(g, 300, 860, RIGHT - 300, 64, PAPER, stroke=INK, sw=5.0, radius=14.0)
+    bar = pivot(cv, g, "sp-tickly-bar", 306.0, 892.0)
+    cv.rect(bar, 306, 866, RIGHT - 312, 52, COPPER, radius=10.0)
+    rows, t = [], first
+    while t < last:
+        for k, level in enumerate(TICKLY):
+            at = t + k * DELAY_LAP
+            rows += [(round(at, 4), TICKLY[k - 1] if k else 0.02), (round(at + 0.3, 4), level)]
+        t += len(TICKLY) * DELAY_LAP
+    cv.keys(bar, "scaleX", rows, hold=False, kind="cubic-out", local=False)
+
+
+SENSE_LAP = 2.4  # seconds for the snowflake and then the leaf to open the gate once each
+GATE = (480.0, 560.0)  # where the sensor's gate is on the page
+
+
+def _snowflake(cv, parent, cx: float, cy: float, r: float) -> None:
+    for a in (0.0, 60.0, 120.0):
+        t = math.radians(a)
+        dx, dy = r * math.sin(t), r * math.cos(t)
+        cv.line(parent, cx - dx, cy - dy, cx + dx, cy + dy, "#3F7FA6", 8.0)
+
+
+def _leaf(cv, parent, cx: float, cy: float, r: float) -> None:
+    cv.path(parent, f"M{cx - r:.0f} {cy:.0f} Q{cx:.0f} {cy - r:.0f} {cx + r:.0f} {cy:.0f} Q{cx:.0f} {cy + r:.0f} "
+            f"{cx - r:.0f} {cy:.0f} Z", fill=LEAF, stroke=INK, sw=4.0)  # fmt: skip
+    cv.line(parent, cx - r * 0.8, cy, cx + r * 0.8, cy, INK, 3.0)
+
+
+def mint_sensor(cv, g, first: float, last: float, measure: Measure) -> None:
+    """A nerve ending with one gate on it: a snowflake opens it, then a mint leaf opens the same gate, and each time
+    the same signal runs down the nerve to a bubble that says cold (the Nobel Assembly, 2021: menthol was used to find
+    the receptor that cold activates)."""
+    sheet(cv, g)
+    gx, gy = GATE
+    label(cv, g, "cold", LEFT, 250, 300, 70, 56.0, INK, "start")
+    label(cv, g, "menthol", RIGHT - 320, 250, 320, 70, 56.0, INK, "end")
+    label(cv, g, "sensor", 650, 590, RIGHT - 650, 70, 52.0, STAMP, "start")
+    nerve = [(gx, gy + 120.0), (gx - 50.0, gy + 190.0), (gx + 20.0, gy + 250.0), (gx + 100.0, gy + 290.0)]
+    cv.path(g, "M" + " L".join(f"{x:.0f} {y:.0f}" for x, y in nerve), fill="#00000000", stroke=NERVE, sw=20.0)
+    cv.rect(g, gx - 140, gy + 60, 280, 64, NERVE, stroke=INK, sw=5.0, radius=24.0)  # the nerve ending's tip
+    halves = []
+    for side in (-1.0, 1.0):
+        half = pivot(cv, g, "sp-gate", gx + side * 56.0, gy + 64.0)
+        cv.rect(half, gx + side * 56.0 - 28, gy - 66, 56, 130, STAMP, stroke=INK, sw=5.0, radius=18.0)
+        halves.append((half, side))
+    _along(cv, g, "sp-signal", nerve, first, last, 1.2, 16.0, STAMP, 3)
+    cv.ellipse(g, 580, 800, 320, 130, ICE, stroke=INK, sw=6.0)
+    label(cv, g, "cold!", 580, 828, 320, 76, 60.0, INK, "center")
+    flake = cv.group(g, cv.uid("sp-snowflake"), x=0.0, y=0.0)
+    _snowflake(cv, flake, 220.0, 400.0, 56.0)
+    leaf = cv.group(g, cv.uid("sp-leaf"), x=0.0, y=0.0)
+    _leaf(cv, leaf, 760.0, 400.0, 72.0)
+    opens: list[tuple[float, float]] = []
+    moves: dict[str, list[tuple[float, float]]] = {"fx": [], "fy": [], "lx": [], "ly": []}
+    t = first
+    while t < last:
+        for start, (kx, ky), (dx, dy) in (
+            (t, ("fx", "fy"), (gx - 70 - 220.0, gy - 130 - 400.0)),
+            (t + SENSE_LAP / 2, ("lx", "ly"), (gx + 70 - 760.0, gy - 130 - 400.0)),
+        ):
+            for at, u in ((start, 0.0), (start + 0.5, 1.0), (start + 1.0, 1.0), (start + 1.15, 0.0)):
+                moves[kx].append((round(at, 4), u * dx))
+                moves[ky].append((round(at, 4), u * dy))
+            opens += [(round(start + 0.5, 4), 0.0), (round(start + 0.65, 4), 1.0), (round(start + 1.0, 4), 1.0),
+                      (round(start + 1.15, 4), 0.0)]  # fmt: skip
+        t += SENSE_LAP
+    cv.keys(flake, "x", moves["fx"], hold=False, kind="sine-in-out", local=False)
+    cv.keys(flake, "y", moves["fy"], hold=False, kind="sine-in-out", local=False)
+    cv.keys(leaf, "x", moves["lx"], hold=False, kind="sine-in-out", local=False)
+    cv.keys(leaf, "y", moves["ly"], hold=False, kind="sine-in-out", local=False)
+    for half, side in halves:
+        cv.keys(half, "rotation", [(at, side * 24.0 * u) for at, u in opens], hold=False, local=False)
+
+
+WATER_LEVEL, FELT_LEVEL = 0.55, 0.25  # the column's share of the tube: the water as it is, and as it feels primed
+
+
+def _thermometer(cv, g, cx: float, name: str) -> Any:
+    """A thermometer about ``cx``; returns its column, a group that scales up from the bulb."""
+    cv.rect(g, cx - 34, 360, 68, 460, PAPER, stroke=INK, sw=6.0, radius=34.0)
+    for k in range(6):
+        cv.line(g, cx + 34, 420 + k * 64, cx + 58, 420 + k * 64, INK, 4.0)
+    column = pivot(cv, g, name, cx, 800.0)
+    cv.rect(column, cx - 18, 380, 36, 420, "#3F7FA6", radius=18.0)
+    cv.ellipse(g, cx - 56, 770, 112, 112, "#3F7FA6", stroke=INK, sw=6.0)
+    return column
+
+
+def mint_primed(cv, g, first: float, last: float, measure: Measure) -> None:
+    """The same cool water on two thermometers: what it is, and how it feels with the cold sensor already switched on,
+    the second dropping lower (Stevens, Southern Cross University, 2026)."""
+    sheet(cv, g)
+    for words, cx in (("the water", 280.0), ("how it feels", 700.0)):
+        size = min(50.0, 50.0 * 400.0 / measure(words, 50.0))
+        label(cv, g, words, cx - 200, 260, 400, 70, size, INK, "center")
+    water = _thermometer(cv, g, 280.0, "sp-water-column")
+    cv.keys(water, "scaleY", [(first, WATER_LEVEL)], hold=True, local=False)
+    felt = _thermometer(cv, g, 700.0, "sp-felt-column")
+    rows, t = [], first
+    while t < last:
+        rows += [(round(t, 4), WATER_LEVEL), (round(t + 1.2, 4), FELT_LEVEL), (round(t + 2.2, 4), FELT_LEVEL),
+                 (round(t + 2.4, 4), WATER_LEVEL)]  # fmt: skip
+        t += 2.4
+    cv.keys(felt, "scaleY", rows, hold=False, kind="cubic-out", local=False)
+    _leaf(cv, g, 860.0, 560.0, 44.0)
+
+
+STRAND_LAP = 3.0  # seconds the starch takes to line up, hold, and scatter again while the page is up
+
+
+def bread_starch(cv, g, first: float, last: float, measure: Measure) -> None:
+    """A crumb of bread up close: its starch strands, every which way while it is warm, turning to line up in rows as
+    a thermometer beside it drops: retrogradation, not drying out (Mercer, University of Guelph, 2017)."""
+    sheet(cv, g)
+    cx, cy, r = 430.0, 610.0, 270.0
+    cv.ellipse(g, cx - r, cy - r, 2 * r, 2 * r, CRUMB, stroke=CRUST, sw=14.0)
+    label(cv, g, "starch", LEFT, 250, 300, 70, 52.0, INK, "start")
+    label(cv, g, "cooling", RIGHT - 300, 250, 300, 70, 52.0, INK, "end")
+    for k in range(12):
+        row, col = divmod(k, 3)
+        x, y = cx + (col - 1) * 150.0, cy - 165.0 + row * 110.0
+        strand = pivot(cv, g, "sp-strand", x, y)
+        cv.rect(strand, x - 60, y - 10, 120, 20, COPPER, stroke=INK, sw=3.0, radius=10.0)
+        scattered = (37.0 * k + 23.0) % 150.0 - 75.0  # every which way, the same way every run
+        rows, t = [], first
+        while t < last:
+            rows += [(round(t, 4), scattered), (round(t + 1.6, 4), 0.0), (round(t + 2.8, 4), 0.0),
+                     (round(t + STRAND_LAP, 4), scattered)]  # fmt: skip
+            t += STRAND_LAP
+        cv.keys(strand, "rotation", rows, hold=False, kind="sine-in-out", local=False)
+    cool = _thermometer(cv, g, 820.0, "sp-cool-column")
+    rows, t = [], first
+    while t < last:
+        rows += [(round(t, 4), 0.85), (round(t + 1.6, 4), 0.3), (round(t + 2.8, 4), 0.3),
+                 (round(t + STRAND_LAP, 4), 0.85)]  # fmt: skip
+        t += STRAND_LAP
+    cv.keys(cool, "scaleY", rows, hold=False, kind="sine-in-out", local=False)
+
+
+STALE_LAP = 2.6  # seconds the two bars take to grow, then start again
+STALE = {"counter": 0.45, "fridge": 0.9}  # how far each grows in a lap: the fridge's faster (no ratio is claimed)
+
+
+def bread_fridge(cv, g, first: float, last: float, measure: Measure) -> None:
+    """Two loaves going stale side by side, on the counter and in the fridge: the fridge's bar runs ahead (Sullivan et
+    al., RMIT, 2017: refrigeration sped up the starch's crystals more than room temperature)."""
+    sheet(cv, g)
+    words = "how fast it goes stale"
+    size = min(54.0, 54.0 * (RIGHT - LEFT) / measure(words, 54.0))
+    label(cv, g, words, LEFT, 250, RIGHT - LEFT, 76, size, INK, "center")
+    for where, top in (("counter", 470.0), ("fridge", 750.0)):
+        label(cv, g, where, LEFT, top - 90, 400, 70, 52.0, INK, "start")
+        if where == "fridge":
+            _snowflake(cv, g, RIGHT - 40, top - 52, 34.0)
+        cv.rect(g, LEFT, top, RIGHT - LEFT, 80, PAPER, stroke=INK, sw=5.0, radius=16.0)
+        bar = pivot(cv, g, "sp-stale-bar", LEFT + 6, top + 40)
+        cv.rect(bar, LEFT + 6, top + 6, RIGHT - LEFT - 12, 68, CRUST, radius=12.0)
+        rows, t = [], first
+        while t < last:
+            full = STALE[where]
+            rows += [(round(t, 4), 0.02), (round(t + 1.8, 4), full), (round(t + STALE_LAP - 0.1, 4), full)]
+            t += STALE_LAP
+        cv.keys(bar, "scaleX", rows, hold=False, kind="sine-in-out", local=False)
+
+
 PANELS: dict[str, Callable[..., None]] = {
     "penny-fall": penny_fall,
     "lightning": lightning,
@@ -1203,6 +1460,12 @@ PANELS: dict[str, Callable[..., None]] = {
     "apple-lemon": apple_lemon,
     "can-test": can_test,
     "can-bubbles": can_bubbles,
+    "tickle-predict": tickle_predict,
+    "tickle-robot": tickle_robot,
+    "mint-sensor": mint_sensor,
+    "mint-primed": mint_primed,
+    "bread-starch": bread_starch,
+    "bread-fridge": bread_fridge,
 }
 
 

@@ -33,12 +33,15 @@ __all__ = [
     "STATES",
     "PropError",
     "apple",
+    "bread",
     "bowl",
     "can",
     "draw",
+    "feather",
     "finished",
     "goldfish",
     "materials",
+    "mint",
     "onion",
     "paper",
     "part_plates",
@@ -78,6 +81,14 @@ OWN = {  # what is new in his world: name, colour, roughness, metallic, clay-fin
     "pip": ("#3F2618", 0.3, 0.0, False),
     "canpaint": ("#2F7FA6", 0.3, 0.35, False),
     "foam": ("#FBF6EA", 0.6, 0.0, True),
+    "quill": ("#EFE6D2", 0.35, 0.0, False),
+    "feather": ("#E9806E", 0.7, 0.0, True),
+    "tin": ("#C9D3D0", 0.3, 0.5, False),
+    "candy": ("#F7F3EA", 0.35, 0.0, True),
+    "crust": ("#B97A3E", 0.62, 0.0, True),
+    "stalecrust": ("#A9814F", 0.75, 0.0, True),
+    "crumb": ("#EAD7AE", 0.7, 0.0, True),
+    "steam": ("#F6F3EC", 0.8, 0.0, True),
 }
 
 
@@ -529,6 +540,127 @@ def can(m: Model, state: str = "shake-up") -> None:
         m.ell("foam", (CAN_R + 4.0, foot - 0.4, -2.0), (9.0, 0.7, 7.0))  # the puddle at its foot
 
 
+# -- batch 3: the feather, the mint and the glass, the loaf ------------------------------------------------------------
+FEATHER_STATES = ("tickle-a", "tickle-b", "rest")
+FEATHER_FIST = (54.0, -284.0, -80.0)  # where his frame-right fist holds the quill up, under his chin and in front
+_FEATHER_TIP = {"tickle-a": (12.0, -290.0, -36.0), "tickle-b": (24.0, -287.0, -38.0)}  # under his jaw, to his neck
+
+
+def _feather(m: Model, root: tuple[float, float, float], tip: tuple[float, float, float]) -> None:
+    """A quill from ``root`` to ``tip``, its vane a run of flat clay barbs along the last two thirds, widest past the
+    middle, so it reads as a feather and not a stick."""
+    a, b = np.asarray(root, float), np.asarray(tip, float)
+    m.tube("quill", (tuple(a), tuple(a + (b - a) * 0.5 + (0.0, -3.0, 0.0)), tuple(b)), 0.9, n=16, sides=8)
+    run = b - a
+    turn = math.degrees(math.atan2(run[1], run[0]))
+    for k, u in enumerate(np.linspace(0.3, 1.0, 9)):
+        wide = 5.5 * math.sin(math.pi * min(1.0, (u - 0.25) / 0.8))
+        centre = a + run * u + (0.0, -1.5 * math.sin(math.pi * u), 0.0)
+        m.ell("feather", tuple(centre), (4.6, max(wide, 1.4), 1.1), rotation=turn + (8.0 if k % 2 else -8.0))
+
+
+@register(
+    "prop",
+    "smallprint-feather",
+    summary="A plain coral feather held up to his own neck, wiggling, or laid on the worktop",
+    contract=_contract(
+        "smallprint-feather",
+        FEATHER_STATES,
+        "tickle-a and tickle-b hold the quill up in his frame-right fist, its tip under his jaw in two places, a "
+        "wiggle; rest lays it on the worktop under his resting hand. The prop is placed at his fist, so its "
+        "coordinates are his model's, about the fist.",
+    ),
+)
+def feather(m: Model, state: str = "tickle-a") -> None:
+    """A feather, about its quill's root: up from his fist with its tip at his neck, in one of two places, so cutting
+    between them wiggles it; or, at ``rest``, lying flat on the worktop."""
+    if state not in FEATHER_STATES:
+        raise PropError(f"the feather's states are {FEATHER_STATES}, got {state!r}")
+    if state == "rest":  # on the worktop, below the fist's place, pointing frame left
+        foot = -FEATHER_FIST[1] - 248.0
+        _feather(m, (14.0, foot - 7.5, 0.0), (-40.0, foot - 7.5, -6.0))  # the vane on its edge, clear of the top
+        return
+    fx, fy, fz = FEATHER_FIST
+    tx, ty, tz = _FEATHER_TIP[state]
+    _feather(m, (-4.0, -8.0, 0.0), (tx - fx, ty - fy, tz - fz))
+
+
+MINT_STATES = ("tin", "glass")
+GLASS_TALL, GLASS_R = 40.0, 11.0
+_GLASS_LIFT = 30.0  # how high his hand lifts the glass's foot off the worktop on ``glass``
+_TIN = (-36.0, 0.0, -6.0)  # the open tin of mints, at the board's frame-left end
+_GLASS_HAND = (40.0 + GLASS_R * 0.8 - 2.0, -248.0 - (_GLASS_LIFT + GLASS_TALL * 0.4) * 0.8, -79.0)  # his model's
+
+
+@register(
+    "prop",
+    "smallprint-mint",
+    summary="An open tin of plain white mints and a glass of water, standing or lifted in his hand",
+    contract=_contract(
+        "smallprint-mint",
+        MINT_STATES,
+        "tin stands the glass on the worktop and puts his hand by the open tin; glass lifts the glass off the worktop "
+        "in his hand, the tin still open. No brand, no lettering.",
+    ),
+)
+def mint(m: Model, state: str = "glass") -> None:
+    """A round tin of mints with its lid off, a few white mints in it, and a tall glass of water: on the worktop, or
+    lifted in his frame-right hand to drink."""
+    if state not in MINT_STATES:
+        raise PropError(f"the mint's states are {MINT_STATES}, got {state!r}")
+    tx, _, tz = _TIN
+    m.cylinder("tin", (tx, -3.0, tz), 13.0, 6.0)
+    m.cylinder("tin", (tx - 6.0, -1.0, tz + 14.0), 13.5, 2.0)  # its lid, off and behind
+    for dx, dz in ((-5.0, -3.0), (4.0, -4.0), (0.0, 4.0), (6.0, 4.0), (-6.0, 5.0)):
+        m.ell("candy", (tx + dx, -6.8, tz + dz), (3.6, 1.6, 3.6))
+    foot = -_GLASS_LIFT if state == "glass" else 0.0
+    m.cylinder("glass", (0.0, foot - GLASS_TALL / 2, 0.0), GLASS_R, GLASS_TALL)
+    m.ell("glass", (0.0, foot - GLASS_TALL, 0.0), (GLASS_R + 0.6, 0.9, GLASS_R + 0.6))  # its rim
+    m.ell("water", (0.0, foot - GLASS_TALL + 6.0, 0.0), (GLASS_R - 0.8, 0.6, GLASS_R - 0.8))  # the water's top
+    m.cylinder("water", (0.0, foot - (GLASS_TALL - 6.0) / 2, -GLASS_R + 1.6), GLASS_R * 0.55, GLASS_TALL - 7.0)
+
+
+BREAD_STATES = ("knock-up", "knock-down", "warm")
+LOAF = (58.0, 24.0, 32.0)  # the loaf's length, height and depth
+_BOARD = 3.0
+KNOCK_LIFT = {"knock-up": 18.0, "knock-down": 9.0}  # how high his fist's middle rides over the loaf's top
+
+
+@register(
+    "prop",
+    "smallprint-bread",
+    summary="A loaf on a board, stale and knocked on by his fist, or warmed with steam rising off it",
+    contract=_contract(
+        "smallprint-bread",
+        BREAD_STATES,
+        "knock-up and knock-down are the stale loaf, cracked and crumbed, with his fist over it high or knuckles "
+        "down on it; warm is the same loaf with steam rising off it and his hand resting by it.",
+    ),
+)
+def bread(m: Model, state: str = "knock-up") -> None:
+    """A plain loaf on a board, no one bakery's: stale, its crust dull and cracked with crumbs round it, knocked on; or
+    warmed again, its crust glossier and three thin wisps of steam rising off it."""
+    if state not in BREAD_STATES:
+        raise PropError(f"the bread's states are {BREAD_STATES}, got {state!r}")
+    long, tall, deep = LOAF
+    m.box("board", (0.0, -_BOARD / 2, 0.0), (long + 22.0, _BOARD, deep + 6.0), 1.2)
+    crust = "crust" if state == "warm" else "stalecrust"
+    m.box(crust, (0.0, -_BOARD - tall / 2, 0.0), (long, tall, deep), 9.0)
+    m.ell(crust, (0.0, -_BOARD - tall + 1.0, 0.0), (long / 2 - 2.0, 5.0, deep / 2 - 2.0))  # its domed top
+    if state == "warm":
+        for k, x in enumerate((-14.0, 2.0, 16.0)):
+            lift = -_BOARD - tall - 5.0  # short, so they stay under his chin
+            wisp = [(x, lift, -4.0), (x + 2.0, lift - 5.0, -6.0), (x - 2.0, lift - 10.0, -6.0),
+                    (x + 1.0, lift - 13.0 - k, -7.0)]  # fmt: skip
+            m.tube("steam", wisp, 1.1, n=16, sides=10)
+    else:
+        front = -deep / 2 - 0.4
+        for x, turn in ((-22.0, 70.0), (6.0, 110.0), (20.0, 80.0)):  # cracks down the dull crust's front
+            m.box("oakdark", (x, -_BOARD - tall * 0.55, front), (0.8, tall * 0.5, 0.4), 0.2, rotation=turn - 90.0)
+        for x, z in ((-34.0, -12.0), (-31.0, -16.0), (33.0, -14.0), (29.0, -18.0), (-4.0, -19.0)):
+            m.ell("crumb", (x, -_BOARD - 1.0, z), (1.6, 1.0, 1.4))
+
+
 def fist(m: Model, x: float, y: float, z: float) -> None:
     """His frame-right hand closed round a handle that lies across the lens: :func:`srstudio.rafa.hold` turned on its
     side, so the hand is his own drawing."""
@@ -600,6 +732,9 @@ STATES: dict[str, tuple[str, ...]] = {
     "smallprint-goldfish": GOLDFISH_STATES,
     "smallprint-apple": APPLE_STATES,
     "smallprint-can": CAN_STATES,
+    "smallprint-feather": FEATHER_STATES,
+    "smallprint-mint": MINT_STATES,
+    "smallprint-bread": BREAD_STATES,
 }
 _DRAW: dict[str, Callable[..., None]] = {
     "smallprint-tower": tower,
@@ -612,6 +747,9 @@ _DRAW: dict[str, Callable[..., None]] = {
     "smallprint-goldfish": goldfish,
     "smallprint-apple": apple,
     "smallprint-can": can,
+    "smallprint-feather": feather,
+    "smallprint-mint": mint,
+    "smallprint-bread": bread,
 }
 PLACES: dict[str, tuple[float, float, float, float, float]] = {  # x, y, z, yaw, scale on the worktop
     "smallprint-tower": (-62.0, -248.0, -80.0, -10.0, 1.4),  # at his right, clear of his face and mouth
@@ -624,6 +762,9 @@ PLACES: dict[str, tuple[float, float, float, float, float]] = {  # x, y, z, yaw,
     "smallprint-goldfish": (8.0, -248.0, -78.0, 0.0, 1.0),
     "smallprint-apple": (6.0, -248.0, -80.0, -4.0, 1.0),
     "smallprint-can": (58.0, -248.0, -80.0, 0.0, 0.8),  # under his frame-right hand, clear of his chin
+    "smallprint-feather": (*FEATHER_FIST, 0.0, 1.0),  # about his raised fist, the quill's root
+    "smallprint-mint": (40.0, -248.0, -80.0, 0.0, 0.8),  # the glass under his frame-right hand, the tin at his left
+    "smallprint-bread": (14.0, -248.0, -80.0, -4.0, 1.0),
 }
 GRIPS: dict[str, tuple[str, tuple[float, float, float]]] = {  # his hand: a kind, and where (the knife's moves)
     "smallprint-tower": ("rest", (82.0, -248.0, -70.0)),
@@ -636,11 +777,17 @@ GRIPS: dict[str, tuple[str, tuple[float, float, float]]] = {  # his hand: a kind
     "smallprint-goldfish": ("rest", (76.0, -248.0, -72.0)),
     "smallprint-apple": ("rest", (82.0, -248.0, -72.0)),
     "smallprint-can": ("rest", (92.0, -248.0, -70.0)),
+    "smallprint-feather": ("rest", (80.0, -248.0, -70.0)),
+    "smallprint-mint": ("rest", (16.0, -248.0, -76.0)),  # by the tin, the glass standing at its right
+    "smallprint-bread": ("rest", (66.0, -248.0, -72.0)),
 }
 HANDS: dict[tuple[str, str], tuple[str, tuple[float, float, float]]] = {  # a state that moves his hand: kind, where
     ("smallprint-bowl", "soaking"): ("dip", (21.0, -256.0, -86.0)),  # in the water, under its surface
     ("smallprint-bowl", "wrinkled"): ("wrinkled", (72.0, -248.0, -70.0)),
     **{("smallprint-can", state): ("hold", (58.0, 0.0, -80.0)) for state in _SHAKE},  # round the can, where it is
+    **{("smallprint-feather", state): ("raise", FEATHER_FIST) for state in _FEATHER_TIP},  # the quill up in his fist
+    ("smallprint-mint", "glass"): ("raise", _GLASS_HAND),  # round the lifted glass
+    **{("smallprint-bread", state): ("knock", (16.0, 0.0, -84.0)) for state in KNOCK_LIFT},  # his fist over the loaf
 }
 
 
@@ -670,6 +817,13 @@ def worktop(prop: str, state: str, where: str = "rafa-kitchen") -> Plate:
         hy = y - (_SHAKE[state] + CAN_TALL * 0.4) * scale
         rafa.reach(model, (hx + 16.0, hy + 10.0, hz + 18.0))
         rafa.hold(model, hx + CAN_R * scale - 2.0, hy, hz + 1.0)
+    elif kind == "raise":  # his hand closed round something he holds up, where HANDS puts it
+        rafa.reach(model, (hx + 16.0, hy + 10.0, hz + 18.0))
+        rafa.hold(model, hx, hy, hz)
+    elif kind == "knock":  # his fist over the loaf's top, high or knuckles down
+        hy = y - _BOARD - LOAF[1] - 6.0 - KNOCK_LIFT[state]
+        rafa.reach(model, (hx + 14.0, hy + 4.0, hz + 22.0))
+        fist(model, hx, hy, hz)
     elif kind == "dip":  # his forearm over the rim, the hand under the water
         rafa.reach(model, (hx + 14.0, y - BOWL_RIM - 3.0, hz + 18.0))
         rafa.rest(model, hx, hy, hz)
