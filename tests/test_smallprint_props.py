@@ -357,3 +357,18 @@ def test_only_the_shaken_can_moves_his_hand_off_the_worktop():
     rest = can_parts("calm")["flesh"]
     held = can_parts("shake-up")["flesh"]
     assert held[:, 1].mean() < rest[:, 1].mean() - 10.0
+
+
+def test_the_flies_sit_on_the_bare_horse_and_hang_over_the_striped_coat_without_touching_it():
+    bare, coated = (materials_of(sp.worktop("smallprint-horse", state)) for state in sp.HORSE_STATES)
+    y, scale = sp.PLACES["smallprint-horse"][1], sp.PLACES["smallprint-horse"][4]
+    back = y + (sp.HORSE_BACK - sp.HORSE_BODY[1]) * scale  # the top of his back
+    assert bare["fly"][:, 1].max() > back, "on him, not over him"
+    assert "coat" not in bare and "coatstripe" not in bare
+    coat = np.concatenate([coated["coat"], coated["coatstripe"]])
+    assert coated["fly"][:, 1].max() < coat[:, 1].min(), "over the coat, every one clear of it"
+    assert coated["wing"][:, 1].max() < coat[:, 1].min()
+    stripes = coated["coatstripe"]
+    assert np.ptp(stripes[:, 0]) > 0.5 * np.ptp(coated["coat"][:, 0]), "stripes run the coat's length"
+    ink, white = (sp.materials()[name].color for name in ("coatstripe", "coat"))
+    assert _contrast(ink, white) > 4.5, "black on white, a zebra's stripes"

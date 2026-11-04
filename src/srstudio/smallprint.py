@@ -1183,6 +1183,123 @@ def can_bubbles(cv, g, first: float, last: float, measure: Measure) -> None:
     label(cv, g, "bubbles", LEFT, 410, 210, 60, 42.0, INK, "start")
 
 
+# -- batch 3: the zebra's stripes --------------------------------------------------------------------------------------
+HIDE, HIDE_DARK, FLY = "#A86B3C", "#4A2E1E", "#2B2A2E"
+COATS = (("black", INK), ("white", PAPER), ("striped", ""))  # the 2019 trial's coats, in the order the page shows them
+
+
+def _stripes(cv, parent, cx: float, cy: float, rx: float, ry: float, gap: float = 30.0) -> None:
+    """Upright black stripes across the ellipse about ``cx, cy``, each running from its top edge to its bottom one."""
+    x = cx - rx + gap * 0.6
+    while x < cx + rx - gap * 0.4:
+        share = max(0.0, 1.0 - ((x - cx) / rx) ** 2) ** 0.5
+        cv.rect(parent, x - gap * 0.22, cy - ry * share, gap * 0.44, 2 * ry * share, INK)
+        x += gap
+
+
+def _horse(
+    cv, parent, cx: float, foot: float, size: float, coat: str = "", stripes: bool = False
+) -> tuple[float, float]:
+    """A horse in profile, head to frame left, standing on ``foot`` about ``cx``, ``size`` its body's length. ``coat``
+    fills a coat over its body; ``stripes`` stripes it, a zebra's hide or a striped coat. Returns its back's middle."""
+    rx, ry = size / 2, size * 0.2
+    cy = foot - size * 0.62
+    for dx in (-0.32, -0.2, 0.22, 0.34):
+        cv.rect(parent, cx + dx * size - size * 0.04, cy, size * 0.08, foot - cy, HIDE, stroke=INK, sw=4.0)
+    cv.path(parent, f"M{cx - rx * 0.6:.0f} {cy - ry * 0.4:.0f} L{cx - rx * 1.05:.0f} {cy - ry * 2.4:.0f} "
+            f"L{cx - rx * 0.78:.0f} {cy - ry * 2.6:.0f} L{cx - rx * 0.3:.0f} {cy - ry * 0.6:.0f} Z", fill=HIDE,
+            stroke=INK, sw=4.0)  # fmt: skip
+    cv.ellipse(parent, cx - rx * 1.32, cy - ry * 2.75, rx * 0.56, ry * 0.9, HIDE, stroke=INK, sw=4.0)  # the head
+    cv.line(parent, cx + rx * 0.95, cy - ry * 0.3, cx + rx * 1.15, cy + ry * 1.4, HIDE_DARK, 9.0)  # the tail
+    cv.ellipse(parent, cx - rx, cy - ry, 2 * rx, 2 * ry, coat or HIDE, stroke=INK, sw=5.0)
+    if stripes:
+        _stripes(cv, parent, cx, cy, rx * 0.97, ry * 0.95, gap=size * 0.11)
+        cv.ellipse(parent, cx - rx, cy - ry, 2 * rx, 2 * ry, "#00000000", stroke=INK, sw=5.0)
+    return cx, cy - ry
+
+
+def _fly_dot(cv, parent, name: str) -> Any:
+    """A horse fly drawn about the origin, in a group of its own to be moved by keys."""
+    dot = cv.group(parent, cv.uid(name), x=0.0, y=0.0)
+    cv.ellipse(dot, -16, -22, 22, 14, "#D8E6EEDD", stroke=INK, sw=2.0)
+    cv.ellipse(dot, -2, -22, 22, 14, "#D8E6EEDD", stroke=INK, sw=2.0)
+    cv.ellipse(dot, -12, -10, 24, 18, FLY, stroke=INK, sw=2.0)
+    return dot
+
+
+def _visits(
+    first: float,
+    last: float,
+    period: float,
+    delay: float,
+    start: tuple[float, float],
+    end: tuple[float, float],
+    lands: bool,
+) -> tuple[list[tuple[float, float]], list[tuple[float, float]]]:
+    """x and y keys for a fly coming down from ``start`` to ``end`` every ``period`` seconds while the page is up: it
+    stays where it lands, or, not ``lands``, touches and goes back up the way it came."""
+    xs: list[tuple[float, float]] = [(first, start[0])]
+    ys: list[tuple[float, float]] = [(first, start[1])]
+    t = first + delay
+    while t + period <= last + period * 0.5:
+        down, back = t + period * 0.45, t + period * 0.75
+        xs += [(round(t, 4), start[0]), (round(down, 4), end[0])]
+        ys += [(round(t, 4), start[1]), (round(down, 4), end[1])]
+        if not lands:
+            xs.append((round(back, 4), start[0] + (end[0] - start[0]) * 0.3))
+            ys.append((round(back, 4), start[1] + (end[1] - start[1]) * 0.1))
+        xs.append((round(t + period - 0.02, 4), xs[-1][1]))
+        ys.append((round(t + period - 0.02, 4), ys[-1][1]))
+        t += period
+    return xs, ys
+
+
+def horse_coats(cv, g, first: float, last: float, measure: Measure) -> None:
+    """The 2019 trial on a horse farm: the same kind of horse in a black, a white and a striped coat, flies coming down
+    on each, landing on the black and the white and touching the striped one only to go back up (Caro et al.,
+    2019)."""
+    sheet(cv, g)
+    label(cv, g, "horses in coats", LEFT, 300, RIGHT - LEFT, 80, 60.0, INK, "center")
+    for k, (name, fill) in enumerate(COATS):
+        cx = 230.0 + k * 270.0  # inside the safe width, clear of the buttons at the right
+        bx, by = _horse(cv, g, cx, 820.0, 190.0, fill or PAPER, stripes=not fill)
+        size = min(46.0, 46.0 * 230.0 / measure(name, 46.0))
+        label(cv, g, name, cx - 115, 850, 230, 64, size, STAMP if not fill else INK, "center")
+        for j in range(2):
+            fly = _fly_dot(cv, g, "sp-fly")
+            lands = bool(fill)
+            xs, ys = _visits(first, last, 1.8, 0.3 + 0.6 * j + 0.2 * k, (bx - 40 + 70 * j, 440.0),
+                             (bx - 50 + 90 * j, by + 4.0), lands)  # fmt: skip
+            cv.keys(fly, "x", xs, hold=False, local=False)
+            cv.keys(fly, "y", ys, hold=False, local=False)
+
+
+def fly_landing(cv, g, first: float, last: float, measure: Measure) -> None:
+    """How a fly comes in, filmed in 2019: over a horse it slows down and lands; over a zebra it comes in as fast as
+    ever and bumps off, its trail of positions evenly spaced to the hide (Caro et al., 2019)."""
+    sheet(cv, g)
+    rows = (("horse", "slows down, lands", 560.0, False), ("zebra", "no slowing down", 900.0, True))
+    for who, how, foot, zebra in rows:
+        cv.rect(g, 520, foot - 140, 400, 140, PAPER if zebra else HIDE, stroke=INK, sw=5.0, radius=16.0)
+        if zebra:
+            x = 548.0
+            while x < 900.0:
+                cv.rect(g, x, foot - 136, 22, 132, INK)
+                x += 52.0
+        label(cv, g, who, LEFT, foot - 320, 380, 70, 56.0, STAMP if zebra else INK, "start")
+        label(cv, g, how, LEFT, foot - 255, 420, 56, min(42.0, 42.0 * 420.0 / measure(how, 42.0)), INK, "start")
+        trail = [(140.0 + 340.0 * (u if zebra else 1 - (1 - u) ** 2.4), foot - 60 - 130 * (1 - u)) for u in
+                 np.linspace(0.0, 1.0, 8)]  # fmt: skip
+        for tx, ty in trail[:-1]:
+            cv.ellipse(g, tx - 6, ty - 6, 12, 12, RULED)
+        fly = _fly_dot(cv, g, "sp-fly")
+        end = (trail[-1][0] + 40.0, foot - 140.0)
+        start = (trail[0][0], trail[0][1])
+        xs, ys = _visits(first, last, 2.0, 0.2, start, end, lands=not zebra)
+        cv.keys(fly, "x", xs, hold=False, kind=None if zebra else "cubic-out", local=False)
+        cv.keys(fly, "y", ys, hold=False, kind=None if zebra else "cubic-out", local=False)
+
+
 PANELS: dict[str, Callable[..., None]] = {
     "penny-fall": penny_fall,
     "lightning": lightning,
@@ -1203,6 +1320,8 @@ PANELS: dict[str, Callable[..., None]] = {
     "apple-lemon": apple_lemon,
     "can-test": can_test,
     "can-bubbles": can_bubbles,
+    "horse-coats": horse_coats,
+    "fly-landing": fly_landing,
 }
 
 

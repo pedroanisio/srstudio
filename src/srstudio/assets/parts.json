@@ -15983,6 +15983,23 @@
           "rig": null
         }
       ]
+    },
+    "smallprint-horse": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-04",
+          "note": "A toy horse on the worktop with three horse flies on its back, or in a white coat ringed with black stripes with the flies hovering over it, not landing, as replacement plates. First drawn for Small Print's zebra-stripes question.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "207d8cfc56a257a83d69c5e61d4458927e3689285eb10e17499b0e83a2073383",
+          "rig": null
+        }
+      ]
     }
   }
 }

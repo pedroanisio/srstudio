@@ -641,6 +641,46 @@ def test_the_bubbles_on_the_can_s_wall_shrink_away_while_the_clock_runs():
     assert float(last.get("x")) < 500.0, "the last bubble to go is on the wall by its label"
 
 
+def stays(fly: ET.Element) -> list[float]:
+    """The seconds a fly sits at the foot of each visit, from its arrival to the key that moves it on: nearly none
+    when it only touches."""
+    ys, runs, since = keyed(fly, "y"), [], None
+    low = max(v for _, v in ys)
+    for t, v in ys:
+        if v == low and since is None:
+            since = t
+        elif v != low and since is not None:
+            runs.append(round(t - since, 4))
+            since = None
+    return runs
+
+
+def test_flies_land_on_the_black_and_the_white_coats_and_only_touch_the_striped_one():
+    root = panel_root("horse-coats")
+    flies = groups(root, "sp-fly")
+    assert len(flies) == 6, "two flies over each of the three horses"
+    for k, fly in enumerate(flies):
+        visits = stays(fly)
+        assert len(visits) >= 2, "they keep coming while the page is up"
+        if k >= 4:  # the coats in the page's order: black, white, striped
+            assert max(visits) < 0.7, "a touch, and back up"
+        else:
+            assert min(visits) > 0.9, "it lands and stays"
+    words = words_on(root)
+    assert all(coat in words for coat in ("black", "white", "striped")) and "horses in coats" in words
+    assert "zebra" not in words, "the trial put coats on horses: the page shows no zebra"
+
+
+def test_over_a_horse_a_fly_slows_down_and_lands_and_over_a_zebra_it_comes_in_at_speed_and_bumps_off():
+    root = panel_root("fly-landing")
+    horse, zebra = groups(root, "sp-fly")
+    ease = [next(a for a in fly if a.get("property") == "x").get("defaultInterpolation") for fly in (horse, zebra)]
+    assert ease == ["cubic-out", "linear"], "one slows down as it comes in, the other does not"
+    assert min(stays(horse)) > 0.9 and max(stays(zebra)) < 0.7, "one lands, the other bumps off"
+    words = words_on(root)
+    assert "slows down, lands" in words and "no slowing down" in words
+
+
 FIXTURE_FONT = next((f for f in SYSTEM_FONTS if f.is_file()), None)  # DejaVu Sans Bold, the fixture font
 NEEDS_FONT = pytest.mark.skipif(FIXTURE_FONT is None, reason="no DejaVu Sans Bold to measure with")
 

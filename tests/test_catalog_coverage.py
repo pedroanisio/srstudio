@@ -60,6 +60,7 @@ NO_EPISODE = [
     "smallprint-can",
     "smallprint-card",
     "smallprint-goldfish",
+    "smallprint-horse",
     "smallprint-onion",
     "smallprint-paper",
     "smallprint-phone",

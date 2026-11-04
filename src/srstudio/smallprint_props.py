@@ -38,6 +38,7 @@ __all__ = [
     "draw",
     "finished",
     "goldfish",
+    "horse",
     "materials",
     "onion",
     "paper",
@@ -78,6 +79,12 @@ OWN = {  # what is new in his world: name, colour, roughness, metallic, clay-fin
     "pip": ("#3F2618", 0.3, 0.0, False),
     "canpaint": ("#2F7FA6", 0.3, 0.35, False),
     "foam": ("#FBF6EA", 0.6, 0.0, True),
+    "horse": ("#A86B3C", 0.55, 0.0, True),
+    "horsedark": ("#4A2E1E", 0.55, 0.0, True),
+    "coat": ("#F3F0E8", 0.6, 0.0, True),
+    "coatstripe": ("#25211F", 0.6, 0.0, True),
+    "fly": ("#2B2A2E", 0.35, 0.0, False),
+    "wing": ("#D8E6EE", 0.12, 0.0, False),
 }
 
 
@@ -535,6 +542,76 @@ def fist(m: Model, x: float, y: float, z: float) -> None:
     _turned(m, lambda s: rafa.hold(s, 0.0, 0.0, 0.0), _spin(-90.0), (x, y, z))
 
 
+# -- batch 3: the toy horse ------------------------------------------------------------------------------------------
+HORSE_STATES = ("flies", "coat")
+HORSE_BODY = (22.0, 9.5, 8.5)  # the body's half-lengths: long, tall, thick
+HORSE_BACK = -27.0  # the body's middle over the worktop
+_COAT_GROW = 1.1  # how far the coat stands off his body
+_FLIES_ON = ((-8.0, -33.5, -5.0), (6.0, -35.5, -2.0), (14.0, -27.0, -8.4))  # x, y, z: two on his back, one on his flank
+_FLIES_OFF = ((-20.0, -44.0, -6.0), (-6.0, -47.0, -4.0), (8.0, -42.0, -8.0))  # over the coat, not touching it
+
+
+def fly(m: Model, x: float, y: float, z: float) -> None:
+    """A horse fly about ``x, y, z``: a dark body, its head to frame left, two pale wings folded back over it. Drawn a
+    little larger than life, so the lens sees it at the worktop's distance."""
+    m.ell("fly", (x, y, z), (3.4, 2.3, 2.3))
+    m.ell("fly", (x - 3.5, y + 0.2, z), (1.7, 1.7, 1.7))
+    for dz in (-1.6, 1.6):
+        m.ell("wing", (x + 2.0, y - 2.4, z + dz), (3.8, 0.6, 1.9), rotation=-14.0)
+
+
+def _section(x: float, coat: tuple[float, float, float], out: float) -> tuple[float, float]:
+    """The half-height and half-thickness of the ellipsoid of half-lengths ``coat`` ``x`` along it, ``out`` more."""
+    long, tall, thick = coat
+    share = max(0.0, 1.0 - (x / long) ** 2) ** 0.5
+    return tall * share + out, thick * share + out
+
+
+@register(
+    "prop",
+    "smallprint-horse",
+    summary="A clay toy horse in profile, horse flies landed on his back, or in a striped coat they do not land on",
+    contract=_contract(
+        "smallprint-horse",
+        HORSE_STATES,
+        "flies: a plain brown horse with three flies on his back and flank; coat: the same horse in a white coat "
+        "with black stripes round it, the flies over it, none touching it. Head and legs stay bare, as in the trial.",
+    ),
+)
+def horse(m: Model, state: str = "flies") -> None:
+    """A toy horse standing in profile, his head to frame left: a plain brown body on four legs, neck, head, mane and
+    tail. On ``flies`` three horse flies sit on him; on ``coat`` he wears a white coat ringed with black stripes over
+    his body, his head and legs bare, and the flies hang in the air over it. No one breed's or toy's likeness."""
+    if state not in HORSE_STATES:
+        raise PropError(f"the horse's states are {HORSE_STATES}, got {state!r}")
+    long, tall, thick = HORSE_BODY
+    m.ell("horse", (0.0, HORSE_BACK, 0.0), HORSE_BODY)
+    for x in (-15.0, 14.0):
+        for z in (-4.5, 4.5):
+            m.tube("horse", ((x, HORSE_BACK + 4.0, z), (x + 0.6, -9.0, z), (x, -2.0, z)), 2.6, n=10)
+            m.ell("horsedark", (x - 0.4, -1.4, z), (3.0, 1.4, 2.8))  # a hoof
+    m.tube("horse", ((-16.0, HORSE_BACK - 3.0, 0.0), (-22.0, -40.0, 0.0), (-25.0, -46.0, 0.0)), 5.0, n=12)
+    m.ell("horse", (-30.5, -43.0, 0.0), (8.8, 4.4, 4.1), rotation=-30.0)  # the head, its muzzle down to frame left
+    m.ell("horsedark", (-36.0, -39.6, -0.6), (2.8, 2.5, 3.4), rotation=-30.0)  # the muzzle
+    m.ell("black", (-28.2, -45.6, -3.7), (1.2, 1.2, 0.6))  # his eye, to the lens
+    for dz in (-1.8, 1.8):
+        m.ell("horse", (-25.0, -49.5, dz), (1.4, 3.0, 1.2), rotation=-12.0)  # his ears
+    m.tube("horsedark", ((-24.0, -49.0, 0.0), (-21.0, -43.0, 0.0), (-16.5, -36.0, 0.0)), 2.2, n=12)  # the mane
+    m.tube("horsedark", ((long - 1.0, HORSE_BACK - 4.0, 0.0), (long + 5.0, HORSE_BACK, 0.0),
+                         (long + 6.0, HORSE_BACK + 12.0, 0.0)), 1.9, n=12)  # fmt: skip  # the tail
+    if state == "coat":
+        coat = (long - 2.0, tall + _COAT_GROW, thick + _COAT_GROW)
+        m.ell("coat", (0.0, HORSE_BACK - 0.6, 0.0), coat)
+        for x in np.arange(-15.0, 16.0, 5.0):  # a band round the coat: a thin disc a little wider than it there
+            ry, rz = _section(x, coat, 1.0)
+            m.ell("coatstripe", (x, HORSE_BACK - 0.6, 0.0), (2.5, ry, rz))
+        spots = _FLIES_OFF
+    else:
+        spots = _FLIES_ON
+    for x, y, z in spots:
+        fly(m, x, y, z)
+
+
 # -- the tears ---------------------------------------------------------------------------------------------------------
 TEAR_BEADS = (  # under each eye, outward and down, growing to the drop: x, y, half-width, half-height (x mirrored)
     (22.6, -356.0, 0.9, 2.0),
@@ -600,6 +677,7 @@ STATES: dict[str, tuple[str, ...]] = {
     "smallprint-goldfish": GOLDFISH_STATES,
     "smallprint-apple": APPLE_STATES,
     "smallprint-can": CAN_STATES,
+    "smallprint-horse": HORSE_STATES,
 }
 _DRAW: dict[str, Callable[..., None]] = {
     "smallprint-tower": tower,
@@ -612,6 +690,7 @@ _DRAW: dict[str, Callable[..., None]] = {
     "smallprint-goldfish": goldfish,
     "smallprint-apple": apple,
     "smallprint-can": can,
+    "smallprint-horse": horse,
 }
 PLACES: dict[str, tuple[float, float, float, float, float]] = {  # x, y, z, yaw, scale on the worktop
     "smallprint-tower": (-62.0, -248.0, -80.0, -10.0, 1.4),  # at his right, clear of his face and mouth
@@ -624,6 +703,7 @@ PLACES: dict[str, tuple[float, float, float, float, float]] = {  # x, y, z, yaw,
     "smallprint-goldfish": (8.0, -248.0, -78.0, 0.0, 1.0),
     "smallprint-apple": (6.0, -248.0, -80.0, -4.0, 1.0),
     "smallprint-can": (58.0, -248.0, -80.0, 0.0, 0.8),  # under his frame-right hand, clear of his chin
+    "smallprint-horse": (-36.0, -248.0, -80.0, 0.0, 1.4),  # at frame left, the hovering flies clear of his chin
 }
 GRIPS: dict[str, tuple[str, tuple[float, float, float]]] = {  # his hand: a kind, and where (the knife's moves)
     "smallprint-tower": ("rest", (82.0, -248.0, -70.0)),
@@ -636,6 +716,7 @@ GRIPS: dict[str, tuple[str, tuple[float, float, float]]] = {  # his hand: a kind
     "smallprint-goldfish": ("rest", (76.0, -248.0, -72.0)),
     "smallprint-apple": ("rest", (82.0, -248.0, -72.0)),
     "smallprint-can": ("rest", (92.0, -248.0, -70.0)),
+    "smallprint-horse": ("rest", (74.0, -248.0, -72.0)),
 }
 HANDS: dict[tuple[str, str], tuple[str, tuple[float, float, float]]] = {  # a state that moves his hand: kind, where
     ("smallprint-bowl", "soaking"): ("dip", (21.0, -256.0, -86.0)),  # in the water, under its surface
