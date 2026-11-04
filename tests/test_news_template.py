@@ -305,6 +305,12 @@ def test_a_line_that_follows_its_own_turns_the_other_way():
     assert any(on <= second <= on + 0.3 and side == -rig.toward for on, _, side in spans), spans
 
 
+def test_the_reels_first_line_is_said_to_the_camera():
+    said = (("vera", _speech(0.2, "Uber says four rides.")), ("gus", _speech(2.6, "Four? Amateurs. Watch this.")))
+    spans = news_template.onsets("vera", news_template.rig("vera"), said, (), 6.0)
+    assert not [span for span in spans if span[0] < 1.0], spans
+
+
 def test_the_head_motion_is_the_same_on_every_build():
     said = (("vera", _speech(1.0, TAKE)),)
     rig = news_template.rig("vera")

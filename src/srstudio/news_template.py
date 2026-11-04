@@ -414,8 +414,8 @@ def card_plan(
 def onsets(who: str, rigged: AnchorRig, said: Said, holds: Sequence[Held], end: float) -> list[Facing]:
     """The turn on each of ``who``'s line onsets, ``(on, off, side)``: from :data:`ONSET_LEAD` before its first word
     until :data:`ONSET_HOLD` after it or the line's end, toward the other anchor when the line answers them and away
-    when it follows ``who``'s own. None overlaps a turn :func:`srstudio.news_head.facing` makes or a hold, and none
-    is shorter than a turn takes."""
+    when it follows ``who``'s own; the reel's first line is said to the camera. None overlaps a turn
+    :func:`srstudio.news_head.facing` makes or a hold, and none is shorter than a turn takes."""
     base = news_head.facing(who, rigged, said, holds, end)
     held = [(h.on, h.off) for h in holds if h.who == who]
     takes = sorted((speech.words[0].start, speech.words[-1].end, by) for by, speech in said if speech.words)
@@ -429,8 +429,8 @@ def onsets(who: str, rigged: AnchorRig, said: Said, holds: Sequence[Held], end: 
                 if a >= on:
                     off = min(off, a)
             busy = [(a, b) for a, b, _ in base] + held + [(a, b) for a, b, _ in out]
-            side = rigged.toward if before is not None and before != who else -rigged.toward
-            if off - on >= FACE_UP and not any(a < off and on < b for a, b in busy):
+            side = rigged.toward if before != who else -rigged.toward
+            if before is not None and off - on >= FACE_UP and not any(a < off and on < b for a, b in busy):
                 out.append((round(on, 6), round(off, 6), side))
         before = by
     return out
