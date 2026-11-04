@@ -610,5 +610,8 @@ beats = [f.Beat(0.0, "level"), f.Beat(3.0, "hurt", "pressed", "pad-lap", tilt=-3
 f.perform(cv, cv.comp, "leo", beats, 8.0, x=280, y=1090, scale=1.5, moves=f.Moves(swallows=(4.0,)))
 ```
 
+A face the screen alone leaves too dark takes a `Key`, a steady neutral gain between the multiplied light and the
+glow: pass `keys=[f.key(who, x, y, scale) for ...]` to `screen_light` (Leo's lift is none, Sam's is `SAM_KEY`).
+
 Both are proposed, so no reel can use them until the operator decides. The reasons are in
 [docs/decisions/0231-two-friends-inked-the-news-way.md](decisions/0231-two-friends-inked-the-news-way.md).

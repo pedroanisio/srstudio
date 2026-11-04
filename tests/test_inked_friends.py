@@ -2,9 +2,14 @@
 from one another, hands that are one drawing and its mirror, a face kept alive by breath, blinks and drift, and the
 screen's light kept to the people by a track matte."""
 
+import re
+import subprocess
 from dataclasses import replace
+from pathlib import Path
 
+import numpy as np
 import pytest
+from PIL import Image
 from sr_core.scene import Scene
 
 from srstudio import PEACH, Canvas, anatomy, anatomy_parts, flat_counter, parts, registry, specimens, styles
@@ -275,6 +280,130 @@ def test_a_light_with_no_face_or_bad_cues_is_refused():
         f.screen_light(cv, cv.comp, "people", ((0.0, "on", "blue"),), 4.0, ())
     with pytest.raises(Exception, match="state"):
         f.screen_light(cv, cv.comp, "people", ((0.0, "blaze", "blue"),), 4.0, ((540.0, 700.0),))
+
+
+# -- each face reads in every light: a measured floor per figure (rendered) --------------------------------------------
+LIT = {"pause": ((0.0, "dim", "blue"),), "play": ((0.0, "on", "blue"),), "red": ((0.0, "on", "red"),)}
+AT = {"leo": 278.0, "sam": 802.0}
+SCALE, GROUND = 1.5, 1090.0
+KEPT = 0.6  # the least share of a face's own drawn contrast (skin against features) it keeps in any light
+PARITY = 0.03  # how far below Leo's share Sam's may fall: his face reads as clearly as Leo's
+
+
+def lightness(rgb: np.ndarray) -> np.ndarray:
+    """CIE L* of sRGB pixels: a perceptual scale, so a difference near black counts as the eye counts it."""
+    c = rgb / 255.0
+    linear = np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+    y = linear @ np.array([0.2126, 0.7152, 0.0722])
+    return np.where(y > 0.008856, 116.0 * np.cbrt(y) - 16.0, 903.3 * y)
+
+
+def hue(rgb: np.ndarray) -> float:
+    """The hue angle in degrees of a patch's mean colour (opponent axes), enough to tell light from colour."""
+    r, g, b = (rgb / 255.0).mean(axis=0)
+    return float(np.degrees(np.arctan2(np.sqrt(3) * (g - b), 2 * r - g - b)))
+
+
+def lit_frame(tmp_path: Path, scene_render: Path, state: str | None, keyed: bool = True) -> np.ndarray:
+    """Both friends at the proof's places, under one state of the screen (``None``: unlit, as drawn)."""
+    cv = stage(1.0)
+    people = cv.group(cv.comp, "people")
+    for who, look in (("leo", "level"), ("sam", "easy")):
+        f.perform(cv, people, who, [Beat(0.0, look)], 1.0, x=AT[who], y=GROUND, scale=SCALE)
+    if state is not None:
+        faces = [f.face_at(AT[who], GROUND, SCALE) for who in AT]
+        keys = [f.key(who, AT[who], GROUND, SCALE) for who in AT] if keyed else ()
+        f.screen_light(cv, cv.comp, "people", LIT[state], 1.0, faces, keys)
+    doc = tmp_path / f"{state}-{keyed}.scene.xml"
+    doc.write_bytes(cv.scene.to_bytes())
+    png = tmp_path / f"{state}-{keyed}.png"
+    subprocess.run([str(scene_render), "render", str(doc), "-f", "0", "-o", str(png)], check=True, capture_output=True)
+    return np.asarray(Image.open(png).convert("RGB"), dtype=float)
+
+
+def face_of(img: np.ndarray, who: str) -> np.ndarray:
+    """The face from the forehead to the top lip, cheek to cheek: mostly skin, with the brows, eyes and nose."""
+    x, y = f.face_at(AT[who], GROUND, SCALE)
+    box = img[int(y - 60 * SCALE) : int(y + 80 * SCALE), int(x - 95 * SCALE) : int(x + 95 * SCALE)]
+    return box.reshape(-1, 3)
+
+
+def skin(img: np.ndarray, who: str) -> float:
+    return float(np.percentile(lightness(face_of(img, who)), 60))
+
+
+def contrast(img: np.ndarray, who: str) -> float:
+    """The face's skin (most of the box) against its darkest features (the brows, lids, lines), in L*."""
+    shade = lightness(face_of(img, who))
+    return float(np.percentile(shade, 60) - np.percentile(shade, 5))
+
+
+@pytest.fixture(scope="module")
+def lit(tmp_path_factory, scene_render):
+    where = tmp_path_factory.mktemp("lit")
+    frames = {state: lit_frame(where, scene_render, state) for state in LIT}
+    frames["bare-pause"] = lit_frame(where, scene_render, "pause", keyed=False)
+    frames["drawn"] = lit_frame(where, scene_render, None)
+    return frames
+
+
+@pytest.mark.parametrize("state", LIT)
+@WHO
+def test_every_face_keeps_its_features_in_every_light(lit, state, who):
+    """Sam went dark against the dark room from the pause to the deadpan: his features sank into his skin. Every face
+    keeps a floor share of the contrast its drawing has, in the dimmest light as in the brightest."""
+    kept = contrast(lit[state], who) / contrast(lit["drawn"], who)
+    assert kept >= KEPT, (state, who, kept)
+
+
+@pytest.mark.parametrize("state", LIT)
+def test_sams_face_reads_as_clearly_as_leos(lit, state):
+    share = {who: contrast(lit[state], who) / contrast(lit["drawn"], who) for who in AT}
+    assert share["sam"] >= share["leo"] - PARITY, (state, share)
+
+
+def test_without_his_key_sams_face_sinks_under_the_pause(lit):
+    """The floor is the one the unkeyed light broke: it is not met by a face the screen alone lights."""
+    assert contrast(lit["bare-pause"], "sam") / contrast(lit["drawn"], "sam") < KEPT
+
+
+def test_the_key_adds_light_not_colour(lit):
+    """Sam keeps his skin: under the key his face is lighter, his hue no further from his own drawn skin than the
+    screen alone puts it, his skin under the pause near his skin as drawn, and he stays darker than Leo."""
+    bare, keyed, drawn = lit["bare-pause"], lit["pause"], lit["drawn"]
+    assert skin(keyed, "sam") > skin(bare, "sam") + 5.0
+    own = hue(face_of(drawn, "sam"))
+    assert abs(hue(face_of(keyed, "sam")) - own) <= abs(hue(face_of(bare, "sam")) - own)
+    assert abs(skin(keyed, "sam") - skin(drawn, "sam")) <= 4.0
+    for state in LIT:
+        assert skin(lit[state], "sam") <= skin(lit[state], "leo") - 10.0, state
+
+
+def test_a_key_is_neutral_and_dodges_only_the_people():
+    cv = stage(6.0)
+    people = cv.group(cv.comp, "people")
+    f.perform(cv, people, "sam", [Beat(0.0, "easy")], 6.0)
+    key = f.key("sam", 540.0, 1120.0)
+    assert key.at == f.face_at(540.0, 1120.0) and 0.0 < key.lift <= 0.75
+    f.screen_light(cv, cv.comp, "people", ((0.0, "on", "blue"), (3.0, "dim", "blue")), 6.0, (key.at,), (key,))
+    out = xml(cv)
+    assert 'blend="color-dodge"' in out and out.count('matte="people"') == 3
+    stops = re.findall(r'<radialGradient id="friends-key[^"]*"[^>]*>\s*<stop offset="0" color="(#[0-9a-f]{6})', out)
+    assert stops and all(c[1:3] == c[3:5] == c[5:7] for c in stops)  # a grey: the same gain on every channel
+
+
+def test_leo_needs_no_key_and_a_key_out_of_range_is_refused():
+    assert f.key("leo", 540.0, 1120.0).lift == 0.0
+    cv = stage()
+    f.screen_light(cv, cv.comp, "people", ((0.0, "on", "blue"),), 4.0, ((540.0, 700.0),), (f.key("leo", 540, 1120),))
+    assert 'blend="color-dodge"' not in xml(cv)
+    for lift in (-0.1, 0.8):
+        with pytest.raises(FriendsError, match="lift"):
+            f.Key((540.0, 700.0), lift)
+    with pytest.raises(FriendsError, match="radius"):
+        f.Key((540.0, 700.0), 0.2, 0.0)
+    with pytest.raises(FriendsError, match="unknown friend"):
+        f.key("gus", 540.0, 1120.0)
 
 
 def test_a_beat_copy_keeps_its_checks():

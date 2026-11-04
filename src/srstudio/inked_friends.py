@@ -52,8 +52,11 @@ __all__ = [
     "Friend",
     "FriendsError",
     "Hold",
+    "Key",
     "Look",
     "Moves",
+    "face_at",
+    "key",
     "leo",
     "perform",
     "sam",
@@ -62,6 +65,7 @@ __all__ = [
 
 NECK_Y, CHIN_Y = -170.0, -40.0  # the neck in the body's frame, and the point of the head that sits on it
 FACE_SLIDE = 12.0  # pixels the face slides toward the side a head turns to
+FACE_Y = -296.0  # the middle of the face above the point a figure stands on, at scale 1
 BLINK = 0.13  # seconds an eye stays shut in a blink
 BREATH = 3.4  # seconds a breath takes
 BREATH_PX = 2.4  # how far the chest rises
@@ -229,6 +233,7 @@ class Friend:
     ears: tuple[float, float, float]  # x, top, bottom of the frame's right ear
     neck: float
     blink_every: tuple[float, float] = field(default=(2.9, 4.4))
+    key: float = 0.0  # how much a soft key from the camera lifts this face (see Key): 0 for a face the screen lights
 
 
 # -- the drawing of a face ---------------------------------------------------------------------------------------------
@@ -680,13 +685,14 @@ SAM_CROP: tuple[Point, ...] = (  # a short crop, squared on top, with a clean li
 LEO_BUILD = news_arms.Build((150.0, -110.0), 130.0, 142.0, 33.0, 30.0, 25.0, 0.96)
 SAM_BUILD = news_arms.Build((152.0, -112.0), 132.0, 144.0, 31.0, 28.0, 24.0, 0.96)
 
+SAM_KEY = 0.5  # his deep skin and darker features sink into a dark room without it (ADR 0231)
 LEO_FRIEND = Friend(
     "leo", LEO_FACE, LEO_LOOKS, LEO_BUILD, HOODIE, HOODIE_TONE, HOODIE_LINE, 401.0, LEO_HEAD, LEO_BACK,
     "#2b1d18", "#1a110e", "#5b4032", (114.0, -176.0, -112.0), 38.0,
 )  # fmt: skip
 SAM_FRIEND = Friend(
     "sam", SAM_FACE, SAM_LOOKS, SAM_BUILD, DENIM, DENIM_TONE, "#2c4568", 433.0, SAM_HEAD, SAM_CROP,
-    "#151012", "#0b0809", "#3a2f33", (106.0, -170.0, -116.0), 40.0, (3.4, 5.2),
+    "#151012", "#0b0809", "#3a2f33", (106.0, -170.0, -116.0), 40.0, (3.4, 5.2), SAM_KEY,
 )  # fmt: skip
 FRIENDS: Mapping[str, Friend] = MappingProxyType({"leo": LEO_FRIEND, "sam": SAM_FRIEND})
 
@@ -866,14 +872,57 @@ def _merge_y(beats: Sequence[Beat], dips: Sequence[tuple[float, float]]) -> list
 
 # -- the light of the screen -------------------------------------------------------------------------------------------
 NIGHT = "#2c2238"  # how far the people go down when the screen does
+
+
+@dataclass(frozen=True)
+class Key:
+    """A soft key light on one face from the camera's side, for a face the screen alone leaves too dark to read.
+
+    It is a colour dodge of a grey: a gain of ``1 / (1 - lift)`` on the linear light at the face's middle (the engine
+    blends in linear light), the same on every channel, so it adds light and no colour: the skin keeps its hue while
+    its features stand off it. It holds steady through every state of the screen and falls off to nothing at
+    ``radius``."""
+
+    at: Point
+    lift: float
+    radius: float = 300.0
+
+    def __post_init__(self) -> None:
+        if not 0.0 <= self.lift <= 0.75:
+            raise FriendsError(f"a key's lift runs from 0 to 0.75, not {self.lift}")
+        if self.radius <= 0:
+            raise FriendsError(f"a key's radius must be positive, not {self.radius}")
+
+
+def _encoded(linear: float) -> int:
+    """The sRGB code of a linear light level: the engine blends in linear light, so a gain is set there."""
+    code = 12.92 * linear if linear <= 0.0031308 else 1.055 * linear ** (1 / 2.4) - 0.055
+    return round(255 * code)
+
+
+def face_at(x: float, y: float, scale: float = 1.0) -> Point:
+    """The middle of the face of a friend drawn at ``x``, ``y`` and ``scale``: where the screen's light aims."""
+    return (x, y + FACE_Y * scale)
+
+
+def key(who: str, x: float, y: float, scale: float = 1.0) -> Key:
+    """The key ``who``'s face takes, drawn at ``x``, ``y`` and ``scale``: his own lift (none for Leo), on his face."""
+    if who not in FRIENDS:
+        raise FriendsError(f"unknown friend {who!r}: {sorted(FRIENDS)}")
+    return Key(face_at(x, y, scale), FRIENDS[who].key, 200.0 * scale)
+
+
 FALL_OFF = "#4a3b56"  # the edges of the frame, away from the screen's light on the faces
 
 
-def screen_light(cv: Canvas, parent, people: str, cues: Any, end: float, faces: Sequence[Point]) -> list:
+def screen_light(
+    cv: Canvas, parent, people: str, cues: Any, end: float, faces: Sequence[Point], keys: Sequence[Key] = ()
+) -> list:
     """The screen's light on the people only: a group gated by the alpha of the group ``people`` (its id), multiplied
     over them so the ink stays ink. The screen's colour (``cues`` as :func:`srstudio.toon_rooms.front_screen` reads
     them), a fall-off from the ``faces`` to the frame's edges, and a darker sheet as the screen's level falls. A glow of
-    the colour on each face goes over that, screened. Returns the parsed cues."""
+    the colour on each face goes over that, screened. Each of the ``keys`` (see :func:`key`) goes between the two.
+    Returns the parsed cues."""
     if not faces:
         raise FriendsError("the screen lights at least one face")
     parsed = toon_rooms._cues("screen", cues, True, end)
@@ -890,6 +939,7 @@ def screen_light(cv: Canvas, parent, people: str, cues: Any, end: float, faces: 
     cv.rect(lit, 0, 0, cv.width, cv.height, fall, cv.clear, 0)
     night = toon_rooms._level(cv, lit, levels, -0.6, 0.6)
     cv.rect(night, 0, 0, cv.width, cv.height, NIGHT, cv.clear, 0)
+    _keyed(cv, parent, people, keys)
     glow = cv.group(parent, cv.uid("glow"), matte=people, matteVisible="true", blend="screen")
     shine = toon_rooms._level(cv, glow, levels, 0.55)
 
@@ -900,6 +950,16 @@ def screen_light(cv: Canvas, parent, people: str, cues: Any, end: float, faces: 
 
     toon_rooms._coloured(cv, shine, parsed, end, spot)
     return parsed
+
+
+def _keyed(cv: Canvas, parent, people: str, keys: Sequence[Key]) -> None:
+    """Each key with a lift, over the multiplied light and under the screened glow: the gain falls on the lit skin and
+    leaves the ink near black, so the features stand off the skin instead of being lifted with it."""
+    for n, k in enumerate(item for item in keys if item.lift):
+        grey = "#" + f"{_encoded(k.lift):02x}" * 3
+        paint = cv.rgrad(f"friends-key-{n}", ((0, grey), (0.55, grey + "99"), (1, grey + "00")))
+        dodge = cv.group(parent, cv.uid("key"), matte=people, matteVisible="true", blend="color-dodge")
+        cv.ellipse(dodge, k.at[0] - k.radius, k.at[1] - k.radius * 1.1, 2 * k.radius, 2.2 * k.radius, paint)
 
 
 # -- the registered drawings -------------------------------------------------------------------------------------------

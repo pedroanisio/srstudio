@@ -51,6 +51,26 @@ open denim shirt) with the News inked primitives (`news_inked`, `news_kit`, `new
   light, so the screen does not tint the wall.
 - Both drawings are version 1, proposed, in the Toon style's parts. No reel can draw them until the operator decides.
 
+### A key for a face the screen leaves dark (2026-11-04)
+
+The review of the proof found Sam's face going dark against the dark room from the pause to the deadpan, so his
+concern, his nod and his deadpan barely read. Measured on renders of both friends at the proof's places, his skin
+stood 17.5 to 18.2 L* off his darkest features in every state of the screen (the pause, play and the red wash): 46 to
+48 % of the 38.3 his drawing has unlit. Leo kept 63 to 65 % of his. The screened glow lifts dark ink by the same
+amount it lifts skin, which costs a dark face a larger share of its contrast.
+
+- `Key` is a soft light on one face: a colour dodge of a grey, so a gain of `1 / (1 - lift)` on the linear light (the
+  engine blends in linear light), the same on every channel. It adds light and no colour: the skin keeps its hue.
+- `screen_light` draws the keys between the multiplied light and the screened glow, so the gain falls on the lit skin
+  while the ink stays near black. The key is steady through every state of the screen.
+- `Friend.key` is each friend's own lift: none for Leo, 0.5 for Sam (`SAM_KEY`). `key(who, x, y, scale)` places it on
+  his face (`face_at`).
+- With it Sam keeps 65 to 68 % of his drawn contrast in every state, his skin under the pause sits at L* 43.8 against
+  42.0 as drawn, and he stays more than 10 L* darker than Leo.
+- `tests/test_inked_friends.py` renders both friends under each state and holds a floor per figure: every face keeps
+  at least 60 % of its own drawn contrast, Sam's share is within 0.03 of Leo's, the unkeyed pause light breaks that
+  floor, and the key moves Sam's hue no further from his drawn skin than the screen alone does.
+
 ## Alternatives rejected
 
 - Keeping the Toon critters with new faces: the review's objection was to animal heads, not only to their range.
@@ -59,6 +79,9 @@ open denim shirt) with the News inked primitives (`news_inked`, `news_kit`, `new
   raised inner brow, no averted gaze and no gape, and adding them there would change every approved anchor's digest.
 - One tint over the whole frame from `toon_rooms.front_screen`: it colours the wall as much as the faces, which is the
   fault the review named.
+- A screened white key on Sam: a screen lifts the ink as much as the skin, so the features gain nothing on the skin.
+- The same floor in absolute L* for both faces: a deep skin has less contrast with dark ink in any light, so meeting
+  Leo's absolute contrast would mean lighting Sam to a lighter skin than his own.
 
 ## Consequences
 
