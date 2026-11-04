@@ -166,12 +166,24 @@ def source_chip(sources: Sequence[tuple[float, float, float, float]]) -> tuple[f
     contract=dc.contract("smallprint-stamp"),
 )
 def stamp(
-    cv, parent, finding: Stamp, start: float, end: float, measure: Measure, top: float = STAMP_Y, chip: bool = False
+    cv,
+    parent,
+    finding: Stamp,
+    start: float,
+    end: float,
+    measure: Measure,
+    top: float = STAMP_Y,
+    chip: bool = False,
+    ceiling: float | None = None,
 ):
     """``finding`` stamped at ``start``, a little crooked, the way a stamp lands, its source under it, the stamp's
-    top at ``top``. With ``chip`` the source sits on a paper chip, to read over a picture. Returns its group."""
+    top at ``top``. With ``chip`` the source sits on a paper chip, to read over a picture. ``ceiling`` is the highest
+    row the stamp may reach as it comes down onto its place (the safe area's top), so it lands from less high when
+    it lands near the top. Returns its group."""
     if end <= start:
         raise ScriptError(f"the stamp needs time on screen, got {start}..{end}")
+    if ceiling is not None and ceiling > top:
+        raise ScriptError(f"a stamp at row {top} is already over its ceiling at row {ceiling}")
     room = RIGHT - LEFT
     size, _, sources, rows = stamp_layout(finding, measure, top)
     wide, tall = measure(finding.text, size) + 80.0, size * 1.6
@@ -183,9 +195,10 @@ def stamp(
     cv.rect(g, x, top, wide, tall, "#F4F0E6E6", stroke=STAMP, sw=7.0, radius=10.0)
     cv.rect(g, x + 10, top + 10, wide - 20, tall - 20, "#00000000", stroke=STAMP, sw=2.5, radius=6.0)
     label(cv, g, finding.text, x, top, wide, tall, size, STAMP, "center")
-    cv.pop_in(
-        g, start, from_=min(LANDS_FROM, room / spread(finding.text, size, measure)), over=0.94, rise=0.09, settle=0.2
-    )
+    lands = min(LANDS_FROM, room / spread(finding.text, size, measure))
+    if ceiling is not None:
+        lands = min(lands, (cy - ceiling) / (round(tall) / 2))  # the text layer is as tall as its box, rounded
+    cv.pop_in(g, start, from_=lands, over=0.94, rise=0.09, settle=0.2)
     cv.keys(g, "opacity", [(start, 0.0), (start + 0.06, 1.0)], hold=False, local=False)
     source = cv.group(parent, cv.uid("smallprint-source"), start=start + 0.2, end=end)
     if chip and sources:

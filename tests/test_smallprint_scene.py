@@ -17,7 +17,7 @@ from srstudio import smallprint_lab as lab
 from srstudio import smallprint_scene as sc
 from srstudio.plates import Camera
 from srstudio.plates import digest as plates_digest
-from srstudio.smallprint_kit import ScriptError, Stamp
+from srstudio.smallprint_kit import ScriptError, Stamp, stamp
 
 LENS = Camera((0.0, -300.0, -362.0), (0.0, -290.0, -205.0), 33.0, 4.0)
 FOUND = Stamp("FED AT ONE HOUR", "Gee et al., 1994")
@@ -239,3 +239,23 @@ def test_two_shots_through_one_lens_share_their_room_plate_as_one_asset(tmp_path
     root = ET.fromstring(scene.to_bytes(layout="pretty"))
     ids = [e.get("id") for e in root.iter() if e.tag.endswith("image")]
     assert ids and len(ids) == len(set(ids))
+
+
+@pytest.mark.parametrize("finding", [FOUND, Stamp("WEEKS, EVEN MONTHS", "Culum Brown, Live Science, 2021")])
+def test_a_stamp_landing_in_the_headline_s_place_never_leaves_the_safe_area_as_it_comes_down(tmp_path, finding):
+    """The engine checks a text layer's box as the stamp scales down onto its place, without its turn."""
+    root, _ = _drawn(shot(stamp_at=0.5), tmp_path, finding)
+    group = next(e for e in root.iter() if (e.get("id") or "").startswith("smallprint-stamp"))
+    biggest = max(float(k.get("value")) for a in group if a.get("property") == "scaleY" for k in a)
+    text = next(e for e in root.iter() if e.tag.endswith("text") and e.get("text") == finding.text)
+    top = float(group.get("y")) - biggest * float(text.get("height")) / 2
+    assert top >= sc.SAFE_TOP - 1e-6
+    assert biggest > 1.0  # it still comes down onto its place
+
+
+def test_a_stamp_placed_over_its_own_ceiling_is_refused():
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="30", duration=3.0)
+    cv = Canvas(scene, font_asset="fraunces")
+    with pytest.raises(ScriptError, match="over its ceiling"):
+        stamp(cv, cv.comp, FOUND, 0.5, 2.0, measure, top=200.0, ceiling=sc.SAFE_TOP)

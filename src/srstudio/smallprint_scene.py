@@ -34,6 +34,7 @@ from PIL import Image, ImageDraw
 from . import look, plates, rafa, rafa_host
 from .clay import Mesh, Model
 from .ink_meter import LEGIBLE_PX
+from .layout import VERTICAL
 from .plates import Camera, Light, Material, Placed, Plate
 from .rafa_reel import Renders
 from .smallprint_kit import (
@@ -57,6 +58,7 @@ __all__ = [
     "STEP",
     "STILL_FOR",
     "STILL_PX",
+    "SAFE_TOP",
     "Box",
     "Move",
     "Shot",
@@ -94,6 +96,7 @@ BAND_FILL = 0.1  # a row the subject covers less of than this is bare
 CLEAR_PX = 12.0  # the least gap between two words on screen
 MASK = 4  # the share is measured on a raster this many times coarser than the frame
 W, H = rafa_host.WIDTH, rafa_host.HEIGHT
+SAFE_TOP = VERTICAL.region(W, H).y0  # the top of the reel's safe area: no word above it, landing or landed
 
 Box = tuple[float, float, float, float]  # x0, y0, x1, y1 in frame pixels
 
@@ -468,7 +471,7 @@ def draw(cv, parent, shot: Shot, first: float, last: float, renders: Renders, ro
     landed = stamp_time(shot, said, first) if stamped is not None else last
     _headline(cv, g, shot, first, landed, measure)
     if stamped is not None:
-        stamp(cv, g, stamped, landed, last, measure, top=shot.stamp_top, chip=True)
+        stamp(cv, g, stamped, landed, last, measure, top=shot.stamp_top, chip=True, ceiling=SAFE_TOP)
     return g
 
 
