@@ -299,6 +299,32 @@ def test_a_staging_can_declare_the_safe_area_a_show_keeps_its_text_in(pinned_fon
     assert ep.spec.safe_area is VERTICAL
 
 
+def _caption_boxes(xml):
+    """(layer x, text width) of each caption the build letters itself."""
+    size = str(toon.CAPTION_SIZE)
+    widths = {t.get("id"): float(t.get("width")) for t in xml.iter("text") if t.get("size") == size}
+    return [(float(n.get("x")), widths[n.get("asset")]) for n in xml.iter("layer") if n.get("asset") in widths]
+
+
+def test_a_sketch_that_declares_a_safe_area_letters_its_captions_inside_their_pills(pinned_fonts, tmp_path):
+    ep, xml = built(tmp_path, silent(stage_sketch()), pinned_fonts)
+    assert ep.spec.safe_area is VERTICAL  # a new reel declares its style's (ADR 0218)
+    boxes = _caption_boxes(xml)
+    assert len(boxes) == len(LINES) and all(x > 0 and width < 1080 for x, width in boxes)
+
+
+def test_a_published_sketch_with_no_safe_area_letters_its_captions_across_the_frame_as_it_went_out(
+    pinned_fonts, tmp_path
+):
+    from srstudio import safe_areas
+
+    slug = "any-questions"
+    assert slug in safe_areas.PUBLISHED_WITHOUT
+    ep, xml = built(tmp_path, silent(replace(stage_sketch(), slug=slug)), pinned_fonts)
+    assert ep.spec.safe_area is None
+    assert _caption_boxes(xml) == [(0.0, 1080.0)] * len(LINES)
+
+
 def test_a_staging_can_bring_its_own_captions_grade_output_and_frame_rate(pinned_fonts, tmp_path):
     seen = []
     graded = []

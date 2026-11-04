@@ -318,6 +318,26 @@ def test_captions_sit_in_measured_pills_in_the_style_font():
         toon.captions(canvas(font=None), cv.comp, lines, measure)
 
 
+def test_captions_asked_to_fit_letter_each_cue_inside_its_pill_and_unasked_across_the_frame():
+    lines = toon.parse_script(SCRIPT)
+    fitted, wide = canvas(), canvas()
+    toon.captions(fitted, fitted.comp, lines, measure, fit=True)
+    toon.captions(wide, wide.comp, lines, measure)  # unasked, as every published reel draws it
+
+    def boxes(cv):
+        root = tree(cv)
+        pills = [s for s in root.find("composition").iter("shape") if s.get("shape") == "rect"]
+        layers = [n for n in root.find("composition").iter("layer")]
+        widths = {t.get("id"): float(t.get("width")) for t in root.find("assets").findall("text")}
+        return [(float(p.get("x")), float(p.get("width")), float(q.get("x")), widths[q.get("asset")])
+                for p, q in zip(pills, layers, strict=True)]  # fmt: skip
+
+    assert all(tw == round(pw) and lx + tw / 2 == pytest.approx(px + pw / 2) for px, pw, lx, tw in boxes(fitted))
+    assert all(lx == 0 and tw == 1080 for _, _, lx, tw in boxes(wide))
+    texts = tree(fitted).find("assets").findall("text")
+    assert {t.get("align") for t in texts} == {"center"} and {t.get("wrap") for t in texts} == {"none"}
+
+
 def test_a_shot_can_lower_the_caption_band():
     default, lowered = canvas(), canvas()
     lines = toon.parse_script(SCRIPT)

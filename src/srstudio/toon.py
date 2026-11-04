@@ -573,12 +573,18 @@ def captions(
     *,
     band: float = CAPTION_TOP,
     clear_bug: bool = False,
+    fit: bool = False,
 ) -> None:
     """One pill per cue, centred, sized by ``measure(text)`` (the text's advance width at :data:`CAPTION_SIZE`);
     ``tints`` colours the pill of a cue by its speaker (white otherwise); ``band`` is the top of the pills in reference
     pixels, for a reel whose corner bug would crowd them. With ``clear_bug`` a pill that comes within
     :data:`srstudio.show.CLEAR` pixels of the show's bug is refused, since a Toon pill is one row: lower the band or
-    split the line. False keeps a published reel's pills."""
+    split the line. False keeps a published reel's pills.
+
+    With ``fit`` each cue's letters are laid out in its pill's own box rather than across the whole frame. The engine
+    measures a text layer's box against a declared safe area (SA01), so a frame-wide box crosses it on every cue
+    however short the words; a scene that declares one (ADR 0218) needs ``fit``. False keeps a published reel's
+    bytes, which declared none."""
     cv.require_font("the Toon style letters its captions in its font")
     top, height = int(round(fy(band))), int(round(fh(CAPTION_H)))  # the text box takes whole pixels
     for line in lines:
@@ -592,4 +598,6 @@ def captions(
         g = cv.group(parent, cv.uid("g"), start=line.start, end=line.end)
         fill = (tints or {}).get(line.speaker, cv.white)
         cv.rect(g, left, top, width, height, fill, cv.clear, 0, radius=CAPTION_RADIUS)
-        cv.text(g, cv.uid("caption"), line.text, 0, top, cv.width, height, CAPTION_SIZE, color=cv.ink, wrap="none")
+        box = int(round(width)) if fit else cv.width  # a text box takes whole pixels, centred like its pill
+        x = round(cv.width / 2 - box / 2, 2) if fit else 0
+        cv.text(g, cv.uid("caption"), line.text, x, top, box, height, CAPTION_SIZE, color=cv.ink, wrap="none")
