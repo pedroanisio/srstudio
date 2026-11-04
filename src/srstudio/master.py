@@ -188,7 +188,7 @@ def encode(
         if not any(p.is_file() for p in stage.rglob("*")):
             raise MasterError(f"the engine wrote no master (exit {done.returncode}): {said}")
         installed, displaced = _install(stage, out, next_name)
-        reported, late = _install(report_stage, report.place.parent, next_name) if report_stage else ([], [])
+        reported, late = _install(report_stage, report.place.parent, next_name) if report and report_stage else ([], [])
         if displaced or late:
             raise files.WriteOnceError("; ".join(displaced + late), code="files.exists", path=str(out))
         return Encoded(tuple(installed), done.returncode, said, tuple(reported))
