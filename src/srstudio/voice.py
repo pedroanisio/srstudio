@@ -34,11 +34,15 @@ import urllib.request
 import wave
 from array import array
 from collections.abc import Callable, Sequence
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from . import checks, files
 from .errors import MissingKeyError, ProviderHTTPError, SrstudioError
+
+if TYPE_CHECKING:
+    from .direction import Direction, Rendered
 
 MODEL = "eleven_multilingual_v2"
 API = "https://api.elevenlabs.io/v1/text-to-speech/{voice}/with-timestamps?output_format=mp3_44100_128"
@@ -87,6 +91,12 @@ class VoiceSettings:
                 raise VoiceRequestError(f"{name} must be within 0..1, got {value}")
         if not 0.7 <= self.speed <= 1.2:
             raise VoiceRequestError(f"speed must be within 0.7..1.2, got {self.speed}")
+
+    @classmethod
+    def expressive(cls, stability: float = 0.5, similarity_boost: float = 0.75) -> VoiceSettings:
+        """Settings for ``eleven_v3`` and ``eleven_v4``, which take only stability and similarity (ADR 0234): no style,
+        the default pace and no speaker boost."""
+        return cls(stability, similarity_boost, 0.0, 1.0, use_speaker_boost=False)
 
 
 @dataclass(frozen=True)
@@ -200,6 +210,8 @@ class SpokenLine:
     wav: Path
     timing_file: Path
     duration: float
+    model: str = MODEL
+    seed: int | None = None  # the seed the take was asked on; None: the client's
 
     def samples(self) -> array:
         with wave.open(str(self.wav), "rb") as w:
@@ -575,14 +587,21 @@ def _readings(text: str) -> set[str]:
     return {"".join(choice) for choice in itertools.product(*options)}
 
 
-def check_transcript(transcript: Transcript, expected: str, accepted: Sequence[str] = ()) -> None:
+AUDIO_EVENT = re.compile(r"\[[^\[\]]*\]")  # speech-to-text writes a performed sound as "[sighs]"
+
+
+def check_transcript(
+    transcript: Transcript, expected: str, accepted: Sequence[str] = (), *, events: bool = False
+) -> None:
     """The heard words equal the scripted words, ignoring case, punctuation and number spelling: a digit string
     reads as its cardinal or digit by digit ("1028" is "one oh two eight" too), and a heard clock on the hour as the
     hour ("3:00 AM" is "three a.m." too, "3:30 AM" is not). A compound may be heard split or joined ("well-being" for
     "wellbeing"): the letters must still match in order. ``accepted`` lists hearings the operator approved for this
     line (a homophone the recognizer cannot tell apart), each compared the same way; anything else is still a
-    mismatch."""
-    heard = _readings(transcript.text) | _readings(ON_THE_HOUR.sub(r"\1", transcript.text))
+    mismatch. ``events``: the line asked for a performed sound (an audio tag), so the bracketed events the recogniser
+    reports (``[sighs]``) are not words; a tag spoken aloud is heard as words and still fails."""
+    said = AUDIO_EVENT.sub(" ", transcript.text) if events else transcript.text
+    heard = _readings(said) | _readings(ON_THE_HOUR.sub(r"\1", said))
     for text in (expected, *accepted):
         if heard & _readings(text):
             return
@@ -615,6 +634,20 @@ def verify_effect(wav_bytes: bytes, seconds: float) -> float:
     return duration
 
 
+def _fingerprint(voice: Voice, payload: dict) -> str:
+    blob = json.dumps({"voice": voice.id, "request": payload}, sort_keys=True)
+    return hashlib.sha256(blob.encode()).hexdigest()[:20]
+
+
+def _spoken(alignment: Alignment, rendered: Rendered | None) -> Alignment:
+    """The alignment of the line's own letters: the provider's, or for a directed line :func:`.direction.spoken`."""
+    if rendered is None:
+        return alignment
+    from .direction import spoken
+
+    return spoken(alignment, rendered)
+
+
 class ElevenLabsClient:
     """Speech with timings, cached by request fingerprint under ``cache``.
 
@@ -640,6 +673,7 @@ class ElevenLabsClient:
         self.multipart_transport = multipart_transport or urllib_multipart_transport
 
     def payload(self, text: str, settings: VoiceSettings) -> dict:
+        """The request of an undirected line: unchanged since the first reel, so its cache key is too."""
         return {
             "text": text,
             "model_id": self.model,
@@ -649,24 +683,93 @@ class ElevenLabsClient:
         }
 
     def fingerprint(self, text: str, voice: Voice, settings: VoiceSettings) -> str:
-        blob = json.dumps({"voice": voice.id, "request": self.payload(text, settings)}, sort_keys=True)
-        return hashlib.sha256(blob.encode()).hexdigest()[:20]
+        return _fingerprint(voice, self.payload(text, settings))
 
-    def synthesize(self, text: str, voice: Voice, settings: VoiceSettings) -> SpokenLine:
-        prefix = self.cache / self.fingerprint(text, voice, settings)
+    def directed(
+        self,
+        text: str,
+        settings: VoiceSettings,
+        direction: Direction,
+        *,
+        seed: int | None = None,
+        previous_text: str = "",
+        next_text: str = "",
+    ) -> tuple[Rendered, dict, VoiceSettings]:
+        """The sent text, the request and the settings in effect of a line said under ``direction`` (ADR 0234),
+        checked for its model before anything is asked: a model that takes no style refuses a style or a pace it would
+        not perform, and the neighbouring lines go only with ``direction.context``."""
+        from .direction import DirectionError, render
+
+        model = direction.model or self.model
+        rendered = render(text, direction, model)
+        spec = direction.check_for(model)
+        if direction.speed is not None:
+            settings = replace(settings, speed=direction.speed)
+        if spec.style:
+            voice_settings: dict = asdict(settings)
+        else:
+            if settings.style != 0 or settings.speed != 1.0:
+                raise DirectionError(
+                    f"{model} takes no style and no speed (got style {settings.style}, speed {settings.speed}): "
+                    "use VoiceSettings.expressive(stability, similarity_boost)"
+                )
+            voice_settings = {"stability": settings.stability, "similarity_boost": settings.similarity_boost}
+        if (previous_text or next_text) and not direction.context:
+            raise DirectionError("previous or next text is sent only for a line directed with context=True")
+        payload = {
+            "text": rendered.text,
+            "model_id": model,
+            "voice_settings": voice_settings,
+            "seed": self.seed if seed is None else seed,
+            "apply_text_normalization": "auto",
+        }
+        if direction.context:
+            for name, value in (("previous_text", previous_text), ("next_text", next_text)):
+                if value:
+                    payload[name] = value
+        return rendered, payload, settings
+
+    def synthesize(
+        self,
+        text: str,
+        voice: Voice,
+        settings: VoiceSettings,
+        *,
+        direction: Direction | None = None,
+        seed: int | None = None,
+        previous_text: str = "",
+        next_text: str = "",
+    ) -> SpokenLine:
+        """``text`` said by ``voice``: cached, or one paid request verified before anything is cached. Without a
+        ``direction`` the request is the one every published reel made (:meth:`payload`); with one, it is
+        :meth:`directed`, and the returned alignment spells ``text`` alone, whatever tags the request carried."""
+        if direction is None:
+            if seed is not None or previous_text or next_text:
+                raise VoiceRequestError("a seed or neighbouring text is part of a direction: pass direction=")
+            return self._said(text, voice, settings, None, self.payload(text, settings))
+        rendered, payload, settings = self.directed(
+            text, settings, direction, seed=seed, previous_text=previous_text, next_text=next_text
+        )
+        return self._said(text, voice, settings, rendered, payload)
+
+    def _said(
+        self, text: str, voice: Voice, settings: VoiceSettings, rendered: Rendered | None, payload: dict
+    ) -> SpokenLine:
+        prefix = self.cache / _fingerprint(voice, payload)
         timing, mp3, wav = (prefix.with_suffix(s) for s in (".json", ".mp3", ".wav"))
+        model, seed = payload["model_id"], (payload["seed"] if rendered is not None else None)
         if timing.exists() and mp3.exists():
-            return self._from_cache(text, voice, settings, timing, mp3, wav)
+            return self._from_cache(text, voice, settings, timing, mp3, wav, rendered, model, seed)
         refuse_half_written((mp3, wav, timing))
         if not self.key:
             raise MissingKeyError("ELEVENLABS_API_KEY is required to generate an uncached line")
-        payload = self.payload(text, settings)
         body, request_id = self.transport(
             API.format(voice=urllib.parse.quote(voice.id, safe="")),
             payload,
             {"xi-api-key": self.key, "Content-Type": "application/json", "Accept": "application/json"},
         )
-        speech = parse_response(body, text)
+        speech = parse_response(body, payload["text"])
+        said = _spoken(speech.alignment, rendered)
         wav_bytes = decode(speech.audio)
         duration = verify_audio(wav_bytes, speech.alignment)
         # Verified: only now does anything reach the cache.
@@ -679,22 +782,27 @@ class ElevenLabsClient:
             "quality_check": None,
             "voice_id": voice.id,
             "voice_name": voice.name,
-            "model": self.model,
+            "model": model,
             "request": payload,
             "request_id": request_id,
         }
+        if rendered is not None:
+            meta["line"] = text
         files.write_once(timing, json.dumps(meta, indent=2) + "\n")
-        return SpokenLine(text, voice, settings, speech.alignment, wav, timing, duration)
+        return SpokenLine(text, voice, settings, said, wav, timing, duration, model, seed)
 
-    def _from_cache(self, text, voice, settings, timing: Path, mp3: Path, wav: Path) -> SpokenLine:
+    def _from_cache(
+        self, text, voice, settings, timing: Path, mp3: Path, wav: Path, rendered=None, model=MODEL, seed=None
+    ) -> SpokenLine:
         meta = _cached_record(timing, "a timing record")
         alignment = Alignment.parse(meta.get("alignment"))
-        _check_text(alignment, text)
+        _check_text(alignment, text if rendered is None else rendered.text)
+        said = _spoken(alignment, rendered)
         wav_bytes = wav.read_bytes() if wav.exists() else decode(mp3.read_bytes())
         duration = verify_audio(wav_bytes, alignment)
         if not wav.exists():
             files.write_same(wav, wav_bytes)
-        return SpokenLine(text, voice, settings, alignment, wav, timing, duration)
+        return SpokenLine(text, voice, settings, said, wav, timing, duration, model, seed)
 
     # -- sound effects ----------------------------------------------------------------------------------
     def sound_effect(self, text: str, seconds: float, prompt_influence: float = 0.6) -> EffectClip:

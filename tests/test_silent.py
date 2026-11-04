@@ -5,7 +5,8 @@ import json
 import pytest
 
 from srstudio import silent, takes
-from srstudio.voice import VoiceSettings
+from srstudio.direction import Direction
+from srstudio.voice import Voice, VoiceSettings
 from support.takes import script
 
 
@@ -68,3 +69,20 @@ def test_main_refuses_a_file_with_no_script(tmp_path):
     empty.write_text("VALUE = 1\n")
     with pytest.raises(silent.SilentError, match="no takes.Script"):
         silent.main([str(empty), str(tmp_path / "project")])
+
+
+def test_a_directed_line_and_an_exchange_have_a_silent_stand_in(tmp_path):
+    ana = Voice(role="ana", id="ana456", name="Matilda")
+    v4 = VoiceSettings.expressive(0.4)
+    lines = (
+        takes.Take("01", "dev", "Did you feed the dog?", 0.0),
+        takes.Take("02", "ana", "Dog food. Discipline.", 0.3, direction=Direction(tags=("sighs",))),
+        takes.Take("03", "dev", "Fine.", 0.2, direction=Direction(model="eleven_v4", pre_hold=0.5)),
+    )
+    s = script(takes=lines, shots=(), voices={**script().voices, "ana": ana}, settings={"dev": v4, "ana": v4},
+               exchanges=(takes.Exchange("01", "02"),))  # fmt: skip
+    made = silent.record(s, tmp_path)
+    one, two, three = made["items"]
+    assert one["exchange"]["gap"] == pytest.approx(0.0, abs=0.05)
+    assert two["duration"] == pytest.approx(two["speech_duration"] + 0.3, abs=1e-6)
+    assert three["pre_hold"] == 0.5
