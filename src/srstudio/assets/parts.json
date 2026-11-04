@@ -140,6 +140,16 @@
           "approval": null,
           "drawing": "c98a709dd55bad1ccd59c3c19f3ba3178d7484bdc868d66b51b33adb1f385727",
           "rig": null
+        },
+        {
+          "number": 2,
+          "date": "2026-11-04",
+          "note": "A pair of hands: a mitten with a thumb on each arm, the right the mirror of the left, and three seated gestures that show them (ADR 0239). Proposed: awaiting arc4d3's decision on the proof clip.",
+          "status": "proposed",
+          "proof": "generated/character-proofs/jp-hands/",
+          "approval": null,
+          "drawing": "76ad2c8df15d4d7d971864a29fc284561b8dbc5873389bd4d3b2da1032a07047",
+          "rig": null
         }
       ]
     },
@@ -2313,6 +2323,16 @@
           "approval": null,
           "drawing": "285b6f53fdf15edf306a7ebd9d07ff16c079d04f880f72336b97301865473cb1",
           "rig": null
+        },
+        {
+          "number": 2,
+          "date": "2026-11-04",
+          "note": "A pair of hands: a mitten with a thumb on each arm, the right the mirror of the left, and three seated gestures that show them (ADR 0239). Proposed: awaiting arc4d3's decision on the proof clip.",
+          "status": "proposed",
+          "proof": "generated/character-proofs/jp-hands/",
+          "approval": null,
+          "drawing": "f7ccaed940bc700d47a801ce2ade0d9cea4ed83109bf2c8d0f4d0089d52b426b",
+          "rig": null
         }
       ]
     },
@@ -3120,6 +3140,16 @@
           "proof": "",
           "approval": null,
           "drawing": "7e08b5891dc25d9d6d689d71f1ab394a85ea55182d25bfec0ff231126cc59f27",
+          "rig": null
+        },
+        {
+          "number": 2,
+          "date": "2026-11-04",
+          "note": "A pair of hands: a mitten with a thumb on each arm, the right the mirror of the left, and three seated gestures that show them (ADR 0239). Proposed: awaiting arc4d3's decision on the proof clip.",
+          "status": "proposed",
+          "proof": "generated/character-proofs/jp-hands/",
+          "approval": null,
+          "drawing": "f13b6a7b18d10f65da678bc24a2e1e5b6e01df91573f356a6f527c42f36b4834",
           "rig": null
         }
       ]

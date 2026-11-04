@@ -15,6 +15,12 @@ A :class:`Look` is what makes the rig a particular character: body fill, blush, 
 (Pip's sprout), what sits on it (Bo's hair) and what the face wears (Bo's glasses), and optional polish: a
 shaded head, a gloss, catch-lights and lashes. :func:`pip`, :func:`bo`, :func:`juno` and :func:`remy` are the
 same rig in four looks, so every pose and cue works for all of them.
+
+A look with ``hands`` ends each arm in a mitten with a thumb (ADR 0239): one drawing, :data:`MITTEN`, and its mirror,
+so the right hand is the left reflected and each thumb follows its side and what the camera sees of it
+(:mod:`srstudio.anatomy`). A hand is drawn in the pass its arm is in, so a hand on an arm behind the body is behind it.
+The seated gestures (:data:`GESTURES`) show them; :func:`pip`, :func:`bo` and :func:`juno` keep their stub arms, and
+``pip@2``, ``bo@2`` and ``juno@2`` are the same characters with hands.
 """
 
 from __future__ import annotations
@@ -26,7 +32,8 @@ from dataclasses import dataclass, field, replace
 
 from . import _blob_drawing_contracts as bdc
 from . import _character_contracts as cc
-from . import checks, signature
+from . import anatomy, anatomy_ledger, checks, signature
+from .anatomy import Facing, Side
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -41,6 +48,16 @@ __all__ = [
     "GAZES",
     "held",
     "worn",
+    "HAND",
+    "MITTEN",
+    "PALMS",
+    "GESTURES",
+    "arm_sides",
+    "facing",
+    "mitten",
+    "PIP_HANDS",
+    "BO_HANDS",
+    "JUNO_HANDS",
     "speaking",
     "MOUTHS",
     "POSES",
@@ -365,13 +382,13 @@ def _sitting(hand_l: Point, hand_r: Point, head: Point = (-40, -322), face: Poin
     )
 
 
+_LOUNGE_FAR_ARM = Stroke((-42, -198), (-52, -152), (-50, -110), (-60, -74), *ARM)  # the far hand on the near thigh
+
+
 def _lounging() -> Pose:
     """Seated back against a sofa: the sit pose with the head tipped back and both hands resting on the near thigh."""
     sit = _sitting((-170, -112), (-150, -108), head=(-30, -322), face=(-20, 2))
-    arms = {
-        "arm_l": Stroke((-62, -205), (-72, -160), (-72, -112), (-84, -70), *ARM),
-        "arm_r": Stroke((-42, -198), (-52, -152), (-50, -110), (-60, -74), *ARM),
-    }
+    arms = {"arm_l": Stroke((-62, -205), (-72, -160), (-72, -112), (-84, -70), *ARM), "arm_r": _LOUNGE_FAR_ARM}
     return Pose("lounge", sit.head, {**sit.limbs, **arms}, sit.front, sit.face)
 
 
@@ -434,6 +451,13 @@ def _hugging() -> Pose:
 def _raised(shoulder: Point, hand: Point, out: float) -> Stroke:
     """An arm raised from the shoulder, its elbow bowed ``out`` (negative bows to the left)."""
     return Stroke(shoulder, (shoulder[0] + out, shoulder[1] - 40), (hand[0] + out * 0.6, hand[1] + 50), hand, *ARM)
+
+
+def _gesture(name: str, arm_l: Stroke, arm_r: Stroke, head: Point = (-40, -322), face: Point = (-26, 6)) -> Pose:
+    """Seated as :func:`_sitting`, the arms acting: the near arm in front of the body, the far one behind it, its hand
+    out past the body's edge where it shows."""
+    sit = _sitting((-170, -112), (-150, -108), head=head, face=face)
+    return Pose(name, sit.head, {**sit.limbs, "arm_l": arm_l, "arm_r": arm_r}, sit.front, sit.face)
 
 
 _HANDS_BEHIND_HEAD = {
@@ -593,10 +617,89 @@ POSES: dict[str, Pose] = {
             arm_l=Stroke((-62, -298), (-122, -316), (-120, -391), (-66, -414), *ARM),
             arm_r=Stroke((62, -298), (122, -316), (120, -391), (66, -414), *ARM),
         ),
+        # The gestures (ADR 0239): seated, a hand either side of the body, so a figure with hands acts with them.
+        # Each near arm bends at the elbow and lifts the forearm by the chest: a partner across a two-shot is never
+        # reached into, and the bend stays wide enough, held and on the way from "lounge", that the arm's outline
+        # never folds over itself.
+        _gesture(  # palms up either side of the body: "what can you do?"
+            "shrug",
+            Stroke((-62, -205), (-35, -155), (-75, -120), (-110, -160), *ARM),
+            Stroke((-42, -198), (20, -140), (80, -180), (115, -225), *ARM),
+            head=(-40, -314),
+        ),
+        _gesture(  # the near hand offered forward, palm up, explaining; the far one on the thigh, as it lounges
+            "explain", Stroke((-62, -205), (-20, -85), (-90, -85), (-118, -140), *ARM), _LOUNGE_FAR_ARM
+        ),
+        _gesture(  # both palms out at the shoulders: "whoa, hold on"
+            "whoa",
+            Stroke((-62, -205), (-15, -160), (-70, -115), (-115, -180), *ARM),
+            Stroke((-42, -198), (50, -190), (80, -240), (112, -290), *ARM),
+            head=(-36, -318),
+        ),
     )
 }
 # Poses added after the cast was approved. An approved drawing walks only the others, so a new pose moves no digest.
-POSES_SINCE_APPROVAL = frozenset({"floor", "phone-a", "phone-b", "sit-show", "sit-back", "hug"})
+POSES_SINCE_APPROVAL = frozenset(
+    {"floor", "phone-a", "phone-b", "sit-show", "sit-back", "hug", "shrug", "explain", "whoa"}
+)
+GESTURES = ("shrug", "explain", "whoa")  # the poses that act with the hands (ADR 0239)
+# The arms whose hands show the camera their palm, by pose; every other hand shows its back (ADR 0147's facing).
+PALMS: Mapping[str, frozenset[str]] = {
+    "shrug": frozenset(ARMS),
+    "whoa": frozenset(ARMS),
+    "explain": frozenset({"arm_l"}),
+}
+
+
+# -- hands (ADR 0239) ---------------------------------------------------------------------------------------------
+HAND = (46.0, 56.0)  # a mitten's width and length in rig units, about half the head's width
+THUMB = (18.0, 32.0, 0.36, 34.0)  # a thumb's width, its length, how far up the palm it leaves, its splay in degrees
+WRIST = 8.0  # how far the palm reaches back over the arm's tip, so no gap shows at the wrist
+MITTEN = anatomy.Drawing("soft-mitten", Side.LEFT, Facing.PALM)  # the frame's left hand; the right is its mirror
+
+
+def _oval(cx: float, cy: float, rx: float, ry: float, turn: float = 0.0, steps: int = 20) -> list[Point]:
+    c, s = math.cos(math.radians(turn)), math.sin(math.radians(turn))
+    out = []
+    for k in range(steps):
+        a = 2 * math.pi * k / steps
+        x, y = rx * math.cos(a), ry * math.sin(a)
+        out.append((cx + x * c - y * s, cy + x * s + y * c))
+    return out
+
+
+def facing(pose: str, arm: str) -> Facing:
+    """What the camera sees of the hand on ``arm`` in ``pose``: its palm in a gesture that shows it, else its back."""
+    if pose not in POSES:
+        raise BlobError(f"unknown pose {pose!r}; one of {sorted(POSES)}")
+    if arm not in ARMS:
+        raise BlobError(f"a hand is on an arm, one of {ARMS}, not {arm!r}")
+    return Facing.PALM if arm in PALMS.get(pose, frozenset()) else Facing.BACK
+
+
+def arm_sides(pose: Pose) -> dict[str, Side]:
+    """The frame's side each arm of a placed ``pose`` leaves from: the arm whose shoulder is further left is the
+    frame's left one (:class:`srstudio.anatomy.Side`), so a flip swaps them."""
+    left = pose.limbs["arm_l"].p0[0] <= pose.limbs["arm_r"].p0[0]
+    return {"arm_l": Side.LEFT if left else Side.RIGHT, "arm_r": Side.RIGHT if left else Side.LEFT}
+
+
+def mitten(arm: Stroke, side: Side, facing: Facing) -> tuple[list[Point], list[Point]]:
+    """The palm and the thumb of the hand on ``arm``, the arm on the frame's ``side`` and the hand showing ``facing``:
+    :data:`MITTEN` drawn fingers up, reflected when the hand is its mirror, then turned along the arm's end and set on
+    its tip. The thumb's side follows from the side and the facing alone (ADR 0147)."""
+    w, length = HAND
+    tw, tl, up, splay = THUMB
+    palm = _oval(0.0, -(length / 2 - WRIST), w / 2, length / 2)
+    thumb = _oval(w / 2 - 2.0, -length * up, tw / 2, tl / 2, turn=splay)
+    sign = -1.0 if MITTEN.mirrored(anatomy.Arm(side).hand(facing)) else 1.0
+    tx, ty = arm.tangent(1.0)
+    hx, hy = arm.p3
+
+    def place(points: list[Point]) -> list[Point]:  # local up (0, -1) onto the arm's direction, then onto its tip
+        return [(hx + sign * x * -ty - y * tx, hy + sign * x * tx + y * -ty) for x, y in points]
+
+    return place(palm), place(thumb)
 
 
 # -- faces ------------------------------------------------------------------------------------------------
@@ -721,7 +824,8 @@ class Look:
 
     The polish is off by default, so a look without it draws exactly as before: ``shade`` colours a crescent
     on the head away from the light (upper left), ``gloss`` puts a highlight on the lit side, ``catchlights``
-    puts the same light in the pupils and ``lashes`` adds two flicks at the outer corner of every eye."""
+    puts the same light in the pupils and ``lashes`` adds two flicks at the outer corner of every eye. ``hands`` ends
+    each arm in a mitten (:func:`mitten`); off, the arms end round, as every approved drawing has them."""
 
     name: str
     fill: str | None = None
@@ -735,6 +839,7 @@ class Look:
     gloss: bool = False
     catchlights: bool = False
     lashes: bool = False
+    hands: bool = False
 
     def __post_init__(self) -> None:
         if not _NAME.fullmatch(self.name):
@@ -962,6 +1067,10 @@ REMY = Look(
     gloss=True,
     catchlights=True,
 )
+# The same characters with hands (ADR 0239): their version 2, proposed until a proof clip is approved.
+PIP_HANDS = replace(PIP, hands=True)
+BO_HANDS = replace(BO, hands=True)
+JUNO_HANDS = replace(JUNO, hands=True)
 
 
 # -- the static silhouette ------------------------------------------------------------------------------------
@@ -1159,6 +1268,20 @@ def drawings(cues: Sequence[Cue], *, end: float, fps: float = 15) -> list[Drawin
     return out
 
 
+def _hand_paths(frames: Sequence[Drawing]) -> dict[str, tuple[list[str], list[str]]]:
+    """Per arm, the palm's and the thumb's outline on every drawing (:func:`mitten`), the side and the facing read
+    from that drawing, so a flip or a gesture turns the hand over on the drawing it lands."""
+    out: dict[str, tuple[list[str], list[str]]] = {arm: ([], []) for arm in ARMS}
+    for d in frames:
+        sides = arm_sides(d.pose)
+        for arm in ARMS:
+            for track, points in zip(
+                out[arm], mitten(d.pose.limbs[arm], sides[arm], facing(d.pose.name, arm)), strict=True
+            ):
+                track.append("M " + _points(points) + " Z")
+    return out
+
+
 def held(cv: Canvas, parent, cues: Sequence[Cue], *, end: float, scale: float = 1, fps: float = 15, id: str):
     """A group that rides between the hands through ``cues``, drawing by drawing, for a prop the character holds.
 
@@ -1325,12 +1448,26 @@ def blob(
         return g
 
     fronts = {limb: [(d.time, limb in d.pose.front) for d in frames] for limb in FRONTABLE}
+    hands = _hand_paths(frames) if look.hands else {}
+    if look.hands:
+        anatomy_ledger.pose_hands(cv, look.name, root.id, (Side.LEFT, Side.RIGHT))
+
+    def hand_shapes(g, arm: str, fill: str, stroke: str, sw: float) -> None:
+        for paths in hands[arm]:
+            shape = cv.path(g, paths[0], fill, stroke, sw)
+            cv.keys(shape, "path", list(zip(times, paths, strict=True)))
+
     for pass_name, fill, stroke, sw in (("outline", cv.ink, cv.ink, 2 * o), ("fill", body_fill, cv.clear, 0)):
         g = cv.group(root, f"{id}-{pass_name}")
         for limb in LIMBS:
             shape = limb_shape(g, limb, fill, stroke, sw)
             if limb in fronts and any(v for _, v in fronts[limb]):
                 _show(cv, shape, _changes(fronts[limb], False))
+        for arm in hands:  # a hand in the pass its arm is in: behind the body with it
+            hand = cv.group(g, f"{id}-hand-{arm}-back-{pass_name}")
+            if any(v for _, v in fronts[arm]):
+                _show(cv, hand, _changes(fronts[arm], False))
+            hand_shapes(hand, arm, fill, stroke, sw)
         head = head_at(cv.group(g, f"{id}-head-{pass_name}"))
         r = radius + (o if pass_name == "outline" else 0)
         cv.ellipse(head, -r, -r, 2 * r, 2 * r, fill)
@@ -1346,12 +1483,16 @@ def blob(
         if any(v for _, v in fronts[limb]):
             g = cv.group(root, f"{id}-front-{limb}")
             _show(cv, g, _changes(fronts[limb], True))
+            if limb in hands:  # the hand's outline under the arm, its fill over the arm's tip: one shape
+                hand_shapes(cv.group(g, f"{id}-hand-{limb}-front"), limb, cv.ink, cv.ink, 2 * o)
             fills = [d.pose.limbs[limb].widened(o).outline() for d in frames]
             traces = [d.pose.limbs[limb].widened(o).contour() for d in frames]
             fill = cv.path(g, fills[0], body_fill, cv.clear, 0)
             cv.keys(fill, "path", list(zip(times, fills, strict=True)))
             trace = cv.path(g, traces[0], cv.clear, cv.ink, o)
             cv.keys(trace, "path", list(zip(times, traces, strict=True)))
+            if limb in hands:
+                hand_shapes(cv.group(g, f"{id}-hand-{limb}-front-fill"), limb, body_fill, cv.clear, 0)
     face = cv.group(root, f"{id}-face")
     cv.keys(face, "x", [(d.time, round(d.pose.head[0] + d.pose.face[0], 3)) for d in frames])
     cv.keys(face, "y", [(d.time, round(d.pose.head[1] + d.pose.face[1], 3)) for d in frames])
@@ -1535,6 +1676,113 @@ def remy(
         shadow=shadow,
         look=REMY,
     )
+
+
+def _handed(
+    look: Look,
+    cv: Canvas,
+    parent,
+    cues: Sequence[Cue],
+    end: float,
+    x: float,
+    y: float,
+    scale: float,
+    mouth_states: Sequence[tuple[float, str]] | None,
+    id: str,
+    fps: float,
+    radius: float,
+    shadow: bool,
+):
+    return blob(
+        cv,
+        parent,
+        cues,
+        end=end,
+        x=x,
+        y=y,
+        scale=scale,
+        mouth_states=mouth_states,
+        id=id,
+        fps=fps,
+        radius=radius,
+        shadow=shadow,
+        look=look,
+    )
+
+
+@register(
+    "character",
+    "pip@2",
+    summary="Pip with a pair of hands: a mitten with a thumb on each arm, the right the mirror of the left",
+    contract=cc.soft(Cue, tuple(POSES), tuple(EYES), MOUTHS, tuple(FEET), tuple(MOUTH_STATES), gazes=GAZES),
+)
+def pip_2(
+    cv: Canvas,
+    parent,
+    cues: Sequence[Cue],
+    *,
+    end: float,
+    x: float = 0,
+    y: float = 0,
+    scale: float = 1,
+    mouth_states: Sequence[tuple[float, str]] | None = None,
+    id: str = "pip",
+    fps: float = 15,
+    radius: float = HEAD,
+    shadow: bool = False,
+):
+    """:func:`pip` in :data:`PIP_HANDS`: every pose ends its arms in hands, and the gestures show them."""
+    return _handed(PIP_HANDS, cv, parent, cues, end, x, y, scale, mouth_states, id, fps, radius, shadow)
+
+
+@register(
+    "character",
+    "bo@2",
+    summary="Bo with a pair of hands: a mitten with a thumb on each arm, the right the mirror of the left",
+    contract=cc.soft(Cue, tuple(POSES), tuple(EYES), MOUTHS, tuple(FEET), tuple(MOUTH_STATES), gazes=GAZES),
+)
+def bo_2(
+    cv: Canvas,
+    parent,
+    cues: Sequence[Cue],
+    *,
+    end: float,
+    x: float = 0,
+    y: float = 0,
+    scale: float = 1,
+    mouth_states: Sequence[tuple[float, str]] | None = None,
+    id: str = "bo",
+    fps: float = 15,
+    radius: float = HEAD,
+    shadow: bool = False,
+):
+    """:func:`bo` in :data:`BO_HANDS`: every pose ends its arms in hands, and the gestures show them."""
+    return _handed(BO_HANDS, cv, parent, cues, end, x, y, scale, mouth_states, id, fps, radius, shadow)
+
+
+@register(
+    "character",
+    "juno@2",
+    summary="Juno with a pair of hands: a mitten with a thumb on each arm, the right the mirror of the left",
+    contract=cc.soft(Cue, tuple(POSES), tuple(EYES), MOUTHS, tuple(FEET), tuple(MOUTH_STATES), gazes=GAZES),
+)
+def juno_2(
+    cv: Canvas,
+    parent,
+    cues: Sequence[Cue],
+    *,
+    end: float,
+    x: float = 0,
+    y: float = 0,
+    scale: float = 1,
+    mouth_states: Sequence[tuple[float, str]] | None = None,
+    id: str = "juno",
+    fps: float = 15,
+    radius: float = HEAD,
+    shadow: bool = False,
+):
+    """:func:`juno` in :data:`JUNO_HANDS`: every pose ends its arms in hands, and the gestures show them."""
+    return _handed(JUNO_HANDS, cv, parent, cues, end, x, y, scale, mouth_states, id, fps, radius, shadow)
 
 
 # -- props and the stage: a 3/4 view from above and to the right ---------------------------------------------

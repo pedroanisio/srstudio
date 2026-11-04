@@ -23,7 +23,8 @@ version.
   :func:`srstudio.usage.recorded`), and a delivery compares that with the release's pins.
 - **Pins.** A release pins what it draws (:attr:`srstudio.releases.Release.parts`). Only the kinds and styles in
   :data:`ROUTED` read a pin when they build, so they may take a second version. So may a show's kit in
-  :data:`KIT_VERSIONS`, whose new version is a module of its own that a reel calls by name (:func:`routed`).
+  :data:`KIT_VERSIONS`, whose new version is a module of its own that a reel calls by name (:func:`routed`), and the
+  kinds and styles in :data:`CALLED`, whose new version is a builder registered as ``name@N`` that a reel calls.
 """
 
 from __future__ import annotations
@@ -46,6 +47,7 @@ __all__ = [
     "RECORD",
     "RECORD_SCHEMA",
     "KIT_VERSIONS",
+    "CALLED",
     "ROUTED",
     "STATUSES",
     "TABLE_SCHEMA",
@@ -82,6 +84,9 @@ RECORD = "parts.json"  # in a project: what its build drew, {part: version}
 STATUSES = ("approved", "proposed")
 ROUTED = (("character", "toon"),)  # the (kind, style) whose builds read a pin
 KIT_VERSIONS = ("news-",)  # parts whose second version is its own module: a reel names it, nothing reads a pin
+# The (kind, style) whose second version is a builder of its own, registered as ``name@N``, that a reel calls by name:
+# the Soft characters with hands (ADR 0239). Nothing reads a pin; the build records which one it called.
+CALLED = (("character", "soft"),)
 DIGEST = re.compile(r"[0-9a-f]{64}")
 
 
@@ -419,7 +424,7 @@ def restore(name: str, number: int = 1) -> registry.Entry:
 def routed(name: str, kind: str, style: str) -> bool:
     """May ``name`` take a second version? Its builds read a pin, or a reel chooses the version by calling the module
     that draws it, as a show's kit does: the reels on the first version keep their calls and cannot change."""
-    return (kind, style) in ROUTED or name.startswith(KIT_VERSIONS)
+    return (kind, style) in ROUTED or (kind, style) in CALLED or name.startswith(KIT_VERSIONS)
 
 
 def part_name(name: str, number: int) -> str:
