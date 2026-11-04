@@ -42,6 +42,7 @@ from typing import Any, Protocol
 
 from . import checks
 from .compose import MusicClient, MusicOutputError, Plan
+from .direction import Direction, DirectionError, seeds
 from .errors import ConsentError, SrstudioError
 from .generated import gain_to_peak, trim_effect, trim_speech
 from .narration import (
@@ -105,7 +106,9 @@ class Take:
     that generates it, its requested length and the most of it kept. ``hold`` is silence kept after the clip,
     still inside the take; ``speed`` overrides the voice's pace for this take; ``extra`` is copied into the
     take's timeline item (an episode's own fields, such as its beat); ``heard`` lists transcripts the operator
-    accepted for this line besides its own words (a homophone speech-to-text cannot tell apart)."""
+    accepted for this line besides its own words (a homophone speech-to-text cannot tell apart); ``direction`` is how
+    the line is said besides its words (:class:`srstudio.direction.Direction`, ADR 0234): its model, audio tags,
+    stressed words, pauses, the silence cut in before (``pre_hold``) or after it, and its takes and the one kept."""
 
     id: str
     actor: str
@@ -120,10 +123,21 @@ class Take:
     peak: float = VOICE_PEAK
     extra: Mapping[str, Any] = field(default_factory=dict)
     heard: tuple[str, ...] = ()
+    direction: Direction | None = None
 
     @property
     def is_effect(self) -> bool:
         return self.actor == EFFECT
+
+    @property
+    def after(self) -> float:
+        """The silence after the take: its ``hold``, or its direction's ``post_hold``."""
+        return self.direction.post_hold if self.direction is not None and self.direction.post_hold else self.hold
+
+    @property
+    def before(self) -> float:
+        """The silence cut in before the take's speech: its direction's ``pre_hold``."""
+        return self.direction.pre_hold if self.direction is not None else 0.0
 
 
 @dataclass(frozen=True)
@@ -152,10 +166,22 @@ class Script:
     language: str = "en-US"
     font: tuple[str, str] = FONT  # the caption font file and its licence, copied into the project by main
     still: float = 0.0  # seconds of silence opening the first take: a still opening (sp-hook_motion arm A)
+    models: Mapping[str, str] = field(default_factory=dict)  # a voice's speech model by role; absent: MODEL
 
     def settings_for(self, take: Take) -> VoiceSettings:
         base = self.settings[take.actor]
-        return base if take.speed is None else replace(base, speed=take.speed)
+        speed = take.speed if take.speed is not None else (take.direction.speed if take.direction else None)
+        return base if speed is None else replace(base, speed=speed)
+
+    def direction_for(self, take: Take) -> Direction | None:
+        """The take's direction with its voice's model when it names none; None for a take said as every published
+        reel's take was (no direction, the default model), so its request and cache key are unchanged."""
+        model = self.models.get(take.actor)
+        if take.direction is None:
+            return None if model is None else Direction(model=model)
+        if take.direction.model is None and model is not None:
+            return replace(take.direction, model=model)
+        return take.direction
 
     def check(self) -> None:
         """The script is well formed before anything is requested."""
@@ -172,6 +198,13 @@ class Script:
             raise TakesError(f"{self.title}: fps must be a positive integer, got {self.fps!r}")
         if not (checks.number(self.still) and 0 <= self.still <= STILL_MAX):
             raise TakesError(f"{self.title}: still must be 0 to {STILL_MAX} seconds, got {self.still!r}")
+        for role, model in self.models.items():
+            if role not in self.voices:
+                raise TakesError(f"{self.title}: a model for {role!r}, who has no voice")
+            try:
+                Direction(model=model)
+            except DirectionError as exc:
+                raise TakesError(f"{self.title}: {role}: {exc}") from None
         ids = [take.id for take in self.takes]
         if ids != sorted(ids) or len(set(ids)) != len(ids):
             raise TakesError(f"take ids must be unique and in order, got {ids}")
@@ -191,6 +224,8 @@ def _check_take(script: Script, take: Take) -> None:
         raise TakesError(f"{where}: hold must be non-negative, got {take.hold}")
     if take.is_effect and take.heard:
         raise TakesError(f"{where}: an effect is not transcribed, so it has no accepted hearing")
+    if take.is_effect and take.direction is not None:
+        raise TakesError(f"{where}: an effect is not voiced, so it has no direction")
     if take.is_effect:
         if not (
             take.prompt
@@ -212,6 +247,17 @@ def _check_take(script: Script, take: Take) -> None:
         script.settings_for(take)
     except ValueError as exc:
         raise TakesError(f"{where}: {exc}") from None
+    direction = script.direction_for(take)
+    if direction is None:
+        return
+    if take.direction is not None and take.direction.post_hold and take.hold:
+        raise TakesError(f"{where}: the hold is said twice (hold {take.hold}, post_hold {take.direction.post_hold})")
+    if take.direction is not None and take.direction.speed is not None and take.speed is not None:
+        raise TakesError(f"{where}: the pace is said twice (speed {take.speed}, direction speed)")
+    try:
+        ElevenLabsClient(Path("."), "", seed=script.seed).directed(take.text, script.settings_for(take), direction)
+    except DirectionError as exc:
+        raise TakesError(f"{where}: {exc}") from None
 
 
 def _check_bed(bed: Bed) -> None:
@@ -228,7 +274,18 @@ def _check_bed(bed: Bed) -> None:
 class Client(Protocol):
     """What the recording asks the provider for (:class:`~srstudio.voice.ElevenLabsClient` does all three)."""
 
-    def synthesize(self, text: str, voice: Voice, settings: VoiceSettings) -> SpokenLine: ...
+    def synthesize(
+        self,
+        text: str,
+        voice: Voice,
+        settings: VoiceSettings,
+        *,
+        direction: Direction | None = None,
+        seed: int | None = None,
+        previous_text: str = "",
+        next_text: str = "",
+    ) -> SpokenLine: ...
+
     def transcribe(self, audio: str | Path, language: str = "en") -> Transcript: ...
     def sound_effect(self, text: str, seconds: float) -> EffectClip: ...
 
@@ -254,7 +311,7 @@ def _effect(take: Take, client: Client, audio: Path, ffmpeg: str) -> tuple[dict,
         seconds=take.seconds,
         prompt=take.prompt,
         generator="ElevenLabs sound generation",
-        duration=round(length + take.hold, 6),
+        duration=round(length + take.after, 6),
     )
     return item, dst
 
@@ -272,16 +329,17 @@ def _speech(script: Script, take: Take, spoken: SpokenLine, audio: Path, ffmpeg:
         trim_start=round(trim.clip_in, 6),
         trim_end=round(trim.clip_out, 6),
         speech_duration=speech,
-        duration=round(speech + take.hold, 6),
+        duration=round(speech + take.after, 6),
         words=words_from_alignment(spoken.alignment, take.text, trim.clip_in, speech),
         phones=phones_from_alignment(spoken.alignment, trim.clip_in, speech),
     )
     return item, dst
 
 
-def _still(made: dict, dst: Path, seconds: float, ffmpeg: str) -> dict:
-    """The first take opened by ``seconds`` of silence: the pause is inside the take (a timeline runs contiguous
-    from zero), so its clip, words, phones, speech and length move later by ``seconds``; ``still`` records it."""
+def _still(made: dict, dst: Path, seconds: float, ffmpeg: str, key: str = "still") -> dict:
+    """The take opened by ``seconds`` of exact silence: the first take's still opening, or a directed take's
+    ``pre_hold``. The pause is inside the take (a timeline runs contiguous from zero), so its clip, words, phones,
+    speech and length move later by ``seconds``; ``key`` records it."""
     before = wav_seconds(dst)
     held = dst.with_name(dst.stem + ".still.wav")
     delay = f"adelay=delays={round(seconds * RATE)}S:all=1"
@@ -289,12 +347,13 @@ def _still(made: dict, dst: Path, seconds: float, ffmpeg: str) -> dict:
                    check=True)  # fmt: skip
     held.replace(dst)
     if abs(wav_seconds(dst) - before - seconds) > 1 / RATE:
-        raise TakesError(f"{dst.name}: the still opening should add {seconds} s, the clip lasts {wav_seconds(dst)} s")
+        raise TakesError(f"{dst.name}: the {key} should add {seconds} s, the clip lasts {wav_seconds(dst)} s")
 
     def later(marks: list[dict]) -> list[dict]:
         return [{**m, "start": round(m["start"] + seconds, 6), "end": round(m["end"] + seconds, 6)} for m in marks]
 
-    out = dict(made, duration=round(made["duration"] + seconds, 6), still=seconds)
+    out = dict(made, duration=round(made["duration"] + seconds, 6))
+    out[key] = seconds
     if made["speech_duration"]:
         out["speech_duration"] = round(made["speech_duration"] + seconds, 6)
     for key in ("words", "phones"):
@@ -340,6 +399,71 @@ def _bed(bed: Bed, client: Client, compose: Compose, root: Path, duration: float
     }
 
 
+def _neighbours(script: Script, take: Take) -> tuple[str, str]:
+    """The spoken lines before and after ``take`` (effects skipped), for a direction with ``context``."""
+    spoken = [t for t in script.takes if not t.is_effect]
+    i = spoken.index(take)
+    return (spoken[i - 1].text if i else "", spoken[i + 1].text if i + 1 < len(spoken) else "")
+
+
+def _directed(
+    script: Script, take: Take, client: Client, heard: list[dict], failures: list[str]
+) -> tuple[SpokenLine, dict] | None:
+    """Every take of a directed line, each on its own seed and heard back; returns the kept one and what the timeline
+    records of the direction, or None after adding a failure: a kept take not heard as written, or several takes and
+    none picked (the takes stay cached, so naming ``pick`` costs no request)."""
+    direction = script.direction_for(take)
+    assert direction is not None  # the caller checked
+    previous_text, next_text = _neighbours(script, take) if direction.context else ("", "")
+    voice, settings = script.voices[take.actor], script.settings_for(take)
+    candidates, said = [], []
+    for k, seed in enumerate(seeds(script.seed, direction.takes)):
+        spoken = client.synthesize(
+            take.text, voice, settings, direction=direction, seed=seed, previous_text=previous_text, next_text=next_text
+        )
+        transcript = client.transcribe(spoken.wav)
+        try:
+            check_transcript(transcript, take.text, accepted=take.heard, events=direction.performed)
+            passed, why = True, ""
+        except TranscriptMismatch as exc:
+            passed, why = False, str(exc)
+        candidates.append({"take": k, "seed": seed, "heard": transcript.text, "passed": passed} | (
+            {"mismatch": why} if why else {}))  # fmt: skip
+        said.append(spoken)
+    line = {"id": take.id, "role": take.actor, "expected": take.text, "heard": candidates[0]["heard"]}
+    if direction.takes > 1:
+        line["takes"] = candidates
+    heard.append(line | ({"accepted": list(take.heard)} if take.heard else {}))
+    if direction.takes > 1 and direction.pick is None:
+        listed = ", ".join(f"{c['take']} seed {c['seed']} {'heard' if c['passed'] else 'MISHEARD'}" for c in candidates)
+        failures.append(f"take {take.id}: {direction.takes} takes recorded, pick one with Direction(pick=k): {listed}")
+        return None
+    pick = direction.pick or 0
+    if not candidates[pick]["passed"]:
+        failures.append(f"take {take.id}: {candidates[pick]['mismatch']}")
+        return None
+    record_ = {"model": said[pick].model, "seed": candidates[pick]["seed"], "direction": _direction_record(direction)}
+    if direction.takes > 1:
+        record_["takes"] = candidates
+        record_["pick"] = pick
+    return said[pick], record_
+
+
+def _direction_record(direction: Direction) -> dict:
+    """What the timeline keeps of a direction: its fields that differ from no direction at all."""
+    out: dict[str, Any] = {}
+    for name, default in (
+        ("model", None), ("tags", ()), ("quality", ""), ("emphasis", ()), ("pre_hold", 0.0), ("post_hold", 0.0),
+        ("speed", None), ("takes", 1), ("pick", None), ("context", False),
+    ):  # fmt: skip
+        value = getattr(direction, name)
+        if value != default:
+            out[name] = list(value) if isinstance(value, tuple) else value
+    if direction.pauses:
+        out["pauses"] = [{"after": p.after, "seconds": p.seconds, "nth": p.nth} for p in direction.pauses]
+    return out
+
+
 def record(
     script: Script,
     root: Path,
@@ -358,12 +482,23 @@ def record(
     audio = root / "audio"
     audio.mkdir(parents=True, exist_ok=True)
     voices = {role: confirm(voice) for role, voice in script.voices.items()}
-    items, heard, failures = [], [], []
+    items: list[dict] = []
+    heard: list[dict] = []
+    failures: list[str] = []
     for take in script.takes:
         item: dict = {"id": take.id, "actor": take.actor, "shot": take.shot, "text": take.text, "mood": take.mood}
         item.update(take.extra)
         if take.is_effect:
             made, dst = _effect(take, client, audio, ffmpeg)
+        elif script.direction_for(take) is not None:
+            kept = _directed(script, take, client, heard, failures)
+            if kept is None:
+                continue
+            spoken, record_ = kept
+            made, dst = _speech(script, take, spoken, audio, ffmpeg)
+            if take.before:
+                made = _still(made, dst, take.before, ffmpeg, key="pre_hold")
+            made.update(record_)
         else:
             spoken = client.synthesize(take.text, script.voices[take.actor], script.settings_for(take))
             transcript = client.transcribe(spoken.wav)
@@ -421,7 +556,7 @@ def _clocked(text: str, speech: float, lead: float) -> dict:
 
 
 def _rehearsed_item(script: Script, take: Take, folder: Path) -> dict:
-    lead = script.still if take is script.takes[0] else 0.0
+    lead = (script.still if take is script.takes[0] else 0.0) + take.before
     item: dict = {"id": take.id, "actor": take.actor, "shot": take.shot, "text": take.text, "mood": take.mood}
     item.update(take.extra)
     if take.is_effect:
@@ -435,9 +570,11 @@ def _rehearsed_item(script: Script, take: Take, folder: Path) -> dict:
         item.update(voice_name=script.voices[take.actor].name, speed=settings.speed, speech_duration=round(length, 6))
         item.update(_clocked(take.text, speech, lead))
         name = f"take-{take.id}.wav"
-    item["duration"] = round(length + take.hold, 6)
-    if lead:
-        item["still"] = lead
+    item["duration"] = round(length + take.after, 6)
+    if script.still and take is script.takes[0]:
+        item["still"] = script.still
+    if take.before:
+        item["pre_hold"] = take.before
     _silence(folder / name, item["duration"])
     item["audio"] = f"assets/{REHEARSAL_DIR}/{name}"
     return item

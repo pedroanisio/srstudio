@@ -1,5 +1,5 @@
 ---
-updated-by: OpenAI Codex (GPT-6)
+updated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 ---
 
 # Prepare audio and bind its timeline
@@ -39,6 +39,40 @@ as its exit. `voice` parses provider responses into typed records, checks alignm
 spelling and finite ordered timing, and verifies audible audio. Invalid responses
 raise `VoiceOutputError` without caching them. Uncached calls have no implicit retry;
 cache reads reverify their contents.
+
+### Direct a line
+
+A take in a `takes.Script`, or a `series.line`, can carry a `srstudio.direction.Direction`
+([ADR 0234](decisions/0234-voice-direction-per-line.md)). The line's words stay the
+captions and what speech-to-text must hear. The direction shapes only the request:
+
+```python
+from srstudio.direction import Direction, Pause
+from srstudio.series import line
+from srstudio.voice import VoiceSettings
+
+line("01b", "leo", "Just... discipline.", hold=0, direction=Direction(
+    model="eleven_v4", tags=("sighs",), emphasis=("discipline",),
+    pre_hold=0.6, post_hold=0.8, takes=3, pick=1))
+line("02", "sam", "Just discipline.", direction=Direction(pauses=(Pause("Just", 0.8),)))  # v2: a break tag
+```
+
+- `model`: `eleven_multilingual_v2` (the default), `eleven_v3` or `eleven_v4`.
+  `Script.models` or `Series.models` sets one for each voice. v3 and v4 take only
+  `VoiceSettings.expressive(stability, similarity_boost)`.
+- `tags` (from `AUDIO_TAGS`) and `quality` are performed on v3 and v4. Multilingual v2
+  speaks a tag aloud, so it is refused there. `emphasis` writes a word in capitals, on
+  v3 and v4 only.
+- `pauses` are break tags, on multilingual v2 only. On v3 and v4, cut the line into two
+  takes with `pre_hold` or `post_hold`, which are exact silence in the edit.
+- `context=True` sends the neighbouring lines as previous and next text. v3 refuses it.
+- `takes=N` records N seeds and hears each one. With more than one take, the recording
+  stops until `pick=k` names the take to keep. The timeline records every take and the
+  pick.
+
+A direction that a line or its model cannot take raises `DirectionError` before any
+request is made. A take without a direction is sent exactly as before, with the same
+cache key.
 
 The generated-asset path uses `srstudio.generated.Generated` and
 `scene-render resolve`. The `srstudio-elevenlabs` provider requires
