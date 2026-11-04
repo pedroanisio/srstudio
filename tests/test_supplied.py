@@ -155,6 +155,21 @@ def test_a_file_that_is_not_pcm_with_samples_is_refused(tmp_path):
 
 
 # -- the voiced project -----------------------------------------------------------------------------------------------
+def test_each_take_is_cut_from_the_file_for_head_motion_keeping_its_channels(tmp_path):
+    wav(tmp_path / supplied.SOURCE, 3.5)
+    supplied.voice(SK, tmp_path, READING, credit="Original audio, by someone else")
+    takes, _ = sketch.load_speech(tmp_path / "voiced" / "speech.json")
+    with wave.open(str(tmp_path / supplied.SOURCE), "rb") as source:
+        channels, rate = source.getnchannels(), source.getframerate()
+    for take in takes:  # each take's stretch, which head motion reads for its loudness; never mixed
+        cut = tmp_path / "audio" / f"vo-{take.id}.wav"
+        assert supplied.duration_of(cut) == pytest.approx(take.kept, abs=1e-4)
+        with wave.open(str(cut), "rb") as w:
+            assert (w.getnchannels(), w.getframerate()) == (channels, rate)
+    manifest = json.loads((tmp_path / "narration.json").read_text())
+    assert all("vo-" not in json.dumps(item) for item in manifest["items"])
+
+
 def test_the_voiced_project_is_what_the_narrated_build_reads(tmp_path):
     audio = wav(tmp_path / supplied.SOURCE, 3.5)
     manifest = supplied.voice(SK, tmp_path, READING, credit="Original audio, by someone else")
