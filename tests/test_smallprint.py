@@ -722,6 +722,14 @@ def test_every_word_over_the_night_sky_sits_on_a_paper_tag_drawn_over_the_dark()
         tx, ty, tw, th = (float(tag.get(k)) for k in ("x", "y", "width", "height"))
         assert tag.get("fill") == sp.PAPER and tag is not sky, f"{text.get('text')!r} is drawn on the dark"
         assert tx <= x + 1 and ty <= y and tx + tw >= x + w - 1 and ty + th >= y + h, f"{text.get('text')!r} overhangs"
+        boxes = [(s, *(float(s.get(k)) for k in ("x", "y", "width", "height"))) for s in order[order.index(tag) + 1 :]
+                 if s.get("shape") and s.get("x") is not None]  # fmt: skip
+        later = [
+            s.get("id")
+            for s, sx, sy, sw, sh in boxes
+            if sx < tx + tw and sx + sw > tx and sy < ty + th and sy + sh > ty
+        ]
+        assert not later, f"{text.get('text')!r}'s tag is drawn over by {later}"
     assert over == 3, "night, east and west all stand in the sky"
 
 

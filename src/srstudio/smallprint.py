@@ -1330,6 +1330,9 @@ def sun_track(cv, g, first: float, last: float, measure: Measure) -> None:
     then night falls, the sun is gone, and the bud swings back to face east before dawn (Atamian et al., 2016)."""
     sheet(cv, g)
     label(cv, g, "young sunflower", LEFT, 290, RIGHT - LEFT, 80, 58.0, INK, "center")
+    arc = [(500.0 - 320.0 * math.cos(u), 760.0 - 300.0 * math.sin(u)) for u in np.linspace(0.0, math.pi, 9)]
+    for x, y in arc[1:-1]:
+        cv.ellipse(g, x - 6, y - 6, 12, 12, RULED)  # under the night and its tag
     night = cv.group(g, cv.uid("sp-night"), opacity=0.0)
     cv.rect(night, 80, 400, 840, 500, NIGHT, radius=24.0)
     cv.rect(night, 410, 416, 180, 72, PAPER, stroke=INK, sw=3.0, radius=36.0)  # a tag, so the word reads on paper
@@ -1339,9 +1342,6 @@ def sun_track(cv, g, first: float, last: float, measure: Measure) -> None:
         left = x if word == "east" else x - wide
         cv.rect(g, left, 776, wide, 68, PAPER, stroke=INK, sw=3.0, radius=34.0)
         label(cv, g, word, left, 780, wide, 60, 46.0, STAMP, "center")
-    arc = [(500.0 - 320.0 * math.cos(u), 760.0 - 300.0 * math.sin(u)) for u in np.linspace(0.0, math.pi, 9)]
-    for x, y in arc[1:-1]:
-        cv.ellipse(g, x - 6, y - 6, 12, 12, RULED)
     sun = cv.group(g, cv.uid("sp-sun"), x=0.0, y=0.0, opacity=1.0)
     cv.ellipse(sun, -44, -44, 88, 88, SUNNY, stroke=INK, sw=4.0)
     cv.path(g, "M500 900 C 492 840, 508 780, 500 720", fill="#00000000", stroke=LEAF, sw=12.0)  # the stem
