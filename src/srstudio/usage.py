@@ -109,13 +109,19 @@ def recorded(project: Path) -> Iterator[None]:
     said: list[bool] = []
 
     def write(used: set[str]) -> None:
+        from . import build_report
+
         if said and not used and not figures and not build.notes and not build.limbs:
             for name, data in kept.items():  # a setup run: the last build's records stand
                 (project / name).write_bytes(data)
+            build_report.check('usage', 'skipped', path=project, reason='Setup-only run restored prior usage records.')
             return
         parts.write_record(project, parts.drawn(used))
         figure_record.write(project, figures)
         anatomy_ledger.write(project, build.notes, build.limbs)
+        for name in RECORDS:
+            build_report.artifact('usage_record', project / name)
+        build_report.check('usage', 'passed', path=project)
 
     token = _setup.set(said)
     try:

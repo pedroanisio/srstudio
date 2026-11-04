@@ -18,6 +18,10 @@ a similar character or pass contract JSON directly to a builder.
 
 | Task | Entry point | Clock and capability checks |
 | --- | --- | --- |
+| Start a project and check its dependencies | `srstudio init ROOT --json`; `srstudio doctor --json` | Run the returned build argument array, including its explicit project root. |
+| Discover a bounded set of parts | `srstudio catalog --summary --json`; `registry.search()` | Page with `next_offset`; capability filters match explicit true declarations only. |
+| Generate a JSON acting score | `srstudio schema acting --version 1.2.0 --json`; `document_schemas.get()` | Structural schema first, `srstudio.acting.parse_score` next, then rig-specific compilation. |
+| Decide whether a build is sufficiently verified | [Agent verification recipes](authoring-verification.md) | Read `checks` and `artifacts`; use `--require-check` to refuse skipped or failed verification. |
 | Discover a character, prop or location | `srstudio inspect KIND NAME --json`; [agent contracts](authoring-discovery.md#agent-contracts) | Read declared units, vocabularies, versions and runtime bindings; unknown fields remain unknown. |
 | Place different character families | [Character clips](authoring-clips.md#character-clips-one-placement-and-timing-boundary) | One local performance clock and an explicit project interval; adapters enforce family capabilities. |
 | Coordinate emotion, speech and listening | `parse_score`, `compile_performance`; [acting](authoring-acting.md#coordinated-acting-and-continuity) | Strict score schema, supported emotion maps and explicit channel ownership. |

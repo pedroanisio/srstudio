@@ -8,7 +8,7 @@ import json
 import os
 import re
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields, replace
 from functools import wraps
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast
@@ -19,7 +19,7 @@ from sr_core.scene import AudioMix, AudioTrack, CaptionTrack, Composition, Group
 from sr_core.scene import Sequence as SceneSequence
 from sr_core.scene._runtime import _attr_specs
 
-from . import anatomy_ledger, checks, digest, native, safe_areas, show, signature
+from . import anatomy_ledger, build_report, checks, digest, native, safe_areas, show, signature
 from ._outputs import pinned_directories, write_outputs
 from ._transaction import scene_transaction
 from .canvas import Canvas, Keys, Palette, Signature
@@ -59,6 +59,16 @@ class SceneCheckError(EpisodeError):
 
     def __init__(self, findings: Sequence[object]):
         self.findings = tuple(findings)
+        self.context = {
+            'findings': [
+                {
+                    'severity': getattr(f, 'severity', None),
+                    'code': getattr(f, 'code', None),
+                    'message': getattr(f, 'message', str(f)),
+                }
+                for f in self.findings
+            ]
+        }
         super().__init__("\n".join(str(f) for f in self.findings))
 
 
@@ -433,6 +443,39 @@ class EpisodeSpec:
             self.namer = _StyleNamer(st.namer) if st.namer else None
         if st.accessibility or self.accessibility:
             self.accessibility = {**st.accessibility, **(self.accessibility or {})}
+
+    def with_style(self, style: Style, **overrides: Any) -> EpisodeSpec:
+        """Copy project settings with fresh style defaults, then apply ``overrides``.
+
+        Resets palette, background, frame, clock, input paths, font, mouth, naming,
+        safe area and accessibility, including prior explicit customizations of those
+        fields. Supply any customizations to retain here. Ordinary ``dataclasses.replace``
+        copies resolved values and therefore should not be used to switch styles.
+        """
+        reset = {
+            'palette',
+            'background',
+            'fps',
+            'width',
+            'height',
+            'dialogue',
+            'audio',
+            'font',
+            'font_id',
+            'font_family',
+            'font_credit',
+            'font_license',
+            'font_policy',
+            'font_weight',
+            'font_style',
+            'mouth_style',
+            'namer',
+            'local_time',
+            'safe_area',
+            'accessibility',
+        }
+        defaults: dict[str, Any] = {f.name: f.default for f in fields(self) if f.name in reset}
+        return replace(self, style=style, **(defaults | overrides))
 
 
 class Episode:
@@ -929,9 +972,18 @@ class Episode:
 
     # -- finish -----------------------------------------------------------------------------------------
     def check(self):
-        if importlib.util.find_spec("lxml") is not None:  # the XSD and Schematron checks need it
-            return self.scene.check(schema=True)
-        return self.scene.check()
+        schema = importlib.util.find_spec('lxml') is not None
+        findings = self.scene.check(schema=True) if schema else self.scene.check()
+        state: build_report.Status = 'failed' if any(f.severity == 'error' for f in findings) else 'passed'
+        build_report.check('sdk', state, path=self.root, findings=findings)
+        build_report.check(
+            'schema',
+            state if schema else 'skipped',
+            path=self.root,
+            findings=findings if schema else (),
+            reason='' if schema else 'Install srstudio[validate] for schema checks.',
+        )
+        return findings
 
     def check_overlays(self, document: Path, roots: Sequence[str], engine: Path | None = None) -> list[Crossing]:
         """Hold the overlay groups ``roots`` of the finished ``document`` inside the safe area: the engine does not
@@ -1070,6 +1122,7 @@ class Episode:
             except OSError as exc:
                 check_error.args = (f"{check_error}\nvalidation report could not be written: {exc}",)
                 raise check_error from exc
+            build_report.artifact('validation_report', target_report)
             raise check_error
         document = _document_at(self.scene, self.root, out.parent)
         from . import text_rules  # it reads the frame gates, which read the releases this module's callers load
@@ -1092,6 +1145,7 @@ class Episode:
             except OSError as exc:
                 error.args = (f"{error}\nvalidation report could not be written: {exc}",)
                 raise error from exc
+            build_report.artifact('validation_report', target_report)
             raise error
         report_data = (json.dumps(report_rows, indent=2) + "\n").encode()
         anatomy_ledger.built(noted, self.cv.limbs.values())
@@ -1102,6 +1156,8 @@ class Episode:
             directories=directories,
             private=private,
         )
+        build_report.artifact('scene', target_out)
+        build_report.artifact('validation_report', target_report)
         print(
             f"{out.name}: {document.count(b'<shape ')} shapes, {document.count(b'<group ')} groups, "
             f"{len(self.caption_specs)} captions, {len(findings)} findings"

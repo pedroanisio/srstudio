@@ -4,6 +4,26 @@ updated-by: OpenAI Codex (GPT-6)
 
 # Repair failed authoring input
 
+Timeline parsing supplies stable `timeline.number`, `timeline.text`, `timeline.required`,
+`timeline.object` and `timeline.sequence` codes for malformed fields. Paths address the input,
+such as `phrases[0].start`, `items[0].duration`, or `[0].text` for caption arrays. The diagnostic
+includes the actual value, expected shape and a repair instruction while retaining `TimelineError`.
+
+`srstudio build --json SCRIPT [ROOT] [options...]` writes one success result to stdout or a
+diagnostic to stderr. Put `--json` before the script; script options keep their own meaning.
+Python, native and child-process stdout/stderr are captured in temporary files; the first
+4096 characters of each stream appear in `context.stdout` and `context.stderr`. Invalid UTF-8
+in captured logs is replaced. Logs do not mix with the JSON result. Scene-check failures retain
+their individual `severity`, `code` and `message` under `context.findings`, subject to the shared
+diagnostic payload limits. The SDK exposes those same findings through `SceneCheckError.to_dict()`.
+
+Build success results additionally report `artifacts` and `checks` under `srstudio.build/1.1.0`.
+Failure diagnostics include the same evidence in `context.build`. Each named check has a status
+(`passed`, `failed`, or `skipped`) and execution details. A skipped check is not verified; an uninstrumented
+custom check is not inferred to have passed. Use `--require-check sdk`, `schema`, `usage`, `anatomy`, or
+`text` before the script, repeating the option as needed. A missing or skipped required check produces
+`build.required_checks`, with the unmet statuses in `actual`. See [verification](authoring-verification.md).
+
 [Library README](../README.md) · [Authoring task index](authoring-reference.md)
 
 Catch the documented error, inspect its typed repair fields, and validate a corrected request before retrying. The recipe below uses `HeadMotionError`; scene-construction errors may also come from `sr_core.scene.SchemaValueError`. See [extension failures](authoring-extensions.md#extending-drawing-calls) for the broader exception boundary.

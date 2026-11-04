@@ -20,14 +20,36 @@ From the `srstudio` directory, using Python 3.10 or later:
 ```bash
 python3 -m venv .venv
 . .venv/bin/activate
-python -m pip install -e '.[validate,test]'
+python -m pip install '.[validate]'
 ```
 
-The `validate` extra adds XSD and Schematron checks; `test` installs the development tools. The `sr-core` dependency is installed from Git at the revision pinned in `pyproject.toml`, so installation requires Git and access to its repository.
+The `validate` extra adds XSD and Schematron checks. Contributors can instead use
+`python -m pip install -e '.[validate,test]'` for an editable installation and development tools.
+The `sr-core` dependency is installed from Git at the revision pinned in `pyproject.toml`, so installation requires Git and access to its repository.
 
 ## Quick start
 
-Build the self-contained sample project:
+Create and build a project from any directory after installation:
+
+```bash
+srstudio init hello
+srstudio build hello/build.py hello
+srstudio doctor
+```
+
+`init` writes an editable `build.py`, synthetic dialogue and tone-burst audio, and a bundled
+DejaVu Sans Bold font with its license. It needs no system fonts, repository examples, engine,
+or speech provider. Existing starter files require `init --overwrite`; existing scene outputs
+require `srstudio build hello/build.py hello --overwrite`. An optional `--slug` names the episode;
+otherwise its slug comes from the directory name. `init --json` returns paths and command argument arrays.
+
+`doctor` checks Python, package versions, the starter font, optional schema validation and the
+engine's `--version` command. Use `--engine /path/to/scene-render` or `SRSTUDIO_ENGINE` when the
+engine is outside `PATH`. `doctor --json` separates `ready_to_build` from `ready_to_render`;
+it exits 1 when rendering prerequisites are missing. It does not render or certify GPU support.
+After installing the separate engine, run `scene-render encode hello/hello.scene.xml`.
+
+For a larger example with custom registered parts, build the repository's sample project:
 
 ```bash
 python examples/new_episode.py examples/out/coffee-review
@@ -107,7 +129,7 @@ Explore the registered characters, locations, props and graphics from the comman
 
 ```bash
 srstudio styles
-srstudio catalog --style cutout --kind location
+srstudio catalog --summary --style cutout --kind location --json
 srstudio inspect location office-wide
 srstudio inspect prop coffee-cup --json
 srstudio inspect character manager --json
@@ -121,6 +143,18 @@ message. Common head, spring, speech, gaze, placement, mouth, blink and keyframe
 geometric residuals and context. Payloads bound strings, collection sizes and nesting; nonfinite numbers become
 strings so diagnostics remain valid JSON. Commands accepting `--json` write this envelope to stderr on failure,
 including argument and plugin-import errors, and preserve their existing nonzero exit codes.
+
+Use `srstudio build --json SCRIPT [ROOT] [script options...]` for a structured build result.
+Place the build-level `--json` before `SCRIPT`; options after the script/root belong to the builder.
+Successful results go to stdout, failure diagnostics to stderr. Both include bounded captured logs;
+scene-check diagnostics retain individual findings under `context.findings`.
+Build results use `srstudio.build/1.1.0` and include `artifacts` with absolute paths and `checks`
+with `passed`, `failed`, or `skipped` status. Failure diagnostics retain this evidence in
+`context.build`. Add `--require-check sdk --require-check anatomy` before `SCRIPT` to refuse
+success when those checks are skipped or fail. Pass `ROOT` explicitly to enable usage recording
+and frame checks. See the [agent verification recipes](docs/authoring-verification.md).
+`parts --digest NAME --json` returns the name, version and digest; `parts --usage REPORT --json`
+returns the measured episode count, pin drift and `ok`. `parts --refused --json` filters the table.
 
 `inspect` shows the actual signature, parameter defaults, callback slots, documentation and a call template. Catalog and inspection results also show the registered version and latest approved default for each recorded part. In JSON these appear under `part_version`; character results also retain the legacy `character_version` field. A plain registered name identifies version 1; use `srstudio.parts.drawing(name)` for the latest approved drawing or pass a version explicitly. Version metadata reports the approval record separately; a replaced builder is marked unverified and cannot be used as an approved default or pin. Run `specimens.check(name, version)` to compare it with the approved drawing; proposed versions raise `NotApprovedError`. Non-character specimens use projects under `generated/episodes` by default, or the path supplied by `episodes=Path('/path/to/projects')` or `SRSTUDIO_EPISODES`. A successful check verifies that builder for the current process. Parts without a standalone specimen cannot be checked this way: `parts.restore(name, version)` restores their original registered builder, and `parts.drawing(name, version, allow_unverified=True)` permits proof work. Selected parts include runnable examples using an existing `ep`; try `coffee-cup`, `office-mug`, `stick-mug`, `toon-mug`, or `soft-coffee-machine`. Use `--plugins my_package.parts` to import a plugin before listing or inspecting its parts. `srstudio catalog --json` returns the listing as JSON.
 
@@ -141,6 +175,17 @@ explicitly unknown, and runtime objects such as a canvas are marked as runtime b
 API; they do not deserialize records or replace builder validation. See the
 [agent contract reference](docs/authoring-discovery.md#agent-contracts).
 
+For bounded discovery, start with `catalog --summary --json` or
+`catalog --search coffee --limit 10 --json`. Pages include `total` and `next_offset`.
+Use `--capability limbs` to require declared support, and
+`inspect character manager --fields name,contract.capabilities --json` to retrieve only selected details.
+`registry.search()` provides the same paging in Python; the legacy unpaged catalog remains available.
+
+JSON authoring documents have separate schemas: `srstudio schema --json` lists formats and versions;
+`srstudio schema acting --version 1.2.0 --json` exports the score's JSON Schema. Python callers use
+`srstudio.document_schemas.get('acting', version='1.2.0')`. Parse with `acting.parse_score`, then compile
+against the chosen rig: a structural schema cannot certify timing, alignment relationships or capabilities.
+
 Core Cutout props, locations and graphics also declare placement units, clocks, return shapes and callback
 semantics. Selected props publish local drawing anchors. Run `srstudio catalog --contract-coverage --json` to
 see explicit declarations separately from inferred argument shapes and the remaining gaps. The
@@ -153,6 +198,12 @@ spatial attachment or collision capabilities.
 ## Styles
 
 A `Style` supplies defaults for frame size, timing, input files, palette, captions and audio. Choose one with a value such as `EpisodeSpec(style=TOON)` after `from srstudio import TOON`; explicit spec fields override its defaults. Use `srstudio styles --json` for the current values, and look up a slug in `srstudio.styles.STYLES` when configuring Python code from JSON.
+
+To switch an existing spec, use `spec.with_style(TOON, fps=30)`. This preserves project settings
+such as title, root and seed, resolves fresh style defaults, then applies the supplied overrides.
+It resets previous palette, background, frame, clock, input paths, font, mouth, naming, safe-area
+and accessibility customizations; resupply any you want to retain. `dataclasses.replace` copies
+already-resolved values, so use it for ordinary field edits rather than style switching.
 
 | Style | Main use |
 | --- | --- |

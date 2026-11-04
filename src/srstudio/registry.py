@@ -331,6 +331,7 @@ def register(
 
 
 def get(kind: str, name: str) -> Entry:
+    _kind(kind)
     try:
         return _REGISTRY[kind][name]
     except KeyError:
@@ -352,13 +353,119 @@ def describe(kind: str, name: str) -> PartDetails:
 
 def entries(kind: str | None = None, style: str | None = None) -> list[Entry]:
     """Registered parts, optionally of one kind and one style (shared parts are listed for every style)."""
-    if kind is not None and kind not in KINDS:
-        raise RegistryError(f"unknown kind {kind!r}; one of {KINDS}")
+    if kind is not None:
+        _kind(kind)
+    if style is not None:
+        from .styles import STYLES
+
+        known = sorted(set(STYLES) | {e.style for group in _REGISTRY.values() for e in group.values()})
+        if style not in known:
+            raise _option('style', style, known)
     kinds = [kind] if kind is not None else list(KINDS)
     out = [e for k in kinds for e in _REGISTRY[k].values()]
     if style is not None:
         out = [e for e in out if e.style in (style, "")]
     return out
+
+
+def _option(path: str, actual: object, expected: object) -> RegistryError:
+    return RegistryError(
+        f'unknown {path} {actual!r}; expected {expected}',
+        code=f'registry.{path}',
+        path=path,
+        actual=actual,
+        expected=expected,
+        remedy=f'Choose a supported {path} from expected.',
+    )
+
+
+def _kind(kind: str) -> None:
+    if kind not in KINDS:
+        raise _option('kind', kind, list(KINDS))
+
+
+def select_fields(data: dict[str, Any], fields: tuple[str, ...]) -> dict[str, Any]:
+    """Select explicit dotted dictionary paths; a typo never silently drops requested information."""
+    result: dict[str, Any] = {}
+    for field_name in fields:
+        source, destination = data, result
+        pieces = field_name.split('.')
+        for i, piece in enumerate(pieces):
+            if not isinstance(source, dict) or piece not in source:
+                raise _option(
+                    'fields', field_name, sorted(source) if isinstance(source, dict) else 'a dictionary field'
+                )
+            if i == len(pieces) - 1:
+                destination[piece] = source[piece]
+            else:
+                if not isinstance(source[piece], dict):
+                    raise _option('fields', field_name, f'{piece} has no nested fields')
+                # Copies avoid changing the source if a broad field and its child are both selected.
+                destination[piece] = dict(destination.get(piece, {}))
+                destination = destination[piece]
+                source = source[piece]
+    return result
+
+
+def search(
+    query: str = '',
+    *,
+    kind: str | None = None,
+    style: str | None = None,
+    capabilities: tuple[str, ...] = (),
+    limit: int = 20,
+    offset: int = 0,
+    fields: tuple[str, ...] = ('kind', 'name', 'style', 'summary'),
+) -> dict[str, Any]:
+    """Bounded, stable discovery. Capabilities match explicit True declarations only.
+
+    Pages are sorted by (kind, name); offsets are relative to the current registry state.
+    Import plugins before paging and keep that state unchanged until all pages are read.
+    """
+    if not isinstance(query, str):
+        raise _option('query', query, 'string')
+    for name, value, low, high in (('limit', limit, 1, 100), ('offset', offset, 0, 1_000_000)):
+        if type(value) is not int or not low <= value <= high:
+            raise _option(name, value, f'integer in {low}..{high}')
+    selected = entries(kind, style)
+    known = {'limbs', 'head_motion', 'expressions'} | {
+        name
+        for group in _REGISTRY.values()
+        for entry in group.values()
+        if entry._current_contract
+        for name, _ in entry._current_contract.capabilities
+    }
+    for capability in capabilities:
+        if capability not in known:
+            raise _option('capabilities', capability, sorted(known))
+    allowed = {'kind', 'name', 'style', 'summary', 'tags', 'module', 'part_version', 'character_version'}
+    if not fields or any(name not in allowed for name in fields):
+        raise _option('fields', fields, sorted(allowed))
+    words = query.casefold().split()
+    selected = [e for e in selected if all(word in ' '.join((e.name, e.summary, *e.tags)).casefold() for word in words)]
+    if capabilities:
+        selected = [
+            e for e in selected if all(e._describe_contract()['capabilities'].get(c) is True for c in capabilities)
+        ]
+    selected.sort(key=lambda e: (e.kind, e.name))
+    rows = []
+    for entry in selected[offset : offset + limit]:
+        row = {name: getattr(entry, name) for name in fields if name not in ('part_version', 'character_version')}
+        if 'tags' in fields:
+            row['tags'] = list(entry.tags)
+        if 'part_version' in fields:
+            row['part_version'] = _part_version(entry)
+        if 'character_version' in fields:
+            row['character_version'] = _character_version(entry)
+        rows.append(row)
+    return {
+        'schema': 'srstudio.catalog-page/1.0.0',
+        'items': rows,
+        'total': len(selected),
+        'offset': offset,
+        'limit': limit,
+        'next_offset': offset + limit if offset + limit < len(selected) else None,
+    }
 
 
 def catalog(style: str | None = None, *, kind: str | None = None) -> list[dict]:

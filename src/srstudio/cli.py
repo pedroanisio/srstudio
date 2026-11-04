@@ -14,10 +14,12 @@ import os
 import runpy
 import shutil
 import sys
-from contextlib import nullcontext
+import tempfile
+from collections.abc import Iterator
+from contextlib import ExitStack, contextmanager, nullcontext, redirect_stderr, redirect_stdout
 from dataclasses import asdict
 from pathlib import Path
-from typing import NoReturn
+from typing import NoReturn, TextIO
 
 from sr_core.scene import SchemaValueError
 
@@ -27,6 +29,7 @@ from . import (
     anatomy_ledger,
     auto_enhance,
     bible_cli,
+    build_report,
     catalog_page,
     catalog_server,
     catalog_specimens,
@@ -34,6 +37,7 @@ from . import (
     choreograph,
     craft,
     dance,
+    document_schemas,
     fonts,
     frames,
     interview,
@@ -41,6 +45,7 @@ from . import (
     lipsync,
     master,
     music,
+    onboarding,
     outbox,
     overlap,
     parts,
@@ -128,13 +133,33 @@ def main(argv=None):
 
     parser = Parser(prog="srstudio")
     sub = parser.add_subparsers(dest="cmd", required=True)
+    schema = sub.add_parser('schema', help='list data document formats or print a versioned JSON Schema')
+    schema.add_argument('document', nargs='?')
+    schema.add_argument('--version')
+    schema.add_argument('--json', action='store_true')
+    starter = sub.add_parser('init', help='create an offline starter project with a bundled font')
+    starter.add_argument('root', type=Path)
+    starter.add_argument('--slug', help='lowercase episode slug (default: directory name)')
+    starter.add_argument('--font', type=Path, help='use an explicit DejaVu Sans Bold font')
+    starter.add_argument('--overwrite', action='store_true', help='replace existing starter files')
+    starter.add_argument('--json', action='store_true')
+    doctor = sub.add_parser('doctor', help='check local build and render prerequisites without changing them')
+    doctor.add_argument('--engine', type=Path)
+    doctor.add_argument('--font', type=Path)
+    doctor.add_argument('--json', action='store_true')
     cat = sub.add_parser(
         "catalog",
         help="list registered characters, locations, props and graphics",
         epilog="Use srstudio inspect KIND NAME for a part's signature, callback slots and usage examples.",
     )
     cat.add_argument("--kind", choices=registry.KINDS)
-    cat.add_argument("--style", choices=sorted(STYLES), help="only the parts of one style (shared parts included)")
+    cat.add_argument("--style", help="only the parts of one known style (shared parts included)")
+    cat.add_argument('--search', help='search names, summaries and tags; returns a bounded page')
+    cat.add_argument('--summary', action='store_true', help='compact first page (20 entries by default)')
+    cat.add_argument('--capability', action='append', default=[], help='require explicit support; repeat for AND')
+    cat.add_argument('--limit', type=int, help='page size, 1..100')
+    cat.add_argument('--offset', type=int, default=0, help='zero-based offset in stable kind/name order')
+    cat.add_argument('--fields', help='comma-separated catalog fields; requires --json')
     cat.add_argument("--json", action="store_true")
     cat.add_argument("--plugins", nargs="*", default=(), help="extra modules to import before listing")
     catalog_mode = cat.add_mutually_exclusive_group()
@@ -148,6 +173,7 @@ def main(argv=None):
     detail.add_argument("kind", choices=registry.KINDS)
     detail.add_argument("name")
     detail.add_argument("--json", action="store_true")
+    detail.add_argument('--fields', help='comma-separated fields, including dotted dictionary paths; requires --json')
     detail.add_argument("--plugins", nargs="*", default=(), help="extra modules to import before inspection")
     number = sub.add_parser(
         "number", help="the show's numbers: set the count, claim or release a reel's number, list (ADR 0074, ADR 0080)"
@@ -309,6 +335,14 @@ def main(argv=None):
         "build", help="run an episode script: an episode's slug, a python file or a module, with its project root"
     )
     build.add_argument("--scripts", type=Path, default=_scripts_default(), help="folder of episode scripts")
+    build.add_argument('--json', action='store_true', help='structured result or diagnostic; put before SCRIPT')
+    build.add_argument(
+        '--require-check',
+        choices=build_report.CHECKS,
+        action='append',
+        default=[],
+        help='fail unless this check passes; repeat as needed, before SCRIPT',
+    )
     build.add_argument("script")
     build.add_argument("root", nargs="?")
     build.add_argument("options", nargs=argparse.REMAINDER, help="passed to the episode (--voice, ...)")
@@ -317,11 +351,53 @@ def main(argv=None):
     record.add_argument("slug")
     record.add_argument("options", nargs=argparse.REMAINDER, help="the project and the recorder's own options")
     args = parser.parse_args(arguments)
+    if getattr(args, 'fields', None) is not None and not args.json:
+        parser.error('--fields requires --json')
+    if args.cmd == 'schema':
+        if args.version and not args.document:
+            parser.error('--version requires a document name')
+        try:
+            data = (
+                document_schemas.get(args.document, version=args.version)
+                if args.document
+                else document_schemas.catalog()
+            )
+        except document_schemas.DocumentSchemaError as exc:
+            _error('schema', exc, args.json)
+            return 2
+        print(json.dumps(data, indent=2, ensure_ascii=False))
+        return 0
+    if args.cmd == 'init':
+        try:
+            result = onboarding.init_project(args.root, slug=args.slug, font=args.font, overwrite=args.overwrite)
+        except onboarding.OnboardingError as exc:
+            _error('init', exc, args.json)
+            return 2
+        if args.json:
+            print(json.dumps(result, ensure_ascii=False))
+        else:
+            print(f"Created {result['root']}")
+            print(f"Build: srstudio build {str(args.root / 'build.py')!r} {str(args.root)!r}")
+            print('Check rendering prerequisites: srstudio doctor')
+        return 0
+    if args.cmd == 'doctor':
+        report = onboarding.doctor(engine=args.engine, font=args.font)
+        if args.json:
+            print(json.dumps(report, ensure_ascii=False))
+        else:
+            for check in report['checks']:
+                print(f"{check['name']}: {check['status']} {check.get('version', check.get('path', ''))}")
+                if check['status'] != 'ok':
+                    print(f"  {check.get('message', '')} {check.get('remedy', '')}".strip())
+            print(f"Ready to build: {report['ready_to_build']}; ready to render: {report['ready_to_render']}")
+        return 0 if report['ready_to_render'] else 1
     if args.cmd == "inspect":
         if not _load_plugins(args.plugins, "inspect", getattr(args, "json", False)):
             return 2
         try:
             info = registry.describe(args.kind, args.name)
+            if args.fields is not None:
+                info = registry.select_fields(info, tuple(args.fields.split(',')))
         except (registry.RegistryError, registry.NotRegisteredError) as exc:
             _error("inspect", exc, getattr(args, "json", False))
             return 2
@@ -368,6 +444,40 @@ def main(argv=None):
         return _parts(args)
     if args.cmd == "catalog":
         if not _load_plugins(args.plugins, "catalog", getattr(args, "json", False)):
+            return 2
+        try:
+            rows = registry.entries(args.kind, args.style)
+            paged = (
+                args.summary
+                or args.search is not None
+                or args.capability
+                or args.limit is not None
+                or args.offset
+                or args.fields is not None
+            )
+            if paged:
+                if args.usage or args.contract_coverage:
+                    parser.error('paged discovery cannot be combined with --usage or --contract-coverage')
+                page = registry.search(
+                    args.search or '',
+                    kind=args.kind,
+                    style=args.style,
+                    capabilities=tuple(args.capability),
+                    limit=20 if args.limit is None else args.limit,
+                    offset=args.offset,
+                    fields=tuple(args.fields.split(','))
+                    if args.fields is not None
+                    else ('kind', 'name', 'style', 'summary'),
+                )
+                if args.json:
+                    print(json.dumps(page, ensure_ascii=False))
+                else:
+                    for row in page['items']:
+                        print(f"{row['kind']} {row['name']} ({row['style'] or 'any'}): {row['summary']}")
+                    print(f"{len(page['items'])} of {page['total']}; next offset: {page['next_offset']}")
+                return 0
+        except registry.RegistryError as exc:
+            _error('catalog', exc, args.json)
             return 2
         if args.contract_coverage:
             coverage = registry.contract_coverage(args.style, kind=args.kind)
@@ -586,41 +696,157 @@ def main(argv=None):
             return 2
         return _run_script(recorder, [str(recorder), *args.options])
     if args.cmd == "build":
-        script = args.script
-        try:
-            episode = _episode_script(args.scripts, script, "")
-        except releases.ReleaseError as exc:
-            _error("build", exc, getattr(args, "json", False))
-            return 2
-        number = None
-        if episode is None and "-" in script and not script.endswith(".py"):
-            print(f"srstudio build: no episode {script!r} in {args.scripts}", file=sys.stderr)
-            return 2
-        if episode is not None:
-            number = _show_number(args.scripts, script)
-            script = str(episode)
-        sys.argv = [script, *([args.root] if args.root else []), *args.options]  # never srstudio's own words
-        try:
-            if args.root and "--voice" in args.options:
-                interview.refuse_rehearsal(Path(args.root))
-                refuse_takes_rehearsal(Path(args.root))
-            with usage.recorded(Path(args.root)) if args.root else nullcontext(), show.stamping(number):
-                if script.endswith(".py"):
-                    sys.path.insert(
-                        0, str(Path(script).resolve().parent)
-                    )  # sibling helpers such as episodes/_common.py
-                    runpy.run_path(script, run_name="__main__")
-                else:
-                    runpy.run_module(script, run_name="__main__")
-            if args.root:
-                return _anatomy_frames(Path(args.root))
-        except (SceneCheckError, parts.PartError) as exc:
-            print(exc, file=sys.stderr)
-            return 1
-        except (SrstudioError, SchemaValueError, OSError) as exc:
-            _error("build", exc, getattr(args, "json", False))
-            return 1
-        return 0
+        if args.json:
+            return _json_build(args)
+        with build_report.capture() as evidence:
+            status = _build(args)
+            if status == 0:
+                try:
+                    evidence.require(args.require_check)
+                except SrstudioError as exc:
+                    _error('build', exc)
+                    return 1
+            return status
+
+
+class _BuildLookupError(Exception):
+    """Carry an input-resolution failure and its original diagnostic to JSON mode."""
+
+    def __init__(self, error: SrstudioError):
+        self.error = error
+        super().__init__(str(error))
+
+
+def _build(args: argparse.Namespace) -> int:
+    script = args.script
+    try:
+        episode = _episode_script(args.scripts, script, "")
+    except releases.ReleaseError as exc:
+        if args.json:
+            raise _BuildLookupError(exc) from exc
+        _error("build", exc, getattr(args, "json", False))
+        return 2
+    number = None
+    if episode is None and "-" in script and not script.endswith(".py"):
+        if args.json:
+            raise _BuildLookupError(
+                SrstudioError(
+                    f'no episode {script!r} in {args.scripts}',
+                    code='build.not_found',
+                    path='script',
+                    actual=script,
+                    remedy='Pass a Python file, module or known episode slug.',
+                )
+            )
+        print(f"srstudio build: no episode {script!r} in {args.scripts}", file=sys.stderr)
+        return 2
+    if episode is not None:
+        number = _show_number(args.scripts, script)
+        script = str(episode)
+    sys.argv = [script, *([args.root] if args.root else []), *args.options]  # never srstudio's own words
+    try:
+        if args.root and "--voice" in args.options:
+            interview.refuse_rehearsal(Path(args.root))
+            refuse_takes_rehearsal(Path(args.root))
+        with usage.recorded(Path(args.root)) if args.root else nullcontext(), show.stamping(number):
+            if script.endswith(".py"):
+                sys.path.insert(0, str(Path(script).resolve().parent))  # sibling helpers such as episodes/_common.py
+                runpy.run_path(script, run_name="__main__")
+            else:
+                runpy.run_module(script, run_name="__main__")
+        if args.root:
+            return _anatomy_frames(Path(args.root))
+    except (SceneCheckError, parts.PartError) as exc:
+        if args.json:
+            raise
+        print(exc, file=sys.stderr)
+        return 1
+    except (SrstudioError, SchemaValueError, OSError) as exc:
+        if args.json:
+            raise
+        _error("build", exc, getattr(args, "json", False))
+        return 1
+    return 0
+
+
+@contextmanager
+def _build_logs(out: TextIO, err: TextIO) -> Iterator[None]:
+    """Capture Python, native and inherited child-process writes for this CLI invocation."""
+    sys.stdout.flush()
+    sys.stderr.flush()
+    with ExitStack() as stack:
+        for target, stream in ((1, out), (2, err)):
+            saved = os.dup(target)
+            stack.callback(os.close, saved)
+            stack.callback(os.dup2, saved, target)
+            os.dup2(stream.fileno(), target)
+        with redirect_stdout(out), redirect_stderr(err):
+            try:
+                yield
+            finally:
+                out.flush()
+                err.flush()
+
+
+def _json_build(args: argparse.Namespace) -> int:
+    """Keep builder chatter out of the JSON streams and retain bounded logs on the result."""
+    error: BaseException | None = None
+    argv, path = sys.argv[:], sys.path[:]
+    with (
+        tempfile.TemporaryFile(mode='w+', encoding='utf-8', errors='replace') as out,
+        tempfile.TemporaryFile(mode='w+', encoding='utf-8', errors='replace') as err,
+    ):
+        with _build_logs(out, err), build_report.capture() as evidence:
+            try:
+                status = _build(args)
+            except SystemExit as exc:
+                status = exc.code if isinstance(exc.code, int) else (0 if exc.code is None else 1)
+                if status:
+                    error = SrstudioError(
+                        f'Builder exited: {exc.code}',
+                        code='build.exit',
+                        actual=exc.code,
+                        remedy='Inspect the builder logs and correct its inputs.',
+                    )
+            except _BuildLookupError as exc:
+                status, error = 2, exc.error
+            except Exception as exc:
+                status, error = 1, exc
+            finally:
+                sys.argv[:], sys.path[:] = argv, path
+            if status == 0:
+                try:
+                    evidence.require(args.require_check)
+                except SrstudioError as exc:
+                    status, error = 1, exc
+        out.seek(0)
+        err.seek(0)
+        logs = {'stdout': out.read(4096), 'stderr': err.read(4096)}
+    if status:
+        error = error or SrstudioError(
+            'Build checks failed; inspect the logs.',
+            code='build.checks',
+            remedy='Correct the reported frame findings and rebuild.',
+        )
+        result = diagnostic(error, command='build')
+        result['context'].update(logs)
+        result['context']['build'] = evidence.to_dict()
+        print(json.dumps(result, allow_nan=False, ensure_ascii=False), file=sys.stderr)
+    else:
+        print(
+            json.dumps(
+                {
+                    'schema': 'srstudio.build/1.1.0',
+                    'status': 'ok',
+                    'script': args.script,
+                    'root': args.root,
+                    'context': logs,
+                    **evidence.to_dict(),
+                },
+                ensure_ascii=False,
+            )
+        )
+    return status
 
 
 def _arms(args: argparse.Namespace) -> int:
@@ -739,11 +965,15 @@ def _parts(args: argparse.Namespace) -> int:
         if args.digest:
             name, _, number = args.digest.partition("@")
             version = parts.get(name).version(int(number or 1))
-            print(catalog_specimens.digest(name, version.number, args.episodes))
+            digest = catalog_specimens.digest(name, version.number, args.episodes)
+            print(json.dumps({'name': name, 'version': version.number, 'digest': digest}) if args.json else digest)
             return 0
         if args.usage:
             measured = usage.Report.read(args.usage)
             drift = measured.pin_drift(releases.load(args.scripts / "posts"))
+            if args.json:
+                print(json.dumps({'episodes_measured': len(measured.episodes), 'ok': not drift, 'drift': drift}))
+                return 1 if drift else 0
             for line in drift:
                 print(line)
             verdict = f"{len(drift)} pins off" if drift else "every part pinned"
@@ -763,6 +993,7 @@ def _parts(args: argparse.Namespace) -> int:
                 "versions": [asdict(v) for v in p.versions],
             }
             for n, p in table.items()
+            if not args.refused or p.refused
         }
         print(json.dumps(data, indent=2, ensure_ascii=False))
         return 0
@@ -925,6 +1156,8 @@ def _anatomy_frames(project: Path) -> int:
     try:
         engine = find_engine()
     except LayoutError as exc:
+        for name in ('anatomy', 'text'):
+            build_report.check(name, 'skipped', path=project, reason=str(exc))
         print(f"srstudio build: the frames were not measured: {exc}", file=sys.stderr)
         return 0
     faults = [fault for scene in scenes for fault in _measured(project, scene, engine)]
@@ -941,8 +1174,11 @@ def _measured(project: Path, scene: Path, engine: Path) -> list[object]:
         ("text", lambda: text_rules.after_build(slug, scene, engine)),
     ):
         try:
-            faults += read()
+            found = read()
+            faults += found
+            build_report.check(rule, 'failed' if found else 'passed', path=scene, findings=found)
         except (FrameGraphError, FrameGateError) as exc:
+            build_report.check(rule, 'skipped', path=scene, reason=str(exc))
             print(f"srstudio build: the {rule} frames were not measured: {exc}", file=sys.stderr)
     for fault in faults:
         print(f"{slug}: {fault}", file=sys.stderr)

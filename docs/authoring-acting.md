@@ -10,6 +10,28 @@ Compile one source performance, then place its windows into shots. The executabl
 
 Run commands from the srstudio repository root.
 
+## JSON score schemas for agents
+
+Discover data formats with `srstudio schema --json`. Export an exact version with
+`srstudio schema acting --version 1.2.0 --json`, or call
+`srstudio.document_schemas.get('acting', version='1.2.0')` in Python. These commands also work
+from an installed package outside the repository. Omitting the version selects the latest supported
+one; pin the version in reproducible agent workflows.
+
+The self-contained JSON Schema 2020-12 document describes the JSON accepted by `parse_score`,
+including closed objects, array limits, nested speech alignment and version-specific fields.
+Version 1.0.0 excludes transition policies and blends; 1.1.0 adds policies; 1.2.0 adds blends.
+This document schema is separate from `contracts.describe_callable(parse_score)`, which describes
+the Python function's arguments and runtime overrides.
+
+Validate structure, then call `parse_score`, then `compile_performance` with a selected rig.
+JSON Schema cannot enforce equal-length alignment arrays, cross-field time ordering or rig vocabulary.
+The parser also requires finite values and actual Python `int` values for `seed` and `sample_rate`:
+JSON Schema's mathematical integer accepts `1.0`, but that Python float is rejected by the parser.
+The schema records these remaining obligations in `x-runtime-constraints`; `x-validation` remains
+`runtime-required`. Runtime `HeadPlan` and `LimbTrack` overrides are supplied separately, never encoded
+as arbitrary objects in a generated score.
+
 ## External arms on a candidate Toon figure
 
 Use `ToonClip.external_arms` when a scene draws a spatial arm outside the native

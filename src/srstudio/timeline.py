@@ -28,58 +28,86 @@ class UnknownTakeError(TimelineError, KeyError):
     """The timeline has no take with that id."""
 
 
-def _record(value: object, where: str, required: tuple[str, ...]) -> dict:
+def _invalid(message: str, code: str, path: str, actual: object, expected: object) -> TimelineError:
+    return TimelineError(
+        message,
+        code=f'timeline.{code}',
+        path=path,
+        actual=actual,
+        expected=expected,
+        remedy=f'Correct {path} to match the expected value and reload the timeline.',
+    )
+
+
+def _record(value: object, where: str, required: tuple[str, ...], *, path: str | None = None) -> dict:
+    path = where if path is None else path
     if not isinstance(value, dict):
-        raise TimelineError(f"{where}: expected an object")
+        raise _invalid(f"{where}: expected an object", 'object', path, value, 'object')
     for name in required:
         if name not in value:
-            raise TimelineError(f"{where}.{name}: required field is missing")
+            field_path = f'{path}.{name}' if path and path != 'timeline' else name
+            raise _invalid(f"{where}.{name}: required field is missing", 'required', field_path, None, 'required field')
     return value
 
 
-def _rows(value: object, where: str, required: tuple[str, ...]) -> list[dict]:
+def _rows(value: object, where: str, required: tuple[str, ...], *, path: str | None = None) -> list[dict]:
+    path = where if path is None else path
     if not isinstance(value, (list, tuple)):
-        raise TimelineError(f"{where}: expected a list or tuple")
-    return [_record(item, f"{where} {i}", required) for i, item in enumerate(value)]
+        raise _invalid(f"{where}: expected a list or tuple", 'sequence', path, value, 'list or tuple')
+    return [_record(item, f"{where} {i}", required, path=f'{path}[{i}]') for i, item in enumerate(value)]
 
 
-def _text(value: object, where: str) -> str:
+def _text(value: object, where: str, *, path: str | None = None) -> str:
     if not isinstance(value, str) or not value.strip():
-        raise TimelineError(f"{where}: expected a nonempty string")
+        raise _invalid(f"{where}: expected a nonempty string", 'text', path or where, value, 'nonempty string')
     return value
 
 
-def _number(value: object, where: str) -> float:
+def _number(value: object, where: str, *, path: str | None = None) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float, str)):
-        raise TimelineError(f"{where}: expected a finite number, got {value!r}")
+        raise _invalid(
+            f"{where}: expected a finite number, got {value!r}", 'number', path or where, value, 'finite number'
+        )
     try:
         result = float(value)
     except (ValueError, OverflowError) as exc:
-        raise TimelineError(f"{where}: expected a finite number, got {value!r}") from exc
-    _finite(result, where)
+        raise _invalid(
+            f"{where}: expected a finite number, got {value!r}", 'number', path or where, value, 'finite number'
+        ) from exc
+    _finite(result, where, path=path)
     return result
 
 
-def _finite(value: float, where: str) -> None:
+def _finite(value: float, where: str, *, path: str | None = None) -> None:
     if not checks.number(value):
-        raise TimelineError(f"{where}: expected a finite number, got {value!r}")
+        raise _invalid(
+            f"{where}: expected a finite number, got {value!r}", 'number', path or where, value, 'finite number'
+        )
 
 
-def _span(start: float, end: float, duration: float, where: str, *, empty: bool = False) -> None:
-    _finite(start, where)
-    _finite(end, where)
+def _span(
+    start: float, end: float, duration: float, where: str, *, empty: bool = False, path: str | None = None
+) -> None:
+    _finite(start, where, path=f'{path}.start' if path else None)
+    _finite(end, where, path=f'{path}.end' if path else None)
     if start < 0 or (end < start if empty else end <= start) or end > duration + ROUNDING:
-        raise TimelineError(f"{where}: range {start}..{end} must be inside 0..{duration} with end after start")
+        raise _invalid(
+            f"{where}: range {start}..{end} must be inside 0..{duration} with end after start",
+            'range',
+            path or where,
+            {'start': start, 'end': end},
+            {'minimum': 0, 'maximum': duration, 'empty_allowed': empty},
+        )
 
 
-def _alignment(items: tuple[dict, ...], duration: float, where: str) -> None:
+def _alignment(items: tuple[dict, ...], duration: float, where: str, *, path: str) -> None:
     previous = -1.0
     for i, item in enumerate(items):
         label = f"{where} {i}"
         if not isinstance(item, dict) or not {"start", "end"} <= item.keys():
             raise TimelineError(f"{label}: expected start and end times")
         start, end = item["start"], item["end"]
-        _span(start, end, duration, label, empty=True)
+        _span(start, end, duration, label, empty=True, path=f'{path}[{i}]')
         if start < previous:
             raise TimelineError(f"{label}: alignment must be ordered by start time")
         previous = start
@@ -157,19 +185,31 @@ class Timeline:
     def __post_init__(self) -> None:
         _finite(self.duration, "duration")
         if self.duration <= 0:
-            raise TimelineError(f"duration must be positive, got {self.duration}")
+            raise _invalid(
+                f"duration must be positive, got {self.duration}",
+                'positive',
+                'duration',
+                self.duration,
+                'positive number',
+            )
         self._check_takes()
         previous = -1.0
         for p in self.phrases:
-            _span(p.start, p.end, self.duration, f"phrase {p.index}")
+            _span(p.start, p.end, self.duration, f"phrase {p.index}", path=f'phrases[{p.index}]')
             if p.start < previous:
                 raise TimelineError(f"phrase {p.index}: phrases must be ordered by start time")
             previous = p.start
         previous = -1.0
         for i, cut in enumerate(self.cuts):
-            _finite(cut.time, f"cut {i}")
+            _finite(cut.time, f"cut {i}", path=f'camera_cuts[{i}].time')
             if not 0 <= cut.time < self.duration or cut.time <= previous:
-                raise TimelineError(f"cut {i}: times must be strictly increasing inside 0..{self.duration}")
+                raise _invalid(
+                    f"cut {i}: times must be strictly increasing inside 0..{self.duration}",
+                    'order',
+                    f'camera_cuts[{i}].time',
+                    cut.time,
+                    {'minimum': 0, 'exclusive_maximum': self.duration, 'after': previous},
+                )
             previous = cut.time
         for effect in self.sound_effects:
             _finite(effect.duration, f"sound effect {effect.name}")
@@ -184,13 +224,13 @@ class Timeline:
     def _check_takes(self) -> None:
         cursor = 0.0
         ids: set[str] = set()
-        for take in self.takes:
+        for i, take in enumerate(self.takes):
             where = f"take {take.id}"
             if not take.id or take.id in ids:
                 raise TimelineError(f"{where}: take IDs must be nonempty and unique")
             ids.add(take.id)
-            _finite(take.duration, where)
-            _span(take.start, take.end, self.duration, where)
+            _finite(take.duration, where, path=f'items[{i}].duration')
+            _span(take.start, take.end, self.duration, where, path=f'items[{i}]')
             if abs(take.start - cursor) > ROUNDING:
                 raise TimelineError(
                     f"{where}: sequence must be contiguous from zero; expected start {cursor}, got {take.start}. "
@@ -199,8 +239,8 @@ class Timeline:
             _finite(take.speech_duration, where)
             if not 0 <= take.speech_duration <= take.duration + ROUNDING:
                 raise TimelineError(f"{where}: speech_duration must be inside 0..{take.duration}")
-            _alignment(take.words, take.duration, f"{where} word")
-            _alignment(take.phones, take.duration, f"{where} phone")
+            _alignment(take.words, take.duration, f"{where} word", path=f'items[{i}].words')
+            _alignment(take.phones, take.duration, f"{where} phone", path=f'items[{i}].phones')
             cursor += take.duration
 
     # -- loading --------------------------------------------------------------------------
@@ -231,28 +271,33 @@ class Timeline:
         phrases = [
             Phrase(
                 index=i,
-                role=_text(p["role"], f"phrase {i}.role"),
-                text=_text(p["text"], f"phrase {i}.text"),
-                caption=_text(p.get("caption", p["text"]), f"phrase {i}.caption"),
-                start=_number(p["start"], f"phrase {i}.start"),
-                end=_number(p["end"], f"phrase {i}.end"),
+                role=_text(p["role"], f"phrase {i}.role", path=f'phrases[{i}].role'),
+                text=_text(p["text"], f"phrase {i}.text", path=f'phrases[{i}].text'),
+                caption=_text(p.get("caption", p["text"]), f"phrase {i}.caption", path=f'phrases[{i}].caption'),
+                start=_number(p["start"], f"phrase {i}.start", path=f'phrases[{i}].start'),
+                end=_number(p["end"], f"phrase {i}.end", path=f'phrases[{i}].end'),
                 voice=p.get("voice", ""),
                 voice_name=p.get("voice_name", ""),
-                speed=_number(p.get("speed", 1.0), f"phrase {i}.speed"),
+                speed=_number(p.get("speed", 1.0), f"phrase {i}.speed", path=f'phrases[{i}].speed'),
                 timing_file=p.get("timing_file"),
-                trim_seconds=_number(p.get("trim_seconds", 0.0), f"phrase {i}.trim_seconds"),
+                trim_seconds=_number(
+                    p.get("trim_seconds", 0.0), f"phrase {i}.trim_seconds", path=f'phrases[{i}].trim_seconds'
+                ),
             )
             for i, p in enumerate(phrase_rows)
         ]
         cuts = [
-            Cut(_number(c["time"], f"camera_cuts {i}.time"), _text(c["angle"], f"camera_cuts {i}.angle"))
+            Cut(
+                _number(c["time"], f"camera_cuts {i}.time", path=f'camera_cuts[{i}].time'),
+                _text(c["angle"], f"camera_cuts {i}.angle", path=f'camera_cuts[{i}].angle'),
+            )
             for i, c in enumerate(cut_rows)
         ]
         sfx = [
             SoundEffect(
                 s["name"],
-                _number(s["start"], f"sound_effects {i}.start"),
-                _number(s.get("duration", 0), f"sound_effects {i}.duration"),
+                _number(s["start"], f"sound_effects {i}.start", path=f'sound_effects[{i}].start'),
+                _number(s.get("duration", 0), f"sound_effects {i}.duration", path=f'sound_effects[{i}].duration'),
             )
             for i, s in enumerate(effect_rows)
         ]
@@ -299,16 +344,20 @@ class Timeline:
         takes = [
             Take(
                 id=str(q["id"]),
-                actor=_text(q["actor"], f"take {i}.actor"),
+                actor=_text(q["actor"], f"take {i}.actor", path=f'items[{i}].actor'),
                 shot=q["shot"],
-                text=_text(q["text"], f"take {i}.text"),
-                start=_number(q["start"], f"take {i}.start"),
-                duration=_number(q["duration"], f"take {i}.duration"),
+                text=_text(q["text"], f"take {i}.text", path=f'items[{i}].text'),
+                start=_number(q["start"], f"take {i}.start", path=f'items[{i}].start'),
+                duration=_number(q["duration"], f"take {i}.duration", path=f'items[{i}].duration'),
                 mood=q.get("mood", ""),
-                speech_duration=_number(q.get("speech_duration", 0.0), f"take {i}.speech_duration"),
+                speech_duration=_number(
+                    q.get("speech_duration", 0.0), f"take {i}.speech_duration", path=f'items[{i}].speech_duration'
+                ),
                 audio=q.get("audio"),
-                words=tuple(_rows(q.get("words", []), f"take {i}.words", ("start", "end"))),
-                phones=tuple(_rows(q.get("phones", []), f"take {i}.phones", ("start", "end"))),
+                words=tuple(_rows(q.get("words", []), f"take {i}.words", ("start", "end"), path=f'items[{i}].words')),
+                phones=tuple(
+                    _rows(q.get("phones", []), f"take {i}.phones", ("start", "end"), path=f'items[{i}].phones')
+                ),
                 extra={k: v for k, v in q.items() if k not in known},
             )
             for i, q in enumerate(take_rows)
@@ -339,14 +388,20 @@ class Timeline:
         if not items:
             raise TimelineError("a caption script needs at least one caption")
         phrases: list[Phrase] = []
-        for i, q in enumerate(_rows(items, "caption", ("start", "end", "text"))):
-            start = _number(q["start"], f"caption {i}.start")
-            end = _number(q["end"], f"caption {i}.end")
+        for i, q in enumerate(_rows(items, "caption", ("start", "end", "text"), path="")):
+            start = _number(q["start"], f"caption {i}.start", path=f'[{i}].start')
+            end = _number(q["end"], f"caption {i}.end", path=f'[{i}].end')
             if end <= start:
-                raise TimelineError(f"caption {i}: end {end} must come after start {start}")
+                raise _invalid(
+                    f"caption {i}: end {end} must come after start {start}",
+                    'range',
+                    f'[{i}]',
+                    {'start': start, 'end': end},
+                    'end after start',
+                )
             if phrases and start < phrases[-1].end - 1e-9:
                 raise TimelineError(f"caption {i}: overlaps the caption before it ({phrases[-1].end} > {start})")
-            text = _text(q["text"], f"caption {i}.text")
+            text = _text(q["text"], f"caption {i}.text", path=f'[{i}].text')
             supplied_caption = q.get("caption")
             if supplied_caption is not None and not isinstance(supplied_caption, str):
                 raise TimelineError(f"caption {i}.caption: expected a string or None")

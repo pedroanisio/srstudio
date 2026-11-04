@@ -1,0 +1,25 @@
+"""Build the starter scene: python build.py [ROOT] [--overwrite]."""
+
+import argparse
+from pathlib import Path
+
+from srstudio import Episode, EpisodeSpec, cast, locations
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('root', type=Path, nargs='?', default=Path(__file__).resolve().parent)
+parser.add_argument('--overwrite', action='store_true', help='replace existing scene and validation report')
+args = parser.parse_args()
+
+ep = Episode(EpisodeSpec(
+    slug=__SLUG__, title='Hello', description='My first srstudio episode',
+    root=args.root, seed=7, held_frames=True,
+    font_license='DejaVu Fonts license; assets/FONT-LICENSE.txt',
+))
+ep.setup(
+    locations.office_wide, ep.t.shots('wide'),
+    at_desk=lambda group: ep.perform(cast.Manager(ep.cv), group, 560, 724, 1.45),
+)
+ep.captions()
+ep.audio()
+ep.markers()
+ep.finish(overwrite=args.overwrite)

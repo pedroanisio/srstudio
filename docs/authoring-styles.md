@@ -12,6 +12,13 @@ Run commands from the srstudio repository root.
 
 ## Styles
 
+`EpisodeSpec.with_style(style, **overrides)` switches an existing project to fresh style defaults.
+For example, `spec.with_style(INK, fps=30)` selects Ink's square frame, sequence clock, palette,
+font and input files, then overrides its rate. It preserves project metadata and root, but resets
+previous style-related customizations, including accessibility and safe area. Pass the ones to
+retain as overrides. `dataclasses.replace(spec, style=...)` copies resolved values and does not
+perform this reset. Switching a spec does not convert its input files or an already built scene.
+
 A **style** is what an episode looks like before a single part is placed, and it is a value:
 `srstudio.styles.Style` holds the frame and rate, the clock, the input file, the caption font, the palettes the style
 is drawn in (with a mouth model per palette), the id scheme, accessibility defaults and the modules that hold its

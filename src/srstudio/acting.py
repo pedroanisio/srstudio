@@ -421,6 +421,9 @@ def compile_performance(rig: ActingRig, score: ActingScore) -> PerformancePlan:
 def parse_score(data: object, *, overrides: Overrides | None = None) -> ActingScore:
     """Strictly parse a score: 1.0.0, policies in 1.1.0, authored blends in 1.2.0.
 
+    Export the JSON document shape with ``document_schemas.get('acting', version='1.2.0')``
+    or ``srstudio schema acting --version 1.2.0 --json``.
+
     Unknown fields and primitive type coercions are refused. HeadPlan/LimbTrack overrides
     are explicit Python runtime bindings, never opaque values forwarded from generated JSON.
     Pass the result to compile_performance to validate its timing, references and capabilities.

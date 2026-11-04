@@ -10,6 +10,31 @@ Inspect capabilities before constructing a drawing. The recipes below import the
 
 Run commands from the srstudio repository root.
 
+For an installed SDK, discovery commands also work outside a repository. Start with a bounded summary:
+
+```bash
+srstudio catalog --summary --json
+srstudio catalog --search coffee --kind prop --limit 10 --json
+srstudio catalog --kind character --capability limbs --limit 10 --json
+srstudio inspect character manager --fields name,contract.capabilities --json
+```
+
+Paged results use `srstudio.catalog-page/1.0.0`: `items`, `total`, `offset`, `limit`, and `next_offset`
+(null at the end). Repeat the same query with that offset. Pages sort by kind and name; keep the SDK,
+plugins and registry state fixed while paging. The default page is 20 entries, with a maximum of 100.
+Search matches all case-insensitive words in names, summaries or tags. Repeated `--capability` filters
+are ANDed and match only explicit true declarations, never unknown values or inferred parameter names.
+
+`catalog --fields kind,name,summary --json` selects top-level listing fields and enables paging.
+`inspect --fields` also accepts dotted dictionary paths such as `contract.arguments`; invalid paths
+raise a structured field error. These selectors require JSON output. Paged discovery cannot be combined
+with usage reports or contract-coverage reports. Plain `catalog --json` retains its full legacy listing.
+Python agents can call `registry.search(query, kind=..., capabilities=(...), limit=..., offset=...)`
+and `registry.select_fields(registry.describe(kind, name), ('name', 'contract.capabilities'))`.
+
+Unknown kinds and style filters raise `RegistryError` with `path=kind` or `path=style`, the rejected
+value, valid choices and a repair instruction. Plugin-declared styles are valid after their modules are imported.
+
 ## Extending
 
 Register a part so the catalog and other episodes find it:
@@ -96,7 +121,7 @@ def marker(cv: Canvas, parent: Composition | Group, opacity: float = 1) -> Group
 
 Every built-in registered character declares its core capabilities, with shared metadata for verified family
 contracts. Other parts and plugins may still have unknown units, clocks, or capabilities. Do not fill those
-gaps by guessing from parameter names. Start with `srstudio catalog --json`, inspect the selected part, supply its
+gaps by guessing from parameter names. Start with `srstudio catalog --summary --json`, inspect the selected part, supply its
 runtime bindings, construct its typed records, and handle the builder's structured diagnostics on failure.
 
 Capabilities describe the **registered callable**. `limbs` means typed `LimbTrack` replacement; `head_motion`
