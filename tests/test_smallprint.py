@@ -893,3 +893,36 @@ def test_the_voiced_build_draws_takes_in_step(monkeypatch, tmp_path):
 def test_a_recording_that_is_not_one_is_refused(recorded):
     with pytest.raises(ScriptError):
         SHOW.check_recorded(recorded)
+
+
+def test_martian_dirt_rusts_grain_by_grain_and_the_planet_turns_red_as_it_does():
+    root = panel_root("mars-rust", 1.0, 7.0)
+    rusts = groups(root, "sp-rust")
+    reds = [keyed(r, "opacity") for r in rusts]
+    assert len(rusts) >= 15 and all(k[0][1] == 0.0 and k[-1][1] == 1.0 for k in reds), "every grey grain rusts"
+    turns = sorted(next(t for t, v in k if v == 1.0) for k in reds)
+    assert len(set(turns)) == len(turns), "one after another, not all at once"
+    (planet,) = groups(root, "sp-mars-red")
+    rise = keyed(planet, "opacity")
+    assert rise[0][1] == 0.0 and rise[-1][1] == 1.0 and rise[-1][0] >= turns[-1] - 0.25, "Mars reddens with its dirt"
+    words = words_on(root)
+    assert all(w in words for w in ("Martian dirt", "iron", "rust"))
+
+
+def test_the_drill_bores_into_the_rock_and_its_cuttings_come_up_markedly_less_red_than_the_dust():
+    root = panel_root("mars-drill", 1.0, 7.0)
+    (drill,) = groups(root, "sp-drill")
+    ys = [v for _, v in keyed(drill, "y")]
+    assert ys[0] == 0.0 and max(ys) >= 140.0 and ys[-1] == 0.0, "it goes into the rock and comes back out"
+    (pile,) = groups(root, "sp-cuttings")
+    grows = keyed(pile, "scaleY")
+    assert grows[0][1] == 0.0 and grows[-1][1] == 1.0, "the cuttings heap up beside the hole"
+    fills = [s.get("fill") for s in pile.iter() if s.get("fill")]
+
+    def redness(colour: str) -> float:
+        r, g, b = (int(colour[i : i + 2], 16) for i in (1, 3, 5))
+        return r - (g + b) / 2
+
+    assert fills and all(redness(f) < 0.25 * redness(sp.MARS_RED) for f in fills), "markedly less red (NASA, 2014)"
+    words = words_on(root)
+    assert all(w in words for w in ("a drilled Mars rock", "reddish dust", "cuttings", "inside"))

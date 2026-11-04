@@ -39,6 +39,7 @@ __all__ = [
     "finished",
     "goldfish",
     "horse",
+    "mars",
     "materials",
     "onion",
     "paper",
@@ -94,6 +95,11 @@ OWN = {  # what is new in his world: name, colour, roughness, metallic, clay-fin
     "lampbody": ("#2F5D62", 0.4, 0.2, False),
     "bulb": ("#FFE58A", 0.15, 0.0, False),
     "bulboff": ("#C9C3B6", 0.2, 0.0, False),
+    "marsred": ("#C0532F", 0.62, 0.0, True),
+    "marsdark": ("#8C3B24", 0.62, 0.0, True),
+    "marscap": ("#F1ECE2", 0.5, 0.0, True),
+    "marsinside": ("#A39D93", 0.7, 0.0, True),
+    "stand": ("#4B4038", 0.4, 0.3, False),
 }
 
 
@@ -695,6 +701,49 @@ def sunflower(m: Model, state: str = "dark") -> None:
             )
 
 
+# -- batch 3: Mars -----------------------------------------------------------------------------------------------------
+MARS_STATES = ("red", "scratched")
+MARS_CENTRE = (0.0, -26.0, 0.0)  # the globe's middle, on a short post over its stand
+MARS_RADIUS = 16.0
+_MARS_PATCHES = ((-40.0, 10.0), (25.0, -15.0), (60.0, 25.0), (-10.0, -35.0))  # darker ground: degrees round, degrees up
+_CRUMBS = ((9.0, -0.8, -9.0), (12.5, -0.7, -7.0), (6.5, -0.6, -11.0), (11.0, -0.6, -11.5))  # on the worktop, in front
+
+
+def _on_globe(round_: float, up: float, out: float) -> tuple[float, float, float]:
+    """A point ``out`` from the globe's middle, ``round_`` degrees from the lens to frame right, ``up`` degrees up."""
+    a, b = np.radians(round_), np.radians(up)
+    cx, cy, cz = MARS_CENTRE
+    return cx + out * float(np.sin(a) * np.cos(b)), cy - out * float(np.sin(b)), cz - out * float(np.cos(a) * np.cos(b))
+
+
+@register(
+    "prop",
+    "smallprint-mars",
+    summary="A clay Mars globe on a small stand, rust-red with darker ground and a white polar cap, plain or scratched",
+    contract=_contract(
+        "smallprint-mars",
+        MARS_STATES,
+        "red: a clay Mars globe on a stand, rust-red with darker patches and a white cap on top; scratched: the same, "
+        "with a grey gouge on the side to the lens and grey crumbs on the worktop in front of it.",
+    ),
+)
+def mars(m: Model, state: str = "red") -> None:
+    """A clay globe of Mars on a post and a round stand: rust-red, with patches of darker ground and a white polar cap.
+    ``scratched`` has a gouge across the side to the lens, grey under the red, and grey crumbs fallen in front of it."""
+    if state not in MARS_STATES:
+        raise PropError(f"the Mars globe's states are {MARS_STATES}, got {state!r}")
+    m.cylinder("stand", (0.0, -1.0, 0.0), 8.0, 2.0)
+    m.tube("stand", ((0.0, -2.0, 0.0), (0.0, -11.0, 0.0)), 1.6)
+    m.ell("marsred", MARS_CENTRE, (MARS_RADIUS, MARS_RADIUS, MARS_RADIUS))
+    for round_, up in _MARS_PATCHES:
+        m.ell("marsdark", _on_globe(round_, up, MARS_RADIUS - 1.2), (4.6, 3.4, 2.4), rotation=round_ / 3.0)
+    m.ell("marscap", (MARS_CENTRE[0], MARS_CENTRE[1] - MARS_RADIUS + 1.6, 0.0), (7.0, 1.6, 7.0))
+    if state == "scratched":
+        m.ell("marsinside", _on_globe(12.0, -6.0, MARS_RADIUS - 0.8), (7.5, 1.9, 2.0), rotation=-18.0)
+        for spot in _CRUMBS:
+            m.ell("marsinside", spot, (1.3, 0.9, 1.3))
+
+
 # -- the tears ---------------------------------------------------------------------------------------------------------
 TEAR_BEADS = (  # under each eye, outward and down, growing to the drop: x, y, half-width, half-height (x mirrored)
     (22.6, -356.0, 0.9, 2.0),
@@ -762,6 +811,7 @@ STATES: dict[str, tuple[str, ...]] = {
     "smallprint-can": CAN_STATES,
     "smallprint-horse": HORSE_STATES,
     "smallprint-sunflower": SUNFLOWER_STATES,
+    "smallprint-mars": MARS_STATES,
 }
 _DRAW: dict[str, Callable[..., None]] = {
     "smallprint-tower": tower,
@@ -776,6 +826,7 @@ _DRAW: dict[str, Callable[..., None]] = {
     "smallprint-can": can,
     "smallprint-horse": horse,
     "smallprint-sunflower": sunflower,
+    "smallprint-mars": mars,
 }
 PLACES: dict[str, tuple[float, float, float, float, float]] = {  # x, y, z, yaw, scale on the worktop
     "smallprint-tower": (-62.0, -248.0, -80.0, -10.0, 1.4),  # at his right, clear of his face and mouth
@@ -790,6 +841,7 @@ PLACES: dict[str, tuple[float, float, float, float, float]] = {  # x, y, z, yaw,
     "smallprint-can": (58.0, -248.0, -80.0, 0.0, 0.8),  # under his frame-right hand, clear of his chin
     "smallprint-horse": (-36.0, -248.0, -80.0, 0.0, 1.4),  # at frame left, the hovering flies clear of his chin
     "smallprint-sunflower": (-40.0, -248.0, -80.0, 0.0, 1.4),
+    "smallprint-mars": (-40.0, -248.0, -80.0, 0.0, 1.4),
 }
 GRIPS: dict[str, tuple[str, tuple[float, float, float]]] = {  # his hand: a kind, and where (the knife's moves)
     "smallprint-tower": ("rest", (82.0, -248.0, -70.0)),
@@ -804,6 +856,7 @@ GRIPS: dict[str, tuple[str, tuple[float, float, float]]] = {  # his hand: a kind
     "smallprint-can": ("rest", (92.0, -248.0, -70.0)),
     "smallprint-horse": ("rest", (74.0, -248.0, -72.0)),
     "smallprint-sunflower": ("rest", (74.0, -248.0, -72.0)),
+    "smallprint-mars": ("rest", (74.0, -248.0, -72.0)),
 }
 HANDS: dict[tuple[str, str], tuple[str, tuple[float, float, float]]] = {  # a state that moves his hand: kind, where
     ("smallprint-bowl", "soaking"): ("dip", (21.0, -256.0, -86.0)),  # in the water, under its surface

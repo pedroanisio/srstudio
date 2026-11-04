@@ -389,3 +389,24 @@ def test_the_grown_sunflower_faces_east_and_the_lit_lamp_to_its_west_does_not_tu
     assert len(pool) and np.ptp(pool[:, 0]) > 20.0, "and lights the worktop under it"
     below = lit["bulb"][(lit["bulb"][:, 1] > y - 32.0) & (lit["bulb"][:, 1] < y - 4.0)]  # under the bulb, off the top
     assert len(below), "drawn rays fall from the bulb towards the worktop, so it reads as on above the caption"
+
+
+def test_the_mars_globe_is_red_with_a_white_cap_and_a_scratch_shows_grey_under_it_to_the_lens():
+    red, scratched = (materials_of(sp.worktop("smallprint-mars", state)) for state in sp.MARS_STATES)
+    assert "marsinside" not in red, "unscratched, it is red all over"
+    for name in ("marsred", "marsdark", "marscap", "stand"):
+        assert np.allclose(red[name], scratched[name]), f"the scratch changes nothing else: {name}"
+    globe, cap = red["marsred"], red["marscap"]
+    assert cap[:, 1].max() < globe[:, 1].mean(), "the cap is on top"
+    gouge = scratched["marsinside"]
+    on_globe = gouge[gouge[:, 1] < globe[:, 1].max() - 2.0]
+    assert len(on_globe) and on_globe[:, 2].mean() < globe[:, 2].mean(), "the gouge is on the side to the lens"
+    y = sp.PLACES["smallprint-mars"][1]
+    crumbs = gouge[np.abs(gouge[:, 1] - y) < 4.0]
+    assert len(crumbs), "and grey crumbs lie on the worktop in front of it"
+
+    def redness(name: str) -> float:
+        r, g, b = (int(sp.materials()[name].color[i : i + 2], 16) for i in (1, 3, 5))
+        return r - (g + b) / 2
+
+    assert redness("marsinside") < 0.25 * redness("marsred"), "markedly less red under the surface"

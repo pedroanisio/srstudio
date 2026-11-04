@@ -16017,6 +16017,23 @@
           "rig": null
         }
       ]
+    },
+    "smallprint-mars": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-04",
+          "note": "A clay globe of Mars on a small stand, rust-red with darker ground and a white polar cap, plain or with a grey gouge on its side to the lens and grey crumbs in front of it, as replacement plates. First drawn for Small Print's Mars question.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "8eb22b78ce237439ec0c88158d49c36599fbb11f1e5c13243a5f8040a451a742",
+          "rig": null
+        }
+      ]
     }
   }
 }

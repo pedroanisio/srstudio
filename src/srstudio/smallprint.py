@@ -1409,6 +1409,72 @@ def east_warm(cv, g, first: float, last: float, measure: Measure) -> None:
             cv.keys(bee, "y", [(t, 540.0 + r * 0.8 * math.sin(u)) for t, u in keys], hold=False, local=False)
 
 
+# -- batch 3: Mars ----------------------------------------------------------------------------------------------------
+IRON, MARS_RED, INSIDE, HOLE = "#8D949C", "#C0532F", "#A39D93", "#5E5850"
+
+
+def mars_rust(cv, g, first: float, last: float, measure: Measure) -> None:
+    """Martian dirt: a heap of grey grains of iron mineral rusting red one after another, and a Mars beside them that
+    turns from grey to red as they do (NASA: iron minerals in the Martian dirt oxidize, or rust, so the surface looks
+    red)."""
+    sheet(cv, g)
+    label(cv, g, "Martian dirt", LEFT, 290, RIGHT - LEFT, 80, 58.0, INK, "center")
+    span = max(last - first, 2.0)
+    spots = [(150.0 + 64.0 * k + 32.0 * row, 640.0 - 54.0 * row) for row in range(3) for k in range(9 - 2 * row)]
+    order = sorted(range(len(spots)), key=lambda n: (n * 7) % len(spots))
+    for rank, n in enumerate(order):
+        x, y = spots[n]
+        grain = pivot(cv, g, "sp-grain", x, y)
+        cv.ellipse(grain, x - 28, y - 26, 56, 52, IRON, stroke=INK, sw=3.0)
+        rust = cv.group(grain, cv.uid("sp-rust"), opacity=0.0)
+        cv.ellipse(rust, x - 28, y - 26, 56, 52, MARS_RED, stroke=INK, sw=3.0)
+        at = round(first + 0.2 + 0.6 * span * rank / len(spots), 4)
+        cv.keys(rust, "opacity", [(first, 0.0), (at, 0.0), (at + 0.2, 1.0)], hold=False, local=False)
+        cv.keys(grain, "scaleX", [(at, 1.0), (at + 0.1, 1.15), (at + 0.25, 1.0)], hold=False, local=False)
+        cv.keys(grain, "scaleY", [(at, 1.0), (at + 0.1, 1.15), (at + 0.25, 1.0)], hold=False, local=False)
+    cx, cy, r = 832.0, 520.0, 78.0
+    planet = pivot(cv, g, "sp-mars", cx, cy)
+    cv.ellipse(planet, cx - r, cy - r, 2 * r, 2 * r, IRON, stroke=INK, sw=4.0)
+    red = cv.group(planet, cv.uid("sp-mars-red"), opacity=0.0)
+    cv.ellipse(red, cx - r, cy - r, 2 * r, 2 * r, MARS_RED, stroke=INK, sw=4.0)
+    for dx, dy, w in ((-30.0, -20.0, 40.0), (18.0, 22.0, 30.0), (30.0, -36.0, 22.0)):
+        cv.ellipse(planet, cx + dx - w / 2, cy + dy - w / 3, w, 2 * w / 3, "#00000033")
+    cv.keys(
+        red, "opacity", [(first, 0.0), (first + 0.2, 0.0), (first + 0.2 + 0.6 * span, 1.0)], hold=False, local=False
+    )
+    cv.keys(planet, "rotation", [(first, 0.0), (last, 40.0 * (last - first))], hold=False, local=False)
+    for colour, x, word in ((IRON, LEFT + 40.0, "iron"), (MARS_RED, 520.0, "rust")):
+        cv.ellipse(g, x, 744, 44, 40, colour, stroke=INK, sw=3.0)
+        label(cv, g, word, x + 60, 734, 220, 60, 50.0, INK, "start")
+
+
+def mars_drill(cv, g, first: float, last: float, measure: Measure) -> None:
+    """A Mars rock cut through under its reddish dust: a rover's drill bores into it and back out, and the cuttings it
+    pulls up from inside heap beside the hole, markedly less red than the surface (NASA, 2014)."""
+    sheet(cv, g)
+    label(cv, g, "a drilled Mars rock", LEFT, 290, RIGHT - LEFT, 80, 58.0, INK, "center")
+    top, x0, x1 = 560.0, 140.0, 900.0
+    cv.rect(g, x0, top, x1 - x0, 260, INSIDE, stroke=INK, sw=5.0, radius=18.0)
+    cv.rect(g, x0, top, x1 - x0, 40, MARS_RED, stroke=INK, sw=5.0, radius=12.0)  # the reddish dust on top
+    span = max(last - first, 2.0)
+    bore = [(first, 0.0), (first + 0.2, 0.0), (first + 0.2 + 0.35 * span, 1.0)]
+    hole = pivot(cv, g, "sp-hole", 540.0, top, scaleY=0.0)
+    cv.rect(hole, 526, top, 28, 150, HOLE)
+    cv.keys(hole, "scaleY", bore, hold=False, local=False)
+    drill = cv.group(g, cv.uid("sp-drill"), y=0.0)
+    cv.rect(drill, 480, 390, 120, 56, SHADE, stroke=INK, sw=4.0, radius=8.0)
+    cv.rect(drill, 526, 446, 28, 114, COPPER, stroke=INK, sw=3.0)
+    down = [(at, 150.0 * v) for at, v in bore]
+    cv.keys(drill, "y", [*down, (min(first + 0.3 + 0.45 * span, last), 0.0)], hold=False, local=False)
+    pile = pivot(cv, g, "sp-cuttings", 650.0, top, scaleY=0.0)
+    cv.path(pile, f"M586 {top} Q650 {top - 70} 714 {top} Z", fill=INSIDE, stroke=INK, sw=4.0)
+    cv.keys(pile, "scaleY", [(first, 0.0), (first + 0.3, 0.0), (first + 0.3 + 0.4 * span, 1.0)], hold=False,
+            local=False)  # fmt: skip
+    label(cv, g, "reddish dust", LEFT, 440, 380, 60, 46.0, INK, "start")
+    label(cv, g, "cuttings", 660, 440, RIGHT - 660, 60, 46.0, INK, "end")
+    label(cv, g, "inside", LEFT, 836, RIGHT - LEFT, 60, 46.0, INK, "center")
+
+
 PANELS: dict[str, Callable[..., None]] = {
     "penny-fall": penny_fall,
     "lightning": lightning,
@@ -1433,6 +1499,8 @@ PANELS: dict[str, Callable[..., None]] = {
     "fly-landing": fly_landing,
     "sun-track": sun_track,
     "east-warm": east_warm,
+    "mars-rust": mars_rust,
+    "mars-drill": mars_drill,
 }
 
 
