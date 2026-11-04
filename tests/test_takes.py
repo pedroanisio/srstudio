@@ -258,7 +258,7 @@ def test_main_needs_consent_a_font_and_reports_a_failure_as_an_exit(tmp_path, mo
     provider = Provider(tmp_path, heard={"speech-1.wav": "nope"})
     seen, original = {}, takes.record
 
-    def fake_record(s, root, *, client, confirm, compose, ffmpeg):
+    def fake_record(s, root, *, client, confirm, compose, ffmpeg, converse):
         seen.update(root=root, ffmpeg=ffmpeg)
         return original(s, root, client=provider, confirm=globals()["confirm"], compose=provider.compose)
 

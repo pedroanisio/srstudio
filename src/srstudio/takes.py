@@ -42,7 +42,9 @@ from typing import Any, Protocol
 
 from . import checks
 from .compose import MusicClient, MusicOutputError, Plan
-from .direction import Direction, DirectionError, seeds
+from .dialogue import Said, Turn, say
+from .dialogue import payload as dialogue_payload
+from .direction import MAX_TAKES, Direction, DirectionError, seeds
 from .errors import ConsentError, SrstudioError
 from .generated import gain_to_peak, trim_effect, trim_speech
 from .narration import (
@@ -141,6 +143,22 @@ class Take:
 
 
 @dataclass(frozen=True)
+class Exchange:
+    """Takes ``first`` to ``last`` said as one Text to Dialogue generation by ``model`` (ADR 0234), so the turns take
+    their timing from each other, then cut back into one take per line for captions and lip sync. The silence after
+    each turn but the last is the dialogue's own, measured from the cut; so those takes hold 0 and have no pace of
+    their own. ``takes`` dialogues are recorded on their own seeds and ``pick`` names the one kept. Without an exchange
+    every line is its own request; a script chooses per exchange."""
+
+    first: str
+    last: str
+    model: str = "eleven_v4"
+    settings: VoiceSettings = field(default_factory=VoiceSettings.expressive)
+    takes: int = 1
+    pick: int | None = None
+
+
+@dataclass(frozen=True)
 class Bed:
     """Instrumental music under the whole episode: the composition ``plan``, pinned by ``seed``, on ``bpm``; mixed
     ``gain_db`` under the voices and faded out over its last ``fade`` seconds."""
@@ -167,6 +185,17 @@ class Script:
     font: tuple[str, str] = FONT  # the caption font file and its licence, copied into the project by main
     still: float = 0.0  # seconds of silence opening the first take: a still opening (sp-hook_motion arm A)
     models: Mapping[str, str] = field(default_factory=dict)  # a voice's speech model by role; absent: MODEL
+    exchanges: Sequence[Exchange] = ()  # runs of takes said as one dialogue
+
+    def exchange_takes(self, exchange: Exchange) -> list[Take]:
+        """The takes ``exchange`` says, in order; :class:`TakesError` when its ends are not takes of the script."""
+        ids = [t.id for t in self.takes]
+        if exchange.first not in ids or exchange.last not in ids:
+            raise TakesError(f"exchange {exchange.first}..{exchange.last}: both ends must be takes of the script")
+        a, b = ids.index(exchange.first), ids.index(exchange.last)
+        if b <= a:
+            raise TakesError(f"exchange {exchange.first}..{exchange.last}: at least two takes, first before last")
+        return list(self.takes[a : b + 1])
 
     def settings_for(self, take: Take) -> VoiceSettings:
         base = self.settings[take.actor]
@@ -208,13 +237,15 @@ class Script:
         ids = [take.id for take in self.takes]
         if ids != sorted(ids) or len(set(ids)) != len(ids):
             raise TakesError(f"take ids must be unique and in order, got {ids}")
+        exchanged = {t.id for e in self.exchanges for t in self.exchange_takes(e)}
         for take in self.takes:
-            _check_take(self, take)
+            _check_take(self, take, said_in_dialogue=take.id in exchanged)
+        _check_exchanges(self)
         if self.bed is not None:
             _check_bed(self.bed)
 
 
-def _check_take(script: Script, take: Take) -> None:
+def _check_take(script: Script, take: Take, *, said_in_dialogue: bool = False) -> None:
     where = f"take {take.id}"
     if take.actor not in (*script.voices, EFFECT):
         raise TakesError(f"{where}: unknown actor {take.actor!r}")
@@ -254,10 +285,50 @@ def _check_take(script: Script, take: Take) -> None:
         raise TakesError(f"{where}: the hold is said twice (hold {take.hold}, post_hold {take.direction.post_hold})")
     if take.direction is not None and take.direction.speed is not None and take.speed is not None:
         raise TakesError(f"{where}: the pace is said twice (speed {take.speed}, direction speed)")
+    if said_in_dialogue:
+        return  # said by its exchange's model, not its voice's: _check_exchanges checks the dialogue's request
     try:
         ElevenLabsClient(Path("."), "", seed=script.seed).directed(take.text, script.settings_for(take), direction)
     except DirectionError as exc:
         raise TakesError(f"{where}: {exc}") from None
+
+
+def _check_exchanges(script: Script) -> None:
+    seen: set[str] = set()
+    for exchange in script.exchanges:
+        where = f"exchange {exchange.first}..{exchange.last}"
+        lines = script.exchange_takes(exchange)
+        if seen & {t.id for t in lines}:
+            raise TakesError(f"{where}: a take is in two exchanges")
+        seen |= {t.id for t in lines}
+        if any(t.is_effect for t in lines):
+            raise TakesError(f"{where}: an effect cannot be said in a dialogue")
+        if (
+            isinstance(exchange.takes, bool)
+            or not isinstance(exchange.takes, int)
+            or not 1 <= exchange.takes <= MAX_TAKES
+        ):
+            raise TakesError(f"{where}: takes is 1 to {MAX_TAKES}, got {exchange.takes!r}")
+        if exchange.pick is not None and not (
+            isinstance(exchange.pick, int)
+            and not isinstance(exchange.pick, bool)
+            and 0 <= exchange.pick < exchange.takes
+        ):
+            raise TakesError(f"{where}: pick is a take of 0..{exchange.takes - 1}, got {exchange.pick!r}")
+        for take in lines[:-1]:
+            if take.after:
+                raise TakesError(f"take {take.id}: inside {where} the silence after it is the dialogue's: hold 0")
+        for take in lines:
+            if take.speed is not None:
+                raise TakesError(f"take {take.id}: inside {where} a take has no pace of its own")
+        try:
+            dialogue_payload(_turns(script, lines), exchange.model, exchange.settings, script.seed)
+        except DirectionError as exc:
+            raise TakesError(f"{where}: {exc}") from None
+
+
+def _turns(script: Script, lines: Sequence[Take]) -> list[Turn]:
+    return [Turn(t.text, script.voices[t.actor], t.direction) for t in lines]
 
 
 def _check_bed(bed: Bed) -> None:
@@ -449,6 +520,81 @@ def _directed(
     return said[pick], record_
 
 
+Converse = Callable[[Sequence[Turn], str, VoiceSettings, int], list[Said]]
+
+
+def _exchanged(
+    script: Script, exchange: Exchange, converse: Converse, client: Client, heard: list[dict], failures: list[str]
+) -> dict[str, tuple[SpokenLine, dict]]:
+    """Every dialogue of ``exchange``, each turn heard back on its own cut; returns the kept dialogue's turns by take
+    id with what the timeline records, or nothing after adding a failure: a kept turn not heard as written, or
+    several dialogues and none picked (they stay cached, so naming ``pick`` costs no request)."""
+    lines = script.exchange_takes(exchange)
+    turns = _turns(script, lines)
+    dialogues: list[list[Said]] = []
+    candidates: list[dict[str, Any]] = []
+    for k, seed in enumerate(seeds(script.seed, exchange.takes)):
+        said = converse(turns, exchange.model, exchange.settings, seed)
+        if len(said) != len(lines):
+            raise TakesError(
+                f"exchange {exchange.first}..{exchange.last}: {len(said)} turns came back for {len(lines)}"
+            )
+        per_turn = []
+        for take, s in zip(lines, said, strict=True):
+            transcript = client.transcribe(s.line.wav)
+            performed = take.direction is not None and take.direction.performed
+            try:
+                check_transcript(transcript, take.text, accepted=take.heard, events=performed)
+                per_turn.append({"id": take.id, "heard": transcript.text, "passed": True})
+            except TranscriptMismatch as exc:
+                per_turn.append({"id": take.id, "heard": transcript.text, "passed": False, "mismatch": str(exc)})
+        dialogues.append(said)
+        candidates.append({"take": k, "seed": seed, "passed": all(t["passed"] for t in per_turn), "turns": per_turn})
+    for i, take in enumerate(lines):
+        line = {"id": take.id, "role": take.actor, "expected": take.text, "heard": candidates[0]["turns"][i]["heard"]}
+        line["exchange"] = exchange.first
+        if exchange.takes > 1:
+            line["takes"] = [{"take": c["take"], "seed": c["seed"]} | c["turns"][i] for c in candidates]
+        heard.append(line | ({"accepted": list(take.heard)} if take.heard else {}))
+    where = f"exchange {exchange.first}..{exchange.last}"
+    if exchange.takes > 1 and exchange.pick is None:
+        listed = ", ".join(f"{c['take']} seed {c['seed']} {'heard' if c['passed'] else 'MISHEARD'}" for c in candidates)
+        failures.append(f"{where}: {exchange.takes} dialogues recorded, pick one with Exchange(pick=k): {listed}")
+        return {}
+    pick = exchange.pick or 0
+    if not candidates[pick]["passed"]:
+        failures += [f"take {t['id']}: {t['mismatch']}" for t in candidates[pick]["turns"] if not t["passed"]]
+        return {}
+    out = {}
+    for i, (take, s) in enumerate(zip(lines, dialogues[pick], strict=True)):
+        record_: dict[str, Any] = {
+            "model": exchange.model,
+            "seed": candidates[pick]["seed"],
+            "exchange": {"first": exchange.first, "last": exchange.last, "start": round(s.start, 6),
+                         "end": round(s.end, 6)},
+        }  # fmt: skip
+        if take.direction is not None:
+            record_["direction"] = _direction_record(take.direction)
+        if i == 0 and exchange.takes > 1:
+            record_["exchange"] |= {"takes": candidates, "pick": pick}
+        out[take.id] = (s.line, record_)
+    return out
+
+
+def _turn_gaps(items: list[dict]) -> None:
+    """Each turn of an exchange but the last lasts until the next turn's speech starts, as the dialogue said it: the
+    gap is measured on the dialogue's clock from the cuts' starts and the trims, and recorded."""
+    for item, after in zip(items, items[1:], strict=False):
+        mine, theirs = item.get("exchange"), after.get("exchange")
+        if not mine or not theirs or mine["first"] != theirs["first"]:
+            continue
+        gap = round((theirs["start"] + after["trim_start"]) - (mine["start"] + item["trim_end"]), 6)
+        if gap < 0:
+            raise TakesError(f"take {item['id']}: the next turn starts {-gap} s before this one ends in the dialogue")
+        mine["gap"] = gap
+        item["duration"] = round(item["speech_duration"] + gap, 6)
+
+
 def _direction_record(direction: Direction) -> dict:
     """What the timeline keeps of a direction: its fields that differ from no direction at all."""
     out: dict[str, Any] = {}
@@ -472,13 +618,20 @@ def record(
     confirm: Callable[[Voice], dict],
     compose: Compose | None = None,
     ffmpeg: str = "ffmpeg",
+    converse: Converse | None = None,
 ) -> dict:
-    """Records every take of ``script`` into ``root`` and writes ``timeline.json``; returns the timeline.
+    """Records every take of ``script`` into ``root`` and writes ``timeline.json``; returns the timeline. ``converse``
+    says an :class:`Exchange` as one dialogue (:func:`srstudio.dialogue.say` with the client, in :func:`main`).
 
     ``voice-transcript.json`` is written whatever was heard; a take that was not heard as written raises after it."""
     script.check()
     if script.bed is not None and compose is None:
         raise TakesError(f"{script.title}: the script has a music bed but there is no composer")
+    if script.exchanges and converse is None:
+        raise TakesError(f"{script.title}: the script has exchanges but nothing says a dialogue")
+    starts = {e.first: e for e in script.exchanges}
+    exchanged: dict[str, tuple[SpokenLine, dict]] = {}
+    in_exchange = {t.id for e in script.exchanges for t in script.exchange_takes(e)}
     audio = root / "audio"
     audio.mkdir(parents=True, exist_ok=True)
     voices = {role: confirm(voice) for role, voice in script.voices.items()}
@@ -488,8 +641,17 @@ def record(
     for take in script.takes:
         item: dict = {"id": take.id, "actor": take.actor, "shot": take.shot, "text": take.text, "mood": take.mood}
         item.update(take.extra)
+        if take.id in starts:
+            assert converse is not None  # checked above
+            exchanged.update(_exchanged(script, starts[take.id], converse, client, heard, failures))
         if take.is_effect:
             made, dst = _effect(take, client, audio, ffmpeg)
+        elif take.id in in_exchange:
+            if take.id not in exchanged:
+                continue
+            spoken, record_ = exchanged[take.id]
+            made, dst = _speech(script, take, spoken, audio, ffmpeg)
+            made.update(record_)
         elif script.direction_for(take) is not None:
             kept = _directed(script, take, client, heard, failures)
             if kept is None:
@@ -518,6 +680,7 @@ def record(
     (root / "voice-transcript.json").write_text(json.dumps(report, indent=2) + "\n")
     if failures:
         raise TakesError("speech check failed:\n" + "\n".join(failures))
+    _turn_gaps(items)
     duration = schedule(items, script.fps)
     timeline = {
         "title": script.title,
@@ -679,6 +842,7 @@ def main(script: Script, argv: list[str] | None = None, env: Mapping[str, str] |
             confirm=lambda voice: confirm_voice(cache, key, voice),
             compose=music.compose,
             ffmpeg=args.ffmpeg,
+            converse=lambda turns, model, settings, seed: say(client, turns, model=model, settings=settings, seed=seed),
         )
     except TakesError as exc:
         raise SystemExit(str(exc)) from None

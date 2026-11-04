@@ -74,6 +74,29 @@ A direction that a line or its model cannot take raises `DirectionError` before 
 request is made. A take without a direction is sent exactly as before, with the same
 cache key.
 
+### Say an exchange as one dialogue
+
+When two or more voices trade lines, a script can say the run as one Text to Dialogue
+request so the turns take their timing from each other:
+
+```python
+from srstudio.takes import Exchange, Take
+
+lines = (
+    Take("01", "will", "What do you feed him?", 0.0),
+    Take("02", "leo", "Dog food. And discipline.", 0.0, direction=Direction(emphasis=("discipline",))),
+    Take("03", "will", "Just discipline?", 0.4, direction=Direction(tags=("curious",))),
+)
+script = Script(..., takes=lines, exchanges=(Exchange("01", "03", takes=2, pick=0),))
+```
+
+`srstudio.takes.main` says it with `srstudio.dialogue.say`. Every turn is cut back
+into its own take, with its own words for captions and lip sync, and each one is heard
+back on its own. Inside an exchange, every take but the last holds 0, and the silence
+between turns comes from the dialogue and is recorded as `exchange.gap`. A turn's
+direction may carry tags, a quality and emphasis only. Lines outside any exchange are
+still one request each, so the choice is made per exchange.
+
 The generated-asset path uses `srstudio.generated.Generated` and
 `scene-render resolve`. The `srstudio-elevenlabs` provider requires
 `SRSTUDIO_ALLOW_CLOUD=1`; resolution pins the resulting file's SHA-256. Keep those

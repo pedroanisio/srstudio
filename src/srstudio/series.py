@@ -37,7 +37,7 @@ from .episode import Episode, EpisodeSpec
 from .errors import SrstudioError
 from .layout import VERTICAL, SafeArea
 from .styles import Style
-from .takes import Script
+from .takes import Exchange, Script
 from .voice import Voice, VoiceSettings
 
 __all__ = ["SeriesError", "Series", "Reel", "line", "effect", "word_at", "record", "build", "MAX_CRF"]
@@ -105,6 +105,7 @@ class Reel:
     bed: bool = True  # False: this reel goes without the series' music bed
     loudness: str | None = None  # None: the style's; the mix's integrated target, in LUFS
     foley: Foley | None = None  # the sounds under the takes, written from the recording when the reel is built
+    exchanges: tuple[Exchange, ...] = ()  # runs of takes said as one dialogue (ADR 0234)
     series: ClassVar[Series | None] = None
 
     def __post_init__(self) -> None:
@@ -146,6 +147,7 @@ class Reel:
             font=s.font,
             still=self.still,
             models={r: s.models[r] for r in roles if r in s.models},
+            exchanges=self.exchanges,
         )
 
 
