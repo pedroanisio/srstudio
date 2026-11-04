@@ -71,7 +71,7 @@ def test_a_stressed_word_louder_and_higher_than_its_line_lands(tmp_path):
     words = line_wav(tmp_path / "l.wav", WORDS, {"discipline.": (190.0, 0.4)})
     m = measure(tmp_path / "l.wav", words, ("discipline",))
     (s,) = m.stressed
-    assert s.heard and s.db == pytest.approx(20 * math.log10(2), abs=0.3)
+    assert s.heard and s.at == 3 and s.db == pytest.approx(20 * math.log10(2), abs=0.3)
     assert s.st == pytest.approx(12 * math.log2(190 / 150), abs=0.2)
     assert s.landed
     assert [w.text for w in m.words] == ["Dog", "food", "and", "discipline."]
@@ -91,6 +91,36 @@ def test_a_stressed_word_that_does_not_stand_out_does_not_land(tmp_path, pitch, 
     words = line_wav(tmp_path / "l.wav", WORDS, pitch)
     (s,) = measure(tmp_path / "l.wav", words, ("discipline",)).stressed
     assert s.heard and not s.landed, why
+
+
+def test_a_lines_pitch_is_the_median_and_interquartile_spread_of_its_voiced_frames(tmp_path):
+    words = line_wav(tmp_path / "l.wav", WORDS, {"discipline.": (190.0, 0.4)})
+    m = measure(tmp_path / "l.wav", words)
+    assert m.median_hz == pytest.approx(150, rel=0.01)
+    assert m.spread == pytest.approx(12 * math.log2(190 / 150), abs=0.2)
+    flat = measure(tmp_path / "f.wav", line_wav(tmp_path / "f.wav", WORDS, {}))
+    assert flat.spread == pytest.approx(0, abs=0.1)
+    rec = m.record()
+    assert rec["median_hz"] == pytest.approx(150, rel=0.01) and rec["spread_st"] == pytest.approx(m.spread, abs=0.01)
+
+
+def test_weight_is_over_the_lines_median_word_and_lift_over_its_median_pitch():
+    assert prosody.weight([-20.0, -20.0, -14.0], 2) == 6.0
+    assert prosody.weight([-20.0, None, -14.0], 2) == 3.0
+    assert prosody.weight([-14.0], 0) is None and prosody.weight([None, -14.0], 0) is None
+    assert prosody.lift(300.0, 150.0, 2) == pytest.approx(12.0)
+    assert prosody.lift(300.0, 150.0, 1) is None and prosody.lift(None, 150.0, 3) is None
+    assert prosody.lift(300.0, None, 3) is None
+    assert prosody.loudest([-20.0, None, -14.0]) == 2 and prosody.loudest([None]) is None
+
+
+def test_a_take_with_no_stressed_word_ranks_on_its_loudest_word(tmp_path):
+    flat = measure(tmp_path / "a.wav", line_wav(tmp_path / "a.wav", WORDS, {}))
+    lifted = measure(tmp_path / "b.wav", line_wav(tmp_path / "b.wav", WORDS, {"discipline.": (190, 0.4)}))
+    (accent,) = lifted.accents()
+    assert accent.word == "discipline." and accent.at == 3 and accent.landed
+    assert lifted.rank() > flat.rank()
+    assert prosody.Measure(()).accents() == ()
 
 
 def test_a_stressed_word_not_heard_is_recorded_as_not_heard(tmp_path):
@@ -136,29 +166,36 @@ def test_a_take_whose_stress_lands_ranks_above_one_whose_does_not(tmp_path):
 
 
 # -- the gate -----------------------------------------------------------------------------------------------------
-def item(id, actor, text, start, duration, first, last, n, stressed=(), direction=None):
+def item(id, actor, text, start, duration, first, last, words, stressed=(), direction=None, spread=3.5, hz=150.0):
+    """A recorded take: ``words`` are (db, hz) per heard word over ``first``..``last``."""
     return {
         "id": id, "actor": actor, "text": text, "start": start, "duration": duration,
-        "prosody": {"first": first, "last": last, "words_per_second": round(n / (last - first), 3),
-                    "words": [{"text": "w"}] * n, "stressed": [dict(s) for s in stressed]},
+        "prosody": {"first": first, "last": last, "words_per_second": round(len(words) / (last - first), 3),
+                    "median_hz": hz, "spread_st": spread,
+                    "words": [{"text": f"w{k}", "db": db, "hz": f} for k, (db, f) in enumerate(words)],
+                    "stressed": [dict(s) for s in stressed]},
     } | ({"direction": direction} if direction else {})  # fmt: skip
 
 
-LANDED = {"word": "Discipline", "heard": True, "db": 4.0, "st": 3.0, "landed": True}
+LANDED = {"word": "Discipline", "heard": True, "at": 0, "db": 8.0, "st": 4.98, "landed": True}
 
 
 def timeline() -> dict:
-    """A reel that keeps every target: a question answered after 0.5 s, a reply after 0.55 s, a punchline after 1.2 s
-    and 0.6 s to the end."""
+    """A reel that keeps every target: a question answered after 0.5 s, a reply after 0.55 s (the median at a change
+    of speaker 0.525 s), a punchline and button after 1.2 s and 0.6 s to the end. The answer and the punchline are
+    key lines whose stressed word (named, or the loudest) stands out; the punchline's lift and weight are over the
+    reel's other lines'."""
     return {
         "duration": 6.3,
         "items": [
-            item("01", "dev", "Did you feed the dog?", 0.0, 1.6, 0.1, 1.3, 5),
-            item("02", "ana", "Dog food.", 1.6, 1.3, 0.2, 1.0, 2),
-            item("03", "dev", "Then what?", 2.9, 2.0, 0.25, 0.9, 2),
-            item("04", "ana", "Discipline.", 4.9, 1.4, 0.1, 0.8, 1, [LANDED], {"punchline": "Discipline"}),
+            item("01", "dev", "Did you feed the dog?", 0.0, 1.6, 0.1, 1.3,
+                 [(-20, 150), (-20, 150), (-19, 150), (-20, 150), (-19, 152)]),
+            item("02", "ana", "Dog food.", 1.6, 1.3, 0.2, 1.0, [(-23, 150), (-16, 190)]),
+            item("03", "dev", "Then what?", 2.9, 2.0, 0.25, 0.9, [(-20, 150), (-19.5, 151)]),
+            item("04", "ana", "Discipline, mostly.", 4.9, 1.4, 0.1, 0.8, [(-12, 200), (-22, 150)], [LANDED],
+                 {"punchline": "Discipline"}),
         ],
-    }
+    }  # fmt: skip
 
 
 def test_a_reel_that_keeps_every_target_has_no_finding():
@@ -184,6 +221,12 @@ def edit(path, value):
     return go
 
 
+def words_of(index, words):
+    """Take ``index``'s heard words replaced by ``words`` ((db, hz) each)."""
+    return edit(("items", index, "prosody", "words"), [{"text": f"w{k}", "db": d, "hz": f} for k, (d, f) in
+                                                       enumerate(words)])  # fmt: skip
+
+
 def first_word_late(t):
     for it in t["items"]:
         it["start"] += 0.3
@@ -192,11 +235,13 @@ def first_word_late(t):
 
 
 def fast_reel(t):
-    """More words in the same spans: every line within 4.3 words a second, the reel at 3.9."""
+    """More words in the same spans, each at the line's median level and pitch: every line within 4.3 words a second,
+    the reel at 3.9."""
     for it in t["items"]:
         p = it["prosody"]
         n = math.floor(prosody.LINE_PACE * (p["last"] - p["first"]))
-        p["words"], p["words_per_second"] = [{"text": "w"}] * n, round(n / (p["last"] - p["first"]), 3)
+        p["words"] += [{"text": "w", "db": -20.0, "hz": 150.0}] * (n - len(p["words"]))
+        p["words_per_second"] = round(n / (p["last"] - p["first"]), 3)
     return t
 
 
@@ -204,7 +249,14 @@ def second_long_answer(t):
     t = shift(t, 1, 0.5)  # 01 -> 02: 1.0 s, the reel's one emotional hold
     t["items"][2]["text"] = "Then what?"
     t["items"][1]["text"] = "Dog food?"
+    words_of(2, [(-23, 150), (-16, 170)])(t)  # 03 is an answer now, a key line: its loudest word stands out
     return shift(t, 2, 0.5)  # 02 -> 03: a second question answered after 1.05 s
+
+
+def lively_rest(t):
+    """The other lines lift as much as the punchline: its delivery no longer stands over them."""
+    words_of(0, [(-20, 150), (-20, 150), (-19, 150), (-20, 150), (-19, 190)])(t)
+    return words_of(2, [(-20, 150), (-19.5, 190)])(t)
 
 
 @pytest.mark.parametrize(
@@ -213,17 +265,26 @@ def second_long_answer(t):
         (edit(("items", 0, "prosody", "words_per_second"), 5.0), "line_pace", "01"),
         (fast_reel, "reel_pace", None),
         (first_word_late, "first_word", "01"),
-        (lambda t: shift(t, 2, -0.35), "turn_gap", "03"),
         (lambda t: shift(t, 2, 0.2), "turn_gap", "03"),
+        (lambda t: shift(t, 2, -0.5), "turn_median", None),
+        (lambda t: shift(shift(t, 1, 0.35), 2, 0.15), "turn_median", None),
         (lambda t: shift(t, 1, -0.2), "answer_gap", "02"),
         (lambda t: shift(t, 1, 1.2), "answer_gap", "02"),
         (second_long_answer, "answer_gap", "03"),
-        (lambda t: shift(t, 3, -0.5), "punch_gap", "04"),
-        (lambda t: shift(t, 3, 0.7), "punch_gap", "04"),
+        (lambda t: shift(t, 3, -0.8), "punch_gap", "04"),
+        (lambda t: shift(t, 3, 0.9), "punch_gap", "04"),
         (edit(("duration",), 5.8), "end_breath", "04"),
         (edit(("duration",), 7.2), "end_breath", "04"),
-        (edit(("items", 3, "prosody", "stressed", 0), LANDED | {"st": 0.5, "landed": False}), "stress", "04"),
+        (words_of(3, [(-14, 165), (-22, 150)]), "stress", "04"),
+        (words_of(3, [(-17, 200), (-22, 150)]), "stress", "04"),
         (edit(("items", 3, "prosody", "stressed", 0), {"word": "Discipline", "heard": False}), "stress", "04"),
+        (words_of(1, [(-20, 150), (-18, 190)]), "stress", "02"),
+        (words_of(1, [(-23, 150), (-16, 155)]), "stress", "02"),
+        (edit(("items", 1, "prosody", "spread_st"), 2.5), "spread", "02"),
+        (edit(("items", 1, "prosody", "spread_st"), None), "spread", "02"),
+        (edit(("items", 1, "prosody", "spread_st"), 1.0), "flat", "02"),
+        (edit(("items", 0, "prosody", "spread_st"), 1.2), "flat", "01"),
+        (lively_rest, "delivery", "04"),
         (edit(("items", 1, "direction"), {"pre_hold": 0.5}), "hold", "02"),
         (edit(("items", 1, "direction"), {"post_hold": 0.6}), "hold", "02"),
         (edit(("items", 1, "prosody", "first"), None), "heard", "02"),
@@ -235,14 +296,42 @@ def test_each_check_fails_on_a_reel_that_breaks_it(spoil, check, take):
     assert prosody.failing(found) == found
 
 
+def test_the_hold_before_a_punchline_is_flagged_only_outside_half_a_second_to_two():
+    """arc4d3's read of Between Friends r7: 0.80 s before the Discipline button sits inside the range."""
+    assert gate(shift(timeline(), 3, -0.4)) == []  # 0.8 s
+    assert gate(shift(timeline(), 3, 0.75)) == []  # 1.95 s
+    (f,) = gate(shift(timeline(), 3, -0.8))
+    assert f.bounds == prosody.PUNCH_FLAG and "aim 1..1.8 s" in f.line()
+
+
+def test_a_gap_is_judged_as_it_is_reported_to_the_millisecond():
+    t = shift(timeline(), 3, -0.7004)  # 0.4996 s before the button reads 0.500, inside 0.5..2
+    assert gate(t) == []
+    (f,) = gate(shift(timeline(), 3, -0.7006))
+    assert f.measured == 0.499
+
+
+def test_the_last_line_is_the_button_whether_or_not_it_is_marked():
+    t = edit(("items", 3, "direction"), None)(timeline())
+    del t["items"][3]["direction"]
+    assert gate(t) == []
+    assert [(f.check, f.take) for f in gate(shift(t, 3, -0.8))] == [("punch_gap", "04")]
+
+
+def test_a_one_word_key_line_has_no_line_to_stand_out_from():
+    t = words_of(3, [(-14, 200)])(timeline())
+    t["items"][3]["prosody"]["words_per_second"] = round(1 / 0.7, 3)
+    (f,) = gate(t)
+    assert (f.check, f.take) == ("stress", "04") and "one-word line" in f.note
+
+
 def test_one_emotional_hold_per_reel_is_allowed_after_a_question():
     t = shift(timeline(), 1, 0.8)  # 01 -> 02: 1.3 s
     assert gate(t) == []
 
 
 def test_a_waiver_states_its_reason_and_keeps_the_finding_visible():
-    t = timeline()
-    t["items"][3]["prosody"]["stressed"][0] |= {"st": 0.5, "landed": False}
+    t = words_of(3, [(-14, 165), (-22, 150)])(timeline())
     t["items"][3]["direction"]["waive"] = [{"check": "stress", "reason": "the deadpan is the joke here"}]
     (finding,) = gate(t)
     assert finding.waived == "the deadpan is the joke here" and prosody.failing([finding]) == []
@@ -252,17 +341,18 @@ def test_a_waiver_states_its_reason_and_keeps_the_finding_visible():
 def test_a_waiver_with_bounds_moves_the_target_and_a_value_outside_them_still_fails():
     t = shift(timeline(), 2, 0.5)  # 02 -> 03: 1.05 s
     t["items"][2]["direction"] = {"waive": [{"check": "turn_gap", "reason": "he lets it hang", "bounds": [0.9, 1.2]}]}
-    assert gate(t) == []
+    assert gate(t) == []  # a waived gap leaves the reel's median too
     t = shift(t, 2, 0.5)
     (finding,) = gate(t)
     assert finding.bounds == (0.9, 1.2) and not finding.waived
 
 
-def test_the_reels_pace_is_waived_on_the_reel():
-    t = fast_reel(timeline())
-    t["prosody"] = {"waive": [{"check": "reel_pace", "reason": "an auctioneer sketch is fast"}]}
+@pytest.mark.parametrize(("spoil", "check"), [(fast_reel, "reel_pace"), (lambda t: shift(t, 2, -0.5), "turn_median")])
+def test_the_reels_own_targets_are_waived_on_the_reel(spoil, check):
+    t = spoil(timeline())
+    t["prosody"] = {"waive": [{"check": check, "reason": "an auctioneer sketch is fast"}]}
     (finding,) = gate(t)
-    assert finding.check == "reel_pace" and finding.waived
+    assert finding.check == check and finding.waived
 
 
 def test_an_effect_between_two_lines_times_that_silence_itself():
@@ -280,7 +370,13 @@ def test_an_effect_between_two_lines_times_that_silence_itself():
         (edit(("items", 0), "x"), "not an object"),
         (edit(("items", 0, "start"), float("nan")), "finite number"),
         (edit(("items", 0, "prosody", "stressed"), [{"word": 3}]), "stressed word record"),
-        (edit(("items", 0, "prosody", "words"), 4), "not a list"),
+        (edit(("items", 0, "prosody", "stressed"), "x"), "stressed is not a list"),
+        (edit(("items", 3, "prosody", "stressed", 0, "at"), 2), "its place among the 2 heard words"),
+        (edit(("items", 3, "prosody", "stressed", 0, "at"), True), "its place among"),
+        (edit(("items", 0, "prosody", "words"), 4), "not a list of word records"),
+        (edit(("items", 0, "prosody", "words"), ["w"]), "not a list of word records"),
+        (edit(("items", 0, "prosody", "words", 0, "db"), "loud"), "finite number"),
+        (edit(("items", 0, "prosody", "spread_st"), float("inf")), "finite number"),
         (edit(("items", 0, "direction"), []), "direction is not an object"),
         (edit(("items",), [{"id": "x", "actor": "sfx"}]), "no spoken take"),
     ],
@@ -407,7 +503,7 @@ def test_the_kept_take_records_its_measures_on_the_takes_clock_and_the_reel_its_
     assert p["first"] == pytest.approx(0.5 + 0.1 - it["trim_start"], abs=0.002)
     assert p["stressed"][0]["landed"] and p["words_per_second"] == pytest.approx(4 / 1.5, abs=0.01)
     reel = timeline["prosody"]
-    assert reel["targets"]["reel_pace"] == 3.6 and reel["targets"]["stress_st"] == 2.0
+    assert reel["targets"] == prosody.targets() and reel["targets"]["turn_median"] == [0.3, 0.65]
     assert any("first_word" in f for f in reel["findings"]) and reel["passed"] is False
     assert gate(timeline) == gate(json.loads((tmp_path / "project" / "timeline.json").read_text()))
 

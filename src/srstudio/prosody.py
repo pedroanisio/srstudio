@@ -1,17 +1,32 @@
 """How a recorded line was said, measured, and the gate on a recording's pace, timing and stress (ADR 0234 c).
 
-The targets are arc4d3's, from 126 Okayville reels (1,745 lines, all ``eleven_multilingual_v2``; 4 Nov 2026): faster
-reels drew fewer likes, so a reel says at most :data:`REEL_PACE` words a second and no line more than
-:data:`LINE_PACE`; the first word comes by :data:`FIRST_WORD`; a reply at a change of speaker comes after
-:data:`TURN_GAP`, after a question :data:`ANSWER_GAP` (one emotional hold per reel up to :data:`EMOTIONAL_HOLD`), and
-a punchline after :data:`PUNCH_GAP`; the reel ends :data:`END_BREATH` after its last word; a stressed word, a
-punchline's included, stands :data:`STRESS_DB` and :data:`STRESS_ST` over the rest of its line.
+The targets and their definitions are arc4d3's, from 126 Okayville reels (1,745 lines, all ``eleven_multilingual_v2``;
+the voice analysis of 4 Nov 2026):
 
-Everything is measured on the recorded take: word times from speech-to-text, and per word its level (RMS, dB) and its
-pitch (the 90th percentile of a YIN fundamental-frequency track over the word's voiced frames). :func:`measure` runs
-when a take is recorded; :mod:`srstudio.takes` writes the numbers into ``timeline.json`` and ranks a line's takes
-with them. :func:`gate` reads only the timeline. A line keeps a target or waives it with its reason
-(:class:`~srstudio.direction.Waiver` in its direction; ``reel_pace`` on the script).
+- **pace**, words per second of speech (first word's start to last word's end, summed over the lines): the reel at
+  most :data:`REEL_PACE`, no line over :data:`LINE_PACE` unless the rush is the joke;
+- **opening**: the first word by :data:`FIRST_WORD`;
+- **change of speaker**: the reel's median gap inside :data:`TURN_GAP`, and no default gap over :data:`TURN_CEILING`;
+- **punchline or button** (a line marked ``punchline``, and the reel's last line): the hold before it aims at
+  :data:`PUNCH_GAP` and is flagged outside :data:`PUNCH_FLAG`;
+- **question to answer** (a line ending in "?" and the other speaker's reply): :data:`ANSWER_GAP`, and once a reel up
+  to :data:`EMOTIONAL_HOLD` for the emotional beat;
+- **weight** on key lines (punchline, answer, button): the stressed word at least :data:`STRESS_DB` over the line's
+  median word; **lift**: at least :data:`STRESS_ST` over the line's median pitch; a key line with no stressed word named
+  is held to it on its loudest word;
+- **spread**, the interquartile range of a line's pitch in semitones: at least :data:`SPREAD_ST` on key lines, and any
+  line under :data:`FLAT_ST` is a flat take to retake;
+- **delivery**: the punchline's and the button's lift and weight at least :data:`DELIVERY_ST` and :data:`DELIVERY_DB`
+  over the median of the reel's other lines;
+- **ending**: :data:`END_BREATH` after the last word.
+
+Everything is measured on the recorded take: word times from speech-to-text, per word its level (RMS, dB) and its
+pitch (the 90th percentile of a YIN fundamental-frequency track over the word's voiced frames), per line the median and
+the spread of the voiced frames inside its words. :func:`measure` runs when a take is recorded; :mod:`srstudio.takes`
+writes the numbers into ``timeline.json`` and ranks a line's takes with them: the stressed word's weight and lift
+first, then the line's pace against its bound. :func:`gate` reads only the timeline and computes every margin again
+from the recorded words. A line keeps a target or waives it with its reason (:class:`~srstudio.direction.Waiver` in its
+direction; :data:`~srstudio.direction.REEL_CHECKS` on the script).
 
     python -m srstudio.prosody PROJECT        # the findings of PROJECT/timeline.json; exit 1 on any
 """
@@ -37,6 +52,12 @@ from .voice import Word, normalize_words
 
 __all__ = [
     "ANSWER_GAP",
+    "DELIVERY_DB",
+    "DELIVERY_ST",
+    "FLAT_ST",
+    "PUNCH_FLAG",
+    "SPREAD_ST",
+    "TURN_CEILING",
     "EMOTIONAL_HOLD",
     "END_BREATH",
     "FIRST_WORD",
@@ -49,20 +70,30 @@ __all__ = [
     "Finding",
     "Measure",
     "ProsodyError",
+    "failing",
     "gate",
+    "lift",
     "measure",
+    "targets",
+    "weight",
 ]
 
 REEL_PACE = 3.6  # words per second of speech, the reel's
 LINE_PACE = 4.3  # words per second of speech, any one line's
 FIRST_WORD = 0.25  # seconds into the reel by which the first word starts
-TURN_GAP = (0.3, 0.65)  # seconds of silence before a reply at a change of speaker
-PUNCH_GAP = (1.0, 1.8)  # before a punchline
+TURN_GAP = (0.3, 0.65)  # the reel's median gap at a change of speaker, seconds
+TURN_CEILING = 0.7  # any one default gap at a change of speaker
+PUNCH_GAP = (1.0, 1.8)  # the hold before a punchline or button: the aim
+PUNCH_FLAG = (0.5, 2.0)  # ... and what the gate flags outside
 ANSWER_GAP = (0.4, 0.9)  # from a question to its answer at a change of speaker
 EMOTIONAL_HOLD = 1.5  # one question-to-answer gap per reel may run this long
 END_BREATH = (0.3, 1.2)  # from the last word to the end of the reel
-STRESS_DB = 3.0  # a stressed word's level over the rest of its line
-STRESS_ST = 2.0  # its pitch over the rest of its line, semitones
+STRESS_DB = 3.0  # a key line's stressed word over the line's median word, dB
+STRESS_ST = 2.0  # its pitch over the line's median pitch, semitones
+SPREAD_ST = 3.2  # a key line's pitch spread (interquartile), semitones
+FLAT_ST = 1.5  # any line under this spread is a flat take
+DELIVERY_ST = 1.0  # the punchline's and the button's lift over the reel's median line
+DELIVERY_DB = 1.0  # ... and their weight
 HOLD_SLACK = 0.05  # seconds a measured hold may fall short of a directed one (word times are 10 ms steps or coarser)
 
 RATE = 16000  # pitch analysis rate
@@ -78,6 +109,29 @@ class ProsodyError(SrstudioError, ValueError):
 
 
 # -- measuring ----------------------------------------------------------------------------------------------------
+def _median(values: Sequence[float]) -> float:
+    return float(np.median(np.asarray(values, dtype=np.float64)))
+
+
+def weight(levels: Sequence[float | None], at: int) -> float | None:
+    """Word ``at``'s level over the line's median word, dB; None when it has no level or the line fewer than two
+    words with one (one word has no line to stand out from)."""
+    known = [db for db in levels if db is not None]
+    mine = levels[at]
+    return None if mine is None or len(known) < 2 else mine - _median(known)
+
+
+def lift(hz: float | None, median_hz: float | None, words: int) -> float | None:
+    """A word's pitch over its line's median pitch, semitones; None when either is unmeasured or the line one word."""
+    return None if hz is None or not median_hz or words < 2 else 12 * math.log2(hz / median_hz)
+
+
+def loudest(levels: Sequence[float | None]) -> int | None:
+    """The index of the line's loudest word, None when no word has a level."""
+    known = [(db, i) for i, db in enumerate(levels) if db is not None]
+    return max(known)[1] if known else None
+
+
 @dataclass(frozen=True)
 class WordLevel:
     """One heard word: its times on the clip, its RMS level (dB full scale) and its pitch (Hz); None when the word is
@@ -92,12 +146,14 @@ class WordLevel:
 
 @dataclass(frozen=True)
 class Stress:
-    """A word meant to be stressed: whether it was heard, and its level and pitch over the rest of the line."""
+    """A word meant to be stressed: whether it was heard (``at``, its index among the heard words), and its weight
+    (dB over the line's median word) and lift (semitones over the line's median pitch)."""
 
     word: str
     heard: bool
     db: float | None = None
     st: float | None = None
+    at: int | None = None
 
     @property
     def landed(self) -> bool:
@@ -108,10 +164,13 @@ class Stress:
 
 @dataclass(frozen=True)
 class Measure:
-    """A recorded line's heard words and its stressed words, times on the clip that was heard."""
+    """A recorded line's heard words, its stressed words, and its pitch: the median (Hz) and the interquartile spread
+    (semitones) of the voiced frames inside its words. Times are on the clip that was heard."""
 
     words: tuple[WordLevel, ...]
     stressed: tuple[Stress, ...] = field(default=())
+    median_hz: float | None = None
+    spread: float | None = None
 
     @property
     def first(self) -> float | None:
@@ -130,17 +189,26 @@ class Measure:
         """Words per second of speech, first word's start to last word's end; None when the span is not measurable."""
         return round(len(self.words) / self.span, 3) if self.span > HOP else None
 
+    def accents(self) -> tuple[Stress, ...]:
+        """The words a ranking weighs: the stressed ones, else the loudest word."""
+        if self.stressed:
+            return self.stressed
+        at = loudest([w.db for w in self.words])
+        if at is None:
+            return ()
+        levels = [w.db for w in self.words]
+        return (Stress(self.words[at].text, True, weight(levels, at), lift(self.words[at].hz, self.median_hz,
+                                                                           len(self.words)), at),)  # fmt: skip
+
     def rank(self, line_pace: float = LINE_PACE) -> tuple:
-        """Higher is better: every stressed word landed, then the weakest stress margin, then a pace within the line's
-        bound, then the slower pace."""
-        margins = [
-            min(s.db / STRESS_DB, s.st / STRESS_ST) for s in self.stressed if s.db is not None and s.st is not None
-        ]
-        weakest = (
-            min(margins) if len(margins) == len(self.stressed) and margins else (-math.inf if self.stressed else 0)
-        )
+        """Higher is better, in the order the voice analysis gives: the stressed word's weight and lift (every one
+        landed, then the weakest margin), then the line's pace within its bound, then the slower pace. A line with no
+        stressed word is weighed on its loudest word."""
+        accents = self.accents()
+        margins = [min(s.db / STRESS_DB, s.st / STRESS_ST) for s in accents if s.db is not None and s.st is not None]
+        weakest = min(margins) if len(margins) == len(accents) and margins else (-math.inf if accents else 0)
         pace = self.pace
-        return (all(s.landed for s in self.stressed), weakest, pace is not None and pace <= line_pace, -(pace or 0.0))
+        return (all(s.landed for s in accents), weakest, pace is not None and pace <= line_pace, -(pace or 0.0))
 
     def record(self, offset: float = 0.0) -> dict:
         """What the timeline keeps, word times moved by ``offset`` onto the take's own clock."""
@@ -155,15 +223,18 @@ class Measure:
             "first": None if self.first is None else at(self.first),
             "last": None if self.last is None else at(self.last),
             "words_per_second": self.pace,
+            "median_hz": num(self.median_hz, 1),
+            "spread_st": num(self.spread),
             "words": [{"text": w.text, "start": at(w.start), "end": at(w.end), "db": num(w.db), "hz": num(w.hz, 1)}
                       for w in self.words],
-            "stressed": [{"word": s.word, "heard": s.heard, "db": num(s.db), "st": num(s.st), "landed": s.landed}
-                         for s in self.stressed],
+            "stressed": [{"word": s.word, "heard": s.heard, "at": s.at, "db": num(s.db), "st": num(s.st),
+                          "landed": s.landed} for s in self.stressed],
         }  # fmt: skip
 
     def summary(self) -> str:
-        """One line for a take listing: pace and each stressed word's margins."""
+        """One line for a take listing: pace, spread and each stressed word's margins."""
         parts = [f"{self.pace} w/s" if self.pace is not None else "pace n/a"]
+        parts.append("spread n/a" if self.spread is None else f"spread {self.spread:.1f} st")
         for s in self.stressed:
             if not s.heard:
                 parts.append(f"{s.word} NOT HEARD")
@@ -236,20 +307,28 @@ def pitch_track(x: np.ndarray, rate: int) -> tuple[np.ndarray, np.ndarray]:
 
 
 def measure(wav: Path, words: Sequence[Word], stressed: Sequence[str] = ()) -> Measure:
-    """The heard ``words`` (speech-to-text, times on ``wav``) with each one's level and pitch, and each ``stressed``
-    word's level and pitch over the rest of the line. A stressed word is matched to the first heard word that is the
-    same once normalised; one not heard is recorded as not heard."""
+    """The heard ``words`` (speech-to-text, times on ``wav``) with each one's level and pitch, the line's median pitch
+    and spread over the voiced frames inside its words, and each ``stressed`` word's weight and lift. A stressed word is
+    matched to the first heard word that is the same once normalised; one not heard is recorded as not heard."""
     x, rate = _samples(wav)
     times, f0 = pitch_track(x, rate)
     spoken = [w for w in words if w.type == "word"]
     levels = []
+    inside = np.zeros(times.size, dtype=bool)
     for w in spoken:
         a, b = max(0, round(w.start * rate)), min(x.size, round(w.end * rate))
         long_enough = w.end - w.start >= HOP and b > a
         db = _db(x[a:b]) if long_enough else None
-        voiced = f0[(times >= w.start) & (times <= w.end) & ~np.isnan(f0)] if long_enough else np.zeros(0)
+        mine = (times >= w.start) & (times <= w.end)
+        voiced = f0[mine & ~np.isnan(f0)] if long_enough else np.zeros(0)
+        if long_enough:
+            inside |= mine
         hz = float(np.percentile(voiced, PITCH_PERCENTILE)) if voiced.size else None
         levels.append(WordLevel(w.text, float(w.start), float(w.end), db, hz))
+    line = f0[inside & ~np.isnan(f0)]
+    median_hz = float(np.median(line)) if line.size else None
+    spread = 12 * math.log2(float(np.percentile(line, 75)) / float(np.percentile(line, 25))) if line.size >= 2 else None
+    dbs = [w.db for w in levels]
     marks = []
     keys = [normalize_words(w.text) for w in spoken]
     for word in stressed:
@@ -258,15 +337,8 @@ def measure(wav: Path, words: Sequence[Word], stressed: Sequence[str] = ()) -> M
         if at is None:
             marks.append(Stress(word, heard=False))
             continue
-        rest = [i for i in range(len(spoken)) if i != at]
-        rest_samples = [x[max(0, round(spoken[i].start * rate)) : round(spoken[i].end * rate)] for i in rest]
-        rest_db = _db(np.concatenate(rest_samples)) if rest_samples else None
-        rest_hz = [hz for i in rest if (hz := levels[i].hz) is not None]
-        mine = levels[at]
-        db = None if mine.db is None or rest_db is None else mine.db - rest_db
-        st = None if mine.hz is None or not rest_hz else 12 * math.log2(mine.hz / float(np.median(rest_hz)))
-        marks.append(Stress(word, True, db, st))
-    return Measure(tuple(levels), tuple(marks))
+        marks.append(Stress(word, True, weight(dbs, at), lift(levels[at].hz, median_hz, len(levels)), at))
+    return Measure(tuple(levels), tuple(marks), median_hz, spread)
 
 
 # -- the gate -----------------------------------------------------------------------------------------------------
@@ -300,14 +372,31 @@ class _Item:
     duration: float
     first: float | None
     last: float | None
-    words: int
     pace: float | None
-    stressed: tuple[Stress, ...]
+    levels: tuple[float | None, ...]  # each heard word's dB
+    pitches: tuple[float | None, ...]  # each heard word's Hz
+    texts: tuple[str, ...]
+    median_hz: float | None
+    spread: float | None
+    stressed: tuple[Stress, ...]  # as recorded: the word, whether heard and where; margins are computed again
     direction: Mapping[str, Any]
+
+    @property
+    def words(self) -> int:
+        return len(self.levels)
 
     @property
     def waivers(self) -> dict[str, dict]:
         return {w["check"]: w for w in self.direction.get("waive", ())}
+
+    def margins(self, at: int) -> tuple[float | None, float | None]:
+        """Word ``at``'s weight and lift, from the recorded words."""
+        return weight(self.levels, at), lift(self.pitches[at], self.median_hz, self.words)
+
+    def accent(self) -> int | None:
+        """The word a delivery is weighed on: the first stressed word heard, else the loudest."""
+        heard = [s.at for s in self.stressed if s.heard and s.at is not None]
+        return heard[0] if heard else loudest(self.levels)
 
 
 def _number(where: str, value: object, optional: bool = False) -> float | None:
@@ -316,6 +405,15 @@ def _number(where: str, value: object, optional: bool = False) -> float | None:
     if isinstance(value, bool) or not isinstance(value, int | float) or not math.isfinite(value):
         raise ProsodyError(f"{where} is not a finite number: {value!r}")
     return float(value)
+
+
+def _parse_stress(where: str, s: object, words: int) -> Stress:
+    if not isinstance(s, Mapping) or not isinstance(s.get("word"), str) or not isinstance(s.get("heard"), bool):
+        raise ProsodyError(f"{where} is not a stressed word record")
+    at = s.get("at")
+    if s["heard"] and not (isinstance(at, int) and not isinstance(at, bool) and 0 <= at < words):
+        raise ProsodyError(f"{where}: a heard stressed word names its place among the {words} heard words, got {at!r}")
+    return Stress(s["word"], s["heard"], at=at if s["heard"] else None)
 
 
 def _parse_item(i: int, item: object) -> _Item | None:
@@ -327,16 +425,15 @@ def _parse_item(i: int, item: object) -> _Item | None:
     p = item.get("prosody")
     if not isinstance(p, Mapping):
         raise ProsodyError(f"{where} (take {item.get('id')}) is not measured: record it with this kit")
-    stressed = []
-    for k, s in enumerate(p.get("stressed", ())):
-        if not isinstance(s, Mapping) or not isinstance(s.get("word"), str) or not isinstance(s.get("heard"), bool):
-            raise ProsodyError(f"{where}.prosody.stressed[{k}] is not a stressed word record")
-        stressed.append(
-            Stress(s["word"], s["heard"], _number(where, s.get("db"), True), _number(where, s.get("st"), True))
-        )
     words = p.get("words", ())
-    if not isinstance(words, list):
-        raise ProsodyError(f"{where}.prosody.words is not a list")
+    if not isinstance(words, list) or not all(isinstance(w, Mapping) for w in words):
+        raise ProsodyError(f"{where}.prosody.words is not a list of word records")
+    levels = tuple(_number(f"{where}.prosody.words[{k}].db", w.get("db"), True) for k, w in enumerate(words))
+    pitches = tuple(_number(f"{where}.prosody.words[{k}].hz", w.get("hz"), True) for k, w in enumerate(words))
+    marks = p.get("stressed", ())
+    if not isinstance(marks, list):
+        raise ProsodyError(f"{where}.prosody.stressed is not a list")
+    stressed = tuple(_parse_stress(f"{where}.prosody.stressed[{k}]", s, len(words)) for k, s in enumerate(marks))
     direction = item.get("direction", {})
     if not isinstance(direction, Mapping):
         raise ProsodyError(f"{where}.direction is not an object")
@@ -348,21 +445,89 @@ def _parse_item(i: int, item: object) -> _Item | None:
         _number(f"{where}.duration", item.get("duration")) or 0.0,
         _number(f"{where}.prosody.first", p.get("first"), True),
         _number(f"{where}.prosody.last", p.get("last"), True),
-        len(words),
         _number(f"{where}.prosody.words_per_second", p.get("words_per_second"), True),
-        tuple(stressed),
+        levels,
+        pitches,
+        tuple(str(w.get("text", "")) for w in words),
+        _number(f"{where}.prosody.median_hz", p.get("median_hz"), True),
+        _number(f"{where}.prosody.spread_st", p.get("spread_st"), True),
+        stressed,
         direction,
     )
 
 
-def _range(check: str, item: _Item | None, measured: float, default: tuple[float, float], reel_waivers: Mapping
-           ) -> Finding | None:  # fmt: skip
+def _range(check: str, item: _Item | None, measured: float, default: tuple[float, float], reel_waivers: Mapping,
+           note: str = "") -> Finding | None:  # fmt: skip
     waiver = (item.waivers if item is not None else reel_waivers).get(check)
     bounds = tuple(waiver["bounds"]) if waiver and "bounds" in waiver else default
+    measured = round(measured, 3)  # judged as reported: word times are 10 ms steps or coarser
     if bounds[0] - 1e-6 <= measured <= bounds[1] + 1e-6:
         return None
     reason = waiver["reason"] if waiver and "bounds" not in waiver else ""
-    return Finding(check, item.id if item else None, round(measured, 3), (bounds[0], bounds[1]), waived=reason)
+    return Finding(check, item.id if item else None, measured, (bounds[0], bounds[1]), note, reason)
+
+
+def _found(check: str, item: _Item, measured: float | None, note: str, bounds: tuple[float, float] | None = None
+           ) -> Finding:  # fmt: skip
+    waiver = item.waivers.get(check)
+    return Finding(check, item.id, None if measured is None else round(measured, 3), bounds, note,
+                   waiver["reason"] if waiver else "")  # fmt: skip
+
+
+def _stress(it: _Item, key: bool) -> list[Finding]:
+    """Each stressed word that does not stand out; on a key line with none named, its loudest word."""
+    marks = list(it.stressed)
+    named = bool(marks)
+    if not named and key:
+        at = loudest(it.levels)
+        if at is None:
+            return [_found("stress", it, None, "a key line with no word's level measured")]
+        marks = [Stress(it.texts[at], True, at=at)]
+    out = []
+    for s in marks:
+        if not s.heard or s.at is None:
+            out.append(_found("stress", it, None, f"{s.word!r} not heard"))
+            continue
+        db, st = it.margins(s.at)
+        if db is None or st is None:
+            why = "a one-word line has no line to stand out from" if it.words < 2 else "its pitch was not measured"
+            out.append(_found("stress", it, None, f"{s.word!r}: {why}"))
+        elif db < STRESS_DB or st < STRESS_ST:
+            which = "" if named else "the loudest word "
+            note = f"{which}{s.word!r} {db:+.1f} dB {st:+.1f} st over the line's median, wants +{STRESS_DB:g} dB"
+            out.append(_found("stress", it, None, f"{note} and +{STRESS_ST:g} st"))
+    return out
+
+
+def _spread(it: _Item, key: bool) -> Finding | None:
+    if it.spread is None:
+        return _found("spread", it, None, "a key line with no voiced frame to measure") if key else None
+    if it.spread < FLAT_ST:
+        return _found("flat", it, it.spread, f"pitch spread under {FLAT_ST:g} st: a flat take to retake")
+    if key and it.spread < SPREAD_ST:
+        return _found("spread", it, it.spread, f"a key line's pitch spread under {SPREAD_ST:g} st")
+    return None
+
+
+def _line_margins(it: _Item) -> tuple[float | None, float | None]:
+    """A line's weight (its loudest word over its median word) and lift (its accent over its median pitch)."""
+    loud, accent = loudest(it.levels), it.accent()
+    return (None if loud is None else weight(it.levels, loud)), (None if accent is None else it.margins(accent)[1])
+
+
+def _delivery(key: _Item, others: Sequence[_Item]) -> Finding | None:
+    """The punchline or button against the median of the reel's other lines; nothing to compare, nothing found. A
+    key line too short to weigh is the stress check's finding."""
+    rest = [m for m in map(_line_margins, others) if m[0] is not None and m[1] is not None]
+    db, st = _line_margins(key)
+    if not rest or db is None or st is None:
+        return None
+    over_db = db - _median([m[0] for m in rest if m[0] is not None])
+    over_st = st - _median([m[1] for m in rest if m[1] is not None])
+    if over_db >= DELIVERY_DB and over_st >= DELIVERY_ST:
+        return None
+    return _found("delivery", key, None, f"lift {over_st:+.1f} st and weight {over_db:+.1f} dB over the reel's median "
+                                         f"line, wants +{DELIVERY_ST:g} st and +{DELIVERY_DB:g} dB")  # fmt: skip
 
 
 def gate(timeline: Mapping[str, Any]) -> list[Finding]:
@@ -378,6 +543,16 @@ def gate(timeline: Mapping[str, Any]) -> list[Finding]:
     spoken = [it for it in sequence if it is not None]
     if not spoken:
         raise ProsodyError("the timeline has no spoken take")
+    button = spoken[-1]
+    answers = {
+        b.id
+        for a, b in zip(sequence, sequence[1:], strict=False)
+        if a is not None and b is not None and a.actor != b.actor and a.text.rstrip().endswith("?")
+    }
+
+    def punch(it: _Item) -> bool:
+        return bool(it.direction.get("punchline")) or it is button
+
     out: list[Finding | None] = []
     for it in spoken:
         if it.first is None or it.last is None:
@@ -393,13 +568,9 @@ def gate(timeline: Mapping[str, Any]) -> list[Finding]:
         if post and it.duration - it.last < post - HOLD_SLACK:
             out.append(Finding("hold", it.id, round(it.duration - it.last, 3), (post, MAX_HOLD),
                                "the silence after the last word is short", hold["reason"] if hold else ""))  # fmt: skip
-        waiver = it.waivers.get("stress")
-        for s in it.stressed:
-            if not s.landed:
-                note = (f"{s.word!r} not heard" if not s.heard else
-                        f"{s.word!r} {_signed(s.db, 'dB')} {_signed(s.st, 'st')} over the line, wants "
-                        f"+{STRESS_DB:g} dB and +{STRESS_ST:g} st")  # fmt: skip
-                out.append(Finding("stress", it.id, None, None, note, waiver["reason"] if waiver else ""))
+        key = punch(it) or it.id in answers
+        out.extend(_stress(it, key))
+        out.append(_spread(it, key))
     measured = [it for it in spoken if it.first is not None and it.last is not None]
     if measured:
         first = measured[0]
@@ -410,25 +581,45 @@ def gate(timeline: Mapping[str, Any]) -> list[Finding]:
         if span > 0:
             reel_pace = sum(it.words for it in measured) / span
             out.append(_range("reel_pace", None, reel_pace, (0.0, REEL_PACE), reel_waivers))
+        for it in measured:
+            if punch(it):
+                out.append(_delivery(it, [o for o in measured if o is not it]))
     emotional = 0
+    turns: list[float] = []  # the default gaps at a change of speaker that keep their own target: the reel's median
     for a, b in zip(sequence, sequence[1:], strict=False):
         if a is None or b is None or a.last is None or b.first is None:
             continue  # an effect between two lines times that silence itself
         gap = (b.start + b.first) - (a.start + a.last)
-        if b.direction.get("punchline"):
-            out.append(_range("punch_gap", b, gap, PUNCH_GAP, reel_waivers))
-        elif a.actor != b.actor and a.text.rstrip().endswith("?"):
+        if punch(b):
+            aim = f"aim {PUNCH_GAP[0]:g}..{PUNCH_GAP[1]:g} s"
+            out.append(_range("punch_gap", b, gap, PUNCH_FLAG, reel_waivers, aim))
+        elif b.id in answers:
             if ANSWER_GAP[1] < gap <= EMOTIONAL_HOLD and "answer_gap" not in b.waivers and emotional == 0:
                 emotional += 1  # the reel's one emotional hold
                 continue
-            out.append(_range("answer_gap", b, gap, ANSWER_GAP, reel_waivers))
+            found = _range("answer_gap", b, gap, ANSWER_GAP, reel_waivers)
+            out.append(found)
+            if found is None and "answer_gap" not in b.waivers:
+                turns.append(gap)
         elif a.actor != b.actor:
-            out.append(_range("turn_gap", b, gap, TURN_GAP, reel_waivers))
+            found = _range("turn_gap", b, gap, (0.0, TURN_CEILING), reel_waivers)
+            out.append(found)
+            if found is None and "turn_gap" not in b.waivers:
+                turns.append(gap)
+    if turns:
+        out.append(_range("turn_median", None, _median(turns), TURN_GAP, reel_waivers))
     return [f for f in out if f is not None]
 
 
-def _signed(v: float | None, unit: str) -> str:
-    return "n/a " + unit if v is None else f"{v:+.1f} {unit}"
+def targets() -> dict[str, Any]:
+    """The gate's targets as a timeline records them."""
+    return {
+        "reel_pace": REEL_PACE, "line_pace": LINE_PACE, "first_word": FIRST_WORD, "turn_median": list(TURN_GAP),
+        "turn_gap": [0.0, TURN_CEILING], "punch_gap": list(PUNCH_FLAG), "punch_aim": list(PUNCH_GAP),
+        "answer_gap": list(ANSWER_GAP), "emotional_hold": EMOTIONAL_HOLD, "end_breath": list(END_BREATH),
+        "stress_db": STRESS_DB, "stress_st": STRESS_ST, "spread_st": SPREAD_ST, "flat_st": FLAT_ST,
+        "delivery_st": DELIVERY_ST, "delivery_db": DELIVERY_DB,
+    }  # fmt: skip
 
 
 def failing(findings: Sequence[Finding]) -> list[Finding]:

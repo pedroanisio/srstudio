@@ -101,29 +101,37 @@ still one request each, so the choice is made per exchange.
 
 Every recorded take is measured on its own clip, and the numbers go into `timeline.json`
 under `prosody`. The words come from speech-to-text, with each word's level and pitch,
-plus the words per second and each stressed word's margins over the rest of its line.
-When a line has several takes, the "pick one" message lists them best first. Name the
-punchline's word with `Direction(punchline="discipline")`. That marks the line for the
-gate and asks nothing different of the provider.
+plus the words per second, the line's median pitch and its spread (interquartile, in
+semitones), and each stressed word's weight (dB over the line's median word) and lift
+(semitones over the line's median pitch). When a line has several takes, the "pick one"
+message lists them best first: stress weight and lift, then pace. Name the punchline's
+word with `Direction(punchline="discipline")`. That marks the line for the gate and asks
+nothing different of the provider.
 
 ```bash
 python -m srstudio.prosody path/to/project   # exit 1 on any finding not waived
 ```
 
-The gate checks:
+Key lines are the punchline, the button (the reel's last line) and an answer to a
+question. The gate checks:
 
 - pace: at most 3.6 words a second over the reel, and 4.3 on any line;
 - timing: the first word by 0.25 s;
-- gaps: 0.3 to 0.65 s at a change of speaker, 0.4 to 0.9 s after a question (one up to
-  1.5 s per reel), and 1.0 to 1.8 s before a punchline;
+- gaps: the reel's median at a change of speaker 0.3 to 0.65 s, no default gap over
+  0.7 s, 0.4 to 0.9 s after a question (one up to 1.5 s per reel), and before a
+  punchline or the button 1.0 to 1.8 s, flagged under 0.5 s or over 2.0 s;
 - the end: 0.3 to 1.2 s after the last word;
-- stress: +3 dB and +2 semitones over the line for each stressed word;
+- stress: +3 dB and +2 semitones for each stressed word, and on a key line with none
+  named, for its loudest word;
+- pitch: a key line's spread at least 3.2 semitones, any line's at least 1.5 (flat);
+- delivery: the punchline's and the button's lift and weight +1 semitone and +1 dB over
+  the reel's other lines;
 - holds: the directed `pre_hold` and `post_hold`.
 
 To keep a line off a target, waive it with a reason. Give bounds to move the target,
 or leave them out to turn the check off for that take:
 `Direction(waive=(Waiver("punch_gap", "the silence is the joke", (1.0, 2.6)),))`. The
-reel's pace is waived on `Script.waive` or `Reel.waive`.
+reel's pace and its median turn gap are waived on `Script.waive` or `Reel.waive`.
 
 The generated-asset path uses `srstudio.generated.Generated` and
 `scene-render resolve`. The `srstudio-elevenlabs` provider requires

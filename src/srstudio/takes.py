@@ -186,7 +186,7 @@ class Script:
     still: float = 0.0  # seconds of silence opening the first take: a still opening (sp-hook_motion arm A)
     models: Mapping[str, str] = field(default_factory=dict)  # a voice's speech model by role; absent: MODEL
     exchanges: Sequence[Exchange] = ()  # runs of takes said as one dialogue
-    waive: tuple[Waiver, ...] = ()  # the reel's prosody targets it does not keep, with reasons (reel_pace)
+    waive: tuple[Waiver, ...] = ()  # the reel's prosody targets it does not keep, with reasons (REEL_CHECKS)
 
     def exchange_takes(self, exchange: Exchange) -> list[Take]:
         """The takes ``exchange`` says, in order; :class:`TakesError` when its ends are not takes of the script."""
@@ -661,15 +661,7 @@ def _turn_gaps(items: list[dict]) -> None:
 def _reel_prosody(script: Script, timeline: dict) -> dict:
     """The gate's targets, the reel's waivers and what the gate finds (:func:`srstudio.prosody.gate`), so the builder
     reads them with the takes; recording does not stop on a finding."""
-    out: dict[str, Any] = {
-        "targets": {
-            "reel_pace": prosody.REEL_PACE, "line_pace": prosody.LINE_PACE, "first_word": prosody.FIRST_WORD,
-            "turn_gap": list(prosody.TURN_GAP), "punch_gap": list(prosody.PUNCH_GAP),
-            "answer_gap": list(prosody.ANSWER_GAP), "emotional_hold": prosody.EMOTIONAL_HOLD,
-            "end_breath": list(prosody.END_BREATH), "stress_db": prosody.STRESS_DB, "stress_st": prosody.STRESS_ST,
-        },
-        "waive": [w.record() for w in script.waive],
-    }  # fmt: skip
+    out: dict[str, Any] = {"targets": prosody.targets(), "waive": [w.record() for w in script.waive]}
     found = prosody.gate(timeline | {"prosody": out})
     out["findings"] = [f.line() for f in found]
     out["passed"] = not prosody.failing(found)

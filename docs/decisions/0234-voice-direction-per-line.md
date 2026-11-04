@@ -91,32 +91,47 @@ the script chooses per exchange which reads better. Inside an exchange:
 **Measures, ranking and the gate (slice c).** `srstudio.prosody` measures every recorded take on its own clip. It
 takes the word times from speech-to-text. For each word it measures the RMS level in dB and the pitch: the 90th
 percentile of a YIN fundamental-frequency track over the word's voiced frames (40 ms frames, 10 ms hop, 70 to 400 Hz).
-A stressed word is one in `emphasis`, or the word named by the new `Direction.punchline`. Its level and pitch are
-compared with the rest of its line. `timeline.json` keeps, per take, the heard words with their numbers, the first
-and last word on the take's clock, the words per second, and each stressed word's margins. When a line or an
-exchange has several takes, they are ranked best first on four keys: the speech check, every stressed word landing,
-the weakest stress margin, and the pace against the line's bound. The ranking goes into the "pick one" failure, the
-transcript report and the timeline. The pick stays the builder's.
+A stressed word is one in `emphasis`, or the word named by the new `Direction.punchline`. Per line it also measures
+the pitch of the voiced frames inside its words: their median, and their spread (the interquartile range in
+semitones). A word's weight is its level over the line's median word, in dB; its lift is its pitch over the line's
+median pitch, in semitones. A one-word line has neither. `timeline.json` keeps, per take, the heard words with their
+numbers, the line's median pitch and spread, the first and last word on the take's clock, the words per second, and
+each stressed word's place and margins. When a line or an exchange has several takes, they are ranked best first in
+the order the voice analysis gives: the speech check, then the stressed word's weight and lift (every one landing,
+then the weakest margin), then the pace against the line's bound. A line with no stressed word is weighed on its
+loudest word. The ranking goes into the "pick one" failure, the transcript report and the timeline. The pick stays
+the builder's.
 
-The targets come from arc4d3's analysis of 126 Okayville reels (1,745 lines, all on multilingual v2, 4 Nov):
+The targets and their definitions are arc4d3's, from 126 Okayville reels (1,745 lines, all on multilingual v2), in
+the voice analysis of 4 Nov. Key lines are the punchline (`Direction.punchline`), the button (the reel's last line,
+marked or not) and an answer (the other speaker's reply to a line ending in "?"). A key line with no stressed word
+named is held to the stress target on its loudest word.
 
 | Check | Target |
 | --- | --- |
 | `reel_pace` | at most 3.6 words a second of speech over the reel |
-| `line_pace` | at most 4.3 words a second on any line |
+| `line_pace` | at most 4.3 words a second on any line, unless the rush is the joke (a waiver) |
 | `first_word` | the first word by 0.25 s |
-| `turn_gap` | 0.3 to 0.65 s at a change of speaker |
+| `turn_median` | the reel's median gap at a change of speaker 0.3 to 0.65 s |
+| `turn_gap` | no default gap at a change of speaker over 0.7 s |
 | `answer_gap` | 0.4 to 0.9 s from a question to its answer; once per reel up to 1.5 s (the emotional hold) |
-| `punch_gap` | 1.0 to 1.8 s before a punchline |
+| `punch_gap` | before a punchline or the button: aim 1.0 to 1.8 s, flagged under 0.5 s or over 2.0 s |
 | `end_breath` | 0.3 to 1.2 s from the last word to the end |
-| `stress` | each stressed word heard, at least +3 dB and +2 semitones over the rest of its line |
+| `stress` | each stressed word heard, at least +3 dB weight and +2 semitones lift; on a key line, its loudest word too |
+| `spread` | a key line's pitch spread at least 3.2 semitones |
+| `flat` | any line's pitch spread at least 1.5 semitones, under it a flat take to retake |
+| `delivery` | the punchline's and the button's lift and weight at least +1 semitone and +1 dB over the median of the reel's other lines |
 | `hold` | the measured silence keeps the direction's `pre_hold` and `post_hold` (50 ms slack) |
+
+The median at a change of speaker counts the turn and answer gaps that keep their own target and are not waived: a
+gap already flagged, the emotional hold and a punchline's hold are not default gaps. The gate computes every margin
+again from the recorded words, so a stale margin in the record cannot pass it.
 
 `prosody.gate(timeline)` returns every finding, and `python -m srstudio.prosody PROJECT` exits 1 on any finding that
 is not waived. Recording writes the targets and findings into `timeline.json`, but does not stop on them. A line
 overrides a target only through `Direction.waive`, a `Waiver(check, reason, bounds)` whose reason is a sentence. With
 bounds, the waiver moves a ranged target; without them, the check is off for that take. A waived finding stays listed
-with its reason. `reel_pace` is waived on `Script.waive` or `Reel.waive`. `punchline` and `waive` change nothing in
+with its reason. `reel_pace` and `turn_median` are waived on `Script.waive` or `Reel.waive`. `punchline` and `waive` change nothing in
 the request: a take whose direction only carries them is sent as an undirected take, with the same cache key.
 
 ## Consequences
@@ -129,13 +144,17 @@ the request: a take whose direction only carries them is sent as an undirected t
 - `sketch.record`, the Toon sketch recorder, takes no direction yet. A sketch line is said as before.
 - A dialogue costs one request for all of its turns. Its cache key is the whole request, so changing one turn
   re-records the exchange.
-- Pace is measured over speech, from each line's first word to its last, summed over the reel. The source report
-  (`insights/reports/voice-analysis-2026-11-04.md`) was not found in this workspace, so its own method could not be
-  compared. A per-reel pace over the whole running time would be lower.
+- Pace is measured over speech, from each line's first word to its last, summed over the reel; arc4d3 confirmed
+  this reading (words per second of speech, not of running time). The targets and definitions were checked against
+  the voice analysis itself (Slack file F0CESR11JFM, 4 Nov). That check moved the change-of-speaker target to the
+  reel's median with a 0.7 s ceiling per gap, the punchline flag to 0.5 and 2.0 s with the button counted as a
+  punchline, the stress margins to the line's median word and median pitch, and added the spread, flat and delivery
+  checks and the loudest word on key lines.
 - The gate is not wired into the delivery gates. Wiring it in would stop reels that are recording now.
-- On the real three-turn dialogue, Christopher's emphasised "discipline" measured -1.7 dB and -6.1 semitones against
-  the rest of his line, so the capitals did not lift it. "What do you feed him?" ran at 6.8 words a second. The
-  ranking and the gate exist for exactly these cases.
+- On the real three-turn dialogue, Christopher's emphasised "discipline" measured -0.8 dB against his line's median
+  word and -3.3 semitones against its median pitch, so the capitals did not lift it. "What do you feed him?" ran at
+  6.8 words a second. All three lines measured a pitch spread of 1.2 to 1.5 semitones, two of them under the 1.5
+  floor for a flat take. The ranking and the gate exist for exactly these cases.
 - A real three-turn v4 dialogue (Will, Christopher, Will, 72 characters) went through `say` on 2026-11-04. Each cut
   was heard as written ("What do you feed him?", "Dog food and discipline", "Just discipline?").
 
