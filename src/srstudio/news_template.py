@@ -24,19 +24,27 @@ the same anchors, rig and set:
 * **The PARODY tag only on fiction**: :func:`band` refuses it on a story with a source.
 * **Inserts keep moving**: :func:`insert` pushes in slowly across its whole span, so a full-frame insert never holds
   a frame still.
+* **Gus's phone is a cutaway** (:func:`phone_insert`): its screen fills the frame's width over a backdrop that hides
+  the shot, the chat fills the screen with a message landing at least every :data:`STILL_MOST` seconds, and the reel
+  cuts back to Gus's reaction (:func:`reaction`) within that of the last one.
+* **Gus holds his phone up** in his close shot (:data:`GRIP`), clear of the band and under his mouth, his fists
+  under it.
+* **The body moves on every line** (:func:`body`): a lean toward the other anchor, both hands up from the desk beside
+  the face (:data:`GRIPS`, a mirrored pair) or a lean back, in turn, on each line's onset, over the head's own motion.
+  Hands already busy with a prop lean instead of coming up.
 """
 
 from __future__ import annotations
 
 import math
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 from shapely.geometry import Polygon, box
 from shapely.ops import unary_union
 
-from . import head_motion, look, news_arms, news_head, news_inked, news_kit, parts
+from . import craft, head_motion, look, news_arms, news_head, news_inked, news_kit, parts
 from .brush import Point
 from .canvas import Canvas
 from .head_motion import FACE_UP, Facing, HeadPlan, HeadStyle
@@ -75,6 +83,17 @@ __all__ = [
     "STILL_MOST",
     "STYLES",
     "TEMPLATE",
+    "BODY_RISE",
+    "CHAT_FOOT",
+    "CHAT_TOP",
+    "CUT_AT",
+    "CUT_TO",
+    "GRIP",
+    "GRIPS",
+    "HAND_REACH",
+    "LEAN_MOST",
+    "UP_HOLD",
+    "Body",
     "CardPlan",
     "Framing",
     "Lower",
@@ -82,19 +101,25 @@ __all__ = [
     "Reach",
     "Seen",
     "band",
+    "body",
+    "body_at",
     "captions",
     "card_plan",
     "crown_travel",
     "face_reach",
     "fill",
+    "gestured",
     "hands_line",
+    "held_phone",
     "insert",
     "insert_reach",
+    "mouth_low",
     "no_desk",
     "obstacles",
     "onsets",
     "phone_insert",
     "plan_of",
+    "reaction",
     "rig",
     "seen",
     "stage",
@@ -135,6 +160,13 @@ ONSET_LEAD = 0.2  # seconds before its first word that a line's turn starts
 ONSET_HOLD = 0.9  # seconds after it that the head starts back to camera
 HEAD_TRAVEL_LEAST = 15.0  # frame pixels the crown must travel over a three-second talking hold
 
+# -- the body ----------------------------------------------------------------------------------------------------------
+LEAN_MOST = 3.5  # degrees of skew an anchor leans by, about the desk's top: the head goes sideways, never lower
+BODY_RISE = 0.3  # seconds a lean takes to arrive, and to go
+UP_HOLD = 0.9  # seconds the hands stay up beside the face once they are there
+BODY_CYCLE = ("toward", "up", "back")  # an anchor's lines in turn: lean toward the other, hands up, lean back
+UP_WRIST = (190.0, -240.0)  # the right wrist with the hands up: beside the face, the hand clear of the band
+
 # -- inserts -----------------------------------------------------------------------------------------------------------
 STILL_MOST = 1.5  # seconds an insert may hold one frame
 INSERT_AT = (500.0, 880.0)  # where the handset's middle goes: inside the safe column, under two lines of caption
@@ -146,6 +178,23 @@ _HANDSET = (
     news_inked.PHONE_Y + news_inked.PHONE_H,
 )
 _HANDSET_MID = ((_HANDSET[0] + _HANDSET[2]) / 2, (_HANDSET[1] + _HANDSET[3]) / 2)
+
+# -- the phone cutaway -------------------------------------------------------------------------------------------------
+CUT_TOP = round(CAPTION_FOOT + 12.0)  # the handset's top edge, just under two lines of caption
+SCREEN_TOP = CUT_TOP + 22.0
+HEADER_H = 112.0  # the chat's name
+CHAT_TOP = SCREEN_TOP + HEADER_H + 22.0  # where the first message can go
+CHAT_FOOT = BAND_FOOT - 18.0  # where the last one lands: the band is down while the phone is up
+SCREEN_FOOT = BAND_FOOT + 30.0
+CUT_AT = (500.0, (CUT_TOP + BAND_FOOT) / 2)  # the push's middle: the safe column's
+CUT_FROM, CUT_TO = 1.0, 1.03  # the cutaway's slow push
+CHAT_LEFT = CUT_AT[0] - (CUT_AT[0] - _SAFE.x0) / CUT_TO + 2.0  # the safe column at the push's largest
+CHAT_RIGHT = CUT_AT[0] + (_SAFE.x1 - CUT_AT[0]) / CUT_TO - 2.0
+BUBBLE_MOST, BUBBLE_LEAST, BUBBLE_LEADING = 66.0, 40.0, 1.14
+BUBBLE_PAD = (28.0, 20.0)  # a message's words inside its bubble, across and down
+BUBBLE_INSET = 80.0  # how far a bubble stops short of the other side, so the two sides read
+GAP_LEAST, GAP_MOST = 20.0, 72.0  # between two messages
+TAIL = 14.0
 
 Span = tuple[float, float]
 _DESK_Y = news_inked.DESK_Y
@@ -209,15 +258,18 @@ def _bounds(who: str) -> tuple[float, float]:
 
 
 def _reach_local(who: str) -> Reach:
+    """The face's reach on its bust: every corner of the head's own motion, and the lean (:data:`LEAN_MOST`), which
+    moves a point sideways by its height over the desk and never up or down."""
     swing, drop = _bounds(who)
     rigged = rig(who)
+    lean = math.tan(math.radians(LEAN_MOST))
     skin = [_rotate(p, s * swing, rigged.neck) for s in (-1.0, 1.0) for p in rigged.head]
     hair = [_rotate(p, s * swing, rigged.neck) for s in (-1.0, 1.0) for p in _hair(who)]
     return Reach(
         low=max(y for _, y in skin) + drop,
         crown=min(y for _, y in hair),
-        left=min(x for x, _ in skin),
-        right=max(x for x, _ in skin),
+        left=min(x - abs(y) * lean for x, y in skin),
+        right=max(x + abs(y) * lean for x, y in skin),
     )
 
 
@@ -242,7 +294,7 @@ def _framing(scale: float, seats: tuple[tuple[str, float], ...]) -> Framing:
 SHOTS: Mapping[str, Framing] = {
     "vera": _framing(2.45, (("vera", _MIDDLE),)),
     "gus": _framing(2.4, (("gus", _MIDDLE),)),
-    "desk": _framing(1.75, (("vera", 300.0), ("gus", 780.0))),
+    "desk": _framing(1.7, (("vera", 293.0), ("gus", 760.0))),  # room either side for the lean
 }
 
 
@@ -288,12 +340,14 @@ def hands_line(framing: Framing) -> float:
 # -- what the band must not cover --------------------------------------------------------------------------------------
 @dataclass(frozen=True)
 class Seen:
-    """One shot on the reel's clock: its framing's name and, for each anchor in it, the poses from each second on."""
+    """One shot on the reel's clock: its framing's name and, for each anchor in it, the poses from each second on and
+    the spans of the whole reel their hands are busy with a prop (:func:`body`)."""
 
     start: float
     end: float
     shot: str
     poses: Mapping[str, tuple[tuple[float, Pose], ...]]
+    busy: Mapping[str, tuple[Span, ...]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -334,12 +388,81 @@ def seen(beats: Sequence, acts: Sequence[Act], end: float) -> tuple[Seen, ...]:
     out = []
     for who, a, b in spans:
         seats = SHOTS[who].seats if who in SHOTS else ()
-        out.append(Seen(a, b, who, {anchor: _during(beats, acts, anchor, a, b) for anchor, _ in seats}))
+        busy = {anchor: _busy(_during(beats, acts, anchor, 0.0, end), end) for anchor, _ in seats}
+        out.append(Seen(a, b, who, {anchor: _during(beats, acts, anchor, a, b) for anchor, _ in seats}, busy))
     return tuple(out)
 
 
 HAND_REACH = 64.0  # bust pixels around a wrist that its hand and fingers can take
-PHONE_HELD = (-56.0, news_inked.PHONE_HELD - 94.0, 56.0, news_inked.PHONE_HELD + 86.0)  # the raised phone, ink included
+PHONE_INK = 4.0  # bust pixels of the phone's case line past its body, either side
+_PHONE_BODY = (
+    -48.0,
+    -84.0,
+    48.0,
+    76.0,
+)  # the back of the phone about its middle, as :mod:`srstudio.news_inked` draws it
+
+
+def _mouth_low(who: str) -> float:
+    """The lowest bust pixel any of ``who``'s mouths reaches with the head at rest, ink included."""
+    face = news_inked.inked(who, 6)
+    drawn = [jaw.y + (62.0 if jaw.tall is None else jaw.tall) for jaw in face.jaws]  # a gape with no drop: the kit's
+    drawn += [face.mouth_y + 16.0, face.mouth_y + 2 + face.mouth_w * 0.34]  # the teeth, the round one
+    return max(drawn) + 3.0 + news_inked.NECK_Y - news_kit.CHIN_Y
+
+
+def mouth_low(who: str, framing: Framing) -> float:
+    """The frame y of the lowest point of ``who``'s mouth in ``framing``, the head at rest."""
+    return framing.desk_y + _mouth_low(who) * framing.scale
+
+
+_UP = (
+    news_arms.Reach((-UP_WRIST[0], UP_WRIST[1]), "open", -8.0, False),
+    news_arms.Reach(UP_WRIST, "open", 8.0, False),
+)  # both hands up from the desk, palms out, a mirrored pair (ADR 0103)
+_FIST_WRIST = (36.0, -88.0)  # the right wrist holding the phone up: behind the band, the fists under the phone
+
+
+def _raised() -> news_inked.Grip:
+    """Gus's hold on this frame: the phone up under his chin, its foot :data:`FACE_GAP` over the band in his close
+    shot and its top under his mouth, tilted back so the camera sees a slice of its back; his fists under it from
+    behind the band, a mirrored pair (ADR 0103) on elbows no sharper than the rig allows, clear of his mouth."""
+    gus = SHOTS["gus"]
+    foot = (BAND_TOP - gus.desk_y) / gus.scale - PHONE_INK
+    top = _mouth_low("gus") + PHONE_INK
+    tall = (foot - top) / (_PHONE_BODY[3] - _PHONE_BODY[1])
+    middle = foot - _PHONE_BODY[3] * tall
+    x, y = _FIST_WRIST
+    phone = (news_arms.Reach((-x, y), "fist", 20.0), news_arms.Reach((x, y), "fist", -20.0))
+    reaches = {**news_arms.REACHES["gus"], "phone": phone, "up": _UP}
+    return news_inked.Grip(reaches, round(middle, 3), round(tall, 4), round(-middle, 3))
+
+
+GRIP = _raised()
+GRIPS: Mapping[str, news_inked.Grip] = {
+    "vera": news_inked.Grip({**news_arms.REACHES["vera"], "up": _UP}),
+    "gus": GRIP,
+}  # each anchor's poses on this frame
+
+
+def _phone_box(grip: news_inked.Grip) -> tuple[float, float, float, float]:
+    x0, y0, x1, y1 = _PHONE_BODY
+    return (
+        x0 - PHONE_INK,
+        grip.phone_y + y0 * grip.phone_tall - PHONE_INK,
+        x1 + PHONE_INK,
+        grip.phone_y + y1 * grip.phone_tall + PHONE_INK,
+    )
+
+
+PHONE_HELD = _phone_box(GRIP)  # the raised phone about Gus's middle on the desk, ink included
+
+
+def held_phone(framing: Framing, x: float) -> tuple[float, float, float, float]:
+    """The box of Gus's raised phone in frame pixels, Gus seated at frame ``x`` in ``framing``."""
+    return _placed(framing, PHONE_HELD, framing.camera_x(x))
+
+
 PHONE_DOWN = (-100.0, 0.0, 100.0, 54.0)  # the phone face down on the desk
 SHEAF = (-120.0, -30.0, 120.0, 34.0)  # Vera's papers under her hands
 MUG = (news_inked.MUG_X - 60.0, news_inked.MUG_Y - 80.0, news_inked.MUG_X + 60.0, news_inked.MUG_Y + 12.0)
@@ -352,9 +475,12 @@ def _placed(framing: Framing, local: tuple[float, float, float, float], x: float
     return (a[0], a[1], b[0], b[1])
 
 
-def obstacles(shots: Sequence[Seen], number: int = 6) -> list[Obstacle]:
+def obstacles(shots: Sequence[Seen], number: int = 6, said: Said = ()) -> list[Obstacle]:
     """Every hand and prop of ``shots`` in frame pixels, each over the time it is there, a change of pose easing in
-    :data:`EASE` before its beat and out after the next."""
+    :data:`EASE` before its beat and out after the next, the hands :func:`gestured` from ``said`` included. ``number``
+    is the anchors' version, on the rig (5 on)."""
+    if number < 5:
+        raise NewsKitError(f"this frame draws the anchors on their rig, version 5 on, not {number}")
     out: list[Obstacle] = []
     for shot in shots:
         if shot.shot not in SHOTS:
@@ -366,14 +492,19 @@ def obstacles(shots: Sequence[Seen], number: int = 6) -> list[Obstacle]:
         ]
         for who, x in framing.seats:
             cam_x = framing.camera_x(x)
-            rows = shot.poses[who]
+            moves = body(who, said, shot.end, shot.busy.get(who, ()))
+            rows = gestured(shot.poses[who], moves, shot.start, shot.end)
             ends = [at for at, _ in rows[1:]] + [shot.end]
             if who == "vera":
                 out.append(Obstacle("vera papers", _placed(framing, SHEAF, cam_x), shot.start, shot.end))
+            lean = math.tan(math.radians(LEAN_MOST))
+            table = GRIPS[who].reaches or news_arms.REACHES[who]
             for (at, pose), stop in zip(rows, ends, strict=True):
                 a, b = max(shot.start, at - EASE), min(shot.end, stop + EASE)
-                for _, _, wrist in news_inked.skeleton(who, number, pose.arms):
-                    hand = (wrist[0] - HAND_REACH, wrist[1] - HAND_REACH, wrist[0] + HAND_REACH, wrist[1] + HAND_REACH)
+                for reach in table[pose.arms]:
+                    wx, wy = reach.wrist
+                    side = HAND_REACH + abs(wy - HAND_REACH) * lean  # the lean moves a hand sideways
+                    hand = (wx - side, wy - HAND_REACH, wx + side, wy + HAND_REACH)
                     out.append(Obstacle(f"{who} hand", _placed(framing, hand, cam_x), a, b))
                 if who == "gus" and pose.arms == "phone":
                     out.append(Obstacle("gus phone", _placed(framing, PHONE_HELD, cam_x), a, b))
@@ -395,14 +526,14 @@ class CardPlan:
 
 
 def card_plan(
-    shots: Sequence[Seen], start: float, small: float, least: float = CARD_LEAST, number: int = 6
+    shots: Sequence[Seen], start: float, small: float, least: float = CARD_LEAST, number: int = 6, said: Said = ()
 ) -> CardPlan:
     """The large card from ``start`` until it goes small at ``small``, or :data:`EASE` before a hand or a prop first
     comes into the band, whichever is first; shorter than ``least`` seconds, and only the credit shows, from
-    ``start``. Nothing it draws is ever over a hand or a prop."""
+    ``start``. Nothing it draws is ever over a hand or a prop, the hands that come up on ``said`` included."""
     if not (math.isfinite(start) and math.isfinite(small) and 0 <= start <= small):
         raise NewsKitError(f"a source card needs 0 <= start <= small, got {start!r}..{small!r}")
-    hits = [o.start for o in obstacles(shots, number) if _overlaps(o.box, CARD_BOX) and o.end > start]
+    hits = [o.start for o in obstacles(shots, number, said) if _overlaps(o.box, CARD_BOX) and o.end > start]
     first = min(hits, default=math.inf)
     stop = min(small, first - EASE if first > start else start)
     if stop - start < least:
@@ -460,6 +591,93 @@ def crown_travel(plan: HeadPlan, who: str, scale: float, start: float, end: floa
     return max((math.dist(a, b) for a in samples for b in samples), default=0.0)
 
 
+# -- the body ----------------------------------------------------------------------------------------------------------
+Keys = tuple[tuple[float, float], ...]
+
+
+@dataclass(frozen=True)
+class Body:
+    """An anchor's body over the reel: ``lean`` the skew in degrees about the desk's top (the head to the frame's left
+    as it grows) as keys eased ``sine-in-out``, and ``up`` the spans the hands are up beside the face
+    (:data:`GRIPS`)."""
+
+    lean: Keys
+    up: tuple[Span, ...]
+
+
+def _keyed(segments: Sequence[tuple[float, float, float]]) -> Keys:
+    """Keys that go to each segment's value over :data:`BODY_RISE` from its start, hold it to its end and come back
+    to 0, unless the next segment starts before they could: then they go straight on to it."""
+    keys: list[tuple[float, float]] = [(0.0, 0.0)]
+    for k, (on, off, value) in enumerate(segments):
+        last_t, last_v = keys[-1]
+        start = max(on, last_t)
+        if start > last_t:
+            keys.append((start, last_v))
+        arrive = start + BODY_RISE
+        keys.append((arrive, value))
+        if off > arrive:
+            keys.append((off, value))
+        after = segments[k + 1][0] if k + 1 < len(segments) else math.inf
+        if after >= keys[-1][0] + BODY_RISE:
+            keys.append((keys[-1][0] + BODY_RISE, 0.0))
+    return tuple((round(a, 6), round(v, 6)) for a, v in keys)
+
+
+def body(who: str, said: Said, end: float, busy: Sequence[Span] = ()) -> Body:
+    """``who``'s body on each of their lines, computed from the takes: from :data:`ONSET_LEAD` before the first word,
+    their lines in turn lean toward the other anchor, bring both hands up beside the face, then lean back
+    (:data:`BODY_CYCLE`). A lean holds to the line's last word; the hands stay up :data:`UP_HOLD` after they arrive.
+    A turn for the hands that falls while they are ``busy`` (a prop in them) leans toward the other anchor instead.
+    The same takes give the same body."""
+    if who not in STYLES:
+        raise NewsKitError(f"the desk seats {tuple(STYLES)}, not {who!r}")
+    toward = -LEAN_MOST if who == "vera" else LEAN_MOST  # Vera sits on the left: her head goes right to lean in
+    own = sorted((s.words[0].start, s.words[-1].end) for by, s in said if by == who and s.words)
+    leans: list[tuple[float, float, float]] = []
+    up: list[Span] = []
+    for k, (first, last) in enumerate(own):
+        on = max(0.0, first - ONSET_LEAD)
+        if on >= end:
+            break
+        kind = BODY_CYCLE[k % len(BODY_CYCLE)]
+        if leans and leans[-1][1] > on:  # the last lean stands up for this line's move
+            leans[-1] = (leans[-1][0], on, leans[-1][2])
+        off = min(on + EASE + UP_HOLD, end)
+        if kind == "up" and not any(a < off + EASE and on - EASE < b for a, b in busy):
+            up.append((round(on, 6), round(off, 6)))
+            continue
+        lean = -toward if kind == "back" else toward
+        leans.append((on, min(max(last, on + BODY_RISE), end), lean))
+    return Body(_keyed(leans), tuple(up))
+
+
+def body_at(keys: Body, t: float) -> tuple[float, bool]:
+    """The lean of ``keys`` at ``t``, eased as the scene eases it, and whether the hands are up then."""
+    return round(news_arms.value_at(keys.lean, t), 6), any(a <= t < b for a, b in keys.up)
+
+
+def _busy(rows: Sequence[tuple[float, Pose]], end: float) -> tuple[Span, ...]:
+    """The spans of ``rows`` whose arms are off the desk: a prop or a gesture of the reel's own."""
+    ends = [at for at, _ in rows[1:]] + [end]
+    return tuple((at, stop) for (at, pose), stop in zip(rows, ends, strict=True) if pose.arms != "rest")
+
+
+def gestured(
+    rows: Sequence[tuple[float, Pose]], moves: Body, start: float, end: float
+) -> tuple[tuple[float, Pose], ...]:
+    """``rows``, an anchor's poses from ``start`` to ``end``, with the arms up over each of ``moves``'s spans."""
+    marks = sorted({at for at, _ in rows} | {t for span in moves.up for t in span if start < t < end})
+    out: list[tuple[float, Pose]] = []
+    for at in marks:
+        pose = next(p for t, p in reversed(rows) if t <= at) if at >= rows[0][0] else rows[0][1]
+        if any(a <= at < b for a, b in moves.up):
+            pose = replace(pose, arms="up")
+        if not out or out[-1][1] != pose:
+            out.append((at, pose))
+    return tuple(out)
+
+
 # -- the stage ---------------------------------------------------------------------------------------------------------
 ROOM_SHARE = 0.55  # how much of the camera's magnification the room takes: it is further away than the desk
 
@@ -505,12 +723,22 @@ def stage(
         back = _camera(cv, shot.back, framing, f"tpl-camera-{at}")
         front = _camera(cv, shot.front, framing, f"tpl-front-{at}")
         holds = news_head.holds_of(acts, shot.beats) if any(act.holds for act in acts) else ()
+        said = shot.said() if seats else ()
         for who, x in seats:
             cam_x = framing.camera_x(x)
             during = _during(shot.beats, acts, who, app.start, app.end)
             look.pool(cv, back, "news2-behind-anchor", "#0c052070", cam_x - 330, 420, 660, 760)
             news_inked._seat(cv, front, who, cam_x, 1.0)
             number = parts.latest(f"news-{who}").number if version is None else version
+            pivot = dict(x=cam_x, y=_DESK_Y, anchorX=cam_x, anchorY=_DESK_Y)  # the lean turns on the desk's top
+            lean_back = cv.group(back, f"tpl-lean-{who}-{at}", **pivot)
+            lean_front = cv.group(front, f"tpl-lean-{who}-front-{at}", **pivot)
+            whole = _during(shot.beats, acts, who, 0.0, shot.end)
+            moves = body(who, said, shot.end, _busy(whole, shot.end))
+            if len(moves.lean) > 1:
+                for g in (lean_back, lean_front):
+                    cv.keys(g, "skewX", moves.lean, hold=False, kind="sine-in-out", local=False)
+            during = gestured(during, moves, app.start, app.end)
             motion = None
             looks: list[tuple[float, float]] = []
             if heads:
@@ -519,22 +747,22 @@ def stage(
                         f"news-{who}@{number}'s head rig is not approved: stage with heads=False until it is"
                     )
                 rigged = rig(who, number)
-                said = shot.said()
                 motion = (rigged, plan_of(who, rigged, said, holds, shot.end).during(app.start, app.end))
                 looks = [(on, off) for on, off, _ in news_head.facing(who, rigged, said, holds, shot.end)]
             news_inked.perform(
                 cv,
-                back,
+                lean_back,
                 who,
                 cam_x,
                 during,
                 app.start,
                 app.end,
                 shot.mouths.get(who, ()),
-                over=front,
+                over=lean_front,
                 motion=motion,
                 looks=looks,
                 number=number,
+                grip=GRIPS[who],
             )
             if who == "gus":
                 down = news_kit._spans([(at, pose.arms) for at, pose in during], app.start, app.end).get("rest")
@@ -581,6 +809,17 @@ def _clipped(start: float, end: float, inserts: Sequence[Span]) -> list[Span]:
     return [(a, b) for a, b in left if b > a]
 
 
+def _readable(pieces: list[Span], what: str) -> list[Span]:
+    """``pieces`` of words on the band, refused if any is up for less than :data:`srstudio.craft.MIN_DISPLAY`."""
+    for a, b in pieces:
+        if b - a < craft.MIN_DISPLAY:
+            raise NewsKitError(
+                f"{what} is up {a:.2f}-{b:.2f} s, too short to read (at least {craft.MIN_DISPLAY:.2f} s): start the "
+                "next lower at the cut back, or end this one before the insert"
+            )
+    return pieces
+
+
 def _chip(cv: Canvas, parent, x: float, w: float, fill: str, text: str, ink: str, stroke: str | None = None) -> None:
     cv.rect(parent, x, ROW_A, w, ROW_A_H, fill, stroke, 3.0 if stroke else 0.0, radius=news_inked.CHIP)
     news_kit._text(cv, parent, text, x, ROW_A, w, ROW_A_H, CHIP_SIZE, ink, "center")
@@ -612,7 +851,8 @@ def band(
     right of the label row from ``card.credit``. A fictional one has none and wears BREAKING at the left of that row,
     and with ``parody`` the PARODY tag at its right; :class:`NewsKitError` refuses the tag on a real story. Each of
     ``lowers`` puts its kicker on the label row and its line under it; whenever none is up, ``line``, the story's own,
-    stands in that row, so the band never shows an empty one. The ticker runs under them from the end of the
+    stands in that row, so the band never shows an empty one. A lower or the line that an insert or another lower leaves
+    up for less than :data:`srstudio.craft.MIN_DISPLAY` is refused. The ticker runs under them from the end of the
     large card, its tab carrying the show's name. Nothing is drawn while an insert is up. Returns the band's group."""
     if parody and source is not None:
         raise NewsKitError("no PARODY tag on a real story: the tag is for a story the show made up")
@@ -683,7 +923,7 @@ def band(
         if start_x + w > edge:
             raise NewsKitError(f"the kicker {kicker!r} does not fit the label row beside the credit")
         lines, size = news_kit._fit(measure, check_copy(lower.line), LINE_SIZE, LINE_LEAST, right - left, 1)
-        for a, b in _clipped(lower.start, lower.end, inserts):
+        for a, b in _readable(_clipped(lower.start, lower.end, inserts), f"the lower {kicker!r}"):
             g = window("lower", a, b)
             _chip(cv, g, start_x, w, MINT, kicker, PLUM_DEEP)
             news_kit._text(cv, g, lines[0], left, ROW_B, right - left, ROW_B_H, size, CREAM)
@@ -691,7 +931,7 @@ def band(
     if line is not None:
         standing, standing_size = news_kit._fit(measure, check_copy(line), LINE_SIZE, LINE_LEAST, right - left, 1)
         taken = [*inserts, *((lower.start, lower.end) for lower in lowers)]
-        for a, b in _clipped(after, end, taken):
+        for a, b in _readable(_clipped(after, end, taken), f"the story's line {line!r}"):
             g = window("line", a, b)
             news_kit._text(cv, g, standing[0], left, ROW_B, right - left, ROW_B_H, standing_size, CREAM)
     # the ticker, from the end of the large card
@@ -758,6 +998,89 @@ def insert_reach() -> tuple[Point, Point]:
     return at((_HANDSET[0], _HANDSET[1])), at((_HANDSET[2], _HANDSET[3]))
 
 
+@dataclass(frozen=True)
+class _Row:
+    bubble: news_kit.Bubble
+    at: float
+    lines: tuple[str, ...]
+    x: float
+    y: float
+    w: float
+    h: float
+
+
+def _landings(bubbles: Sequence[news_kit.Bubble], start: float, end: float) -> list[tuple[float, int]]:
+    """When the typing dots come up, each with the message it announces: wherever two landings, the screen's own
+    first among them, are more than :data:`STILL_MOST` apart. The last message must leave the cut back to Gus's
+    reaction no further off than that, and no nearer than the engine's least time for words on screen."""
+    arrivals = [max(b.at, start) for b in bubbles]
+    if any(b < a for a, b in zip(arrivals, arrivals[1:], strict=False)):
+        raise NewsKitError(f"the messages must arrive in the order they stack, got {arrivals}")
+    if arrivals[-1] >= end:
+        raise NewsKitError(f"message {bubbles[-1].text!r} arrives after the phone has gone")
+    if end - arrivals[-1] < craft.MIN_DISPLAY:
+        raise NewsKitError(
+            f"message {bubbles[-1].text!r} is up {end - arrivals[-1]:.3f} s: too short to read, the engine's least is "
+            f"{craft.MIN_DISPLAY} s"
+        )
+    if end - arrivals[-1] > STILL_MOST + 1e-9:
+        raise NewsKitError(
+            f"cut back to Gus's reaction within {STILL_MOST} s of the last message: it lands at {arrivals[-1]} and "
+            f"the phone stays up to {end}"
+        )
+    dots: list[tuple[float, int]] = []
+    before = start
+    for k, at in enumerate(arrivals):
+        wait = at - before
+        if wait > STILL_MOST + 1e-9:
+            if wait / 2 > STILL_MOST:
+                raise NewsKitError(
+                    f"{wait:.2f} s before {bubbles[k].text!r} is more than one round of typing dots can fill"
+                )
+            dots.append((round(before + wait / 2, 6), k))
+        before = at
+    return dots
+
+
+def _rows(bubbles: Sequence[news_kit.Bubble], start: float, measure: Measure) -> tuple[list[_Row], float]:
+    """The messages stacked to fill the chat: the largest size whose two lines a message fit, from
+    :data:`BUBBLE_MOST` down, the gaps opened up to :data:`GAP_MOST`, and the last one on :data:`CHAT_FOOT`."""
+    area = CHAT_FOOT - CHAT_TOP
+    widest = CHAT_RIGHT - CHAT_LEFT - TAIL - BUBBLE_INSET
+    words = [check_copy(f"{b.clock}  {b.text}") for b in bubbles]
+    size = BUBBLE_MOST
+    while size >= BUBBLE_LEAST:
+        wrapped = [news_kit._wrap(measure, text, size, widest - 2 * BUBBLE_PAD[0], 2) for text in words]
+        if all(wrapped):
+            tall = [len(lines or ()) * size * BUBBLE_LEADING + 2 * BUBBLE_PAD[1] for lines in wrapped]
+            if sum(tall) + GAP_LEAST * (len(tall) - 1) <= area:
+                break
+        size -= 2.0
+    else:
+        raise NewsKitError(f"{len(bubbles)} messages do not fit the phone's screen at {BUBBLE_LEAST} px")
+    gap = 0.0 if len(tall) == 1 else min(GAP_MOST, (area - sum(tall)) / (len(tall) - 1))
+    y = CHAT_FOOT - sum(tall) - gap * (len(tall) - 1)
+    rows = []
+    for b, lines, h in zip(bubbles, [w or [] for w in wrapped], tall, strict=True):
+        w = min(widest, max(measure(line, size) for line in lines) + 2 * BUBBLE_PAD[0])
+        x = CHAT_RIGHT - TAIL - w if b.out else CHAT_LEFT + TAIL
+        rows.append(_Row(b, max(b.at, start), tuple(lines), x, y, w, h))
+        y += h + gap
+    return rows, size
+
+
+def _bubble(cv: Canvas, parent, row: _Row, w: float | None = None) -> None:
+    """A message's bubble with its tail on the sender's side, at ``row``'s place; ``w`` a width of its own."""
+    wide = row.w if w is None else w
+    x = row.x if w is None or not row.bubble.out else row.x + row.w - w
+    fill = MINT if row.bubble.out else news_kit.BUTTER
+    foot = row.y + row.h
+    tip = x + wide + TAIL if row.bubble.out else x - TAIL
+    root = x + wide - 30.0 if row.bubble.out else x + 30.0
+    cv.path(parent, f"M {root} {foot - 40} L {tip} {foot} L {root} {foot - 4} Z", fill, cv.clear, 0)
+    cv.rect(parent, x, row.y, wide, row.h, fill, radius=30.0)
+
+
 def phone_insert(
     cv: Canvas,
     parent,
@@ -768,8 +1091,89 @@ def phone_insert(
     measure: Measure,
     id: str = "news-phone",
 ):
-    """Gus's phone (:func:`srstudio.news_inked.phone_insert`) on this frame: a third of it and more, pushing in.
-    Returns the insert's group."""
-    g = insert(cv, parent, start, end)
-    news_inked.phone_insert(cv, g, chat, bubbles, start, end, measure, id=id)
-    return g
+    """Gus's phone as a cutaway from ``start`` to ``end``: an opaque backdrop over the shot, so no face is under it and
+    nobody holds it, and the handset's screen the frame's whole width under two lines of caption, ``chat`` at its
+    head. The messages fill the screen down to :data:`CHAT_FOOT`, each sliding in from its second; wherever the
+    screen would wait longer than :data:`STILL_MOST` for the next, the typing dots come up halfway on its side. The
+    reel cuts back to Gus's reaction (:func:`reaction`) within :data:`STILL_MOST` of the last message; the cutaway
+    refuses a longer hold. It pushes in from :data:`CUT_FROM` to :data:`CUT_TO` about :data:`CUT_AT`, keyed at least
+    every :data:`STILL_MOST`. Returns the pushing group."""
+    news_kit._span(start, end, "the phone")
+    if not bubbles:
+        raise NewsKitError("the phone needs a message to show")
+    dots = _landings(bubbles, start, end)
+    rows, size = _rows(bubbles, start, measure)
+    g = cv.group(parent, id, start=start, end=end)
+    cv.rect(g, -20, -20, FRAME_W + 40, FRAME_H + 40, PLUM_DEEP)
+    push = cv.group(
+        g,
+        f"{id}-push",
+        x=CUT_AT[0],
+        y=CUT_AT[1],
+        anchorX=CUT_AT[0],
+        anchorY=CUT_AT[1],
+        scaleX=CUT_FROM,
+        scaleY=CUT_FROM,
+    )
+    steps = max(1, math.ceil((end - start) / STILL_MOST))
+    keys = [
+        (round(start + (end - start) * k / steps, 6), round(CUT_FROM + (CUT_TO - CUT_FROM) * k / steps, 6))
+        for k in range(steps + 1)
+    ]
+    for prop in ("scaleX", "scaleY"):
+        cv.keys(push, prop, keys, hold=False, kind="sine-in-out", local=False)
+    case = cv.grad("news2-cut-case", [(0, "#4b3a78"), (1, "#1a0e36")], (0, 0, 1, 1))
+    cv.rect(push, -60, CUT_TOP, FRAME_W + 120, SCREEN_FOOT + 24 - CUT_TOP, case, PLUM_DEEP, 5.0, radius=64.0)
+    cv.rect(push, -30, SCREEN_TOP, FRAME_W + 60, SCREEN_FOOT - SCREEN_TOP, "#f7f1ff", radius=44.0)
+    head = cv.grad("news2-cut-chat", [(0, MINT), (1, "#2cc9a3")], (0, 0, 0, 1))
+    cv.rect(push, -30, SCREEN_TOP, FRAME_W + 60, HEADER_H, head, radius=44.0)
+    cv.rect(push, -30, SCREEN_TOP + HEADER_H - 48.0, FRAME_W + 60, 48.0, head)
+    cv.rect(push, CUT_AT[0] - 70, SCREEN_TOP + 10, 140, 26, PLUM_DEEP, radius=13.0)
+    news_inked._oval(cv, push, CHAT_LEFT + 34, SCREEN_TOP + 66, 30, 30, PLUM)
+    news_inked._oval(cv, push, CHAT_LEFT + 34, SCREEN_TOP + 57, 11, 11, MINT)
+    news_inked._oval(cv, push, CHAT_LEFT + 34, SCREEN_TOP + 81, 17, 11, MINT)
+    news_kit._text(
+        cv, push, check_copy(chat), CHAT_LEFT + 80, SCREEN_TOP + 38, CHAT_RIGHT - CHAT_LEFT - 160, 66, 50,
+        PLUM_DEEP, "center",
+    )  # fmt: skip
+    for k, row in enumerate(rows):
+        box = cv.group(push, f"{id}-{k}", start=row.at, end=end)
+        slide = cv.group(box, f"{id}-{k}-in")
+        if row.at > start:
+            cv.keys(slide, "y", [(row.at, 22.0), (row.at + 0.2, 0.0)], hold=False, kind="sine-in-out", local=False)
+        _bubble(cv, slide, row)
+        news_kit._text(
+            cv,
+            slide,
+            "\n".join(row.lines),
+            row.x + BUBBLE_PAD[0],
+            row.y + BUBBLE_PAD[1],
+            row.w - 2 * BUBBLE_PAD[0],
+            row.h - 2 * BUBBLE_PAD[1],
+            size,
+            PLUM_DEEP,
+        )
+    for at, k in dots:
+        row = rows[k]
+        typing = cv.group(push, f"{id}-typing-{k}", start=at, end=rows[k].at)
+        _bubble(cv, typing, replace(row, h=min(row.h, 92.0)), 168.0)
+        left = row.x + row.w - 168.0 if row.bubble.out else row.x
+        for d in range(3):
+            dot = cv.group(typing, f"{id}-typing-{k}-{d}")
+            bob = [
+                (round(at + 0.12 * d + 0.18 * s, 6), -8.0 if s % 2 else 0.0)
+                for s in range(int((row.at - at - 0.12 * d) / 0.18) + 1)
+            ]
+            if len(bob) > 1:
+                cv.keys(dot, "y", bob, hold=False, kind="sine-in-out", local=False)
+            news_inked._oval(cv, dot, left + 48 + 36 * d, row.y + min(row.h, 92.0) / 2, 12, 12, PLUM)
+    return push
+
+
+def reaction(shots: Sequence[Seen], end: float) -> None:
+    """Refuse a phone cutaway ending at ``end`` unless the reel cuts back to Gus's reaction there: the shot that runs
+    from ``end`` on is his close shot."""
+    after = [s for s in shots if s.start <= end + 1e-6 < s.end]
+    if not after or after[0].shot != "gus":
+        shot = after[0].shot if after else "nothing"
+        raise NewsKitError(f"the phone cuts back to Gus's reaction, but the shot at {end} s is {shot!r}")

@@ -104,6 +104,7 @@ __all__ = [
     "COLLAR_Y",
     "FAR_BLUR",
     "FRAMING",
+    "Grip",
     "LOWER_H",
     "LOWER_Y",
     "MUG_SIZE",
@@ -1172,14 +1173,16 @@ def _arm_on_rig(
     spans: Mapping[str, Spans],
     seed: float,
     number: int = 5,
+    reaches: news_arms.Reaches | None = None,
 ) -> None:
     """One arm of version 5: the hand under the sleeve, then all the sleeve's ink, then all its fill, so that a line
     runs around the whole arm with none at the elbow, where the two lengths are one sleeve, or at the shoulder.
-    From version 6 its hand is the one of the pair that belongs to this arm; before it, every arm drew the same hand."""
+    From version 6 its hand is the one of the pair that belongs to this arm; before it, every arm drew the same hand.
+    ``reaches`` places the wrists of a frame that holds the poses its own way (:class:`Grip`)."""
     build = news_arms.BUILDS[who]
     sleeve, tone, skin, shadow = _DRESS[who]
-    keys = news_arms.keys_of(who, side, acts)
-    holds = {state: hold for state, hold in news_arms.holds(who, side).items() if state in spans}
+    keys = news_arms.keys_of(who, side, acts, reaches)
+    holds = {state: hold for state, hold in news_arms.holds(who, side, reaches).items() if state in spans}
     _, fore = _bones(cv, parent, build, side, keys)
     wrist = cv.group(fore, cv.uid("wrist"), x=0.0, y=-build.fore - CUFF, anchorX=0.0, anchorY=0.0)
     cv.keys(wrist, "rotation", keys["palm"], hold=False, kind="sine-in-out", local=False)
@@ -1220,10 +1223,31 @@ def _arm_on_rig(
                 _strip(cv, bone, near, far, length, edge, tone, when)
 
 
+@dataclass(frozen=True)
+class Grip:
+    """How a frame holds the poses: ``reaches``, the wrists of each pose (None: the rig's own,
+    :data:`srstudio.news_arms.REACHES`), and Gus's phone, its middle ``phone_y`` over the desk, ``phone_tall`` the
+    share of its back the camera sees (1: flat to the lens, less as it tilts away) and ``phone_rise`` how far under
+    that it starts as his hands bring it up. ``Grip()`` is the rig's own hold, the one every reel so far draws."""
+
+    reaches: news_arms.Reaches | None = None
+    phone_y: float = PHONE_HELD
+    phone_tall: float = 1.0
+    phone_rise: float = PHONE_RISE
+
+
 def _arms_on_rig(
-    cv: Canvas, parent, who: str, acts: Sequence[tuple[float, Pose]], spans: Mapping[str, Spans], number: int = 5
+    cv: Canvas,
+    parent,
+    who: str,
+    acts: Sequence[tuple[float, Pose]],
+    spans: Mapping[str, Spans],
+    number: int = 5,
+    grip: Grip | None = None,
 ) -> None:
-    """Both arms of version 5, over what they hold: Vera's sheaf and Gus's phone, which rises with his hands."""
+    """Both arms of version 5, over what they hold: Vera's sheaf and Gus's phone, which rises with his hands, held as
+    ``grip`` holds it (None: the rig's own hold)."""
+    hold = Grip() if grip is None else grip
     if who == "vera":
         g = cv.group(parent, cv.uid("g"), opacity=0.0)
         cv.gate(g, [span for when in spans.values() for span in when])
@@ -1232,13 +1256,17 @@ def _arms_on_rig(
         g = cv.group(parent, cv.uid("g"), opacity=0.0)
         cv.gate(g, spans["phone"])
         rise = cv.group(g, cv.uid("g"))
-        keys: list[tuple[float, float]] = [(0.0, PHONE_RISE)]
+        keys: list[tuple[float, float]] = [(0.0, hold.phone_rise)]
         for a, b in spans["phone"]:
-            keys += [(a, PHONE_RISE), (a + news_arms.EASE, 0.0), (b - news_arms.EASE, 0.0), (b, PHONE_RISE)]
+            keys += [(a, hold.phone_rise), (a + news_arms.EASE, 0.0), (b - news_arms.EASE, 0.0), (b, hold.phone_rise)]
         cv.keys(rise, "y", keys, hold=False, kind="sine-in-out", local=False)
-        _phone(cv, rise, 0.0, PHONE_HELD)
+        if hold.phone_tall == 1.0:
+            _phone(cv, rise, 0.0, hold.phone_y)
+        else:  # tilted back: the camera sees less of its height, about its middle
+            _phone(cv, cv.group(rise, cv.uid("g"), y=hold.phone_y, scaleY=hold.phone_tall), 0.0, 0.0)
     for i, side in enumerate((-1.0, 1.0)):
-        _arm_on_rig(cv, parent, who, side, acts, spans, (31.0 if who == "vera" else 61.0) + i * 6, number)
+        seed = (31.0 if who == "vera" else 61.0) + i * 6
+        _arm_on_rig(cv, parent, who, side, acts, spans, seed, number, hold.reaches)
 
 
 def skeleton(who: str, number: int, state: str) -> tuple[tuple[Point, Point, Point], ...]:
@@ -1375,16 +1403,17 @@ def perform(
     motion: Motion = None,
     looks: Sequence[tuple[float, float]] = (),
     number: int = 2,
+    grip: Grip | None = None,
 ):
     """``who`` at the desk from ``start`` to ``end``, centred on frame ``x``: ``acts`` is the :class:`Pose` from each
     second on and ``mouths`` the take's visemes. The arms and hands go in ``over``, the plane in front of the desk,
     when there is one, so a forearm lies across the desk's top and a head stays behind its edge. ``motion`` puts the
     head on its rig (:func:`_on_rig`) and ``looks`` is when its eyes go to the other anchor with it. ``number`` is the
-    version drawn."""
+    version drawn. ``grip`` holds the poses of a version on the rig (5 on) a frame's own way (:class:`Grip`)."""
     if motion is not None:
         rig, plan = motion
         plan.check_bounds(rig.style, frozen=bool(cv._frozen))
-    return _perform(cv, parent, who, x, acts, start, end, mouths, id, scale, over, motion, looks, number)
+    return _perform(cv, parent, who, x, acts, start, end, mouths, id, scale, over, motion, looks, number, grip)
 
 
 def _perform(
@@ -1402,6 +1431,7 @@ def _perform(
     motion: Motion = None,
     looks: Sequence[tuple[float, float]] = (),
     number: int = 2,
+    grip: Grip | None = None,
 ):
     """Draw a checked performance or rig_specimen's fixed aggregate-envelope probe."""
     _span(start, end, "an anchor")
@@ -1428,7 +1458,7 @@ def _perform(
         eyes = eye_track(side_eyes(acts, looks, end), end, 4.3 if who == "vera" else 2.4, 1.7 if who == "vera" else 0.9)
         mouth = mouth_track(acts, mouths, end)
         if motion is not None:
-            _on_rig(cv, g, hands, who, acts, arms, eyes, mouth, start, end, motion, inked(who, number), number)
+            _on_rig(cv, g, hands, who, acts, arms, eyes, mouth, start, end, motion, inked(who, number), number, grip)
             return g
         neck = dict(x=0.0, y=NECK_Y, anchorX=0.0, anchorY=CHIN_Y)  # the head turns on the neck, over the collar
         if who == "vera":
@@ -1439,17 +1469,24 @@ def _perform(
             _gus_body(cv, g, number)
             head = cv.group(g, cv.uid("g"), **neck)
             _gus_head(cv, head, eyes, mouth, start, end, None, inked(who, number))
-        _arms_of(cv, hands, who, acts, arms, number)
+        _arms_of(cv, hands, who, acts, arms, number, grip)
         cv.keys(head, "rotation", _head_keys(acts), hold=False, kind="sine-in-out", local=False)
         return g
 
 
 def _arms_of(
-    cv: Canvas, hands, who: str, acts: Sequence[tuple[float, Pose]], arms: Mapping[str, Spans], number: int
+    cv: Canvas,
+    hands,
+    who: str,
+    acts: Sequence[tuple[float, Pose]],
+    arms: Mapping[str, Spans],
+    number: int,
+    grip: Grip | None = None,
 ) -> None:
-    """The arms of version ``number``: from version 5 on their rig, before it a drawing for each pose."""
+    """The arms of version ``number``: from version 5 on their rig, held as ``grip`` holds them, before it a drawing
+    for each pose."""
     if number >= 5:
-        _arms_on_rig(cv, hands, who, acts, arms, number)
+        _arms_on_rig(cv, hands, who, acts, arms, number, grip)
     else:
         (_vera_arms if who == "vera" else _gus_arms)(cv, hands, arms)
 
@@ -1483,6 +1520,7 @@ def _on_rig(
     motion: tuple[AnchorRig, HeadPlan],
     face: Face,
     number: int = 2,
+    grip: Grip | None = None,
 ) -> None:
     """An anchor whose head moves. The nesting is :mod:`srstudio.toon_head`'s, one kind of motion a group, outermost
     first: over the body, which does not move, the beat's tilt, the plan's turn and nod, with all the hair and the
@@ -1498,7 +1536,7 @@ def _on_rig(
     toon_head._animate(cv, nod, "rotation", plan.roll)
     toon_head._animate(cv, nod, "y", plan.nod, 1.0, CHIN_Y)
     (_vera_head if who == "vera" else _gus_head)(cv, nod, eyes, mouth, start, end, motion, face)
-    _arms_of(cv, hands, who, acts, arms, number)
+    _arms_of(cv, hands, who, acts, arms, number, grip)
 
 
 def _rig_of(body: tuple[float, float], skin: tuple[Point, ...], hair: tuple[Point, ...], wide: float, **move) -> dict:

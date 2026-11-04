@@ -217,16 +217,24 @@ def hold_of(build: Build, side: float, reach: Reach) -> Hold:
     return Hold(-side * down, -side * bend, _wrap(reach.turn - fore), reach.hand)
 
 
-def holds(who: str, side: float) -> dict[str, Hold]:
-    """Every pose of the arm of ``who`` on ``side``."""
+Reaches = Mapping[str, tuple[Reach, Reach]]  # each pose's pair of wrists, the frame's left arm first
+
+
+def holds(who: str, side: float, reaches: Reaches | None = None) -> dict[str, Hold]:
+    """Every pose of the arm of ``who`` on ``side``: from :data:`REACHES`, or from ``reaches`` when a frame places
+    the arms its own way."""
     index = 0 if side < 0 else 1
-    return {state: hold_of(BUILDS[who], side, pair[index]) for state, pair in REACHES[who].items()}
+    table = REACHES[who] if reaches is None else reaches
+    return {state: hold_of(BUILDS[who], side, pair[index]) for state, pair in table.items()}
 
 
-def keys_of(who: str, side: float, acts: Sequence[tuple[float, Pose]]) -> dict[str, Keys]:
+def keys_of(
+    who: str, side: float, acts: Sequence[tuple[float, Pose]], reaches: Reaches | None = None
+) -> dict[str, Keys]:
     """The keys of each of :data:`JOINTS` through ``acts``: a hold to a change's beat, less :data:`EASE`, and the next
-    pose by the beat plus it. Two changes closer than that share the time between them."""
-    poses = holds(who, side)
+    pose by the beat plus it. Two changes closer than that share the time between them. ``reaches`` is as for
+    :func:`holds`."""
+    poses = holds(who, side, reaches)
     rows = [(at, poses[pose.arms]) for at, pose in acts]
     frames: list[tuple[float, Hold]] = [rows[0]]
     for at, hold in rows[1:]:
