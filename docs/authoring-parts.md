@@ -569,3 +569,49 @@ to mood. Her moods go through the rig, not through `toon_cast.figure`, which hol
 
 Lyra and her rig are approved. The two locations and five props are proposed, so a reel cannot use them until they are
 decided. The reasons and where the port differs from the pack are in [docs/decisions/0063-lyra-retro-orbit.md](decisions/0063-lyra-retro-orbit.md).
+
+## Leo and Sam: two friends holding controllers, proposed
+
+[src/srstudio/toon_gamepad.py](../src/srstudio/toon_gamepad.py) adds a generic game controller held in both paws.
+`Player` is a critter in a top whose own arm kinds are the four `GRIPS`: `pad` (both thumbs on the sticks),
+`pad-press` (the right thumb on a button), `pad-lap` (lowered, thumbs off) and `pad-up` (lifted). Each is a typed
+`Hold`. The paws are a pair: `GRIP` is drawn for the frame's left arm and reflected for the right, so both thumbs point
+in over the top edge.
+
+[src/srstudio/toon_friends.py](../src/srstudio/toon_friends.py) is `toon-leo`, a koala in a mustard hoodie, and
+`toon-sam`, a sea otter in a teal tee, with `LEO_RIG` and `SAM_RIG`. Their builders draw through the rig held still,
+so a pose names a grip wherever it names an arm:
+
+```python
+from srstudio import toon_friends, toon_head
+from srstudio.head_motion import HeadPlan
+from srstudio.toon import Pose
+
+poses = [Pose(0.0, "half", "flat", "pad"), Pose(2.0, "down", "flat", "pad-lap")]
+toon_head.figure(cv, parent, toon_friends.LEO_RIG, poses, 4.0, HeadPlan.still())
+```
+
+Both characters and both rigs are proposed, so `toon_rigs.rig_of` refuses them and no reel can use them until the
+operator decides. `toon.parse_poses` still holds to the shared arm kinds, so a sketch cannot name a grip yet. The
+reasons are in [docs/decisions/0230-a-controller-held-in-both-paws.md](decisions/0230-a-controller-held-in-both-paws.md).
+
+## Leo and Sam inked the News way, proposed
+
+[src/srstudio/inked_friends.py](../src/srstudio/inked_friends.py) draws `friends-leo` and `friends-sam`, two friends of
+about twenty in the News inked drawing, each holding a generic controller in both hands. A timeline is a list of
+`Beat`s, each naming a `Look` (lids, gaze, and the inner and outer ends of the brows), a mouth from `MOUTHS` and a hold
+from `HOLDS`; `Moves` adds nods, shrugs, swallows and a flush. Breath, head drift and blinks run under every beat.
+`screen_light` lights the people from the TV through the `people` matte, so the room keeps its own light:
+
+```python
+from srstudio import inked_friends as f
+
+beats = [f.Beat(0.0, "level"), f.Beat(3.0, "hurt", "pressed", "pad-lap", tilt=-3.0)]
+f.perform(cv, cv.comp, "leo", beats, 8.0, x=280, y=1090, scale=1.5, moves=f.Moves(swallows=(4.0,)))
+```
+
+A face the screen alone leaves too dark takes a `Key`, a steady neutral gain between the multiplied light and the
+glow: pass `keys=[f.key(who, x, y, scale) for ...]` to `screen_light` (Leo's lift is none, Sam's is `SAM_KEY`).
+
+Both are proposed, so no reel can use them until the operator decides. The reasons are in
+[docs/decisions/0231-two-friends-inked-the-news-way.md](decisions/0231-two-friends-inked-the-news-way.md).

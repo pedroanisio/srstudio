@@ -37,6 +37,7 @@ from . import (
     collage,
     gloss,
     host_kit,
+    inked_friends,
     news_inked,
     news_kit,
     parts,
@@ -44,6 +45,7 @@ from . import (
     rig,
     stick,
     toon,
+    toon_gamepad,
     toon_head,
     toon_lyra,
     toon_rigs,
@@ -60,6 +62,7 @@ __all__ = [
     "IGNORED",
     "MOUTHS",
     "OWN_ARMS",
+    "OWN_RIG_ARMS",
     "SPECIMENS",
     "WEAR",
     "DrawingChangedError",
@@ -142,7 +145,13 @@ NEWER_MOUTHS = (*MOUTHS, "yawn", "scream", "puff")
 TRACED_MOUTHS = MOUTHS[:9]
 ARMS = ("desk", "type", "crossed", "sigh", "lean", "face", "face2")
 GESTURES = ("ready", "present", "empathy", "shrug", "folded", "firm", "panic", "facepalm", "tablet")  # Bento's own
-OWN_ARMS = {"toon-bento@2": GESTURES}  # a drawing whose hands are in its own poses, drawn after the shared arms
+GRIPS = toon_gamepad.GRIPS  # a player's own ways of holding a controller (ADR 0230)
+OWN_ARMS = {  # a drawing whose hands are in its own poses, drawn after the shared arms
+    "toon-bento@2": GESTURES,
+    "toon-leo": GRIPS,
+    "toon-sam": GRIPS,
+}
+OWN_RIG_ARMS = {"toon-leo": GRIPS, "toon-sam": GRIPS}  # a rig whose own poses its digest covers
 WEAR = ("glasses", "sweat", "flush")
 PAPER_EYES = ("open", "side", "up", "half", "closed", "wide", "angry", "sad")
 PAPER_MOUTHS = ("flat", "smile", "frown", "o", "grin", "smug")
@@ -211,9 +220,10 @@ def _newer_toon(entry: registry.Entry) -> Canvas:
     return cv
 
 
-def _rigged(rig: toon_head.HeadRig) -> Canvas:
-    """A rig through every kind a drawn face has, its head at rest and at the corners of what it can reach."""
-    poses = _poses(NEWER_EYES, NEWER_MOUTHS, ARMS, WEAR)
+def _rigged(rig: toon_head.HeadRig, own: tuple[str, ...] = ()) -> Canvas:
+    """A rig through every kind a drawn face has, its head at rest and at the corners of what it can reach, and
+    through ``own``, the arm kinds of its own after the shared ones."""
+    poses = _poses(NEWER_EYES, NEWER_MOUTHS, (*ARMS, *own), WEAR)
     seconds = len(poses) * STEP
     cv = _stage("toon", seconds)
     toon_head._draw_reach(cv, cv.comp, rig, poses, seconds, _taps(poses), mouths=_track(VISEMES))
@@ -267,7 +277,20 @@ def _actor(entry: registry.Entry) -> Canvas:
     return cv
 
 
+def _friend(entry: registry.Entry) -> Canvas:
+    """Leo or Sam through every look, mouth and hold of his, with a nod, a shrug, a swallow and a blush (ADR 0231)."""
+    who = entry.name.removeprefix("friends-")
+    beats = inked_friends.specimen_beats(who, HOLD * 2)
+    cv = _stage("toon", HOLD * 2)
+    mouths = _track(inked_friends.VISEMES)
+    inked_friends.perform(cv, cv.comp, who, beats, HOLD * 2, moves=inked_friends.SPECIMEN_MOVES, mouths=mouths)
+    return cv
+
+
 def _anchor(entry: registry.Entry) -> Canvas:
+    """A figure inked the News way: an anchor through his poses, or one of the two friends (ADR 0231)."""
+    if entry.name.startswith("friends-"):
+        return _friend(entry)
     cv = _stage("toon", HOLD)
     who = entry.name.removeprefix("news-").split("@")[0]
     acts = tuple(
@@ -364,7 +387,9 @@ SPECIMENS: dict[str, Callable[[registry.Entry], Canvas]] = {
     "toon-cat": _traced_toon,
     **{f"toon-{name}": _brush_toon for name in TOON_BRUSH},
     "toon-fox@2": _newer_toon,
-    **dict.fromkeys(("toon-sloth", "toon-goat", "toon-hamster", "toon-bento", "toon-lyra"), _newer_toon),
+    **dict.fromkeys(
+        ("toon-sloth", "toon-goat", "toon-hamster", "toon-bento", "toon-lyra", "toon-leo", "toon-sam"), _newer_toon
+    ),
     **{f"toon-{name}@2": _newer_toon for name in TOON_REDRAWN},
     "toon-bento@2": _newer_toon,
     **{f"collage-{name}": _paper for name in collage.LOOKS},
@@ -390,6 +415,8 @@ SPECIMENS: dict[str, Callable[[registry.Entry], Canvas]] = {
         ),
         _anchor,
     ),
+    "friends-leo": _anchor,
+    "friends-sam": _anchor,
     "host-lint": _moth,
     "rafa": _clay,
     "pedro": _clay,
@@ -550,7 +577,8 @@ def rig_digest(name: str, number: int = 1) -> str:
         return fingerprint(cv.scene.to_bytes(layout="pretty"))
     if part not in toon_rigs.RIGS:
         raise SpecimenError(f"{name} version {number} has no head rig")
-    return fingerprint(_rigged(toon_rigs.RIGS[part]).scene.to_bytes(layout="pretty"))
+    own = OWN_RIG_ARMS.get(part, ())
+    return fingerprint(_rigged(toon_rigs.RIGS[part], own).scene.to_bytes(layout="pretty"))
 
 
 def check_rig(name: str, number: int = 1) -> None:

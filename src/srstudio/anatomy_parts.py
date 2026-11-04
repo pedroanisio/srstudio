@@ -84,6 +84,18 @@ _ANCHOR = _paired(
     Facing.PALM,
 )
 _BENTO = _paired("toon_bento.Paw on an Arm: the arm chooses the mirror (ADR 0143)", "open", Side.LEFT, Facing.PALM)
+_PLAYER = _paired(
+    "toon_gamepad.GRIP on an Arm: the arm chooses the mirror (ADR 0230); a shared pose draws the critter's mitt",
+    "grip",
+    Side.LEFT,
+    Facing.PALM,
+)
+_FRIENDS = _paired(
+    "inked_friends.GRIP: one grip drawn for the frame's left arm, reflected for the right (ADR 0231)",
+    "pad-grip",
+    Side.LEFT,
+    Facing.BACK,
+)
 _RAFA = _paired("the arm picks the thumb's side in rafa.pair and rafa._hand", "rafa-hand", Side.LEFT, Facing.BACK)
 _COLLAGE = _paired("collage._hand takes a contract hand and draws its thumb there", "pose", Side.LEFT, Facing.BACK)
 _STROKE = _thumbless("arms end in a stroke's round cap")
@@ -120,6 +132,8 @@ CHARACTERS: Final = MappingProxyType(
         "gloss-nadia": _BALL,
         "gloss-sunny": _BALL,
         "gloss-tamsin": _BALL,
+        "friends-leo": _FRIENDS,
+        "friends-sam": _FRIENDS,
         "host-lint": _thumbless("a fur mitten on a sleeve, the same shape either way round"),
         "juno": _SOFT,
         "manager": _single(
@@ -155,9 +169,11 @@ CHARACTERS: Final = MappingProxyType(
         "toon-goat": _MITT,
         "toon-hamster": _MITT,
         "toon-hedgehog": _MITT,
+        "toon-leo": _PLAYER,
         "toon-lyra": _WINGTIP,
         "toon-rabbit": _MITT,
         "toon-raccoon": _MITT,
+        "toon-sam": _PLAYER,
         "toon-sloth": _MITT,
     }
 )
@@ -189,6 +205,8 @@ BODIES: Final = MappingProxyType(
         "gloss-nadia": _DOLL,
         "gloss-sunny": _DOLL,
         "gloss-tamsin": _DOLL,
+        "friends-leo": _DESK,  # seated: the couch cuts them at the waist
+        "friends-sam": _DESK,
         "host-lint": _DESK,
         "juno": _LEGS,
         "manager": _DESK,
@@ -222,9 +240,11 @@ BODIES: Final = MappingProxyType(
         "toon-goat": _DESK,
         "toon-hamster": _DESK,
         "toon-hedgehog": _DESK,
+        "toon-leo": _DESK,  # seated: the couch and the frame's foot cut him at the waist
         "toon-lyra": _LEGS,  # an owl who stands to present: her uniform tapers to drawn legs and feet
         "toon-rabbit": _DESK,
         "toon-raccoon": _DESK,
+        "toon-sam": _DESK,
         "toon-sloth": _DESK,
     }
 )
