@@ -14,6 +14,10 @@ that does not fit the width at :data:`MIN_SIZE` and a layout that leaves the gri
 A :class:`ShowCover` is the one cover of every Okayville reel from ADR 0074 on: the same band in the same place, over
 the reel's own art, whatever its style. It is a kind of :class:`Thumbnail` and not a new field of one: a thumbnail's
 fields are part of a delivered cover's fingerprint, so a field added there would drift every published reel.
+
+A one-word series says its place on the band's top row, as ``SAGA #19``. A series named in more words, as
+``Juno & Pip``, is a show of episodes: its tag, ``JUNO & PIP · EP 2``, takes a row of its own under the top row,
+which is too short for it beside the show's name and the number (ADR 0233).
 """
 
 from __future__ import annotations
@@ -34,6 +38,7 @@ from sr_core.scene import Scene
 from . import checks, fonts, gpu
 from .canvas import Canvas, Palette
 from .errors import SrstudioError
+from .show_numbers import NumberError, series_slug
 
 __all__ = [
     "ACCENT_CONTRAST",
@@ -89,6 +94,8 @@ SHOW_NAME = "OKAYVILLE"
 BAND_TOP, BAND_RULE, BAND_MARGIN = 1270, 10, 30  # the band's top, its accent rule, the px kept clear above the crop
 HEADER_TOP, HEADER_SIZE, HEADER_GAP = 1296, 92, 26  # 15 px tall on a grid of 180 px wide tiles
 SERIES_MIN = 60  # the series label shrinks this far to share the row with a long number
+# A show's episode tag: its row's top, just under the top row's 94 px, its size, and the air under it
+SERIES_TOP, SERIES_SIZE, SERIES_GAP = 1394, 60, 8
 PREMISE_TOP = 1400
 PREMISE_MAX, PREMISE_MIN = 170, 84  # a premise under 84 px is under 14 px tall on the grid
 MAX_WORDS, SHOW_LINES = 5, 2
@@ -175,16 +182,27 @@ class ShowCover(Thumbnail):
         named, counted = bool(self.series), self.series_number != 0
         if named != counted:
             out.append(f"series {self.series!r} and series_number {self.series_number!r} go together")
-        if named and not _SERIES.match(str(self.series)):
-            out.append(f"series {self.series!r} must be one capitalised word, as Saga")
+        if named:
+            try:
+                series_slug(self.series)
+            except NumberError as e:
+                out.append(str(e))
         if counted and (type(self.series_number) is not int or self.series_number < 1):
             out.append(f"series_number must be a whole number from 1, got {self.series_number!r}")
         return out
 
     @property
+    def episodic(self) -> bool:
+        """Whether the series is a show named in more than one word, as ``Juno & Pip``, whose tag has its own row."""
+        return bool(self.series) and not _SERIES.match(str(self.series))
+
+    @property
     def tag(self) -> str:
-        """The reel's place in its series as a caption says it, ``Saga #19``; empty for a reel in no series."""
-        return f"{self.series} #{self.series_number}" if self.series else ""
+        """The reel's place in its series as a caption says it: ``Saga #19``, or ``Juno & Pip · EP 2`` for a show named
+        in more words; empty for a reel in no series."""
+        if not self.series:
+            return ""
+        return f"{self.series} · EP {self.series_number}" if self.episodic else f"{self.series} #{self.series_number}"
 
 
 def grid_box(width: int, height: int) -> tuple[int, int, int, int]:
@@ -263,8 +281,10 @@ def _show_layout(thumb: ShowCover, font: bytes, width: int, height: int) -> Layo
     if (width, height) != SHOW_FRAME:
         raise ThumbnailError(f"the band is drawn for a {SHOW_FRAME[0]} x {SHOW_FRAME[1]} reel, not {width} x {height}")
     _show_header(thumb, font)
+    row = _series_row(thumb, font)
+    premise_top = PREMISE_TOP if row is None else SERIES_TOP + round(SERIES_SIZE * LEADING) + SERIES_GAP
     gx, gy, gw, gh = grid_box(width, height)
-    room, depth = gw - 2 * MARGIN, gy + gh - BAND_MARGIN - PREMISE_TOP
+    room, depth = gw - 2 * MARGIN, gy + gh - BAND_MARGIN - premise_top
     fits = (
         s
         for s in range(PREMISE_MAX, PREMISE_MIN - 1, -2)
@@ -275,7 +295,7 @@ def _show_layout(thumb: ShowCover, font: bytes, width: int, height: int) -> Layo
     if size is None:
         raise ThumbnailError(f"premise {thumb.headline!r} is wider than {room} px at {PREMISE_MIN} px; shorten it")
     pitch = round(size * LEADING)
-    top = PREMISE_TOP + (depth - pitch * len(thumb.lines)) // 2
+    top = premise_top + (depth - pitch * len(thumb.lines)) // 2
     lines = tuple((top + i * pitch, round(fonts.text_width(font, x, size))) for i, x in enumerate(thumb.lines))
     return Layout(size, lines, None, (gx, gy, gw, BAND_TOP - gy), (BAND_TOP, height - BAND_TOP, 0))
 
@@ -288,7 +308,7 @@ def _show_header(thumb: ShowCover, font: bytes) -> list[tuple[str, float, float,
         wide = fonts.text_width(font, text, HEADER_SIZE)
         row.append((text, left, wide, HEADER_SIZE, colour))
         left += wide + HEADER_GAP
-    if thumb.series:
+    if thumb.series and not thumb.episodic:
         text = thumb.tag.upper()
         room = right - left
         size = next(
@@ -301,6 +321,17 @@ def _show_header(thumb: ShowCover, font: bytes) -> list[tuple[str, float, float,
     elif left - HEADER_GAP > right:
         raise ThumbnailError(f"{row[-1][0]!r} runs past the band's margin")
     return row
+
+
+def _series_row(thumb: ShowCover, font: bytes) -> tuple[str, float, float, int, str] | None:
+    """A show's episode tag on its own row under the top row, at the left margin; ``None`` for any other cover."""
+    if not thumb.episodic:
+        return None
+    text, room = thumb.tag.upper(), float(SHOW_FRAME[0] - 2 * MARGIN)
+    wide = fonts.text_width(font, text, SERIES_SIZE)
+    if wide > room:
+        raise ThumbnailError(f"{text!r} is wider than the {room:.0f} px of the band")
+    return text, float(MARGIN), wide, SERIES_SIZE, INK.white
 
 
 def _backdrop_placement(thumb: Thumbnail, lay: Layout, width: int, height: int) -> tuple[float, float, float]:
@@ -409,6 +440,13 @@ def _draw_band(cv: Canvas, thumb: ShowCover, lay: Layout, font: bytes) -> None:
             align="start",
             wrap="none",
         )
+    row = _series_row(thumb, font)
+    if row is not None:
+        text, left, wide, size, colour = row
+        h = round(size * 1.25)
+        y = SERIES_TOP + (round(size * LEADING) - h) // 2
+        cv.text(cv.comp, "header-series", text, round(left), y, ceil(wide) + 4, h, size, color=colour, align="start",
+                wrap="none")  # fmt: skip
     pitch = round(lay.size * LEADING)
     for i, (text, (ty, _w)) in enumerate(zip(thumb.lines, lay.lines, strict=True)):
         h = round(lay.size * 1.25)

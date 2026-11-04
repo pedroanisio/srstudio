@@ -38,6 +38,7 @@ from . import bible_inventory, registry
 from .bible import Bible, Character
 from .errors import SrstudioError
 from .releases import Release
+from .show_numbers import NumberError, series_slug
 from .social import DeliveryError
 from .thumbnail import ShowCover
 
@@ -113,10 +114,18 @@ def _which(here: list[Character], voice: str, pinned: Collection[str]) -> Charac
     return here[0]
 
 
+def _slug(series: str) -> str:
+    """The slug of a cover's series; a name that is none stays as it was, lower-cased, for the cover's own check."""
+    try:
+        return series_slug(series) if series else ""
+    except NumberError:
+        return series.lower()
+
+
 def world_of_release(release: Release) -> str:
     """The sealed series its show cover names, else what its slug says: a series reel need not spell its world."""
     cover = release.post.thumbnail
-    series = cover.series.lower() if isinstance(cover, ShowCover) else ""
+    series = _slug(cover.series) if isinstance(cover, ShowCover) else ""
     return series if series in bible_inventory.SEALED else bible_inventory.world_of(release.slug)
 
 
