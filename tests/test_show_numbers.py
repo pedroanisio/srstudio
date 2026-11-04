@@ -15,8 +15,11 @@ from srstudio.show_numbers import (
     claim,
     episode_document,
     ledger_path,
+    place,
     read,
     release_claim,
+    series_key,
+    series_slug,
     set_base,
 )
 
@@ -210,7 +213,9 @@ def test_the_publishing_side_s_counts_give_the_numbers_it_named(path):
     assert claim(path, "gloss-next", series="Gloss") == Claim(195, "Gloss", 10)
 
 
-@pytest.mark.parametrize("series", ["saga", "SAGA", "Two Words", "Saga#"])
+@pytest.mark.parametrize(
+    "series", ["saga", "SAGA", "Saga#", "juno-and-pip", "Juno &", "Juno  Pip", "& Pip", "Juno & pip"]
+)
 def test_a_series_is_named_as_its_cover_names_it(path, series):
     with pytest.raises(NumberError, match="capitalised"):
         set_base(path, 18, series=series)
@@ -511,3 +516,130 @@ def test_the_command_line_refuses_when_it_cannot_see_the_deliveries(path, capsys
 def test_the_command_line_needs_a_slug_to_release(path, capsys):
     assert main(["number", "release", "--ledger", str(path)]) == 2
     assert "slug" in capsys.readouterr().err
+
+
+# -- a series named in more words, and a place given after the claim (ADR 0233) ---------------------------------------
+@pytest.mark.parametrize(
+    ("name", "slug", "key"),
+    [
+        ("Saga", "saga", "Saga"),
+        ("Gloss", "gloss", "Gloss"),
+        ("Juno & Pip", "juno-and-pip", "juno-and-pip"),
+        ("Small Print", "small-print", "small-print"),
+    ],
+)
+def test_a_series_name_has_one_slug_and_the_ledger_keeps_one_word_names_as_they_were(name, slug, key):
+    assert series_slug(name) == slug
+    assert series_key(name) == key
+
+
+@pytest.mark.parametrize(
+    "name", ["", " ", "juno-and-pip", "Juno_Pip", "Juno & Pip!", "Juno and pip", "Juno &", None, 7]
+)
+def test_a_series_name_that_is_not_capitalised_words_has_no_slug(name):
+    with pytest.raises(NumberError, match="capitalised words"):
+        series_slug(name)
+
+
+def test_a_show_named_in_more_words_is_kept_by_its_slug_and_reaches_the_episode_document(path):
+    set_base(path, 214)
+    set_base(path, 0, series="Juno & Pip")
+    held = claim(path, "jp-one", series="Juno & Pip", brief="series-v1")
+    assert held == Claim(215, "juno-and-pip", 1, "series-v1")
+    stored = json.loads(path.read_text())
+    assert stored["series"] == {"juno-and-pip": 0}
+    assert stored["reels"]["jp-one"] == {
+        "number": 215,
+        "series": "juno-and-pip",
+        "series_number": 1,
+        "brief": "series-v1",
+    }
+    assert claim(path, "jp-one", series="Juno & Pip") == held
+    assert episode_document(held) == {"number": 215, "series": "juno-and-pip", "series_number": 1, "brief": "series-v1"}
+
+
+def test_a_one_word_series_writes_the_ledger_and_the_document_it_always_did(path):
+    set_base(path, 192)
+    set_base(path, 18, series="Saga")
+    held = claim(path, "saga-next", series="Saga")
+    assert json.loads(path.read_text())["reels"]["saga-next"] == {"number": 193, "series": "Saga", "series_number": 19}
+    assert episode_document(held) == {"number": 193, "series": "saga", "series_number": 19}
+
+
+@pytest.mark.parametrize("key", ["juno_and_pip", "Juno & Pip", "juno-and-Pip", "-juno", "juno-"])
+def test_a_ledger_key_that_is_neither_a_name_nor_a_slug_writes_no_document(key):
+    with pytest.raises(NumberError, match="neither"):
+        episode_document(Claim(216, key, 2))
+
+
+def test_a_show_without_its_place_writes_no_document():
+    with pytest.raises(NumberError, match="go together"):
+        episode_document(Claim(216, "juno-and-pip", 0))
+
+
+@pytest.fixture
+def show(path):
+    set_base(path, 214)
+    set_base(path, 0, series="Juno & Pip")
+    claim(path, "jp-one", brief="series-v1")
+    claim(path, "jp-two", brief="series-v1")
+    return path
+
+
+def test_a_claim_gets_its_place_in_a_show_and_keeps_its_number_and_brief(show):
+    second = place(show, "jp-two", "Juno & Pip", 2, delivered=())
+    assert second == Claim(216, "juno-and-pip", 2, "series-v1")
+    assert read(show).reels["jp-two"] == second
+    assert place(show, "jp-two", "Juno & Pip", 2, delivered=()) == second
+    assert place(show, "jp-one", "Juno & Pip", 1, delivered=()) == Claim(215, "juno-and-pip", 1, "series-v1")
+    assert claim(path=show, slug="jp-three", series="Juno & Pip") == Claim(217, "juno-and-pip", 3)
+
+
+@pytest.mark.parametrize(
+    ("slug", "series", "number", "delivered", "message"),
+    [
+        ("jp-nine", "Juno & Pip", 2, (), "has no claim"),
+        ("jp-two", "Juno & Pip", 2, ("jp-two",), "was delivered"),
+        ("jp-two", "Small Print", 2, (), "has no base"),
+        ("jp-two", "Juno & Pip", 0, (), "from 1"),
+        ("jp-two", "Juno & Pip", True, (), "from 1"),
+        ("jp-two", "", 2, (), "capitalised words"),
+        ("jp-two", "juno-and-pip", 2, (), "capitalised words"),
+    ],
+)
+def test_a_place_is_refused_and_the_ledger_is_left_as_it_was(show, slug, series, number, delivered, message):
+    before = show.read_bytes()
+    with pytest.raises(NumberError, match=message):
+        place(show, slug, series, number, delivered=delivered)
+    assert show.read_bytes() == before
+
+
+def test_a_place_taken_or_a_reel_already_placed_is_refused(show):
+    place(show, "jp-one", "Juno & Pip", 1, delivered=())
+    with pytest.raises(NumberError, match="held by jp-one"):
+        place(show, "jp-two", "Juno & Pip", 1, delivered=())
+    with pytest.raises(NumberError, match="already"):
+        place(show, "jp-one", "Juno & Pip", 3, delivered=())
+
+
+def test_the_cli_places_a_claim_in_a_show(show, capsys):
+    root = show.parent.parent
+    (root / "renders" / "ig").mkdir(parents=True)
+    (root / "outbox").mkdir()
+    args = ["number", "place", "jp-two", "--series", "Juno & Pip", "--series-number", "2", "--ledger", str(show)]
+    assert main(args) == 0
+    assert capsys.readouterr().out.strip() == "jp-two #216 juno-and-pip #2 series-v1"
+    assert main(["number", "place", "jp-one", "--series", "Juno & Pip", "--ledger", str(show)]) == 2
+    assert "takes --series and --series-number" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("number", [1, 3])
+def test_a_place_at_or_under_the_series_base_is_refused(path, number):
+    set_base(path, 214)
+    set_base(path, 3, series="Juno & Pip")
+    claim(path, "jp-two", brief="series-v1")
+    before = path.read_bytes()
+    with pytest.raises(NumberError, match="at or under"):
+        place(path, "jp-two", "Juno & Pip", number, delivered=())
+    assert path.read_bytes() == before
+    assert place(path, "jp-two", "Juno & Pip", 4, delivered=()) == Claim(215, "juno-and-pip", 4, "series-v1")

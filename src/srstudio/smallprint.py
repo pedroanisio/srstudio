@@ -1183,6 +1183,555 @@ def can_bubbles(cv, g, first: float, last: float, measure: Measure) -> None:
     label(cv, g, "bubbles", LEFT, 410, 210, 60, 42.0, INK, "start")
 
 
+# -- batch 3: the feather, the mint, the loaf --------------------------------------------------------------------------
+FEATHER, MINT_LEAF, CRUMB, CRUST, ICE = "#E9806E", "#5E9E5A", "#EAD7AE", "#B97A3E", "#BFE3F2"
+FELT = {"someone else": 0.92, "you": 0.28}  # how full each tickle bar fills: yours is the one turned down
+WIGGLE_LAP = 0.32  # seconds a drawn feather takes to wiggle there and back
+
+
+def _wiggle(first: float, last: float, lap: float, swing: float) -> list[tuple[float, float]]:
+    """Rotation keys that rock a group by ``swing`` degrees either side, a lap every ``lap`` seconds, while it is up."""
+    rows, t = [], first
+    while t < last:
+        rows += [(round(t, 4), -swing), (round(t + lap / 2, 4), swing)]
+        t += lap
+    return rows
+
+
+def _quill(cv, parent, x: float, y: float, long: float, turn: float = 0.0) -> None:
+    """A feather drawn flat, its quill's root at ``x, y``, pointing up (``turn`` degrees from up, clockwise)."""
+    a = math.radians(turn)
+    tip = (x + long * math.sin(a), y - long * math.cos(a))
+    nx, ny = math.cos(a), math.sin(a)  # across the vane
+    mid = (x + 0.6 * long * math.sin(a), y - 0.6 * long * math.cos(a))
+    w = long * 0.2
+    cv.path(parent, f"M{x + 0.25 * (tip[0] - x):.1f} {y + 0.25 * (tip[1] - y):.1f} "
+            f"Q{mid[0] + nx * w:.1f} {mid[1] + ny * w:.1f} {tip[0]:.1f} {tip[1]:.1f} "
+            f"Q{mid[0] - nx * w:.1f} {mid[1] - ny * w:.1f} {x + 0.25 * (tip[0] - x):.1f} "
+            f"{y + 0.25 * (tip[1] - y):.1f} Z", fill=FEATHER, stroke=INK, sw=4.0)  # fmt: skip
+    cv.line(parent, x, y, tip[0], tip[1], INK, 4.0)
+
+
+def _palm(cv, parent, cx: float, cy: float, wide: float) -> None:
+    """An open palm seen from above, the fingers to frame left."""
+    cv.ellipse(parent, cx - wide / 2, cy - wide * 0.24, wide * 0.62, wide * 0.48, SKIN, stroke=INK, sw=5.0)
+    for k in range(4):
+        y = cy - wide * 0.2 + k * wide * 0.12
+        cv.rect(parent, cx - wide / 2 - wide * 0.3, y, wide * 0.4, wide * 0.1, SKIN, stroke=INK, sw=4.0,
+                radius=wide * 0.05)  # fmt: skip
+    cv.rect(parent, cx + wide * 0.06, cy - wide * 0.16, wide * 0.44, wide * 0.32, SKIN, stroke=INK, sw=5.0,
+            radius=wide * 0.1)  # fmt: skip
+
+
+def tickle_predict(cv, g, first: float, last: float, measure: Measure) -> None:
+    """The same feather on the same palm twice: moved by someone else, the tickle bar fills; moved by you, it stays
+    low, marked predicted, the touch your brain saw coming and turned down (Blakemore, Wolpert and Frith, 1998)."""
+    sheet(cv, g)
+    for who, top in (("someone else", 270.0), ("you", 610.0)):
+        size = min(52.0, 52.0 * 420.0 / measure(who, 52.0))
+        label(cv, g, who, LEFT, top, 420, 70, size, INK, "start")
+        label(cv, g, "tickle", 530, top, RIGHT - 530, 70, 44.0, INK, "start")
+        _palm(cv, g, 280.0, top + 220.0, 260.0)
+        feather = pivot(cv, g, "sp-feather", 400.0, top + 90.0)  # held above, its tip brushing the palm's middle
+        _quill(cv, feather, 400.0, top + 90.0, 190.0, 225.0)
+        cv.keys(feather, "rotation", _wiggle(first, last, WIGGLE_LAP, 14.0), hold=False, kind="sine-in-out",
+                local=False)  # fmt: skip
+        cv.rect(g, 530, top + 100, RIGHT - 530, 64, PAPER, stroke=INK, sw=5.0, radius=14.0)
+        bar = pivot(cv, g, "sp-tickle-bar", 536.0, top + 132.0)
+        cv.rect(bar, 536, top + 106, RIGHT - 542, 52, COPPER, radius=10.0)
+        cv.keys(bar, "scaleX", [(first, 0.02), (min(first + 1.2, last), FELT[who])], hold=False, kind="cubic-out",
+                local=False)  # fmt: skip
+        if who == "you":
+            label(cv, g, "predicted", 530, top + 180, RIGHT - 530, 64, 46.0, STAMP, "start")
+
+
+DELAY_LAP = 1.6  # seconds the delay dial takes to turn once: each turn, a longer delay and a tickle bar a step higher
+TICKLY = (0.2, 0.45, 0.7, 0.95)  # the bar's steps, longer delay to longer: it rose with the delay (1999)
+
+
+def tickle_robot(cv, g, first: float, last: float, measure: Measure) -> None:
+    """The London robots: a hand pushing one robot's handle, the move running down a wire through a delay dial to a
+    second robot that strokes a palm, and a tickly bar that climbs a step with every longer delay (Blakemore, Frith and
+    Wolpert, 1999)."""
+    sheet(cv, g)
+    for x in (140.0, 620.0):  # the two robots' bases
+        cv.rect(g, x, 520, 220, 90, SHADE, stroke=INK, sw=5.0, radius=12.0)
+    arm_a = pivot(cv, g, "sp-robot-arm", 250.0, 530.0)
+    cv.line(arm_a, 250, 530, 250, 360, INK, 14.0)
+    cv.ellipse(arm_a, 222, 330, 56, 56, STAMP, stroke=INK, sw=4.0)
+    cv.ellipse(arm_a, 190, 300, 70, 56, SKIN, stroke=INK, sw=4.0)  # the hand on the handle
+    _palm(cv, g, 760.0, 800.0, 220.0)
+    arm_b = pivot(cv, g, "sp-robot-arm", 730.0, 600.0)
+    cv.line(arm_b, 730, 600, 730, 690, INK, 14.0)
+    _quill(cv, arm_b, 730.0, 680.0, 110.0, 180.0)  # its tip on the palm
+    swings = _wiggle(first, last, 0.8, 16.0)
+    cv.keys(arm_a, "rotation", swings, hold=False, kind="sine-in-out", local=False)
+    cv.keys(arm_b, "rotation", swings, hold=False, kind="sine-in-out", local=False)
+    wire = [(360.0, 565.0), (620.0, 565.0)]
+    cv.line(g, 360, 565, 620, 565, RULED, 6.0)
+    _clock(cv, g, 480.0, 420.0, 80.0, first, last, DELAY_LAP)
+    cv.line(g, 480, 500, 480, 565, RULED, 6.0)
+    _along(cv, g, "sp-move", wire, first, last, 1.2, 12.0, COPPER, 3)
+    label(cv, g, "delay", 380, 270, 200, 64, 48.0, INK, "center")
+    label(cv, g, "tickly", LEFT, 862, 220, 60, 46.0, INK, "start")
+    cv.rect(g, 300, 860, RIGHT - 300, 64, PAPER, stroke=INK, sw=5.0, radius=14.0)
+    bar = pivot(cv, g, "sp-tickly-bar", 306.0, 892.0)
+    cv.rect(bar, 306, 866, RIGHT - 312, 52, COPPER, radius=10.0)
+    rows, t = [], first
+    while t < last:
+        for k, level in enumerate(TICKLY):
+            at = t + k * DELAY_LAP
+            rows += [(round(at, 4), TICKLY[k - 1] if k else 0.02), (round(at + 0.3, 4), level)]
+        t += len(TICKLY) * DELAY_LAP
+    cv.keys(bar, "scaleX", rows, hold=False, kind="cubic-out", local=False)
+
+
+SENSE_LAP = 2.4  # seconds for the snowflake and then the leaf to open the gate once each
+GATE = (480.0, 560.0)  # where the sensor's gate is on the page
+
+
+def _snowflake(cv, parent, cx: float, cy: float, r: float) -> None:
+    for a in (0.0, 60.0, 120.0):
+        t = math.radians(a)
+        dx, dy = r * math.sin(t), r * math.cos(t)
+        cv.line(parent, cx - dx, cy - dy, cx + dx, cy + dy, "#3F7FA6", 8.0)
+
+
+def _leaf(cv, parent, cx: float, cy: float, r: float) -> None:
+    cv.path(parent, f"M{cx - r:.0f} {cy:.0f} Q{cx:.0f} {cy - r:.0f} {cx + r:.0f} {cy:.0f} Q{cx:.0f} {cy + r:.0f} "
+            f"{cx - r:.0f} {cy:.0f} Z", fill=MINT_LEAF, stroke=INK, sw=4.0)  # fmt: skip
+    cv.line(parent, cx - r * 0.8, cy, cx + r * 0.8, cy, INK, 3.0)
+
+
+def mint_sensor(cv, g, first: float, last: float, measure: Measure) -> None:
+    """A nerve ending with one gate on it: a snowflake opens it, then a mint leaf opens the same gate, and each time
+    the same signal runs down the nerve to a bubble that says cold (the Nobel Assembly, 2021: menthol was used to find
+    the receptor that cold activates)."""
+    sheet(cv, g)
+    gx, gy = GATE
+    label(cv, g, "cold", LEFT, 250, 300, 70, 56.0, INK, "start")
+    label(cv, g, "menthol", RIGHT - 320, 250, 320, 70, 56.0, INK, "end")
+    label(cv, g, "sensor", 650, 590, RIGHT - 650, 70, 52.0, STAMP, "start")
+    nerve = [(gx, gy + 120.0), (gx - 50.0, gy + 190.0), (gx + 20.0, gy + 250.0), (gx + 100.0, gy + 290.0)]
+    cv.path(g, "M" + " L".join(f"{x:.0f} {y:.0f}" for x, y in nerve), fill="#00000000", stroke=NERVE, sw=20.0)
+    cv.rect(g, gx - 140, gy + 60, 280, 64, NERVE, stroke=INK, sw=5.0, radius=24.0)  # the nerve ending's tip
+    halves = []
+    for side in (-1.0, 1.0):
+        half = pivot(cv, g, "sp-gate", gx + side * 56.0, gy + 64.0)
+        cv.rect(half, gx + side * 56.0 - 28, gy - 66, 56, 130, STAMP, stroke=INK, sw=5.0, radius=18.0)
+        halves.append((half, side))
+    _along(cv, g, "sp-signal", nerve, first, last, 1.2, 16.0, STAMP, 3)
+    cv.ellipse(g, 580, 800, 320, 130, ICE, stroke=INK, sw=6.0)
+    label(cv, g, "cold!", 580, 828, 320, 76, 60.0, INK, "center")
+    flake = cv.group(g, cv.uid("sp-snowflake"), x=0.0, y=0.0)
+    _snowflake(cv, flake, 220.0, 400.0, 56.0)
+    leaf = cv.group(g, cv.uid("sp-leaf"), x=0.0, y=0.0)
+    _leaf(cv, leaf, 760.0, 400.0, 72.0)
+    opens: list[tuple[float, float]] = []
+    moves: dict[str, list[tuple[float, float]]] = {"fx": [], "fy": [], "lx": [], "ly": []}
+    t = first
+    while t < last:
+        for start, (kx, ky), (dx, dy) in (
+            (t, ("fx", "fy"), (gx - 70 - 220.0, gy - 130 - 400.0)),
+            (t + SENSE_LAP / 2, ("lx", "ly"), (gx + 70 - 760.0, gy - 130 - 400.0)),
+        ):
+            for at, u in ((start, 0.0), (start + 0.5, 1.0), (start + 1.0, 1.0), (start + 1.15, 0.0)):
+                moves[kx].append((round(at, 4), u * dx))
+                moves[ky].append((round(at, 4), u * dy))
+            opens += [(round(start + 0.5, 4), 0.0), (round(start + 0.65, 4), 1.0), (round(start + 1.0, 4), 1.0),
+                      (round(start + 1.15, 4), 0.0)]  # fmt: skip
+        t += SENSE_LAP
+    cv.keys(flake, "x", moves["fx"], hold=False, kind="sine-in-out", local=False)
+    cv.keys(flake, "y", moves["fy"], hold=False, kind="sine-in-out", local=False)
+    cv.keys(leaf, "x", moves["lx"], hold=False, kind="sine-in-out", local=False)
+    cv.keys(leaf, "y", moves["ly"], hold=False, kind="sine-in-out", local=False)
+    for half, side in halves:
+        cv.keys(half, "rotation", [(at, side * 24.0 * u) for at, u in opens], hold=False, local=False)
+
+
+WATER_LEVEL, FELT_LEVEL = 0.55, 0.25  # the column's share of the tube: the water as it is, and as it feels primed
+
+
+def _thermometer(cv, g, cx: float, name: str) -> Any:
+    """A thermometer about ``cx``; returns its column, a group that scales up from the bulb."""
+    cv.rect(g, cx - 34, 360, 68, 460, PAPER, stroke=INK, sw=6.0, radius=34.0)
+    for k in range(6):
+        cv.line(g, cx + 34, 420 + k * 64, cx + 58, 420 + k * 64, INK, 4.0)
+    column = pivot(cv, g, name, cx, 800.0)
+    cv.rect(column, cx - 18, 380, 36, 420, "#3F7FA6", radius=18.0)
+    cv.ellipse(g, cx - 56, 770, 112, 112, "#3F7FA6", stroke=INK, sw=6.0)
+    return column
+
+
+def mint_primed(cv, g, first: float, last: float, measure: Measure) -> None:
+    """The same cool water on two thermometers: what it is, and how it feels with the cold sensor already switched on,
+    the second dropping lower (Stevens, Southern Cross University, 2026)."""
+    sheet(cv, g)
+    for words, cx in (("the water", 280.0), ("how it feels", 700.0)):
+        size = min(50.0, 50.0 * 400.0 / measure(words, 50.0))
+        label(cv, g, words, cx - 200, 260, 400, 70, size, INK, "center")
+    water = _thermometer(cv, g, 280.0, "sp-water-column")
+    cv.keys(water, "scaleY", [(first, WATER_LEVEL)], hold=True, local=False)
+    felt = _thermometer(cv, g, 700.0, "sp-felt-column")
+    rows, t = [], first
+    while t < last:
+        rows += [(round(t, 4), WATER_LEVEL), (round(t + 1.2, 4), FELT_LEVEL), (round(t + 2.2, 4), FELT_LEVEL),
+                 (round(t + 2.4, 4), WATER_LEVEL)]  # fmt: skip
+        t += 2.4
+    cv.keys(felt, "scaleY", rows, hold=False, kind="cubic-out", local=False)
+    _leaf(cv, g, 860.0, 560.0, 44.0)
+
+
+STRAND_LAP = 3.0  # seconds the starch takes to line up, hold, and scatter again while the page is up
+
+
+def bread_starch(cv, g, first: float, last: float, measure: Measure) -> None:
+    """A crumb of bread up close: its starch strands, every which way while it is warm, turning to line up in rows as
+    a thermometer beside it drops: retrogradation, not drying out (Mercer, University of Guelph, 2017)."""
+    sheet(cv, g)
+    cx, cy, r = 430.0, 610.0, 270.0
+    cv.ellipse(g, cx - r, cy - r, 2 * r, 2 * r, CRUMB, stroke=CRUST, sw=14.0)
+    label(cv, g, "starch", LEFT, 250, 300, 70, 52.0, INK, "start")
+    label(cv, g, "cooling", RIGHT - 300, 250, 300, 70, 52.0, INK, "end")
+    for k in range(12):
+        row, col = divmod(k, 3)
+        x, y = cx + (col - 1) * 150.0, cy - 165.0 + row * 110.0
+        strand = pivot(cv, g, "sp-strand", x, y)
+        cv.rect(strand, x - 60, y - 10, 120, 20, COPPER, stroke=INK, sw=3.0, radius=10.0)
+        scattered = (37.0 * k + 23.0) % 150.0 - 75.0  # every which way, the same way every run
+        rows, t = [], first
+        while t < last:
+            rows += [(round(t, 4), scattered), (round(t + 1.6, 4), 0.0), (round(t + 2.8, 4), 0.0),
+                     (round(t + STRAND_LAP, 4), scattered)]  # fmt: skip
+            t += STRAND_LAP
+        cv.keys(strand, "rotation", rows, hold=False, kind="sine-in-out", local=False)
+    cool = _thermometer(cv, g, 820.0, "sp-cool-column")
+    rows, t = [], first
+    while t < last:
+        rows += [(round(t, 4), 0.85), (round(t + 1.6, 4), 0.3), (round(t + 2.8, 4), 0.3),
+                 (round(t + STRAND_LAP, 4), 0.85)]  # fmt: skip
+        t += STRAND_LAP
+    cv.keys(cool, "scaleY", rows, hold=False, kind="sine-in-out", local=False)
+
+
+STALE_LAP = 2.6  # seconds the two bars take to grow, then start again
+STALE = {"counter": 0.45, "fridge": 0.9}  # how far each grows in a lap: the fridge's faster (no ratio is claimed)
+
+
+def bread_fridge(cv, g, first: float, last: float, measure: Measure) -> None:
+    """Two loaves going stale side by side, on the counter and in the fridge: the fridge's bar runs ahead (Sullivan et
+    al., RMIT, 2017: refrigeration sped up the starch's crystals more than room temperature)."""
+    sheet(cv, g)
+    words = "how fast it goes stale"
+    size = min(54.0, 54.0 * (RIGHT - LEFT) / measure(words, 54.0))
+    label(cv, g, words, LEFT, 250, RIGHT - LEFT, 76, size, INK, "center")
+    for where, top in (("counter", 470.0), ("fridge", 750.0)):
+        label(cv, g, where, LEFT, top - 90, 400, 70, 52.0, INK, "start")
+        if where == "fridge":
+            _snowflake(cv, g, RIGHT - 40, top - 52, 34.0)
+        cv.rect(g, LEFT, top, RIGHT - LEFT, 80, PAPER, stroke=INK, sw=5.0, radius=16.0)
+        bar = pivot(cv, g, "sp-stale-bar", LEFT + 6, top + 40)
+        cv.rect(bar, LEFT + 6, top + 6, RIGHT - LEFT - 12, 68, CRUST, radius=12.0)
+        rows, t = [], first
+        while t < last:
+            full = STALE[where]
+            rows += [(round(t, 4), 0.02), (round(t + 1.8, 4), full), (round(t + STALE_LAP - 0.1, 4), full)]
+            t += STALE_LAP
+        cv.keys(bar, "scaleX", rows, hold=False, kind="sine-in-out", local=False)
+
+
+# -- batch 3: the zebra's stripes --------------------------------------------------------------------------------------
+HIDE, HIDE_DARK, FLY = "#A86B3C", "#4A2E1E", "#2B2A2E"
+COATS = (("black", INK), ("white", PAPER), ("striped", ""))  # the 2019 trial's coats, in the order the page shows them
+
+
+def _stripes(cv, parent, cx: float, cy: float, rx: float, ry: float, gap: float = 30.0) -> None:
+    """Upright black stripes across the ellipse about ``cx, cy``, each running from its top edge to its bottom one."""
+    x = cx - rx + gap * 0.6
+    while x < cx + rx - gap * 0.4:
+        share = max(0.0, 1.0 - ((x - cx) / rx) ** 2) ** 0.5
+        cv.rect(parent, x - gap * 0.22, cy - ry * share, gap * 0.44, 2 * ry * share, INK)
+        x += gap
+
+
+def _horse(
+    cv, parent, cx: float, foot: float, size: float, coat: str = "", stripes: bool = False
+) -> tuple[float, float]:
+    """A horse in profile, head to frame left, standing on ``foot`` about ``cx``, ``size`` its body's length. ``coat``
+    fills a coat over its body; ``stripes`` stripes it, a zebra's hide or a striped coat. Returns its back's middle."""
+    rx, ry = size / 2, size * 0.2
+    cy = foot - size * 0.62
+    for dx in (-0.32, -0.2, 0.22, 0.34):
+        cv.rect(parent, cx + dx * size - size * 0.04, cy, size * 0.08, foot - cy, HIDE, stroke=INK, sw=4.0)
+    cv.path(parent, f"M{cx - rx * 0.6:.0f} {cy - ry * 0.4:.0f} L{cx - rx * 1.05:.0f} {cy - ry * 2.4:.0f} "
+            f"L{cx - rx * 0.78:.0f} {cy - ry * 2.6:.0f} L{cx - rx * 0.3:.0f} {cy - ry * 0.6:.0f} Z", fill=HIDE,
+            stroke=INK, sw=4.0)  # fmt: skip
+    cv.ellipse(parent, cx - rx * 1.32, cy - ry * 2.75, rx * 0.56, ry * 0.9, HIDE, stroke=INK, sw=4.0)  # the head
+    cv.line(parent, cx + rx * 0.95, cy - ry * 0.3, cx + rx * 1.15, cy + ry * 1.4, HIDE_DARK, 9.0)  # the tail
+    cv.ellipse(parent, cx - rx, cy - ry, 2 * rx, 2 * ry, coat or HIDE, stroke=INK, sw=5.0)
+    if stripes:
+        _stripes(cv, parent, cx, cy, rx * 0.97, ry * 0.95, gap=size * 0.11)
+        cv.ellipse(parent, cx - rx, cy - ry, 2 * rx, 2 * ry, "#00000000", stroke=INK, sw=5.0)
+    return cx, cy - ry
+
+
+def _fly_dot(cv, parent, name: str) -> Any:
+    """A horse fly drawn about the origin, in a group of its own to be moved by keys."""
+    dot = cv.group(parent, cv.uid(name), x=0.0, y=0.0)
+    cv.ellipse(dot, -16, -22, 22, 14, "#D8E6EEDD", stroke=INK, sw=2.0)
+    cv.ellipse(dot, -2, -22, 22, 14, "#D8E6EEDD", stroke=INK, sw=2.0)
+    cv.ellipse(dot, -12, -10, 24, 18, FLY, stroke=INK, sw=2.0)
+    return dot
+
+
+def _visits(
+    first: float,
+    last: float,
+    period: float,
+    delay: float,
+    start: tuple[float, float],
+    end: tuple[float, float],
+    lands: bool,
+) -> tuple[list[tuple[float, float]], list[tuple[float, float]]]:
+    """x and y keys for a fly coming down from ``start`` to ``end`` every ``period`` seconds while the page is up: it
+    stays where it lands, or, not ``lands``, touches and goes back up the way it came."""
+    xs: list[tuple[float, float]] = [(first, start[0])]
+    ys: list[tuple[float, float]] = [(first, start[1])]
+    t = first + delay
+    while t + period <= last + period * 0.5:
+        down, back = t + period * 0.45, t + period * 0.75
+        xs += [(round(t, 4), start[0]), (round(down, 4), end[0])]
+        ys += [(round(t, 4), start[1]), (round(down, 4), end[1])]
+        if not lands:
+            xs.append((round(back, 4), start[0] + (end[0] - start[0]) * 0.3))
+            ys.append((round(back, 4), start[1] + (end[1] - start[1]) * 0.1))
+        xs.append((round(t + period - 0.02, 4), xs[-1][1]))
+        ys.append((round(t + period - 0.02, 4), ys[-1][1]))
+        t += period
+    return xs, ys
+
+
+def horse_coats(cv, g, first: float, last: float, measure: Measure) -> None:
+    """The 2019 trial on a horse farm: the same kind of horse in a black, a white and a striped coat, flies coming down
+    on each, landing on the black and the white and touching the striped one only to go back up (Caro et al.,
+    2019)."""
+    sheet(cv, g)
+    label(cv, g, "horses in coats", LEFT, 300, RIGHT - LEFT, 80, 60.0, INK, "center")
+    for k, (name, fill) in enumerate(COATS):
+        cx = 230.0 + k * 270.0  # inside the safe width, clear of the buttons at the right
+        bx, by = _horse(cv, g, cx, 820.0, 190.0, fill or PAPER, stripes=not fill)
+        size = min(46.0, 46.0 * 230.0 / measure(name, 46.0))
+        label(cv, g, name, cx - 115, 850, 230, 64, size, STAMP if not fill else INK, "center")
+        for j in range(2):
+            fly = _fly_dot(cv, g, "sp-fly")
+            lands = bool(fill)
+            xs, ys = _visits(first, last, 1.8, 0.3 + 0.6 * j + 0.2 * k, (bx - 40 + 70 * j, 440.0),
+                             (bx - 50 + 90 * j, by + 4.0), lands)  # fmt: skip
+            cv.keys(fly, "x", xs, hold=False, local=False)
+            cv.keys(fly, "y", ys, hold=False, local=False)
+
+
+def fly_landing(cv, g, first: float, last: float, measure: Measure) -> None:
+    """How a fly comes in, filmed in 2019: over a horse it slows down and lands; over a zebra it comes in as fast as
+    ever and bumps off, its trail of positions evenly spaced to the hide (Caro et al., 2019)."""
+    sheet(cv, g)
+    rows = (("horse", "slows down, lands", 560.0, False), ("zebra", "no slowing down", 900.0, True))
+    for who, how, foot, zebra in rows:
+        cv.rect(g, 520, foot - 140, 400, 140, PAPER if zebra else HIDE, stroke=INK, sw=5.0, radius=16.0)
+        if zebra:
+            x = 548.0
+            while x < 900.0:
+                cv.rect(g, x, foot - 136, 22, 132, INK)
+                x += 52.0
+        label(cv, g, who, LEFT, foot - 320, 380, 70, 56.0, STAMP if zebra else INK, "start")
+        label(cv, g, how, LEFT, foot - 255, 420, 56, min(42.0, 42.0 * 420.0 / measure(how, 42.0)), INK, "start")
+        trail = [(140.0 + 340.0 * (u if zebra else 1 - (1 - u) ** 2.4), foot - 60 - 130 * (1 - u)) for u in
+                 np.linspace(0.0, 1.0, 8)]  # fmt: skip
+        for tx, ty in trail[:-1]:
+            cv.ellipse(g, tx - 6, ty - 6, 12, 12, RULED)
+        fly = _fly_dot(cv, g, "sp-fly")
+        end = (trail[-1][0] + 40.0, foot - 140.0)
+        start = (trail[0][0], trail[0][1])
+        xs, ys = _visits(first, last, 2.0, 0.2, start, end, lands=not zebra)
+        cv.keys(fly, "x", xs, hold=False, kind=None if zebra else "cubic-out", local=False)
+        cv.keys(fly, "y", ys, hold=False, kind=None if zebra else "cubic-out", local=False)
+
+
+# -- batch 3: the sunflower ------------------------------------------------------------------------------------------
+PETAL, SEEDS, LEAF, SUNNY, NIGHT = "#F2B731", "#5A3A22", "#5E8F3A", "#F6C445", "#1C2A4ACC"
+
+
+def _flower(cv, parent, cx: float, cy: float, r: float, facing: float) -> None:
+    """A sunflower's head about ``cx, cy``, its face ``r`` across, turned ``facing`` (-1 to frame left, east, 1 to frame
+    right, west): petals round a brown middle, drawn narrower as it turns away, its middle towards the side it faces."""
+    squeeze = 1.0 - 0.35 * abs(facing)
+    for k in range(16):
+        a = 2.0 * math.pi * k / 16
+        px, py = cx + (r + 18.0) * math.cos(a) * squeeze, cy + (r + 18.0) * math.sin(a)
+        cv.ellipse(parent, px - 16, py - 16, 32, 32, PETAL, stroke=INK, sw=2.5)
+    cv.ellipse(parent, cx - r * squeeze, cy - r, 2 * r * squeeze, 2 * r, PETAL, stroke=INK, sw=3.0)
+    shift = facing * r * 0.25
+    cv.ellipse(parent, cx + shift - r * 0.62 * squeeze, cy - r * 0.62, 1.24 * r * squeeze, 1.24 * r, SEEDS,
+               stroke=INK, sw=3.0)  # fmt: skip
+
+
+def _bud(cv, parent, cx: float, cy: float) -> None:
+    """A young sunflower's closed green bud about ``cx, cy``, its tip at frame top, to be turned by its group."""
+    for dx in (-26.0, 0.0, 26.0):
+        cv.ellipse(parent, cx + dx - 16, cy - 64, 32, 70, LEAF, stroke=INK, sw=3.0)
+    cv.ellipse(parent, cx - 44, cy - 40, 88, 64, LEAF, stroke=INK, sw=4.0)
+
+
+def sun_track(cv, g, first: float, last: float, measure: Measure) -> None:
+    """A young sunflower under the sky, day after day: the sun crosses from east to west and the bud turns with it;
+    then night falls, the sun is gone, and the bud swings back to face east before dawn (Atamian et al., 2016)."""
+    sheet(cv, g)
+    label(cv, g, "young sunflower", LEFT, 290, RIGHT - LEFT, 80, 58.0, INK, "center")
+    arc = [(500.0 - 320.0 * math.cos(u), 760.0 - 300.0 * math.sin(u)) for u in np.linspace(0.0, math.pi, 9)]
+    for x, y in arc[1:-1]:
+        cv.ellipse(g, x - 6, y - 6, 12, 12, RULED)  # under the night and its tag
+    night = cv.group(g, cv.uid("sp-night"), opacity=0.0)
+    cv.rect(night, 80, 400, 840, 500, NIGHT, radius=24.0)
+    cv.rect(night, 410, 416, 180, 72, PAPER, stroke=INK, sw=3.0, radius=36.0)  # a tag, so the word reads on paper
+    label(cv, night, "night", 410, 420, 180, 60, 46.0, INK, "center")
+    for word, x in (("east", LEFT + 20.0), ("west", RIGHT - 20.0)):  # on paper tags, so they read in the night too
+        wide = measure(word, 46.0) + 40.0
+        left = x if word == "east" else x - wide
+        cv.rect(g, left, 776, wide, 68, PAPER, stroke=INK, sw=3.0, radius=34.0)
+        label(cv, g, word, left, 780, wide, 60, 46.0, STAMP, "center")
+    sun = cv.group(g, cv.uid("sp-sun"), x=0.0, y=0.0, opacity=1.0)
+    cv.ellipse(sun, -44, -44, 88, 88, SUNNY, stroke=INK, sw=4.0)
+    cv.path(g, "M500 900 C 492 840, 508 780, 500 720", fill="#00000000", stroke=LEAF, sw=12.0)  # the stem
+    cv.ellipse(g, 440, 800, 70, 34, LEAF, stroke=INK, sw=3.0)  # a leaf
+    head = pivot(cv, g, "sp-bud", 500.0, 720.0)
+    _bud(cv, head, 500.0, 700.0)
+    cv.line(g, 300, 900, 700, 900, INK, 6.0)  # the ground
+    day, dark = 2.4, 1.2
+    xs, ys, glow, shade, turn = [], [], [], [], []
+    t = first
+    while t < last:
+        for k, (x, y) in enumerate(arc):
+            at = round(t + day * k / (len(arc) - 1), 4)
+            xs.append((at, x))
+            ys.append((at, y))
+        glow += [(round(t, 4), 1.0), (round(t + day, 4), 1.0), (round(t + day + 0.2, 4), 0.0),
+                 (round(t + day + dark - 0.02, 4), 0.0)]  # fmt: skip
+        shade += [(round(t, 4), 0.0), (round(t + day, 4), 0.0), (round(t + day + 0.2, 4), 1.0),
+                  (round(t + day + dark - 0.2, 4), 1.0), (round(t + day + dark, 4), 0.0)]  # fmt: skip
+        turn += [(round(t, 4), -60.0), (round(t + day, 4), 60.0), (round(t + day + dark - 0.1, 4), -60.0)]
+        t += day + dark
+    cv.keys(sun, "x", xs, hold=False, local=False)
+    cv.keys(sun, "y", ys, hold=False, local=False)
+    cv.keys(sun, "opacity", glow, hold=False, local=False)
+    cv.keys(night, "opacity", shade, hold=False, local=False)
+    cv.keys(head, "rotation", turn, hold=False, kind="sine-in-out", local=False)
+
+
+def east_warm(cv, g, first: float, last: float, measure: Measure) -> None:
+    """Grown sunflowers in the morning, one facing east into the sun and one turned to face west: the east-facing one
+    warms up faster and five bees come to it while one comes to the other (UC Davis, 2016: five times as many
+    pollinating insects)."""
+    sheet(cv, g)
+    label(cv, g, "grown sunflowers, morning", LEFT, 290, RIGHT - LEFT, 80, 54.0, INK, "center")
+    sx, sy = 165.0, 465.0  # clear of the title above, the margin to the left and the east row's bees to the right
+    sun = pivot(cv, g, "sp-sun", sx, sy)
+    cv.ellipse(sun, sx - 44, sy - 44, 88, 88, SUNNY, stroke=INK, sw=4.0)
+    for k in range(8):
+        a = math.radians(k * 45)
+        cv.line(sun, sx + 58 * math.cos(a), sy + 58 * math.sin(a), sx + 76 * math.cos(a), sy + 76 * math.sin(a),
+                INK, 5.0)  # fmt: skip
+    cv.keys(sun, "rotation", [(first, 0.0), (last, 45.0 * (last - first))], hold=False, local=False)
+    rows = (("faces east", 360.0, -1.0, 5, 0.85), ("turned west", 720.0, 1.0, 1, 0.35))
+    for words, cx, facing, bees, warm in rows:
+        cv.path(g, f"M{cx:.0f} 820 C {cx - 8:.0f} 740, {cx + 8:.0f} 660, {cx:.0f} 580", fill="#00000000",
+                stroke=LEAF, sw=12.0)  # fmt: skip
+        _flower(cv, g, cx, 540.0, 62.0, facing)
+        tube_x = cx + 120.0
+        cv.rect(g, tube_x - 14, 500, 28, 220, PAPER, stroke=INK, sw=4.0, radius=14.0)  # a thermometer
+        fill = cv.group(g, cv.uid("sp-warmth"), scaleY=0.2, anchorX=tube_x, anchorY=716.0, x=tube_x, y=716.0)
+        cv.rect(fill, tube_x - 8, 506, 16, 210, STAMP, radius=8.0)
+        cv.keys(fill, "scaleY", [(first, 0.2), (first + 1.6, warm), (last, warm)], hold=False, kind="cubic-out",
+                local=False)  # fmt: skip
+        size = min(46.0, 46.0 * 300.0 / measure(words, 46.0))
+        label(cv, g, words, cx - 150, 840, 300, 64, size, INK, "center")
+        for k in range(bees):
+            bee = cv.group(g, cv.uid("sp-bee"), x=0.0, y=0.0)
+            cv.ellipse(bee, -14, -10, 28, 20, SUNNY, stroke=INK, sw=3.0)
+            cv.line(bee, -2, -10, -2, 10, INK, 4.0)
+            cv.ellipse(bee, -10, -26, 16, 18, "#D8E6EEDD", stroke=INK, sw=2.0)
+            phase, r = 2.0 * math.pi * k / max(bees, 1), 110.0 + 14.0 * (k % 2)
+            keys = [(round(first + 0.1 * j, 4), u) for j, u in enumerate(np.linspace(phase, phase + 4 * math.pi,
+                    int((last - first) / 0.1) + 1))]  # fmt: skip
+            cv.keys(bee, "x", [(t, cx + r * math.cos(u)) for t, u in keys], hold=False, local=False)
+            cv.keys(bee, "y", [(t, 540.0 + r * 0.8 * math.sin(u)) for t, u in keys], hold=False, local=False)
+
+
+# -- batch 3: Mars ----------------------------------------------------------------------------------------------------
+IRON, MARS_RED, INSIDE, HOLE = "#8D949C", "#C0532F", "#A39D93", "#5E5850"
+
+
+def mars_rust(cv, g, first: float, last: float, measure: Measure) -> None:
+    """Martian dirt: a heap of grey grains of iron mineral rusting red one after another, and a Mars beside them that
+    turns from grey to red as they do (NASA: iron minerals in the Martian dirt oxidize, or rust, so the surface looks
+    red)."""
+    sheet(cv, g)
+    label(cv, g, "Martian dirt", LEFT, 290, RIGHT - LEFT, 80, 58.0, INK, "center")
+    span = max(last - first, 2.0)
+    spots = [(150.0 + 64.0 * k + 32.0 * row, 640.0 - 54.0 * row) for row in range(3) for k in range(9 - 2 * row)]
+    order = sorted(range(len(spots)), key=lambda n: (n * 7) % len(spots))
+    for rank, n in enumerate(order):
+        x, y = spots[n]
+        grain = pivot(cv, g, "sp-grain", x, y)
+        cv.ellipse(grain, x - 28, y - 26, 56, 52, IRON, stroke=INK, sw=3.0)
+        rust = cv.group(grain, cv.uid("sp-rust"), opacity=0.0)
+        cv.ellipse(rust, x - 28, y - 26, 56, 52, MARS_RED, stroke=INK, sw=3.0)
+        at = round(first + 0.2 + 0.6 * span * rank / len(spots), 4)
+        cv.keys(rust, "opacity", [(first, 0.0), (at, 0.0), (at + 0.2, 1.0)], hold=False, local=False)
+        cv.keys(grain, "scaleX", [(at, 1.0), (at + 0.1, 1.15), (at + 0.25, 1.0)], hold=False, local=False)
+        cv.keys(grain, "scaleY", [(at, 1.0), (at + 0.1, 1.15), (at + 0.25, 1.0)], hold=False, local=False)
+    cx, cy, r = 832.0, 520.0, 78.0
+    planet = pivot(cv, g, "sp-mars", cx, cy)
+    cv.ellipse(planet, cx - r, cy - r, 2 * r, 2 * r, IRON, stroke=INK, sw=4.0)
+    red = cv.group(planet, cv.uid("sp-mars-red"), opacity=0.0)
+    cv.ellipse(red, cx - r, cy - r, 2 * r, 2 * r, MARS_RED, stroke=INK, sw=4.0)
+    for dx, dy, w in ((-30.0, -20.0, 40.0), (18.0, 22.0, 30.0), (30.0, -36.0, 22.0)):
+        cv.ellipse(planet, cx + dx - w / 2, cy + dy - w / 3, w, 2 * w / 3, "#00000033")
+    cv.keys(
+        red, "opacity", [(first, 0.0), (first + 0.2, 0.0), (first + 0.2 + 0.6 * span, 1.0)], hold=False, local=False
+    )
+    cv.keys(planet, "rotation", [(first, 0.0), (last, 40.0 * (last - first))], hold=False, local=False)
+    for colour, x, word in ((IRON, LEFT + 40.0, "iron"), (MARS_RED, 520.0, "rust")):
+        cv.ellipse(g, x, 744, 44, 40, colour, stroke=INK, sw=3.0)
+        label(cv, g, word, x + 60, 734, 220, 60, 50.0, INK, "start")
+
+
+def mars_drill(cv, g, first: float, last: float, measure: Measure) -> None:
+    """A Mars rock cut through under its reddish dust: a rover's drill bores into it and back out, and the cuttings it
+    pulls up from inside heap beside the hole, markedly less red than the surface (NASA, 2014)."""
+    sheet(cv, g)
+    label(cv, g, "a drilled Mars rock", LEFT, 290, RIGHT - LEFT, 80, 58.0, INK, "center")
+    top, x0, x1 = 560.0, 140.0, 900.0
+    cv.rect(g, x0, top, x1 - x0, 260, INSIDE, stroke=INK, sw=5.0, radius=18.0)
+    cv.rect(g, x0, top, x1 - x0, 40, MARS_RED, stroke=INK, sw=5.0, radius=12.0)  # the reddish dust on top
+    span = max(last - first, 2.0)
+    bore = [(first, 0.0), (first + 0.2, 0.0), (first + 0.2 + 0.35 * span, 1.0)]
+    hole = pivot(cv, g, "sp-hole", 460.0, top, scaleY=0.0)
+    cv.rect(hole, 446, top, 28, 150, HOLE)
+    cv.keys(hole, "scaleY", bore, hold=False, local=False)
+    drill = cv.group(g, cv.uid("sp-drill"), y=0.0)
+    cv.rect(drill, 400, 390, 120, 56, SHADE, stroke=INK, sw=4.0, radius=8.0)
+    cv.rect(drill, 446, 446, 28, 114, COPPER, stroke=INK, sw=3.0)
+    down = [(at, 150.0 * v) for at, v in bore]
+    cv.keys(drill, "y", [*down, (min(first + 0.3 + 0.45 * span, last), 0.0)], hold=False, local=False)
+    pile = pivot(cv, g, "sp-cuttings", 720.0, top, scaleY=0.0)  # clear of the drill, its top 90 px over the dust
+    cv.path(pile, f"M580 {top} Q720 {top - 180} 860 {top} Z", fill=INSIDE, stroke=INK, sw=4.0)
+    cv.keys(pile, "scaleY", [(first, 0.0), (first + 0.3, 0.0), (first + 0.3 + 0.4 * span, 1.0)], hold=False,
+            local=False)  # fmt: skip
+    label(cv, g, "reddish dust", LEFT, 440, 320, 60, 46.0, INK, "start")
+    label(cv, g, "cuttings", 580, 370, 280, 60, 46.0, INK, "center")
+    label(cv, g, "inside", LEFT, 836, RIGHT - LEFT, 60, 46.0, INK, "center")
+
+
 PANELS: dict[str, Callable[..., None]] = {
     "penny-fall": penny_fall,
     "lightning": lightning,
@@ -1203,6 +1752,18 @@ PANELS: dict[str, Callable[..., None]] = {
     "apple-lemon": apple_lemon,
     "can-test": can_test,
     "can-bubbles": can_bubbles,
+    "tickle-predict": tickle_predict,
+    "tickle-robot": tickle_robot,
+    "mint-sensor": mint_sensor,
+    "mint-primed": mint_primed,
+    "bread-starch": bread_starch,
+    "bread-fridge": bread_fridge,
+    "horse-coats": horse_coats,
+    "fly-landing": fly_landing,
+    "sun-track": sun_track,
+    "east-warm": east_warm,
+    "mars-rust": mars_rust,
+    "mars-drill": mars_drill,
 }
 
 

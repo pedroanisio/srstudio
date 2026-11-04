@@ -38,6 +38,7 @@ __all__ = [
     "LIMBS",
     "ARMS",
     "EYES",
+    "GAZES",
     "held",
     "worn",
     "speaking",
@@ -624,12 +625,15 @@ def _lash(cv: Canvas, g, x: float, y: float, side: int, rise: float) -> None:
         )
 
 
-def _eyes(cv: Canvas, g, kind: str, x: float, y: float, shine: bool = False, lashes: bool = False) -> None:
+def _eyes(
+    cv: Canvas, g, kind: str, x: float, y: float, shine: bool = False, lashes: bool = False, gaze: str = "left"
+) -> None:
+    dx = (-LOOK_REACH if gaze == "left" else LOOK_REACH) if kind == "look" else 0.0
     for side in (-1, 1):
         ex = x + side * 30
         if kind in ("open", "look", "wide"):
             w, h, cy = (48, 56, y - 3) if kind == "wide" else (40, 46, y)
-            _eye(cv, g, ex, cy, w, h, 13 if kind == "wide" else 17, dx=-8 if kind == "look" else 0.0, shine=shine)
+            _eye(cv, g, ex, cy, w, h, 13 if kind == "wide" else 17, dx=dx, shine=shine)
             if lashes:  # where the lid's outer curve turns down
                 _lash(cv, g, ex + side * w * 0.36, cy - h * 0.34, side, 10)
         elif kind == "happy":
@@ -674,6 +678,10 @@ def _mouth(cv: Canvas, g, kind: str, x: float, y: float) -> None:
         _stroke(cv, g, f"M {x - 14:g} {y + 4:g} L {x + 14:g} {y + 4:g}", 5.5)
 
 
+LOOK_REACH = 8  # how far the "look" pupils sit from the middle of the eye, toward the gaze
+# Which way the "look" eyes point on the screen. "left" is what the rig always drew, so a cue that names no gaze draws
+# as before; "right" lets a figure look at someone on its right, flipped or not (ADR 0235).
+GAZES: tuple[str, ...] = ("left", "right")
 EYES: dict[str, Callable[..., None]] = {
     k: (lambda cv, g, x, y, k=k, **polish: _eyes(cv, g, k, x, y, **polish))
     for k in ("open", "look", "wide", "happy", "squint", "closed")
@@ -992,7 +1000,8 @@ class Cue:
     ``ease`` seconds before ``time`` the character leaves the previous pose through in-between drawings and
     lands on the beat; ``lift`` raises the middle of that move on an arc. ``pin`` names a leg whose foot stays
     planted through the move: the position is then solved from that foot, not given. ``overshoot`` lands that
-    fraction past the pose and settles back one drawing later. The expression changes when the pose lands."""
+    fraction past the pose and settles back one drawing later. The expression changes when the pose lands.
+    ``gaze`` is the screen side the ``"look"`` eyes point to, one of :data:`GAZES`; ``flip`` does not turn it."""
 
     time: float
     pose: str
@@ -1007,6 +1016,7 @@ class Cue:
     pin: str | None = None
     overshoot: float = 0.0
     published_full_gap_ease: bool = False  # set by settle(); see there
+    gaze: str = "left"
 
 
 def cue(
@@ -1073,6 +1083,10 @@ def _check(cues: Sequence[Cue], end: float) -> None:
             raise BlobError(f"unknown eyes {cue.eyes!r}; one of {sorted(EYES)}")
         if cue.mouth not in MOUTHS:
             raise BlobError(f"unknown mouth {cue.mouth!r}; one of {MOUTHS}")
+        if cue.gaze not in GAZES:
+            raise BlobError(f"unknown gaze {cue.gaze!r}; one of {GAZES}")
+        if cue.gaze != "left" and cue.eyes != "look":
+            raise BlobError(f"the cue at {cue.time} sets gaze {cue.gaze!r}, which only the \"look\" eyes have")
         if cue.pin is not None:
             if cue.pin not in FEET:
                 raise BlobError(f"unknown pin {cue.pin!r}; one of {FEET}")
@@ -1344,11 +1358,12 @@ def blob(
     if look.blush is not None:
         for side in (-1, 1):
             cv.ellipse(face, side * 58 - 15, 16, 30, 17, look.blush, opacity=0.85)
-    eyes_track = [(d.time, d.face.eyes) for d in frames]
-    for kind in dict.fromkeys(e for _, e in eyes_track):
-        g = cv.group(face, f"{id}-eyes-{kind}")
-        _show(cv, g, _changes(eyes_track, kind))
-        EYES[kind](cv, g, 0, -8, shine=look.catchlights, lashes=look.lashes)
+    # One group a drawn pair of eyes: "look" left keeps its old id, "look" right is a group of its own.
+    eyes_track = [(d.time, (d.face.eyes, d.face.gaze)) for d in frames]
+    for kind, gaze in dict.fromkeys(e for _, e in eyes_track):
+        g = cv.group(face, f"{id}-eyes-{kind}" if gaze == "left" else f"{id}-eyes-{kind}-{gaze}")
+        _show(cv, g, _changes(eyes_track, (kind, gaze)))
+        EYES[kind](cv, g, 0, -8, shine=look.catchlights, lashes=look.lashes, gaze=gaze)
     mouths = mouth_track(frames, mouth_states or ())
     for shape in dict.fromkeys(m for _, m in mouths):
         g = cv.group(face, f"{id}-mouth-{shape}")
@@ -1365,7 +1380,7 @@ def blob(
     summary="Pip, the sprout-headed white blob: one interpolating rig (stand, step, walk, sit, type, nod, clasp, "
     "lean, groove, cheer, wave), eased in-betweens on a beat, six eyes, five mouths and a sung mouth that follows "
     "the soundtrack",
-    contract=cc.soft(Cue, tuple(POSES), tuple(EYES), MOUTHS, tuple(FEET), tuple(MOUTH_STATES)),
+    contract=cc.soft(Cue, tuple(POSES), tuple(EYES), MOUTHS, tuple(FEET), tuple(MOUTH_STATES), gazes=GAZES),
 )
 def pip(
     cv: Canvas,
@@ -1406,7 +1421,7 @@ def pip(
     "bo",
     summary="Bo, the boss: Pip's rig and pose sheet in a pale blue body with side-parted hair and square glasses, "
     "no blush; any cue Pip can perform, Bo can",
-    contract=cc.soft(Cue, tuple(POSES), tuple(EYES), MOUTHS, tuple(FEET), tuple(MOUTH_STATES)),
+    contract=cc.soft(Cue, tuple(POSES), tuple(EYES), MOUTHS, tuple(FEET), tuple(MOUTH_STATES), gazes=GAZES),
 )
 def bo(
     cv: Canvas,
@@ -1447,7 +1462,7 @@ def bo(
     summary="Juno, the colleague who already did the reading: Pip's rig and pose sheet in an apricot body with "
     "an auburn bun, scalloped bangs, a coral scrunchie and freckles; shaded, with catch-lights and lashes on every "
     "eye",
-    contract=cc.soft(Cue, tuple(POSES), tuple(EYES), MOUTHS, tuple(FEET), tuple(MOUTH_STATES)),
+    contract=cc.soft(Cue, tuple(POSES), tuple(EYES), MOUTHS, tuple(FEET), tuple(MOUTH_STATES), gazes=GAZES),
 )
 def juno(
     cv: Canvas,
@@ -1487,7 +1502,7 @@ def juno(
     "remy",
     summary="Remy from IT support: Pip's rig and pose sheet in a lavender body with a spiky tuft and a headset "
     "(padded band, ear cups with a status light, mic boom); shaded, with a gloss on the head and catch-lights",
-    contract=cc.soft(Cue, tuple(POSES), tuple(EYES), MOUTHS, tuple(FEET), tuple(MOUTH_STATES)),
+    contract=cc.soft(Cue, tuple(POSES), tuple(EYES), MOUTHS, tuple(FEET), tuple(MOUTH_STATES), gazes=GAZES),
 )
 def remy(
     cv: Canvas,

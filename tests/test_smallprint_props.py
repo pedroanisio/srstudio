@@ -167,6 +167,9 @@ def test_a_tear_plate_turns_with_his_head_and_holds_his_own_body():
         (lambda: sp.goldfish(clay.Model(), "asleep"), "goldfish's states"),
         (lambda: sp.apple(clay.Model(), "rotten"), "apple's states"),
         (lambda: sp.can(clay.Model(), "crushed"), "can's states"),
+        (lambda: sp.feather(clay.Model(), "plucked"), "feather's states"),
+        (lambda: sp.mint(clay.Model(), "chewed"), "mint's states"),
+        (lambda: sp.bread(clay.Model(), "sliced"), "bread's states"),
         (lambda: sp.draw(clay.Model(), "rafa-mug", "x"), "worktop props"),
         (lambda: sp.worktop("smallprint-roll", "roll", "garage"), "his rooms"),
         (lambda: sp._skin_z(400.0, 0.0), "no skin"),
@@ -237,7 +240,7 @@ def test_the_soaking_hand_is_under_the_water_inside_the_bowl_and_the_wrinkled_on
 
 def test_his_hand_moves_only_for_the_states_that_say_so():
     for (prop, state), (kind, _) in sp.HANDS.items():
-        assert state in sp.STATES[prop] and kind in ("dip", "wrinkled", "hold")
+        assert state in sp.STATES[prop] and kind in ("dip", "wrinkled", "hold", "raise", "knock")
     a, b = (materials_of(sp.worktop("smallprint-phone", state))["flesh"] for state in sp.PHONE_STATES)
     np.testing.assert_array_equal(a, b)
     c, d = (materials_of(sp.worktop("smallprint-bowl", state))["flesh"] for state in sp.BOWL_STATES)
@@ -357,3 +360,96 @@ def test_only_the_shaken_can_moves_his_hand_off_the_worktop():
     rest = can_parts("calm")["flesh"]
     held = can_parts("shake-up")["flesh"]
     assert held[:, 1].mean() < rest[:, 1].mean() - 10.0
+
+
+def test_the_feather_s_tip_is_at_his_neck_in_two_places_and_at_rest_it_is_down_on_the_worktop():
+    y = sp.PLACES["smallprint-mint"][1]  # the worktop's top
+    tips = []
+    for state in ("tickle-a", "tickle-b"):
+        parts = materials_of(sp.worktop("smallprint-feather", state))
+        vane, hand = parts["feather"], parts["flesh"]
+        tip = vane[vane[:, 2].argmax()]  # the end furthest from the lens: at his neck, under his chin
+        assert -305.0 < tip[1] < -285.0 and abs(tip[0]) < 50.0, "under his jaw, at his neck"
+        assert hand[:, 1].max() < y - 10.0, "held up off the worktop in his fist"
+        tips.append(tip)
+    assert np.hypot(*(tips[0] - tips[1])[:2]) > 6.0, "cutting between the two wiggles it"
+    rest = materials_of(sp.worktop("smallprint-feather", "rest"))
+    assert rest["feather"][:, 1].max() <= y + 0.5 and rest["feather"][:, 1].min() > y - 18.0, "down on the worktop"
+
+
+def test_the_glass_is_lifted_in_his_hand_for_a_sip_and_stands_by_the_open_tin_otherwise():
+    y = sp.PLACES["smallprint-mint"][1]
+    standing, lifted = (materials_of(sp.worktop("smallprint-mint", s)) for s in sp.MINT_STATES)
+    assert standing["glass"][:, 1].max() == pytest.approx(y, abs=0.5), "on the worktop"
+    assert lifted["glass"][:, 1].max() < y - 20.0, "off the worktop"
+    glass, hand = lifted["glass"], lifted["flesh"]
+    assert glass[:, 1].min() < hand[:, 1].mean() < glass[:, 1].max(), "his hand round it, between rim and foot"
+    assert np.hypot(*(hand.mean(axis=0) - glass.mean(axis=0))[[0, 2]]) < 20.0
+    for parts in (standing, lifted):
+        assert "tin" in parts and "candy" in parts, "the open tin of mints stays on the worktop"
+        assert parts["candy"][:, 1].min() < parts["tin"][:, 1].min(), "the mints show over the tin's rim"
+
+
+def test_his_fist_knocks_the_stale_loaf_and_the_warmed_one_steams_with_no_cracks():
+    up, down, warm = (materials_of(sp.worktop("smallprint-bread", s)) for s in sp.BREAD_STATES)
+    top = down["stalecrust"][:, 1].min()
+    assert down["flesh"][:, 1].max() == pytest.approx(top, abs=1.5), "knuckles down on the loaf's top"
+    assert up["flesh"][:, 1].max() < top - 6.0, "and up off it"
+    for stale in (up, down):
+        assert "crumb" in stale and "crust" not in stale and "steam" not in stale
+    assert "steam" in warm and "stalecrust" not in warm and "crumb" not in warm
+    assert warm["steam"][:, 1].max() < warm["crust"][:, 1].min(), "the steam rises off the top"
+    assert warm["flesh"][:, 1].max() == pytest.approx(sp.PLACES["smallprint-bread"][1], abs=1.0), "his hand rests"
+
+
+def test_the_flies_sit_on_the_bare_horse_and_hang_over_the_striped_coat_without_touching_it():
+    bare, coated = (materials_of(sp.worktop("smallprint-horse", state)) for state in sp.HORSE_STATES)
+    y, scale = sp.PLACES["smallprint-horse"][1], sp.PLACES["smallprint-horse"][4]
+    back = y + (sp.HORSE_BACK - sp.HORSE_BODY[1]) * scale  # the top of his back
+    assert bare["fly"][:, 1].max() > back, "on him, not over him"
+    assert "coat" not in bare and "coatstripe" not in bare
+    coat = np.concatenate([coated["coat"], coated["coatstripe"]])
+    assert coated["fly"][:, 1].max() < coat[:, 1].min(), "over the coat, every one clear of it"
+    assert coated["wing"][:, 1].max() < coat[:, 1].min()
+    stripes = coated["coatstripe"]
+    assert np.ptp(stripes[:, 0]) > 0.5 * np.ptp(coated["coat"][:, 0]), "stripes run the coat's length"
+    ink, white = (sp.materials()[name].color for name in ("coatstripe", "coat"))
+    assert _contrast(ink, white) > 4.5, "black on white, a zebra's stripes"
+
+
+def test_the_grown_sunflower_faces_east_and_the_lit_lamp_to_its_west_does_not_turn_it():
+    dark, lit = (materials_of(sp.worktop("smallprint-sunflower", state)) for state in sp.SUNFLOWER_STATES)
+    for parts in (dark, lit):
+        seeds, petals, lamp = parts["seedhead"], parts["petal"], parts["lampbody"]
+        assert seeds[:, 0].mean() < petals[:, 0].mean() - 0.5, "its middle is to the east (frame left) of its petals"
+        assert lamp[:, 0].min() > seeds[:, 0].max(), "the lamp stands to its west"
+    assert np.allclose(dark["seedhead"], lit["seedhead"]) and np.allclose(dark["petal"], lit["petal"]), (
+        "a grown sunflower does not turn to the light"
+    )
+    assert "bulb" in lit and "bulb" not in dark and "bulboff" in dark, "the lamp is off, then on"
+    y = sp.PLACES["smallprint-sunflower"][1]
+    pool = lit["bulb"][np.abs(lit["bulb"][:, 1] - y) < 1.0]
+    assert len(pool) and np.ptp(pool[:, 0]) > 20.0, "and lights the worktop under it"
+    below = lit["bulb"][(lit["bulb"][:, 1] > y - 32.0) & (lit["bulb"][:, 1] < y - 4.0)]  # under the bulb, off the top
+    assert len(below), "drawn rays fall from the bulb towards the worktop, so it reads as on above the caption"
+
+
+def test_the_mars_globe_is_red_with_a_white_cap_and_a_scratch_shows_grey_under_it_to_the_lens():
+    red, scratched = (materials_of(sp.worktop("smallprint-mars", state)) for state in sp.MARS_STATES)
+    assert "marsinside" not in red, "unscratched, it is red all over"
+    for name in ("marsred", "marsdark", "marscap", "stand"):
+        assert np.allclose(red[name], scratched[name]), f"the scratch changes nothing else: {name}"
+    globe, cap = red["marsred"], red["marscap"]
+    assert cap[:, 1].max() < globe[:, 1].mean(), "the cap is on top"
+    gouge = scratched["marsinside"]
+    on_globe = gouge[gouge[:, 1] < globe[:, 1].max() - 2.0]
+    assert len(on_globe) and on_globe[:, 2].mean() < globe[:, 2].mean(), "the gouge is on the side to the lens"
+    y = sp.PLACES["smallprint-mars"][1]
+    crumbs = gouge[np.abs(gouge[:, 1] - y) < 4.0]
+    assert len(crumbs), "and grey crumbs lie on the worktop in front of it"
+
+    def redness(name: str) -> float:
+        r, g, b = (int(sp.materials()[name].color[i : i + 2], 16) for i in (1, 3, 5))
+        return r - (g + b) / 2
+
+    assert redness("marsinside") < 0.25 * redness("marsred"), "markedly less red under the surface"

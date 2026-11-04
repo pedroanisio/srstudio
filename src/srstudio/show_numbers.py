@@ -11,6 +11,11 @@ A claim can also name the ``brief`` the reel was made to, which the posting job 
 the ``post_by`` day a timely reel is due, which sends it ahead of the number order, and the ``not_before`` day it may
 first post.
 
+A series has a display name, as a cover says it (``Saga``, ``Juno & Pip``), and a stable slug, as ``episode.json`` says
+it (``saga``, ``juno-and-pip``; :func:`series_slug`). The ledger keeps a one-word series under its name, as it always
+has, and a longer one under its slug (:func:`series_key`), so the published records keep their keys (ADR 0233). A claim
+taken before its series was known gets its place with :func:`place`, until the reel is delivered.
+
 The ledger is a file under ``generated/``: JSON of a fixed schema, read strictly, written whole under a lock.
 """
 
@@ -40,8 +45,11 @@ __all__ = [
     "claim",
     "episode_document",
     "ledger_path",
+    "place",
     "read",
     "release_claim",
+    "series_key",
+    "series_slug",
     "set_base",
 ]
 
@@ -49,7 +57,9 @@ FILE = "numbers.json"
 SCHEMA = "1.3.0"  # 1.1.0 added a reel's optional brief, 1.2.0 its optional post_by, 1.3.0 its optional not_before
 _READS = ("1.0.0", "1.1.0", "1.2.0", SCHEMA)
 _LOCK = ".numbers.lock"
-_SERIES = re.compile(r"[A-Z][a-z]+")  # one capitalised word, as a cover names it
+_SERIES = re.compile(r"[A-Z][a-z]+")  # one capitalised word, as a cover names it and the ledger has always kept it
+_NAME = re.compile(r"[A-Z][a-z]+(?:(?: &)? [A-Z][a-z]+)*")  # capitalised words, an & between two: Saga, Juno & Pip
+_SLUG = re.compile(r"[a-z]+(?:-[a-z]+)+")  # a longer series as the ledger keeps it: juno-and-pip
 _BRIEF = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")  # lower-case words joined by hyphens, as send-v1
 _DAY = re.compile(r"\d{4}-\d{2}-\d{2}")  # date.fromisoformat alone also reads 20261102
 _OPTIONAL = frozenset({"series", "series_number", "brief", "post_by", "not_before"})
@@ -81,13 +91,37 @@ class _Brief(TypedDict, total=False):
 
 class EpisodeDocument(_Brief):
     """``episode.json``, beside a numbered video: what the posting job reads, the three required fields on every reel.
-    ``series`` is the series in lower case, empty for a reel in no series, whose ``series_number`` is 0. ``brief`` is
-    there only when the reel names one, and ``post_by`` and ``not_before`` only on a timely reel, so a reel without them
-    keeps the document it always had."""
+    ``series`` is the series' slug (:func:`series_slug`), empty for a reel in no series, whose ``series_number`` is 0.
+    ``brief`` is there only when the reel names one, and ``post_by`` and ``not_before`` only on a timely reel, so a
+    reel without them keeps the document it always had."""
 
     number: int
     series: str
     series_number: int
+
+
+def series_slug(name: str) -> str:
+    """The stable slug of the series a cover names ``name``: ``Saga`` is ``saga``, ``Juno & Pip`` is ``juno-and-pip``.
+    A name that is not capitalised words, with at most an ``&`` between two of them, is a :class:`NumberError`."""
+    if not isinstance(name, str) or not _NAME.fullmatch(name):
+        raise NumberError(f"series {name!r} must be capitalised words, as Saga or Juno & Pip")
+    return "-".join("and" if word == "&" else word.lower() for word in name.split(" "))
+
+
+def series_key(name: str) -> str:
+    """What the ledger keeps for the series named ``name``: a one-word series its name, as it always has (``Saga``),
+    and a longer one its slug (``juno-and-pip``), so no published record changes its key."""
+    slug = series_slug(name)
+    return name if _SERIES.fullmatch(name) else slug
+
+
+def _document_series(key: str) -> str:
+    """The slug ``episode.json`` carries for the series the ledger keeps as ``key``."""
+    if _SERIES.fullmatch(key):
+        return key.lower()
+    if _SLUG.fullmatch(key):
+        return key
+    raise NumberError(f"series {key!r} is neither one capitalised word, as Saga, nor a slug, as juno-and-pip")
 
 
 def _check_brief(brief: str) -> str:
@@ -118,13 +152,11 @@ def episode_document(claim: Claim) -> EpisodeDocument:
     named = bool(claim.series)
     if named != (claim.series_number != 0):
         raise NumberError(f"series {claim.series!r} and series_number {claim.series_number!r} go together")
-    if named and not _SERIES.fullmatch(claim.series):
-        raise NumberError(f"series {claim.series!r} must be one capitalised word, as Saga")
     if type(claim.series_number) is not int or claim.series_number < 0:
         raise NumberError(f"series_number must be a whole number, got {claim.series_number!r}")
     document: EpisodeDocument = {
         "number": claim.number,
-        "series": claim.series.lower(),
+        "series": _document_series(claim.series) if named else "",
         "series_number": claim.series_number,
     }
     if claim.brief:
@@ -269,8 +301,7 @@ def set_base(path: Path, base: int, series: str = "") -> Ledger:
     """Set the count ahead of the first number, or of ``series``' first. It is a fact and moves no claim: a base is
     refused once anything was claimed on it."""
     _whole(base, "base", 0)
-    if series and not _SERIES.fullmatch(series):
-        raise NumberError(f"series {series!r} must be one capitalised word, as Saga")
+    series = series_key(series) if series else ""
     path = Path(path)
     with _locked(path) as ledger:
         if series:
@@ -289,8 +320,10 @@ def claim(path: Path, slug: str, series: str = "", brief: str = "", post_by: str
     """The number of reel ``slug``, taken the first time and the same one every time after. Asking for another series
     than the one claimed is refused: the first would stay on its render. So is another ``brief``; asked with none, a
     claim answers with the one it holds. ``post_by`` sets the day a timely reel is due and ``not_before`` the first day
-    it may post, on a new claim or a held one, and the second may not fall after the first."""
+    it may post, on a new claim or a held one, and the second may not fall after the first. ``series`` is the name a
+    cover gives it, as Saga or Juno & Pip."""
     path = Path(path)
+    series = series_key(series) if series else ""
     if brief:
         _check_brief(brief)
     if post_by:
@@ -329,3 +362,34 @@ def release_claim(path: Path, slug: str, delivered: Collection[str]) -> Claim:
             raise NumberError(f"{slug} has no claim to release")
         _write(path, replace(ledger, reels={k: v for k, v in ledger.reels.items() if k != slug}))
         return held
+
+
+def place(path: Path, slug: str, series: str, series_number: int, delivered: Collection[str]) -> Claim:
+    """Give reel ``slug``, claimed in no series, its place ``series_number`` in the series named ``series`` (as Juno &
+    Pip), and return its claim: a reel is claimed before its show is settled, and its place is part of what its cover
+    says. Asked again with the same place, it answers with the claim. A reel already in a series, one in ``delivered``
+    (its cover went out without the place), a place taken or at or under the series' base, and a series with no base
+    are refused, and the number never moves."""
+    key = series_key(series)
+    _whole(series_number, "series_number", 1)
+    path = Path(path)
+    with _locked(path) as ledger:
+        held = ledger.reels.get(slug)
+        if held is None:
+            raise NumberError(f"{slug} has no claim: claim its number first, with srstudio number claim {slug}")
+        if (held.series, held.series_number) == (key, series_number):
+            return held
+        if held.series:
+            raise NumberError(f"{slug} holds #{held.number} as {held.series} #{held.series_number} already")
+        if slug in delivered:
+            raise NumberError(f"{slug} was delivered without a series, so its cover stays as it went out")
+        if key not in ledger.series:
+            raise NumberError(f"{key} has no base: set it with srstudio number base N --series {series!r}")
+        if series_number <= ledger.series[key]:
+            raise NumberError(f"{key} #{series_number} is at or under the series' base, {ledger.series[key]}")
+        taken = [s for s, c in ledger.reels.items() if (c.series, c.series_number) == (key, series_number)]
+        if taken:
+            raise NumberError(f"{key} #{series_number} is held by {taken[0]}")
+        new = replace(held, series=key, series_number=series_number)
+        _write(path, replace(ledger, reels={**ledger.reels, slug: new}))
+        return new

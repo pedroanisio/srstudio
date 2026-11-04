@@ -223,6 +223,7 @@ def test_tongs_clicks_hold_but_grill_flip_and_dust_fall_interpolate():
         ('soft-washer', dict(loads=((1, 'mystery'),))),
         ('soft-tv', dict(off=7)),
         ('soft-home-fridge', dict(off=0)),
+        ('soft-home-fridge', dict(light=False, off=2)),
         ('soft-dust', dict(end=0)),
         ('soft-dimmer', dict(rows=((0, 1.1),))),
         ('soft-notice', dict(text='X' * 25)),
@@ -263,3 +264,9 @@ def test_soft_props_discovery_recipe_executes():
     block = doc.split('<!-- soft-prop-discovery:start -->')[1].split('<!-- soft-prop-discovery:end -->')[0]
     code = block.split('```python\n')[1].split('```')[0]
     exec(compile(code, '<soft-prop-discovery>', 'exec'), {})
+
+
+def test_a_fridge_declares_its_light_as_a_switch_that_defaults_on():
+    light = args('soft-home-fridge')['light']
+    assert light['type'] == 'boolean'
+    assert light['default'] is True
