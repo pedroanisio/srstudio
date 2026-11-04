@@ -90,12 +90,13 @@ ACCENT = re.compile(r"strong [a-z]+(?: [a-z]+)? accent")  # the guide's "[strong
 QUALITY = re.compile(r"[a-z]+(?:[ ,'-]+[a-z]+)*")  # "quietly, holding back": words, commas, hyphens
 WORD = re.compile(r"[A-Za-z][A-Za-z'’-]*")
 
-# The checks of the prosody gate (srstudio.prosody, ADR 0234 c) a take's direction may waive, and the one a script may.
+# The checks of the prosody gate (srstudio.prosody, ADR 0234 c) a take's direction may waive, and those a script may:
+# the reel's prosody checks and the master's (srstudio.master_gate, ADR 0237).
 LINE_CHECKS = (
     "line_pace", "first_word", "turn_gap", "punch_gap", "answer_gap", "end_breath", "stress", "hold", "spread", "flat",
     "delivery",
 )  # fmt: skip
-REEL_CHECKS = ("reel_pace", "turn_median")
+REEL_CHECKS = ("reel_pace", "turn_median", "frozen", "opening", "lra")  # the last three: srstudio.master_gate
 RANGED = ("line_pace", "first_word", "turn_gap", "punch_gap", "answer_gap", "end_breath", "reel_pace", "turn_median")
 MIN_REASON_WORDS = 3
 MAX_REASON = 200
@@ -156,7 +157,7 @@ class Waiver:
     """A prosody target this line (or, for :data:`REEL_CHECKS`, this script) does not keep, and why. ``bounds``
     replaces the target's (low, high) for a check measured against a range (:data:`RANGED`: seconds, or words per
     second); without it the check is off for this take. ``stress``, ``hold``, ``spread``, ``flat`` and ``delivery``
-    take no bounds."""
+    take no bounds, nor do the master's ``frozen``, ``opening`` and ``lra``."""
 
     check: str
     reason: str

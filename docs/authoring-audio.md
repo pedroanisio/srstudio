@@ -138,6 +138,14 @@ reason, in the delivery report. A reel whose `timeline.json` has a `prosody` sec
 refused on any finding that is not waived. A reel recorded before the gate has no
 section, so it reads "unmeasured" and is never refused.
 
+Beside it, `srstudio.master_gate` measures the finished master under the same policy
+([ADR 0237](decisions/0237-master-checks-at-first-delivery.md)). A frozen run fails at over
+1.5 s, where a frame changing under 0.05% of its pixels counts as frozen. An opening
+silence fails at over 0.25 s to the first sound above -45 dB, and a loudness range fails
+under 4.5 LU. Still runs over 2 s, a music bed with no half-second dip of 10 dB, and a
+first word inside the opening silence are reported as information. Waive `frozen`,
+`opening` or `lra` on `Script.waive` with a reason.
+
 The generated-asset path uses `srstudio.generated.Generated` and
 `scene-render resolve`. The `srstudio-elevenlabs` provider requires
 `SRSTUDIO_ALLOW_CLOUD=1`; resolution pins the resulting file's SHA-256. Keep those
