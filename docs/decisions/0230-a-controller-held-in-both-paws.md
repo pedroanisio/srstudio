@@ -2,7 +2,7 @@
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 ---
 
-# ADR 0228: A controller held in both paws
+# ADR 0230: A controller held in both paws
 
 - Status: proposed (2026-11-04). The drawings it adds, `toon-leo` and `toon-sam`, are proposed with their rigs, and
   the proof is at `generated/character-proofs/between-friends/index.html`

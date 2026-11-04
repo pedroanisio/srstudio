@@ -144,7 +144,7 @@ NEWER_MOUTHS = (*MOUTHS, "yawn", "scream", "puff")
 TRACED_MOUTHS = MOUTHS[:9]
 ARMS = ("desk", "type", "crossed", "sigh", "lean", "face", "face2")
 GESTURES = ("ready", "present", "empathy", "shrug", "folded", "firm", "panic", "facepalm", "tablet")  # Bento's own
-GRIPS = toon_gamepad.GRIPS  # a player's own ways of holding a controller (ADR 0228)
+GRIPS = toon_gamepad.GRIPS  # a player's own ways of holding a controller (ADR 0230)
 OWN_ARMS = {  # a drawing whose hands are in its own poses, drawn after the shared arms
     "toon-bento@2": GESTURES,
     "toon-leo": GRIPS,

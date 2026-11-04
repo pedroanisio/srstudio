@@ -1,4 +1,4 @@
-"""A controller held in both paws (ADR 0228): the holds as typed data, the pair of paws (one drawing, mirrored for the
+"""A controller held in both paws (ADR 0230): the holds as typed data, the pair of paws (one drawing, mirrored for the
 frame's right arm), thumbs that point in toward each other, and a grip that draws wherever a pose does."""
 
 import math

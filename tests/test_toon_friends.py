@@ -1,4 +1,4 @@
-"""Leo and Sam, two best friends drawn the critters' way with head rigs and controller grips (ADR 0228): both
+"""Leo and Sam, two best friends drawn the critters' way with head rigs and controller grips (ADR 0230): both
 proposed, each with his own face and his own head motion, every pose drawn through the rig, and nothing a reel can
 draw until the operator approves them."""
 

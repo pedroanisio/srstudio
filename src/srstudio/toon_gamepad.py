@@ -1,4 +1,4 @@
-"""A game controller held in both paws: the grips of a Toon critter that plays (ADR 0228).
+"""A game controller held in both paws: the grips of a Toon critter that plays (ADR 0230).
 
 A :class:`Player` is a :class:`~srstudio.toon_critters.Critter` that wears a top and can hold a controller. Its own
 poses are the four ways of holding one (:data:`GRIPS`), drawn as gestures (:class:`srstudio.toon_cast.Posing`), so a

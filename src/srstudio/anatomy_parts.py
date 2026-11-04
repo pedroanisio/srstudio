@@ -85,7 +85,7 @@ _ANCHOR = _paired(
 )
 _BENTO = _paired("toon_bento.Paw on an Arm: the arm chooses the mirror (ADR 0143)", "open", Side.LEFT, Facing.PALM)
 _PLAYER = _paired(
-    "toon_gamepad.GRIP on an Arm: the arm chooses the mirror (ADR 0228); a shared pose draws the critter's mitt",
+    "toon_gamepad.GRIP on an Arm: the arm chooses the mirror (ADR 0230); a shared pose draws the critter's mitt",
     "grip",
     Side.LEFT,
     Facing.PALM,

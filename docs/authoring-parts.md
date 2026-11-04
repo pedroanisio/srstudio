@@ -593,4 +593,4 @@ toon_head.figure(cv, parent, toon_friends.LEO_RIG, poses, 4.0, HeadPlan.still())
 
 Both characters and both rigs are proposed, so `toon_rigs.rig_of` refuses them and no reel can use them until the
 operator decides. `toon.parse_poses` still holds to the shared arm kinds, so a sketch cannot name a grip yet. The
-reasons are in [docs/decisions/0228-a-controller-held-in-both-paws.md](decisions/0228-a-controller-held-in-both-paws.md).
+reasons are in [docs/decisions/0230-a-controller-held-in-both-paws.md](decisions/0230-a-controller-held-in-both-paws.md).

@@ -1,5 +1,5 @@
 """Leo and Sam, two best friends of about twenty, drawn the critters' way (ADR 0052) with head rigs (ADR 0059) and the
-controller grips of :mod:`srstudio.toon_gamepad` (ADR 0228).
+controller grips of :mod:`srstudio.toon_gamepad` (ADR 0230).
 
 Leo is a koala in a mustard hoodie: a broad, light grey head, big round ears fluffed white at the rim, a large dark
 nose and small eyes set wide of it, so a small change of lid or brow reads. Sam is a sea otter in a teal long-sleeved
