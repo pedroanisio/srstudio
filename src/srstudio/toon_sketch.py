@@ -363,7 +363,8 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
             ep.hide_on_cover(drawn)
     else:
         fit_captions(lines, partial(measure, size=toon.CAPTION_SIZE), cv.width)
-        toon.captions(cv, ep.comp, lines, partial(measure, size=toon.CAPTION_SIZE), tints=staging.tints)
+        fit = ep.spec.safe_area is not None  # a declared area measures each text box (ADR 0218)
+        toon.captions(cv, ep.comp, lines, partial(measure, size=toon.CAPTION_SIZE), tints=staging.tints, fit=fit)
     if voiced:
         ep.audio(narration=manifest, loudness=staging.loudness)
         beds = []
