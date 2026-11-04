@@ -7032,10 +7032,10 @@
         {
           "number": 1,
           "date": "2026-11-03",
-          "note": "A big phone whose screen wakes into a simple face: a search bar typing on cue, eyes that look and narrow, a mouth on a lip-sync track, a lean toward the glass, and old searches flickering on as pills round it. An invented interface with no brand or real search engine look. First drawn for my-phone-searches. Proposed: a face, so it waits for arc4d3's decision.",
-          "status": "proposed",
-          "proof": "",
-          "approval": null,
+          "note": "A big phone whose screen wakes into a simple face: a search bar typing on cue, eyes that look and narrow, a mouth on a lip-sync track, a lean toward the glass, and old searches flickering on as pills round it. An invented interface with no brand or real search engine look. First drawn for my-phone-searches.",
+          "status": "approved",
+          "proof": "generated/character-proofs/toon-phone-face/my-phone-searches.mp4",
+          "approval": {"date": "2026-11-03", "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793755705.187079: \"approved, toon-phone-face v1 as drawn (two eyes and a mouth on the screen, no brand, no logo, a generic search bar).\""},
           "drawing": "34c9ec4a07eaffb81e3318935257f68af1f7634a438a1f7909ddaef8ce3d30d9",
           "rig": null
         }
