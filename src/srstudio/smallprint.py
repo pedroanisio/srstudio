@@ -1300,6 +1300,111 @@ def fly_landing(cv, g, first: float, last: float, measure: Measure) -> None:
         cv.keys(fly, "y", ys, hold=False, kind=None if zebra else "cubic-out", local=False)
 
 
+# -- batch 3: the sunflower ------------------------------------------------------------------------------------------
+PETAL, SEEDS, LEAF, SUNNY, NIGHT = "#F2B731", "#5A3A22", "#5E8F3A", "#F6C445", "#1C2A4ACC"
+
+
+def _flower(cv, parent, cx: float, cy: float, r: float, facing: float) -> None:
+    """A sunflower's head about ``cx, cy``, its face ``r`` across, turned ``facing`` (-1 to frame left, east, 1 to frame
+    right, west): petals round a brown middle, drawn narrower as it turns away, its middle towards the side it faces."""
+    squeeze = 1.0 - 0.35 * abs(facing)
+    for k in range(16):
+        a = 2.0 * math.pi * k / 16
+        px, py = cx + (r + 18.0) * math.cos(a) * squeeze, cy + (r + 18.0) * math.sin(a)
+        cv.ellipse(parent, px - 16, py - 16, 32, 32, PETAL, stroke=INK, sw=2.5)
+    cv.ellipse(parent, cx - r * squeeze, cy - r, 2 * r * squeeze, 2 * r, PETAL, stroke=INK, sw=3.0)
+    shift = facing * r * 0.25
+    cv.ellipse(parent, cx + shift - r * 0.62 * squeeze, cy - r * 0.62, 1.24 * r * squeeze, 1.24 * r, SEEDS,
+               stroke=INK, sw=3.0)  # fmt: skip
+
+
+def _bud(cv, parent, cx: float, cy: float) -> None:
+    """A young sunflower's closed green bud about ``cx, cy``, its tip at frame top, to be turned by its group."""
+    for dx in (-26.0, 0.0, 26.0):
+        cv.ellipse(parent, cx + dx - 16, cy - 64, 32, 70, LEAF, stroke=INK, sw=3.0)
+    cv.ellipse(parent, cx - 44, cy - 40, 88, 64, LEAF, stroke=INK, sw=4.0)
+
+
+def sun_track(cv, g, first: float, last: float, measure: Measure) -> None:
+    """A young sunflower under the sky, day after day: the sun crosses from east to west and the bud turns with it;
+    then night falls, the sun is gone, and the bud swings back to face east before dawn (Atamian et al., 2016)."""
+    sheet(cv, g)
+    label(cv, g, "young sunflower", LEFT, 290, RIGHT - LEFT, 80, 58.0, INK, "center")
+    night = cv.group(g, cv.uid("sp-night"), opacity=0.0)
+    cv.rect(night, 80, 400, 840, 500, NIGHT, radius=24.0)
+    cv.rect(night, 410, 416, 180, 72, PAPER, stroke=INK, sw=3.0, radius=36.0)  # a tag, so the word reads on paper
+    label(cv, night, "night", 410, 420, 180, 60, 46.0, INK, "center")
+    label(cv, g, "east", LEFT + 20, 780, 200, 60, 46.0, STAMP, "start")
+    label(cv, g, "west", RIGHT - 220, 780, 200, 60, 46.0, STAMP, "end")
+    arc = [(500.0 - 320.0 * math.cos(u), 760.0 - 300.0 * math.sin(u)) for u in np.linspace(0.0, math.pi, 9)]
+    for x, y in arc[1:-1]:
+        cv.ellipse(g, x - 6, y - 6, 12, 12, RULED)
+    sun = cv.group(g, cv.uid("sp-sun"), x=0.0, y=0.0, opacity=1.0)
+    cv.ellipse(sun, -44, -44, 88, 88, SUNNY, stroke=INK, sw=4.0)
+    cv.path(g, "M500 900 C 492 840, 508 780, 500 720", fill="#00000000", stroke=LEAF, sw=12.0)  # the stem
+    cv.ellipse(g, 440, 800, 70, 34, LEAF, stroke=INK, sw=3.0)  # a leaf
+    head = pivot(cv, g, "sp-bud", 500.0, 720.0)
+    _bud(cv, head, 500.0, 700.0)
+    cv.line(g, 300, 900, 700, 900, INK, 6.0)  # the ground
+    day, dark = 2.4, 1.2
+    xs, ys, glow, shade, turn = [], [], [], [], []
+    t = first
+    while t < last:
+        for k, (x, y) in enumerate(arc):
+            at = round(t + day * k / (len(arc) - 1), 4)
+            xs.append((at, x))
+            ys.append((at, y))
+        glow += [(round(t, 4), 1.0), (round(t + day, 4), 1.0), (round(t + day + 0.2, 4), 0.0),
+                 (round(t + day + dark - 0.02, 4), 0.0)]  # fmt: skip
+        shade += [(round(t, 4), 0.0), (round(t + day, 4), 0.0), (round(t + day + 0.2, 4), 1.0),
+                  (round(t + day + dark - 0.2, 4), 1.0), (round(t + day + dark, 4), 0.0)]  # fmt: skip
+        turn += [(round(t, 4), -60.0), (round(t + day, 4), 60.0), (round(t + day + dark - 0.1, 4), -60.0)]
+        t += day + dark
+    cv.keys(sun, "x", xs, hold=False, local=False)
+    cv.keys(sun, "y", ys, hold=False, local=False)
+    cv.keys(sun, "opacity", glow, hold=False, local=False)
+    cv.keys(night, "opacity", shade, hold=False, local=False)
+    cv.keys(head, "rotation", turn, hold=False, kind="sine-in-out", local=False)
+
+
+def east_warm(cv, g, first: float, last: float, measure: Measure) -> None:
+    """Grown sunflowers in the morning, one facing east into the sun and one turned to face west: the east-facing one
+    warms up faster and five bees come to it while one comes to the other (UC Davis, 2016: five times as many
+    pollinating insects)."""
+    sheet(cv, g)
+    label(cv, g, "grown sunflowers, morning", LEFT, 290, RIGHT - LEFT, 80, 54.0, INK, "center")
+    sun = pivot(cv, g, "sp-sun", 150.0, 430.0)
+    cv.ellipse(sun, 100, 380, 100, 100, SUNNY, stroke=INK, sw=4.0)
+    for k in range(8):
+        a = math.radians(k * 45)
+        cv.line(sun, 150 + 64 * math.cos(a), 430 + 64 * math.sin(a), 150 + 86 * math.cos(a), 430 + 86 * math.sin(a),
+                INK, 5.0)  # fmt: skip
+    cv.keys(sun, "rotation", [(first, 0.0), (last, 45.0 * (last - first))], hold=False, local=False)
+    rows = (("faces east", 360.0, -1.0, 5, 0.85), ("turned west", 720.0, 1.0, 1, 0.35))
+    for words, cx, facing, bees, warm in rows:
+        cv.path(g, f"M{cx:.0f} 820 C {cx - 8:.0f} 740, {cx + 8:.0f} 660, {cx:.0f} 580", fill="#00000000",
+                stroke=LEAF, sw=12.0)  # fmt: skip
+        _flower(cv, g, cx, 540.0, 62.0, facing)
+        tube_x = cx + 120.0
+        cv.rect(g, tube_x - 14, 500, 28, 220, PAPER, stroke=INK, sw=4.0, radius=14.0)  # a thermometer
+        fill = cv.group(g, cv.uid("sp-warmth"), scaleY=0.2, anchorX=tube_x, anchorY=716.0, x=tube_x, y=716.0)
+        cv.rect(fill, tube_x - 8, 506, 16, 210, STAMP, radius=8.0)
+        cv.keys(fill, "scaleY", [(first, 0.2), (first + 1.6, warm), (last, warm)], hold=False, kind="cubic-out",
+                local=False)  # fmt: skip
+        size = min(46.0, 46.0 * 300.0 / measure(words, 46.0))
+        label(cv, g, words, cx - 150, 840, 300, 64, size, INK, "center")
+        for k in range(bees):
+            bee = cv.group(g, cv.uid("sp-bee"), x=0.0, y=0.0)
+            cv.ellipse(bee, -14, -10, 28, 20, SUNNY, stroke=INK, sw=3.0)
+            cv.line(bee, -2, -10, -2, 10, INK, 4.0)
+            cv.ellipse(bee, -10, -26, 16, 18, "#D8E6EEDD", stroke=INK, sw=2.0)
+            phase, r = 2.0 * math.pi * k / max(bees, 1), 110.0 + 14.0 * (k % 2)
+            keys = [(round(first + 0.1 * j, 4), u) for j, u in enumerate(np.linspace(phase, phase + 4 * math.pi,
+                    int((last - first) / 0.1) + 1))]  # fmt: skip
+            cv.keys(bee, "x", [(t, cx + r * math.cos(u)) for t, u in keys], hold=False, local=False)
+            cv.keys(bee, "y", [(t, 540.0 + r * 0.8 * math.sin(u)) for t, u in keys], hold=False, local=False)
+
+
 PANELS: dict[str, Callable[..., None]] = {
     "penny-fall": penny_fall,
     "lightning": lightning,
@@ -1322,6 +1427,8 @@ PANELS: dict[str, Callable[..., None]] = {
     "can-bubbles": can_bubbles,
     "horse-coats": horse_coats,
     "fly-landing": fly_landing,
+    "sun-track": sun_track,
+    "east-warm": east_warm,
 }
 
 

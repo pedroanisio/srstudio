@@ -16000,6 +16000,23 @@
           "rig": null
         }
       ]
+    },
+    "smallprint-sunflower": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-04",
+          "note": "A grown sunflower in a terracotta pot, its open head facing east (frame left), a small desk lamp at its west side, off or lit, the flower facing east either way, as replacement plates. First drawn for Small Print's sunflower question.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3668961e3cda25c66d11f03f333d0649453d9a84267b8d9e7f2bb45ca9c2be95",
+          "rig": null
+        }
+      ]
     }
   }
 }

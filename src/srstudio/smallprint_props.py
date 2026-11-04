@@ -45,6 +45,7 @@ __all__ = [
     "part_plates",
     "phone",
     "roll",
+    "sunflower",
     "tear_plate",
     "tears",
     "tower",
@@ -85,6 +86,14 @@ OWN = {  # what is new in his world: name, colour, roughness, metallic, clay-fin
     "coatstripe": ("#25211F", 0.6, 0.0, True),
     "fly": ("#2B2A2E", 0.35, 0.0, False),
     "wing": ("#D8E6EE", 0.12, 0.0, False),
+    "pot": ("#B8643F", 0.6, 0.0, True),
+    "soil": ("#4A3526", 0.8, 0.0, True),
+    "stem": ("#5E8F3A", 0.55, 0.0, True),
+    "petal": ("#F2B731", 0.45, 0.0, True),
+    "seedhead": ("#5A3A22", 0.7, 0.0, True),
+    "lampbody": ("#2F5D62", 0.4, 0.2, False),
+    "bulb": ("#FFE58A", 0.15, 0.0, False),
+    "bulboff": ("#C9C3B6", 0.2, 0.0, False),
 }
 
 
@@ -612,6 +621,74 @@ def horse(m: Model, state: str = "flies") -> None:
         fly(m, x, y, z)
 
 
+# -- batch 3: the sunflower --------------------------------------------------------------------------------------------
+SUNFLOWER_STATES = ("dark", "lamp")
+SUNFLOWER_HEAD = (-6.0, -52.0, -2.0)  # the flower's middle, east of its stem: frame left is east on his worktop
+SUNFLOWER_FACING = 62.0  # degrees about the upright from the lens towards frame left: it faces east, and the lens
+LAMP_AT = 30.0  # the lamp's foot, to the west of the pot at frame right
+
+
+def _front(facing: float) -> tuple[float, float]:
+    """The x and z of the way a face turned ``facing`` degrees looks: towards the lens and, turned, to frame left."""
+    spin = np.radians(facing)
+    return -float(np.sin(spin)), -float(np.cos(spin))
+
+
+def _along(centre: tuple[float, float, float], facing: float, out: float) -> tuple[float, float, float]:
+    """``centre`` moved ``out`` the way a face turned ``facing`` looks, or behind it when ``out`` is negative."""
+    fx, fz = _front(facing)
+    return centre[0] + fx * out, centre[1], centre[2] + fz * out
+
+
+def _petals(m: Model, centre: tuple[float, float, float], r: float, facing: float, n: int = 18) -> None:
+    """A ring of ``n`` petals round a face of radius ``r`` about ``centre``, the face turned ``facing`` degrees."""
+    fx, fz = _front(facing)
+    cx, cy, cz = _along(centre, facing, -0.6)
+    for k in range(n):
+        a = 2.0 * np.pi * k / n
+        out = r + 3.2
+        dx, dy = out * np.cos(a), out * np.sin(a)  # across the face: along it sideways, perpendicular to its look
+        m.ell("petal", (cx - dx * fz, cy + dy, cz + dx * fx), (4.2, 1.7, 0.7), rotation=float(np.degrees(a)),
+              rotation_y=facing)  # fmt: skip
+
+
+@register(
+    "prop",
+    "smallprint-sunflower",
+    summary="A clay sunflower in full bloom in a terracotta pot, facing east, a desk lamp to its west off or on",
+    contract=_contract(
+        "smallprint-sunflower",
+        SUNFLOWER_STATES,
+        "dark: a grown sunflower in a pot, its open head facing east (frame left), a desk lamp at its west side, off; "
+        "lamp: the same, the lamp's bulb lit, and the flower still facing east, away from it.",
+    ),
+)
+def sunflower(m: Model, state: str = "dark") -> None:
+    """A grown sunflower in a terracotta pot: a green stem with two leaves, its open head of yellow petals round a
+    brown seed head turned to frame left, which is east on his worktop. A small desk lamp stands to its west, at frame
+    right: dark on ``dark``, lit on ``lamp``. The flower faces east in both: a grown one has stopped turning."""
+    if state not in SUNFLOWER_STATES:
+        raise PropError(f"the sunflower's states are {SUNFLOWER_STATES}, got {state!r}")
+    m.cylinder("pot", (0.0, -6.0, 0.0), 8.0, 12.0)
+    m.cylinder("pot", (0.0, -12.6, 0.0), 9.2, 2.4)  # the rim
+    m.cylinder("soil", (0.0, -13.6, 0.0), 8.2, 0.6)
+    hx, hy, hz = SUNFLOWER_HEAD
+    m.tube("stem", ((0.0, -13.0, 0.0), (0.6, -30.0, 0.0), (-1.0, -44.0, -0.5), (hx + 3.0, hy + 4.0, hz + 1.5)), 1.5)
+    for side, y in ((-1.0, -24.0), (1.0, -32.0)):
+        m.ell("stem", (side * 5.2, y, 0.0), (5.0, 1.6, 2.6), rotation=side * -28.0)  # a leaf
+    head = (hx, hy, hz)
+    m.ell("petal", _along(head, SUNFLOWER_FACING, -0.4), (8.4, 8.4, 1.0), rotation_y=SUNFLOWER_FACING)  # its backing
+    _petals(m, head, 6.8, SUNFLOWER_FACING)
+    m.ell("seedhead", _along(head, SUNFLOWER_FACING, 0.4), (6.6, 6.6, 1.8), rotation_y=SUNFLOWER_FACING)
+    m.ell("stem", _along(head, SUNFLOWER_FACING, -1.6), (6.2, 6.2, 0.9), rotation_y=SUNFLOWER_FACING)  # its green back
+    m.box("lampbody", (LAMP_AT, -1.0, 0.0), (13.0, 2.0, 10.0), radius=0.9)  # the lamp's base
+    m.tube("lampbody", ((LAMP_AT + 2.0, -1.5, 0.0), (LAMP_AT + 3.0, -20.0, 0.0), (LAMP_AT - 4.0, -32.0, 0.0)), 1.2)
+    m.ell("lampbody", (LAMP_AT - 9.0, -32.0, 0.0), (7.0, 4.6, 5.0), rotation=24.0)  # its shade, towards the flower
+    m.ell("bulb" if state == "lamp" else "bulboff", (LAMP_AT - 12.0, -28.0, -0.5), (3.2, 3.2, 3.2))
+    if state == "lamp":  # its light on the worktop, under the flower's back
+        m.ell("bulb", (LAMP_AT - 16.0, -0.15, 0.0), (15.0, 0.15, 10.0))
+
+
 # -- the tears ---------------------------------------------------------------------------------------------------------
 TEAR_BEADS = (  # under each eye, outward and down, growing to the drop: x, y, half-width, half-height (x mirrored)
     (22.6, -356.0, 0.9, 2.0),
@@ -678,6 +755,7 @@ STATES: dict[str, tuple[str, ...]] = {
     "smallprint-apple": APPLE_STATES,
     "smallprint-can": CAN_STATES,
     "smallprint-horse": HORSE_STATES,
+    "smallprint-sunflower": SUNFLOWER_STATES,
 }
 _DRAW: dict[str, Callable[..., None]] = {
     "smallprint-tower": tower,
@@ -691,6 +769,7 @@ _DRAW: dict[str, Callable[..., None]] = {
     "smallprint-apple": apple,
     "smallprint-can": can,
     "smallprint-horse": horse,
+    "smallprint-sunflower": sunflower,
 }
 PLACES: dict[str, tuple[float, float, float, float, float]] = {  # x, y, z, yaw, scale on the worktop
     "smallprint-tower": (-62.0, -248.0, -80.0, -10.0, 1.4),  # at his right, clear of his face and mouth
@@ -704,6 +783,7 @@ PLACES: dict[str, tuple[float, float, float, float, float]] = {  # x, y, z, yaw,
     "smallprint-apple": (6.0, -248.0, -80.0, -4.0, 1.0),
     "smallprint-can": (58.0, -248.0, -80.0, 0.0, 0.8),  # under his frame-right hand, clear of his chin
     "smallprint-horse": (-36.0, -248.0, -80.0, 0.0, 1.4),  # at frame left, the hovering flies clear of his chin
+    "smallprint-sunflower": (-40.0, -248.0, -80.0, 0.0, 1.4),
 }
 GRIPS: dict[str, tuple[str, tuple[float, float, float]]] = {  # his hand: a kind, and where (the knife's moves)
     "smallprint-tower": ("rest", (82.0, -248.0, -70.0)),
@@ -717,6 +797,7 @@ GRIPS: dict[str, tuple[str, tuple[float, float, float]]] = {  # his hand: a kind
     "smallprint-apple": ("rest", (82.0, -248.0, -72.0)),
     "smallprint-can": ("rest", (92.0, -248.0, -70.0)),
     "smallprint-horse": ("rest", (74.0, -248.0, -72.0)),
+    "smallprint-sunflower": ("rest", (74.0, -248.0, -72.0)),
 }
 HANDS: dict[tuple[str, str], tuple[str, tuple[float, float, float]]] = {  # a state that moves his hand: kind, where
     ("smallprint-bowl", "soaking"): ("dip", (21.0, -256.0, -86.0)),  # in the water, under its surface

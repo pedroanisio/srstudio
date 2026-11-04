@@ -681,6 +681,38 @@ def test_over_a_horse_a_fly_slows_down_and_lands_and_over_a_zebra_it_comes_in_at
     assert "slows down, lands" in words and "no slowing down" in words
 
 
+def test_the_young_sunflower_follows_the_sun_east_to_west_and_turns_back_east_in_the_dark():
+    root = panel_root("sun-track", 1.0, 9.0)
+    (bud,) = groups(root, "sp-bud")
+    (sun,) = groups(root, "sp-sun")
+    (night,) = groups(root, "sp-night")
+    turns, xs = dict(keyed(bud, "rotation")), keyed(sun, "x")
+    dawns = [t for t, x in xs if x == min(x for _, x in xs)]
+    dusks = [t for t, x in xs if x == max(x for _, x in xs)]
+    assert len(dusks) >= 2, "day after day while the page is up"
+    assert all(turns.get(t) == -60.0 for t in dawns), "at dawn the bud faces east, where the sun comes up"
+    assert all(turns.get(t) == 60.0 for t in dusks), "at sunset it faces west, where the sun has gone"
+    for dusk, dawn in zip(dusks, dawns[1:], strict=False):
+        dark = [t for t, v in keyed(night, "opacity") if v == 1.0 and dusk < t < dawn]
+        assert dark, "night falls between them"
+        back = [t for t, v in turns.items() if v == -60.0 and dusk < t <= dawn]
+        assert back and min(back) < dawn, "and in the dark the bud is back facing east before the sun is up"
+    words = words_on(root)
+    assert all(w in words for w in ("east", "west", "night", "young sunflower"))
+
+
+def test_grown_sunflowers_facing_east_warm_faster_and_get_five_times_the_bees_of_one_turned_west():
+    root = panel_root("east-warm")
+    bees = groups(root, "sp-bee")
+    assert len(bees) == 6, "five and one: five times as many (UC Davis, 2016)"
+    centres = sorted(round(sum(v for _, v in keyed(bee, "x")) / len(keyed(bee, "x"))) for bee in bees)
+    assert sum(c < 540 for c in centres) == 5 and sum(c > 540 for c in centres) == 1
+    east, west = (keyed(g, "scaleY")[-1][1] for g in groups(root, "sp-warmth"))
+    assert east > west, "the east-facing one is the warmer"
+    words = words_on(root)
+    assert "faces east" in words and "turned west" in words and "grown sunflowers" in words
+
+
 FIXTURE_FONT = next((f for f in SYSTEM_FONTS if f.is_file()), None)  # DejaVu Sans Bold, the fixture font
 NEEDS_FONT = pytest.mark.skipif(FIXTURE_FONT is None, reason="no DejaVu Sans Bold to measure with")
 

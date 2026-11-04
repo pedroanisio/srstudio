@@ -372,3 +372,18 @@ def test_the_flies_sit_on_the_bare_horse_and_hang_over_the_striped_coat_without_
     assert np.ptp(stripes[:, 0]) > 0.5 * np.ptp(coated["coat"][:, 0]), "stripes run the coat's length"
     ink, white = (sp.materials()[name].color for name in ("coatstripe", "coat"))
     assert _contrast(ink, white) > 4.5, "black on white, a zebra's stripes"
+
+
+def test_the_grown_sunflower_faces_east_and_the_lit_lamp_to_its_west_does_not_turn_it():
+    dark, lit = (materials_of(sp.worktop("smallprint-sunflower", state)) for state in sp.SUNFLOWER_STATES)
+    for parts in (dark, lit):
+        seeds, petals, lamp = parts["seedhead"], parts["petal"], parts["lampbody"]
+        assert seeds[:, 0].mean() < petals[:, 0].mean() - 0.5, "its middle is to the east (frame left) of its petals"
+        assert lamp[:, 0].min() > seeds[:, 0].max(), "the lamp stands to its west"
+    assert np.allclose(dark["seedhead"], lit["seedhead"]) and np.allclose(dark["petal"], lit["petal"]), (
+        "a grown sunflower does not turn to the light"
+    )
+    assert "bulb" in lit and "bulb" not in dark and "bulboff" in dark, "the lamp is off, then on"
+    y = sp.PLACES["smallprint-sunflower"][1]
+    pool = lit["bulb"][np.abs(lit["bulb"][:, 1] - y) < 1.0]
+    assert len(pool) and np.ptp(pool[:, 0]) > 20.0, "and lights the worktop under it"

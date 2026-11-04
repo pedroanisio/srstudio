@@ -66,6 +66,7 @@ NO_EPISODE = [
     "smallprint-phone",
     "smallprint-roll",
     "smallprint-stamp",
+    "smallprint-sunflower",
     "smallprint-tears",
     "smallprint-tower",
     "smallprint-wall",
