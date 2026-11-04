@@ -25,6 +25,8 @@ with ``--voice``), as :func:`srstudio.sketch.record` would after a recording:
 - ``voiced/mouths.json``, the viseme track of every lip-synced character on screen who says a line, read with
   ``mouth`` (:func:`srstudio.sketch.lips`); a speaker with no character on screen gets its track from
   :func:`mouth_track`, for a dress that draws its own mouth.
+- ``audio/vo-<id>.wav``, each take's stretch of the file, which head motion reads for its loudness
+  (:func:`srstudio.toon_sketch.spoken_takes`); they are never mixed, the one item above is.
 
 The loops run over the sketch's lines and the reading's words, both finite; nothing is retried and no model output
 sets a bound.
@@ -295,9 +297,26 @@ def voice(
     ]  # fmt: skip
     sketch.write_voiced(root, beats, needed, sk.lines, mouths)
     sketch.write_speech(root, takes, needed)
+    _cut(audio, root, takes)
     (root / "voice-transcript.json").write_text(json.dumps({"lines": lines, "passed": True}, indent=2) + "\n")
     (root / "narration.json").write_text(json.dumps(manifest, indent=2) + "\n")
     return manifest
+
+
+def _cut(audio: Path, root: Path, takes: Sequence[sketch.Take]) -> None:
+    """Each take's stretch of ``audio`` as ``audio/vo-<id>.wav`` beside it, for the head motion's loudness."""
+    with wave.open(str(audio), "rb") as w:
+        channels, width, rate, count = w.getnchannels(), w.getsampwidth(), w.getframerate(), w.getnframes()
+        frames = w.readframes(count)
+    step = channels * width
+    for take in takes:
+        a = min(round(take.at * rate), count)
+        b = min(round((take.at + take.kept) * rate), count)
+        with wave.open(str(root / "audio" / f"vo-{take.id}.wav"), "wb") as out:
+            out.setnchannels(channels)
+            out.setsampwidth(width)
+            out.setframerate(rate)
+            out.writeframes(frames[a * step : b * step])
 
 
 Hear = Callable[[Path, Mapping[str, str]], Transcript]
