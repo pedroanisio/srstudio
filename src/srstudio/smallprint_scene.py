@@ -26,6 +26,7 @@ from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
+from weakref import WeakKeyDictionary
 
 import numpy as np
 from PIL import Image, ImageDraw
@@ -421,13 +422,24 @@ def _camera(cv, g, shot: Shot, amount: float) -> None:
     cv.keys(g, "y", [(m.at, py + m.dy * amount) for m in shot.moves], hold=False, kind="sine-in-out", local=False)
 
 
+_SHELVES: WeakKeyDictionary[Any, rafa_host._Shelf] = WeakKeyDictionary()
+
+
+def _shelf(cv, root: Path) -> rafa_host._Shelf:
+    """One shelf of picture files a document, so shots that share a plate (one lens, one room) add it once."""
+    shelf = _SHELVES.get(cv)
+    if shelf is None or shelf.folder != root / "assets" / "rafa":
+        shelf = _SHELVES[cv] = rafa_host._Shelf(cv, root)
+    return shelf
+
+
 def draw(cv, parent, shot: Shot, first: float, last: float, renders: Renders, root: Path, measure: Measure,
          stamped: Stamp | None = None, said: float | None = None) -> Any:  # fmt: skip
     """The shot over the frame from ``first`` to ``last``: his room out of focus, his worktop with the still part,
     the moving parts a plate every :data:`STEP` frames, the camera's move with the room moving less than the worktop,
     the headline, and the stamp on its word. Checks the bar first. Returns the shot's group."""
     check(shot, first, last, stamped, measure, said=said)
-    shelf = rafa_host._Shelf(cv, Path(root))
+    shelf = _shelf(cv, Path(root))
     w, h = _size()
     g = cv.group(parent, cv.uid(f"smallprint-scene-{shot.panel}"), start=first, end=last)
     cv.rect(g, 0, 0, W, H, "#5F8579")

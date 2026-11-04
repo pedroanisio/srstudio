@@ -16,6 +16,7 @@ from srstudio import Canvas
 from srstudio import smallprint_lab as lab
 from srstudio import smallprint_scene as sc
 from srstudio.plates import Camera
+from srstudio.plates import digest as plates_digest
 from srstudio.smallprint_kit import ScriptError, Stamp
 
 LENS = Camera((0.0, -300.0, -362.0), (0.0, -290.0, -205.0), 33.0, 4.0)
@@ -222,3 +223,19 @@ def test_the_room_moves_less_than_the_worktop_as_the_camera_pushes_in(tmp_path):
 
     room, bench = top_zoom("test-tank-room-angle"), top_zoom("test-tank-bench-angle")
     assert bench == pytest.approx(1.2) and room == pytest.approx(1.0 + 0.2 * sc.PARALLAX)
+
+
+def test_two_shots_through_one_lens_share_their_room_plate_as_one_asset(tmp_path):
+    renders = _Renders(tmp_path)
+    renders.plate = lambda plate, _cache={}: _cache.setdefault(  # one file a plate, as the engine's cache gives
+        plates_digest(plate), _Renders.plate(renders, plate)
+    )
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="30", duration=5.0)
+    cv = Canvas(scene, font_asset="fraunces")
+    first, second = shot(stamp_at=0.5), replace(shot(stamp_at=2.5), panel="test-tank-2")
+    sc.draw(cv, cv.comp, first, 0.0, 2.0, renders, tmp_path / "project", measure, FOUND)
+    sc.draw(cv, cv.comp, second, 2.0, 4.0, renders, tmp_path / "project", measure, FOUND)
+    root = ET.fromstring(scene.to_bytes(layout="pretty"))
+    ids = [e.get("id") for e in root.iter() if e.tag.endswith("image")]
+    assert ids and len(ids) == len(set(ids))
