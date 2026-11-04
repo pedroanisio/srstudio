@@ -227,7 +227,9 @@ class Texture:
 @dataclass(frozen=True)
 class Material:
     """What a mesh is made of. A ``print`` is a texture rendered from typed data, ``color_map`` and ``normal_map`` are
-    textures made in code; ``sheen`` is the soft bloom of a surface a hand has been over."""
+    textures made in code; ``sheen`` is the soft bloom of a surface a hand has been over. ``transmission`` is the
+    share of light that passes through (glass, water, a thin fin), refracted at ``ior``; an opaque material writes
+    neither, so every drawing made before them keeps its digest."""
 
     id: str
     color: str
@@ -240,6 +242,14 @@ class Material:
     normal_scale: float = 1.0
     sheen: str = ""
     subsurface: float = 0.0
+    transmission: float = 0.0
+    ior: float = 1.5
+
+    def __post_init__(self) -> None:
+        if not (checks.number(self.transmission) and 0.0 <= self.transmission <= 1.0):
+            raise PlateError(f"{self.id}: a transmission is a share from 0 to 1, got {self.transmission!r}")
+        if not (checks.number(self.ior) and 1.0 <= self.ior <= 3.0):
+            raise PlateError(f"{self.id}: an index of refraction is from 1 to 3, got {self.ior!r}")
 
 
 @dataclass(frozen=True)
@@ -278,7 +288,9 @@ class Placed:
 
 @dataclass(frozen=True, eq=False)
 class Plate:
-    """One still: ``width`` by ``height``, seen by ``camera``, under ``lights``; ``background`` empty is real alpha."""
+    """One still: ``width`` by ``height``, seen by ``camera``, under ``lights``; ``background`` empty is real alpha.
+    ``samples`` is the path tracer's samples a pixel: fewer is a quicker, noisier picture that the denoiser smooths,
+    for a plate that is one frame of many. None is the library's :data:`SAMPLES` when the plate is drawn."""
 
     width: int
     height: int
@@ -287,8 +299,13 @@ class Plate:
     placed: tuple[Placed, ...]
     materials: tuple[Material, ...]
     background: str = CLEAR
+    samples: int | None = None
 
     def __post_init__(self) -> None:
+        if self.samples is not None and (
+            isinstance(self.samples, bool) or not isinstance(self.samples, int) or not 1 <= self.samples <= 4096
+        ):
+            raise PlateError(f"a plate takes 1 to 4096 samples a pixel, got {self.samples!r}")
         if not (self.width > 0 and self.height > 0):
             raise PlateError(f"a plate has a size, got {self.width}x{self.height}")
         if not self.placed:
@@ -377,6 +394,8 @@ def document(plate: Plate) -> bytes:
             attrs.update(sheenColor=material.sheen, sheenRoughness=0.6)
         if material.subsurface:
             attrs["subsurface"] = material.subsurface
+        if material.transmission:
+            attrs.update(transmission=material.transmission, ior=material.ior)
         shelf.add_material(**attrs)  # type: ignore[arg-type]
     seen: set[str] = set()
     serial = 0
@@ -425,7 +444,7 @@ def document(plate: Plate) -> bytes:
         aoRadius=camera.ao,
         aoIntensity=0.45,
         renderer="pathtrace",
-        pathSamples=SAMPLES,
+        pathSamples=SAMPLES if plate.samples is None else plate.samples,
         maxBounces=BOUNCES,
         denoise=True,
         exposure=0.12,
