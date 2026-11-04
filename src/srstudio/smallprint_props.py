@@ -685,8 +685,14 @@ def sunflower(m: Model, state: str = "dark") -> None:
     m.tube("lampbody", ((LAMP_AT + 2.0, -1.5, 0.0), (LAMP_AT + 3.0, -20.0, 0.0), (LAMP_AT - 4.0, -32.0, 0.0)), 1.2)
     m.ell("lampbody", (LAMP_AT - 9.0, -32.0, 0.0), (7.0, 4.6, 5.0), rotation=24.0)  # its shade, towards the flower
     m.ell("bulb" if state == "lamp" else "bulboff", (LAMP_AT - 12.0, -28.0, -0.5), (3.2, 3.2, 3.2))
-    if state == "lamp":  # its light on the worktop, under the flower's back
+    if state == "lamp":  # its light on the worktop, under the flower's back, and three drawn rays down to it
         m.ell("bulb", (LAMP_AT - 16.0, -0.15, 0.0), (15.0, 0.15, 10.0))
+        for dx, dy in ((-9.0, -4.0), (-6.0, 8.0), (-1.0, 11.0)):
+            m.tube(
+                "bulb",
+                ((LAMP_AT - 14.0 + 0.3 * dx, -27.0 + 0.3 * dy, -0.5), (LAMP_AT - 14.0 + dx, -27.0 + dy, -0.5)),
+                0.6,
+            )
 
 
 # -- the tears ---------------------------------------------------------------------------------------------------------

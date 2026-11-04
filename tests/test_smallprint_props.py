@@ -387,3 +387,5 @@ def test_the_grown_sunflower_faces_east_and_the_lit_lamp_to_its_west_does_not_tu
     y = sp.PLACES["smallprint-sunflower"][1]
     pool = lit["bulb"][np.abs(lit["bulb"][:, 1] - y) < 1.0]
     assert len(pool) and np.ptp(pool[:, 0]) > 20.0, "and lights the worktop under it"
+    below = lit["bulb"][(lit["bulb"][:, 1] > y - 32.0) & (lit["bulb"][:, 1] < y - 4.0)]  # under the bulb, off the top
+    assert len(below), "drawn rays fall from the bulb towards the worktop, so it reads as on above the caption"
