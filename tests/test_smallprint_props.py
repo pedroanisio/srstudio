@@ -167,6 +167,9 @@ def test_a_tear_plate_turns_with_his_head_and_holds_his_own_body():
         (lambda: sp.goldfish(clay.Model(), "asleep"), "goldfish's states"),
         (lambda: sp.apple(clay.Model(), "rotten"), "apple's states"),
         (lambda: sp.can(clay.Model(), "crushed"), "can's states"),
+        (lambda: sp.feather(clay.Model(), "plucked"), "feather's states"),
+        (lambda: sp.mint(clay.Model(), "chewed"), "mint's states"),
+        (lambda: sp.bread(clay.Model(), "sliced"), "bread's states"),
         (lambda: sp.draw(clay.Model(), "rafa-mug", "x"), "worktop props"),
         (lambda: sp.worktop("smallprint-roll", "roll", "garage"), "his rooms"),
         (lambda: sp._skin_z(400.0, 0.0), "no skin"),
@@ -237,7 +240,7 @@ def test_the_soaking_hand_is_under_the_water_inside_the_bowl_and_the_wrinkled_on
 
 def test_his_hand_moves_only_for_the_states_that_say_so():
     for (prop, state), (kind, _) in sp.HANDS.items():
-        assert state in sp.STATES[prop] and kind in ("dip", "wrinkled", "hold")
+        assert state in sp.STATES[prop] and kind in ("dip", "wrinkled", "hold", "raise", "knock")
     a, b = (materials_of(sp.worktop("smallprint-phone", state))["flesh"] for state in sp.PHONE_STATES)
     np.testing.assert_array_equal(a, b)
     c, d = (materials_of(sp.worktop("smallprint-bowl", state))["flesh"] for state in sp.BOWL_STATES)
@@ -357,3 +360,43 @@ def test_only_the_shaken_can_moves_his_hand_off_the_worktop():
     rest = can_parts("calm")["flesh"]
     held = can_parts("shake-up")["flesh"]
     assert held[:, 1].mean() < rest[:, 1].mean() - 10.0
+
+
+def test_the_feather_s_tip_is_at_his_neck_in_two_places_and_at_rest_it_is_down_on_the_worktop():
+    y = sp.PLACES["smallprint-mint"][1]  # the worktop's top
+    tips = []
+    for state in ("tickle-a", "tickle-b"):
+        parts = materials_of(sp.worktop("smallprint-feather", state))
+        vane, hand = parts["feather"], parts["flesh"]
+        tip = vane[vane[:, 2].argmax()]  # the end furthest from the lens: at his neck, under his chin
+        assert -305.0 < tip[1] < -285.0 and abs(tip[0]) < 50.0, "under his jaw, at his neck"
+        assert hand[:, 1].max() < y - 10.0, "held up off the worktop in his fist"
+        tips.append(tip)
+    assert np.hypot(*(tips[0] - tips[1])[:2]) > 6.0, "cutting between the two wiggles it"
+    rest = materials_of(sp.worktop("smallprint-feather", "rest"))
+    assert rest["feather"][:, 1].max() <= y + 0.5 and rest["feather"][:, 1].min() > y - 18.0, "down on the worktop"
+
+
+def test_the_glass_is_lifted_in_his_hand_for_a_sip_and_stands_by_the_open_tin_otherwise():
+    y = sp.PLACES["smallprint-mint"][1]
+    standing, lifted = (materials_of(sp.worktop("smallprint-mint", s)) for s in sp.MINT_STATES)
+    assert standing["glass"][:, 1].max() == pytest.approx(y, abs=0.5), "on the worktop"
+    assert lifted["glass"][:, 1].max() < y - 20.0, "off the worktop"
+    glass, hand = lifted["glass"], lifted["flesh"]
+    assert glass[:, 1].min() < hand[:, 1].mean() < glass[:, 1].max(), "his hand round it, between rim and foot"
+    assert np.hypot(*(hand.mean(axis=0) - glass.mean(axis=0))[[0, 2]]) < 20.0
+    for parts in (standing, lifted):
+        assert "tin" in parts and "candy" in parts, "the open tin of mints stays on the worktop"
+        assert parts["candy"][:, 1].min() < parts["tin"][:, 1].min(), "the mints show over the tin's rim"
+
+
+def test_his_fist_knocks_the_stale_loaf_and_the_warmed_one_steams_with_no_cracks():
+    up, down, warm = (materials_of(sp.worktop("smallprint-bread", s)) for s in sp.BREAD_STATES)
+    top = down["stalecrust"][:, 1].min()
+    assert down["flesh"][:, 1].max() == pytest.approx(top, abs=1.5), "knuckles down on the loaf's top"
+    assert up["flesh"][:, 1].max() < top - 6.0, "and up off it"
+    for stale in (up, down):
+        assert "crumb" in stale and "crust" not in stale and "steam" not in stale
+    assert "steam" in warm and "stalecrust" not in warm and "crumb" not in warm
+    assert warm["steam"][:, 1].max() < warm["crust"][:, 1].min(), "the steam rises off the top"
+    assert warm["flesh"][:, 1].max() == pytest.approx(sp.PLACES["smallprint-bread"][1], abs=1.0), "his hand rests"

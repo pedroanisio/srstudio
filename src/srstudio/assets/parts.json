@@ -16065,6 +16065,57 @@
           "rig": null
         }
       ]
+    },
+    "smallprint-feather": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-04",
+          "note": "A plain coral feather held up in his frame-right fist with its tip under his jaw, in two places to cut between as a wiggle, or laid on the worktop, as replacement plates; his own rig is not changed. First drawn for Small Print's tickle-yourself question.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "38aba0493f27f0601f5474f8a27b24665c4de0e1c7e10524882d5d75ab101a1e",
+          "rig": null
+        }
+      ]
+    },
+    "smallprint-mint": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-04",
+          "note": "An open, unlettered tin of plain white mints and a glass of water, standing on the worktop or lifted in his hand, as replacement plates; his own rig is not changed. First drawn for Small Print's mint-water question.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "16b5cd5a8c4ecd759fc3bcff15955ce293a62d3e3d06fd9f28a0d48b4c931746",
+          "rig": null
+        }
+      ]
+    },
+    "smallprint-bread": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-04",
+          "note": "A plain loaf on a board, stale with a dull cracked crust and crumbs and knocked on by his fist high or low, or warmed with three thin wisps of steam, as replacement plates; his own rig is not changed. First drawn for Small Print's bread question.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "46af2848cafda1f985784f7d47f3001c39f727359f98aaf853f9eab77c862a15",
+          "rig": null
+        }
+      ]
     }
   }
 }
