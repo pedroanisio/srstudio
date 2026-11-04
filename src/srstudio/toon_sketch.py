@@ -538,6 +538,7 @@ def recorder(
     cover: thumbnail.Thumbnail | None = None,
     cover_font: str = "",
     cover_size: tuple[int, int] = (1080, 1920),
+    check: Callable[[Path], object] | None = None,
 ) -> Callable[..., int]:
     """The ``main`` of an episode's recording script: :func:`srstudio.recording.main` around :func:`record_episode`
     (``python3 <episode>_audio.py PROJECT [--ffmpeg PATH] [--place-only]``, the help from ``doc``); ``validate`` checks
@@ -548,7 +549,8 @@ def recorder(
 
     ``cover`` is the post's cover, laid out with the project's own ``cover_font`` (its path inside the project) on a
     ``cover_size`` frame before any take is paid for, so a headline too wide or too tall stops the recording rather
-    than the delivery after the encode. A cover without its font is refused when the recorder is made."""
+    than the delivery after the encode. A cover without its font is refused when the recorder is made. ``check`` is
+    run on the project after the cover and before any take, for what needs the project's files to measure."""
     if cover is not None and not cover_font:
         raise thumbnail.ThumbnailError("a cover to check needs cover_font, the font's path inside the project")
 
@@ -565,6 +567,8 @@ def recorder(
         if validate is not None:
             validate(sk)
         check_cover(project)
+        if check is not None:
+            check(project)
         if place_only:
             return place_episode(sk, project, seed, note, mouth=mouth, foley_of=foley_of, sounds=sounds)
         return record_episode(sk, project, env, ffmpeg, seed, note, mouth=mouth, foley_of=foley_of, sounds=sounds)

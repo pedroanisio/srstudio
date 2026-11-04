@@ -3,17 +3,22 @@ question opens and closes it, every finding is stamped with its source inside th
 
 from __future__ import annotations
 
+import json
+import math
 import xml.etree.ElementTree as ET
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import Canvas, rafa_show, sketch
+from srstudio import Canvas, host_kit, rafa_show, sketch, toon_sketch
 from srstudio import smallprint as sp
 from srstudio import smallprint_kit as kit
+from srstudio.sample import SYSTEM_FONTS
 from srstudio.smallprint import Beat, ScriptError, Show, Stamp
 from srstudio.social import InstagramPost
+from srstudio.thumbnail import Thumbnail, ThumbnailError
 
 SMILE, BATTERY, MELTDOWN = "public-smile", "social-battery", "internal-meltdown"
 TOWER = "smallprint-tower"
@@ -535,3 +540,240 @@ def test_a_caption_band_on_a_reel_built_before_held_frames_keeps_its_times():
     root = ET.fromstring(caption_scene(False, (6.367,)))
     (band,) = [g for g in root.iter() if g.get("start") is not None]
     assert (band.get("start"), band.get("end")) == ("6.367", "7.367")
+
+
+def words_on(root: ET.Element) -> str:
+    return " ".join(t.get("text") or "" for t in root.iter() if t.tag.endswith("text"))
+
+
+def test_the_goldfish_swims_to_his_lever_again_and_again_and_food_comes_one_hour_in_twenty_four():
+    root = panel_root("fish-lever")
+    (fish,) = groups(root, "sp-fish")
+    xs = keyed(fish, "x")
+    arrivals = [t for t, v in xs if v == max(v for _, v in xs)]
+    assert len(arrivals) >= 2 and arrivals[-1] >= 5.0, "he keeps going to the lever while the page is up"
+    (hour,) = groups(root, "sp-hour")
+    d = next(e for e in hour if e.get("shape") == "path").get("path")
+    (cx, cy), *arc = [tuple(map(float, part.strip(" MLZ").split())) for part in d.split("L")]
+    turn = [math.degrees(math.atan2(y - cy, x - cx)) for x, y in (arc[0], arc[-1])]
+    assert turn[1] - turn[0] == pytest.approx(360.0 / 24.0, abs=0.01), "one hour of the dial's day"
+    (hand,) = groups(root, "sp-clock-hand")
+    assert keyed(hand, "rotation")[-1][1] > keyed(hand, "rotation")[0][1], "the clock goes round"
+    assert "lever" in words_on(root) and "1 hour a day" in words_on(root)
+
+
+def test_when_the_food_stops_the_goldfish_keeps_pressing_and_no_pellet_comes():
+    root = panel_root("fish-stopped")
+    assert groups(root, "sp-pellet") == [], "no food comes"
+    (fish,) = groups(root, "sp-fish")
+    xs = keyed(fish, "x")
+    assert len([t for t, v in xs if v == max(v for _, v in xs)]) >= 2, "he keeps going to the lever"
+    (lever,) = groups(root, "sp-lever")
+    assert max(v for _, v in keyed(lever, "rotation")) > 0.0, "and pressing it"
+    assert "no food" in words_on(root) and "1 hour a day" not in words_on(root)
+    assert groups(panel_root("fish-lever"), "sp-pellet"), "while it was fed, the pellets came"
+
+
+def test_the_days_are_crossed_off_week_after_week_and_the_fish_waits_at_his_corner():
+    root = panel_root("fish-weeks", 1.0, 9.0)
+    days = groups(root, "sp-day")
+    assert len(days) == 28, "four weeks of days"
+    shown = [min(t for t, v in keyed(day, "opacity") if v > 0.0) for day in days]
+    assert shown == sorted(shown) and shown[-1] <= 9.0 - 1.0, "crossed off in order, the last a second before the cut"
+    (fish,) = groups(root, "sp-fish")
+    assert len(keyed(fish, "y")) >= 4, "he bobs where his food comes"
+    assert "weeks" in words_on(root) and "food here" in words_on(root)
+    food = groups(root, "sp-food")
+    assert len(food) >= 3, "pellets on the water mark where the food comes"
+    hollow = [e for e in root.iter() if e.get("shape") == "ellipse" and (e.get("fill") or "").endswith("00000000")]
+    assert hollow == [], "no ring over the fish: a ring over his head reads as a halo"
+
+
+def test_the_cut_face_browns_only_once_its_cells_have_broken_and_the_oxygen_has_come_in():
+    root = panel_root("apple-cells")
+    cells = groups(root, "sp-cell")
+    broken = min(t for cell in cells for t, v in keyed(cell, "scaleX") if v < 0.5)
+    (brown,) = groups(root, "sp-browning")
+    rises = [(t, v) for t, v in keyed(brown, "opacity")]
+    assert rises[0][1] == 0.0 and rises[-1][1] > 0.6
+    assert min(t for t, v in rises if v > 0.0) > broken
+    assert groups(root, "sp-oxygen") and groups(root, "sp-enzyme")
+    assert "enzyme" in words_on(root) and "oxygen" in words_on(root) and "cells" in words_on(root)
+
+
+def test_the_bare_half_browns_and_the_lemon_half_stays_pale_under_its_drops():
+    root = panel_root("apple-lemon")
+    browning = groups(root, "sp-browning")
+    assert len(browning) == 1, "only the bare half has a brown layer"
+    assert max(v for _, v in keyed(browning[0], "opacity")) > 0.6
+    drops = groups(root, "sp-juice")
+    assert drops and all(len(keyed(d, "y")) >= 4 for d in drops), "the juice keeps dripping on the other half"
+    bare_x = float(next(e for e in browning[0] if e.get("shape") == "ellipse").get("x"))
+    drop_x = float(next(e for e in drops[0] if e.get("shape") == "path").get("path").split()[0][1:])
+    assert drop_x > bare_x + 300.0, "the drops fall on the other half"
+    assert "bare" in words_on(root) and "lemon juice" in words_on(root)
+
+
+def test_tapped_and_untapped_cans_lose_the_same_foam():
+    root = panel_root("can-test")
+    bars = groups(root, "sp-foam-bar")
+    assert len(bars) == 2
+    lengths = [keyed(bar, "scaleX")[-1][1] for bar in bars]
+    assert lengths[0] == pytest.approx(lengths[1]), "no significant difference (Sopina et al., 2019)"
+    (finger,) = groups(root, "sp-finger")
+    assert len(keyed(finger, "rotation")) >= 6, "the finger taps, and keeps tapping"
+    words = words_on(root)
+    assert "tapped" in words and "not tapped" in words and "1,000 cans" in words
+    assert "beer lost" in words and "foam" not in words, "the trial weighed the beer lost, not the foam"
+
+
+def test_the_bubbles_on_the_can_s_wall_shrink_away_while_the_clock_runs():
+    root = panel_root("can-bubbles")
+    bubbles = groups(root, "sp-bubble")
+    assert len(bubbles) >= 6
+    for bubble in bubbles:
+        rows = keyed(bubble, "scaleX")
+        assert rows[0][1] == 1.0 and min(v for _, v in rows) < 0.2, "each one dissolves"
+    (hand,) = groups(root, "sp-clock-hand")
+    assert keyed(hand, "rotation")[-1][1] > keyed(hand, "rotation")[0][1]
+    assert "wait" in words_on(root)
+    last = max(bubbles, key=lambda b: max(t for t, _ in keyed(b, "scaleX")))
+    assert float(last.get("x")) < 500.0, "the last bubble to go is on the wall by its label"
+
+
+FIXTURE_FONT = next((f for f in SYSTEM_FONTS if f.is_file()), None)  # DejaVu Sans Bold, the fixture font
+NEEDS_FONT = pytest.mark.skipif(FIXTURE_FONT is None, reason="no DejaVu Sans Bold to measure with")
+
+
+def project_with_font(root: Path) -> Path:
+    """A project folder holding the fixture font where the show's style installs its own."""
+    assert FIXTURE_FONT is not None and host_kit.HOST.font is not None
+    font = root / host_kit.HOST.font.src
+    font.parent.mkdir(parents=True)
+    font.write_bytes(FIXTURE_FONT.read_bytes())
+    return root
+
+
+def with_cover(headline: str) -> Show:
+    """SHOW with a cover, its last line short enough for the fixture font's wider letters."""
+    post = InstagramPost(title="Goldfish", description="d", thumbnail=Thumbnail(headline, 1.0, "Small Print #7"))
+    return replace(with_beat(7, line="So the penny is the safe one up there."), post=post)
+
+
+@NEEDS_FONT
+def test_the_recording_refuses_a_cover_headline_too_wide_before_any_take(monkeypatch, tmp_path):
+    """goldfish-memory's first headline only failed when its cover was drawn from the master, every take paid for."""
+    taken = []
+    monkeypatch.setattr(toon_sketch, "record_episode", lambda *a, **k: taken.append(a) or {})
+    project = project_with_font(tmp_path)
+    with pytest.raises(ThumbnailError, match="THREE-SECOND MEMORY"):
+        sp.audio_main(with_cover("Goldfish\nthree-second memory?"), None, lambda *a, **k: [])([str(project)], {})
+    assert taken == []
+    sp.audio_main(with_cover("Goldfish\n3 seconds?"), None, lambda *a, **k: [])([str(project)], {})
+    assert len(taken) == 1
+
+
+def test_the_recording_refuses_a_cover_whose_font_is_not_installed(monkeypatch, tmp_path):
+    monkeypatch.setattr(toon_sketch, "record_episode", lambda *a, **k: pytest.fail("a take was recorded"))
+    with pytest.raises(ThumbnailError, match="is not in"):
+        sp.audio_main(with_cover("Goldfish\n3 seconds?"), None, lambda *a, **k: [])([str(tmp_path)], {})
+
+
+def display(text: str, size: float) -> float:
+    """A display face's widths: m and w twice as wide as every other character."""
+    return size * sum(1.0 if ch in "mwMW" else 0.5 for ch in text)
+
+
+def test_a_caption_row_that_fits_by_characters_but_not_by_pixels_is_refused():
+    """ "Hi, buddy. Remember me?" kept validate's 23 characters; in Fraunces it was 871 px of the 840 allowed."""
+    SHOW.check_fit(display)
+    buddy = with_beat(1, line="Hi, buddy. Remember me?")
+    buddy.validate()
+    with pytest.raises(ScriptError, match=r"try: 'Hi, buddy. Remember me\?' is 844 px"):
+        buddy.check_fit(display)
+
+
+@NEEDS_FONT
+def test_the_recording_refuses_a_caption_too_wide_before_any_take(monkeypatch, tmp_path):
+    taken = []
+    monkeypatch.setattr(toon_sketch, "record_episode", lambda *a, **k: taken.append(a) or {})
+    project = project_with_font(tmp_path)
+    fits = with_cover("Goldfish\n3 seconds?")
+    buddy = replace(fits, beats=tuple(replace(b, line="Hi, buddy. Remember me?") if b.id == "try" else b
+                                     for b in fits.beats))  # fmt: skip
+    with pytest.raises(ScriptError, match="Hi, buddy"):
+        sp.audio_main(buddy, None, lambda *a, **k: [])([str(project)], {})
+    assert taken == []
+    sp.audio_main(fits, None, lambda *a, **k: [])([str(project)], {})
+    assert len(taken) == 1
+
+
+def narration(show: Show, kept: tuple[float, ...] | None = None) -> dict:
+    """The recorder's narration.json for ``show``, its takes measured as ``kept`` (the show's own when None) and laid
+    where the show's data said when it was recorded."""
+    takes = show.kept if kept is None else kept
+    recorded = replace(show, kept=takes)
+    return {
+        "items": [
+            {"id": f"{i:02d}", "phase": "line", "start": at, "speech_duration": take}
+            for i, (at, take) in enumerate(zip(recorded.starts(), takes, strict=True), 1)
+        ]
+    }
+
+
+def test_takes_laid_where_the_data_says_are_in_step():
+    SHOW.check_recorded(narration(SHOW))
+
+
+def test_a_kept_changed_after_recording_is_refused_line_by_line():
+    """The total can agree while the lines do not: two estimates off in opposite directions cancel out."""
+    swapped = (KEPT[1], KEPT[0], *KEPT[2:])
+    with pytest.raises(
+        ScriptError,
+        match=r"hook: take 1\.400 s, kept 2\.4 s; try: take 2\.400 s, kept 1\.4 s; "
+        r"try: laid at 1\.600 s, starts at 2\.6 s$",
+    ) as refused:
+        SHOW.check_recorded(narration(SHOW, swapped))
+    assert "no: laid at" not in str(refused.value), "from the third line on the two agree again"
+
+
+def test_a_recording_with_a_line_missing_is_refused():
+    short = narration(SHOW)
+    short["items"].pop()
+    with pytest.raises(ScriptError, match="7 recorded lines for 8 beats"):
+        SHOW.check_recorded(short)
+
+
+def run_env(tmp_path: Path) -> dict[str, str]:
+    engine = tmp_path / "scene-render"
+    engine.write_text("#!/bin/sh\n")  # the engine must exist (layout.find_engine)
+    return {"SRSTUDIO_ENGINE": str(engine), "SRSTUDIO_RENDERS": str(tmp_path), "SRSTUDIO_FONTS": str(tmp_path)}
+
+
+def test_the_voiced_build_refuses_takes_out_of_step_before_it_draws(monkeypatch, tmp_path):
+    monkeypatch.setattr(sp, "build", lambda *a: pytest.fail("the build drew a reel whose voice is out of step"))
+    env = run_env(tmp_path)
+    (tmp_path / "narration.json").write_text(json.dumps(narration(SHOW, (KEPT[1], KEPT[0], *KEPT[2:]))))
+    with pytest.raises(ScriptError, match="out of step"):
+        sp.run(SHOW, ["show", str(tmp_path), "--voice"], env)
+    (tmp_path / "narration.json").unlink()
+    with pytest.raises(ScriptError, match="no narration.json"):
+        sp.run(SHOW, ["show", str(tmp_path), "--voice"], env)
+
+
+def test_the_voiced_build_draws_takes_in_step(monkeypatch, tmp_path):
+    built = []
+    monkeypatch.setattr(sp, "build", lambda root, staging, flags: built.append(flags))
+    (tmp_path / "narration.json").write_text(json.dumps(narration(SHOW)))
+    sp.run(SHOW, ["show", str(tmp_path), "--voice"], run_env(tmp_path))
+    assert built == [{"--voice"}]
+
+
+@pytest.mark.parametrize(
+    "recorded",
+    [[], {"items": "lines"}, {"items": [{"id": "01", "phase": "line", "start": 0.0}] * len(BEATS)},
+     {"items": [{"phase": "line", "start": "soon", "speech_duration": 1.0}] * len(BEATS)}],
+)  # fmt: skip
+def test_a_recording_that_is_not_one_is_refused(recorded):
+    with pytest.raises(ScriptError):
+        SHOW.check_recorded(recorded)
