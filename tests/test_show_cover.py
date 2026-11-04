@@ -1,6 +1,7 @@
 """The one cover of every Okayville reel: the same band over the reel's own art (ADR 0074)."""
 
 import dataclasses
+import html
 import re
 
 import pytest
@@ -30,7 +31,7 @@ def compose(thumb) -> bytes:
 
 
 def words(document: bytes) -> list[str]:
-    return re.findall(r'<text [^>]*?text="([^"]*)"', document.decode())
+    return [html.unescape(w) for w in re.findall(r'<text [^>]*?text="([^"]*)"', document.decode())]
 
 
 def test_the_template_is_valid_for_a_number_and_a_premise():
@@ -133,3 +134,50 @@ def test_a_plain_thumbnail_draws_what_it_drew():
         "headline", "at", "kicker", "focus", "zoom", "accent", "place",
     ]  # fmt: skip
     assert words(compose(plain)) == ["SAGA 08", "A HEADLINE", "A HEADLINE"]
+
+
+# -- a show named in more words (ADR 0233) -----------------------------------------------------------------------------
+def test_a_show_named_in_more_words_says_its_episode_on_a_row_of_its_own():
+    thumb = cover(series="Juno & Pip", series_number=2, number=216, headline="READY IN FIVE MINUTES")
+    assert thumb.problems() == []
+    assert thumb.episodic
+    assert thumb.tag == "Juno & Pip · EP 2"
+    assert words(compose(thumb)) == ["OKAYVILLE", "#216", "JUNO & PIP · EP 2", "READY IN FIVE MINUTES"]
+    document = compose(thumb).decode()
+    row = re.search(r'<text [^>]*?id="header-series"[^>]*>', document)
+    assert row is not None
+
+
+def test_the_episode_row_sits_between_the_top_row_and_the_premise_inside_the_grid():
+    gx, gy, gw, gh = grid_box(WIDTH, HEIGHT)
+    thumb = cover(series="Juno & Pip", series_number=2, number=216)
+    lay = layout(thumb, FONT_BYTES, WIDTH, HEIGHT)
+    header_end = thumbnail.HEADER_TOP + round(thumbnail.HEADER_SIZE * thumbnail.LEADING)
+    row_end = thumbnail.SERIES_TOP + round(thumbnail.SERIES_SIZE * thumbnail.LEADING)
+    assert header_end <= thumbnail.SERIES_TOP
+    assert row_end + thumbnail.SERIES_GAP <= lay.lines[0][0]
+    assert lay.lines[-1][0] + round(lay.size * thumbnail.LEADING) <= gy + gh - thumbnail.BAND_MARGIN
+    assert lay.size >= thumbnail.PREMISE_MIN
+    assert lay.shade == layout(cover(), FONT_BYTES, WIDTH, HEIGHT).shade
+
+
+def test_a_one_word_series_keeps_its_place_on_the_top_row_and_draws_no_episode_row():
+    thumb = cover(series="Saga", series_number=19)
+    assert not thumb.episodic
+    assert thumb.tag == "Saga #19"
+    assert 'id="header-series"' not in compose(thumb).decode()
+    assert layout(thumb, FONT_BYTES, WIDTH, HEIGHT) == layout(cover(), FONT_BYTES, WIDTH, HEIGHT)
+
+
+@pytest.mark.parametrize(
+    ("series", "number"),
+    [("Juno & Pip", 0), ("Juno &", 2), ("juno-and-pip", 2), ("Juno & Pip!", 2), ("Juno  Pip", 2), ("Juno & Pip", -2)],
+)
+def test_a_show_without_a_name_or_a_place_is_refused(series, number):
+    assert any("series" in p for p in cover(series=series, series_number=number).problems())
+
+
+def test_an_episode_tag_wider_than_the_band_is_refused_not_drawn():
+    long = "Extraordinarily Long Names Never Ending Shows Forever"
+    with pytest.raises(ThumbnailError, match="wider"):
+        layout(cover(series=long, series_number=1), FONT_BYTES, WIDTH, HEIGHT)
