@@ -124,3 +124,22 @@ def test_a_reel_waiver_reaches_the_report_too(tmp_path):
     lines = prosody_gate.lines(read(tmp_path, fast=gated(t)))
     assert lines[0] == "prosody fast-video: passes on its waivers"
     assert "(waived: an auctioneer sketch is fast)" in lines[1] and "reel: reel_pace" in lines[1]
+
+
+def test_a_timeline_handed_over_as_text_is_read_the_same_and_none_is_unmeasured():
+    where = "timeline.json in the package"
+    assert prosody_gate.judge("p", None, where).lines() == [f"prosody p: {UNMEASURED} (no {where}), advisory"]
+    assert prosody_gate.judge("p", json.dumps(gated(timeline())).encode(), where).lines() == ["prosody p: clean"]
+    bad = prosody_gate.judge("p", b"\xff", where)
+    assert bad.refused and bad.error.startswith(f"{where} cannot be read")
+
+
+def test_a_timeline_that_cannot_be_opened_is_refused(tmp_path, monkeypatch):
+    recorded(tmp_path, "new", gated(timeline()))
+
+    def unreadable(self):
+        raise PermissionError(13, "Permission denied")
+
+    monkeypatch.setattr(Path, "read_bytes", unreadable)
+    found = prosody_gate.reading("new-video", tmp_path / "new")
+    assert found.refused and found.error == "timeline.json cannot be read: [Errno 13] Permission denied"

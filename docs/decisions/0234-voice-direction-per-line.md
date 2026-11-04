@@ -148,6 +148,9 @@ reads `episodes/<slug>/timeline.json` for each first delivery:
   A section or timeline it cannot read refuses the reel.
 - **Waived.** A waived finding is listed with its reason. `deliver` prints the report, and the delivery post to the
   reviewer quotes it. The Instagram caption (`ig.txt`) is public and never carries a waiver.
+- **Pilots.** A pilot reaches Drive as a package, and its build project has no fixed place. `prosody_gate.judge`
+  reads the `project/timeline.json` its package carries. No package carries one today, so every pilot reads
+  "unmeasured" until its package does.
 
 ## Consequences
 

@@ -26,7 +26,7 @@ from .prosody import Finding, ProsodyError
 from .releases import Release
 from .social import Drift
 
-__all__ = ["UNMEASURED", "Reading", "lines", "read", "reading", "refusals"]
+__all__ = ["UNMEASURED", "Reading", "judge", "lines", "read", "reading", "refusals"]
 
 UNMEASURED = "unmeasured"
 TIMELINE = "timeline.json"
@@ -65,23 +65,34 @@ class Reading:
         return [f"{head}: {verdict}", *(f"  {f.line()}" for f in self.findings)]
 
 
-def reading(video: str, project: Path) -> Reading:
-    """The gate's reading of the reel recorded in ``project``."""
-    path = Path(project) / TIMELINE
-    if not path.is_file():
-        return Reading(video, False, why=f"no {TIMELINE}")
+def judge(video: str, document: str | bytes | None, where: str = TIMELINE) -> Reading:
+    """The gate's reading of a reel's timeline ``document`` (None: there is none), named ``where`` in the report: a
+    project's ``timeline.json``, or the one a pilot's package carries."""
+    if document is None:
+        return Reading(video, False, why=f"no {where}")
     try:
-        timeline = json.loads(path.read_text())
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-        return Reading(video, True, error=f"{TIMELINE} cannot be read: {exc}")
+        timeline = json.loads(document)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        return Reading(video, True, error=f"{where} cannot be read: {exc}")
     if not isinstance(timeline, Mapping):
-        return Reading(video, True, error=f"{TIMELINE} is not an object")
+        return Reading(video, True, error=f"{where} is not an object")
     if "prosody" not in timeline:
-        return Reading(video, False, why=f"{TIMELINE} has no prosody section: recorded before the gate")
+        return Reading(video, False, why=f"{where} has no prosody section: recorded before the gate")
     try:
         return Reading(video, True, tuple(prosody.gate(timeline)))
     except ProsodyError as exc:
         return Reading(video, True, error=str(exc))
+
+
+def reading(video: str, project: Path) -> Reading:
+    """The gate's reading of the reel recorded in ``project``."""
+    path = Path(project) / TIMELINE
+    if not path.is_file():
+        return judge(video, None)
+    try:
+        return judge(video, path.read_bytes())
+    except OSError as exc:
+        return Reading(video, True, error=f"{TIMELINE} cannot be read: {exc}")
 
 
 def read(releases: Mapping[str, Release], episodes: Path, first: Mapping[str, str]) -> dict[str, Reading]:
