@@ -2268,10 +2268,12 @@ def captions(
     tints: Mapping[str, str] | None = None,
     id: str = "news-captions",
     safe: SafeArea | None = None,
+    top: float = CAPTION_TOP,
 ):
     """One panel per cue over the faces, in the fill ``tints`` gives its speaker: a cue that needs a third line stops
-    the build. With ``safe`` the panels centre on the declared area's column and keep inside it. Returns the group
-    that holds them, which a build keeps off the cover."""
+    the build. With ``safe`` the panels centre on the declared area's column and keep inside it; ``top`` is the panels'
+    line, :data:`~srstudio.news_kit.CAPTION_TOP` unless a template sets its own (ADR 0238). Returns the group that holds
+    them, which a build keeps off the cover."""
     cv.require_font("the show letters its captions in its font", NewsKitError)
     area = safe_box(cv, safe)
     right = _right(area)
@@ -2287,13 +2289,13 @@ def captions(
         wide = max(measure(row, CAPTION_SIZE) for row in wrapped) + 2 * CAPTION_PAD + 12
         high = len(wrapped) * CAPTION_SIZE * CAPTION_LEADING + CAPTION_PAD
         x = round((TEXT_LEFT + right) / 2 - wide / 2, 2)
-        _card(cv, g, x, CAPTION_TOP, wide, high, fill)
+        _card(cv, g, x, top, wide, high, fill)
         cv.text(
             g,
             cv.uid("caption"),
             "\n".join(wrapped),
             x,
-            CAPTION_TOP,
+            top,
             round(wide),
             round(high),
             CAPTION_SIZE,

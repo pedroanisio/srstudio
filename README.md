@@ -247,7 +247,7 @@ Four shows are channels on Toon's road rather than styles of their own. Each is 
 | Show | Value | Main use |
 | --- | --- | --- |
 | Mind | `mind_kit.MIND` | How people think: Toon's cast and sets under its own cards ([ADR 0055](docs/decisions/0055-mind-kit.md)). |
-| News | `news_kit.NEWS` | A parody desk with its own set, anchors and graphics ([ADR 0060](docs/decisions/0060-news-kit.md)). |
+| News | `news_kit.NEWS` | A parody desk with its own set, anchors and graphics ([ADR 0060](docs/decisions/0060-news-kit.md)). A proposed version 2 of its frame, `news_template`, puts every word but the captions in one band and the anchors in medium close-ups ([ADR 0238](docs/decisions/0238-news-template-one-band.md)). |
 | Host | `host_kit.HOST` | One talking character on his own set ([ADR 0066](docs/decisions/0066-talking-head-host-kit.md)). |
 | Maps | `map_kit.MAPS` | The world on the engine's native maps ([ADR 0057](docs/decisions/0057-map-kit.md)). |
 
