@@ -34,6 +34,22 @@ and `registry.select_fields(registry.describe(kind, name), ('name', 'contract.ca
 
 Unknown kinds and style filters raise `RegistryError` with `path=kind` or `path=style`, the rejected
 value, valid choices and a repair instruction. Plugin-declared styles are valid after their modules are imported.
+In JSON mode, plugin logs cannot mix with the catalog or inspection payload. Failed imports return a
+structured diagnostic on stderr, including bounded captured logs; see [plugin diagnostics](authoring-diagnostics.md).
+
+For targeted retrieval, use the recipe section matching the selected family:
+
+| Family or task | Recipe sections |
+| --- | --- |
+| Contracts and registration | [Agent contracts](#agent-contracts) |
+| Cutout and Toon placement | [Drawing anchors, rooms and held props](#non-character-discovery-and-drawing-anchors) |
+| Stick | [Household](#stick-household-and-everyday-drawings), [transport](#stick-road-and-airport-composition), [scene placement](#stick-scene-placement-and-partial-handles) |
+| Captions, maps and news | [Core and Orbit](#core-captions-and-orbit-print-artwork), [presentation kits](#presentation-kits-and-map-assets), [news](#news-graphics-and-insert-timelines) |
+| Soft and Blob | [Rooms](#soft-rooms-bedtime-props-and-phone-inserts), [props](#soft-props-appliances-and-effects), [layouts](#blob-furniture-room-layouts-and-placement-helpers) |
+| Ink | [Shots and interfaces](#ink-shots-and-illustrated-interfaces) |
+| Collage | [Table props](#collage-table-and-corner-props), [reaches](#everyday-collage-props-and-sampled-reaches), [rooms and photos](#collage-rooms-photographs-and-illustrated-interfaces) |
+| Rafa, Gloss and Saga | [Rafa models](#rafa-models-and-surface-preparation), [Gloss rooms](#gloss-rooms-cards-and-graphics), [Saga contact](#saga-scenery-and-sampled-console-contact) |
+| Cel and wire vehicles | [Measured rooms and vehicles](#measured-rooms-call-props-signatures-and-wire-vehicles) |
 
 ## Extending
 

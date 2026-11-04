@@ -34,6 +34,7 @@ Inspect the build result's `checks` mapping. Each entry has `status: passed|fail
 `results` with paths, reasons and findings. `skipped` is not evidence of success. Missing engines, unavailable
 frame measurements, and checks never invoked by the builder remain skipped. A required check must pass for
 every recorded execution. The command exits nonzero if a required check fails or is skipped.
+This also applies to builders that finish with `sys.exit(0)` or `sys.exit()`.
 
 | Check | Evidence and limits |
 | --- | --- |
@@ -47,6 +48,66 @@ every recorded execution. The command exits nonzero if a required check fails or
 old files to infer outputs. Custom builders writing files or calling sr-core directly must not infer verification
 from an empty artifact list or skipped SDK checks. A failure diagnostic retains available build evidence at
 `context.build`. A later failure can leave published artifacts; inspect the report before retrying.
+
+Frame checks select every scene published through `Episode.finish()` in this invocation, including custom
+names and output directories, excluding `*.audio.scene.xml`. They use the supplied project root for usage
+records. Old scenes in that directory are not measured on behalf of a new build. A builder that writes scene
+files directly must explicitly record each completed publication with
+`srstudio.build_report.artifact('scene', scene_path)` to include it in post-build frame checks. This records
+an output, not SDK validation; it does not make `sdk` or `schema` pass.
+
+### Reading results and retrying
+
+These JSON excerpts show selected fields; real results include all five check entries and execution details.
+On exit zero, read stdout. Here SDK validation passed but no anatomy measurement ran:
+
+```json
+{
+  "schema": "srstudio.build/1.1.0",
+  "status": "ok",
+  "artifacts": [{"kind": "scene", "path": "/work/hello/hello.scene.xml"}],
+  "checks": {
+    "sdk": {"status": "passed", "results": [{"status": "passed", "path": "/work/hello", "reason": "", "findings": []}]},
+    "anatomy": {"status": "skipped", "results": [{"status": "skipped", "path": "/work/hello", "reason": "engine unavailable", "findings": []}]}
+  }
+}
+```
+
+On a nonzero exit, read stderr. Requiring anatomy in that situation produces a diagnostic containing the
+already-published scene. `context.build.checks` has the same structure as success `checks`:
+
+```json
+{
+  "schema": "srstudio.diagnostic/1.0.0",
+  "code": "build.required_checks",
+  "path": "require_check",
+  "actual": {"anatomy": "skipped"},
+  "expected": "passed",
+  "context": {
+    "command": "build",
+    "build": {
+      "artifacts": [{"kind": "scene", "path": "/work/hello/hello.scene.xml"}],
+      "checks": {"anatomy": {"status": "skipped", "results": [{"status": "skipped", "reason": "engine unavailable"}]}}
+    }
+  }
+}
+```
+
+1. Read the exit status and diagnostic before choosing a retry. Argument or lookup failures may have no
+   `context.build`; do not assume artifacts were produced.
+2. Repair the reported field or missing dependency. For failed frame checks, inspect each result's scene
+   path and findings. Retrying identical inputs cannot fix a deterministic validation failure.
+3. Inspect `context.build.artifacts` before repeating a failed build. Verification happens after publication,
+   so a failure can still leave usable files. Choose a fresh output directory, or deliberately replace the
+   previous outputs with the builder's overwrite option. The starter accepts `--overwrite` after its root.
+4. Repeat the same required checks and evaluate the new report. An old report or scene does not satisfy them.
+
+For the starter, after repairing an engine configuration failure:
+
+```bash
+srstudio doctor --json
+srstudio build --json --require-check sdk --require-check anatomy --require-check text hello/build.py hello --overwrite
+```
 
 These checks do not encode a video or establish visual approval. Render with the separate scene-render engine;
 `srstudio master` installs encoded masters write-once ([ADR 0170](decisions/0170-approved-files-are-write-once.md)).

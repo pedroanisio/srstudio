@@ -17,6 +17,11 @@ in captured logs is replaced. Logs do not mix with the JSON result. Scene-check 
 their individual `severity`, `code` and `message` under `context.findings`, subject to the shared
 diagnostic payload limits. The SDK exposes those same findings through `SceneCheckError.to_dict()`.
 
+For `catalog --json` and `inspect --json`, plugin import logs are also captured so neither output stream is
+contaminated. Successful discovery omits these logs; a failed import retains up to 4096 characters per stream
+in the diagnostic's `context`. Ordinary Python exceptions and plugin-requested exits become `plugin.import`
+with `path=plugins` and the module name as `actual`; existing SDK exceptions keep their diagnostic codes.
+
 Build success results additionally report `artifacts` and `checks` under `srstudio.build/1.1.0`.
 Failure diagnostics include the same evidence in `context.build`. Each named check has a status
 (`passed`, `failed`, or `skipped`) and execution details. A skipped check is not verified; an uninstrumented
@@ -44,6 +49,14 @@ Common explicit paths include `style.breath_period`, `spring.damping`, `channel.
 `blink.period`, `visibility[0]` and `keys.rotation[1][1]`. Their code families are `head.style.*`,
 `head.spring.*`, `head.channel.*`, `head.speech.*`, `head.facing.*`, `gaze.*`, `rig.*` and `canvas.*`.
 The path identifies the supplied input, not a general-purpose object mutation expression.
+
+Acting alignment failures preserve the exact array and index, for example
+`speech[0].alignment.character_end_times_seconds[0]`. `acting.parse_score()` raises `ActingError` with
+`code=acting.input`; direct `voice.Alignment.parse()` calls raise `VoiceOutputError` with
+`code=voice.alignment`. Both expose the rejected value, expected timing constraint and a field-specific
+repair instruction. Length mismatches identify the timing array and report its length as `actual`, with the
+required character count in `expected`. Fix the original input and parse it again; do not infer a valid
+correction from the human message or change every alignment in the score.
 
 This example repairs one known invalid setting and compiles a new plan. An agent should validate its proposed
 correction through the same typed constructor. Unsupported capabilities require changing the request or rig;

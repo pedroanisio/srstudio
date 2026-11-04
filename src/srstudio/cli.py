@@ -81,23 +81,28 @@ def _error(command: str, error: BaseException, json_output: bool = False) -> Non
 
 def _load_plugins(modules, command: str, json_output: bool = False) -> bool:
     for module in modules:
+        logs: dict[str, str] = {}
         try:
-            importlib.import_module(module)
-        except ImportError as exc:
-            _error(
-                command,
-                SrstudioError(
+            with _captured_logs() if json_output else nullcontext(logs) as logs:
+                importlib.import_module(module)
+        except (Exception, SystemExit) as exc:
+            error = (
+                exc
+                if isinstance(exc, SrstudioError)
+                else SrstudioError(
                     f'cannot import plugin {module!r}: {exc}',
                     code='plugin.import',
                     path='plugins',
                     actual=module,
-                    remedy='Install the plugin or remove it from --plugins.',
-                ),
-                json_output,
+                    remedy='Install or configure the plugin, or remove it from --plugins.',
+                )
             )
-            return False
-        except SrstudioError as exc:
-            _error(command, exc, json_output)
+            if json_output:
+                payload = diagnostic(error, command=command)
+                payload['context'].update(logs)
+                print(json.dumps(payload, allow_nan=False, ensure_ascii=False), file=sys.stderr)
+            else:
+                _error(command, error)
             return False
     return True
 
@@ -699,7 +704,7 @@ def main(argv=None):
         if args.json:
             return _json_build(args)
         with build_report.capture() as evidence:
-            status = _build(args)
+            status = _build(args, evidence)
             if status == 0:
                 try:
                     evidence.require(args.require_check)
@@ -717,7 +722,7 @@ class _BuildLookupError(Exception):
         super().__init__(str(error))
 
 
-def _build(args: argparse.Namespace) -> int:
+def _build(args: argparse.Namespace, evidence: build_report.BuildReport) -> int:
     script = args.script
     try:
         episode = _episode_script(args.scripts, script, "")
@@ -748,14 +753,25 @@ def _build(args: argparse.Namespace) -> int:
         if args.root and "--voice" in args.options:
             interview.refuse_rehearsal(Path(args.root))
             refuse_takes_rehearsal(Path(args.root))
-        with usage.recorded(Path(args.root)) if args.root else nullcontext(), show.stamping(number):
-            if script.endswith(".py"):
-                sys.path.insert(0, str(Path(script).resolve().parent))  # sibling helpers such as episodes/_common.py
-                runpy.run_path(script, run_name="__main__")
-            else:
-                runpy.run_module(script, run_name="__main__")
+        try:
+            with usage.recorded(Path(args.root)) if args.root else nullcontext(), show.stamping(number):
+                if script.endswith(".py"):
+                    sys.path.insert(0, str(Path(script).resolve().parent))  # sibling helpers
+                    runpy.run_path(script, run_name="__main__")
+                else:
+                    runpy.run_module(script, run_name="__main__")
+        except SystemExit as stop:
+            # usage.recorded handles successful exits before they reach here. Finish the
+            # CLI's verification too; a main() returning zero is ordinary script completion.
+            if stop.code is not None and not (isinstance(stop.code, int) and stop.code == 0):
+                raise
         if args.root:
-            return _anatomy_frames(Path(args.root))
+            scenes = [
+                Path(row['path'])
+                for row in evidence.artifacts
+                if row['kind'] == 'scene' and not row['path'].endswith('.audio.scene.xml')
+            ]
+            return _anatomy_frames(Path(args.root), scenes)
     except (SceneCheckError, parts.PartError) as exc:
         if args.json:
             raise
@@ -788,17 +804,31 @@ def _build_logs(out: TextIO, err: TextIO) -> Iterator[None]:
                 err.flush()
 
 
-def _json_build(args: argparse.Namespace) -> int:
-    """Keep builder chatter out of the JSON streams and retain bounded logs on the result."""
-    error: BaseException | None = None
-    argv, path = sys.argv[:], sys.path[:]
+@contextmanager
+def _captured_logs() -> Iterator[dict[str, str]]:
+    """Populate bounded logs after restoring both JSON output streams, including on failure."""
+    logs: dict[str, str] = {}
     with (
         tempfile.TemporaryFile(mode='w+', encoding='utf-8', errors='replace') as out,
         tempfile.TemporaryFile(mode='w+', encoding='utf-8', errors='replace') as err,
     ):
-        with _build_logs(out, err), build_report.capture() as evidence:
+        try:
+            with _build_logs(out, err):
+                yield logs
+        finally:
+            out.seek(0)
+            err.seek(0)
+            logs.update(stdout=out.read(4096), stderr=err.read(4096))
+
+
+def _json_build(args: argparse.Namespace) -> int:
+    """Keep builder chatter out of the JSON streams and retain bounded logs on the result."""
+    error: BaseException | None = None
+    argv, path = sys.argv[:], sys.path[:]
+    with _captured_logs() as logs:
+        with build_report.capture() as evidence:
             try:
-                status = _build(args)
+                status = _build(args, evidence)
             except SystemExit as exc:
                 status = exc.code if isinstance(exc.code, int) else (0 if exc.code is None else 1)
                 if status:
@@ -819,9 +849,6 @@ def _json_build(args: argparse.Namespace) -> int:
                     evidence.require(args.require_check)
                 except SrstudioError as exc:
                     status, error = 1, exc
-        out.seek(0)
-        err.seek(0)
-        logs = {'stdout': out.read(4096), 'stderr': err.read(4096)}
     if status:
         error = error or SrstudioError(
             'Build checks failed; inspect the logs.',
@@ -1146,11 +1173,13 @@ def _strict(args: argparse.Namespace) -> int:
     return 0
 
 
-def _anatomy_frames(project: Path) -> int:
+def _anatomy_frames(project: Path, scenes: list[Path] | None = None) -> int:
     """The rules that read the frames, on what was just built: rule 2 of the anatomy rules and the timing of a text.
     Measuring takes the engine, so a build with no engine says it did not measure, and the first delivery still does
     (ADR 0148, ADR 0150). 1 for a fault."""
-    scenes = _picture_scenes(project)
+    # The CLI supplies only this invocation's published scenes. Direct callers may
+    # still explicitly request inspection of the existing project directory.
+    scenes = _picture_scenes(project) if scenes is None else scenes
     if not scenes:
         return 0
     try:

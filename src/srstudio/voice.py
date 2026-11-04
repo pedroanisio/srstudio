@@ -107,33 +107,68 @@ class Alignment:
 
     @classmethod
     def parse(cls, data: object, where: str = "alignment") -> Alignment:
+        def fail(message: str, path: str, actual: object, expected: str) -> VoiceOutputError:
+            return VoiceOutputError(
+                message,
+                code='voice.alignment',
+                path=path,
+                actual=actual,
+                expected=expected,
+                remedy=f'Correct {path} in the alignment: supply {expected}.',
+            )
+
         if not isinstance(data, dict):
-            raise VoiceOutputError(f"{where} must be an object")
+            raise fail(f"{where} must be an object", where, data, 'an object with characters and timing arrays')
         unknown = set(data) - set(cls.FIELDS)
         if unknown:
-            raise VoiceOutputError(f"{where}: unknown field(s) {sorted(unknown)}")
+            raise fail(f"{where}: unknown field(s) {sorted(unknown)}", where, list(data), f'only fields {cls.FIELDS}')
         for name in cls.FIELDS:
             if not isinstance(data.get(name), list):
-                raise VoiceOutputError(f"{where}.{name} is missing or not a list")
+                raise fail(f"{where}.{name} is missing or not a list", f'{where}.{name}', data.get(name), 'an array')
         chars, starts, ends = (data[n] for n in cls.FIELDS)
-        if not len(chars) == len(starts) == len(ends):
-            raise VoiceOutputError(f"{where}: arrays differ in length ({len(chars)}, {len(starts)}, {len(ends)})")
+        for name, values in zip(cls.FIELDS[1:], (starts, ends), strict=True):
+            if len(values) != len(chars):
+                raise fail(
+                    f"{where}: arrays differ in length ({len(chars)}, {len(starts)}, {len(ends)})",
+                    f'{where}.{name}',
+                    len(values),
+                    f'{len(chars)} entries, matching characters',
+                )
         for i, c in enumerate(chars):
             if not isinstance(c, str) or len(c) != 1:
-                raise VoiceOutputError(f"{where}: character {i} is not a single character: {c!r}")
+                raise fail(
+                    f"{where}: character {i} is not a single character: {c!r}",
+                    f'{where}.characters[{i}]',
+                    c,
+                    'a single-character string',
+                )
         previous = 0.0
         for i, (a, b) in enumerate(zip(starts, ends, strict=True)):
-            for v in (a, b):
+            start_path = f'{where}.character_start_times_seconds[{i}]'
+            end_path = f'{where}.character_end_times_seconds[{i}]'
+            for path, v in ((start_path, a), (end_path, b)):
                 if isinstance(v, bool) or not isinstance(v, (int, float)):
-                    raise VoiceOutputError(f"{where}: time {i} is not a number: {v!r}")
+                    raise fail(
+                        f"{where}: time {i} is not a number: {v!r}", path, v, 'a finite number excluding booleans'
+                    )
                 if not checks.number(v):
-                    raise VoiceOutputError(f"{where}: time {i} is not finite")
+                    raise fail(f"{where}: time {i} is not finite", path, v, 'a finite number of seconds')
                 if v < 0:
-                    raise VoiceOutputError(f"{where}: time {i} is negative")
+                    raise fail(f"{where}: time {i} is negative", path, v, 'a number of seconds >= 0')
             if a < previous - 1e-9:
-                raise VoiceOutputError(f"{where}: character {i} starts out of order ({a} < {previous})")
+                raise fail(
+                    f"{where}: character {i} starts out of order ({a} < {previous})",
+                    start_path,
+                    a,
+                    f'start >= previous start ({previous} seconds), tolerance 1e-9',
+                )
             if b < a - 1e-9:
-                raise VoiceOutputError(f"{where}: character {i} ends before its start ({b} < {a})")
+                raise fail(
+                    f"{where}: character {i} ends before its start ({b} < {a})",
+                    end_path,
+                    b,
+                    f'end >= this character start ({a} seconds), tolerance 1e-9',
+                )
             previous = a
         return cls(tuple(chars), tuple(float(a) for a in starts), tuple(float(b) for b in ends))
 

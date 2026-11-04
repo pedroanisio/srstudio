@@ -435,7 +435,15 @@ def parse_score(data: object, *, overrides: Overrides | None = None) -> ActingSc
     except ActingError:
         raise
     except SrstudioError as exc:
-        raise _error('alignment', None, str(exc)) from exc
+        detail = exc.to_dict()
+        raise ActingError(
+            str(exc),
+            code='acting.input',
+            path=detail['path'] or 'alignment',
+            actual=detail['actual'],
+            expected=detail['expected'],
+            remedy=detail['remedy'],
+        ) from exc
 
 
 def gloss_actor(who: Literal['nadia', 'gus', 'tamsin', 'sunny']) -> ActingRig:
