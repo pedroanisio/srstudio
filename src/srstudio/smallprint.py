@@ -1373,11 +1373,12 @@ def east_warm(cv, g, first: float, last: float, measure: Measure) -> None:
     pollinating insects)."""
     sheet(cv, g)
     label(cv, g, "grown sunflowers, morning", LEFT, 290, RIGHT - LEFT, 80, 54.0, INK, "center")
-    sun = pivot(cv, g, "sp-sun", 150.0, 430.0)
-    cv.ellipse(sun, 100, 380, 100, 100, SUNNY, stroke=INK, sw=4.0)
+    sx, sy = 165.0, 465.0  # clear of the title above, the margin to the left and the east row's bees to the right
+    sun = pivot(cv, g, "sp-sun", sx, sy)
+    cv.ellipse(sun, sx - 44, sy - 44, 88, 88, SUNNY, stroke=INK, sw=4.0)
     for k in range(8):
         a = math.radians(k * 45)
-        cv.line(sun, 150 + 64 * math.cos(a), 430 + 64 * math.sin(a), 150 + 86 * math.cos(a), 430 + 86 * math.sin(a),
+        cv.line(sun, sx + 58 * math.cos(a), sy + 58 * math.sin(a), sx + 76 * math.cos(a), sy + 76 * math.sin(a),
                 INK, 5.0)  # fmt: skip
     cv.keys(sun, "rotation", [(first, 0.0), (last, 45.0 * (last - first))], hold=False, local=False)
     rows = (("faces east", 360.0, -1.0, 5, 0.85), ("turned west", 720.0, 1.0, 1, 0.35))

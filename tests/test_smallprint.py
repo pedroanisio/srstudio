@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 import xml.etree.ElementTree as ET
 from dataclasses import replace
 from pathlib import Path
@@ -711,6 +712,18 @@ def test_grown_sunflowers_facing_east_warm_faster_and_get_five_times_the_bees_of
     assert east > west, "the east-facing one is the warmer"
     words = words_on(root)
     assert "faces east" in words and "turned west" in words and "grown sunflowers" in words
+
+
+def test_the_turning_morning_sun_clears_the_page_title_and_the_margin():
+    root = panel_root("east-warm")
+    (sun,) = groups(root, "sp-sun")
+    cx, cy = float(sun.get("anchorX")), float(sun.get("anchorY"))
+    points = [tuple(map(float, xy.split())) for s in sun for xy in re.findall(r"[\d.]+ [\d.]+", s.get("path") or "")]
+    disc = next(s for s in sun if s.get("shape") == "ellipse")
+    reach = max([math.dist((cx, cy), p) for p in points] + [float(disc.get("width")) / 2]) + 2.5  # half a stroke
+    (title,) = (e for e in root.iter() if e.get("text") == "grown sunflowers, morning")
+    assert cy - reach >= 290 + float(title.get("height")), "it turns under the title, never across it"
+    assert cx - reach >= sp.LEFT, "and inside the page's margin"
 
 
 FIXTURE_FONT = next((f for f in SYSTEM_FONTS if f.is_file()), None)  # DejaVu Sans Bold, the fixture font
