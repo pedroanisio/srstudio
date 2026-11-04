@@ -3,26 +3,10 @@
 from dataclasses import replace
 
 import pytest
-from sr_core.scene import Scene
 
-from srstudio import Canvas, body
+from srstudio import body
 from srstudio.limbs import Camera, Frame, Vec3
-
-
-def plan():
-    return body.compile_body(
-        body.BodyScore(
-            2,
-            (body.BodyKey(0, Frame(Vec3(0, -0.88, 0))),),
-            (body.FootAnchor('left', Frame(Vec3(-0.12, 0, 0))), body.FootAnchor('right', Frame(Vec3(0.12, 0, 0)))),
-        )
-    )
-
-
-def canvas():
-    scene = Scene(version='auto')
-    scene.add_project(width=1080, height=1920, fps='24', duration=8)
-    return Canvas(scene, font_asset=None)
+from support.body import canvas, plan
 
 
 @pytest.mark.parametrize('style', ['solid', 'wire'])

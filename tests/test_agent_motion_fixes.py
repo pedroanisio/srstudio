@@ -11,7 +11,7 @@ from srstudio.limbs import Camera, Frame, Quaternion
 from srstudio.limbs.errors import LimbError
 from srstudio.limbs.motion import Attachment
 from support.acting import contact_track, evaluate
-from test_body_drawing import canvas, plan
+from support.body import canvas, plan
 
 
 @pytest.mark.parametrize(
