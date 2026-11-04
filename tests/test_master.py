@@ -31,6 +31,11 @@ def fake_engine(tmp_path: Path, code: int, body: str = "master bytes", write: bo
         'slug=$(basename "$2" .scene.xml); out=""\n'
         'prev=""; for a in "$@"; do [ "$prev" = "--out-dir" ] && out="$a"; prev="$a"; done\n'
         f"{made}\n"
+        # --report PATH, relative to the engine's working folder (the document's), {id} for the output's id
+        'rep=""; prev=""; for a in "$@"; do [ "$prev" = "--report" ] && rep="$a"\n'
+        '  case "$a" in --report=*) rep="${a#--report=}";; esac; prev="$a"; done\n'
+        'if [ -n "$rep" ]; then rep=$(printf %s "$rep" | sed "s/{id}/main/g")\n'
+        f'  mkdir -p "$(dirname "$rep")" && printf %s "report of {body}" > "$rep"; fi\n'
         'echo "args: $*"\n'
         f"echo engine-said >&2\nexit {code}\n"
     )
@@ -146,3 +151,95 @@ def test_the_command_needs_an_output_folder(tmp_path, monkeypatch, capsys):
     assert main(["master", str(tmp_path / "episodes" / "reel" / "reel.scene.xml"),
                  "--engine", str(fake_engine(tmp_path, 0))]) == 0  # fmt: skip
     assert (tmp_path / "gen" / "renders" / "reel.mp4").is_file()
+
+
+REPORT = "generated/episodes/reel/qa/render-report.json"
+
+
+@pytest.mark.parametrize("form", [("--report", REPORT), (f"--report={REPORT}",)])
+def test_a_relative_report_lands_under_the_callers_folder_not_doubled_under_the_documents(tmp_path, monkeypatch, form):
+    scene, out = project(tmp_path), tmp_path / "generated"
+    monkeypatch.chdir(tmp_path)
+    done = master.encode(scene, out, engine=fake_engine(tmp_path, 0, "first"), args=("--strict", *form))
+    assert not (scene.parent / "generated").exists(), "the report went under the document's folder"
+    assert done.report == (tmp_path / REPORT,) and (tmp_path / REPORT).read_text() == "report of first"
+    assert leftovers((tmp_path / REPORT).parent) == [] and leftovers(scene.parent) == []
+
+
+def test_an_absolute_report_stays_where_it_was_asked(tmp_path):
+    scene, out, place = project(tmp_path), tmp_path / "generated", tmp_path / "elsewhere" / "r.json"
+    done = master.encode(scene, out, engine=fake_engine(tmp_path, 0, "abs"), args=("--report", str(place)))
+    assert done.report == (place,) and place.read_text() == "report of abs"
+
+
+def test_a_report_already_there_is_never_replaced_and_spends_no_encode(tmp_path, monkeypatch):
+    scene, out = project(tmp_path), tmp_path / "generated"
+    monkeypatch.chdir(tmp_path)
+    report = tmp_path / REPORT
+    report.parent.mkdir(parents=True)
+    report.write_text("the report of the approved master")
+    ran = []
+
+    def never(*a, **kw):
+        ran.append(a)
+        raise AssertionError("encoded over a report")
+
+    with pytest.raises(files.WriteOnceError, match="render-report.json exists"):
+        master.encode(scene, out, engine=fake_engine(tmp_path, 0), args=("--report", REPORT), run=never)
+    assert ran == [] and report.read_text() == "the report of the approved master"
+    assert not out.exists() or leftovers(out) == []
+
+
+def test_next_writes_the_new_report_beside_the_old_one(tmp_path, monkeypatch):
+    scene, out = project(tmp_path), tmp_path / "generated"
+    monkeypatch.chdir(tmp_path)
+    master.encode(scene, out, engine=fake_engine(tmp_path, 0, "first"), args=("--report", REPORT))
+    done = master.encode(
+        scene, out, engine=fake_engine(tmp_path, 1, "second"), args=("--report", REPORT), next_name=True
+    )
+    again = tmp_path / "generated" / "episodes" / "reel" / "qa" / "render-report-v2.json"
+    assert done.report == (again,) and again.read_text() == "report of second"
+    assert (tmp_path / REPORT).read_text() == "report of first"
+    assert done.paths == (out / "renders" / "reel-v2.mp4",)
+
+
+def test_a_report_that_appears_during_the_encode_is_kept_and_the_new_one_goes_beside_it(tmp_path, monkeypatch):
+    scene, out = project(tmp_path), tmp_path / "generated"
+    monkeypatch.chdir(tmp_path)
+
+    def racing(argv, **kw):
+        (tmp_path / REPORT).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / REPORT).write_text("another session's report")
+        return master.subprocess.run(argv, **kw)
+
+    with pytest.raises(files.WriteOnceError, match="render-report-v2.json"):
+        master.encode(scene, out, engine=fake_engine(tmp_path, 0, "late"), args=("--report", REPORT), run=racing)
+    assert (tmp_path / REPORT).read_text() == "another session's report"
+    assert (tmp_path / REPORT).with_name("render-report-v2.json").read_text() == "report of late"
+    assert (out / "renders" / "reel.mp4").read_text() == "late"
+
+
+def test_a_report_per_output_checks_each_output_s_place(tmp_path, monkeypatch):
+    scene, out = project(tmp_path), tmp_path / "generated"
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "qa").mkdir()
+    (tmp_path / "qa" / "main.json").write_text("kept")
+    with pytest.raises(files.WriteOnceError, match="main.json exists"):
+        master.encode(scene, out, engine=fake_engine(tmp_path, 0), args=("--report", "qa/{id}.json"))
+    (tmp_path / "qa" / "main.json").unlink()
+    done = master.encode(scene, out, engine=fake_engine(tmp_path, 0, "per id"), args=("--report", "qa/{id}.json"))
+    assert done.report == (tmp_path / "qa" / "main.json",)
+
+
+@pytest.mark.parametrize("bad", [("--report",), ("--report", ""), ("--report=",), ("--report", "qa/{id}/r.json")])
+def test_a_report_place_that_cannot_be_staged_is_refused(tmp_path, bad):
+    with pytest.raises(master.MasterError, match="--report"):
+        master.encode(project(tmp_path), tmp_path / "g", engine=fake_engine(tmp_path, 0), args=bad)
+
+
+def test_the_command_prints_the_report_it_installed(tmp_path, monkeypatch, capsys):
+    scene, out = project(tmp_path), tmp_path / "generated"
+    monkeypatch.chdir(tmp_path)
+    engine = str(fake_engine(tmp_path, 0))
+    assert main(["master", str(scene), "--out-dir", str(out), "--engine", engine, "--", "--report", REPORT]) == 0
+    assert f"report: {tmp_path / REPORT}" in capsys.readouterr().out

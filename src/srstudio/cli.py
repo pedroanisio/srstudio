@@ -960,6 +960,8 @@ def _master(args: argparse.Namespace) -> int:
     print(done.output.rstrip())
     for path in done.paths:
         print(f"master: {path}")
+    for path in done.report:
+        print(f"report: {path}")
     return done.returncode
 
 
