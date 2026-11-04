@@ -35,7 +35,8 @@ delivered on it renders the same; a new reel opts in by staging with `news_templ
 
 - **One band** from `BAND_TOP` (y 1240) to `BAND_FOOT` (y 1420, the safe area's foot): 180 px, 9.4 % of the frame.
   The label row carries the credit chip on a real story, or BREAKING (and PARODY when asked) on fiction, beside the
-  current kicker; under it the story's one line; under that the ticker, whose tab carries the show's name. The bug,
+  current kicker; under it the story's one line (the lower's, or with `line=` the story's own while no lower is up,
+  so the row is never empty); under that the ticker, whose tab is sized to the show's name it carries. The bug,
   the chevron bar and the second label row are gone, so the band and the captions are the only two text layers. The
   band stands down while an insert is up. `band` refuses PARODY on a story that has a source.
 - **Medium close-ups.** A shot is a camera on the version-1 set (`Framing`): the desk's middle placed at
@@ -47,7 +48,8 @@ delivered on it renders the same; a new reel opts in by staging with `news_templ
   refused, since its chin would reach the band. The captions move up to y 226, where the bug's row was.
 - **Heads keyed from the speech.** `STYLES` resize the rig-v3 nods for the closer face (Vera 9 px with a 2 degree
   roll, Gus 12 px with 3), and `onsets` adds a turn on each line's onset: toward the other anchor on a reply, away on a
-  line that follows the anchor's own, back to camera 0.9 s after the first word. The turns never overlap the ones
+  line that follows the anchor's own, back to camera 0.9 s after the first word. The reel's first line is said to
+  the camera. The turns never overlap the ones
   `news_head.facing` makes or a hold. Everything is computed from the takes, so the same takes give the same plan.
   `crown_travel` measures how far the top of the hair moves over a span; a three-second talking hold must move it at
   least 15 px in the frame.
@@ -67,6 +69,9 @@ delivered on it renders the same; a new reel opts in by staging with `news_templ
 - In Gus's close shot his held phone is drawn at chest height, behind the band. The card yields to it, but the band
   does not. Clearing it needs either a higher phone hold (an acting change for arc4d3) or a looser framing that misses
   the 40 % fill.
+- The credit leaves with the rest of the band while an insert is up, so the source is not on screen on every frame
+  as version 1 keeps it: an insert's words and the captions are already the two text layers the bar allows. The large
+  card opens the reel and the post's text carries the sources.
 - Hands resting on the desk sit under the band in the close shots, in the area the Reels interface covers. The acting
   hands of Gus (`up`, `point`) are above the band.
 - The episodes repository needs its srstudio pin moved to a commit with this module before a reel can opt in.
