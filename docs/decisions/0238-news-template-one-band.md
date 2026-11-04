@@ -4,8 +4,10 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 
 # ADR 0238: The News template's one band
 
-- Status: proposed (2026-11-04). The frame, the framings and the head motion are a proposal: the proof clip is at
-  `generated/news-template-proof/`, and no reel may stage on `srstudio.news_template` until arc4d3 approves it
+- Status: accepted (2026-11-04). arc4d3 approved the band and the framing in Slack (thread 1793825656.258549,
+  message 1793831201.407529) for Fri 6 Nov's roasts, with three fixes before the first reel ships: the phone as a
+  cutaway, Gus's raised hold and a body move on every line. They are part of this decision. The proof clips are in
+  `generated/news-template-proof/`
 - Deciders: arc4d3; ordered after the 4 Nov News craft audit; written by Claude Opus 5.5 in Claude Code
 - Follows [ADR 0060](0060-news-kit.md), [ADR 0071](0071-news-anchor-head-rigs.md) and
   [ADR 0142](0142-news-hands-are-a-pair.md)
@@ -41,7 +43,8 @@ delivered on it renders the same; a new reel opts in by staging with `news_templ
   band stands down while an insert is up. `band` refuses PARODY on a story that has a source.
 - **Medium close-ups.** A shot is a camera on the version-1 set (`Framing`): the desk's middle placed at
   `(540, desk_y)` and the set scaled about it, the room behind at 55 % of that magnification. Vera's close shot is
-  scale 2.45 (42 % fill), Gus's 2.4 (at least 40 %), the two-shot 1.75 with the anchors at x 300 and 780 (38 %).
+  scale 2.45 (42 % fill), Gus's 2.4 (at least 40 %), the two-shot 1.7 with the anchors at x 293 and 760 (36 %), so
+  a leaning head stays inside the frame.
   `desk_y` is chosen so the lowest a face reaches, at the most its head turns, rolls, nods and tilts, stays 6 px above
   the band; `face_reach` checks that the hair stays under a two-line caption and the skin inside the frame. `fill`
   measures the silhouettes (jacket, neck, skin, hair) above the desk, not their boxes. A pose tilted past 6 degrees is
@@ -59,21 +62,40 @@ delivered on it renders the same; a new reel opts in by staging with `news_templ
   there) comes into the band, or at the moment the story goes small. If that leaves under 2 s, only the credit shows,
   from the first frame.
 - **Inserts keep moving.** `insert` pushes a full-frame insert in from 1.16 to 1.2 times the handset's size, keyed at
-  least every 1.5 s, so no frame of it holds; `phone_insert` draws Gus's phone inside it, the handset's screen inside
-  the safe column and under two lines of caption.
+  least every 1.5 s, so no frame of it holds.
+- **Gus's phone is a cutaway.** `phone_insert` draws the handset's screen across the frame's width, from under two
+  lines of caption to past the band's foot, over an opaque backdrop, so nothing of the shot shows and nobody holds
+  it. The chat fills the screen: the messages arrive one by one with at most 1.5 s between landings (typing dots bridge
+  a longer wait), each sliding in over 0.2 s, and the last lands at `CHAT_FOOT`, the screen's foot, with the gaps
+  between them opened up to fill it. The words are sized to fit the safe column at the push's largest scale. The last
+  message stays up at least `craft.MIN_DISPLAY` (0.83 s) and at most 1.5 s; `reaction` refuses an insert whose next
+  shot is not Gus's, so the reel cuts back to his reaction.
+- **Gus holds his phone up** in his close shot (`GRIP`, a `news_inked.Grip`): the phone foreshortened under his chin,
+  its box between the lowest point of his mouth (`mouth_low`) and `BAND_TOP`, his fists under it from behind the
+  band, a mirrored pair (ADR 0103) on elbows no sharper than `news_arms.ELBOW_LEAST`. The framing does not change;
+  the fill stays at 40 %. Version 1's hold is untouched.
+- **The body moves on every line.** `body` keys, from 0.2 s before each line's first word, a lean toward the other
+  anchor (3.5 degrees of skew about the desk's top, so the head goes sideways and never lower), both hands up
+  beside the face (`GRIPS`, a mirrored open pair above the band in every shot), and a lean away, in turn. A lean holds
+  to the line's last word; the hands stay up 0.9 s. When the hands are busy with a prop, their turn leans instead.
+  `obstacles` and `card_plan` take the takes, so the large card also yields to hands that come up.
+- **Words stay up long enough to read.** `band` refuses a lower or the story's line that an insert or another lower
+  leaves up for less than `craft.MIN_DISPLAY`.
 
 ## Consequences
 
 - A new News reel staged on version 2 meets the audit's band, fill and motion measures by construction; the tests in
   `tests/test_news_template.py` hold each rule.
-- In Gus's close shot his held phone is drawn at chest height, behind the band. The card yields to it, but the band
-  does not. Clearing it needs either a higher phone hold (an acting change for arc4d3) or a looser framing that misses
-  the 40 % fill.
+- Gus's raised phone has 97 px between his mouth and the band in his close shot, so it reads as the phone's back,
+  foreshortened, with the fists' tops under it; the screen is shown in the cutaway instead.
+- A reel with a phone must end the insert on a beat of Gus's and keep its last message up 0.83 to 1.5 s: the
+  cutaway's checks refuse anything else, and a lower that would show for less than 0.83 s after it must start at the
+  cut back.
 - The credit leaves with the rest of the band while an insert is up, so the source is not on screen on every frame
   as version 1 keeps it: an insert's words and the captions are already the two text layers the bar allows. The large
   card opens the reel and the post's text carries the sources.
-- Hands resting on the desk sit under the band in the close shots, in the area the Reels interface covers. The acting
-  hands of Gus (`up`, `point`) are above the band.
+- Hands resting on the desk sit under the band in the close shots, in the area the Reels interface covers. The hands
+  up and Gus's `point` are above the band.
 - The episodes repository needs its srstudio pin moved to a commit with this module before a reel can opt in.
 
 ## Rejected alternatives
@@ -88,5 +110,9 @@ delivered on it renders the same; a new reel opts in by staging with `news_templ
 - **Measuring fill by the anchor's height share.** The audit's "about 30 %" matches the height share of the version-1
   close shot (31 %), but height ignores how wide a body is: a thin figure at full height would pass. The silhouette's
   area is the measure.
-- **Moving Gus's phone hold higher.** It would clear the band, but it is an acting change to an approved rig, and it
-  needs arc4d3's word first.
+- **The phone as an inset over the shot.** A handset inside the safe column left half its screen blank and sat over
+  Gus's face; the cutaway gives the chat the frame's width and hands the picture back to his reaction.
+- **A looser close shot for the raised phone.** It would leave room for a taller phone, but the fill would drop under
+  40 %, which the audit ranks first.
+- **A shrug as the second body move.** In the close shots the shoulders and the hands sit under the band, so a shrug
+  did not read on screen; hands up beside the face do.
