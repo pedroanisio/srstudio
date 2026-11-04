@@ -926,3 +926,21 @@ def test_the_drill_bores_into_the_rock_and_its_cuttings_come_up_markedly_less_re
     assert fills and all(redness(f) < 0.25 * redness(sp.MARS_RED) for f in fills), "markedly less red (NASA, 2014)"
     words = words_on(root)
     assert all(w in words for w in ("a drilled Mars rock", "reddish dust", "cuttings", "inside"))
+
+
+def test_the_cuttings_heap_reads_at_phone_size_beside_the_drill_and_under_its_label():
+    root = panel_root("mars-drill", 1.0, 7.0)
+    (pile,) = groups(root, "sp-cuttings")
+    (heap,) = [s for s in pile.iter("shape") if s.get("path")]
+    x0, y0, cx, cy, x1, y1 = (float(n) for n in re.findall(r"-?\d+(?:\.\d+)?", heap.get("path")))
+    peak = (y0 + 2 * cy + y1) / 4  # the drawn top of a quadratic heap is half way to its control point
+    assert y0 - peak >= 80.0 and x1 - x0 >= 240.0, "a heap big enough to read on a phone"
+    (drill,) = groups(root, "sp-drill")
+    bit = max((s for s in drill.iter("shape") if s.get("width")), key=lambda s: float(s.get("height")))
+    bit_x1 = float(bit.get("x")) + float(bit.get("width"))
+    assert x0 - bit_x1 >= 40.0, "the heap stands clear of the drill, not under it"
+    (text,) = [s for s in root.iter() if s.tag.endswith("text") and s.get("text") == "cuttings"]
+    (layer,) = [s for s in root.iter() if s.tag.endswith("layer") and s.get("asset") == text.get("id")]
+    left, top, wide = float(layer.get("x")), float(layer.get("y")), float(text.get("width"))
+    assert top + float(text.get("height")) <= peak - 10.0, "its label sits over the heap, not on it"
+    assert left <= (x0 + x1) / 2 <= left + wide, "and names the heap it is over"

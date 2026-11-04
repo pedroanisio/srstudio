@@ -1458,20 +1458,20 @@ def mars_drill(cv, g, first: float, last: float, measure: Measure) -> None:
     cv.rect(g, x0, top, x1 - x0, 40, MARS_RED, stroke=INK, sw=5.0, radius=12.0)  # the reddish dust on top
     span = max(last - first, 2.0)
     bore = [(first, 0.0), (first + 0.2, 0.0), (first + 0.2 + 0.35 * span, 1.0)]
-    hole = pivot(cv, g, "sp-hole", 540.0, top, scaleY=0.0)
-    cv.rect(hole, 526, top, 28, 150, HOLE)
+    hole = pivot(cv, g, "sp-hole", 460.0, top, scaleY=0.0)
+    cv.rect(hole, 446, top, 28, 150, HOLE)
     cv.keys(hole, "scaleY", bore, hold=False, local=False)
     drill = cv.group(g, cv.uid("sp-drill"), y=0.0)
-    cv.rect(drill, 480, 390, 120, 56, SHADE, stroke=INK, sw=4.0, radius=8.0)
-    cv.rect(drill, 526, 446, 28, 114, COPPER, stroke=INK, sw=3.0)
+    cv.rect(drill, 400, 390, 120, 56, SHADE, stroke=INK, sw=4.0, radius=8.0)
+    cv.rect(drill, 446, 446, 28, 114, COPPER, stroke=INK, sw=3.0)
     down = [(at, 150.0 * v) for at, v in bore]
     cv.keys(drill, "y", [*down, (min(first + 0.3 + 0.45 * span, last), 0.0)], hold=False, local=False)
-    pile = pivot(cv, g, "sp-cuttings", 650.0, top, scaleY=0.0)
-    cv.path(pile, f"M586 {top} Q650 {top - 70} 714 {top} Z", fill=INSIDE, stroke=INK, sw=4.0)
+    pile = pivot(cv, g, "sp-cuttings", 720.0, top, scaleY=0.0)  # clear of the drill, its top 90 px over the dust
+    cv.path(pile, f"M580 {top} Q720 {top - 180} 860 {top} Z", fill=INSIDE, stroke=INK, sw=4.0)
     cv.keys(pile, "scaleY", [(first, 0.0), (first + 0.3, 0.0), (first + 0.3 + 0.4 * span, 1.0)], hold=False,
             local=False)  # fmt: skip
-    label(cv, g, "reddish dust", LEFT, 440, 380, 60, 46.0, INK, "start")
-    label(cv, g, "cuttings", 660, 440, RIGHT - 660, 60, 46.0, INK, "end")
+    label(cv, g, "reddish dust", LEFT, 440, 320, 60, 46.0, INK, "start")
+    label(cv, g, "cuttings", 580, 370, 280, 60, 46.0, INK, "center")
     label(cv, g, "inside", LEFT, 836, RIGHT - LEFT, 60, 46.0, INK, "center")
 
 
