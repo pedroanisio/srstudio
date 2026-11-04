@@ -12,9 +12,10 @@ from pathlib import Path
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import Canvas, host_kit, rafa_show, sketch, toon_sketch
+from srstudio import Canvas, host_kit, rafa_show, sketch, smallprint_lab, smallprint_scene, toon_sketch
 from srstudio import smallprint as sp
 from srstudio import smallprint_kit as kit
+from srstudio.plates import Camera
 from srstudio.sample import SYSTEM_FONTS
 from srstudio.smallprint import Beat, ScriptError, Show, Stamp
 from srstudio.social import InstagramPost
@@ -777,3 +778,106 @@ def test_the_voiced_build_draws_takes_in_step(monkeypatch, tmp_path):
 def test_a_recording_that_is_not_one_is_refused(recorded):
     with pytest.raises(ScriptError):
         SHOW.check_recorded(recorded)
+
+
+# -- explainer shots in 3D on his worktop (ADR 0240) ------------------------------------------------------------------
+LENS = Camera((0.0, -300.0, -362.0), (0.0, -290.0, -205.0), 33.0, 4.0)
+
+
+def _tank(m) -> None:
+    m.box("feeder", (0.0, -290.0, -205.0), (70.0, 120.0, 10.0))
+
+
+def _pellet(m, pose: float) -> None:
+    m.ell("pellet", (pose, -290.0, -215.0), (3.0, 3.0, 3.0))
+
+
+def _shot(name: str = "test-tank", stamp_at: float | None = None) -> smallprint_scene.Shot:
+    return smallprint_scene.Shot(name, LENS, "A TEST", _tank, lambda t: round(math.sin(t * 3.0) * 12.0, 1), _pellet,
+                                 smallprint_lab.materials, smallprint_lab.finished, stamp_at=stamp_at)  # fmt: skip
+
+
+def _with_shot(stamp_at: float | None = None, **changes) -> Show:
+    return replace(with_beat(3, panel="test-tank"), scenes=(_shot(stamp_at=stamp_at),), **changes)
+
+
+def test_an_explainer_shot_takes_a_panel_s_place_and_its_stamp_lands_on_its_word():
+    sk = SHOW.sketch
+    plain = _with_shot()
+    plain.validate()
+    (name, first, last, held), *_ = plain.panel_runs(sk.beats, sk.end)
+    assert name == "test-tank" and [beat.id for beat, _ in held] == ["why"]
+    on_word = _with_shot(stamp_at=first + 0.5)
+    times = on_word.stamp_times(sk.beats, sk.end)
+    assert times[0] == pytest.approx(first + 0.5)
+    assert plain.stamp_times(sk.beats, sk.end)[0] == pytest.approx(max(first, sp.cut(held[0][1]) + 0.35))
+    assert times[1:] == SHOW.stamp_times(sk.beats, sk.end)[1:]  # the paper panels keep theirs
+
+
+@pytest.mark.parametrize(
+    ("panel", "scenes", "match"),
+    [
+        ("test-tank", (_shot(), _shot()), "a panel name of its own"),
+        ("penny-fall", (_shot("penny-fall"),), "a panel name of its own"),
+        ("test-tank", (_shot(), _shot("unused-tank")), "no beat shows"),
+    ],
+)
+def test_explainer_shots_that_clash_or_go_unused_are_refused(panel, scenes, match):
+    with pytest.raises(ScriptError, match=match):
+        replace(with_beat(3, panel=panel), scenes=scenes).validate()
+
+
+def test_a_beat_on_a_shot_the_show_does_not_have_is_refused():
+    with pytest.raises(ScriptError, match="the panels are"):
+        with_beat(3, panel="test-tank").validate()
+
+
+def test_an_explainer_shot_with_no_renders_to_draw_its_plates_is_refused():
+    with pytest.raises(ScriptError, match="plates' renders"):
+        drawn(_with_shot())
+
+
+def test_an_explainer_shot_is_drawn_from_plates_with_its_stamp_and_its_chip(tmp_path):
+    asked = []
+
+    class Renders:
+        def plate(self, plate) -> Path:
+            asked.append(plate)
+            path = tmp_path / f"plate-{len(asked)}.png"
+            path.write_bytes(b"png")
+            return path
+
+    show = _with_shot()
+    sk = show.sketch
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="30", duration=sk.end, background=sp.PAPER)
+    cv = Canvas(scene, font_asset="fraunces")
+    show.overlay(cv, cv.comp, sk.beats, sk.end, lambda text, size: 0.52 * size * len(text), Renders(), tmp_path / "p")
+    root = ET.fromstring(scene.to_bytes(layout="pretty"))
+    ids = {e.get("id") for e in root.iter()}
+    assert {"test-tank-room-angle", "test-tank-bench-angle"} <= ids and len(asked) > 2
+    words = {e.get("text") for e in root.iter() if e.tag.endswith("text")}
+    assert {"A TEST", FOUND.text, *[f"{b.stamp.text}" for b in BEATS if b.stamp and b.panel != "penny-fall"]} <= words
+    assert any(e.get("fill") == "#F4F0E6EB" for e in root.iter())  # the source on its chip, over a picture
+
+
+def test_a_stamp_lands_where_its_layout_says_and_the_paper_page_keeps_its_place():
+    measure = lambda text, size: 0.52 * size * len(text)  # noqa: E731
+    for top, chip in ((kit.STAMP_Y, False), (236.0, True)):
+        scene = Scene(version="auto")
+        scene.add_project(width=1080, height=1920, fps="30", duration=4.0)
+        cv = Canvas(scene, font_asset="fraunces")
+        kit.stamp(cv, cv.comp, FOUND, 1.0, 3.0, measure, top=top, chip=chip)
+        root = ET.fromstring(scene.to_bytes(layout="pretty"))
+        _, box, sources, rows = kit.stamp_layout(FOUND, measure, top)
+        rects = [e for e in root.iter() if e.get("shape") == "rect"]
+        assert any(float(r.get("y")) == top for r in rects)
+        assert box[1] < top + 10.0 and sources[0][1] > top
+        chips = [r for r in rects if r.get("fill") == "#F4F0E6EB"]
+        assert len(chips) == chip
+        if chip:
+            x0, y0, x1, y1 = kit.source_chip(sources)
+            assert float(chips[0].get("x")) == pytest.approx(x0) and float(chips[0].get("y")) == pytest.approx(y0)
+            assert x0 < sources[0][0] and y1 > sources[-1][3]
+    with pytest.raises(ScriptError, match="needs a source row"):
+        kit.source_chip([])

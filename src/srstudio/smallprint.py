@@ -41,6 +41,7 @@ from . import (
     scripting,
     sketch,
     smallprint_props,
+    smallprint_scene,
     toon,
 )
 from . import foley as synth
@@ -161,6 +162,12 @@ class Show:
     room: str = "rafa-kitchen"
     bleed: bool = True
     held_frames: bool = False  # held keys half a frame before their frame (ADR 0216): every new reel sets it
+    scenes: tuple[smallprint_scene.Shot, ...] = ()  # explainer shots acted out in 3D on his worktop (ADR 0240)
+
+    @property
+    def shots(self) -> dict[str, smallprint_scene.Shot]:
+        """The explainer shots by the panel each one draws."""
+        return {shot.panel: shot for shot in self.scenes}
 
     @property
     def output(self) -> str:
@@ -234,6 +241,11 @@ class Show:
             raise ScriptError("the reel opens and closes on him, with the question over him")
         if not any(beat.stamp for beat in self.beats):
             raise ScriptError("a finding is stamped, with its source")
+        named = [shot.panel for shot in self.scenes]
+        if len(set(named)) != len(named) or set(named) & set(PANELS):
+            raise ScriptError(f"each explainer shot has a panel name of its own, got {named}")
+        if set(named) - {beat.panel for beat in self.beats}:
+            raise ScriptError(f"explainer shots no beat shows: {sorted(set(named) - {b.panel for b in self.beats})}")
         for i, (beat, kept) in enumerate(zip(self.beats, self.kept, strict=True)):
             if beat.steps and beat.steps[-1][0] >= kept + (beat.hold or GAP) and i + 1 < len(self.beats):
                 raise ScriptError(f"{beat.id}: a step lands after its beat, at {beat.steps[-1][0]} s")
@@ -316,8 +328,8 @@ class Show:
         offsets = [at for at, _ in beat.steps]
         if offsets != sorted(offsets) or any(at < 0.0 for at in offsets):
             raise ScriptError(f"{beat.id}: steps go forward from the line's start, got {offsets}")
-        if beat.panel and beat.panel not in PANELS:
-            raise ScriptError(f"{beat.id}: the panels are {tuple(PANELS)}, got {beat.panel!r}")
+        if beat.panel and beat.panel not in PANELS and beat.panel not in self.shots:
+            raise ScriptError(f"{beat.id}: the panels are {(*PANELS, *self.shots)}, got {beat.panel!r}")
         if beat.stamp is not None:
             if not beat.panel:
                 raise ScriptError(f"{beat.id}: a stamp lands on a panel")
@@ -359,9 +371,37 @@ class Show:
                 rows.append((beat.panel, first, last, [(beat, sb.start)]))
         return rows
 
-    def overlay(self, cv, parent, beats, end, measure) -> None:
-        """Over the picture: each panel and its stamps, the question card on the first beat and the last, the marks."""
+    def stamp_times(self, beats: Sequence[Any], end: float) -> list[float]:
+        """When each stamp lands, in the script's order: on an explainer shot's word when it names one, else a little
+        after its line starts."""
+        times = []
+        for name, first, _, held in self.panel_runs(beats, end):
+            shot = self.shots.get(name)
+            for beat, said in held:
+                if beat.stamp is not None:
+                    times.append(
+                        smallprint_scene.stamp_time(shot, cut(said), first) if shot else max(first, cut(said) + 0.35)
+                    )
+        return times
+
+    def overlay(
+        self, cv, parent, beats, end, measure, renders: Renders | None = None, root: Path | None = None
+    ) -> None:
+        """Over the picture: each panel and its stamps, the question card on the first beat and the last, the marks.
+        An explainer shot is drawn from its plates, which ``renders`` makes into the project at ``root``."""
         for name, first, last, held in self.panel_runs(beats, end):
+            if name in self.shots:
+                stamped = [(beat, said) for beat, said in held if beat.stamp is not None]
+                if len(stamped) > 1 or renders is None or root is None:
+                    raise ScriptError(f"{name}: an explainer shot takes one stamp and the plates' renders and project")
+                beat, said = stamped[0] if stamped else (None, None)
+                finding = beat.stamp if beat else None
+                at = cut(said) if said is not None else None
+                g = smallprint_scene.draw(
+                    cv, parent, self.shots[name], first, last, renders, root, measure, finding, at
+                )
+                finish(cv, g)
+                continue
             g = cv.group(parent, cv.uid(f"smallprint-panel-{name}"), start=first, end=last)
             PANELS[name](cv, g, first, last, measure)
             for i, (beat, said) in enumerate(held):
@@ -1257,7 +1297,7 @@ def shared_sounds(show: Show, beats, end: float, root: Path, seed: int) -> list[
     sound = sounder(root, end, seed)
     audio = Path(root) / "audio"
     pages = [first for _, first, _, _ in show.panel_runs(beats, end)]
-    stamps = [max(cut(sb.start) + 0.35, 0.0) for b, sb in zip(show.beats, beats, strict=True) if b.stamp]
+    stamps = show.stamp_times(beats, end)
     return [
         sketch.effect("room", 0.0, ROOM_GAIN, root, synth.write_room(audio / "room.wav", end, seed=seed)),
         sketch.effect("bed", 0.0, BED_GAIN, root, bed(audio / "bed.wav", end, seed), role="music"),
@@ -1335,7 +1375,7 @@ def run(show: Show, argv: Sequence[str], env: Mapping[str, str] = os.environ) ->
         captions=lambda *_: None,  # the engine's track, added to the built episode below
         camera=framing(show),
         finish=finish,
-        overlay=show.overlay,
+        overlay=partial(show.overlay, renders=renders, root=root),
         safe_area=VERTICAL,
         output=show.output,
         crf="25",

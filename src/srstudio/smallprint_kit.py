@@ -7,7 +7,7 @@ places them is :mod:`srstudio.smallprint`.
 from __future__ import annotations
 
 import math
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -32,6 +32,8 @@ __all__ = [
     "card",
     "label",
     "stamp",
+    "source_chip",
+    "stamp_layout",
     "wrap",
 ]
 
@@ -121,17 +123,11 @@ def spread(text: str, size: float, measure: Measure) -> float:
     return (measure(text, size) + 80.0) * math.cos(turn) + size * 1.6 * math.sin(turn)
 
 
-@register(
-    "graphic",
-    "smallprint-stamp",
-    summary="A finding stamped in red on a panel, its source in ink under it",
-    contract=dc.contract("smallprint-stamp"),
-)
-def stamp(cv, parent, finding: Stamp, start: float, end: float, measure: Measure):
-    """``finding`` stamped at ``start``, a little crooked, the way a stamp lands, its source under it. Returns its
-    group."""
-    if end <= start:
-        raise ScriptError(f"the stamp needs time on screen, got {start}..{end}")
+def stamp_layout(
+    finding: Stamp, measure: Measure, top: float = STAMP_Y
+) -> tuple[float, tuple[float, float, float, float], list[tuple[float, float, float, float]], list[str]]:
+    """Where :func:`stamp` puts ``finding`` with its top at ``top``: its size, the frame box the turned stamp covers,
+    a box for each source row, and the rows. Or :class:`ScriptError` for a finding no stamp fits."""
     room = RIGHT - LEFT
     size = STAMP_SIZE
     while spread(finding.text, size, measure) > room and size > 36.0:
@@ -139,20 +135,62 @@ def stamp(cv, parent, finding: Stamp, start: float, end: float, measure: Measure
     if spread(finding.text, size, measure) > room:
         raise ScriptError(f"{finding.text!r} does not fit a stamp")
     wide, tall = measure(finding.text, size) + 80.0, size * 1.6
-    cx, cy = (LEFT + RIGHT) / 2, STAMP_Y + tall / 2  # the safe area's middle, which is left of the frame's
+    cx, cy = (LEFT + RIGHT) / 2, top + tall / 2
+    turn = math.radians(abs(TILT))
+    half_w = (wide * math.cos(turn) + tall * math.sin(turn)) / 2
+    half_h = (wide * math.sin(turn) + tall * math.cos(turn)) / 2
+    rows = wrap(finding.source, SOURCE_SIZE, room, measure)[:2]
+    sources = []
+    for i, row in enumerate(rows):
+        w = measure(row, SOURCE_SIZE)
+        y = top + tall + 34.0 + i * 38.0
+        sources.append((cx - w / 2, y, cx + w / 2, y + 38.0))
+    return size, (cx - half_w, cy - half_h, cx + half_w, cy + half_h), sources, rows
+
+
+CHIP_PAD = (18.0, 6.0)  # the paper chip under a source reaches this far past its rows, across and down
+
+
+def source_chip(sources: Sequence[tuple[float, float, float, float]]) -> tuple[float, float, float, float]:
+    """The paper chip :func:`stamp` lays under the source rows ``sources`` (boxes from :func:`stamp_layout`)."""
+    if not sources:
+        raise ScriptError("a source chip needs a source row")
+    px, py = CHIP_PAD
+    return (min(b[0] for b in sources) - px, sources[0][1] - py, max(b[2] for b in sources) + px, sources[-1][3] + py)
+
+
+@register(
+    "graphic",
+    "smallprint-stamp",
+    summary="A finding stamped in red on a panel, its source in ink under it",
+    contract=dc.contract("smallprint-stamp"),
+)
+def stamp(
+    cv, parent, finding: Stamp, start: float, end: float, measure: Measure, top: float = STAMP_Y, chip: bool = False
+):
+    """``finding`` stamped at ``start``, a little crooked, the way a stamp lands, its source under it, the stamp's
+    top at ``top``. With ``chip`` the source sits on a paper chip, to read over a picture. Returns its group."""
+    if end <= start:
+        raise ScriptError(f"the stamp needs time on screen, got {start}..{end}")
+    room = RIGHT - LEFT
+    size, _, sources, rows = stamp_layout(finding, measure, top)
+    wide, tall = measure(finding.text, size) + 80.0, size * 1.6
+    cx, cy = (LEFT + RIGHT) / 2, top + tall / 2  # the safe area's middle, which is left of the frame's
     x = round(cx - wide / 2, 2)
     g = cv.group(
         parent, cv.uid("smallprint-stamp"), start=start, end=end, x=cx, y=cy, anchorX=cx, anchorY=cy, rotation=TILT
     )
-    cv.rect(g, x, STAMP_Y, wide, tall, "#F4F0E6E6", stroke=STAMP, sw=7.0, radius=10.0)
-    cv.rect(g, x + 10, STAMP_Y + 10, wide - 20, tall - 20, "#00000000", stroke=STAMP, sw=2.5, radius=6.0)
-    label(cv, g, finding.text, x, STAMP_Y, wide, tall, size, STAMP, "center")
+    cv.rect(g, x, top, wide, tall, "#F4F0E6E6", stroke=STAMP, sw=7.0, radius=10.0)
+    cv.rect(g, x + 10, top + 10, wide - 20, tall - 20, "#00000000", stroke=STAMP, sw=2.5, radius=6.0)
+    label(cv, g, finding.text, x, top, wide, tall, size, STAMP, "center")
     cv.pop_in(
         g, start, from_=min(LANDS_FROM, room / spread(finding.text, size, measure)), over=0.94, rise=0.09, settle=0.2
     )
     cv.keys(g, "opacity", [(start, 0.0), (start + 0.06, 1.0)], hold=False, local=False)
     source = cv.group(parent, cv.uid("smallprint-source"), start=start + 0.2, end=end)
-    rows = wrap(finding.source, SOURCE_SIZE, RIGHT - LEFT, measure)
-    for i, row in enumerate(rows[:2]):
-        label(cv, source, row, LEFT, STAMP_Y + tall + 34.0 + i * 38.0, RIGHT - LEFT, 38.0, SOURCE_SIZE, INK, "center")
+    if chip and sources:
+        x0, y0, x1, y1 = source_chip(sources)
+        cv.rect(source, x0, y0, x1 - x0, y1 - y0, "#F4F0E6EB", radius=(y1 - y0) / 2 if len(sources) == 1 else 18.0)
+    for i, row in enumerate(rows):
+        label(cv, source, row, LEFT, top + tall + 34.0 + i * 38.0, RIGHT - LEFT, 38.0, SOURCE_SIZE, INK, "center")
     return g
