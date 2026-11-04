@@ -85,8 +85,9 @@ def test_a_master_with_no_sound_cannot_be_measured(clips):
 
 def test_a_file_that_is_no_video_cannot_be_measured(tmp_path):
     (tmp_path / "x.mp4").write_bytes(b"not a video")
-    with pytest.raises(MasterError, match="x.mp4: ffprobe"):
+    with pytest.raises(MasterError, match="x.mp4: ffprobe: .*x.mp4: Invalid data") as e:
         master_gate.measure(tmp_path / "x.mp4")
+    assert "\n" not in str(e.value)  # one line in the report
 
 
 # -- runs, the bed, the information lines -------------------------------------------------------------------------

@@ -113,7 +113,8 @@ def _run(cmd: Sequence[str], what: str) -> subprocess.CompletedProcess:
     try:
         return subprocess.run(list(cmd), capture_output=True, check=True)
     except subprocess.CalledProcessError as exc:
-        raise MasterError(f"{what}: {exc.stderr.decode(errors='replace').strip()[-300:]}") from None
+        said = [line for line in exc.stderr.decode(errors="replace").splitlines() if line.strip()]
+        raise MasterError(f"{what}: {said[-1].strip()[-300:] if said else f'exit {exc.returncode}'}") from None
     except OSError as exc:
         raise MasterError(f"{what}: {exc}") from None
 
