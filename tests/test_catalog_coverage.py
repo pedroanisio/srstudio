@@ -38,8 +38,10 @@ PACKAGE_ONLY = [
 SUPERSEDED = ["toon-fox", "toon-hedgehog", "toon-raccoon"]
 REPLACED_ON_SCREEN = ["news-gus@2", "news-vera@2"]
 NO_EPISODE = [
+    "bo@2",  # proposed: hands, ADR 0239
     "friends-leo",
     "friends-sam",
+    "juno@2",  # proposed: hands, ADR 0239
     "news-gus@4",
     "news-gus@5",
     "news-gus@6",
@@ -48,6 +50,7 @@ NO_EPISODE = [
     "news-vera@5",
     "news-vera@6",
     "pedro",
+    "pip@2",  # proposed: hands, ADR 0239
     "rafa",
     "rafa-bills",
     "rafa-breakroom",
