@@ -665,3 +665,126 @@ def test_a_remote_lies_in_a_hand_and_refuses_a_scale_it_cannot_draw():
 def test_the_menu_and_the_remote_are_parts():
     assert registry.get("prop", "toon-tv-menu").builder is toon_everyday.tv_menu
     assert registry.get("prop", "toon-remote").builder is toon_everyday.remote
+
+
+# -- the phone with a face ---------------------------------------------------------------------------------------------
+from srstudio.toon_everyday import Chip, Query  # noqa: E402
+
+PHONE_AT = (330.0, 1000.0)
+
+
+def faced(cv: Canvas | None = None, **kw):
+    cv = cv or canvas()
+    args = {
+        "queries": (Query(0.0, "can a duck\nget lost", 0.5), Query(3.0, "is it me", 0.4)),
+        "measure": measure,
+        "wake": 0.8,
+        "looks": ((0.0, "ahead"), (1.0, "up")),
+        "lids": ((0.0, 0.0), (2.0, 0.5)),
+        "mouth": ((0.9, "open"), (1.1, "closed")),
+        "leans": ((1.5, 1.0),),
+        "chips": (Chip(1.2, "do fish get\nthirsty", -40.0, -300.0, -4.0), Chip(1.6, "is cereal soup", 30, -200)),
+        "clear": 2.5,
+        "id": "pf",
+    }
+    args.update(kw)
+    box = toon_everyday.phone_face(cv, cv.comp, at=args.pop("at", PHONE_AT), **args)
+    return cv, box
+
+
+def test_a_phone_with_a_face_is_a_part():
+    assert registry.get("prop", "toon-phone-face").builder is toon_everyday.phone_face
+
+
+def test_a_phone_with_a_face_types_each_query_on_its_own_clock_in_a_box_fitted_to_its_words():
+    cv, _ = faced()
+    root = tree(cv)
+    texts = {t.get("id"): t for t in root.iter("text")}
+    bar = [g for g in root.iter("group") if g.get("id", "").startswith("pf-query-")]
+    assert [g.get("id") for g in bar] == ["pf-query-0", "pf-query-1"]
+    for g, q in zip(bar, ("can a duck\nget lost", "is it me"), strict=True):
+        layer = next(g.iter("layer"))
+        text = texts[layer.get("asset")]
+        assert text.get("text") == q and text.get("align") == "start"
+        need = max(measure(row, toon_everyday.QUERY_SLOT.size) for row in q.split("\n"))
+        assert int(text.get("width")) == math.ceil(need) + 2 < int(toon.fh(toon_everyday.QUERY_SLOT.w))
+    animators = [a for a in root.iter("textAnimator")]
+    assert [(a.get("preset"), float(a.get("presetStart"))) for a in animators] == [("typewriter", 0.0),
+                                                                                  ("typewriter", 3.0)]  # fmt: skip
+
+
+def test_a_phone_with_a_face_wakes_its_face_over_the_results_and_clears_its_chips():
+    cv, box = faced()
+    assert keys(group(cv, "pf-results"), "opacity") == [(0.0, 1.0), (0.8, 1.0), (1.0, 0.0)]
+    assert keys(group(cv, "pf-awake"), "opacity") == [(0.0, 0.0), (0.8, 0.0), (1.0, 1.0)]
+    assert keys(group(cv, "pf-chips"), "opacity") == [(0.0, 1.0), (2.5, 0.0)]
+    flicker = keys(group(cv, "pf-chip-0"), "opacity")
+    assert flicker[0] == (0.0, 0.0) and flicker[1][0] == 1.2 and flicker[-1] == (1.32, 1.0)
+    assert layer_texts(cv, "pf-chip-1") == ["is cereal soup"]
+    shown = {g.get("id"): keys(g, "opacity") for g in tree(cv).iter("group") if "-mouth-" in g.get("id", "")}
+    assert shown["pf-mouth-open"][-2:] == [(0.9, 1.0), (1.1, 0.0)] and shown["pf-mouth-closed"][0] == (0.0, 1.0)
+    grow = keys(group(cv, "pf-face"), "scaleX")
+    assert grow[0] == (0.0, 1.0) and grow[-1] == (1.75, 1.0 + toon_everyday.LEAN)
+    phone_only = toon_everyday.phone_face(canvas(), canvas().comp, (Query(0.0, "hi"),), measure=measure, wake=0.0,
+                                          at=PHONE_AT)  # fmt: skip
+    assert box[0] <= phone_only[0] and box[1] <= phone_only[1]  # the chips are in its footprint
+    assert phone_only == pytest.approx(
+        (PHONE_AT[0] + toon_everyday.PHONE_FACE_BOX[0], PHONE_AT[1] + toon_everyday.PHONE_FACE_BOX[1],
+         PHONE_AT[0] + toon_everyday.PHONE_FACE_BOX[2], PHONE_AT[1] + toon_everyday.PHONE_FACE_BOX[3])
+    )  # fmt: skip
+
+
+def test_a_phone_awake_from_the_start_shows_no_results_and_no_clear_keeps_its_chips():
+    cv, _ = faced(wake=0.0, clear=None)
+    assert keys(group(cv, "pf-results"), "opacity") == [(0.0, 0.0)]
+    assert keys(group(cv, "pf-awake"), "opacity") == [(0.0, 1.0)]
+    assert not group(cv, "pf-chips").findall("animate")
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "match"),
+    [
+        ({"queries": ()}, "at least one query"),
+        ({"queries": ("hello",)}, "a Query"),
+        ({"queries": (Query(0.0, "hi", -1.0),)}, "typing takes"),
+        ({"queries": (Query(0.0, "x" * 40),)}, "needs"),
+        ({"queries": (Query(0.0, "a\nb\nc\nd"),)}, "lines"),
+        ({"queries": (Query(0.0, "hi", 2.0), Query(1.0, "yo"))}, "still being typed"),
+        ({"queries": (Query(1.0, "hi"), Query(0.5, "yo"))}, "query"),
+        ({"wake": -1}, "wakes"),
+        ({"wake": True}, "wakes"),
+        ({"looks": ((0.0, "sideways"),)}, "one of"),
+        ({"looks": ((0.0, "up"), (0.05, "down"))}, "apart"),
+        ({"looks": ((0.0,),)}, "pair"),
+        ({"lids": ((0.0, 1.5),)}, "fraction"),
+        ({"lids": ((-1.0, 0.5),)}, "number >= 0"),
+        ({"mouth": ((0.5, "smile"),)}, "one of"),
+        ({"leans": ((1.0, 1.0), (1.1, 0.0))}, "apart"),
+        ({"clear": 0}, "clear at"),
+        ({"chips": ("do fish get thirsty",)}, "a Chip"),
+        ({"chips": (Chip(1.0, "hi", 0, -200, 45.0),)}, "tilt"),
+        ({"chips": (Chip(1.0, "hi", 0, -200), Chip(0.5, "yo", 0, -150))}, "before the chip"),
+        ({"chips": (Chip(2.0, "hi", 0, -200),)}, "reading minimum"),
+        ({"chips": (Chip(1.0, "a\nb\nc", 0, -200),)}, "one or two lines"),
+        ({"chips": (Chip(1.0, "hi", -400, -200),)}, "leaving the frame"),
+        ({"chips": (Chip(1.0, "hi", 0, -700),)}, "caption band or the signature"),
+        ({"chips": (Chip(1.0, "hi", 226, -180),)}, "caption band or the signature"),
+        ({"scale": 3.0}, "scale"),
+    ],
+)
+def test_a_phone_with_a_face_refuses_what_it_cannot_show(kwargs, match):
+    with pytest.raises(ToonDataError, match=match):
+        faced(**kwargs)
+
+
+def test_a_phone_with_a_face_grows_and_blinks_about_points_that_stay_put():
+    """The engine places a group's anchor at its x, y: an anchor with no matching position moves what it holds."""
+    cv, _ = faced()
+    pivots = [g for g in tree(cv).iter("group") if g.get("anchorX") is not None or g.get("anchorY") is not None]
+    assert {g.get("id") for g in pivots} == {"pf-face", "pf-lid-0", "pf-lid-1"}
+    for g in pivots:
+        for axis in ("X", "Y"):
+            assert float(g.get(axis.lower(), 0)) == float(g.get(f"anchor{axis}", 0)), g.get("id")
+    face = group(cv, "pf-face")
+    cx, cy = toon_everyday.FACE_CENTRE
+    assert (float(face.get("x")), float(face.get("y"))) == (toon.fh(cx), toon.fh(cy))

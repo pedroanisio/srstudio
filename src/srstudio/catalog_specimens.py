@@ -489,6 +489,18 @@ RECIPES: dict[str, Recipe] = {
     "toon-dishes": Recipe(part((("salad", 380), ("water", 470), ("check", 540)))),
     "toon-card-reader": Recipe(part(((0.0, "TAP CARD", "idle"),))),
     "toon-phone": Recipe(lettered(PHONE_SCREENS)),
+    "toon-phone-face": Recipe(
+        lettered(
+            (toon_everyday.Query(0.0, "can a duck\nget lost", 0.6),),
+            wake=0.8,
+            looks=((0.0, "ahead"), (1.0, "up-left")),
+            lids=((0.0, 0.0), (1.4, 0.45)),
+            mouth=((1.0, "open"), (1.2, "teeth"), (1.4, "closed")),
+            leans=((1.8, 1.0),),
+            chips=(toon_everyday.Chip(1.6, "do fish get\nthirsty", -40.0, -300.0, -4.0),),
+            scale=1.2,
+        )
+    ),
     "toon-speaker": Recipe(part(((0.0, "listen"),), SECONDS)),
     "toon-bandage": Recipe(part(0.0, SECONDS, SimpleNamespace(eyes=((200.0, 300.0), (360.0, 300.0))))),
     "mind-name-card": Recipe(lettered("A Long Name", 0.0, 0.2, SECONDS)),

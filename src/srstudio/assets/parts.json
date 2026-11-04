@@ -7024,6 +7024,23 @@
         }
       ]
     },
+    "toon-phone-face": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-03",
+          "note": "A big phone whose screen wakes into a simple face: a search bar typing on cue, eyes that look and narrow, a mouth on a lip-sync track, a lean toward the glass, and old searches flickering on as pills round it. An invented interface with no brand or real search engine look. First drawn for my-phone-searches. Proposed: a face, so it waits for arc4d3's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "34c9ec4a07eaffb81e3318935257f68af1f7634a438a1f7909ddaef8ce3d30d9",
+          "rig": null
+        }
+      ]
+    },
     "toon-plant": {
       "kind": "prop",
       "style": "toon",
