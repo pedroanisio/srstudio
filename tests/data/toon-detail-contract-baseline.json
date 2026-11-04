@@ -29,7 +29,8 @@
     "toon-study-page": "a7af48ca3a55184aa436ab2f2040550553a2733cca5c14751d728b3369495985",
     "toon-quiz-sheet": "ed6af876484d57049c7267c11fd4b37fedaa0bc6121dac9f4a1b376f00de4ee0",
     "toon-voice-note-bar": "bb9fdd35189f32931f447e2a4d97270cf1ce516d4888517201c563b0cd5cd4fa",
-    "toon-wifi-list": "fa9c8d258e95be548b98404066a512cd55e5049a37115258f3466e7bdd7c2963"
+    "toon-wifi-list": "fa9c8d258e95be548b98404066a512cd55e5049a37115258f3466e7bdd7c2963",
+    "toon-phone-face": "6fd1c59d87ed3059928fdefd456f8dc6d3af6dce7690a84b3a6bc4f900a7fb72"
   },
   "footprints": {
     "toon-phone": [
@@ -61,6 +62,12 @@
       580.0,
       512.0,
       834.0
+    ],
+    "toon-phone-face": [
+      205.0,
+      576.0,
+      455.0,
+      1008.0
     ]
   }
 }
