@@ -237,10 +237,12 @@ _CONTRACTS = {
         'the feet center',
         ('end', END),
         ('off', TIME),
+        ('light', P(type=bool)),
         constraints=(
             (
                 '300x760 pixels at scale 1. 0<off<=end, default end. Only its green indicator is gated; '
-                'the body remains. This changes no room light or refrigerator state.',
+                'the body remains. This changes no room light or refrigerator state. light=False draws no '
+                'indicator and then refuses off.',
             )
         ),
     ),
