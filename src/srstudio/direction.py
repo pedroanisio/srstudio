@@ -23,7 +23,7 @@ Every refusal is a :class:`DirectionError`, raised before anything is requested.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from . import checks
 from .voice import Alignment, VoiceOutputError, VoiceRequestError
@@ -34,11 +34,14 @@ __all__ = [
     "MAX_HOLD",
     "MAX_TAKES",
     "MODELS",
+    "LINE_CHECKS",
+    "REEL_CHECKS",
     "Direction",
     "DirectionError",
     "ModelSpec",
     "Pause",
     "Rendered",
+    "Waiver",
     "model_spec",
     "render",
     "seeds",
@@ -86,6 +89,13 @@ AUDIO_TAGS = frozenset(
 ACCENT = re.compile(r"strong [a-z]+(?: [a-z]+)? accent")  # the guide's "[strong X accent]"
 QUALITY = re.compile(r"[a-z]+(?:[ ,'-]+[a-z]+)*")  # "quietly, holding back": words, commas, hyphens
 WORD = re.compile(r"[A-Za-z][A-Za-z'’-]*")
+
+# The checks of the prosody gate (srstudio.prosody, ADR 0234 c) a take's direction may waive, and the one a script may.
+LINE_CHECKS = ("line_pace", "first_word", "turn_gap", "punch_gap", "answer_gap", "end_breath", "stress", "hold")
+REEL_CHECKS = ("reel_pace",)
+RANGED = ("line_pace", "first_word", "turn_gap", "punch_gap", "answer_gap", "end_breath", "reel_pace")
+MIN_REASON_WORDS = 3
+MAX_REASON = 200
 
 
 class DirectionError(VoiceRequestError):
@@ -139,6 +149,48 @@ class Pause:
 
 
 @dataclass(frozen=True)
+class Waiver:
+    """A prosody target this line (or, for ``reel_pace``, this script) does not keep, and why. ``bounds`` replaces the
+    target's (low, high) for a check measured against a range (seconds, or words per second); without it the check is
+    off for this take. ``stress`` and ``hold`` take no bounds."""
+
+    check: str
+    reason: str
+    bounds: tuple[float, float] | None = None
+
+    def __post_init__(self) -> None:
+        if self.check not in (*LINE_CHECKS, *REEL_CHECKS):
+            raise DirectionError(f"waiver of {self.check!r}: the checks are {[*LINE_CHECKS, *REEL_CHECKS]}")
+        if not (
+            isinstance(self.reason, str)
+            and len(self.reason) <= MAX_REASON
+            and len(self.reason.split()) >= MIN_REASON_WORDS
+        ):
+            raise DirectionError(
+                f"waiver of {self.check}: the reason is a sentence of at least {MIN_REASON_WORDS} words and at most "
+                f"{MAX_REASON} characters, got {self.reason!r}"
+            )
+        if self.bounds is None:
+            return
+        if self.check not in RANGED:
+            raise DirectionError(f"waiver of {self.check}: it has no bounds to replace; waive it without bounds")
+        if not (
+            isinstance(self.bounds, tuple)
+            and len(self.bounds) == 2
+            and all(checks.number(b) and b >= 0 for b in self.bounds)
+            and self.bounds[0] <= self.bounds[1]
+        ):
+            raise DirectionError(
+                f"waiver of {self.check}: bounds are (low, high), 0 <= low <= high, got {self.bounds!r}"
+            )
+
+    def record(self) -> dict:
+        return {"check": self.check, "reason": self.reason} | (
+            {"bounds": list(self.bounds)} if self.bounds is not None else {}
+        )
+
+
+@dataclass(frozen=True)
 class Direction:
     """How one line is said, besides its words.
 
@@ -148,7 +200,12 @@ class Direction:
     ``pauses``: break tags inside the line. ``pre_hold`` and ``post_hold``: exact silence cut into the edit before and
     after the take, seconds. ``speed``: the pace, 0.7..1.2, on a model where it is in effect. ``takes``: how many
     takes to record, each on its own seed; ``pick``: the take kept (0-based), required once there is more than one.
-    ``context``: send the neighbouring lines as previous and next text, on a model that takes them."""
+    ``context``: send the neighbouring lines as previous and next text, on a model that takes them.
+
+    Two fields change nothing in the request; the prosody gate reads them (``srstudio.prosody``). ``punchline``: this
+    line is a punchline, and this word of it carries the stress (the gate wants the 1.0-1.8 s gap before it and the
+    word +3 dB and +2 semitones over the rest of the line). ``waive``: the gate's targets this line does not keep,
+    each with its reason."""
 
     model: str | None = None
     tags: tuple[str, ...] = ()
@@ -161,6 +218,8 @@ class Direction:
     takes: int = 1
     pick: int | None = None
     context: bool = False
+    punchline: str = ""
+    waive: tuple[Waiver, ...] = ()
 
     def __post_init__(self) -> None:
         if self.model is not None:
@@ -206,6 +265,27 @@ class Direction:
             raise DirectionError(f"pick is a take of 0..{self.takes - 1}, got {self.pick!r}")
         if not isinstance(self.context, bool):
             raise DirectionError(f"context is True or False, got {self.context!r}")
+        if not isinstance(self.punchline, str) or (self.punchline and not WORD.fullmatch(self.punchline)):
+            raise DirectionError(f"punchline names the one word of the line that lands it, got {self.punchline!r}")
+        if not isinstance(self.waive, tuple) or not all(isinstance(w, Waiver) for w in self.waive):
+            raise DirectionError("waive is a tuple of Waiver values")
+        named = [w.check for w in self.waive]
+        if len(set(named)) != len(named):
+            raise DirectionError(f"a check is waived twice: {named}")
+        if set(named) & set(REEL_CHECKS):
+            raise DirectionError(f"{REEL_CHECKS} are the reel's: waive them on the script, not on a line")
+
+    @property
+    def asks(self) -> bool:
+        """Whether the direction changes what is requested or cut: anything but ``punchline`` and ``waive``. A take
+        whose direction only marks it for the gate is sent as an undirected take, with the same cache key."""
+        return replace(self, punchline="", waive=()) != Direction()
+
+    @property
+    def stressed(self) -> tuple[str, ...]:
+        """The words the gate measures as stressed: the emphasis, then the punchline's word."""
+        lowered = {w.lower() for w in self.emphasis}
+        return self.emphasis + ((self.punchline,) if self.punchline and self.punchline.lower() not in lowered else ())
 
     @property
     def shapes_text(self) -> bool:

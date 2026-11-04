@@ -40,11 +40,11 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Protocol
 
-from . import checks
+from . import checks, prosody
 from .compose import MusicClient, MusicOutputError, Plan
 from .dialogue import Said, Turn, say
 from .dialogue import payload as dialogue_payload
-from .direction import MAX_TAKES, Direction, DirectionError, seeds
+from .direction import MAX_TAKES, REEL_CHECKS, Direction, DirectionError, Waiver, seeds
 from .errors import ConsentError, SrstudioError
 from .generated import gain_to_peak, trim_effect, trim_speech
 from .narration import (
@@ -186,6 +186,7 @@ class Script:
     still: float = 0.0  # seconds of silence opening the first take: a still opening (sp-hook_motion arm A)
     models: Mapping[str, str] = field(default_factory=dict)  # a voice's speech model by role; absent: MODEL
     exchanges: Sequence[Exchange] = ()  # runs of takes said as one dialogue
+    waive: tuple[Waiver, ...] = ()  # the reel's prosody targets it does not keep, with reasons (reel_pace)
 
     def exchange_takes(self, exchange: Exchange) -> list[Take]:
         """The takes ``exchange`` says, in order; :class:`TakesError` when its ends are not takes of the script."""
@@ -206,7 +207,7 @@ class Script:
         """The take's direction with its voice's model when it names none; None for a take said as every published
         reel's take was (no direction, the default model), so its request and cache key are unchanged."""
         model = self.models.get(take.actor)
-        if take.direction is None:
+        if take.direction is None or not take.direction.asks:  # nothing asked, or only marked for the gate
             return None if model is None else Direction(model=model)
         if take.direction.model is None and model is not None:
             return replace(take.direction, model=model)
@@ -241,6 +242,12 @@ class Script:
         for take in self.takes:
             _check_take(self, take, said_in_dialogue=take.id in exchanged)
         _check_exchanges(self)
+        if not isinstance(self.waive, tuple) or not all(isinstance(w, Waiver) for w in self.waive):
+            raise TakesError(f"{self.title}: waive is a tuple of Waiver values")
+        misplaced = [w.check for w in self.waive if w.check not in REEL_CHECKS]
+        if misplaced or len({w.check for w in self.waive}) != len(self.waive):
+            raise TakesError(f"{self.title}: a script waives {REEL_CHECKS} once each; a line's checks go in its "
+                             f"direction, got {[w.check for w in self.waive]}")  # fmt: skip
         if self.bed is not None:
             _check_bed(self.bed)
 
@@ -278,6 +285,9 @@ def _check_take(script: Script, take: Take, *, said_in_dialogue: bool = False) -
         script.settings_for(take)
     except ValueError as exc:
         raise TakesError(f"{where}: {exc}") from None
+    if take.direction is not None and take.direction.punchline:
+        if normalize_words(take.direction.punchline)[0] not in normalize_words(take.text):
+            raise TakesError(f"{where}: the punchline's word {take.direction.punchline!r} is not in the line")
     direction = script.direction_for(take)
     if direction is None:
         return
@@ -477,17 +487,43 @@ def _neighbours(script: Script, take: Take) -> tuple[str, str]:
     return (spoken[i - 1].text if i else "", spoken[i + 1].text if i + 1 < len(spoken) else "")
 
 
-def _directed(
-    script: Script, take: Take, client: Client, heard: list[dict], failures: list[str]
-) -> tuple[SpokenLine, dict] | None:
-    """Every take of a directed line, each on its own seed and heard back; returns the kept one and what the timeline
-    records of the direction, or None after adding a failure: a kept take not heard as written, or several takes and
-    none picked (the takes stay cached, so naming ``pick`` costs no request)."""
+Kept = tuple[SpokenLine, dict, prosody.Measure]
+
+
+def _stressed(take: Take) -> tuple[str, ...]:
+    return take.direction.stressed if take.direction is not None else ()
+
+
+def _line_pace(take: Take) -> float:
+    """The line's pace bound: the gate's, or its waiver's."""
+    for w in take.direction.waive if take.direction is not None else ():
+        if w.check == "line_pace":
+            return w.bounds[1] if w.bounds is not None else float("inf")
+    return prosody.LINE_PACE
+
+
+def _listing(candidates: Sequence[dict], order: Sequence[int]) -> str:
+    """The takes best first, each with its seed, its hearing and its measures."""
+    return "; ".join(
+        f"{c['take']} seed {c['seed']} {'heard' if c['passed'] else 'MISHEARD'} ({c['measured']})"
+        for c in (candidates[k] for k in order)
+    )
+
+
+def _directed(script: Script, take: Take, client: Client, heard: list[dict], failures: list[str]) -> Kept | None:
+    """Every take of a directed line, each on its own seed, heard back and measured (:mod:`srstudio.prosody`); returns
+    the kept one, what the timeline records of the direction and its measure, or None after adding a failure: a kept
+    take not heard as written, or several takes and none picked (the takes stay cached, so naming ``pick`` costs no
+    request). The takes are ranked, best first, on the speech check, the stressed words' level and pitch over the
+    rest of the line, then the pace against the line's bound; the ranking is listed and recorded, the pick is the
+    builder's."""
     direction = script.direction_for(take)
     assert direction is not None  # the caller checked
     previous_text, next_text = _neighbours(script, take) if direction.context else ("", "")
     voice, settings = script.voices[take.actor], script.settings_for(take)
-    candidates, said = [], []
+    candidates: list[dict[str, Any]] = []
+    said: list[SpokenLine] = []
+    measures: list[prosody.Measure] = []
     for k, seed in enumerate(seeds(script.seed, direction.takes)):
         spoken = client.synthesize(
             take.text, voice, settings, direction=direction, seed=seed, previous_text=previous_text, next_text=next_text
@@ -498,16 +534,24 @@ def _directed(
             passed, why = True, ""
         except TranscriptMismatch as exc:
             passed, why = False, str(exc)
+        m = prosody.measure(spoken.wav, transcript.words, _stressed(take))
+        brief = m.record()
         candidates.append({"take": k, "seed": seed, "heard": transcript.text, "passed": passed} | (
-            {"mismatch": why} if why else {}))  # fmt: skip
+            {"mismatch": why} if why else {}) | {"words_per_second": brief["words_per_second"],
+            "stressed": brief["stressed"], "measured": m.summary()})  # fmt: skip
         said.append(spoken)
+        measures.append(m)
+    bound = _line_pace(take)
+    order = sorted(range(len(said)), key=lambda k: (candidates[k]["passed"], measures[k].rank(bound)), reverse=True)
     line = {"id": take.id, "role": take.actor, "expected": take.text, "heard": candidates[0]["heard"]}
     if direction.takes > 1:
         line["takes"] = candidates
     heard.append(line | ({"accepted": list(take.heard)} if take.heard else {}))
     if direction.takes > 1 and direction.pick is None:
-        listed = ", ".join(f"{c['take']} seed {c['seed']} {'heard' if c['passed'] else 'MISHEARD'}" for c in candidates)
-        failures.append(f"take {take.id}: {direction.takes} takes recorded, pick one with Direction(pick=k): {listed}")
+        failures.append(
+            f"take {take.id}: {direction.takes} takes recorded, pick one with Direction(pick=k), best first: "
+            + _listing(candidates, order)
+        )
         return None
     pick = direction.pick or 0
     if not candidates[pick]["passed"]:
@@ -517,7 +561,8 @@ def _directed(
     if direction.takes > 1:
         record_["takes"] = candidates
         record_["pick"] = pick
-    return said[pick], record_
+        record_["rank"] = order
+    return said[pick], record_, measures[pick]
 
 
 Converse = Callable[[Sequence[Turn], str, VoiceSettings, int], list[Said]]
@@ -525,31 +570,47 @@ Converse = Callable[[Sequence[Turn], str, VoiceSettings, int], list[Said]]
 
 def _exchanged(
     script: Script, exchange: Exchange, converse: Converse, client: Client, heard: list[dict], failures: list[str]
-) -> dict[str, tuple[SpokenLine, dict]]:
-    """Every dialogue of ``exchange``, each turn heard back on its own cut; returns the kept dialogue's turns by take
-    id with what the timeline records, or nothing after adding a failure: a kept turn not heard as written, or
-    several dialogues and none picked (they stay cached, so naming ``pick`` costs no request)."""
+) -> dict[str, Kept]:
+    """Every dialogue of ``exchange``, each turn heard back and measured on its own cut; returns the kept dialogue's
+    turns by take id with what the timeline records and each turn's measure, or nothing after adding a failure: a
+    kept turn not heard as written, or several dialogues and none picked (they stay cached, so naming ``pick`` costs
+    no request). Dialogues rank as their weakest turn does."""
     lines = script.exchange_takes(exchange)
     turns = _turns(script, lines)
     dialogues: list[list[Said]] = []
     candidates: list[dict[str, Any]] = []
+    measured: list[list[prosody.Measure]] = []
     for k, seed in enumerate(seeds(script.seed, exchange.takes)):
         said = converse(turns, exchange.model, exchange.settings, seed)
         if len(said) != len(lines):
             raise TakesError(
                 f"exchange {exchange.first}..{exchange.last}: {len(said)} turns came back for {len(lines)}"
             )
-        per_turn = []
+        per_turn, measures = [], []
         for take, s in zip(lines, said, strict=True):
             transcript = client.transcribe(s.line.wav)
             performed = take.direction is not None and take.direction.performed
+            m = prosody.measure(s.line.wav, transcript.words, _stressed(take))
+            brief = m.record()
+            measure = {"words_per_second": brief["words_per_second"], "stressed": brief["stressed"]}
             try:
                 check_transcript(transcript, take.text, accepted=take.heard, events=performed)
-                per_turn.append({"id": take.id, "heard": transcript.text, "passed": True})
+                per_turn.append({"id": take.id, "heard": transcript.text, "passed": True} | measure)
             except TranscriptMismatch as exc:
-                per_turn.append({"id": take.id, "heard": transcript.text, "passed": False, "mismatch": str(exc)})
+                per_turn.append({"id": take.id, "heard": transcript.text, "passed": False, "mismatch": str(exc)}
+                                | measure)  # fmt: skip
+            measures.append(m)
         dialogues.append(said)
-        candidates.append({"take": k, "seed": seed, "passed": all(t["passed"] for t in per_turn), "turns": per_turn})
+        measured.append(measures)
+        candidates.append({"take": k, "seed": seed, "passed": all(t["passed"] for t in per_turn), "turns": per_turn,
+                           "measured": " | ".join(m.summary() for m in measures)})  # fmt: skip
+
+    def rank(k: int) -> tuple:
+        turns = [m.rank(_line_pace(t)) for t, m in zip(lines, measured[k], strict=True)]
+        return (candidates[k]["passed"], all(r[0] for r in turns), min(r[1] for r in turns),
+                all(r[2] for r in turns), min(r[3] for r in turns))  # fmt: skip
+
+    order = sorted(range(len(dialogues)), key=rank, reverse=True)
     for i, take in enumerate(lines):
         line = {"id": take.id, "role": take.actor, "expected": take.text, "heard": candidates[0]["turns"][i]["heard"]}
         line["exchange"] = exchange.first
@@ -558,8 +619,10 @@ def _exchanged(
         heard.append(line | ({"accepted": list(take.heard)} if take.heard else {}))
     where = f"exchange {exchange.first}..{exchange.last}"
     if exchange.takes > 1 and exchange.pick is None:
-        listed = ", ".join(f"{c['take']} seed {c['seed']} {'heard' if c['passed'] else 'MISHEARD'}" for c in candidates)
-        failures.append(f"{where}: {exchange.takes} dialogues recorded, pick one with Exchange(pick=k): {listed}")
+        failures.append(
+            f"{where}: {exchange.takes} dialogues recorded, pick one with Exchange(pick=k), best first: "
+            + _listing(candidates, order)
+        )
         return {}
     pick = exchange.pick or 0
     if not candidates[pick]["passed"]:
@@ -576,8 +639,8 @@ def _exchanged(
         if take.direction is not None:
             record_["direction"] = _direction_record(take.direction)
         if i == 0 and exchange.takes > 1:
-            record_["exchange"] |= {"takes": candidates, "pick": pick}
-        out[take.id] = (s.line, record_)
+            record_["exchange"] |= {"takes": candidates, "pick": pick, "rank": order}
+        out[take.id] = (s.line, record_, measured[pick][i])
     return out
 
 
@@ -595,6 +658,24 @@ def _turn_gaps(items: list[dict]) -> None:
         item["duration"] = round(item["speech_duration"] + gap, 6)
 
 
+def _reel_prosody(script: Script, timeline: dict) -> dict:
+    """The gate's targets, the reel's waivers and what the gate finds (:func:`srstudio.prosody.gate`), so the builder
+    reads them with the takes; recording does not stop on a finding."""
+    out: dict[str, Any] = {
+        "targets": {
+            "reel_pace": prosody.REEL_PACE, "line_pace": prosody.LINE_PACE, "first_word": prosody.FIRST_WORD,
+            "turn_gap": list(prosody.TURN_GAP), "punch_gap": list(prosody.PUNCH_GAP),
+            "answer_gap": list(prosody.ANSWER_GAP), "emotional_hold": prosody.EMOTIONAL_HOLD,
+            "end_breath": list(prosody.END_BREATH), "stress_db": prosody.STRESS_DB, "stress_st": prosody.STRESS_ST,
+        },
+        "waive": [w.record() for w in script.waive],
+    }  # fmt: skip
+    found = prosody.gate(timeline | {"prosody": out})
+    out["findings"] = [f.line() for f in found]
+    out["passed"] = not prosody.failing(found)
+    return out
+
+
 def _direction_record(direction: Direction) -> dict:
     """What the timeline keeps of a direction: its fields that differ from no direction at all."""
     out: dict[str, Any] = {}
@@ -607,6 +688,10 @@ def _direction_record(direction: Direction) -> dict:
             out[name] = list(value) if isinstance(value, tuple) else value
     if direction.pauses:
         out["pauses"] = [{"after": p.after, "seconds": p.seconds, "nth": p.nth} for p in direction.pauses]
+    if direction.punchline:
+        out["punchline"] = direction.punchline
+    if direction.waive:
+        out["waive"] = [w.record() for w in direction.waive]
     return out
 
 
@@ -630,7 +715,7 @@ def record(
     if script.exchanges and converse is None:
         raise TakesError(f"{script.title}: the script has exchanges but nothing says a dialogue")
     starts = {e.first: e for e in script.exchanges}
-    exchanged: dict[str, tuple[SpokenLine, dict]] = {}
+    exchanged: dict[str, Kept] = {}
     in_exchange = {t.id for e in script.exchanges for t in script.exchange_takes(e)}
     audio = root / "audio"
     audio.mkdir(parents=True, exist_ok=True)
@@ -641,6 +726,7 @@ def record(
     for take in script.takes:
         item: dict = {"id": take.id, "actor": take.actor, "shot": take.shot, "text": take.text, "mood": take.mood}
         item.update(take.extra)
+        measure: prosody.Measure | None = None
         if take.id in starts:
             assert converse is not None  # checked above
             exchanged.update(_exchanged(script, starts[take.id], converse, client, heard, failures))
@@ -649,14 +735,14 @@ def record(
         elif take.id in in_exchange:
             if take.id not in exchanged:
                 continue
-            spoken, record_ = exchanged[take.id]
+            spoken, record_, measure = exchanged[take.id]
             made, dst = _speech(script, take, spoken, audio, ffmpeg)
             made.update(record_)
         elif script.direction_for(take) is not None:
             kept = _directed(script, take, client, heard, failures)
             if kept is None:
                 continue
-            spoken, record_ = kept
+            spoken, record_, measure = kept
             made, dst = _speech(script, take, spoken, audio, ffmpeg)
             if take.before:
                 made = _still(made, dst, take.before, ffmpeg, key="pre_hold")
@@ -671,10 +757,16 @@ def record(
             except TranscriptMismatch as exc:
                 failures.append(f"take {take.id}: {exc}")
                 continue
+            measure = prosody.measure(spoken.wav, transcript.words, _stressed(take))
             made, dst = _speech(script, take, spoken, audio, ffmpeg)
+            if take.direction is not None:  # marked for the gate only: the request was an undirected take's
+                made["direction"] = _direction_record(take.direction)
         if script.still and take is script.takes[0]:
             made = _still(made, dst, script.still, ffmpeg)
         item.update(made, audio=f"audio/{dst.name}", sha256=sha256_of(dst))
+        if measure is not None:  # word times from the heard clip onto the take's own clock
+            shift = made.get("still", 0.0) + made.get("pre_hold", 0.0) - made["trim_start"]
+            item["prosody"] = measure.record(shift)
         items.append(item)
     report = {"recognizer": f"ElevenLabs {STT_MODEL}", "lines": heard, "passed": not failures}
     (root / "voice-transcript.json").write_text(json.dumps(report, indent=2) + "\n")
@@ -693,6 +785,8 @@ def record(
         "tempo_adjustment": 1.0,
         "items": items,
     }
+    if any("prosody" in item for item in items):
+        timeline["prosody"] = _reel_prosody(script, timeline)
     if script.bed is not None:
         assert compose is not None  # checked above
         timeline["music"] = _bed(script.bed, client, compose, root, duration, ffmpeg)

@@ -32,7 +32,7 @@ from pathlib import Path
 from typing import Any, ClassVar
 
 from . import native, takes
-from .direction import Direction
+from .direction import Direction, Waiver
 from .episode import Episode, EpisodeSpec
 from .errors import SrstudioError
 from .layout import VERTICAL, SafeArea
@@ -106,6 +106,7 @@ class Reel:
     loudness: str | None = None  # None: the style's; the mix's integrated target, in LUFS
     foley: Foley | None = None  # the sounds under the takes, written from the recording when the reel is built
     exchanges: tuple[Exchange, ...] = ()  # runs of takes said as one dialogue (ADR 0234)
+    waive: tuple[Waiver, ...] = ()  # the reel's prosody targets it does not keep (reel_pace), each with its reason
     series: ClassVar[Series | None] = None
 
     def __post_init__(self) -> None:
@@ -148,6 +149,7 @@ class Reel:
             still=self.still,
             models={r: s.models[r] for r in roles if r in s.models},
             exchanges=self.exchanges,
+            waive=self.waive,
         )
 
 

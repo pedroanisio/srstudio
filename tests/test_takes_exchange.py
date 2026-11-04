@@ -228,3 +228,13 @@ def test_a_reel_passes_its_exchanges_to_its_script():
     Reel.series = s
     reel = Reel("r", "01", "T", "d", "a", LINES, "hook", lambda takes: {}, exchanges=(takes.Exchange("01", "03"),))
     assert reel.script().exchanges == (takes.Exchange("01", "03"),)
+
+
+def test_each_turn_is_measured_and_the_dialogues_are_ranked_with_their_numbers(tmp_path):
+    studio = Studio(tmp_path, heard={("That is not food.", 7): "That is knot food."})
+    _, timeline, _ = run(tmp_path, exchanged(exchanges=(takes.Exchange("01", "03", takes=2, pick=1),)), studio)
+    first = timeline["items"][0]
+    assert first["exchange"]["rank"] == [1, 0]  # the misheard dialogue ranks last
+    assert all("measured" in c for c in first["exchange"]["takes"])
+    assert all("words_per_second" in t for c in first["exchange"]["takes"] for t in c["turns"])
+    assert all("prosody" in item for item in timeline["items"])

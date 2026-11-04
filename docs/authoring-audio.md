@@ -97,6 +97,34 @@ between turns comes from the dialogue and is recorded as `exchange.gap`. A turn'
 direction may carry tags, a quality and emphasis only. Lines outside any exchange are
 still one request each, so the choice is made per exchange.
 
+### Measure and gate the delivery
+
+Every recorded take is measured on its own clip, and the numbers go into `timeline.json`
+under `prosody`. The words come from speech-to-text, with each word's level and pitch,
+plus the words per second and each stressed word's margins over the rest of its line.
+When a line has several takes, the "pick one" message lists them best first. Name the
+punchline's word with `Direction(punchline="discipline")`. That marks the line for the
+gate and asks nothing different of the provider.
+
+```bash
+python -m srstudio.prosody path/to/project   # exit 1 on any finding not waived
+```
+
+The gate checks:
+
+- pace: at most 3.6 words a second over the reel, and 4.3 on any line;
+- timing: the first word by 0.25 s;
+- gaps: 0.3 to 0.65 s at a change of speaker, 0.4 to 0.9 s after a question (one up to
+  1.5 s per reel), and 1.0 to 1.8 s before a punchline;
+- the end: 0.3 to 1.2 s after the last word;
+- stress: +3 dB and +2 semitones over the line for each stressed word;
+- holds: the directed `pre_hold` and `post_hold`.
+
+To keep a line off a target, waive it with a reason. Give bounds to move the target,
+or leave them out to turn the check off for that take:
+`Direction(waive=(Waiver("punch_gap", "the silence is the joke", (1.0, 2.6)),))`. The
+reel's pace is waived on `Script.waive` or `Reel.waive`.
+
 The generated-asset path uses `srstudio.generated.Generated` and
 `scene-render resolve`. The `srstudio-elevenlabs` provider requires
 `SRSTUDIO_ALLOW_CLOUD=1`; resolution pins the resulting file's SHA-256. Keep those

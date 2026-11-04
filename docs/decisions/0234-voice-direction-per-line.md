@@ -5,7 +5,7 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 # ADR 0234: Voice direction per line
 
 - Status: proposed (2026-11-04). Slice (a): the model, the direction schema and the holds. Slice (b): Text to
-  Dialogue, cut back into one take per line. The take ranking and gate (c) follow in their own commit.
+  Dialogue, cut back into one take per line. Slice (c): the takes measured and ranked, and the prosody gate.
 - Deciders: the operator; ordered by arc4d3 (Slack, 4 Nov); written by Claude Opus 5.5 in Claude Code
 - Follows [ADR 0031](0031-shared-look-and-caption-primitives.md) and [ADR 0170](0170-approved-files-are-write-once.md)
 - Back to the [library README](../../README.md)
@@ -88,6 +88,37 @@ the script chooses per exchange which reads better. Inside an exchange:
 - `takes=N` records N dialogues on seeds `seed, seed+1, ...`. With more than one, the recording stops until `pick`
   names the kept dialogue. Every candidate's hearing is recorded on the exchange's first take.
 
+**Measures, ranking and the gate (slice c).** `srstudio.prosody` measures every recorded take on its own clip. It
+takes the word times from speech-to-text. For each word it measures the RMS level in dB and the pitch: the 90th
+percentile of a YIN fundamental-frequency track over the word's voiced frames (40 ms frames, 10 ms hop, 70 to 400 Hz).
+A stressed word is one in `emphasis`, or the word named by the new `Direction.punchline`. Its level and pitch are
+compared with the rest of its line. `timeline.json` keeps, per take, the heard words with their numbers, the first
+and last word on the take's clock, the words per second, and each stressed word's margins. When a line or an
+exchange has several takes, they are ranked best first on four keys: the speech check, every stressed word landing,
+the weakest stress margin, and the pace against the line's bound. The ranking goes into the "pick one" failure, the
+transcript report and the timeline. The pick stays the builder's.
+
+The targets come from arc4d3's analysis of 126 Okayville reels (1,745 lines, all on multilingual v2, 4 Nov):
+
+| Check | Target |
+| --- | --- |
+| `reel_pace` | at most 3.6 words a second of speech over the reel |
+| `line_pace` | at most 4.3 words a second on any line |
+| `first_word` | the first word by 0.25 s |
+| `turn_gap` | 0.3 to 0.65 s at a change of speaker |
+| `answer_gap` | 0.4 to 0.9 s from a question to its answer; once per reel up to 1.5 s (the emotional hold) |
+| `punch_gap` | 1.0 to 1.8 s before a punchline |
+| `end_breath` | 0.3 to 1.2 s from the last word to the end |
+| `stress` | each stressed word heard, at least +3 dB and +2 semitones over the rest of its line |
+| `hold` | the measured silence keeps the direction's `pre_hold` and `post_hold` (50 ms slack) |
+
+`prosody.gate(timeline)` returns every finding, and `python -m srstudio.prosody PROJECT` exits 1 on any finding that
+is not waived. Recording writes the targets and findings into `timeline.json`, but does not stop on them. A line
+overrides a target only through `Direction.waive`, a `Waiver(check, reason, bounds)` whose reason is a sentence. With
+bounds, the waiver moves a ranged target; without them, the check is off for that take. A waived finding stays listed
+with its reason. `reel_pace` is waived on `Script.waive` or `Reel.waive`. `punchline` and `waive` change nothing in
+the request: a take whose direction only carries them is sent as an undirected take, with the same cache key.
+
 ## Consequences
 
 - Every published take keeps its request and cache key. A test pins two keys computed before this change.
@@ -98,6 +129,13 @@ the script chooses per exchange which reads better. Inside an exchange:
 - `sketch.record`, the Toon sketch recorder, takes no direction yet. A sketch line is said as before.
 - A dialogue costs one request for all of its turns. Its cache key is the whole request, so changing one turn
   re-records the exchange.
+- Pace is measured over speech, from each line's first word to its last, summed over the reel. The source report
+  (`insights/reports/voice-analysis-2026-11-04.md`) was not found in this workspace, so its own method could not be
+  compared. A per-reel pace over the whole running time would be lower.
+- The gate is not wired into the delivery gates. Wiring it in would stop reels that are recording now.
+- On the real three-turn dialogue, Christopher's emphasised "discipline" measured -1.7 dB and -6.1 semitones against
+  the rest of his line, so the capitals did not lift it. "What do you feed him?" ran at 6.8 words a second. The
+  ranking and the gate exist for exactly these cases.
 - A real three-turn v4 dialogue (Will, Christopher, Will, 72 characters) went through `say` on 2026-11-04. Each cut
   was heard as written ("What do you feed him?", "Dog food and discipline", "Just discipline?").
 
@@ -114,5 +152,9 @@ the script chooses per exchange which reads better. Inside an exchange:
 - **Splitting a dialogue at the alignment's word boundaries** instead of at `voice_segments`. The silence between turns
   would have no owner. Segments are the API's own turn boundaries, and they are checked against the letters.
 - **`previous_text` on a dialogue.** The API accepts it, but an exchange already carries its own context.
+- **Ranking on pitch alone.** A word shouted on the same note, or sung higher at the same level, is not the stress
+  the analysis measured. The targets ask for both.
+- **Stopping the recording on a gate finding.** The builder needs the numbers to pick a take or write a waiver, and
+  the cached takes cost nothing to re-measure.
 - **Room tone for the holds.** Exact silence is measurable and the mix has its own bed. Room tone can come later as a
   mix decision.
