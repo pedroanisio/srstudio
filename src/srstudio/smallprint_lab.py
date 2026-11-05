@@ -21,10 +21,14 @@ import numpy as np
 from . import checks, clay, plates, rafa, smallprint_props
 from .clay import Mesh, Model
 from .errors import SrstudioError
+from .foley import Burst
 from .plates import Line, Material, Print, Texture
 
 __all__ = [
     "BENCH",
+    "BUBBLE",
+    "LEVER_CLICK",
+    "TICK",
     "CALENDAR",
     "DIAL_HOURS",
     "FED_HOUR",
@@ -36,6 +40,7 @@ __all__ = [
     "PAGE",
     "PRESS",
     "PUSH",
+    "RATTLE",
     "TANK",
     "TIP",
     "WEDGE",
@@ -45,6 +50,7 @@ __all__ = [
     "Mark",
     "Rig",
     "bench",
+    "bubble_times",
     "calendar_pages",
     "calendar_stand",
     "chute_mouth",
@@ -69,6 +75,7 @@ __all__ = [
     "swim",
     "swim_room",
     "tank",
+    "tick_times",
 ]
 
 TOP = -248.0  # the worktop's top
@@ -756,3 +763,44 @@ def calendar_pages(m: Model, page: tuple[str, str], under: tuple[str, str] | Non
         normal = normal / np.linalg.norm(normal)
         uvs = [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)]
         m.surface(page_name(*page), corners, [normal] * 4, [(0, 1, 2), (0, 2, 3)], uvs)
+
+
+# -- the tank's sounds --------------------------------------------------------------------------------------------
+# the hopper's rattle is RATTLE; HOPPER is the hopper itself
+BUBBLE = Burst(0.06, 1200.0, attack=0.002, decay=0.25, tone_hz=650.0, tone_end_hz=1400.0, tone=0.8)  # one, rising
+LEVER_CLICK = Burst(0.04, 6000.0, attack=0.001, decay=0.2, tone_hz=2000.0, tone_end_hz=1500.0, tone=0.5)
+RATTLE = Burst(0.35, 4500.0, attack=0.005, decay=0.5, tone_hz=900.0, tone_end_hz=700.0, tone=0.2, flutter_hz=37.0)
+TICK = Burst(0.02, 8000.0, attack=0.001, decay=0.15, tone_hz=3200.0, tone_end_hz=3200.0, tone=0.6)  # the dial
+BUBBLE_GAP = 0.08  # seconds: two bubbles closer than this blur into one
+
+
+def _spans(spans: Sequence[tuple[float, float]]) -> list[tuple[float, float]]:
+    for a, b in spans:
+        if not (checks.number(a) and checks.number(b) and 0 <= a < b):
+            raise LabError(f"a span runs forward from 0 or later, got {(a, b)!r}")
+    return sorted(spans)
+
+
+def tick_times(spans: Sequence[tuple[float, float]], every: float = 0.5) -> list[float]:
+    """The dial's ticks: one each ``every`` seconds inside each span, from its start."""
+    if not (checks.number(every) and every > 0):
+        raise LabError(f"ticks come a positive number of seconds apart, got {every!r}")
+    out: list[float] = []
+    for a, b in _spans(spans):
+        out.extend(round(a + k * every, 6) for k in range(math.ceil((b - a) / every - 1e-9)))
+    return out
+
+
+def bubble_times(spans: Sequence[tuple[float, float]], seed: int, every: float = 0.45) -> list[float]:
+    """The tank's bubbles inside each span: about one each ``every`` seconds, each pushed off its slot by up to half
+    of it, the same for one ``seed``; none within :data:`BUBBLE_GAP` of the one before."""
+    if not (checks.number(every) and every > BUBBLE_GAP):
+        raise LabError(f"bubbles come more than {BUBBLE_GAP} s apart, got {every!r}")
+    rng = np.random.default_rng(seed)
+    out: list[float] = []
+    for a, b in _spans(spans):
+        for k in range(math.ceil((b - a) / every - 1e-9)):
+            t = round(min(b - 0.01, a + (k + rng.uniform(0.0, 0.5)) * every), 6)
+            if not out or t - out[-1] >= BUBBLE_GAP:
+                out.append(t)
+    return out
