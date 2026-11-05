@@ -67,6 +67,7 @@ __all__ = [
     "Move",
     "Shot",
     "BAND",
+    "NEAR",
     "camera_at",
     "check",
     "clashes",
@@ -102,6 +103,7 @@ BAND_FILL = 0.1  # a row the subject covers less of than this is bare
 CLEAR_PX = 12.0  # the least gap between two words on screen
 MASK = 4  # the share is measured on a raster this many times coarser than the frame
 W, H = rafa_host.WIDTH, rafa_host.HEIGHT
+NEAR = 0.5  # model units in front of the lens: nearer, and behind it, nothing is in the frame
 SAFE_TOP = VERTICAL.region(W, H).y0  # the top of the reel's safe area: no word above it, landing or landed
 LANDS = 1.06  # the least scale a stamp comes down from onto its place
 
@@ -205,7 +207,11 @@ def camera_at(shot: Shot, t: float) -> tuple[float, float, float]:
 
 def _seen(shot: Shot, points: np.ndarray, t: float) -> np.ndarray:
     """Frame pixels of scene ``points`` through the lens and the camera at ``t``."""
-    flat = rafa_host.project(points, lens=shot.lens, width=W, height=H)
+    return _moved_pixels(shot, rafa_host.project(points, lens=shot.lens, width=W, height=H), t)
+
+
+def _moved_pixels(shot: Shot, flat: np.ndarray, t: float) -> np.ndarray:
+    """Frame pixels through the lens moved as the camera at ``t`` moves the plates."""
     zoom, dx, dy = camera_at(shot, t)
     px, py = shot.pivot
     return np.stack((px + (flat[:, 0] - px) * zoom + dx, py + (flat[:, 1] - py) * zoom + dy), axis=1)
@@ -243,13 +249,43 @@ def subject(shot: Shot, pose: Hashable) -> tuple[Mesh, ...]:
     return (*_still(shot), *_moving(shot, pose))
 
 
+def _cut_at_near(points: np.ndarray, depth: np.ndarray) -> np.ndarray:
+    """The part of a triangle (``points``, their ``depth`` along the lens) at or past :data:`NEAR`: the polygon a
+    lens sees of it, its corners in front kept and each edge that crosses the plane cut where it crosses."""
+    kept = []
+    for k in range(len(points)):
+        a, b, da, db = points[k], points[(k + 1) % len(points)], depth[k], depth[(k + 1) % len(points)]
+        if da >= NEAR:
+            kept.append(a)
+        if (da >= NEAR) != (db >= NEAR):
+            kept.append(a + (b - a) * (NEAR - da) / (db - da))
+    return np.array(kept)
+
+
+def _polygons(shot: Shot, mesh: Mesh) -> list[np.ndarray]:
+    """The mesh's triangles through the lens as frame pixels (before the camera moves), each cut at :data:`NEAR`: what
+    is behind the lens is not in the frame, so a lens among the parts sees only what is in front of it."""
+    eye = np.array(shot.lens.position, dtype=float)
+    ahead = np.array(shot.lens.target, dtype=float) - eye
+    depth = (np.asarray(mesh.vertices, dtype=float) - eye) @ (ahead / np.linalg.norm(ahead))
+    if depth.min() >= NEAR:
+        pixels = rafa_host.project(mesh.vertices, lens=shot.lens, width=W, height=H)
+        return [pixels[tri] for tri in mesh.triangles]
+    out = []
+    for tri in mesh.triangles:
+        if depth[tri].max() < NEAR:
+            continue
+        front = _cut_at_near(np.asarray(mesh.vertices, dtype=float)[tri], depth[tri])
+        out.append(rafa_host.project(front, lens=shot.lens, width=W, height=H))
+    return out
+
+
 def _raster(shot: Shot, meshes: Sequence[Mesh]) -> Image.Image:
     mask = Image.new("L", (W // MASK, H // MASK), 0)
     pen = ImageDraw.Draw(mask)
     for mesh in meshes:
-        pixels = rafa_host.project(mesh.vertices, lens=shot.lens, width=W, height=H) / MASK
-        for tri in mesh.triangles:
-            pen.polygon([tuple(p) for p in pixels[tri]], fill=255)
+        for polygon in _polygons(shot, mesh):
+            pen.polygon([tuple(p) for p in polygon / MASK], fill=255)
     return mask
 
 
@@ -358,10 +394,16 @@ def printed_boxes(shot: Shot, t: float, pose: Hashable | None = None) -> list[tu
     """Every printed face the lens sees at ``t`` (its lettering): the frame box each one covers."""
     out = []
     for mesh in subject(shot, shot.pose(t) if pose is None else pose):
-        if mesh.material in shot.printed:
-            p = _seen(shot, mesh.vertices, t)
-            out.append((mesh.material, (float(p[:, 0].min()), float(p[:, 1].min()), float(p[:, 0].max()),
-                                        float(p[:, 1].max()))))  # fmt: skip
+        if mesh.material not in shot.printed:
+            continue
+        seen = _polygons(shot, mesh)
+        if not seen:
+            continue  # behind the lens
+        p = _moved_pixels(shot, np.concatenate(seen), t)
+        box = (max(0.0, float(p[:, 0].min())), max(0.0, float(p[:, 1].min())), min(float(W), float(p[:, 0].max())),
+               min(float(H), float(p[:, 1].max())))  # fmt: skip
+        if box[0] < box[2] and box[1] < box[3]:  # in the frame
+            out.append((mesh.material, box))
     return out
 
 
