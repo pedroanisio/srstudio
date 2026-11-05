@@ -241,8 +241,7 @@ def stamp(
         if cy - reach < ceiling:
             raise ScriptError(f"a stamp at row {top} reaches over its ceiling at row {ceiling}")
         lands = min(lands, (cy - ceiling) / reach)
-    cv.pop_in(g, start, from_=lands, over=0.94, rise=0.09, settle=0.2)
-    cv.keys(g, "opacity", [(start, 0.0), (start + 0.06, 1.0)], hold=False, local=False)
+    cv.pop_in(g, start, from_=lands, over=0.94, rise=0.09, settle=0.2)  # whole from its first frame: a stamp slams
     source = cv.group(parent, cv.uid("smallprint-source"), start=start + 0.2, end=end)
     if chip and sources:
         x0, y0, x1, y1 = source_chip(sources)

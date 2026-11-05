@@ -24,6 +24,7 @@ import json
 import math
 import re
 import subprocess
+import tempfile
 import wave
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -57,6 +58,7 @@ __all__ = [
     "lines",
     "loudness_range",
     "measure",
+    "mix_range",
     "opening",
     "read",
     "refusals",
@@ -188,6 +190,36 @@ def loudness_range(video: Path, *, ffmpeg: str = "ffmpeg") -> float:
     if not found:
         raise MasterError(f"{video.name}: ebur128 printed no loudness range")
     return float(found[-1])
+
+
+def mix_range(project: Path, *, ffmpeg: str = "ffmpeg") -> float:
+    """The loudness range, LU, of a narration project's mix before any render: every line and effect in its
+    ``narration.json`` placed at its start, at its gain, summed and measured as :func:`loudness_range` measures a
+    master. It is how a reel's line levels (a line said under the rest: ``Beat.gain``) are set to reach
+    :data:`MIN_LRA` without rendering a master; it leaves out what only the render does (the master's limiter), so
+    the master reads close to it, not equal (goldfish v3: 4.0 here, 4.1 on its master). A project with no manifest,
+    or one naming a file it does not hold, is :class:`MasterError`."""
+    manifest = project / "narration.json"
+    if not manifest.is_file():
+        raise MasterError(f"{project.name}: no narration.json to mix")
+    n = json.loads(manifest.read_text())
+    sounds = [(float(i["start"]), float(i.get("gain_db", 0.0)), i["audio"]) for i in n["items"]]
+    sounds += [(float(e["start"]), float(e["gain_db"]), e["audio"]) for e in n.get("effects", ())]
+    inputs: list[str] = []
+    chains = []
+    for k, (start, gain, audio) in enumerate(sounds):
+        if not (project / audio).is_file():
+            raise MasterError(f"{project.name}: narration.json names {audio}, which is not there")
+        inputs += ["-i", str(project / audio)]
+        chains.append(f"[{k}:a]aresample=48000,aformat=channel_layouts=mono,volume={gain}dB,"
+                      f"adelay={round(start * 1000)}:all=1[s{k}]")  # fmt: skip
+    summed = "".join(f"[s{k}]" for k in range(len(sounds)))
+    chains.append(f"{summed}amix=inputs={len(sounds)}:normalize=0,atrim=0:{float(n['duration'])}[mix]")
+    with tempfile.TemporaryDirectory(dir=project) as scratch:
+        mixed = Path(scratch) / "mix.wav"
+        _run([ffmpeg, "-v", "error", "-y", *inputs, "-filter_complex", ";".join(chains), "-map", "[mix]", str(mixed)],
+             f"{project.name}: mixing narration.json")  # fmt: skip
+        return loudness_range(mixed, ffmpeg=ffmpeg)
 
 
 def constant_bed(stem: Path, *, fade: float = 0.0) -> bool:
