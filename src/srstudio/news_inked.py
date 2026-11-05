@@ -1125,6 +1125,21 @@ def _phone(cv: Canvas, parent, x: float, y: float) -> None:
     cv.path(g, "M 18 -70 L 34 -70 L 8 66 L -8 66 Z", "#ffffff14", cv.clear, 0)
 
 
+PHONE_SCREEN = "#f7f1ff"  # the lit face of the phone
+
+
+def _phone_face(cv: Canvas, parent, x: float, y: float) -> None:
+    """The face of his phone, turned to the camera so we see what he is so proud of: the case, a lit screen with a
+    chat on it, the camera's notch. It is the back's size, a little narrower at the top as it turns to us."""
+    g = cv.group(parent, cv.uid("g"), x=x, y=y)
+    _form(cv, g, ((-44, -84), (44, -84), (48, 76), (-48, 76)), PLUM, "#160a30", 73.0, 7.0, 10.0, 0.1)
+    cv.path(g, "M -36 -72 L 36 -72 L 39 66 L -39 66 Z", PHONE_SCREEN, cv.clear, 0)
+    cv.path(g, "M -36 -72 L 36 -72 L 36.6 -46 L -36.6 -46 Z", MINT, cv.clear, 0)
+    cv.rect(g, -10, -80, 20, 5, PLUM_DEEP, radius=2.5)
+    for bx, by, bw, fill in ((-2, -36, 34, MINT), (-32, -14, 44, BUTTER), (-32, 8, 38, BUTTER), (2, 32, 32, MINT)):
+        cv.rect(g, bx, by, bw, 16, fill, radius=6.0)
+
+
 GUS_ARMS: dict[str, tuple[tuple[Point, Point, Point, str, float | None], ...]] = {  # shoulder, elbow, wrist, hand, turn
     "up": (((-180, -96), (-272, -74), (-246, -232), "open", -8.0), ((180, -96), (272, -74), (246, -232), "open", 8.0)),
     "chest": (((-180, -96), (-232, 6), (-104, 14), "rest", 98.0), ((180, -96), (226, -14), (70, -56), "fist", -52.0)),
@@ -1228,12 +1243,19 @@ class Grip:
     """How a frame holds the poses: ``reaches``, the wrists of each pose (None: the rig's own,
     :data:`srstudio.news_arms.REACHES`), and Gus's phone, its middle ``phone_y`` over the desk, ``phone_tall`` the
     share of its back the camera sees (1: flat to the lens, less as it tilts away) and ``phone_rise`` how far under
-    that it starts as his hands bring it up. ``Grip()`` is the rig's own hold, the one every reel so far draws."""
+    that it starts as his hands bring it up; ``phone_x`` its middle across, ``phone_size`` its size and ``screen``
+    which side the camera sees, its face rather than its back, ``phone_wide`` the share of its width the camera sees as
+    it turns to it. ``Grip()`` is the rig's own hold, the one every reel so
+    far draws."""
 
     reaches: news_arms.Reaches | None = None
     phone_y: float = PHONE_HELD
     phone_tall: float = 1.0
     phone_rise: float = PHONE_RISE
+    phone_x: float = 0.0
+    phone_size: float = 1.0
+    phone_wide: float = 1.0
+    screen: bool = False
 
 
 def _arms_on_rig(
@@ -1260,7 +1282,18 @@ def _arms_on_rig(
         for a, b in spans["phone"]:
             keys += [(a, hold.phone_rise), (a + news_arms.EASE, 0.0), (b - news_arms.EASE, 0.0), (b, hold.phone_rise)]
         cv.keys(rise, "y", keys, hold=False, kind="sine-in-out", local=False)
-        if hold.phone_tall == 1.0:
+        if hold.screen or hold.phone_x or (hold.phone_size, hold.phone_wide) != (1.0, 1.0):  # held somewhere its own
+            size = hold.phone_size
+            place = cv.group(
+                rise,
+                cv.uid("g"),
+                x=hold.phone_x,
+                y=hold.phone_y,
+                scaleX=size * hold.phone_wide,
+                scaleY=size * hold.phone_tall,
+            )
+            (_phone_face if hold.screen else _phone)(cv, place, 0.0, 0.0)
+        elif hold.phone_tall == 1.0:
             _phone(cv, rise, 0.0, hold.phone_y)
         else:  # tilted back: the camera sees less of its height, about its middle
             _phone(cv, cv.group(rise, cv.uid("g"), y=hold.phone_y, scaleY=hold.phone_tall), 0.0, 0.0)

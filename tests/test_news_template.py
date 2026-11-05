@@ -35,6 +35,7 @@ LOWERS = (Lower(3.0, 6.0, "VERA STILLMAN, ANCHOR", "AI AGENTS: FOUR RIDES"), Low
 LINES = (toon.Line("a", "Uber says AI agents booked just four rides.", 0.2, 2.8, "vera"),)
 READ = Pose(mouth="talk")
 PHONE = Pose("down", "talk", "phone")
+CHEST = Pose("level", "talk", "chest")  # a fist at his chest: the hand comes up into the band
 
 
 # -- helpers ----------------------------------------------------------------------------------------------------------
@@ -267,9 +268,9 @@ def _beats(*rows):
     return tuple(SimpleNamespace(start=at, who=who, event=event) for at, who, event in rows)
 
 
-def test_the_card_goes_before_a_phone_comes_up_under_it():
+def test_the_card_goes_before_a_hand_comes_up_under_it():
     beats = _beats((0.0, "vera", "card"), (2.9, "gus", ""), (5.6, "vera", ""))
-    acts = (Act(READ, Pose()), Act(Pose(), PHONE), Act(READ, PHONE))
+    acts = (Act(READ, Pose()), Act(Pose(), CHEST), Act(READ, CHEST))
     seen = news_template.seen(beats, acts, 8.0)
     plan = news_template.card_plan(seen, 0.0, 5.6)
     assert plan.large is not None and plan.large[0] == 0.0
@@ -279,9 +280,9 @@ def test_the_card_goes_before_a_phone_comes_up_under_it():
             assert not _overlap(news_template.CARD_BOX, box.box), box
 
 
-def test_a_phone_under_the_card_from_frame_zero_leaves_only_the_credit():
+def test_a_hand_under_the_card_from_frame_zero_leaves_only_the_credit():
     beats = _beats((0.0, "gus", "card"), (3.0, "vera", ""))
-    acts = (Act(Pose(), PHONE), Act(READ, PHONE))
+    acts = (Act(Pose(), CHEST), Act(READ, CHEST))
     plan = news_template.card_plan(news_template.seen(beats, acts, 6.0), 0.0, 3.0)
     assert plan.large is None and plan.credit == 0.0
 
@@ -300,8 +301,10 @@ def test_hands_and_the_phone_are_obstacles_where_they_are_drawn():
     assert {"gus hand", "gus phone"} <= kinds
     phone = next(box for box in found if box.what == "gus phone")
     assert not _overlap(news_template.CARD_BOX, phone.box)  # raised over the band
-    fists = [box for box in found if box.what == "gus hand"]
-    assert any(_overlap(news_template.CARD_BOX, box.box) for box in fists)  # the very case the card must yield to
+    hands = [box for box in found if box.what == "gus hand"]
+    assert not any(_overlap(news_template.CARD_BOX, box.box) for box in hands)  # one up by his face, one on the desk
+    chest = news_template.obstacles(news_template.seen(beats, (Act(Pose(), CHEST),), 3.0))
+    assert any(_overlap(news_template.CARD_BOX, box.box) for box in chest if box.what == "gus hand")  # what yields
 
 
 # -- the heads --------------------------------------------------------------------------------------------------------
@@ -604,9 +607,45 @@ def test_gus_holds_his_phone_up_clear_of_the_band(shot):
     assert 0.0 <= box[0] and box[2] <= FRAME_W
 
 
-def test_the_raised_phone_stays_under_his_mouth():
+def _features(who: str) -> list[tuple[float, float, float, float]]:
+    """The boxes of ``who``'s eyes and mouth on the bust, at every corner of the head's reach: the turn either way
+    about the neck and the drop, the face sliding further on the nod. An eye is its circle, a mouth its widest gape."""
+    face = news_inked.inked(who, 6)
+    rig = news_template.rig(who)
+    swing, drop = news_template._bounds(who)
+    fall = drop * (1 + rig.face_slide)
+    lift = news_inked.NECK_Y - news_kit.CHIN_Y  # head-local to bust
+    turns = (-swing, 0.0, swing)
+    out = []
+    for s in (-1, 1):
+        centres = [news_template._rotate((s * face.eye_x, face.eye_y + lift), a, rig.neck) for a in turns]
+        r = face.eye_r
+        xs, ys = [x for x, _ in centres], [y for _, y in centres]
+        out.append((min(xs) - r, min(ys) - r, max(xs) + r, max(ys) + r + fall))
+    half = max(face.mouth_w, 104.0) / 2  # the widest gape
+    corners = ((-half, face.mouth_y + lift - 24.0), (half, face.mouth_y + lift - 24.0))
+    corners += ((-half, news_template._mouth_low(who)), (half, news_template._mouth_low(who)))
+    pts = [news_template._rotate(c, a, rig.neck) for a in turns for c in corners]
+    xs, ys = [x for x, _ in pts], [y for _, y in pts]
+    out.append((min(xs), min(ys), max(xs), max(ys) + fall))
+    return out
+
+
+def test_the_raised_phone_stands_beside_his_face_clear_of_his_eyes_and_mouth():
+    x0, y0, x1, y1 = news_template.PHONE_HELD
+    features = _features("gus")
+    for box in features:
+        assert not _overlap(news_template.PHONE_HELD, box), box
+    face, lift = news_inked.inked("gus", 6), news_inked.NECK_Y - news_kit.CHIN_Y
+    assert y0 < face.eye_y + lift and y1 > face.mouth_y + lift  # from his eyes to his mouth at rest: by his face
+    assert x0 > 0  # on one side of his face
+
+
+def test_the_raised_phone_shows_its_screen_inside_the_close_up():
+    assert news_template.GRIP.screen
     framing = news_template.SHOTS["gus"]
-    assert news_template.held_phone(framing, 540.0)[1] >= news_template.mouth_low("gus", framing)
+    x0, _, x1, _ = news_template.held_phone(framing, 540.0)
+    assert 0.0 <= x0 and x1 <= FRAME_W
 
 
 def _elbow(who: str, side: float, reach) -> float:
@@ -619,22 +658,43 @@ def _elbow(who: str, side: float, reach) -> float:
     return math.degrees(math.acos((a[0] * b[0] + a[1] * b[1]) / (math.hypot(*a) * math.hypot(*b))))
 
 
-def test_the_raised_hold_is_a_mirrored_pair_on_his_own_bones():
-    left, right = news_template.GRIP.reaches["phone"]
-    assert left.wrist == (-right.wrist[0], right.wrist[1]) and left.hand == right.hand and left.turn == -right.turn
-    for side, reach in ((-1.0, left), (1.0, right)):
+def test_one_hand_holds_the_phone_up_and_the_other_rests():
+    rest, held = news_template.GRIP.reaches["phone"]
+    assert rest == news_arms.REACHES["gus"]["rest"][0]  # the free hand on the desk, as at rest
+    assert held.hand == "fist"
+    for side, reach in ((-1.0, rest), (1.0, held)):
         news_arms.Hand(reach.hand, side).on(side)
         assert _elbow("gus", side, reach) >= news_arms.ELBOW_LEAST
 
 
-def test_the_fists_hold_the_phone_from_under_it_clear_of_the_mouth():
-    framing = news_template.SHOTS["gus"]
-    for reach in news_template.GRIP.reaches["phone"]:
-        _, y = framing.frame((540.0 + reach.wrist[0], news_inked.DESK_Y + reach.wrist[1]))
-        assert y > news_template.BAND_TOP  # the wrists behind the band, the fists come up to the phone
-        assert y - news_template.HAND_REACH * framing.scale > news_template.mouth_low("gus", framing)
-        _, top, _, foot = news_template.held_phone(framing, 540.0)
-        assert y - news_template.HAND_REACH * framing.scale > (top + foot) / 2  # the phone shows over the fists
+def test_the_holding_hand_is_on_the_phone_clear_of_his_eyes_and_mouth():
+    _, held = news_template.GRIP.reaches["phone"]
+    wx, wy = held.wrist
+    x0, y0, x1, y1 = news_template.PHONE_HELD
+    assert (y0 + y1) / 2 < wy <= y1 + news_template.HAND_REACH  # from under its middle: the screen shows over the hand
+    assert x0 - news_template.HAND_REACH < wx < x1 + news_template.HAND_REACH
+    hand = (wx - 40.0, wy - 40.0, wx + 40.0, wy + 40.0)  # the fist as drawn, about its wrist
+    for box in _features("gus"):
+        assert not _overlap(hand, box), box
+
+
+def test_the_raised_hold_draws_the_phones_screen_beside_his_face():
+    cv = canvas()
+    news_inked._arms_on_rig(cv, cv.comp, "gus", ((0.0, PHONE),), {"phone": [(0.0, 3.0)]}, 6, news_template.GRIP)
+    root = ET.fromstring(cv.scene.to_bytes())
+    grip = news_template.GRIP
+    held = [
+        g for g in root.iter("group") if float(g.get("x", 0)) == grip.phone_x and float(g.get("y", 0)) == grip.phone_y
+    ]
+    assert held, "the phone at its place beside his face"
+    fills = {s.get("fill") for s in held[0].iter("shape")}
+    assert news_template.SCREEN in fills  # its lit screen to the camera, not its back
+
+
+def test_the_rigs_own_hold_is_unchanged():
+    own = news_inked.Grip()
+    assert own == news_inked.Grip(None, news_inked.PHONE_HELD, 1.0, news_inked.PHONE_RISE)
+    assert (own.phone_x, own.phone_size, own.phone_wide, own.screen) == (0.0, 1.0, 1.0, False)
 
 
 def test_the_raised_phone_is_the_obstacle_the_card_plans_around():

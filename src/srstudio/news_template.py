@@ -28,8 +28,8 @@ the same anchors, rig and set:
   that hides the shot, the signature's cactus and code on its chrome; each cutaway lands a message and the chat builds
   across them, a face's reaction (:func:`reaction`) between each, Gus's after the last. No flat insert stays up over
   :data:`INSERT_MOST` and all of them take at most :data:`INSERT_SHARE` of the reel (:func:`flat_inserts`).
-* **Gus holds his phone up** in his close shot (:data:`GRIP`), clear of the band and under his mouth, his fists
-  under it.
+* **Gus holds his phone up** in his close shot (:data:`GRIP`) in one hand beside his face, its screen to the camera,
+  clear of his eyes and mouth and of the band; the other hand rests.
 * **The body moves on every line** (:func:`body`): a lean toward the other anchor, both hands up from the desk beside
   the face (:data:`GRIPS`, a mirrored pair) or a lean back, in turn, on each line's onset, over the head's own motion.
   Hands already busy with a prop lean instead of coming up.
@@ -192,7 +192,7 @@ CUT_TOP = round(CAPTION_FOOT + 12.0)  # the chat's name, just under two lines of
 HEADER_H = 112.0
 CHAT_TOP = CUT_TOP + HEADER_H + 22.0  # where the first message can go
 CHAT_FOOT = BAND_FOOT - 18.0  # where the last one lands: the band is down while the phone is up
-SCREEN = "#f7f1ff"  # the lit screen
+SCREEN = news_inked.PHONE_SCREEN  # the lit screen
 KEY_ROWS = ((10, 0.0), (9, 46.0), (7, 140.0), (1, 260.0))  # the keyboard's keys per row and the row's inset
 KEY_H, KEY_GAP, KEY_EDGE = 68.0, 14.0, 16.0
 COMPOSER = (BAND_FOOT + 22.0, 92.0)  # the message field's top and height, under the safe area
@@ -432,22 +432,26 @@ _UP = (
     news_arms.Reach((-UP_WRIST[0], UP_WRIST[1]), "open", -8.0, False),
     news_arms.Reach(UP_WRIST, "open", 8.0, False),
 )  # both hands up from the desk, palms out, a mirrored pair (ADR 0103)
-_FIST_WRIST = (36.0, -88.0)  # the right wrist holding the phone up: behind the band, the fists under the phone
+HOLD_PHONE = (154.0, -290.0)  # the raised phone's middle on the bust: beside Gus's face on the frame's right
+HOLD_SIZE, HOLD_WIDE = 0.82, 0.7  # its size, and the share of its width seen as he turns its screen to the camera:
+# clear of his eyes at every turn of his head, and inside the frame in his close-up and in the two-shot
+HOLD_WRIST = (178.0, -236.0)  # the hand under it, its elbow out past the frame's edge
+HOLD_TURN = -30.0  # the fist's fingers, up and across the phone's foot
+HOLD_RISE = 150.0  # how far under its place the phone starts as his hand brings it up
 
 
 def _raised() -> news_inked.Grip:
-    """Gus's hold on this frame: the phone up under his chin, its foot :data:`FACE_GAP` over the band in his close
-    shot and its top under his mouth, tilted back so the camera sees a slice of its back; his fists under it from
-    behind the band, a mirrored pair (ADR 0103) on elbows no sharper than the rig allows, clear of his mouth."""
-    gus = SHOTS["gus"]
-    foot = (BAND_TOP - gus.desk_y) / gus.scale - PHONE_INK
-    top = _mouth_low("gus") + PHONE_INK
-    tall = (foot - top) / (_PHONE_BODY[3] - _PHONE_BODY[1])
-    middle = foot - _PHONE_BODY[3] * tall
-    x, y = _FIST_WRIST
-    phone = (news_arms.Reach((-x, y), "fist", 20.0), news_arms.Reach((x, y), "fist", -20.0))
-    reaches = {**news_arms.REACHES["gus"], "phone": phone, "up": _UP}
-    return news_inked.Grip(reaches, round(middle, 3), round(tall, 4), round(-middle, 3))
+    """Gus's hold on this frame: one hand holds his phone up beside his face, its screen to the camera, clear of his
+    eyes and mouth at every turn of his head and over the band; the other rests on the desk as it does at rest."""
+    reaches = {
+        **news_arms.REACHES["gus"],
+        "phone": (news_arms.REACHES["gus"]["rest"][0], news_arms.Reach(HOLD_WRIST, "fist", HOLD_TURN, False)),
+        "up": _UP,
+    }
+    x, y = HOLD_PHONE
+    return news_inked.Grip(
+        reaches, y, 1.0, HOLD_RISE, phone_x=x, phone_size=HOLD_SIZE, phone_wide=HOLD_WIDE, screen=True
+    )
 
 
 GRIP = _raised()
@@ -459,15 +463,16 @@ GRIPS: Mapping[str, news_inked.Grip] = {
 
 def _phone_box(grip: news_inked.Grip) -> tuple[float, float, float, float]:
     x0, y0, x1, y1 = _PHONE_BODY
+    wide, tall = grip.phone_size * grip.phone_wide, grip.phone_size * grip.phone_tall
     return (
-        x0 - PHONE_INK,
-        grip.phone_y + y0 * grip.phone_tall - PHONE_INK,
-        x1 + PHONE_INK,
-        grip.phone_y + y1 * grip.phone_tall + PHONE_INK,
+        grip.phone_x + x0 * wide - PHONE_INK,
+        grip.phone_y + y0 * tall - PHONE_INK,
+        grip.phone_x + x1 * wide + PHONE_INK,
+        grip.phone_y + y1 * tall + PHONE_INK,
     )
 
 
-PHONE_HELD = _phone_box(GRIP)  # the raised phone about Gus's middle on the desk, ink included
+PHONE_HELD = _phone_box(GRIP)  # the raised phone beside Gus's face on the desk, ink included
 
 
 def held_phone(framing: Framing, x: float) -> tuple[float, float, float, float]:
