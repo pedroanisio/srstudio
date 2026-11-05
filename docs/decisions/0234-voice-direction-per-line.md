@@ -173,6 +173,26 @@ raises its key word. Those episodes are built on `srstudio.interview`, whose lin
   the clip and its SHA-256, and the source take and its SHA-256. The line's phrase also carries `stress` (word to
   dB). Without any stress the build writes exactly what it wrote before.
 
+**The median includes the stressed word (2026-11-05).** The line's median word is taken over all of its words, so it
+includes the stressed word, and raising that word can move the median. `lean` used to apply `STRESS_DB + MARGIN`
+minus the word's weight, as if the median did not move. In a two-word line the median is the mean of the two words,
+so a gain of `g` lifted the weight by only `g / 2`. The shortfall halved on each pass and did not close in `TRIES`.
+`MOST` was also checked against the wrong total. Ep5's "I'm not." (`stress=("not",)`) failed on every take for one
+of these two reasons.
+
+- **Gain.** Each pass solves for the least gain after which the word is `STRESS_DB + MARGIN` over the median as it
+  will be once the word is raised. The solver takes the word levels from the pass's `prosody.measure` and works
+  through `prosody.weight`, so it uses the measure's own rule and not a second copy of it. The weight never falls
+  as the gain rises, so the solve is a bisection. It runs from 0 to the gain that puts the word `2 x` the aim over
+  the line's loudest other word, a gain that always clears the aim. When a line stresses several words, each one is
+  solved with the earlier ones already raised. A two-word line needs `2 x (STRESS_DB + MARGIN)` plus the dB the word
+  starts under the other word.
+- **Bounds.** `MOST` bounds the gain the word actually takes, and its value is still 9 dB. `TRIES` stays at 3, and
+  the later passes now only correct ramps and rounding. A longer line, where the median is set by other words, is
+  raised by the same amount as before. The tests pin three five-word cases to within 0.1 dB of develop a455e253.
+- **Consequence.** In a two-word line, a stressed word more than 2 dB under the other word now asks for more than
+  `MOST`. It is refused with the true figure and the line has to be taken again.
+
 ## Consequences
 
 - Every published take keeps its request and cache key. A test pins two keys computed before this change.
@@ -221,5 +241,11 @@ raises its key word. Those episodes are built on `srstudio.interview`, whose lin
   Every clip-based family would have to change. The gain would also be measured on a simulation of the engine's curve
   rather than on the bytes the mix plays: `emphasis.lean`'s ramp is linear in amplitude, and the engine interpolates
   keys between dB values. The derived clip is exactly what the mix plays, and `lean` measured it.
+- **Measuring a stressed word against the median of the other words** so that `lean`'s old arithmetic would hold.
+  `prosody.measure`, the C7 bar and the gates all read the weight, and arc4d3's rule is "+3 dB over the line's median
+  word". Changing the measure would change what every recorded take and passed gate means. `lean` has to reach the
+  target the measure defines.
+- **A closed form for the two-word case** (`g = 2 x aim - weight`). It is exact for two words only. The bisection
+  works on any line through `weight` itself.
 - **Room tone for the holds.** Exact silence is measurable and the mix has its own bed. Room tone can come later as a
   mix decision.

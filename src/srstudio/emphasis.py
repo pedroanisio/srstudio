@@ -8,6 +8,7 @@ difference, which keeps every word's weight over the others.
 
 from __future__ import annotations
 
+import math
 import wave
 from collections.abc import Sequence
 from pathlib import Path
@@ -15,7 +16,7 @@ from pathlib import Path
 import numpy as np
 
 from .errors import SrstudioError
-from .prosody import STRESS_DB, measure
+from .prosody import STRESS_DB, measure, weight
 from .voice import Word
 
 __all__ = ["MARGIN", "MOST", "RAMP", "TRIES", "EmphasisError", "lean"]
@@ -55,6 +56,29 @@ def _envelope(size: int, rate: int, start: float, end: float, db: float) -> np.n
     return 1.0 + (10 ** (db / 20) - 1.0) * up
 
 
+def _gain(levels: Sequence[float | None], at: int, aim: float) -> float:
+    """The least dB word ``at`` must be raised so that, raised, it is ``aim`` over the line's median word as
+    :func:`srstudio.prosody.weight` takes it then: the median includes the word, so it moves with the gain (by half of
+    it in a two-word line). The weight only grows with the gain, so it is solved by bisection: exact to well under a
+    thousandth of a dB, and it reads the median from the measure's own rule rather than a second copy of it."""
+
+    def over(g: float) -> float:
+        raised = [db + g if i == at and db is not None else db for i, db in enumerate(levels)]
+        got = weight(raised, at)
+        return -math.inf if got is None else got
+
+    if over(0.0) >= aim:
+        return 0.0
+    mine = levels[at]
+    others = [db for i, db in enumerate(levels) if i != at and db is not None]
+    # raised to the line's loudest word + 2 x aim, the median is at most halfway from that word to it: aim over it
+    lo, hi = 0.0, max(0.0, max(others, default=0.0) + 2 * aim - (mine or 0.0))
+    for _ in range(60):
+        mid = (lo + hi) / 2
+        lo, hi = (mid, hi) if over(mid) < aim else (lo, mid)
+    return hi
+
+
 def lean(wav: Path, words: Sequence[Word], stressed: Sequence[str]) -> dict[str, float]:
     """Each ``stressed`` word of the clip ``wav`` (``words`` its heard words, times on the clip) raised until it is
     :data:`STRESS_DB` over the line's median word; ``wav`` rewritten in place when anything moved. Returns the dB each
@@ -66,7 +90,9 @@ def lean(wav: Path, words: Sequence[Word], stressed: Sequence[str]) -> dict[str,
     peak = float(np.max(np.abs(x))) if x.size else 0.0
     raised = dict.fromkeys(stressed, 0.0)
     for _ in range(TRIES):
-        marks = measure(wav, words, stressed).stressed
+        measured = measure(wav, words, stressed)
+        marks = measured.stressed
+        levels = [w.db for w in measured.words]
         missing = [m.word for m in marks if not m.heard]
         if missing:
             raise EmphasisError(f"{wav.name}: the stressed word(s) {', '.join(missing)} are not heard in the take")
@@ -77,7 +103,7 @@ def lean(wav: Path, words: Sequence[Word], stressed: Sequence[str]) -> dict[str,
             if m.db is None or m.at is None:
                 raise EmphasisError(f"{wav.name}: {m.word!r} is too short to measure")
             heard = [w for w in words if w.type == "word"][m.at]
-            need = STRESS_DB + MARGIN - m.db
+            need = _gain(levels, m.at, STRESS_DB + MARGIN)  # the gain the word takes: MOST bounds this
             if raised[m.word] + need > MOST:
                 total = raised[m.word] + need
                 raise EmphasisError(
@@ -85,6 +111,8 @@ def lean(wav: Path, words: Sequence[Word], stressed: Sequence[str]) -> dict[str,
                 )
             x = x * _envelope(x.size, rate, heard.start, heard.end, need)
             raised[m.word] += need
+            mine = levels[m.at]  # known: a word with a weight has a level
+            levels[m.at] = None if mine is None else mine + need  # a later stressed word is solved on this one raised
         top = float(np.max(np.abs(x)))
         if peak and top > peak:
             x = x * (peak / top)

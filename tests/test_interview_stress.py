@@ -151,6 +151,21 @@ def test_no_stress_changes_nothing(tmp_path):
     assert not (tmp_path / "assets" / "stressed").exists()
 
 
+def test_a_two_word_line_is_stressed_on_the_word_it_names(tmp_path):
+    # "I'm not.": the stressed word is half of the line's median word, so the median moves with its gain
+    iv = stressed_interview(("not",), "I'm not.")
+    pins, ears = pins_and_ears(tmp_path, iv)
+    path, transcript = take(pins["line-2"].path, "I'm not.", {"not": 0.25 * 10 ** (-1.5 / 20)})
+    pins["line-2"] = Resolved(pins["line-2"].generated, path, sha256_of(path))
+    assert prosody.measure(path, transcript.words, ["not"]).stressed[0].db < 0
+
+    out, record = I.stress(iv, tmp_path, pins, lambda p: transcript if p == path else ears(p))
+
+    got = prosody.measure(out["line-2"].path, transcript.words, ["not"]).stressed[0]
+    assert got.db >= prosody.STRESS_DB
+    assert 0 < record[0]["words"]["not"] <= 9.0
+
+
 # -- the whole build, on the fake provider ------------------------------------------------------------------------
 def back_to_back(speech, effect) -> I.Schedule:
     starts, cursor = [], 0.5

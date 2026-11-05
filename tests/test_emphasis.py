@@ -15,11 +15,14 @@ RATE = 48000
 TEXT = ("a", "fish", "expert", "says", "weeks")
 
 
-def _clip(path: Path, levels: dict[str, float] | None = None, silent: str = "") -> list[Word]:
-    """Five words, 0.3 s of a voice-like tone each with 0.1 s between, all at one level unless ``levels`` says."""
+def _clip(
+    path: Path, levels: dict[str, float] | None = None, silent: str = "", said: tuple[str, ...] = TEXT
+) -> list[Word]:
+    """Five words (or ``said``), 0.3 s of a voice-like tone each with 0.1 s between, all at one level unless
+    ``levels`` says."""
     x, words, at = [], [], 0.05
     x.append(np.zeros(round(at * RATE)))
-    for i, text in enumerate(TEXT):
+    for i, text in enumerate(said):
         t = np.arange(round(0.3 * RATE)) / RATE
         amp = 0.0 if text == silent else (levels or {}).get(text, 0.25)
         x.append(amp * np.sin(2 * np.pi * (150 + 10 * i) * t))
@@ -110,3 +113,57 @@ def test_stereo_is_refused(tmp_path):
         w.writeframes(b"\0\0" * 200)
     with pytest.raises(emphasis.EmphasisError, match="mono 16-bit"):
         emphasis.lean(wav, [Word("a", 0.0, 0.001, "word")], ["a"])
+
+
+# -- the stressed word is one of the words the line's median is taken from ----------------------------------------
+def _down(db: float) -> float:
+    """The amplitude ``db`` under the clip's usual word level."""
+    return 0.25 * 10 ** (-db / 20)
+
+
+UNEVEN = dict(zip(TEXT, (_down(i) for i in range(len(TEXT))), strict=True))  # each word 1 dB under the one before
+
+
+def test_a_two_word_line_whose_stressed_word_starts_under_the_median_lands_on_the_target(tmp_path, monkeypatch):
+    wav = tmp_path / "vo.wav"
+    words = _clip(wav, {"not": _down(1.5)}, said=("I'm", "not"))  # 1.5 dB under "I'm": 0.75 dB under the median
+    assert prosody.measure(wav, words, ["not"]).stressed[0].db < 0
+    passes = []
+    real = emphasis.measure
+
+    def counted(*args):
+        passes.append(1)
+        return real(*args)
+
+    monkeypatch.setattr(emphasis, "measure", counted)
+    raised = emphasis.lean(wav, words, ["not"])
+    assert prosody.measure(wav, words, ["not"]).stressed[0].db >= prosody.STRESS_DB
+    assert len(passes) <= emphasis.TRIES
+    # the median moves by half the gain: 'not' needs 2 x (3 + 0.5 margin) dB and the 1.5 dB it started under "I'm"
+    assert raised["not"] == pytest.approx(8.5, abs=0.1)
+    assert raised["not"] <= emphasis.MOST
+
+
+def test_a_two_word_line_that_needs_more_than_most_in_true_gain_is_refused(tmp_path):
+    wav = tmp_path / "vo.wav"
+    words = _clip(wav, {"not": _down(4.0)}, said=("I'm", "not"))  # true gain 2 x 3.5 + 4 = 11 dB
+    before = wav.read_bytes()
+    with pytest.raises(emphasis.EmphasisError, match="'not' would need 11.0 dB, over 9: take the line again"):
+        emphasis.lean(wav, words, ["not"])
+    assert wav.read_bytes() == before
+
+
+@pytest.mark.parametrize(
+    "levels, word, today",
+    [
+        (None, "weeks", 3.5),  # the median is another word's level, whatever the gain
+        (UNEVEN, "weeks", 6.5),  # raised past the median word, the median moves up one word
+        (UNEVEN, "says", 5.5),
+    ],
+)
+def test_a_longer_line_is_raised_as_it_was(tmp_path, levels, word, today):
+    wav = tmp_path / "vo.wav"
+    words = _clip(wav, levels)
+    raised = emphasis.lean(wav, words, [word])
+    assert raised[word] == pytest.approx(today, abs=0.1)  # what develop a455e253 raised it by
+    assert prosody.measure(wav, words, [word]).stressed[0].db >= prosody.STRESS_DB
