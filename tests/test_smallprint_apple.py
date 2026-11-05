@@ -257,3 +257,20 @@ def test_the_hourglass_runs_its_sand_from_the_top_to_the_heap_below():
     full, empty = _halves(sand=1.0)["sand"], _halves(sand=0.0)["sand"]
     assert full[:, 1].min() < empty[:, 1].min()  # sand stands high in the top bulb only while it is there
     assert np.ptp(empty[:, 1]) > 0
+
+
+def test_each_column_pops_open_as_the_knife_reaches_it_left_to_right():
+    times = ap.open_times(1.0, 2.0)
+    assert len(times) == ap.COLS and times == sorted(times) and 1.0 < times[0] and times[-1] < 2.0
+    xs = [c[0] for c in ap.cell_centres()[: ap.COLS]]
+    for column, at in enumerate(times):
+        before = ap.opened(ap.knife_x(at - 0.01, 1.0, 2.0), passed=False)[column]
+        after = ap.opened(ap.knife_x(at + 0.01, 1.0, 2.0), passed=False)[column]
+        assert not before and after, (column, xs[column])
+    with pytest.raises(ap.AppleError, match="slice"):
+        ap.open_times(2.0, 1.0)
+
+
+@pytest.mark.parametrize("burst", [ap.SLICE, ap.POP, ap.LAND, ap.SQUEEZE, ap.DRIP])
+def test_the_bench_sounds_are_short_effects_never_a_bed(burst):
+    assert burst.seconds <= 1.0

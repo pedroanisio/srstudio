@@ -30,6 +30,7 @@ import numpy as np
 from . import checks, clay, rafa, smallprint_props
 from .clay import Mesh, Model
 from .errors import SrstudioError
+from .foley import Burst
 from .plates import Material
 
 __all__ = [
@@ -37,6 +38,11 @@ __all__ = [
     "BOARD",
     "CELLS",
     "COLS",
+    "DRIP",
+    "LAND",
+    "POP",
+    "SLICE",
+    "SQUEEZE",
     "HALF_R",
     "INTACT",
     "LEVELS",
@@ -59,6 +65,7 @@ __all__ = [
     "knife_x",
     "lemon_centre",
     "materials",
+    "open_times",
     "opened",
     "oxygen",
     "oxygen_at",
@@ -575,3 +582,25 @@ def halves_parts(m: Model, pose: HalvesPose) -> None:
             m.ell("lemonflesh", (x + 4.2 * math.cos(a), TOP - 11.6, z + 4.2 * math.sin(a)), (2.8, 0.4, 1.3),
                   rotation_y=-math.degrees(a))  # fmt: skip
     _hourglass(m, pose.sand)
+
+
+# -- the bench's sounds -----------------------------------------------------------------------------------------------
+SLICE = Burst(0.9, 3200.0, attack=0.06, decay=0.7, tone_hz=260.0, tone_end_hz=200.0, tone=0.12, flutter_hz=43.0)  # wet
+POP = Burst(0.05, 2600.0, attack=0.001, decay=0.2, tone_hz=900.0, tone_end_hz=520.0, tone=0.6)  # a cell splitting
+LAND = Burst(0.06, 5200.0, attack=0.001, decay=0.2, tone_hz=2300.0, tone_end_hz=2700.0, tone=0.5)  # oxygen meets enzyme
+SQUEEZE = Burst(0.45, 1800.0, attack=0.06, decay=0.5, tone_hz=180.0, tone_end_hz=140.0, tone=0.2, flutter_hz=29.0)
+DRIP = Burst(0.07, 1500.0, attack=0.001, decay=0.25, tone_hz=1300.0, tone_end_hz=700.0, tone=0.7)  # juice on the face
+
+
+def open_times(start: float, end: float) -> list[float]:
+    """The seconds the knife, slicing across from ``start`` to ``end``, opens each column of cells: one pop each, left
+    to right, on the frame :func:`opened` first shows it open."""
+    if not (checks.number(start) and checks.number(end) and end > start):
+        raise AppleError(f"a slice takes some time, got {start!r} to {end!r}")
+    x0, x1, *_ = _slab_box()
+    lo, hi = x0 - 8.0, x1 + 8.0
+    out = []
+    for c in range(COLS):
+        x = x0 + PITCH * (c + 0.5) + CELL_R * 0.4  # where the edge is when this column opens
+        out.append(round(start + (x - lo) / (hi - lo) * (end - start), 6))
+    return out
