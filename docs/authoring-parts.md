@@ -125,7 +125,11 @@ project is refused.
   in `REMY` (lavender, curling tuft, headset with mic boom, gloss). A look may turn on `shade` (a crescent away
   from an upper-left light), `gloss`, `catchlights` and `lashes`; all are off by default, so Pip and Bo draw as
   before ([ADR 0007](../docs/decisions/0007-polished-looks.md)). A seated `lounge`
-  pose rests both hands on the near thigh, for the sofa.
+  pose rests both hands on the near thigh, for the sofa. A look may also wear an `Outfit` (top, trousers, trim): the
+  rig draws it on the torso and limbs on every drawing, with a collar under the chin and a cuff line at each wrist and
+  ankle, hands and feet bare, and draws an arm held behind the body behind the top. Its top and trousers keep
+  `MIN_CLOTH_DISTANCE` (CIE76 ΔE 40) from the fill. `juno_v2` (`juno@2`) is `juno` in `JUNO_V2`, her home outfit on
+  ([ADR 0242](../docs/decisions/0242-juno-v2-a-home-outfit.md)).
   (`srstudio.cel`): `traced` (`cel-traced`): a traced character as a sheet of filled drawings, one held per run of
   the pose timeline; drawings and runs are data (`cel.load_drawings`, `cel.load_runs`), parsed and refused when
   malformed (`cel.CelDataError`).

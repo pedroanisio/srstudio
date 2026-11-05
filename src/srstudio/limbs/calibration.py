@@ -160,6 +160,10 @@ class QualityPreset:
                 'forearm': 0.9,
                 'arm_width': 0.18,
                 'hand': 'human',
+                'hand_profile': {
+                    'symbol': 'srstudio.limbs.calibration.CALIBRATED_HAND',
+                    'thumb_segments': list(CALIBRATED_HAND.digits[0].lengths),
+                },
                 'sides': ['left', 'right'],
                 'angular_units': 'radians',
                 'drawing_scale': 'camera-controlled; limits use world units',

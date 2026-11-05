@@ -25,6 +25,56 @@ from srstudio.head_motion import Spring
 from support.acting import canvas, contact_track, evaluate, numeric
 
 
+@pytest.mark.parametrize('kind', ['contact', 'prop'])
+@pytest.mark.parametrize('offset', [0, 0.25])
+@pytest.mark.parametrize(
+    'crop,at,delayed,conflict',
+    [
+        (0.25, 1, False, False),
+        (1, 4, False, True),
+        (3.5, 4, False, False),
+        (0.25, 0.1, True, False),
+        (1, 0.1, True, True),
+    ],
+)
+def test_reset_uses_the_cropped_and_held_contact_or_prop_clock(kind, offset, crop, at, delayed, conflict):
+    from srstudio.limbs.motion import Attachment
+
+    track = contact_track()
+    if kind == 'prop':
+        motion = replace(track.motion, contacts=())
+        motion = replace(motion, attachments=(Attachment('cup', 0.5, 3.5, motion.sample(0.5).hand.frame),))
+        track = replace(track, motion=motion)
+    track = replace(track, options=replace(track.options, duration=crop, offset=offset))
+    policy = TransitionPolicy(timing=(ChannelTiming('expression', delay=3.8),)) if delayed else None
+    score = ActingScore(
+        5, (ActingBeat(at, reset=True, transition=0, policy=policy),), overrides=Overrides(limbs=(track,))
+    )
+    if conflict:
+        with pytest.raises(ActingError) as caught:
+            compile_performance(gloss_actor('nadia'), score)
+        assert caught.value.to_dict()['code'] == 'acting.conflict'
+    else:
+        plan = compile_performance(gloss_actor('nadia'), score)
+        state = plan.sample(at).limbs[0]
+        assert not state.contacts
+        if kind == 'prop':
+            source_time = min(crop, max(0, at - offset))
+            assert state.props == (('cup', track.motion.prop_frame('cup', source_time)),)
+
+
+def test_reset_cannot_release_a_prop_held_before_the_track_offset():
+    from srstudio.limbs.motion import Attachment
+
+    track = contact_track()
+    motion = replace(track.motion, contacts=())
+    motion = replace(motion, attachments=(Attachment('cup', 0, 3.5, motion.sample(0).hand.frame),))
+    track = replace(track, motion=motion, options=replace(track.options, offset=1))
+    score = ActingScore(5, (ActingBeat(0.1, reset=True, transition=0),), overrides=Overrides(limbs=(track,)))
+    with pytest.raises(ActingError, match='prop'):
+        compile_performance(gloss_actor('nadia'), score)
+
+
 def test_policy_free_score_retains_its_serialized_drawing():
     score = ActingScore(
         4,

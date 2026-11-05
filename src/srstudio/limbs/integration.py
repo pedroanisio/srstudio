@@ -56,6 +56,15 @@ class LimbTrack:
         """Map character seconds to the source, holding the first and cropped last poses."""
         return min(_motion_duration(self.motion, self.options, end), max(0, time - self.options.offset))
 
+    def _held_interval(self, start: float, stop: float, *, end: float) -> tuple[float, float] | None:
+        """Preimage of a half-open source interval on the cropped, held character clock."""
+        limit = _motion_duration(self.motion, self.options, end)
+        if start > limit:
+            return None
+        first = 0.0 if start == 0 else start + self.options.offset
+        last = end if stop > limit else min(end, stop + self.options.offset)
+        return (first, last) if first < last else None
+
     def draw(self, cv: Canvas, layers: LayerTargets, *, id: str) -> Compiled:
         if self.occlusion:
             return bake(

@@ -142,7 +142,11 @@ bindings passed to `parse_score(..., overrides=...)`, never opaque generated JSO
 parent clock. The returned group runs on the original performance clock, so attached
 drawings must use that clock too. Random-access sampling preserves expression, gaze,
 breathing phase, contacts and attachment state across cuts. A reset during an active
-limb contact or prop attachment fails until its explicit release. Spatial limb samples
+limb contact or prop attachment fails until its explicit release. Reset checks,
+including transition-policy phases, use the same offset, crop and terminal hold as
+sampling: cropping before acquisition removes the conflict, while cropping during
+an active contact or attachment holds it through the performance end. A release
+exactly at the crop boundary remains released. Spatial limb samples
 describe the source motion; baked rendering still uses the selected limb frame rate.
 
 Run the two-family silent study with licensed font assets and a JSON state report:

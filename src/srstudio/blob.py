@@ -54,10 +54,21 @@ __all__ = [
     "Cue",
     "Drawing",
     "Look",
+    "Outfit",
     "PIP",
     "BO",
     "JUNO",
+    "JUNO_HOME",
+    "JUNO_V2",
     "REMY",
+    "MIN_CLOTH_DISTANCE",
+    "COLLAR",
+    "delta_e",
+    "clothed",
+    "collar",
+    "cut",
+    "inside",
+    "juno_v2",
     "FEET",
     "FRONTABLE",
     "SEATED_FLOOR",
@@ -709,6 +720,194 @@ _COLOUR = re.compile(r"#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?")
 _NAME = re.compile(r"[a-z][a-z0-9-]*")
 
 
+# -- clothes (ADR 0242) -------------------------------------------------------------------------------------------
+MIN_CLOTH_DISTANCE = 40.0  # CIE76 ΔE*ab a garment keeps from the skin it covers: it reads as cloth, never as skin
+COLLAR = 14.0  # how far the collar stands out from the head's rim, in pose units
+COLLAR_SPAN = 62.0  # degrees either side of the line from the head to the body the collar may run
+COLLAR_MARGIN = 6.0  # pose units the collar keeps inside the body's edge, so it never changes the silhouette
+COLLAR_STEPS = 16  # points along each arc of the collar, the same on every drawing
+
+
+def _lab(colour: str) -> tuple[float, float, float]:
+    """``#RRGGBB`` in CIE L*a*b* (sRGB, D65)."""
+
+    def linear(c: float) -> float:
+        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+    r, g, b = (linear(int(colour[i : i + 2], 16) / 255) for i in (1, 3, 5))
+    x = (0.4124564 * r + 0.3575761 * g + 0.1804375 * b) / 0.95047
+    y = 0.2126729 * r + 0.7151522 * g + 0.0721750 * b
+    z = (0.0193339 * r + 0.1191920 * g + 0.9503041 * b) / 1.08883
+
+    def f(t: float) -> float:
+        return t ** (1 / 3) if t > (6 / 29) ** 3 else t / (3 * (6 / 29) ** 2) + 4 / 29
+
+    fx, fy, fz = f(x), f(y), f(z)
+    return 116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)
+
+
+def delta_e(a: str, b: str) -> float:
+    """How far apart two ``#RRGGBB`` colours look: CIE76 ΔE*ab, the straight distance in L*a*b*. About 2.3 is the
+    least an eye notices; :data:`MIN_CLOTH_DISTANCE` is far past "a slightly different peach"."""
+    for colour in (a, b):
+        if not (isinstance(colour, str) and _COLOUR.fullmatch(colour)):
+            raise BlobError(f"a colour distance takes #RRGGBB colours, got {colour!r}")
+    return math.dist(_lab(a), _lab(b))
+
+
+@dataclass(frozen=True)
+class Outfit:
+    """Clothes the rig draws on the body as part of a :class:`Look`, so they follow every pose and in-between.
+
+    ``top`` dresses the torso and sleeves the arms, ``trousers`` dress the legs. A sleeve stops ``hand`` pose units
+    (measured along the arm) short of its tip and a trouser leg ``foot`` short of its, so every hand and foot is the
+    same size in every pose and in-between, and stays the look's skin. Each sleeve and trouser leg ends in a cuff
+    ``cuff`` long in ``trim``, with an ink line where it meets the skin, and a ``trim`` collar sits under the chin."""
+
+    top: str
+    trousers: str
+    trim: str
+    hand: float = 26.0
+    foot: float = 22.0
+    cuff: float = 12.0
+
+    def __post_init__(self) -> None:
+        for label in ("top", "trousers", "trim"):
+            colour = getattr(self, label)
+            if not (isinstance(colour, str) and _COLOUR.fullmatch(colour)):
+                raise BlobError(f"an outfit's {label} must be a #RRGGBB colour, got {colour!r}")
+        for label in ("hand", "foot"):
+            bare = getattr(self, label)
+            if not (checks.number(bare) and 0 < bare <= 80):
+                raise BlobError(f"an outfit leaves a {label} of 0 < {label} <= 80 pose units bare, got {bare!r}")
+        if not (checks.number(self.cuff) and 0 < self.cuff <= 20):
+            raise BlobError(f"an outfit's cuff is a short band, 0 < cuff <= 20 pose units, got {self.cuff!r}")
+
+    def reach(self, limb: str, s: Stroke) -> float:
+        """How far along ``limb``, drawn as ``s``, the cloth runs (0..1): all of the torso, an arm to :attr:`hand` from
+        its tip, a leg to :attr:`foot` from its tip; an in-between that folds a limb shorter than two of those
+        keeps half of its length clothed and half bare."""
+        if limb not in LIMBS:
+            raise BlobError(f"unknown limb {limb!r}; one of {LIMBS}")
+        if limb == "torso":
+            return 1.0
+        return _from_tip(s, min(self.hand if limb in ARMS else self.foot, _length(s) / 2))
+
+
+_ARC = 96  # chords along a stroke when measuring its length
+
+
+def _length(s: Stroke) -> float:
+    """How long ``s``'s centreline is, measured along it."""
+    pts = [s.point(k / _ARC) for k in range(_ARC + 1)]
+    return sum(math.dist(a, b) for a, b in zip(pts, pts[1:], strict=False))
+
+
+def _from_tip(s: Stroke, length: float) -> float:
+    """Where along ``s`` (0..1) the curve is ``length`` short of its tip, measured along it; 0 if it is shorter."""
+    pts = [s.point(k / _ARC) for k in range(_ARC + 1)]
+    left = length
+    for k in range(_ARC, 0, -1):
+        step = math.dist(pts[k], pts[k - 1])
+        if step >= left:
+            return (k - left / step) / _ARC if step else k / _ARC
+        left -= step
+    return 0.0
+
+
+def _span(s: Stroke, a: float, b: float) -> Stroke:
+    """The part of ``s`` from ``a`` to ``b`` along it (0 <= a < b <= 1), as a stroke of its own: the cubic's blossom
+    gives its control points, and the widths run on as they did."""
+
+    def blossom(t1: float, t2: float, t3: float) -> Point:
+        pts = [s.p0, s.p1, s.p2, s.p3]
+        for t in (t1, t2, t3):
+            pts = [_lerp_pt(p, q, t) for p, q in zip(pts, pts[1:], strict=False)]
+        return pts[0]
+
+    if a == 0 and b == 1:
+        return s
+    return Stroke(
+        blossom(a, a, a),
+        blossom(a, a, b),
+        blossom(a, b, b),
+        blossom(b, b, b),
+        _lerp(s.w0, s.w1, a),
+        _lerp(s.w0, s.w1, b),
+    )
+
+
+def clothed(s: Stroke, outfit: Outfit, limb: str) -> Stroke:
+    """The part of ``limb`` (drawn as ``s``) that ``outfit`` covers, from the body out to its cuff."""
+    return _span(s, 0.0, outfit.reach(limb, s))
+
+
+def _cuff(s: Stroke, outfit: Outfit, limb: str) -> Stroke:
+    """The cuff at the end of ``limb``'s cloth: the last :attr:`Outfit.cuff` of it, measured along the limb."""
+    end = outfit.reach(limb, s)
+    start = max(0.0, _from_tip(_span(s, 0.0, end), outfit.cuff) * end)
+    return _span(s, start, end)
+
+
+def cut(s: Stroke, *, start: bool = True, samples: int = 14, cap: int = 8) -> str:
+    """The closed outline of ``s`` cut square at its end, as cloth is where it stops on a limb (and at its start too
+    unless ``start``, which keeps the round cap that sits inside the body)."""
+    left, right = [], []
+    for i in range(samples + 1):
+        t = i / samples
+        (cx, cy), (tx, ty) = s.point(t), s.tangent(t)
+        h = _lerp(s.w0, s.w1, t) / 2
+        left.append((cx - ty * h, cy + tx * h))
+        right.append((cx + ty * h, cy - tx * h))
+    ring = left + list(reversed(right))
+    if start:
+        ring += s._rim(samples, cap)[1]
+    return "M " + " L ".join(f"{x:.1f} {y:.1f}" for x, y in ring) + " Z"
+
+
+def _across(s: Stroke, t: float, wider: float) -> str:
+    """A line across ``s`` at ``t`` along it, edge to edge of the stroke drawn ``wider``: where a cuff meets."""
+    (x, y), (tx, ty) = s.point(t), s.tangent(t)
+    half = (_lerp(s.w0, s.w1, t) + wider) / 2
+    return f"M {x - ty * half:.1f} {y + tx * half:.1f} L {x + ty * half:.1f} {y - tx * half:.1f}"
+
+
+def inside(s: Stroke, p: Point, margin: float = 0.0, samples: int = 64) -> bool:
+    """Is ``p`` at least ``margin`` inside the round-capped stroke ``s``?"""
+    for i in range(samples + 1):
+        t = i / samples
+        if math.dist(p, s.point(t)) + margin <= _lerp(s.w0, s.w1, t) / 2:
+            return True
+    return False
+
+
+def collar(pose: Pose) -> list[Point]:
+    """The collar of ``pose``: a band :data:`COLLAR` wide round the bottom of the head, centred on the line from the
+    head to the body and running as far either way as it stays :data:`COLLAR_MARGIN` inside the torso (at most
+    :data:`COLLAR_SPAN` degrees), so the silhouette never changes. Its outer arc, then its inner arc back just inside
+    the head's rim, which the head's fill covers; :data:`COLLAR_STEPS` points each, on every drawing."""
+    torso = pose.limbs["torso"]
+    (hx, hy), r = pose.head, HEAD
+    top = torso.p0 if math.dist(torso.p0, pose.head) <= math.dist(torso.p3, pose.head) else torso.p3
+    centre = math.degrees(math.atan2(top[1] - hy, top[0] - hx))
+
+    def at(angle: float, radius: float) -> Point:
+        a = math.radians(angle)
+        return (hx + radius * math.cos(a), hy + radius * math.sin(a))
+
+    def fits(angle: float) -> bool:
+        return inside(torso, at(angle, r + COLLAR), COLLAR_MARGIN) and inside(torso, at(angle, r - 2), 0.5)
+
+    lo = hi = centre
+    if fits(centre):
+        while lo - 1 >= centre - COLLAR_SPAN and fits(lo - 1):
+            lo -= 1
+        while hi + 1 <= centre + COLLAR_SPAN and fits(hi + 1):
+            hi += 1
+    angles = [lo + (hi - lo) * k / (COLLAR_STEPS - 1) for k in range(COLLAR_STEPS)]
+    return [at(a, r + COLLAR) for a in angles] + [at(a, r - 2) for a in reversed(angles)]
+
+
 @dataclass(frozen=True)
 class Look:
     """What makes the blob rig a particular character.
@@ -721,7 +920,10 @@ class Look:
 
     The polish is off by default, so a look without it draws exactly as before: ``shade`` colours a crescent
     on the head away from the light (upper left), ``gloss`` puts a highlight on the lit side, ``catchlights``
-    puts the same light in the pupils and ``lashes`` adds two flicks at the outer corner of every eye."""
+    puts the same light in the pupils and ``lashes`` adds two flicks at the outer corner of every eye.
+
+    ``outfit`` (ADR 0242) dresses the body and limbs (:class:`Outfit`); a look without one draws exactly as before.
+    Its top and trousers keep :data:`MIN_CLOTH_DISTANCE` from the fill, so a dressed look never reads as skin."""
 
     name: str
     fill: str | None = None
@@ -735,6 +937,7 @@ class Look:
     gloss: bool = False
     catchlights: bool = False
     lashes: bool = False
+    outfit: Outfit | None = None
 
     def __post_init__(self) -> None:
         if not _NAME.fullmatch(self.name):
@@ -742,6 +945,18 @@ class Look:
         for label, colour in (("fill", self.fill), ("blush", self.blush), ("shade", self.shade)):
             if colour is not None and not _COLOUR.fullmatch(colour):
                 raise BlobError(f"look {self.name!r}: {label} must be a #RRGGBB colour, got {colour!r}")
+        if self.outfit is not None:
+            if not isinstance(self.outfit, Outfit):
+                raise BlobError(f"look {self.name!r}: an outfit is an Outfit, got {self.outfit!r}")
+            skin = (self.fill or "#FFFFFF")[:7]
+            for label in ("top", "trousers"):
+                colour = getattr(self.outfit, label)
+                gap = delta_e(colour, skin)
+                if gap < MIN_CLOTH_DISTANCE:
+                    raise BlobError(
+                        f"look {self.name!r}: the outfit's {label} {colour} is too close to its fill {skin} "
+                        f"(ΔE {gap:.1f} < {MIN_CLOTH_DISTANCE:g}); it would read as skin"
+                    )
 
 
 def _sprout_look(cv: Canvas, g, r: float) -> None:
@@ -951,6 +1166,13 @@ JUNO = Look(
     catchlights=True,
     lashes=True,
 )
+# Juno's home outfit (ADR 0242): a teal top and mustard trousers, the kitchen's own two accents, with a cream collar
+# and cuffs. Version 2 of Juno is version 1 dressed in it; her head, hair and face are version 1's.
+JUNO_TOP = "#3F8F8A"
+JUNO_TROUSERS = "#D29B2A"
+JUNO_TRIM = "#F6EAD3"
+JUNO_HOME = Outfit(top=JUNO_TOP, trousers=JUNO_TROUSERS, trim=JUNO_TRIM)
+JUNO_V2 = replace(JUNO, outfit=JUNO_HOME)
 REMY = Look(
     "remy",
     fill=REMY_FILL,
@@ -1325,12 +1547,70 @@ def blob(
         return g
 
     fronts = {limb: [(d.time, limb in d.pose.front) for d in frames] for limb in FRONTABLE}
+    outfit = look.outfit
+
+    def keyed(g, paths: list[str], fill: str, stroke: str, sw: float):
+        shape = cv.path(g, paths[0], fill, stroke, sw)
+        cv.keys(shape, "path", list(zip(times, paths, strict=True)))
+        return shape
+
+    def dress(g, limb: str, wider: float) -> None:
+        """``limb``'s cloth on every drawing, ``wider`` than the limb (a front limb is widened by its outline): the
+        garment, then its cuff in the trim and the ink line where the cuff meets the skin."""
+        assert outfit is not None
+        strokes = [d.pose.limbs[limb] for d in frames]
+        colour = outfit.top if limb in ("torso", *ARMS) else outfit.trousers
+        if limb == "torso":
+            keyed(g, [s.widened(wider).outline() for s in strokes], colour, cv.clear, 0)
+            hems = []
+            for s in strokes:
+                rim, start = s._rim(14, 8)
+                # The hip is the lower end, regardless of the torso's direction.
+                hem = rim[14:23] if s.p3[1] > s.p0[1] else [rim[-1], *start, rim[0]]
+                hems.append("M " + _points(hem))
+            keyed(g, hems, cv.clear, cv.ink, o)
+            return
+        keyed(g, [cut(clothed(s, outfit, limb).widened(wider)) for s in strokes], colour, cv.clear, 0)
+        cuffs = [_cuff(s, outfit, limb) for s in strokes]
+        keyed(g, [cut(c.widened(wider), start=False) for c in cuffs], outfit.trim, cv.clear, 0)
+        keyed(g, [_across(c, 1.0, wider) for c in cuffs], cv.clear, cv.ink, o)  # the cuff line, at the skin
+        keyed(g, [_across(c, 0.0, wider) for c in cuffs], cv.clear, cv.ink, 0.6 * o)  # the cuff's seam, finer
+
+    def front_limb(parent, limb):
+        g = cv.group(parent, f"{id}-front-{limb}")
+        _show(cv, g, _changes(fronts[limb], True))
+        fills = [d.pose.limbs[limb].widened(o).outline() for d in frames]
+        traces = [d.pose.limbs[limb].widened(o).contour() for d in frames]
+        fill = cv.path(g, fills[0], body_fill, cv.clear, 0)
+        cv.keys(fill, "path", list(zip(times, fills, strict=True)))
+        if outfit is not None:
+            dress(g, limb, o)
+        trace = cv.path(g, traces[0], cv.clear, cv.ink, o)
+        cv.keys(trace, "path", list(zip(times, traces, strict=True)))
+
+    # Dressed, an arm held behind the body is drawn behind it: one colour never showed a hand over the body, a top does.
+    order = LIMBS if outfit is None else (*ARMS, *FEET, "torso")
     for pass_name, fill, stroke, sw in (("outline", cv.ink, cv.ink, 2 * o), ("fill", body_fill, cv.clear, 0)):
         g = cv.group(root, f"{id}-{pass_name}")
-        for limb in LIMBS:
+        for limb in order:
+            if pass_name == "fill" and outfit is not None and limb == "torso":
+                for leg in FEET:
+                    if any(v for _, v in fronts[leg]):
+                        front_limb(g, leg)
             shape = limb_shape(g, limb, fill, stroke, sw)
-            if limb in fronts and any(v for _, v in fronts[limb]):
+            front = limb in fronts and any(v for _, v in fronts[limb])
+            if front:
                 _show(cv, shape, _changes(fronts[limb], False))
+            if pass_name == "fill" and outfit is not None:
+                cloth = cv.group(g, f"{id}-fill-{limb}-cloth")
+                if front:
+                    _show(cv, cloth, _changes(fronts[limb], False))
+                dress(cloth, limb, 0.0)
+        if pass_name == "fill" and outfit is not None:
+            band = cv.group(g, f"{id}-collar")
+            rims = [collar(d.pose) for d in frames]
+            keyed(band, ["M " + _points(rim) + " Z" for rim in rims], outfit.trim, cv.clear, 0)
+            keyed(band, ["M " + _points(rim[:COLLAR_STEPS]) for rim in rims], cv.clear, cv.ink, o)
         head = head_at(cv.group(g, f"{id}-head-{pass_name}"))
         r = radius + (o if pass_name == "outline" else 0)
         cv.ellipse(head, -r, -r, 2 * r, 2 * r, fill)
@@ -1340,18 +1620,10 @@ def blob(
             look.topper(cv, head_at(cv.group(root, f"{id}-{look.topper_id}")), radius)
     if look.hair is not None:
         look.hair(cv, head_at(cv.group(root, f"{id}-hair")), radius)
-    # A front limb is filled, then traced along its sides and tip only: the root stays open inside the body, so
-    # the limb grows out of it instead of sitting on it. Widened by the outline so it matches the silhouette's edge.
+    # Dressed front legs are already under the top; arms still sit over it.
     for limb in FRONTABLE:
-        if any(v for _, v in fronts[limb]):
-            g = cv.group(root, f"{id}-front-{limb}")
-            _show(cv, g, _changes(fronts[limb], True))
-            fills = [d.pose.limbs[limb].widened(o).outline() for d in frames]
-            traces = [d.pose.limbs[limb].widened(o).contour() for d in frames]
-            fill = cv.path(g, fills[0], body_fill, cv.clear, 0)
-            cv.keys(fill, "path", list(zip(times, fills, strict=True)))
-            trace = cv.path(g, traces[0], cv.clear, cv.ink, o)
-            cv.keys(trace, "path", list(zip(times, traces, strict=True)))
+        if any(v for _, v in fronts[limb]) and (outfit is None or limb in ARMS):
+            front_limb(root, limb)
     face = cv.group(root, f"{id}-face")
     cv.keys(face, "x", [(d.time, round(d.pose.head[0] + d.pose.face[0], 3)) for d in frames])
     cv.keys(face, "y", [(d.time, round(d.pose.head[1] + d.pose.face[1], 3)) for d in frames])
@@ -1494,6 +1766,47 @@ def juno(
         radius=radius,
         shadow=shadow,
         look=JUNO,
+    )
+
+
+@register(
+    "character",
+    "juno@2",
+    summary="Juno version 2 (ADR 0242): version 1's head, hair and face, dressed at home in a teal top and mustard "
+    "trousers with a cream collar and cuffs, drawn by the rig on every pose and in-between; hands and feet bare",
+    contract=cc.soft(Cue, tuple(POSES), tuple(EYES), MOUTHS, tuple(FEET), tuple(MOUTH_STATES), gazes=GAZES),
+)
+def juno_v2(
+    cv: Canvas,
+    parent,
+    cues: Sequence[Cue],
+    *,
+    end: float,
+    x: float = 0,
+    y: float = 0,
+    scale: float = 1,
+    mouth_states: Sequence[tuple[float, str]] | None = None,
+    id: str = "juno",
+    fps: float = 15,
+    radius: float = HEAD,
+    shadow: bool = False,
+):
+    """Juno version 2 performing ``cues``: :func:`juno` in :data:`JUNO_V2`, her home outfit on. A reel calls it by
+    name; version 1 (:func:`juno`) stays as published reels drew it."""
+    return blob(
+        cv,
+        parent,
+        cues,
+        end=end,
+        x=x,
+        y=y,
+        scale=scale,
+        mouth_states=mouth_states,
+        id=id,
+        fps=fps,
+        radius=radius,
+        shadow=shadow,
+        look=JUNO_V2,
     )
 
 

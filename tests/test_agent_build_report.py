@@ -7,7 +7,29 @@ from pathlib import Path
 import pytest
 
 from srstudio import cli
+from srstudio.build_report import CHECKS, BuildReport
+from srstudio.errors import SrstudioError
 from srstudio.layout import LayoutError
+
+
+@pytest.mark.parametrize('names', [['motion_quality'], ['sdk', 'typo'], [None], [[]], 'sdk', None, 3])
+def test_sdk_required_checks_reject_invalid_names_with_repair_details(names):
+    with pytest.raises(SrstudioError) as caught:
+        BuildReport().require(names)
+    error = caught.value.to_dict()
+    assert error['code'] == 'build.check'
+    assert error['path'] == 'require_check'
+    assert error['actual'] == names
+    assert error['expected'] == list(CHECKS)
+    assert 'motion-quality' in error['remedy']
+    json.dumps(error, allow_nan=False)
+
+
+def test_sdk_required_checks_accept_empty_and_passed_check_names():
+    report = BuildReport()
+    report.require([])
+    report.results['sdk'].append({'status': 'passed'})
+    report.require(['sdk', 'sdk'])
 
 
 @pytest.fixture

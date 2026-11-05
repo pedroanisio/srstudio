@@ -83,6 +83,47 @@ def test_emission_budgets_fail_before_scene_mutation(budget, monkeypatch):
     assert cv.scene.to_bytes() == before
 
 
+@pytest.mark.parametrize('budget', ['frames', 'nodes'])
+@pytest.mark.parametrize('at,scale', [(0, 1), (1, 2)])
+def test_late_windows_count_the_entire_source_budget(budget, at, scale, monkeypatch):
+    import srstudio._body_draw as drawing
+
+    authored = plan()
+    if budget == 'frames':
+        authored = body.compile_body(replace(authored.score, duration=50, validation_hz=1))
+    else:
+        # One second fits; the entire two-second source does not.
+        monkeypatch.setattr(drawing, 'MAX_NODES', 1500)
+    cv = canvas()
+    parent = cv.group(cv.comp, 'parent', timeScale=scale)
+    before, serial = cv.scene.to_bytes(), cv._serial
+    with pytest.raises(body.BodyError) as caught:
+        authored.window(authored.duration - 1, authored.duration).place(cv, parent, at=at, camera=Camera())
+    assert caught.value.to_dict()['code'] == 'body.budget'
+    assert caught.value.to_dict()['path'] == budget
+    assert cv.scene.to_bytes() == before and cv._serial == serial
+
+
+def test_late_window_projects_hidden_source_before_scene_mutation(monkeypatch):
+    import srstudio._body_draw as drawing
+    from srstudio.limbs.errors import LimbError
+
+    project = drawing.geometry
+
+    def behind_camera(pose, *args):
+        if 0.1 < pose.time < 0.5:
+            raise LimbError('source starts behind the near plane')
+        return project(pose, *args)
+
+    monkeypatch.setattr(drawing, 'geometry', behind_camera)
+    cv = canvas()
+    before, serial = cv.scene.to_bytes(), cv._serial
+    with pytest.raises(body.BodyError) as caught:
+        plan().window(1, 2).place(cv, cv.comp, camera=Camera())
+    assert caught.value.to_dict()['code'] == 'body.projection'
+    assert cv.scene.to_bytes() == before and cv._serial == serial
+
+
 def test_foreign_parent_and_duplicate_id_are_refused():
     cv, other = canvas(), canvas()
     existing = cv.group(cv.comp, 'occupied')

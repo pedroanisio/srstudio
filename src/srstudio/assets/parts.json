@@ -2313,6 +2313,16 @@
           "approval": null,
           "drawing": "285b6f53fdf15edf306a7ebd9d07ff16c079d04f880f72336b97301865473cb1",
           "rig": null
+        },
+        {
+          "number": 2,
+          "date": "2026-11-05",
+          "note": "Dressed at home: a teal top and mustard trousers with a cream collar and cuffs, drawn by the rig (ADR 0242); arc4d3's ruling 1793854854.581609, Juno reads as naked.",
+          "status": "proposed",
+          "proof": "generated/okayville/jp-review/juno-v2/",
+          "approval": null,
+          "drawing": "1f3f37e9a44e3004ca4092820c166b119858575b31eab642ad26cb339ea12237",
+          "rig": null
         }
       ]
     },
