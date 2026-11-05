@@ -262,10 +262,10 @@ def test_an_overlay_can_read_the_takes_the_heads_read(pinned_fonts, tmp_path, mo
     assert [n for n in xml.iter() if n.get("id") == "over-every-shot"]
 
 
-def test_a_staging_takes_one_overlay_or_the_other(pinned_fonts, tmp_path):
-    st = replace(silent(stage_sketch()), overlay=lambda *a: None, overlay_said=lambda *a: None)
+def test_a_staging_takes_one_overlay_or_the_other():
+    st = silent(stage_sketch())
     with pytest.raises(toon_sketch.StagingError, match="one overlay"):
-        built(tmp_path, st, pinned_fonts)
+        replace(st, overlay=lambda *a: None, overlay_said=lambda *a: None)
 
 
 def test_an_opening_line_is_drawn_over_every_shot_until_the_first_line_ends_and_kept_off_the_cover(

@@ -161,6 +161,10 @@ class Staging:
     bleed: bool = False  # far planes blurred past the frame's edge (srstudio.look.sheet): every new reel sets it
     held_frames: bool = False  # held keys half a frame before their frame (ADR 0216): every new reel sets it
 
+    def __post_init__(self) -> None:
+        if self.overlay is not None and self.overlay_said is not None:
+            raise StagingError("a staging takes one overlay: overlay, or overlay_said to read the takes too")
+
 
 def figure_group(cv: Canvas, parent, framing: tuple[float, float] | None):
     """The group a character is drawn into: ``parent`` itself, or a group ``framing`` scales and moves."""
@@ -259,8 +263,6 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
     flags = errors.flags(flags, BUILD_FLAGS)
     sk = staging.sketch
     check_heads(sk, staging.heads, staging.versions)
-    if staging.overlay is not None and staging.overlay_said is not None:
-        raise StagingError("a staging takes one overlay: overlay, or overlay_said to read the takes too")
     if "--init" in flags:
         sketch.write_project(root, sk, staging.style.google_font())
         return None
