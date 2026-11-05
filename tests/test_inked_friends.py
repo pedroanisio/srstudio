@@ -1,6 +1,6 @@
-"""Leo and Sam as two young men inked the News way (ADR 0231): both proposed, each with looks of his own that differ
-from one another, hands that are one drawing and its mirror, a face kept alive by breath, blinks and drift, and the
-screen's light kept to the people by a track matte."""
+"""Leo and Sam as two young men inked the News way (ADR 0231): both approved at version 1 by arc4d3 on 4 Nov (Slack
+1793837712.509019), each with looks of his own that differ from one another, hands that are one drawing and its
+mirror, a face kept alive by breath, blinks and drift, and the screen's light kept to the people by a track matte."""
 
 import re
 import subprocess
@@ -40,13 +40,14 @@ def draw(who: str, beats, end: float = 6.0, moves: Moves = f.STILL, mouths=()) -
 
 # -- the record --------------------------------------------------------------------------------------------------------
 @EACH
-def test_each_is_a_proposed_toon_character_with_no_approval(name):
+def test_each_is_a_toon_character_approved_at_version_one_on_arc4d3s_words(name):
     specimens.load_parts()
     assert registry.get("character", name).style == "toon"
     record = parts.get(name)
     assert record.kind == "character" and record.style == "toon"
     version = record.version(1)
-    assert version.status == "proposed" and version.approval is None
+    assert version.status == "approved" and version.approval is not None
+    assert version.approval.date == "2026-11-04" and "1793837712.509019" in version.approval.words
     assert version.proof == "generated/character-proofs/between-friends/index.html"
 
 
@@ -56,9 +57,8 @@ def test_the_digest_on_record_is_the_one_drawn(name):
 
 
 @EACH
-def test_a_proposed_drawing_cannot_be_verified_as_approved(name):
-    with pytest.raises(parts.NotApprovedError, match="proposed"):
-        specimens.check(name)
+def test_the_approved_drawing_verifies_against_its_record(name):
+    specimens.check(name)  # raises when the drawing is not the approved one on record
 
 
 def test_the_style_lists_the_module():

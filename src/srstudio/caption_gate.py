@@ -135,7 +135,17 @@ def _shipped(reel: str) -> Approval:
     return Approval("operator", RECORDED, f"published on {reel}")
 
 
+_BETWEEN_FRIENDS = (  # arc4d3's words in the Between Friends thread, Slack 1793790129.895039
+    "by the operator's delegation of 2026-10-31, Slack 1793837712.509019: \"Between Friends: white-outlined (#FFFFFF, "
+    "gold active word, #121415 stroke 8) is approved as Between Friends' caption look. arc4d3 read it on the final's "
+    "stills, including 7.73 s over Sam's shirt.\""
+)
+
+
 LOOKS: tuple[ApprovedLook, ...] = (
+    ApprovedLook("Between Friends", "white-outlined", ("#FFFFFF",), "#F4D492", "#121415", 8, (1200, 1500),
+                 "generated/pilots/build-between-friends/the-course-final/review/stills",
+                 Approval("arc4d3", "2026-11-04", _BETWEEN_FRIENDS)),
     ApprovedLook("Cel", "lettered-on-a-box", ("#FFFFFF",), None, None, 0, (240, 500),
                  "generated/renders/mushroom-training.mp4", _shipped("mushroom-training"), drawn=True),
     ApprovedLook("Collage", "ink-on-pill", ("#1D1A22",), None, None, 0, (300, 560),
