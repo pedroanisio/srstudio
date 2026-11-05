@@ -320,3 +320,33 @@ def test_a_shot_with_a_cut_passes_and_draws_both_sides_with_one_headline(tmp_pat
     assert {p.camera for p in renders.asked} == {LENS, CLOSE}
     texts = [e.get("text") for e in root.iter() if e.tag.endswith("text")]
     assert texts.count("A TEST") == 1 and FOUND.text in texts
+
+
+# -- a lens among the parts: what is behind it is not in the frame ---------------------------------------------------
+INSIDE = Camera((0.0, -290.0, -214.0), (0.0, -290.0, -150.0), 33.0, 4.0)  # past the face at z -212, looking away
+
+
+def test_a_printed_face_behind_the_lens_touches_no_word_and_covers_nothing():
+    behind = shot(still=_face_at(-290.0), printed=frozenset({"dialface"}), lens=INSIDE)
+    assert all(name != "dialface" for name, _ in sc.printed_boxes(behind, 0.0))
+    assert sc.clashes(behind, FOUND, 0.0, measure, [0.0, 1.0]) == []
+
+
+def test_a_part_the_lens_stands_inside_counts_only_what_is_in_front_of_it(tmp_path):
+    def wall(m) -> None:  # a slab from 4 behind the lens to 20 in front of it, wide enough to fill the view
+        m.box("feeder", (0.0, -290.0, -206.0), (400.0, 400.0, 24.0))
+
+    inside = shot(still=wall, pose=_parked, lens=INSIDE)
+    assert sc.share(inside, 0.0) > 0.95  # its front, 20 ahead, fills the frame
+
+
+def test_a_part_wholly_behind_the_lens_covers_none_of_the_frame():
+    def behind(m) -> None:
+        m.box("feeder", (0.0, -290.0, -240.0), (40.0, 40.0, 10.0))
+
+    def far_pellet(m, pose) -> None:
+        m.ell("pellet", (0.0, -290.0, -260.0), (3.0, 3.0, 3.0))
+
+    gone = shot(still=behind, pose=_parked, draw=far_pellet, lens=INSIDE)
+    assert sc.share(gone, 0.0) == 0.0
+    assert sc.hero_share(replace(gone, hero=frozenset({"pellet"})), 0.0) == 0.0
