@@ -33,6 +33,7 @@ from typing import Any
 
 import numpy as np
 
+from . import gpu
 from .errors import SrstudioError
 from .prosody import Finding
 from .releases import Release
@@ -204,7 +205,8 @@ def scene_range(scene: Path, *, engine: str | Path, ffmpeg: str = "ffmpeg") -> f
         raise MasterError(f"{scene.name}: no scene to mix")
     with tempfile.TemporaryDirectory(dir=scene.parent) as scratch:
         mixed = Path(scratch) / "mix.wav"
-        _run([str(engine), "encode", str(scene), "-o", str(mixed)], f"{scene.name}: the engine's audio encode")
+        with gpu.held():  # an engine encode, audio only included, takes the GPU lock like every render (ADR 0171)
+            _run([str(engine), "encode", str(scene), "-o", str(mixed)], f"{scene.name}: the engine's audio encode")
         if not mixed.is_file() or mixed.stat().st_size == 0:
             raise MasterError(f"{scene.name}: the engine's audio encode wrote no audio")
         return loudness_range(mixed, ffmpeg=ffmpeg)
