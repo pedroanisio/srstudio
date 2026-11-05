@@ -23,7 +23,7 @@ import re
 import shutil
 import subprocess
 import tempfile
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -137,6 +137,8 @@ def ready(
     numbers: Mapping[str, Claim] | None = None,
     projects: Mapping[str, Path] | None = None,
     release_reports: list[str] | None = None,
+    release_approvals: Mapping[str, master_gate.ReleaseApproval] | None = None,
+    published: Collection[str] = (),
     scopes: Mapping[str, str] | None = None,
     dispositions: Mapping[str, tuple[Disposition, ...]] | None = None,
 ) -> tuple[list[Bundle], list[Drift]]:
@@ -149,10 +151,24 @@ def ready(
     name that is not published, an empty test or an arm other than ``a`` or ``b`` raises :class:`OutboxError`.
     ``numbers`` maps a video name to its number on the show. ``projects`` supplies
     the cached recording project for every candidate; absence refuses C7. Every
-    candidate is checked, including delivered but unpublished files. Callers may
-    collect complete results in ``release_reports``, and pass trusted ``scopes``
-    and exact master/check ``dispositions``. Publication filtering is the caller's
-    responsibility and requires verified platform evidence, never Drive presence."""
+    candidate is checked, including delivered but unpublished files, unless named
+    in ``published``. Callers may collect complete results in ``release_reports``,
+    and pass trusted ``scopes`` and exact master/check ``dispositions``.
+    ``release_approvals`` maps names to ADR 0248 whole-master approvals, passed to
+    the gate and valid only for the approved master hash. ``published`` excludes
+    names from master evaluation on caller-verified platform publication evidence
+    (ADR 0246), never Drive presence. Excluded videos still need current delivery
+    and a package; their Bundles remain in the staged manifest (ADR 0249), with an
+    exclusion line in ``release_reports``. Unknown names in either argument, or
+    names in both, raise :class:`OutboxError`."""
+    release_approvals = dict(release_approvals or {})
+    published = set(published)
+    unknown = sorted((set(release_approvals) | published) - set(items))
+    if unknown:
+        raise OutboxError(f"release approval or publication names an unknown video: {', '.join(unknown)}")
+    overlap = sorted(set(release_approvals) & published)
+    if overlap:
+        raise OutboxError(f"videos have both release approval and publication exclusion: {', '.join(overlap)}")
     ab = _arms(items, ab)
     numbers = dict(numbers or {})
     strays = sorted(set(numbers) - set(items))
@@ -176,18 +192,23 @@ def ready(
         if name not in packages:
             drift.append(Drift(name, NO_PACKAGE))
             continue
-        project = (projects or {}).get(name)
-        reading = master_gate.evaluate_release(
-            Path(item.video),
-            project,
-            scope=(scopes or {}).get(name, "reserved"),
-            dispositions=(dispositions or {}).get(name, ()),
-        )
-        if release_reports is not None:
-            release_reports.extend(reading.lines())
-        if reading.refused:
-            drift.append(Drift(name, "\n".join(reading.lines())))
-            continue
+        if name in published:
+            if release_reports is not None:
+                release_reports.append(f"excluded: {name}: published on platform (caller evidence)")
+        else:
+            project = (projects or {}).get(name)
+            reading = master_gate.evaluate_release(
+                Path(item.video),
+                project,
+                scope=(scopes or {}).get(name, "reserved"),
+                dispositions=(dispositions or {}).get(name, ()),
+                release_approval=release_approvals.get(name),
+            )
+            if release_reports is not None:
+                release_reports.extend(reading.lines())
+            if reading.refused:
+                drift.append(Drift(name, "\n".join(reading.lines())))
+                continue
         folder = Path(deliveries) / name
         files = (Path(item.video), folder / FILE_NAME, folder / COVER_NAME, Path(packages[name]))
         bundles.append(Bundle(name, files, ab.get(name), episode=numbers.get(name)))

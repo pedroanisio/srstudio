@@ -670,7 +670,101 @@ def test_outbox_reports_the_shared_gate_and_holds_a_c7_failure(clips, tmp_path, 
         release_reports=report,
     )
     assert not bundles and drift and report == reading.lines()
-    assert calls == [(clips["clean"], tmp_path, {"scope": "new_pilot", "dispositions": ()})]
+    assert calls == [(clips["clean"], tmp_path, {"scope": "new_pilot", "dispositions": (), "release_approval": None})]
+
+
+@pytest.mark.parametrize("changed", [False, True])
+def test_outbox_reviewed_master_approval_is_hash_bound(tmp_path, monkeypatch, accepted_measure, changed):
+    from srstudio import outbox
+    from srstudio.digest import sha256
+    from srstudio.social import Item
+
+    video = tmp_path / "legacy.mp4"
+    video.write_bytes(b"reviewed master")
+    approval = release_approval(sha256(video))
+    if changed:
+        video.write_bytes(b"replacement master")
+    monkeypatch.setattr(outbox, "check_delivery", lambda *a, **kw: [])
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: accepted_measure)
+    package = tmp_path / "legacy.vpkg.zip"
+    package.write_bytes(b"fixture package")
+    items = {"legacy": Item(InstagramPost(title="t", description="d"), video)}
+    reports = []
+    bundles, drift = outbox.ready(
+        items,
+        tmp_path,
+        font=tmp_path / "font.ttf",
+        packages={"legacy": package},
+        release_approvals={"legacy": approval},
+        release_reports=reports,
+    )
+    if changed:
+        assert not bundles and len(drift) == 1
+        assert "release approval" in drift[0].reason
+    else:
+        assert [bundle.name for bundle in bundles] == ["legacy"] and not drift
+        assert any("RELEASED" in line for line in reports)
+
+
+@pytest.mark.parametrize("held", ["", "drift", "manifest", "package"])
+def test_outbox_published_exclusion_skips_master_gate_but_retains_delivery_checks(tmp_path, monkeypatch, held):
+    from srstudio import outbox
+    from srstudio.social import Drift, Item
+
+    delivery_drift = {
+        "drift": [Drift("posted", "delivery changed")],
+        "manifest": [Drift("*", "untrustworthy manifest")],
+    }.get(held, [])
+    monkeypatch.setattr(outbox, "check_delivery", lambda *a, **kw: delivery_drift)
+
+    def forbidden(*a, **kw):
+        pytest.fail("published master must not be read or evaluated")
+
+    monkeypatch.setattr(master_gate, "evaluate_release", forbidden)
+    monkeypatch.setattr(master_gate, "sha256", forbidden)
+    package = tmp_path / "posted.vpkg.zip"
+    package.write_bytes(b"fixture package")
+    video = tmp_path / "not-read.mp4"
+    items = {"posted": Item(InstagramPost(title="t", description="d"), video)}
+    reports = ["existing report"]
+    bundles, drift = outbox.ready(
+        items,
+        tmp_path,
+        font=tmp_path / "font.ttf",
+        packages={} if held == "package" else {"posted": package},
+        published={"posted"},
+        release_reports=reports,
+    )
+    if held:
+        assert not bundles
+        assert drift == (delivery_drift or [Drift("posted", outbox.NO_PACKAGE)])
+        assert reports == ["existing report"]
+    else:
+        assert not drift
+        assert bundles == [
+            outbox.Bundle("posted", (video, tmp_path / "posted" / "ig.txt", tmp_path / "posted" / "cover.jpg", package))
+        ]
+        assert reports == ["existing report", "excluded: posted: published on platform (caller evidence)"]
+
+
+@pytest.mark.parametrize("invalid", ["unknown approval", "unknown published", "overlap"])
+def test_outbox_rejects_unknown_or_overlapping_release_names(tmp_path, monkeypatch, invalid):
+    from srstudio import outbox
+    from srstudio.social import Item
+
+    def forbidden(*a, **kw):
+        pytest.fail("invalid release names must be rejected before checking deliveries")
+
+    monkeypatch.setattr(outbox, "check_delivery", forbidden)
+    items = {"reel": Item(InstagramPost(title="t", description="d"), tmp_path / "reel.mp4")}
+    approvals = {"unknown" if invalid == "unknown approval" else "reel": release_approval("a" * 64)}
+    kwargs = {
+        "unknown approval": {"release_approvals": approvals},
+        "unknown published": {"published": {"unknown"}},
+        "overlap": {"release_approvals": approvals, "published": {"reel"}},
+    }[invalid]
+    with pytest.raises(outbox.OutboxError, match="unknown|reel"):
+        outbox.ready(items, tmp_path, font=tmp_path / "font.ttf", **kwargs)
 
 
 def test_authority_is_not_evaluated_when_master_measurement_is_missing(clips, monkeypatch):
