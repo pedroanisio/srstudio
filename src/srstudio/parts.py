@@ -84,7 +84,7 @@ RECORD = "parts.json"  # in a project: what its build drew, {part: version}
 STATUSES = ("approved", "proposed")
 ROUTED = (("character", "toon"),)  # the (kind, style) whose builds read a pin
 KIT_VERSIONS = ("news-",)  # parts whose second version is its own module: a reel names it, nothing reads a pin
-CALLED_VERSIONS = ("juno",)  # parts whose later version is its own builder, name@N, that a reel calls (ADR 0240)
+CALLED_VERSIONS = ("juno",)  # parts whose later version is its own builder, name@N, that a reel calls (ADR 0242)
 DIGEST = re.compile(r"[0-9a-f]{64}")
 
 

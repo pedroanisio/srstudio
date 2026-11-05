@@ -2,7 +2,7 @@
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 ---
 
-# ADR 0240: Juno version 2 wears a home outfit, drawn by the rig as part of her look
+# ADR 0242: Juno version 2 wears a home outfit, drawn by the rig as part of her look
 
 - Status: proposed (2026-11-05). `juno@2` is recorded `proposed` with no approval. arc4d3 approves it, or not, from
   one full-size still of her standing and one seated (`generated/okayville/jp-review/juno-v2/`). Until then

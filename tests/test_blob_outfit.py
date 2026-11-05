@@ -1,4 +1,4 @@
-"""Juno v2 wears a home outfit as part of her look (ADR 0240, arc4d3's ruling 1793854854.581609: "Juno reads as naked").
+"""Juno v2 wears a home outfit as part of her look (ADR 0242, arc4d3's ruling 1793854854.581609: "Juno reads as naked").
 
 The top and trousers are drawn by the rig on the torso and limbs, drawing by drawing, so they follow every pose and
 in-between; a collar line sits under the chin and a cuff line at each wrist and ankle; hands, feet, head and face stay

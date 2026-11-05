@@ -129,7 +129,7 @@ project is refused.
   rig draws it on the torso and limbs on every drawing, with a collar under the chin and a cuff line at each wrist and
   ankle, hands and feet bare, and draws an arm held behind the body behind the top. Its top and trousers keep
   `MIN_CLOTH_DISTANCE` (CIE76 ΔE 40) from the fill. `juno_v2` (`juno@2`) is `juno` in `JUNO_V2`, her home outfit on
-  ([ADR 0240](../docs/decisions/0240-juno-v2-a-home-outfit.md)).
+  ([ADR 0242](../docs/decisions/0242-juno-v2-a-home-outfit.md)).
   (`srstudio.cel`): `traced` (`cel-traced`): a traced character as a sheet of filled drawings, one held per run of
   the pose timeline; drawings and runs are data (`cel.load_drawings`, `cel.load_runs`), parsed and refused when
   malformed (`cel.CelDataError`).

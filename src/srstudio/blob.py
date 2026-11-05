@@ -720,7 +720,7 @@ _COLOUR = re.compile(r"#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?")
 _NAME = re.compile(r"[a-z][a-z0-9-]*")
 
 
-# -- clothes (ADR 0240) -------------------------------------------------------------------------------------------
+# -- clothes (ADR 0242) -------------------------------------------------------------------------------------------
 MIN_CLOTH_DISTANCE = 40.0  # CIE76 ΔE*ab a garment keeps from the skin it covers: it reads as cloth, never as skin
 COLLAR = 14.0  # how far the collar stands out from the head's rim, in pose units
 COLLAR_SPAN = 62.0  # degrees either side of the line from the head to the body the collar may run
@@ -922,7 +922,7 @@ class Look:
     on the head away from the light (upper left), ``gloss`` puts a highlight on the lit side, ``catchlights``
     puts the same light in the pupils and ``lashes`` adds two flicks at the outer corner of every eye.
 
-    ``outfit`` (ADR 0240) dresses the body and limbs (:class:`Outfit`); a look without one draws exactly as before.
+    ``outfit`` (ADR 0242) dresses the body and limbs (:class:`Outfit`); a look without one draws exactly as before.
     Its top and trousers keep :data:`MIN_CLOTH_DISTANCE` from the fill, so a dressed look never reads as skin."""
 
     name: str
@@ -1166,7 +1166,7 @@ JUNO = Look(
     catchlights=True,
     lashes=True,
 )
-# Juno's home outfit (ADR 0240): a teal top and mustard trousers, the kitchen's own two accents, with a cream collar
+# Juno's home outfit (ADR 0242): a teal top and mustard trousers, the kitchen's own two accents, with a cream collar
 # and cuffs. Version 2 of Juno is version 1 dressed in it; her head, hair and face are version 1's.
 JUNO_TOP = "#3F8F8A"
 JUNO_TROUSERS = "#D29B2A"
@@ -1772,7 +1772,7 @@ def juno(
 @register(
     "character",
     "juno@2",
-    summary="Juno version 2 (ADR 0240): version 1's head, hair and face, dressed at home in a teal top and mustard "
+    summary="Juno version 2 (ADR 0242): version 1's head, hair and face, dressed at home in a teal top and mustard "
     "trousers with a cream collar and cuffs, drawn by the rig on every pose and in-between; hands and feet bare",
     contract=cc.soft(Cue, tuple(POSES), tuple(EYES), MOUTHS, tuple(FEET), tuple(MOUTH_STATES), gazes=GAZES),
 )
