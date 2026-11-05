@@ -154,3 +154,13 @@ def test_reason_only_prosody_waiver_is_refused():
     t = late_end(timeline())
     t["items"][3]["direction"]["waive"] = [{"check": "end_breath", "reason": "a deliberately held ending"}]
     assert prosody_gate.judge("new", json.dumps(gated(t))).refused
+
+
+def test_fast_reel_without_waiver_has_no_reel_ceiling(tmp_path):
+    t = timeline()
+    for item in t['items']:
+        p = item['prosody']
+        n = int(4.3 * (p['last'] - p['first']))
+        p['words'] += [{'text': 'w', 'db': -20.0, 'hz': 150.0}] * (n - len(p['words']))
+        p['words_per_second'] = round(n / (p['last'] - p['first']), 3)
+    assert prosody_gate.lines(read(tmp_path, fast=gated(t))) == ['prosody fast-video: clean']

@@ -236,7 +236,10 @@ def test_the_master_checks_are_waived_on_the_script_with_a_reason_and_no_bounds(
 
 # ADR 0244: common final-master acceptance, independent of legacy script waivers.
 @pytest.fixture
-def accepted_measure():
+def accepted_measure(monkeypatch):
+    from srstudio import craft_bar
+
+    monkeypatch.setattr(craft_bar, 'measure_voice', lambda *a, **kw: craft_bar.Result(()))
     return master_gate.Measured(
         (),
         (),
@@ -476,7 +479,7 @@ def test_freeze_requires_successful_eof_evidence(monkeypatch):
         master_gate.frozen_content(Path('unused'))
 
 
-def test_actual_passing_master_and_shared_delivery_result(clips, tmp_path):
+def test_actual_master_missing_key_refuses_shared_delivery_result(clips, tmp_path):
     (tmp_path / 'timeline.json').write_text(
         json.dumps(
             {
@@ -492,13 +495,14 @@ def test_actual_passing_master_and_shared_delivery_result(clips, tmp_path):
         )
     )
     acceptance = master_gate.accept_master(clips['clean'], tmp_path)
-    assert acceptance.ok
+    assert not acceptance.ok
+    assert acceptance.voices[0].stress_status == "FAIL"
     reading = master_gate.judge('clean', clips['clean'], {}, project=tmp_path)
     assert reading.acceptance.master_sha256 == acceptance.master_sha256
     assert [(c.check, c.value, c.verdict) for c in reading.acceptance.checks] == [
         (c.check, c.value, c.verdict) for c in acceptance.checks
     ]
-    assert not reading.refused
+    assert reading.refused
     assert master_gate.findings(acceptance.measured)[0] == []
 
 
@@ -522,7 +526,7 @@ def test_release_api_reports_missing_c7_with_hash(clips, tmp_path):
 
     result = evaluate_release(clips["clean"], tmp_path)
     assert result.refused and len(result.master_sha256) == 64
-    assert any(c.check == "c7" and c.verdict == "MISSING" for c in result.checks)
+    assert {c.check for c in result.checks if c.verdict == "MISSING"} >= {"c7.pace", "c7.stress"}
     assert "legacy=True" in "\n".join(result.lines())
 
 
