@@ -432,11 +432,11 @@ _UP = (
     news_arms.Reach((-UP_WRIST[0], UP_WRIST[1]), "open", -8.0, False),
     news_arms.Reach(UP_WRIST, "open", 8.0, False),
 )  # both hands up from the desk, palms out, a mirrored pair (ADR 0103)
-HOLD_PHONE = (154.0, -290.0)  # the raised phone's middle on the bust: beside Gus's face on the frame's right
+HOLD_PHONE = (154.0, -304.0)  # the raised phone's middle on the bust: beside Gus's face on the frame's right
 HOLD_SIZE, HOLD_WIDE = 0.82, 0.7  # its size, and the share of its width seen as he turns its screen to the camera:
 # clear of his eyes at every turn of his head, and inside the frame in his close-up and in the two-shot
-HOLD_WRIST = (178.0, -236.0)  # the hand under it, its elbow out past the frame's edge
-HOLD_TURN = -30.0  # the fist's fingers, up and across the phone's foot
+HOLD_WRIST = (176.0, -236.0)  # the hand under it, its elbow out past the frame's edge
+HOLD_TURN = -80.0  # the fist lies under the phone, its fingers across its foot toward his face
 HOLD_RISE = 150.0  # how far under its place the phone starts as his hand brings it up
 
 
