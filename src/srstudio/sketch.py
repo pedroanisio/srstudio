@@ -35,6 +35,7 @@ from typing import Any, Protocol
 
 from . import (  # noqa: F401 - they register
     checks,
+    emphasis,
     fonts,
     lipsync,
     parts,
@@ -54,7 +55,16 @@ from .generated import gain_to_peak, trim_speech
 from .hearing import blind_lines
 from .narration import Placement, Slot, confirm_voice, conform, plan_relaxed, sha256_of
 from .phrasing import words_of
-from .voice import Alignment, Transcript, TranscriptMismatch, Voice, VoiceSettings, check_transcript, normalize_words
+from .voice import (
+    Alignment,
+    Transcript,
+    TranscriptMismatch,
+    Voice,
+    VoiceSettings,
+    Word,
+    check_transcript,
+    normalize_words,
+)
 
 __all__ = [
     "PHONE_SPEAKER",
@@ -125,6 +135,7 @@ LIP_SYNCED = (
     "lyra",
 )  # the brush-drawn characters, whose mouths follow a viseme track
 MIN_STEP = 0.15  # the least a beat may be held, seconds
+SPEEDS = (0.7, 1.2)  # a line's own voice speed: what the voice takes (VoiceSettings)
 LINE_LEVELS = (-12.0, 0.0)  # (dB) how far a line may sit under the others in the mix: interview.LEVELS, for a sketch
 BLANK_GAP = 0.25  # a silent beat starts this long after the line before it ends
 BLANK_MARGIN = 0.30  # and this long before the next spoken beat at the latest
@@ -181,7 +192,11 @@ class Line:
     as it was said, and only the audio in the reel is band-limited.
 
     ``together``: another speaker says this line on the first word of the line before it, two voices on one beat. It
-    is its own take, heard back alone, and no beat starts it: the caption is the line it joins."""
+    is its own take, heard back alone, and no beat starts it: the caption is the line it joins.
+
+    ``speed``: the voice's pace for this line alone (its speaker's settings otherwise), a take of its own; ``stress``:
+    words of the line that carry its weight, raised by gain on the take to :data:`srstudio.prosody.STRESS_DB` over the
+    line's median word when the voice said them flat (:func:`srstudio.emphasis.lean`)."""
 
     speaker: str
     text: str
@@ -189,6 +204,8 @@ class Line:
     gain: float = 0.0  # dB against the others in the mix
     phone: bool = False
     together: bool = False
+    speed: float | None = None
+    stress: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -290,6 +307,12 @@ def check(sketch: Sketch) -> None:
                 raise SketchError(f"line {i}: together joins the line before it, and there is none to join")
             if before.speaker == line.speaker:
                 raise SketchError(f"line {i}: together is another speaker on one beat, not {line.speaker} again")
+        if line.speed is not None and not (checks.number(line.speed) and SPEEDS[0] <= line.speed <= SPEEDS[1]):
+            raise SketchError(f"line {i}: speed {line.speed!r} is outside {SPEEDS}")
+        said = normalize_words(line.text)
+        for word in line.stress:
+            if len(normalize_words(word)) != 1 or normalize_words(word)[0] not in said:
+                raise SketchError(f"line {i}: the stressed word {word!r} is not one word of the line")
         for text in line.heard:
             if not normalize_words(text) or normalize_words(text) == normalize_words(line.text):
                 raise SketchError(f"line {i}: an accepted hearing must be other words than the line, got {text!r}")
@@ -872,6 +895,20 @@ def _placed(lines: Sequence[Line], plan: Sequence[Slot], speeches: Sequence[floa
     return out, needed
 
 
+def _settings(speaker: Speaker, line: Line) -> VoiceSettings:
+    """The voice settings a line is asked with: its speaker's, at the line's own speed when it has one."""
+    return speaker.settings if line.speed is None else replace(speaker.settings, speed=line.speed)
+
+
+def _clip_words(alignment: Alignment, clip_in: float, kept: float) -> list[Word]:
+    """The take's words on the conformed clip, which starts at ``clip_in`` of the take and runs ``kept`` seconds."""
+    return [
+        Word(text, round(max(0.0, a - clip_in), 6), round(min(kept, b - clip_in), 6), "word")
+        for text, a, b in words_of(alignment)
+        if b > clip_in and a < clip_in + kept
+    ]
+
+
 def record(
     sketch: Sketch,
     root: Path,
@@ -905,7 +942,7 @@ def record(
     takes = []
     for line in sketch.lines:
         speaker = speakers[line.speaker]
-        spoken = client.synthesize(line.text, speaker.voice, speaker.settings)
+        spoken = client.synthesize(line.text, speaker.voice, _settings(speaker, line))
         takes.append((spoken, trim_speech(spoken.wav, lead=SPEECH_LEAD, tail=SPEECH_TAIL)))
     placed, needed = _placed(sketch.lines, plan, [trim.clip_out - trim.clip_in for _, trim in takes])
     items, heard, failures, word_starts, kept_takes = [], [], [], [], []
@@ -936,6 +973,7 @@ def record(
             ffmpeg,
             **colour,
         )
+        stressed = emphasis.lean(dst, _clip_words(spoken.alignment, trim.clip_in, kept), line.stress)
         word_starts.append(
             [round(start + round(max(0.0, a - trim.clip_in), 6), 6) for _, a, _ in words_of(spoken.alignment)]
         )  # summed from the rounded values place_again reads back, so both place a beat on the same microsecond
@@ -953,7 +991,7 @@ def record(
                 "start": start,
                 "duration": kept,
                 "speech_duration": round(trim.clip_out - trim.clip_in, 6),
-                "speed": speakers[line.speaker].settings.speed,
+                "speed": _settings(speakers[line.speaker], line).speed,
                 "lead": 0.0,
                 "tempo": 1.0,
                 "lag": round(at.lag, 6),
@@ -961,6 +999,7 @@ def record(
                 "audio": f"audio/{dst.name}",
                 "sha256": sha256_of(dst),
             }
+            | ({"stress": stressed} if stressed else {})
         )
     (root / "voice-transcript.json").write_text(json.dumps({"lines": heard, "passed": not failures}, indent=2) + "\n")
     if failures:
