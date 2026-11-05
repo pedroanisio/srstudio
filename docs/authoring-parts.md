@@ -595,8 +595,8 @@ poses = [Pose(0.0, "half", "flat", "pad"), Pose(2.0, "down", "flat", "pad-lap")]
 toon_head.figure(cv, parent, toon_friends.LEO_RIG, poses, 4.0, HeadPlan.still())
 ```
 
-Both characters and both rigs are proposed, so `toon_rigs.rig_of` refuses them and no reel can use them until the
-operator decides. `toon.parse_poses` still holds to the shared arm kinds, so a sketch cannot name a grip yet. The
+Both characters and both rigs are proposed, so `toon_rigs.rig_of` refuses them and no reel can use them until
+arc4d3 decides. `toon.parse_poses` still holds to the shared arm kinds, so a sketch cannot name a grip yet. The
 reasons are in [docs/decisions/0230-a-controller-held-in-both-paws.md](decisions/0230-a-controller-held-in-both-paws.md).
 
 ## Leo and Sam inked the News way, proposed
@@ -617,5 +617,5 @@ f.perform(cv, cv.comp, "leo", beats, 8.0, x=280, y=1090, scale=1.5, moves=f.Move
 A face the screen alone leaves too dark takes a `Key`, a steady neutral gain between the multiplied light and the
 glow: pass `keys=[f.key(who, x, y, scale) for ...]` to `screen_light` (Leo's lift is none, Sam's is `SAM_KEY`).
 
-Both are proposed, so no reel can use them until the operator decides. The reasons are in
+Both are proposed, so no reel can use them until arc4d3 decides. The reasons are in
 [docs/decisions/0231-two-friends-inked-the-news-way.md](decisions/0231-two-friends-inked-the-news-way.md).
