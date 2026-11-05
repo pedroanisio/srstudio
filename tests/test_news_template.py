@@ -9,7 +9,19 @@ from xml.etree import ElementTree as ET
 
 import pytest
 
-from srstudio import craft, head_motion, news_arms, news_head, news_inked, news_kit, news_template, toon
+from srstudio import canvas as canvas_module
+from srstudio import (
+    craft,
+    frame_gates,
+    framegraph,
+    head_motion,
+    news_arms,
+    news_head,
+    news_inked,
+    news_kit,
+    news_template,
+    toon,
+)
 from srstudio.head_motion import Speech, Word
 from srstudio.layout import VERTICAL
 from srstudio.news_kit import Act, NewsKitError, Pose, Source
@@ -187,10 +199,10 @@ def test_the_band_refuses_words_a_cut_back_leaves_too_short_to_read(lowers, line
             cv.comp,
             ticker=TICKER,
             lowers=lowers if line is None else (*lowers, Lower(6.0, 9.0, "FOUR AI RIDES", "ALL OF THEM: GUS")),
-            end=9.0,
+            end=12.0,
             measure=measure,
             line=line,
-            inserts=((3.0, 5.6),),
+            inserts=((4.0, 5.6),),
         )
 
 
@@ -349,17 +361,18 @@ def test_a_pose_tilted_past_the_templates_reach_is_refused():
 
 # -- inserts and the stage --------------------------------------------------------------------------------------------
 def test_an_insert_keeps_moving_for_its_whole_span():
-    cv, g = _cutaway()
+    cv, pushes = _cutaway()
     root = ET.fromstring(cv.scene.to_bytes())
-    node = next(n for n in root.iter("group") if n.get("id") == g.id)
-    keys = {
-        a.get("property"): [(float(k.get("time")), float(k.get("value"))) for k in a.findall("key")]
-        for a in node.findall("animate")
-    }
-    scale = keys["scaleX"]
-    assert scale[0][0] <= 2.0 and scale[-1][0] >= 7.6
-    assert all(b[1] != a[1] for a, b in zip(scale, scale[1:], strict=False))  # every stretch moves
-    assert max(b[0] - a[0] for a, b in zip(scale, scale[1:], strict=False)) <= news_template.STILL_MOST
+    for g, (start, end) in zip(pushes, SPANS, strict=True):
+        node = next(n for n in root.iter("group") if n.get("id") == g.id)
+        keys = {
+            a.get("property"): [(float(k.get("time")), float(k.get("value"))) for k in a.findall("key")]
+            for a in node.findall("animate")
+        }
+        scale = keys["scaleX"]
+        assert scale[0][0] <= start and scale[-1][0] >= end
+        assert all(b[1] != a[1] for a, b in zip(scale, scale[1:], strict=False))  # every stretch moves
+        assert max(b[0] - a[0] for a, b in zip(scale, scale[1:], strict=False)) <= news_template.STILL_MOST
 
 
 def test_the_insert_keeps_its_words_inside_the_safe_area_at_its_largest():
@@ -398,18 +411,21 @@ def test_captions_sit_on_the_templates_line():
     assert math.isclose(news_template.TEMPLATE, 2)
 
 
-# -- the phone cutaway (arc4d3, 4 Nov) --------------------------------------------------------------------------------
+# -- the phone cutaway (arc4d3, 4 Nov; C1, C2 and the signature, 5 Nov) ---------------------------------------------
 CHAT = (
     news_kit.Bubble("6:01", "Book me a ride home"),
     news_kit.Bubble("6:01", "Sure! Which home?", out=False, at=2.6),
     news_kit.Bubble("6:02", "Booked! Pickup: Tuesday", out=False, at=4.4),
     news_kit.Bubble("6:02", "Also booked 3 backups!", out=False, at=6.8),
 )
+SPANS = ((2.0, 3.6), (4.2, 5.4), (6.6, 7.8))  # three inserts, a face between each
 
 
-def _cutaway(bubbles=CHAT, start: float = 2.0, end: float = 7.8):
+def _cutaway(bubbles=CHAT, spans=SPANS, signed: bool = True):
     cv = canvas()
-    g = news_template.phone_insert(cv, cv.comp, "My AI", bubbles, start, end, measure)
+    if signed:
+        cv.signature = canvas_module.Signature()
+    g = news_template.phone_insert(cv, cv.comp, "My AI", bubbles, spans, measure)
     return cv, g
 
 
@@ -419,21 +435,50 @@ def _fill_of(cv, ident: str) -> str:
     return str(node.get("fill", ""))
 
 
-def test_the_phone_is_a_cutaway_whose_screen_fills_the_frame_width():
+def _inserts(cv) -> dict[str, ET.Element]:
+    root = ET.fromstring(cv.scene.to_bytes())
+    return {
+        g.get("id", ""): g
+        for g in root.iter("group")
+        if g.get("id", "").startswith("news-phone-") and g.get("id", "")[len("news-phone-") :].isdigit()
+    }
+
+
+def test_each_insert_is_its_own_cutaway_over_its_span():
+    cv, pushes = _cutaway()
+    inserts = _inserts(cv)
+    assert len(pushes) == len(inserts) == 3
+    spans = sorted((float(g.get("start")), float(g.get("end"))) for g in inserts.values())
+    assert spans == list(SPANS)
+
+
+def test_the_phones_screen_fills_the_frame_height_and_width():
     cv, _ = _cutaway()
-    boxes = _shapes(cv, "news-phone")
-    screen = [b for b in boxes if b[1] <= 0.0 and b[3] >= FRAME_W and b[2] < news_template.CHAT_TOP]
-    assert screen, "no screen edge to edge"
-    back = [b for b in boxes if b[1] <= 0 and b[2] <= 0 and b[3] >= FRAME_W and b[4] >= FRAME_H]
-    assert back and all(len(_fill_of(cv, b[0])) == 7 for b in back)  # opaque: nothing of the shot shows through
+    for n in (1, 2, 3):
+        boxes = _shapes(cv, f"news-phone-{n}")
+        screen = [b for b in boxes if b[1] <= 0.0 and b[3] >= FRAME_W and b[2] <= 0.0 and b[4] >= FRAME_H]
+        assert len(screen) >= 2, "the backdrop and the screen each cover the whole frame"
+        fills = {_fill_of(cv, b[0]) for b in screen}
+        assert news_kit.PLUM_DEEP in fills, "an opaque backdrop: nothing of the shot shows through"
+        assert news_template.SCREEN in fills, "a lit screen over the whole frame, not the dark backdrop"
 
 
-def test_the_chat_fills_the_screen_down_to_its_foot():
+def test_the_chat_builds_across_the_inserts_and_the_last_ends_full():
+    cv, _ = _cutaway()
+    inserts = _inserts(cv)
+    shown = []
+    for n in (1, 2, 3):
+        ids = {g.get("id") for g in inserts[f"news-phone-{n}"].iter("group")}
+        shown.append(sorted(k for k in range(len(CHAT)) if f"news-phone-{n}-m{k}" in ids))
+    assert shown == [[0, 1], [0, 1, 2], [0, 1, 2, 3]]
+
+
+def test_the_full_chat_fills_the_screen_down_to_its_foot():
     cv, _ = _cutaway()
     root = ET.fromstring(cv.scene.to_bytes())
     rows = []
     for k in range(len(CHAT)):
-        node = next(n for n in root.iter("group") if n.get("id") == f"news-phone-{k}")
+        node = next(n for n in root.iter("group") if n.get("id") == f"news-phone-3-m{k}")
         rects = [r for r in node.iter("shape") if r.get("shape") == "rect"]
         y0 = min(float(r.get("y")) for r in rects)
         rows.append((y0, max(float(r.get("y")) + float(r.get("height")) for r in rects)))
@@ -444,28 +489,78 @@ def test_the_chat_fills_the_screen_down_to_its_foot():
     assert covered >= 0.6 * (news_template.CHAT_FOOT - news_template.CHAT_TOP)  # no blank half
 
 
-def test_something_lands_on_the_screen_at_least_every_one_and_a_half_seconds():
-    cv, _ = _cutaway()
-    root = ET.fromstring(cv.scene.to_bytes())
-    lands = sorted(
-        float(g.get("start"))
-        for g in root.iter("group")
-        if g.get("id", "").startswith("news-phone-") and g.get("start") is not None
-    )
-    times = [2.0, *lands, 7.8]
-    assert max(b - a for a, b in zip(times, times[1:], strict=False)) <= news_template.STILL_MOST + 1e-9
-    assert [t for t in lands if t not in (2.0, 2.6, 4.4, 6.8)], "a gap of 1.8 s needs the typing dots"
+def test_a_message_landing_while_the_phone_is_away_is_refused():
+    with pytest.raises(NewsKitError, match="while the phone is away"):
+        _cutaway(spans=((2.0, 3.6), (4.6, 5.6), (6.6, 7.8)))  # 4.4 lands between the first two
 
 
-def test_the_cutaway_cuts_back_within_one_and_a_half_seconds_of_its_last_message():
+def test_an_insert_with_no_new_message_is_refused():
+    with pytest.raises(NewsKitError, match="no new message"):
+        _cutaway(spans=((2.0, 3.6), (4.2, 5.4), (5.6, 6.6), (6.7, 7.8)))
+
+
+def test_an_insert_over_two_seconds_is_refused():
+    with pytest.raises(NewsKitError, match="longer than 2.0 s"):
+        _cutaway(spans=((2.0, 3.6), (4.2, 5.4), (6.6, 8.61)))
+    with pytest.raises(NewsKitError, match="longer than"):
+        news_template.flat_inserts(((1.0, 3.01),), 60.0)
+
+
+def test_inserts_over_fifteen_percent_of_the_reel_are_refused():
+    news_template.flat_inserts(SPANS, 4.0 / news_template.INSERT_SHARE)
+    with pytest.raises(NewsKitError, match="at most 15%"):
+        news_template.flat_inserts(SPANS, 4.0 / news_template.INSERT_SHARE - 0.1)
+
+
+def test_the_band_refuses_inserts_over_their_share():
+    with pytest.raises(NewsKitError, match="at most 15%"):
+        news_template.band(
+            cv := canvas(), cv.comp, ticker=TICKER, lowers=(), end=12.0, measure=measure, inserts=SPANS
+        )  # fmt: skip
+
+
+def test_overlapping_inserts_are_refused():
+    with pytest.raises(NewsKitError, match="overlap"):
+        _cutaway(spans=((2.0, 3.6), (3.5, 5.4), (6.6, 7.8)))
+
+
+def test_each_insert_cuts_back_within_one_and_a_half_seconds_of_its_last_message():
     with pytest.raises(NewsKitError, match="cut back"):
-        _cutaway(CHAT[:2], 2.0, 4.4)
+        _cutaway(CHAT[:2], ((1.0, 2.1), (2.5, 4.2)))
 
 
-def test_a_wait_the_typing_dots_cannot_bridge_is_refused():
-    late = (CHAT[0], news_kit.Bubble("6:09", "Booked!", out=False, at=5.4))
-    with pytest.raises(NewsKitError, match="typing"):
-        _cutaway(late, 2.0, 6.4)
+def test_the_last_message_of_each_insert_stays_up_long_enough_to_be_read():
+    with pytest.raises(NewsKitError, match="read"):
+        _cutaway(spans=((2.0, 3.6), (4.2, 4.4 + craft.MIN_DISPLAY - 0.1), (6.6, 7.8)))
+    _cutaway(spans=((2.0, 3.6), (4.2, 4.4 + craft.MIN_DISPLAY + 0.01), (6.6, 7.8)))
+
+
+def test_both_signature_marks_are_on_every_inserts_chrome():
+    cv, _ = _cutaway()
+    for name, g in _inserts(cv).items():
+        ids = [str(n.get("id", "")) for n in g.iter("group")]
+        assert any(i.startswith("sig-cactus") for i in ids), name
+        assert any(i.startswith("sig-code") for i in ids), name
+
+
+def test_both_signature_marks_are_seen_on_every_insert_frame(scene_render, tmp_path):
+    from support.gloss import font
+
+    cv, _ = _cutaway()
+    (tmp_path / "font.ttf").write_bytes(font())
+    cv.assets.add_font(id="barlow-condensed", src="font.ttf", family="DejaVu Sans", weight="700")
+    document = cv.scene.to_bytes()
+    scene = tmp_path / "phone.scene.xml"
+    scene.write_bytes(document)
+    times = [t for t in frame_gates.sample_times(8.0, 0.2, fps=30) if any(a <= t < b for a, b in SPANS)]
+    shown = frame_gates.signature_shown(framegraph.evaluate(scene_render, scene, times), framegraph.drawings(document))
+    assert shown.frames == len(times) and shown.both == len(times), shown
+
+
+def test_an_unsigned_reels_phone_draws_its_plain_picture():
+    cv, _ = _cutaway(signed=False)
+    root = ET.fromstring(cv.scene.to_bytes())
+    assert not [g for g in root.iter("group") if str(g.get("id", "")).startswith("sig-")]
 
 
 def test_the_cutaways_words_stay_inside_the_safe_area_at_its_largest():
@@ -486,6 +581,17 @@ def test_the_cutaway_cuts_back_to_gus():
     news_template.reaction(shots, 7.6)
     with pytest.raises(NewsKitError, match="reaction"):
         news_template.reaction(shots, 9.0)
+
+
+def test_between_inserts_the_cut_back_is_to_either_anchor():
+    beats = _beats((0.0, "vera", "card"), (2.0, "phone", ""), (3.6, "vera", ""), (4.2, "phone", ""), (5.4, "gus", ""))
+    acts = (Act(READ, Pose()), Act(Pose(), PHONE), Act(READ, PHONE), Act(Pose(), PHONE), Act(Pose(), PHONE))
+    shots = news_template.seen(beats, acts, 8.0)
+    news_template.reaction(shots, 3.6, ("gus", "vera"))
+    with pytest.raises(NewsKitError, match="Gus's reaction"):
+        news_template.reaction(shots, 3.6)
+    with pytest.raises(NewsKitError, match="Gus or Vera's reaction"):
+        news_template.reaction(shots, 2.0, ("gus", "vera"))
 
 
 # -- Gus's raised hold (arc4d3, 4 Nov) --------------------------------------------------------------------------------
@@ -615,12 +721,6 @@ def test_the_stage_leans_the_anchor_and_brings_the_hands_up():
     assert all(any(a.get("property") == "skewX" for a in g.findall("animate")) for g in lean)
     gestured = news_template.gestured(((0.0, READ),), news_template.body("vera", SAID, 12.0), 0.0, 12.0)
     assert [pose.arms for _, pose in gestured].count("up") == 1  # Vera's second line, hands up and down again
-
-
-def test_the_last_message_stays_up_long_enough_to_be_read():
-    with pytest.raises(NewsKitError, match="read"):
-        _cutaway(CHAT, 2.0, 6.8 + craft.MIN_DISPLAY - 0.1)
-    _cutaway(CHAT, 2.0, 6.8 + craft.MIN_DISPLAY + 0.01)
 
 
 @pytest.mark.parametrize("shot", ["vera", "gus", "desk"])

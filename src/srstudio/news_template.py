@@ -24,9 +24,10 @@ the same anchors, rig and set:
 * **The PARODY tag only on fiction**: :func:`band` refuses it on a story with a source.
 * **Inserts keep moving**: :func:`insert` pushes in slowly across its whole span, so a full-frame insert never holds
   a frame still.
-* **Gus's phone is a cutaway** (:func:`phone_insert`): its screen fills the frame's width over a backdrop that hides
-  the shot, the chat fills the screen with a message landing at least every :data:`STILL_MOST` seconds, and the reel
-  cuts back to Gus's reaction (:func:`reaction`) within that of the last one.
+* **Gus's phone is a run of short cutaways** (:func:`phone_insert`): its screen fills the whole frame over a backdrop
+  that hides the shot, the signature's cactus and code on its chrome; each cutaway lands a message and the chat builds
+  across them, a face's reaction (:func:`reaction`) between each, Gus's after the last. No flat insert stays up over
+  :data:`INSERT_MOST` and all of them take at most :data:`INSERT_SHARE` of the reel (:func:`flat_inserts`).
 * **Gus holds his phone up** in his close shot (:data:`GRIP`), clear of the band and under his mouth, his fists
   under it.
 * **The body moves on every line** (:func:`body`): a lean toward the other anchor, both hands up from the desk beside
@@ -44,7 +45,7 @@ from typing import Any
 from shapely.geometry import Polygon, box
 from shapely.ops import unary_union
 
-from . import craft, head_motion, look, news_arms, news_head, news_inked, news_kit, parts
+from . import craft, head_motion, look, news_arms, news_head, news_inked, news_kit, parts, signature
 from .brush import Point
 from .canvas import Canvas
 from .head_motion import FACE_UP, Facing, HeadPlan, HeadStyle
@@ -112,6 +113,9 @@ __all__ = [
     "hands_line",
     "held_phone",
     "insert",
+    "INSERT_MOST",
+    "INSERT_SHARE",
+    "flat_inserts",
     "insert_reach",
     "mouth_low",
     "no_desk",
@@ -180,20 +184,28 @@ _HANDSET = (
 _HANDSET_MID = ((_HANDSET[0] + _HANDSET[2]) / 2, (_HANDSET[1] + _HANDSET[3]) / 2)
 
 # -- the phone cutaway -------------------------------------------------------------------------------------------------
-CUT_TOP = round(CAPTION_FOOT + 12.0)  # the handset's top edge, just under two lines of caption
-SCREEN_TOP = CUT_TOP + 22.0
-HEADER_H = 112.0  # the chat's name
-CHAT_TOP = SCREEN_TOP + HEADER_H + 22.0  # where the first message can go
+INSERT_MOST = 2.0  # seconds a flat insert may stay up before the reel cuts back to a face (C2)
+INSERT_SHARE = 0.15  # the most of a reel's running time its flat inserts may take together (C2)
+SCREEN_TOP, SCREEN_FOOT = -10.0, FRAME_H + 10.0  # the screen fills the frame's height: no empty band over or under it
+STATUS_FOOT = _SAFE.y0  # the phone's status bar, over the safe area: the signature code is its carrier name
+CUT_TOP = round(CAPTION_FOOT + 12.0)  # the chat's name, just under two lines of caption
+HEADER_H = 112.0
+CHAT_TOP = CUT_TOP + HEADER_H + 22.0  # where the first message can go
 CHAT_FOOT = BAND_FOOT - 18.0  # where the last one lands: the band is down while the phone is up
-SCREEN_FOOT = BAND_FOOT + 30.0
+SCREEN = "#f7f1ff"  # the lit screen
+KEY_ROWS = ((10, 0.0), (9, 46.0), (7, 140.0), (1, 260.0))  # the keyboard's keys per row and the row's inset
+KEY_H, KEY_GAP, KEY_EDGE = 68.0, 14.0, 16.0
+COMPOSER = (BAND_FOOT + 22.0, 92.0)  # the message field's top and height, under the safe area
 CUT_AT = (500.0, (CUT_TOP + BAND_FOOT) / 2)  # the push's middle: the safe column's
 CUT_FROM, CUT_TO = 1.0, 1.03  # the cutaway's slow push
 CHAT_LEFT = CUT_AT[0] - (CUT_AT[0] - _SAFE.x0) / CUT_TO + 2.0  # the safe column at the push's largest
 CHAT_RIGHT = CUT_AT[0] + (_SAFE.x1 - CUT_AT[0]) / CUT_TO - 2.0
-BUBBLE_MOST, BUBBLE_LEAST, BUBBLE_LEADING = 66.0, 40.0, 1.14
+BUBBLE_MOST, BUBBLE_LEAST, BUBBLE_LEADING = 78.0, 40.0, 1.14
 BUBBLE_PAD = (28.0, 20.0)  # a message's words inside its bubble, across and down
 BUBBLE_INSET = 80.0  # how far a bubble stops short of the other side, so the two sides read
-GAP_LEAST, GAP_MOST = 20.0, 72.0  # between two messages
+GAP_LEAST, GAP_MOST = 20.0, 64.0  # between two messages
+CODE_H = 30.0  # the signature code's glyph height in the status bar
+AVATAR_CACTUS = 0.42  # the signature cactus as the chat's picture, 64 px tall
 TAIL = 14.0
 
 Span = tuple[float, float]
@@ -853,13 +865,15 @@ def band(
     ``lowers`` puts its kicker on the label row and its line under it; whenever none is up, ``line``, the story's own,
     stands in that row, so the band never shows an empty one. A lower or the line that an insert or another lower leaves
     up for less than :data:`srstudio.craft.MIN_DISPLAY` is refused. The ticker runs under them from the end of the
-    large card, its tab carrying the show's name. Nothing is drawn while an insert is up. Returns the band's group."""
+    large card, its tab carrying the show's name. Nothing is drawn while an insert is up, and the inserts must pass
+    :func:`flat_inserts` over ``end``. Returns the band's group."""
     if parody and source is not None:
         raise NewsKitError("no PARODY tag on a real story: the tag is for a story the show made up")
     if not ticker or not all(isinstance(item, str) and item.strip() for item in ticker):
         raise NewsKitError("a ticker needs at least one item of words")
     if not (math.isfinite(end) and end > 0):
         raise NewsKitError(f"the band needs an end after 0, got {end!r}")
+    flat_inserts(inserts, end)
     left = news_kit.TEXT_LEFT
     right = news_inked._right(news_inked.safe_box(cv, safe))
     plan = card if card is not None else CardPlan(None, 0.0)
@@ -1009,37 +1023,63 @@ class _Row:
     h: float
 
 
-def _landings(bubbles: Sequence[news_kit.Bubble], start: float, end: float) -> list[tuple[float, int]]:
-    """When the typing dots come up, each with the message it announces: wherever two landings, the screen's own
-    first among them, are more than :data:`STILL_MOST` apart. The last message must leave the cut back to Gus's
-    reaction no further off than that, and no nearer than the engine's least time for words on screen."""
-    arrivals = [max(b.at, start) for b in bubbles]
+def flat_inserts(spans: Sequence[Span], runtime: float) -> None:
+    """Refuse flat inserts (``spans``) that hold the screen too long (C2): any one up longer than
+    :data:`INSERT_MOST`, or all of them more than :data:`INSERT_SHARE` of the reel's ``runtime``."""
+    for a, b in spans:
+        if b - a > INSERT_MOST + 1e-9:
+            raise NewsKitError(
+                f"the insert {a:.2f}-{b:.2f} s is up {b - a:.2f} s, longer than {INSERT_MOST} s: split it, cutting "
+                "back to a face between the parts"
+            )
+    total = sum(b - a for a, b in spans)
+    if total > INSERT_SHARE * runtime + 1e-9:
+        raise NewsKitError(
+            f"the inserts take {total:.2f} s of {runtime:.2f} s, {total / runtime:.0%}: at most {INSERT_SHARE:.0%}"
+        )
+
+
+def _visits(spans: Sequence[Span]) -> list[Span]:
+    out = sorted(spans)
+    if not out:
+        raise NewsKitError("the phone needs a span to be up")
+    for a, b in out:
+        news_kit._span(a, b, "the phone")
+    for (a, b), (c, _) in zip(out, out[1:], strict=False):
+        if c < b:
+            raise NewsKitError(f"the phone's spans {a}-{b} and {c} overlap: cut back to a face between them")
+    flat_inserts(out, math.inf)
+    return out
+
+
+def _landings(bubbles: Sequence[news_kit.Bubble], spans: Sequence[Span]) -> None:
+    """Refuse a chat that does not build across ``spans``: every message after the first span's start lands while
+    the phone is up, every later span shows one more, and each span cuts back to a face no sooner than
+    :data:`srstudio.craft.MIN_DISPLAY` and no later than :data:`STILL_MOST` after the last message it shows lands.
+    Inside a span of :data:`INSERT_MOST` the screen so never waits :data:`STILL_MOST` for a message."""
+    arrivals = [max(b.at, spans[0][0]) for b in bubbles]
     if any(b < a for a, b in zip(arrivals, arrivals[1:], strict=False)):
         raise NewsKitError(f"the messages must arrive in the order they stack, got {arrivals}")
-    if arrivals[-1] >= end:
-        raise NewsKitError(f"message {bubbles[-1].text!r} arrives after the phone has gone")
-    if end - arrivals[-1] < craft.MIN_DISPLAY:
-        raise NewsKitError(
-            f"message {bubbles[-1].text!r} is up {end - arrivals[-1]:.3f} s: too short to read, the engine's least is "
-            f"{craft.MIN_DISPLAY} s"
-        )
-    if end - arrivals[-1] > STILL_MOST + 1e-9:
-        raise NewsKitError(
-            f"cut back to Gus's reaction within {STILL_MOST} s of the last message: it lands at {arrivals[-1]} and "
-            f"the phone stays up to {end}"
-        )
-    dots: list[tuple[float, int]] = []
-    before = start
     for k, at in enumerate(arrivals):
-        wait = at - before
-        if wait > STILL_MOST + 1e-9:
-            if wait / 2 > STILL_MOST:
-                raise NewsKitError(
-                    f"{wait:.2f} s before {bubbles[k].text!r} is more than one round of typing dots can fill"
-                )
-            dots.append((round(before + wait / 2, 6), k))
-        before = at
-    return dots
+        if not any(a <= at < b for a, b in spans):
+            raise NewsKitError(
+                f"message {bubbles[k].text!r} lands at {at} s, while the phone is away: land it inside an insert"
+            )
+    for n, (start, end) in enumerate(spans):
+        landing = [at for at in arrivals if start <= at < end]
+        if n and not landing:
+            raise NewsKitError(f"the insert {start}-{end} s shows no new message: the chat builds across its inserts")
+        last = landing[-1] if landing else start
+        if end - last < craft.MIN_DISPLAY:
+            raise NewsKitError(
+                f"the last message the insert {start}-{end} s shows is up {end - last:.3f} s: too short to read, the "
+                f"engine's least is {craft.MIN_DISPLAY} s"
+            )
+        if end - last > STILL_MOST + 1e-9:
+            raise NewsKitError(
+                f"cut back to a reaction within {STILL_MOST} s of the last message: it lands at {last} and the phone "
+                f"stays up to {end}"
+            )
 
 
 def _rows(bubbles: Sequence[news_kit.Bubble], start: float, measure: Measure) -> tuple[list[_Row], float]:
@@ -1069,10 +1109,9 @@ def _rows(bubbles: Sequence[news_kit.Bubble], start: float, measure: Measure) ->
     return rows, size
 
 
-def _bubble(cv: Canvas, parent, row: _Row, w: float | None = None) -> None:
-    """A message's bubble with its tail on the sender's side, at ``row``'s place; ``w`` a width of its own."""
-    wide = row.w if w is None else w
-    x = row.x if w is None or not row.bubble.out else row.x + row.w - w
+def _bubble(cv: Canvas, parent, row: _Row) -> None:
+    """A message's bubble with its tail on the sender's side, at ``row``'s place."""
+    wide, x = row.w, row.x
     fill = MINT if row.bubble.out else news_kit.BUTTER
     foot = row.y + row.h
     tip = x + wide + TAIL if row.bubble.out else x - TAIL
@@ -1081,99 +1120,121 @@ def _bubble(cv: Canvas, parent, row: _Row, w: float | None = None) -> None:
     cv.rect(parent, x, row.y, wide, row.h, fill, radius=30.0)
 
 
+def _chrome(cv: Canvas, push, chat: str) -> None:
+    """The handset over the whole frame: its case, the screen, the status bar with the signature code as its
+    carrier's name, the chat's head with the signature cactus as its picture, the message field and the keyboard."""
+    case = cv.grad("news2-cut-case", [(0, "#4b3a78"), (1, "#1a0e36")], (0, 0, 1, 1))
+    cv.rect(push, -60, SCREEN_TOP - 40, FRAME_W + 120, SCREEN_FOOT - SCREEN_TOP + 80, case, PLUM_DEEP, 5.0, radius=64.0)
+    cv.rect(push, -30, SCREEN_TOP, FRAME_W + 60, SCREEN_FOOT - SCREEN_TOP, SCREEN, radius=44.0)
+    # the status bar: the notch, the signal, the battery and the code
+    cv.rect(push, -30, SCREEN_TOP, FRAME_W + 60, STATUS_FOOT - SCREEN_TOP, "#efe6ff")
+    cv.rect(push, CUT_AT[0] - 90, 26, 180, 40, PLUM_DEEP, radius=20.0)
+    for k, h in enumerate((14.0, 22.0, 30.0, 38.0)):
+        cv.rect(push, CHAT_LEFT + 14 * k, 150 - h, 9, h, PLUM_DEEP, radius=3.0)
+    cv.rect(push, CHAT_RIGHT - 70, 118, 62, 32, cv.clear, PLUM_DEEP, 4.0, radius=8.0)
+    cv.rect(push, CHAT_RIGHT - 64, 124, 40, 20, MINT, radius=4.0)
+    signature.code(cv, push, CHAT_RIGHT - 96, 120, CODE_H, color=PLUM_DEEP, align="end")
+    # the chat's head, under the captions' foot: its picture and its name
+    head = cv.grad("news2-cut-chat", [(0, MINT), (1, "#2cc9a3")], (0, 0, 0, 1))
+    cv.rect(push, -30, STATUS_FOOT, FRAME_W + 60, CUT_TOP + HEADER_H - STATUS_FOOT, head)
+    news_inked._oval(cv, push, CHAT_LEFT + 40, CUT_TOP + 56, 44, 44, "#f7f1ff")
+    drawn = signature.cactus(cv, push, CHAT_LEFT + 40, CUT_TOP + 90, AVATAR_CACTUS)
+    if drawn is None:  # an unsigned reel: the plain picture
+        news_inked._oval(cv, push, CHAT_LEFT + 40, CUT_TOP + 46, 13, 13, PLUM)
+        news_inked._oval(cv, push, CHAT_LEFT + 40, CUT_TOP + 74, 22, 14, PLUM)
+    news_kit._text(
+        cv, push, check_copy(chat), CHAT_LEFT + 100, CUT_TOP + 22, CHAT_RIGHT - CHAT_LEFT - 200, 66, 50,
+        PLUM_DEEP, "center",
+    )  # fmt: skip
+    # the message field and the keyboard, under the safe area: shapes only, no words outside it
+    top, tall = COMPOSER
+    cv.rect(push, -30, top - 16, FRAME_W + 60, SCREEN_FOOT - top + 16, "#efe6ff")
+    cv.rect(push, CHAT_LEFT + 80, top, CHAT_RIGHT - CHAT_LEFT - 160, tall, "#ffffff", "#cfc2ea", 3.0, radius=tall / 2)
+    news_inked._oval(cv, push, CHAT_LEFT + 30, top + tall / 2, 30, 30, MINT)
+    news_inked._oval(cv, push, CHAT_RIGHT - 30, top + tall / 2, 30, 30, MINT)
+    board = top + tall + 20.0
+    cv.rect(push, -30, board, FRAME_W + 60, SCREEN_FOOT - board, "#e2d6f7")
+    for row, (keys, inset) in enumerate(KEY_ROWS):
+        y = board + KEY_GAP + row * (KEY_H + KEY_GAP)
+        w = (FRAME_W - 2 * (KEY_EDGE + inset) - KEY_GAP * (keys - 1)) / keys
+        for k in range(keys):
+            x = KEY_EDGE + inset + k * (w + KEY_GAP)
+            cv.rect(push, x, y, w, KEY_H, "#ffffff", radius=12.0)
+
+
 def phone_insert(
     cv: Canvas,
     parent,
     chat: str,
     bubbles: Sequence[news_kit.Bubble],
-    start: float,
-    end: float,
+    spans: Sequence[Span],
     measure: Measure,
     id: str = "news-phone",
-):
-    """Gus's phone as a cutaway from ``start`` to ``end``: an opaque backdrop over the shot, so no face is under it and
-    nobody holds it, and the handset's screen the frame's whole width under two lines of caption, ``chat`` at its
-    head. The messages fill the screen down to :data:`CHAT_FOOT`, each sliding in from its second; wherever the
-    screen would wait longer than :data:`STILL_MOST` for the next, the typing dots come up halfway on its side. The
-    reel cuts back to Gus's reaction (:func:`reaction`) within :data:`STILL_MOST` of the last message; the cutaway
-    refuses a longer hold. It pushes in from :data:`CUT_FROM` to :data:`CUT_TO` about :data:`CUT_AT`, keyed at least
-    every :data:`STILL_MOST`. Returns the pushing group."""
-    news_kit._span(start, end, "the phone")
+) -> list[Any]:
+    """Gus's phone as cutaways, one for each of ``spans``: an opaque backdrop over the shot, so no face is under it
+    and nobody holds it, and the handset filling the frame, the signature on its chrome (:func:`_chrome`), ``chat``
+    at its head. The reel cuts back to a face between the spans and the chat builds across them: each span shows
+    every message landed before it and slides in its own, and the last span ends on the whole chat, filled down to
+    :data:`CHAT_FOOT`. No span stays up longer than :data:`INSERT_MOST` (:func:`flat_inserts`), and each cuts back
+    within :data:`STILL_MOST` of its last message (:func:`_landings`); the spans' share of the reel is
+    :func:`band`'s to check. Each span pushes in from :data:`CUT_FROM` to :data:`CUT_TO` about :data:`CUT_AT`, keyed
+    at least every :data:`STILL_MOST`. Returns each span's pushing group."""
     if not bubbles:
         raise NewsKitError("the phone needs a message to show")
-    dots = _landings(bubbles, start, end)
-    rows, size = _rows(bubbles, start, measure)
-    g = cv.group(parent, id, start=start, end=end)
-    cv.rect(g, -20, -20, FRAME_W + 40, FRAME_H + 40, PLUM_DEEP)
-    push = cv.group(
-        g,
-        f"{id}-push",
-        x=CUT_AT[0],
-        y=CUT_AT[1],
-        anchorX=CUT_AT[0],
-        anchorY=CUT_AT[1],
-        scaleX=CUT_FROM,
-        scaleY=CUT_FROM,
-    )
-    steps = max(1, math.ceil((end - start) / STILL_MOST))
-    keys = [
-        (round(start + (end - start) * k / steps, 6), round(CUT_FROM + (CUT_TO - CUT_FROM) * k / steps, 6))
-        for k in range(steps + 1)
-    ]
-    for prop in ("scaleX", "scaleY"):
-        cv.keys(push, prop, keys, hold=False, kind="sine-in-out", local=False)
-    case = cv.grad("news2-cut-case", [(0, "#4b3a78"), (1, "#1a0e36")], (0, 0, 1, 1))
-    cv.rect(push, -60, CUT_TOP, FRAME_W + 120, SCREEN_FOOT + 24 - CUT_TOP, case, PLUM_DEEP, 5.0, radius=64.0)
-    cv.rect(push, -30, SCREEN_TOP, FRAME_W + 60, SCREEN_FOOT - SCREEN_TOP, "#f7f1ff", radius=44.0)
-    head = cv.grad("news2-cut-chat", [(0, MINT), (1, "#2cc9a3")], (0, 0, 0, 1))
-    cv.rect(push, -30, SCREEN_TOP, FRAME_W + 60, HEADER_H, head, radius=44.0)
-    cv.rect(push, -30, SCREEN_TOP + HEADER_H - 48.0, FRAME_W + 60, 48.0, head)
-    cv.rect(push, CUT_AT[0] - 70, SCREEN_TOP + 10, 140, 26, PLUM_DEEP, radius=13.0)
-    news_inked._oval(cv, push, CHAT_LEFT + 34, SCREEN_TOP + 66, 30, 30, PLUM)
-    news_inked._oval(cv, push, CHAT_LEFT + 34, SCREEN_TOP + 57, 11, 11, MINT)
-    news_inked._oval(cv, push, CHAT_LEFT + 34, SCREEN_TOP + 81, 17, 11, MINT)
-    news_kit._text(
-        cv, push, check_copy(chat), CHAT_LEFT + 80, SCREEN_TOP + 38, CHAT_RIGHT - CHAT_LEFT - 160, 66, 50,
-        PLUM_DEEP, "center",
-    )  # fmt: skip
-    for k, row in enumerate(rows):
-        box = cv.group(push, f"{id}-{k}", start=row.at, end=end)
-        slide = cv.group(box, f"{id}-{k}-in")
-        if row.at > start:
-            cv.keys(slide, "y", [(row.at, 22.0), (row.at + 0.2, 0.0)], hold=False, kind="sine-in-out", local=False)
-        _bubble(cv, slide, row)
-        news_kit._text(
-            cv,
-            slide,
-            "\n".join(row.lines),
-            row.x + BUBBLE_PAD[0],
-            row.y + BUBBLE_PAD[1],
-            row.w - 2 * BUBBLE_PAD[0],
-            row.h - 2 * BUBBLE_PAD[1],
-            size,
-            PLUM_DEEP,
+    visits = _visits(spans)
+    _landings(bubbles, visits)
+    rows, size = _rows(bubbles, visits[0][0], measure)
+    pushes = []
+    for n, (start, end) in enumerate(visits):
+        own = id if len(visits) == 1 else f"{id}-{n + 1}"
+        g = cv.group(parent, own, start=start, end=end)
+        cv.rect(g, -20, -20, FRAME_W + 40, FRAME_H + 40, PLUM_DEEP)
+        push = cv.group(
+            g,
+            f"{own}-push",
+            x=CUT_AT[0],
+            y=CUT_AT[1],
+            anchorX=CUT_AT[0],
+            anchorY=CUT_AT[1],
+            scaleX=CUT_FROM,
+            scaleY=CUT_FROM,
         )
-    for at, k in dots:
-        row = rows[k]
-        typing = cv.group(push, f"{id}-typing-{k}", start=at, end=rows[k].at)
-        _bubble(cv, typing, replace(row, h=min(row.h, 92.0)), 168.0)
-        left = row.x + row.w - 168.0 if row.bubble.out else row.x
-        for d in range(3):
-            dot = cv.group(typing, f"{id}-typing-{k}-{d}")
-            bob = [
-                (round(at + 0.12 * d + 0.18 * s, 6), -8.0 if s % 2 else 0.0)
-                for s in range(int((row.at - at - 0.12 * d) / 0.18) + 1)
-            ]
-            if len(bob) > 1:
-                cv.keys(dot, "y", bob, hold=False, kind="sine-in-out", local=False)
-            news_inked._oval(cv, dot, left + 48 + 36 * d, row.y + min(row.h, 92.0) / 2, 12, 12, PLUM)
-    return push
+        steps = max(1, math.ceil((end - start) / STILL_MOST))
+        keys = [
+            (round(start + (end - start) * k / steps, 6), round(CUT_FROM + (CUT_TO - CUT_FROM) * k / steps, 6))
+            for k in range(steps + 1)
+        ]
+        for prop in ("scaleX", "scaleY"):
+            cv.keys(push, prop, keys, hold=False, kind="sine-in-out", local=False)
+        _chrome(cv, push, chat)
+        for k, row in enumerate(rows):
+            if row.at >= end:
+                break
+            box = cv.group(push, f"{own}-m{k}", start=max(row.at, start), end=end)
+            slide = cv.group(box, f"{own}-m{k}-in")
+            if row.at > start:
+                cv.keys(slide, "y", [(row.at, 22.0), (row.at + 0.2, 0.0)], hold=False, kind="sine-in-out", local=False)
+            _bubble(cv, slide, row)
+            news_kit._text(
+                cv,
+                slide,
+                "\n".join(row.lines),
+                row.x + BUBBLE_PAD[0],
+                row.y + BUBBLE_PAD[1],
+                row.w - 2 * BUBBLE_PAD[0],
+                row.h - 2 * BUBBLE_PAD[1],
+                size,
+                PLUM_DEEP,
+            )
+        pushes.append(push)
+    return pushes
 
 
-def reaction(shots: Sequence[Seen], end: float) -> None:
-    """Refuse a phone cutaway ending at ``end`` unless the reel cuts back to Gus's reaction there: the shot that runs
-    from ``end`` on is his close shot."""
+def reaction(shots: Sequence[Seen], end: float, who: Sequence[str] = ("gus",)) -> None:
+    """Refuse a phone cutaway ending at ``end`` unless the reel cuts back to a reaction there: the shot that runs from
+    ``end`` on is the close shot of one of ``who`` (Gus's own, after the last span; either anchor's between two)."""
     after = [s for s in shots if s.start <= end + 1e-6 < s.end]
-    if not after or after[0].shot != "gus":
+    if not after or after[0].shot not in who:
         shot = after[0].shot if after else "nothing"
-        raise NewsKitError(f"the phone cuts back to Gus's reaction, but the shot at {end} s is {shot!r}")
+        names = " or ".join(w.capitalize() for w in who) + "'s" if len(who) > 1 else f"{who[0].capitalize()}'s"
+        raise NewsKitError(f"the phone cuts back to {names} reaction, but the shot at {end} s is {shot!r}")
