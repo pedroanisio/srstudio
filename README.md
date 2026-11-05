@@ -364,3 +364,5 @@ Every `render` and `encode` srstudio starts takes one machine-wide GPU lock, `/r
 - [Authoring task index](docs/authoring-reference.md) — task guides for discovery, acting, timing, styles and delivery; links to episode history.
 
 The project is licensed under MIT.
+
+`srstudio proof VIDEO --project DIR [--json]` adds the C4/C7 craft bar: master loudness, cached first-word timing and per-line pace, stress measured on the master mix, declared music continuity, and cropped freezedetect; any failed bar exits 1. Use the matching recorded project (see [ADR 0239](docs/decisions/0239-proof-project-craft-bar.md)).
