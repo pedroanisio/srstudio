@@ -256,7 +256,7 @@ RELEASE = Release("a-new-reel", post, parts={"toon-fox": 2, "toon-bear": 1, "too
 no pins, a video with no such record and a build that drew anything its pins do not say, and `check` reports the
 first and the last. A proposed version is never
 the default and cannot be pinned. An approved drawing is never revised in place: a test redraws every one and fails
-if its digest moves, so changing a look means adding a version. Only the operator approves a version. Only Toon's
+if its digest moves, so changing a look means adding a version. Only arc4d3 approves a character version (stmt videos.op.looks.001). Only Toon's
 characters read pins so far, through `toon_sketch.Staging.versions`, and the table refuses a second version of
 anything else by name until its kind and style are in `parts.ROUTED`. A head rig is a second drawing, recorded on its
 version with the same fields and rules, so changing an approved rig means adding a version of the character.
