@@ -7,6 +7,7 @@ places them is :mod:`srstudio.smallprint`.
 from __future__ import annotations
 
 import math
+import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -22,6 +23,7 @@ __all__ = [
     "INK",
     "LEFT",
     "PAPER",
+    "REPEATS",
     "RIGHT",
     "RULED",
     "SHADE",
@@ -31,10 +33,11 @@ __all__ = [
     "Stamp",
     "card",
     "label",
-    "stamp",
+    "repeats",
     "source_chip",
-    "stamp_reach",
+    "stamp",
     "stamp_layout",
+    "stamp_reach",
     "wrap",
 ]
 
@@ -64,6 +67,35 @@ class Stamp:
 
 
 Measure = Callable[[str, float], float]
+
+REPEATS = 0.5  # the most of a stamp's own words its caption may already say: more, and it is read twice
+_SMALL = frozenset(
+    "a an and are as at be been but by can could did do does even for from had has have he her his how i in into is it"
+    " its just not of on only or our out over said say says she so than that the their them then there these they"
+    " this those to up very was we were what when which who why will with would you".split()
+)
+
+
+def _stem(word: str) -> str:
+    for end in ("ing", "ed", "es", "s"):
+        if word.endswith(end) and len(word) - len(end) >= 3:
+            return word[: -len(end)]
+    return word
+
+
+def _words(text: str) -> list[str]:
+    return [_stem(w) for w in re.findall(r"[a-z0-9]+", text.lower()) if w not in _SMALL]
+
+
+def repeats(text: str, line: str) -> float:
+    """The share of a stamp's ``text`` that its caption ``line`` already says: its own words (not the small ones that
+    join them), each cut to its stem, that the line also has. A stamp over :data:`REPEATS` is a second read of one
+    idea; it should carry what the line does not say. :class:`ScriptError` for a stamp with no word of its own."""
+    own = _words(text)
+    if not own:
+        raise ScriptError(f"the stamp {text!r} has no word of its own")
+    said = set(_words(line))
+    return sum(w in said for w in own) / len(own)
 
 
 def label(cv, parent, text: str, x, y, w, h, size, colour, align: Any = "start") -> None:

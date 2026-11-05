@@ -142,6 +142,28 @@ def test_the_timer_hand_points_at_the_fed_hour_at_the_top_and_goes_round_once_a_
     assert six[0] > cx and abs(six[1] - cy) < abs(six[0] - cx)
 
 
+@pytest.mark.parametrize("hour", [h / 4 for h in range(96)])
+def test_the_hand_never_covers_an_hour_printed_on_the_face(hour):
+    """The hours are printed in a ring outside the hand's reach, so no hour is under it at any time of day."""
+    cx, cy, _ = lab.dial_centre()
+    hand = _meshes(lambda m: lab.parts(m, lab.Rig(hour=hour), None))["dialhand"]
+    reach = float(np.max(np.hypot(hand[:, 0] - cx, hand[:, 1] - cy)))
+    assert reach < lab.numbers_inside() * lab.DIAL_R
+
+
+def test_the_hours_and_the_fed_wedge_sit_in_rings_of_their_own():
+    mid = 256
+    for line in lab.dial_print().lines:
+        r = math.hypot(line.x - mid, line.y - mid) / mid
+        assert r == pytest.approx(lab.NUMBER_AT)
+        assert (r * mid - lab.GLYPH * line.size) / mid >= lab.numbers_inside() - 1e-9
+    face = _meshes(lambda m: lab.bench(m, 1.0))
+    cx, cy, _ = lab.dial_centre()
+    wedge = face["fedhour"]
+    outside = (lab.NUMBER_AT + lab.GLYPH * lab.NUMBER_SIZE / 256) * lab.DIAL_R  # the printed hours' outer reach
+    assert np.min(np.hypot(wedge[:, 0] - cx, wedge[:, 1] - cy)) >= outside
+
+
 def test_glass_is_only_thin_panes_facing_the_lens_and_the_water_only_its_top():
     """A transmissive surface with the plate's clear background behind it renders opaque: no glass box, no water
     volume, and the tank closed at the sides and back."""
