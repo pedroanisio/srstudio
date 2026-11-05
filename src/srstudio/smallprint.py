@@ -59,6 +59,7 @@ from .smallprint_kit import (
     INK,
     LEFT,
     PAPER,
+    REPEATS,
     RIGHT,
     RULED,
     SHADE,
@@ -68,6 +69,7 @@ from .smallprint_kit import (
     Stamp,
     card,
     label,
+    repeats,
     stamp,
 )
 from .social import InstagramPost
@@ -246,6 +248,7 @@ class Show:
             raise ScriptError(f"each explainer shot has a panel name of its own, got {named}")
         if set(named) - {beat.panel for beat in self.beats}:
             raise ScriptError(f"explainer shots no beat shows: {sorted(set(named) - {b.panel for b in self.beats})}")
+        self._check_stamps_say_more()
         for i, (beat, kept) in enumerate(zip(self.beats, self.kept, strict=True)):
             if beat.steps and beat.steps[-1][0] >= kept + (beat.hold or GAP) and i + 1 < len(self.beats):
                 raise ScriptError(f"{beat.id}: a step lands after its beat, at {beat.steps[-1][0]} s")
@@ -306,6 +309,26 @@ class Show:
                 off.append(f"{beat.id}: laid at {laid:.3f} s, starts at {start} s")
         if off:
             raise ScriptError("; ".join(off))
+
+    def _check_stamps_say_more(self) -> None:
+        """An explainer shot's stamp carries what its captions do not say: one whose own words the lines under it
+        already say, over :data:`~srstudio.smallprint_kit.REPEATS` of them, is two reads of one idea. The lines under
+        a stamp are its beat's and the next ones' on the same panel. Paper panels, as published, keep theirs."""
+        for i, beat in enumerate(self.beats):
+            if beat.stamp is None or beat.panel not in self.shots:
+                continue
+            under = [beat.line]
+            for after in self.beats[i + 1 :]:
+                if after.panel != beat.panel:
+                    break
+                under.append(after.line)
+            share = repeats(beat.stamp.text, " ".join(under))
+            if share > REPEATS:
+                raise ScriptError(
+                    f"{beat.id}: the stamp {beat.stamp.text!r} says its caption again ({share:.0%} of its words are"
+                    f" in the lines under it, over {REPEATS:.0%}): stamp what the line does not say, the measured"
+                    " result, or drop the stamp"
+                )
 
     def _check(self, beat: Beat) -> None:
         host_kit.check_copy(beat.line)

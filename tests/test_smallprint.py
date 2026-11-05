@@ -1111,3 +1111,35 @@ def test_the_cuttings_heap_reads_at_phone_size_beside_the_drill_and_under_its_la
     left, top, wide = float(layer.get("x")), float(layer.get("y")), float(text.get("width"))
     assert top + float(text.get("height")) <= peak - 10.0, "its label sits over the heap, not on it"
     assert left <= (x0 + x1) / 2 <= left + wide, "and names the heap it is over"
+
+
+# -- a stamp says what the caption does not ---------------------------------------------------------------------------
+@pytest.mark.parametrize(
+    ("text", "line", "share"),
+    [
+        ("THEY LEARNED THE FEEDING HOUR", "Food came one hour a day. They learned the hour.", 2 / 3),
+        ("WEEKS, EVEN MONTHS", "How long can they remember? A fish expert says weeks. Even months.", 1.0),
+        ("THE LAB TEST", "Goldfish were trained to press a lever.", 0.0),
+        ("THEY ANTICIPATED FEEDING TIME", "Food came one hour a day. They learned the hour.", 0.0),
+        ("TOP SPEED 25 MPH", "It is flat, so it tumbles. It tops out around 25 miles an hour.", 0.5),
+        ("LEARNS, LEARNING", "He learned.", 1.0),
+    ],
+)
+def test_a_stamp_s_share_of_words_the_caption_already_says(text, line, share):
+    assert kit.repeats(text, line) == pytest.approx(share)
+
+
+def test_a_stamp_of_no_word_of_its_own_is_refused():
+    with pytest.raises(ScriptError, match="no word of its own"):
+        kit.repeats("THE AND", "Anything at all.")
+
+
+def test_an_explainer_shot_s_stamp_that_says_its_caption_again_is_refused():
+    again = Stamp("TUMBLES, TOPS OUT AT 25", "Louis Bloomfield, Live Science, 2012")
+    with pytest.raises(ScriptError, match="says its caption again"):
+        _with_shot(beats=tuple(replace(b, stamp=again) if b.id == "why" else b for b in _with_shot().beats)).validate()
+    _with_shot().validate()  # "TOP SPEED 25 MPH" says half of it again: allowed
+
+
+def test_a_paper_panel_s_stamp_is_held_to_nothing_new():
+    with_beat(4, stamp=Stamp("BUSTED", "MythBusters, 2003")).validate()  # published shows keep their stamps
