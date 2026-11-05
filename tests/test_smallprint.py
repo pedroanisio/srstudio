@@ -13,36 +13,15 @@ from pathlib import Path
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import Canvas, host_kit, rafa_show, sketch, toon_sketch
+from srstudio import Canvas, host_kit, rafa_show, sketch, smallprint_lab, smallprint_scene, toon_sketch
 from srstudio import smallprint as sp
 from srstudio import smallprint_kit as kit
+from srstudio.plates import Camera
 from srstudio.sample import SYSTEM_FONTS
-from srstudio.smallprint import Beat, ScriptError, Show, Stamp
+from srstudio.smallprint import ScriptError, Show, Stamp
 from srstudio.social import InstagramPost
 from srstudio.thumbnail import Thumbnail, ThumbnailError
-
-SMILE, BATTERY, MELTDOWN = "public-smile", "social-battery", "internal-meltdown"
-TOWER = "smallprint-tower"
-FOUND = Stamp("TOP SPEED 25 MPH", "Louis Bloomfield, Live Science, 2012")
-BEATS = (
-    Beat("hook", "Can a penny from up there kill you?", SMILE, TOWER, "top"),
-    Beat("try", "Okay. One penny.", MELTDOWN, steps=((0.4, "fall-1"), (0.8, "fall-3"), (1.2, "landed")), hold=0.5),
-    Beat("no", "Nope. It would sting.", BATTERY, framing="close"),
-    Beat("why", "It is flat, so it tumbles. It tops out around 25 miles an hour.", BATTERY,
-         panel="penny-fall", stamp=FOUND),
-    Beat("busted", "MythBusters tried it in 2003. Busted.", BATTERY, panel="penny-fall",
-         stamp=Stamp("BUSTED", "MythBusters, 2003")),
-    Beat("check", "Please do not check.", BATTERY, TOWER, "landed", framing="tight", hold=0.6),
-    Beat("bolt", "What does hit that building? Lightning. About 23 times a year.", SMILE, panel="lightning",
-         stamp=Stamp("23 STRIKES A YEAR", "NASA Goddard, citing NOAA, 2017")),
-    Beat("end", "So up there, the penny is the safe one.", SMILE, TOWER, "top"),
-)  # fmt: skip
-KEPT = (2.4, 1.4, 1.5, 4.6, 2.2, 1.2, 4.0, 2.2)
-SHOW = Show(
-    "penny", 1, "A penny", "Can a penny dropped from the Empire State Building kill you?", "Rafa and a penny.",
-    "A clay man drops a penny off a model tower.", BEATS, KEPT, InstagramPost(title="Can a penny kill you?",
-    description="d"),
-)  # fmt: skip
+from support.smallprint import BEATS, FOUND, KEPT, SHOW, TOWER
 
 
 def with_beat(i: int, **changes) -> Show:
@@ -249,6 +228,22 @@ def test_the_shared_sounds_are_the_room_the_bed_a_page_and_a_stamp(tmp_path):
     assert [row["id"] for row in rows] == ["room", "bed", "page", "stamp"]
     assert next(row for row in rows if row["id"] == "bed")["role"] == "music"
     assert all((tmp_path / row["audio"]).exists() for row in rows)
+
+
+def test_a_show_without_the_bed_keeps_the_room_up_as_its_floor_and_no_music(tmp_path):
+    sk = SHOW.sketch
+    rows = sp.shared_sounds(replace(SHOW, bed=False), sk.beats, sk.end, tmp_path, 7)
+    assert [row["id"] for row in rows] == ["room", "page", "stamp"]
+    assert not any(row.get("role") == "music" for row in rows)
+    with_bed = sp.shared_sounds(SHOW, sk.beats, sk.end, tmp_path, 7)
+    assert rows[0]["gain_db"] == sp.ROOM_ALONE > with_bed[0]["gain_db"]
+
+
+def test_a_beat_s_speed_and_stressed_words_reach_its_line():
+    beats = (replace(SHOW.beats[0], speed=0.9, stress=(SHOW.beats[0].line.split()[0],)), *SHOW.beats[1:])
+    line = replace(SHOW, beats=beats).lines[0]
+    assert (line.speed, line.stress) == (0.9, (SHOW.beats[0].line.split()[0],))
+    assert (SHOW.lines[1].speed, SHOW.lines[1].stress) == (None, ())
 
 
 def test_the_sketch_matches_the_script():
@@ -895,6 +890,109 @@ def test_a_recording_that_is_not_one_is_refused(recorded):
         SHOW.check_recorded(recorded)
 
 
+# -- explainer shots in 3D on his worktop (ADR 0240) ------------------------------------------------------------------
+LENS = Camera((0.0, -300.0, -362.0), (0.0, -290.0, -205.0), 33.0, 4.0)
+
+
+def _tank(m) -> None:
+    m.box("feeder", (0.0, -290.0, -205.0), (70.0, 120.0, 10.0))
+
+
+def _pellet(m, pose: float) -> None:
+    m.ell("pellet", (pose, -290.0, -215.0), (3.0, 3.0, 3.0))
+
+
+def _shot(name: str = "test-tank", stamp_at: float | None = None) -> smallprint_scene.Shot:
+    return smallprint_scene.Shot(name, LENS, "A TEST", _tank, lambda t: round(math.sin(t * 3.0) * 12.0, 1), _pellet,
+                                 smallprint_lab.materials, smallprint_lab.finished, stamp_at=stamp_at)  # fmt: skip
+
+
+def _with_shot(stamp_at: float | None = None, **changes) -> Show:
+    return replace(with_beat(3, panel="test-tank"), scenes=(_shot(stamp_at=stamp_at),), **changes)
+
+
+def test_an_explainer_shot_takes_a_panel_s_place_and_its_stamp_lands_on_its_word():
+    sk = SHOW.sketch
+    plain = _with_shot()
+    plain.validate()
+    (name, first, last, held), *_ = plain.panel_runs(sk.beats, sk.end)
+    assert name == "test-tank" and [beat.id for beat, _ in held] == ["why"]
+    on_word = _with_shot(stamp_at=first + 0.5)
+    times = on_word.stamp_times(sk.beats, sk.end)
+    assert times[0] == pytest.approx(first + 0.5)
+    assert plain.stamp_times(sk.beats, sk.end)[0] == pytest.approx(max(first, sp.cut(held[0][1]) + 0.35))
+    assert times[1:] == SHOW.stamp_times(sk.beats, sk.end)[1:]  # the paper panels keep theirs
+
+
+@pytest.mark.parametrize(
+    ("panel", "scenes", "match"),
+    [
+        ("test-tank", (_shot(), _shot()), "a panel name of its own"),
+        ("penny-fall", (_shot("penny-fall"),), "a panel name of its own"),
+        ("test-tank", (_shot(), _shot("unused-tank")), "no beat shows"),
+    ],
+)
+def test_explainer_shots_that_clash_or_go_unused_are_refused(panel, scenes, match):
+    with pytest.raises(ScriptError, match=match):
+        replace(with_beat(3, panel=panel), scenes=scenes).validate()
+
+
+def test_a_beat_on_a_shot_the_show_does_not_have_is_refused():
+    with pytest.raises(ScriptError, match="the panels are"):
+        with_beat(3, panel="test-tank").validate()
+
+
+def test_an_explainer_shot_with_no_renders_to_draw_its_plates_is_refused():
+    with pytest.raises(ScriptError, match="plates' renders"):
+        drawn(_with_shot())
+
+
+def test_an_explainer_shot_is_drawn_from_plates_with_its_stamp_and_its_chip(tmp_path):
+    asked = []
+
+    class Renders:
+        def plate(self, plate) -> Path:
+            asked.append(plate)
+            path = tmp_path / f"plate-{len(asked)}.png"
+            path.write_bytes(b"png")
+            return path
+
+    show = _with_shot()
+    sk = show.sketch
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="30", duration=sk.end, background=sp.PAPER)
+    cv = Canvas(scene, font_asset="fraunces")
+    show.overlay(cv, cv.comp, sk.beats, sk.end, lambda text, size: 0.52 * size * len(text), Renders(), tmp_path / "p")
+    root = ET.fromstring(scene.to_bytes(layout="pretty"))
+    ids = {e.get("id") for e in root.iter()}
+    assert {"test-tank-room-angle", "test-tank-bench-angle"} <= ids and len(asked) > 2
+    words = {e.get("text") for e in root.iter() if e.tag.endswith("text")}
+    assert {"A TEST", FOUND.text, *[f"{b.stamp.text}" for b in BEATS if b.stamp and b.panel != "penny-fall"]} <= words
+    assert any(e.get("fill") == "#F4F0E6EB" for e in root.iter())  # the source on its chip, over a picture
+
+
+def test_a_stamp_lands_where_its_layout_says_and_the_paper_page_keeps_its_place():
+    measure = lambda text, size: 0.52 * size * len(text)  # noqa: E731
+    for top, chip in ((kit.STAMP_Y, False), (236.0, True)):
+        scene = Scene(version="auto")
+        scene.add_project(width=1080, height=1920, fps="30", duration=4.0)
+        cv = Canvas(scene, font_asset="fraunces")
+        kit.stamp(cv, cv.comp, FOUND, 1.0, 3.0, measure, top=top, chip=chip)
+        root = ET.fromstring(scene.to_bytes(layout="pretty"))
+        _, box, sources, rows = kit.stamp_layout(FOUND, measure, top)
+        rects = [e for e in root.iter() if e.get("shape") == "rect"]
+        assert any(float(r.get("y")) == top for r in rects)
+        assert box[1] < top + 10.0 and sources[0][1] > top
+        chips = [r for r in rects if r.get("fill") == "#F4F0E6EB"]
+        assert len(chips) == chip
+        if chip:
+            x0, y0, x1, y1 = kit.source_chip(sources)
+            assert float(chips[0].get("x")) == pytest.approx(x0) and float(chips[0].get("y")) == pytest.approx(y0)
+            assert x0 < sources[0][0] and y1 > sources[-1][3]
+    with pytest.raises(ScriptError, match="needs a source row"):
+        kit.source_chip([])
+
+
 def test_a_feather_you_move_yourself_fills_the_tickle_bar_less_and_says_predicted():
     root = panel_root("tickle-predict")
     else_bar, you_bar = groups(root, "sp-tickle-bar")
@@ -1007,3 +1105,35 @@ def test_the_cuttings_heap_reads_at_phone_size_beside_the_drill_and_under_its_la
     left, top, wide = float(layer.get("x")), float(layer.get("y")), float(text.get("width"))
     assert top + float(text.get("height")) <= peak - 10.0, "its label sits over the heap, not on it"
     assert left <= (x0 + x1) / 2 <= left + wide, "and names the heap it is over"
+
+
+# -- a stamp says what the caption does not ---------------------------------------------------------------------------
+@pytest.mark.parametrize(
+    ("text", "line", "share"),
+    [
+        ("THEY LEARNED THE FEEDING HOUR", "Food came one hour a day. They learned the hour.", 2 / 3),
+        ("WEEKS, EVEN MONTHS", "How long can they remember? A fish expert says weeks. Even months.", 1.0),
+        ("THE LAB TEST", "Goldfish were trained to press a lever.", 0.0),
+        ("THEY ANTICIPATED FEEDING TIME", "Food came one hour a day. They learned the hour.", 0.0),
+        ("TOP SPEED 25 MPH", "It is flat, so it tumbles. It tops out around 25 miles an hour.", 0.5),
+        ("LEARNS, LEARNING", "He learned.", 1.0),
+    ],
+)
+def test_a_stamp_s_share_of_words_the_caption_already_says(text, line, share):
+    assert kit.repeats(text, line) == pytest.approx(share)
+
+
+def test_a_stamp_of_no_word_of_its_own_is_refused():
+    with pytest.raises(ScriptError, match="no word of its own"):
+        kit.repeats("THE AND", "Anything at all.")
+
+
+def test_an_explainer_shot_s_stamp_that_says_its_caption_again_is_refused():
+    again = Stamp("TUMBLES, TOPS OUT AT 25", "Louis Bloomfield, Live Science, 2012")
+    with pytest.raises(ScriptError, match="says its caption again"):
+        _with_shot(beats=tuple(replace(b, stamp=again) if b.id == "why" else b for b in _with_shot().beats)).validate()
+    _with_shot().validate()  # "TOP SPEED 25 MPH" says half of it again: allowed
+
+
+def test_a_paper_panel_s_stamp_is_held_to_nothing_new():
+    with_beat(4, stamp=Stamp("BUSTED", "MythBusters, 2003")).validate()  # published shows keep their stamps

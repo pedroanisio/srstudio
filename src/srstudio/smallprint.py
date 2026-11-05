@@ -41,6 +41,7 @@ from . import (
     scripting,
     sketch,
     smallprint_props,
+    smallprint_scene,
     toon,
 )
 from . import foley as synth
@@ -58,6 +59,7 @@ from .smallprint_kit import (
     INK,
     LEFT,
     PAPER,
+    REPEATS,
     RIGHT,
     RULED,
     SHADE,
@@ -67,6 +69,7 @@ from .smallprint_kit import (
     Stamp,
     card,
     label,
+    repeats,
     stamp,
 )
 from .social import InstagramPost
@@ -78,6 +81,7 @@ __all__ = [
     "LONGEST",
     "PACE",
     "PANELS",
+    "ROOM_ALONE",
     "SHORTEST",
     "Beat",
     "ScriptError",
@@ -118,6 +122,7 @@ OPENING, QUIET = 5.0, 1.0  # seconds: no hold longer than QUIET starts in the fi
 WORKED = "Arithmetic:"  # a stamp's source that is a sum the reel works on screen, which no year can date
 _YEAR = re.compile(r"\b(?:1[5-9]|20)\d{2}\b")
 ROOM_GAIN, BED_GAIN = -30.0, -27.0
+ROOM_ALONE = -26.0  # the room's gain when it is the reel's only floor (no bed)
 PLACEHOLDER = ("side", "flat", "desk")  # a pose for the sketch's check: this man is drawn from his beats
 TOP, BOTTOM = 220.0, 1240.0  # frame rows a panel draws inside: the safe area, clear of the caption band
 
@@ -127,7 +132,8 @@ class Beat:
     """One line of the script: its ``id``, the words, his ``mood``, the worktop ``prop`` and its ``state`` when the
     line starts (empty: as the beat before left them), the ``steps`` it moves through after that (seconds into the
     line, state), the ``framing``, the seconds he holds after it, a ``panel`` that takes the frame, the ``stamp`` on it,
-    whether he is crying, and the line's ``gain`` in dB."""
+    whether he is crying, the line's ``gain`` in dB, the voice's ``speed`` for this line alone, and the words it
+    ``stress``es (raised by gain on the take when said flat: :class:`~srstudio.sketch.Line`)."""
 
     id: str
     line: str
@@ -141,6 +147,8 @@ class Beat:
     stamp: Stamp | None = None
     tears: bool = False
     gain: float = 0.0
+    speed: float | None = None
+    stress: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -161,6 +169,13 @@ class Show:
     room: str = "rafa-kitchen"
     bleed: bool = True
     held_frames: bool = False  # held keys half a frame before their frame (ADR 0216): every new reel sets it
+    scenes: tuple[smallprint_scene.Shot, ...] = ()  # explainer shots acted out in 3D on his worktop (ADR 0240)
+    bed: bool = True  # the music bed under the whole reel; without it the room is the floor and the effects carry it
+
+    @property
+    def shots(self) -> dict[str, smallprint_scene.Shot]:
+        """The explainer shots by the panel each one draws."""
+        return {shot.panel: shot for shot in self.scenes}
 
     @property
     def output(self) -> str:
@@ -172,7 +187,7 @@ class Show:
 
     @property
     def lines(self) -> tuple[Line, ...]:
-        return tuple(Line(HOST, beat.line, gain=beat.gain) for beat in self.beats)
+        return tuple(Line(HOST, beat.line, gain=beat.gain, speed=beat.speed, stress=beat.stress) for beat in self.beats)
 
     def spoken_words(self) -> int:
         return sum(len(beat.line.split()) for beat in self.beats)
@@ -234,6 +249,12 @@ class Show:
             raise ScriptError("the reel opens and closes on him, with the question over him")
         if not any(beat.stamp for beat in self.beats):
             raise ScriptError("a finding is stamped, with its source")
+        named = [shot.panel for shot in self.scenes]
+        if len(set(named)) != len(named) or set(named) & set(PANELS):
+            raise ScriptError(f"each explainer shot has a panel name of its own, got {named}")
+        if set(named) - {beat.panel for beat in self.beats}:
+            raise ScriptError(f"explainer shots no beat shows: {sorted(set(named) - {b.panel for b in self.beats})}")
+        self._check_stamps_say_more()
         for i, (beat, kept) in enumerate(zip(self.beats, self.kept, strict=True)):
             if beat.steps and beat.steps[-1][0] >= kept + (beat.hold or GAP) and i + 1 < len(self.beats):
                 raise ScriptError(f"{beat.id}: a step lands after its beat, at {beat.steps[-1][0]} s")
@@ -295,6 +316,26 @@ class Show:
         if off:
             raise ScriptError("; ".join(off))
 
+    def _check_stamps_say_more(self) -> None:
+        """An explainer shot's stamp carries what its captions do not say: one whose own words the lines under it
+        already say, over :data:`~srstudio.smallprint_kit.REPEATS` of them, is two reads of one idea. The lines under
+        a stamp are its beat's and the next ones' on the same panel. Paper panels, as published, keep theirs."""
+        for i, beat in enumerate(self.beats):
+            if beat.stamp is None or beat.panel not in self.shots:
+                continue
+            under = [beat.line]
+            for after in self.beats[i + 1 :]:
+                if after.panel != beat.panel:
+                    break
+                under.append(after.line)
+            share = repeats(beat.stamp.text, " ".join(under))
+            if share > REPEATS:
+                raise ScriptError(
+                    f"{beat.id}: the stamp {beat.stamp.text!r} says its caption again ({share:.0%} of its words are"
+                    f" in the lines under it, over {REPEATS:.0%}): stamp what the line does not say, the measured"
+                    " result, or drop the stamp"
+                )
+
     def _check(self, beat: Beat) -> None:
         host_kit.check_copy(beat.line)
         if beat.mood not in rafa.MOODS:
@@ -316,8 +357,8 @@ class Show:
         offsets = [at for at, _ in beat.steps]
         if offsets != sorted(offsets) or any(at < 0.0 for at in offsets):
             raise ScriptError(f"{beat.id}: steps go forward from the line's start, got {offsets}")
-        if beat.panel and beat.panel not in PANELS:
-            raise ScriptError(f"{beat.id}: the panels are {tuple(PANELS)}, got {beat.panel!r}")
+        if beat.panel and beat.panel not in PANELS and beat.panel not in self.shots:
+            raise ScriptError(f"{beat.id}: the panels are {(*PANELS, *self.shots)}, got {beat.panel!r}")
         if beat.stamp is not None:
             if not beat.panel:
                 raise ScriptError(f"{beat.id}: a stamp lands on a panel")
@@ -359,9 +400,37 @@ class Show:
                 rows.append((beat.panel, first, last, [(beat, sb.start)]))
         return rows
 
-    def overlay(self, cv, parent, beats, end, measure) -> None:
-        """Over the picture: each panel and its stamps, the question card on the first beat and the last, the marks."""
+    def stamp_times(self, beats: Sequence[Any], end: float) -> list[float]:
+        """When each stamp lands, in the script's order: on an explainer shot's word when it names one, else a little
+        after its line starts."""
+        times = []
+        for name, first, _, held in self.panel_runs(beats, end):
+            shot = self.shots.get(name)
+            for beat, said in held:
+                if beat.stamp is not None:
+                    times.append(
+                        smallprint_scene.stamp_time(shot, cut(said), first) if shot else max(first, cut(said) + 0.35)
+                    )
+        return times
+
+    def overlay(
+        self, cv, parent, beats, end, measure, renders: Renders | None = None, root: Path | None = None
+    ) -> None:
+        """Over the picture: each panel and its stamps, the question card on the first beat and the last, the marks.
+        An explainer shot is drawn from its plates, which ``renders`` makes into the project at ``root``."""
         for name, first, last, held in self.panel_runs(beats, end):
+            if name in self.shots:
+                stamped = [(beat, said) for beat, said in held if beat.stamp is not None]
+                if len(stamped) > 1 or renders is None or root is None:
+                    raise ScriptError(f"{name}: an explainer shot takes one stamp and the plates' renders and project")
+                beat, said = stamped[0] if stamped else (None, None)
+                finding = beat.stamp if beat else None
+                at = cut(said) if said is not None else None
+                g = smallprint_scene.draw(
+                    cv, parent, self.shots[name], first, last, renders, root, measure, finding, at
+                )
+                finish(cv, g)
+                continue
             g = cv.group(parent, cv.uid(f"smallprint-panel-{name}"), start=first, end=last)
             PANELS[name](cv, g, first, last, measure)
             for i, (beat, said) in enumerate(held):
@@ -1814,17 +1883,20 @@ def bed(path: Path, end: float, seed: int, bpm: float = 96.0) -> Path:
 
 
 def shared_sounds(show: Show, beats, end: float, root: Path, seed: int) -> list[dict]:
-    """What every episode has: the room, the bed, a page turning in under each panel and a thump under each stamp."""
+    """What every episode has: the room, the bed (when the show keeps one, :attr:`Show.bed`), a page turning in under
+    each panel and a thump under each stamp. Without the bed the room comes up to :data:`ROOM_ALONE`: a quiet floor
+    the episode's own effects sit on, never a constant music bed."""
     sound = sounder(root, end, seed)
     audio = Path(root) / "audio"
     pages = [first for _, first, _, _ in show.panel_runs(beats, end)]
-    stamps = [max(cut(sb.start) + 0.35, 0.0) for b, sb in zip(show.beats, beats, strict=True) if b.stamp]
-    return [
-        sketch.effect("room", 0.0, ROOM_GAIN, root, synth.write_room(audio / "room.wav", end, seed=seed)),
-        sketch.effect("bed", 0.0, BED_GAIN, root, bed(audio / "bed.wav", end, seed), role="music"),
-        sound("page", -12.0, synth.SWISH, pages),
-        sound("stamp", -6.0, synth.THUD, stamps),
-    ]
+    stamps = show.stamp_times(beats, end)
+    room = synth.write_room(audio / "room.wav", end, seed=seed)
+    floor = [sketch.effect("room", 0.0, ROOM_GAIN, root, room)]
+    if show.bed:
+        floor.append(sketch.effect("bed", 0.0, BED_GAIN, root, bed(audio / "bed.wav", end, seed), role="music"))
+    else:
+        floor = [sketch.effect("room", 0.0, ROOM_ALONE, root, room)]
+    return [*floor, sound("page", -12.0, synth.SWISH, pages), sound("stamp", -6.0, synth.THUD, stamps)]
 
 
 def audio_main(show: Show, doc: str | None, foley_of: Callable[..., list[dict]]) -> Callable[..., int]:
@@ -1896,7 +1968,7 @@ def run(show: Show, argv: Sequence[str], env: Mapping[str, str] = os.environ) ->
         captions=lambda *_: None,  # the engine's track, added to the built episode below
         camera=framing(show),
         finish=finish,
-        overlay=show.overlay,
+        overlay=partial(show.overlay, renders=renders, root=root),
         safe_area=VERTICAL,
         output=show.output,
         crf="25",

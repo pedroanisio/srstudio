@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import stat
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
@@ -184,3 +185,44 @@ def test_a_falloff_keeps_the_top_sharp_blurs_the_bottom_and_is_made_once(tmp_pat
 def test_a_falloff_that_cannot_exist_is_refused(tmp_path):
     with pytest.raises(plates.PlateError, match="falloff"):
         plates.soften(tmp_path / "a.png", tmp_path, sharp_to=30, soft_from=10, sigma=3.0)
+
+
+def _material_attrs(plate_: Plate) -> dict:
+    text = plates.document(plate_).decode()
+    start = text.index("<material ")
+    return dict(part.split("=", 1) for part in text[start + 10 : text.index("/>", start)].split())
+
+
+def test_glass_is_written_with_its_transmission_and_ior_and_changes_the_digest():
+    base = plate()
+    glass = replace(base, materials=(Material("clay", "#C88762", transmission=0.9, ior=1.33),))
+    attrs = _material_attrs(glass)
+    assert attrs["transmission"].strip('"') == "0.9" and attrs["ior"].strip('"') == "1.33"
+    assert plates.digest(glass) != plates.digest(base)
+
+
+def test_an_opaque_material_writes_no_transmission_so_every_drawing_made_before_keeps_its_digest():
+    attrs = _material_attrs(plate())
+    assert "transmission" not in attrs and "ior" not in attrs
+
+
+@pytest.mark.parametrize(
+    "bad", [dict(transmission=-0.1), dict(transmission=1.2), dict(ior=0.9), dict(ior=float("nan"))]
+)
+def test_a_material_refuses_a_transmission_or_ior_light_cannot_have(bad):
+    with pytest.raises(PlateError):
+        Material("glass", "#BCDCE0", **bad)
+
+
+def test_a_plate_may_take_fewer_samples_which_is_another_drawing_and_the_default_is_written_as_before():
+    base = plate()
+    assert f'pathSamples="{plates.SAMPLES}"' in plates.document(base).decode()
+    quick = replace(base, samples=16)
+    assert 'pathSamples="16"' in plates.document(quick).decode()
+    assert plates.digest(quick) != plates.digest(base)
+
+
+@pytest.mark.parametrize("bad", [0, -4, 2.5, True, 4097])
+def test_a_plate_refuses_a_sample_count_the_engine_cannot_take(bad):
+    with pytest.raises(PlateError):
+        replace(plate(), samples=bad)
