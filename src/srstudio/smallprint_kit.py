@@ -232,7 +232,7 @@ def stamp(
     g = cv.group(
         parent, cv.uid("smallprint-stamp"), start=start, end=end, x=cx, y=cy, anchorX=cx, anchorY=cy, rotation=TILT
     )
-    cv.rect(g, x, top, wide, tall, "#F4F0E6E6", stroke=STAMP, sw=7.0, radius=10.0)
+    cv.rect(g, x, top, wide, tall, PAPER, stroke=STAMP, sw=7.0, radius=10.0)  # opaque: only its paper behind the red
     cv.rect(g, x + 10, top + 10, wide - 20, tall - 20, "#00000000", stroke=STAMP, sw=2.5, radius=6.0)
     label(cv, g, finding.text, x, top, wide, tall, size, STAMP, "center")
     lands = min(LANDS_FROM, room / spread(finding.text, size, measure))

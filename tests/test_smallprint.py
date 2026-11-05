@@ -1030,6 +1030,22 @@ def test_a_stamp_slams_in_whole_with_no_frame_half_seen():
         assert all(v == 1.0 for _, v in keyed(node, "opacity")), keyed(node, "opacity")
 
 
+def test_a_stamp_s_paper_is_opaque_so_nothing_behind_it_shows_through_its_red():
+    """The red reads against its own paper and nothing else: a see-through paper let a dark pole behind the stamp
+    lower the red's contrast to 4.48:1 (great-wall v7 failed --strict at 13.967 s)."""
+    measure = lambda text, size: 0.52 * size * len(text)  # noqa: E731
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="30", duration=4.0)
+    cv = Canvas(scene, font_asset="fraunces")
+    kit.stamp(cv, cv.comp, FOUND, 1.0, 3.0, measure)
+    root = ET.fromstring(scene.to_bytes(layout="pretty"))
+    (stamp,) = groups(root, "smallprint-stamp")
+    fills = [s.get("fill") for s in stamp.iter() if s.tag.endswith("shape") and s.get("fill")]
+    painted = [f for f in fills if not (len(f) == 9 and f.endswith("00"))]  # a frame drawn by its stroke alone
+    assert painted, fills
+    assert all(len(f) == 7 or f.upper().endswith("FF") for f in painted), painted
+
+
 def test_a_feather_you_move_yourself_fills_the_tickle_bar_less_and_says_predicted():
     root = panel_root("tickle-predict")
     else_bar, you_bar = groups(root, "sp-tickle-bar")
