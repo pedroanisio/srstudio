@@ -36,6 +36,7 @@ from . import (
     catalog_versions,
     choreograph,
     craft,
+    craft_bar,
     dance,
     document_schemas,
     fonts,
@@ -245,6 +246,7 @@ def main(argv=None):
     )
     measured = sub.add_parser("proof", help="a master's measures (ffprobe, ebur128) and a sheet of frames to look at")
     measured.add_argument("video", type=Path)
+    measured.add_argument("--project", type=Path, help="measure the C4/C7 craft bar with cached project recordings")
     measured.add_argument("--at", type=float, action="append", default=[], help="a moment to look at, in seconds")
     measured.add_argument("--sheet", type=Path, help="write the frames, in one row, to this image")
     measured.add_argument("--arm", choices=("a", "b"), help="fail unless the master shows this sp-hook_motion arm")
@@ -937,15 +939,22 @@ def _choreograph(args: argparse.Namespace) -> int:
 
 def _proof(args: argparse.Namespace) -> int:
     try:
+        craft = craft_bar.measure(args.video, args.project) if args.project else None
         made = proof.report(args.video, args.at, args.sheet, arm=args.arm)
+        if craft is not None:
+            from dataclasses import asdict
+
+            made["craft_bar"] = asdict(craft) | {"passed": craft.passed}
     except proof.ProofError as exc:
         _error("proof", exc, getattr(args, "json", False))
         return 1
     if args.json:
         print(json.dumps(made))
     else:
-        print(" ".join(f"{k}={v}" for k, v in made.items()))
-    return 0
+        print(" ".join(f"{k}={v}" for k, v in made.items() if k != "craft_bar"))
+        if craft is not None:
+            print("\n".join(craft.lines()))
+    return 1 if craft is not None and not craft.passed else 0
 
 
 def _master(args: argparse.Namespace) -> int:
