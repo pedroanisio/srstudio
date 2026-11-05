@@ -204,3 +204,39 @@ def test_a_page_prints_its_word_over_its_number():
     word, number = lab.page_print("WEEK", "3").lines
     assert (word.text, number.text) == ("WEEK", "3") and word.y < number.y and number.size > word.size
     assert lab.page_material("WEEK", "3").print == lab.page_print("WEEK", "3")
+
+
+def test_the_dial_ticks_inside_its_spans_on_the_beat():
+    assert lab.tick_times([(1.0, 2.0)]) == [1.0, 1.5]
+    assert lab.tick_times([(3.0, 3.6), (0.0, 0.4)], every=0.25) == [0.0, 0.25, 3.0, 3.25, 3.5]
+    assert lab.tick_times([]) == []
+
+
+def test_the_bubbles_rise_inside_their_spans_the_same_for_a_seed_and_never_blur():
+    spans = [(0.0, 4.0), (6.0, 9.5)]
+    got = lab.bubble_times(spans, 7)
+    assert got == lab.bubble_times(spans, 7) and got != lab.bubble_times(spans, 8)
+    assert all(any(a <= t < b for a, b in spans) for t in got)
+    assert all(b - a >= lab.BUBBLE_GAP for a, b in zip(got, got[1:], strict=False))
+    assert 12 <= len(got) <= 17  # about one each 0.45 s over 7.5 s
+
+
+@pytest.mark.parametrize(
+    "call, match",
+    [
+        (lambda: lab.tick_times([(2.0, 1.0)]), "runs forward"),
+        (lambda: lab.tick_times([(-1.0, 1.0)]), "runs forward"),
+        (lambda: lab.tick_times([(0.0, 1.0)], every=0.0), "positive number"),
+        (lambda: lab.bubble_times([(0.0, float("nan"))], 1), "runs forward"),
+        (lambda: lab.bubble_times([(0.0, 1.0)], 1, every=0.05), "more than 0.08"),
+    ],
+)
+def test_sound_times_out_of_any_span_are_refused(call, match):
+    with pytest.raises(lab.LabError, match=match):
+        call()
+
+
+def test_the_tank_sounds_are_short_and_bright_enough_to_sit_over_a_voice():
+    for burst in (lab.BUBBLE, lab.LEVER_CLICK, lab.TICK):
+        assert burst.seconds <= 0.1
+    assert lab.RATTLE.flutter_hz > 0  # the hopper rattles, it does not thump
