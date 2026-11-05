@@ -8,8 +8,10 @@ An :class:`Interview` is checked when it is made (voices, roles, speeds, effect 
 requested. Each line and effect is a ``<generated>`` item for the ``srstudio-elevenlabs`` provider
 (:func:`declarations`), resolved and pinned by the engine; the provider parses and verifies every response.
 Speech-to-text must then hear every line as written (:func:`hear`), or the build stops; :func:`said` reads that
-cached hearing back, so the picture keys on the words of the take. The episode's
-schedule places the lines and effects from the trimmed clip lengths (:func:`place`): a line that runs into
+cached hearing back, so the picture keys on the words of the take. A line's ``stress`` words are then raised by gain
+(:func:`stress`, :func:`srstudio.emphasis.lean`) on a derived clip under ``assets/stressed``, measured on the take,
+which keeps its pin. The episode's schedule places the lines and effects from the trimmed clip lengths
+(:func:`place`): a line that runs into
 the next, a missing or unknown effect, or anything past the end card stops the build instead of being
 mixed. :func:`build` runs the steps, writes the caption face first (:func:`caption_face`: DejaVu Sans Bold by
 default, or ``Interview.font``, a Google Font pinned under ``assets/fonts``), then the room tone and ``dialogue.json``;
@@ -30,13 +32,15 @@ import math
 import os
 import random
 import re
+import shutil
 import sys
 import wave
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import checks, fonts
+from . import checks, emphasis, fonts
+from .emphasis import EmphasisError
 from .errors import SrstudioError
 from .fonts import Fetch, FontError, GoogleFont
 from .generated import (
@@ -75,14 +79,23 @@ LEVELS = (-12.0, 0.0)  # (dB) how far a line may sit under the others in the mix
 VOICE_PEAK = 0.78  # the loudest moment of the dialogue, before the master's loudness pass
 ROOM_TONE = 0.00018  # standard deviation of the room tone
 _ID = re.compile(r"[a-z][a-z0-9-]*\Z")
+STRESSED_DIR = "stressed"  # a stressed line's derived clip, under the project's assets, beside the takes' own cache
 
 
 class InterviewError(SrstudioError, ValueError):
     """A script, a misheard line or a schedule the build cannot use."""
 
 
+class StressError(InterviewError, EmphasisError):
+    """A line's stressed word the take does not say, or that gain cannot lift (:mod:`srstudio.emphasis`), naming the
+    line: an :class:`InterviewError` of the build and an :class:`~srstudio.emphasis.EmphasisError` of the measure."""
+
+
 @dataclass(frozen=True)
 class Spoken:
+    """One line. ``stress``: words of the line that carry it, raised by gain to :data:`srstudio.prosody.STRESS_DB` over
+    the line's median word when the take says them flat (:func:`stress`); a line of one word has no median to clear."""
+
     role: str
     text: str  # what is spoken, and what speech-to-text must hear
     caption: str
@@ -91,6 +104,7 @@ class Spoken:
     heard: tuple[str, ...] = ()  # hearings the operator approved for this line, besides its own words
     gain: float = 0.0  # dB against the others in the mix; the take stays the same (:data:`LEVELS`)
     phone: bool = False  # heard through a phone; the speech check still hears the clean take
+    stress: tuple[str, ...] = ()  # key words, raised by gain on a derived clip; the take stays the same
 
 
 @dataclass(frozen=True)
@@ -190,6 +204,7 @@ class Interview:
                 raise InterviewError(f"line {i}: heard must be a tuple of non-empty strings, got {line.heard!r}")
             if not (checks.number(line.gain) and LEVELS[0] <= line.gain <= LEVELS[1]):
                 raise InterviewError(f"line {i}: gain {line.gain!r} must lie in {LEVELS}")
+            _check_stress(i, line)
             try:
                 self.voices[line.role].voice_settings(line.speed)
             except SongError as exc:
@@ -209,6 +224,29 @@ class Interview:
                 raise InterviewError(f"effect {fx.id}: longest {fx.longest} must lie in (0, {fx.seconds}]")
             if not (0 < fx.peak <= 1):
                 raise InterviewError(f"effect {fx.id}: peak {fx.peak} must lie in (0, 1]")
+
+
+def _check_stress(i: int, line: Spoken) -> None:
+    """``line``'s stress: a tuple of words of its text, each once (case and punctuation aside), on a line of more than
+    one word."""
+    if not isinstance(line.stress, tuple) or not all(isinstance(w, str) and w.strip() for w in line.stress):
+        raise InterviewError(f"line {i}: stress must be a tuple of non-empty strings, got {line.stress!r}")
+    if not line.stress:
+        return
+    said = normalize_words(line.text)
+    if len(said) < 2:
+        raise InterviewError(
+            f"line {i}: {line.text!r} is one word: a stressed word is measured over the line's median word, "
+            "which would be itself, so a one-word line cannot be stressed"
+        )
+    seen: set[str] = set()
+    for word in line.stress:
+        key = normalize_words(word)
+        if len(key) != 1 or key[0] not in said:
+            raise InterviewError(f"line {i}: the stressed word {word!r} is not one word of {line.text!r}")
+        if key[0] in seen:
+            raise InterviewError(f"line {i}: stress names {word!r} twice")
+        seen.add(key[0])
 
 
 def declarations(iv: Interview) -> tuple[list[Generated], list[Generated]]:
@@ -304,6 +342,60 @@ def said(root: Path, phrase: Phrase, word: str, which: int = 0) -> float:
     if not phrase.start <= at <= phrase.end:
         raise InterviewError(f"line {phrase.index + 1}: {word!r} is heard at {at:.3f} s, outside {phrase.span}")
     return at
+
+
+def stress(
+    iv: Interview, root: Path, pins: Mapping[str, Resolved], transcribe: Callable[[Path], Transcript]
+) -> tuple[dict[str, Resolved], list[dict]]:
+    """The pins with each stressed line's take replaced by a derived clip, and the record of what was raised.
+
+    The take is copied to ``assets/stressed/line-N.wav`` and :func:`srstudio.emphasis.lean` raises each ``stress`` word
+    there, measured with :func:`srstudio.prosody.measure` on the words ``transcribe`` hears inside the take's trim
+    (:func:`~srstudio.generated.trim_speech`), up to :data:`~srstudio.emphasis.MOST` dB in
+    :data:`~srstudio.emphasis.TRIES` passes. The copy keeps the take's length, so word times, the trim and :func:`said`
+    hold. The take itself and its pin are never touched; the clip is pinned by its own SHA-256, and the record names
+    its source take and digest. A line with no ``stress`` keeps its pin. A word not heard, one gain cannot lift, or a
+    take heard as one word raises :class:`StressError`."""
+    root = Path(root)
+    lines, _ = declarations(iv)
+    out, record = dict(pins), []
+    for i, (line, item) in enumerate(zip(iv.lines, lines, strict=True), 1):
+        if not line.stress:
+            continue
+        source = pins[item.id]
+        trim = trim_speech(source.path)
+        words = [
+            w
+            for w in transcribe(source.path).words
+            if w.type == "word" and w.end > trim.clip_in and w.start < trim.clip_out
+        ]
+        if len(words) < 2:
+            raise StressError(
+                f"line {i}: the take is heard as {len(words)} word(s): a stressed word is measured over the line's "
+                "median word, so a one-word take cannot be stressed"
+            )
+        cache = f"assets/{STRESSED_DIR}/{item.id}.wav"
+        clip = root / cache
+        clip.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source.path, clip)  # every build leans from the take, never from an earlier lean
+        try:
+            raised = emphasis.lean(clip, words, line.stress)
+        except EmphasisError as exc:
+            raise StressError(f"line {i}: {exc}") from exc
+        derived = Resolved(dataclasses.replace(item, cache=cache), clip, sha256_of(clip))
+        out[item.id] = derived
+        record.append(
+            {
+                "line": i,
+                "words": raised,
+                "clip": cache,
+                "sha256": derived.sha256,
+                "source": item.cache,
+                "source_sha256": source.sha256,
+                "measure": "srstudio.emphasis.lean on the take's trim",
+            }
+        )
+    return out, record
 
 
 @dataclass(frozen=True)
@@ -460,13 +552,20 @@ def build(
     if failures:
         raise InterviewError("speech check failed:\n" + "\n".join(failures))
 
-    # 3. Trim, level and place every clip where the schedule says.
+    # 3. A line's stressed words raised by gain on a derived clip, measured on the take (the take keeps its pin).
+    pins, stressed = stress(iv, root, pins, ElevenLabsClient(cache, key="").transcribe)
+    for entry in stressed:
+        print(f"line {entry['line']}: stressed " + ", ".join(f"{w} +{db:.2f} dB" for w, db in entry["words"].items()))
+
+    # 4. Trim, level and place every clip where the schedule says.
     placed = place(iv, pins, schedule)
     t = placed.timing
+    for entry in stressed:
+        t.phrases[entry["line"] - 1]["stress"] = entry["words"]
     for phrase in t.phrases:
         print(f"{phrase['voice_name']:>4} {phrase['start']:6.3f}-{phrase['end']:6.3f}  {phrase['text']}")
 
-    # 4. The room tone under the whole episode.
+    # 5. The room tone under the whole episode.
     write_room_tone(assets / "room-tone.wav", t.duration, iv.room_tone_seed)
 
     timeline = {
@@ -478,13 +577,23 @@ def build(
         "duration": t.duration,
         "phrases": t.phrases,
         "sound_effects": placed.sound_effects,
-        "clips": [c.to_dict() for c in placed.clips],
+        "clips": [c.to_dict() for c in _clips_of(placed.clips, pins, stressed)],
+        **({"stress": stressed} if stressed else {}),
         **extra(t),
     }
     out = root / "dialogue.json"
     out.write_text(json.dumps(timeline, indent=2) + "\n")
     print(f"duration {t.duration:.3f}s, reaction {t.reaction:.3f}s, end card {t.ending:.3f}s")
     return out
+
+
+def _clips_of(clips: Sequence[PlacedClip], pins: Mapping[str, Resolved], stressed: Sequence[dict]) -> list[PlacedClip]:
+    """``clips`` with each stressed line's item naming its derived clip (:func:`stress`), whose digest it carries."""
+    derived = {f"line-{entry['line']}" for entry in stressed}
+    return [
+        dataclasses.replace(c, generated=pins[c.generated.id].generated) if c.generated.id in derived else c
+        for c in clips
+    ]
 
 
 REHEARSAL_DIR = "rehearsal"  # under the project's assets, never the takes' own cache

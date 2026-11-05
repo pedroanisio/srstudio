@@ -152,6 +152,27 @@ reads `episodes/<slug>/timeline.json` for each first delivery:
   reads the `project/timeline.json` its package carries. No package carries one today, so every pilot reads
   "unmeasured" until its package does.
 
+**Stress on interview lines (2026-11-05).** arc4d3 ruled (Slack 1793847253.338049) that each Juno & Pip punchline
+raises its key word. Those episodes are built on `srstudio.interview`, whose lines had a speed but no stress. Only
+`sketch.Line.stress` had one.
+
+- **Script.** `interview.Spoken.stress` is a tuple of words of the line. The `Interview` checks it when it is made
+  and raises an `InterviewError` that names the line. Each entry must be a non-empty string, one word of the text
+  (compared as `normalize_words` reads them, so case and punctuation are ignored), and named only once. A stressed
+  line of one word is refused, because the stress margin is measured against the line's median word, which would be
+  the word itself.
+- **Build.** After every line is heard as written and before placement, `interview.stress` copies each stressed
+  take to `assets/stressed/line-N.wav`. `emphasis.lean` then raises each stressed word on the copy, as it does for
+  a sketch line. It measures with `prosody.measure` on the words speech-to-text heard inside the take's trim, aims
+  for `STRESS_DB` over the median word, makes at most `TRIES` passes and raises a word by no more than `MOST`. The
+  clip's peak never rises. The copy has the take's length, so word times, the trim and `said` still hold. Each build
+  starts again from the take. The placed clip is the copy, pinned by its own SHA-256. The take and its pin are never
+  touched. A word that is not heard, a word gain cannot lift, or a take heard as a single word raises
+  `interview.StressError`, which is both an `InterviewError` and an `EmphasisError`.
+- **Record.** `dialogue.json` has a top-level `stress` list. Each entry gives the line, the dB each word was raised,
+  the clip and its SHA-256, and the source take and its SHA-256. The line's phrase also carries `stress` (word to
+  dB). Without any stress the build writes exactly what it wrote before.
+
 ## Consequences
 
 - Every published take keeps its request and cache key. A test pins two keys computed before this change.
@@ -194,5 +215,11 @@ reads `episodes/<slug>/timeline.json` for each first delivery:
   the analysis measured. The targets ask for both.
 - **Stopping the recording on a gate finding.** The builder needs the numbers to pick a take or write a waiver, and
   the cached takes cost nothing to re-measure.
+- **Gain automation on an interview take's track** (gain keys over the word's span, as `craft.hush` writes on music),
+  instead of a derived clip. The take would stay the placed file. But the clip schema (`generated.Placement`) has no
+  keys, and `Soundtrack.from_clips`, which drives the mouths and the levels, models only a constant gain and fades.
+  Every clip-based family would have to change. The gain would also be measured on a simulation of the engine's curve
+  rather than on the bytes the mix plays: `emphasis.lean`'s ramp is linear in amplitude, and the engine interpolates
+  keys between dB values. The derived clip is exactly what the mix plays, and `lean` measured it.
 - **Room tone for the holds.** Exact silence is measurable and the mix has its own bed. Room tone can come later as a
   mix decision.
