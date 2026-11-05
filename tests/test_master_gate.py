@@ -244,3 +244,45 @@ def test_the_master_checks_are_waived_on_the_script_with_a_reason_and_no_bounds(
         Waiver("frozen", "the held frame is the joke", (0.0, 3.0))
     with pytest.raises(DirectionError, match="at least 3 words"):
         Waiver("opening", "because")
+
+
+def _noise(path: Path, seconds: float, level: float, seed: int) -> None:
+    """Mono 48 kHz noise at ``level`` of full scale: speech-shaped enough for ebur128."""
+    rng = np.random.default_rng(seed)
+    samples = np.clip(rng.normal(0.0, level, int(48000 * seconds)), -1.0, 1.0)
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(48000)
+        w.writeframes((samples * 32767).astype("<i2").tobytes())
+
+
+def _narration(root: Path, levels: list[float]) -> Path:
+    """A narration project of one 4 s line per level, back to back, and a room under all of them."""
+    (root / "audio").mkdir(parents=True)
+    items = []
+    for k, level in enumerate(levels):
+        _noise(root / "audio" / f"vo-{k}.wav", 4.0, level, k)
+        items.append({"id": f"{k:02d}", "phase": "line", "start": 4.0 * k, "audio": f"audio/vo-{k}.wav"})
+    _noise(root / "audio" / "room.wav", 4.0 * len(levels), 0.2, 99)
+    effects = [{"id": "room", "start": 0.0, "gain_db": -30.0, "audio": "audio/room.wav"}]
+    (root / "narration.json").write_text(
+        json.dumps({"duration": 4.0 * len(levels), "items": items, "effects": effects})
+    )
+    return root
+
+
+def test_the_mix_range_reads_the_line_levels_before_any_render(tmp_path):
+    flat = master_gate.mix_range(_narration(tmp_path / "flat", [0.2] * 6))
+    under = 0.2 * 10 ** (-6 / 20)  # two lines said 6 dB under the rest
+    quiet = master_gate.mix_range(_narration(tmp_path / "quiet", [0.2, under, 0.2, 0.2, under, 0.2]))
+    assert flat < 1.0 <= master_gate.MIN_LRA <= quiet
+
+
+def test_a_mix_range_with_no_manifest_or_a_missing_take_is_refused(tmp_path):
+    with pytest.raises(MasterError, match="narration.json"):
+        master_gate.mix_range(tmp_path)
+    root = _narration(tmp_path / "gone", [0.2, 0.2, 0.2])
+    (root / "audio" / "vo-1.wav").unlink()
+    with pytest.raises(MasterError, match="vo-1.wav"):
+        master_gate.mix_range(root)

@@ -1015,6 +1015,21 @@ def test_a_stamp_lands_where_its_layout_says_and_the_paper_page_keeps_its_place(
         kit.source_chip([])
 
 
+def test_a_stamp_slams_in_whole_with_no_frame_half_seen():
+    """A fade, however short, leaves a frame with the stamp half see-through, where its red loses contrast against
+    what is behind it (great-wall v6 failed --strict on that frame): the stamp is whole from its first frame."""
+    measure = lambda text, size: 0.52 * size * len(text)  # noqa: E731
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="30", duration=4.0)
+    cv = Canvas(scene, font_asset="fraunces")
+    kit.stamp(cv, cv.comp, FOUND, 1.0, 3.0, measure)
+    root = ET.fromstring(scene.to_bytes(layout="pretty"))
+    (stamp,) = groups(root, "smallprint-stamp")
+    for node in [stamp, *stamp.iter()]:
+        assert float(node.get("opacity", "1")) == 1.0
+        assert all(v == 1.0 for _, v in keyed(node, "opacity")), keyed(node, "opacity")
+
+
 def test_a_feather_you_move_yourself_fills_the_tickle_bar_less_and_says_predicted():
     root = panel_root("tickle-predict")
     else_bar, you_bar = groups(root, "sp-tickle-bar")
