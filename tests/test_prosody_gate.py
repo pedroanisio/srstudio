@@ -45,14 +45,15 @@ def read(root: Path, **documents: object) -> dict[str, Reading]:
 
 
 # -- advisory everywhere ------------------------------------------------------------------------------------------
-def test_a_reel_recorded_before_the_gate_reads_unmeasured_and_is_never_refused(tmp_path):
+def test_a_reel_recorded_before_the_gate_reads_unmeasured_and_is_refused(tmp_path):
     old = late_end(timeline())  # it would fail the gate, had it been recorded to it
     readings = read(tmp_path, old=old, none=None)
-    assert not readings["old"].measured and not readings["old"].refused
-    assert prosody_gate.refusals(readings) == []
+    assert not readings["old"].measured and readings["old"].refused
+    assert len(prosody_gate.refusals(readings)) == 2
     assert prosody_gate.lines(readings) == [
-        f"prosody none-video: {UNMEASURED} (no timeline.json), advisory",
-        f"prosody old-video: {UNMEASURED} (timeline.json has no prosody section: recorded before the gate), advisory",
+        f"prosody none-video: {UNMEASURED} (no timeline.json), REFUSED: missing C7 evidence",
+        f"prosody old-video: {UNMEASURED} (timeline.json has no prosody section: recorded before the gate), "
+        "REFUSED: missing C7 evidence",
     ]
 
 
@@ -74,7 +75,7 @@ def test_a_reel_recorded_to_the_gate_with_an_unwaived_finding_is_refused(tmp_pat
     (drift,) = prosody_gate.refusals(read(tmp_path, new=gated(late_end(timeline()), passed=False)))
     assert drift.name == "new-video"
     assert "prosody: take 04: end_breath 3.300 outside 0.3..1.2" in drift.reason
-    assert "waive a target with its reason" in drift.reason
+    assert "final-master/check-specific authority disposition" in drift.reason
 
 
 def test_the_recorded_verdict_is_not_trusted_the_gate_runs_again(tmp_path):
@@ -102,15 +103,12 @@ def test_a_timeline_the_gate_cannot_read_is_refused_not_passed(tmp_path, documen
 
 
 # -- waivers reach the report -------------------------------------------------------------------------------------
-def test_a_waived_finding_passes_and_its_reason_is_in_the_report(tmp_path):
+def test_a_reason_only_waiver_refuses(tmp_path):
     t = late_end(timeline())
     t["items"][3]["direction"]["waive"] = [{"check": "end_breath", "reason": "the silence after is the joke"}]
     readings = read(tmp_path, new=gated(t, passed=True))
-    assert prosody_gate.refusals(readings) == []
-    assert prosody_gate.lines(readings) == [
-        "prosody new-video: passes on its waivers",
-        "  take 04: end_breath 3.300 outside 0.3..1.2 (waived: the silence after is the joke)",
-    ]
+    assert prosody_gate.refusals(readings)
+    assert "missing typed approval evidence" in readings["new"].findings[0].note
 
 
 def test_a_reel_waiver_reaches_the_report_too(tmp_path):
@@ -122,13 +120,15 @@ def test_a_reel_waiver_reaches_the_report_too(tmp_path):
         p["words_per_second"] = round(n / (p["last"] - p["first"]), 3)
     t["prosody"] = {"waive": [{"check": "reel_pace", "reason": "an auctioneer sketch is fast"}]}
     lines = prosody_gate.lines(read(tmp_path, fast=gated(t)))
-    assert lines[0] == "prosody fast-video: passes on its waivers"
-    assert "(waived: an auctioneer sketch is fast)" in lines[1] and "reel: reel_pace" in lines[1]
+    assert lines[0] == "prosody fast-video: REFUSED"
+    assert "reel_pace: missing typed approval evidence" in lines[1]
 
 
 def test_a_timeline_handed_over_as_text_is_read_the_same_and_none_is_unmeasured():
     where = "timeline.json in the package"
-    assert prosody_gate.judge("p", None, where).lines() == [f"prosody p: {UNMEASURED} (no {where}), advisory"]
+    assert prosody_gate.judge("p", None, where).lines() == [
+        f"prosody p: {UNMEASURED} (no {where}), REFUSED: missing C7 evidence"
+    ]
     assert prosody_gate.judge("p", json.dumps(gated(timeline())).encode(), where).lines() == ["prosody p: clean"]
     bad = prosody_gate.judge("p", b"\xff", where)
     assert bad.refused and bad.error.startswith(f"{where} cannot be read")
@@ -143,3 +143,14 @@ def test_a_timeline_that_cannot_be_opened_is_refused(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "read_bytes", unreadable)
     found = prosody_gate.reading("new-video", tmp_path / "new")
     assert found.refused and found.error == "timeline.json cannot be read: [Errno 13] Permission denied"
+
+
+def test_missing_prosody_is_a_release_refusal():
+    r = prosody_gate.judge("legacy", None)
+    assert r.refused and "REFUSED" in "\n".join(r.lines())
+
+
+def test_reason_only_prosody_waiver_is_refused():
+    t = late_end(timeline())
+    t["items"][3]["direction"]["waive"] = [{"check": "end_breath", "reason": "a deliberately held ending"}]
+    assert prosody_gate.judge("new", json.dumps(gated(t))).refused

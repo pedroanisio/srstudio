@@ -167,11 +167,11 @@ def test_a_silent_master_fails_its_opening():
 GATED = {"items": [{"id": "01", "start": 0.4, "prosody": {"first": 0.1}}], "prosody": {"waive": []}}
 
 
-def test_a_reel_recorded_before_the_gate_is_listed_and_never_refused(clips):
+def test_a_reel_recorded_before_the_gate_is_listed_and_refused(clips):
     r = master_gate.judge("Old", clips["frozen"], None)
-    assert not r.binding and not r.refused and r.failing
-    assert r.lines()[0] == "master Old: findings (recorded before the gate: advisory)"
-    assert master_gate.refusals({"old": r}) == []
+    assert not r.binding and r.refused and r.failing
+    assert r.lines()[0] == "master Old: REFUSED (legacy=True; release gate applies)"
+    assert master_gate.refusals({"old": r})
 
 
 def test_a_reel_recorded_to_the_gate_is_refused_on_an_unwaived_finding(clips):
@@ -183,8 +183,23 @@ def test_a_reel_recorded_to_the_gate_is_refused_on_an_unwaived_finding(clips):
 
 
 def test_a_waiver_on_the_script_passes_the_finding_with_its_reason(clips):
-    waived = GATED | {"prosody": {"waive": [{"check": "opening", "reason": "the cold open is a held beat"}]}}
-    r = master_gate.judge("New", clips["late"], waived)
+    from srstudio.authority import Disposition, Message
+    from srstudio.digest import sha256
+
+    reason = "the cold open is a held beat"
+    d = Disposition(
+        sha256(clips["late"]),
+        "opening",
+        None,
+        reason,
+        None,
+        "production",
+        "builder",
+        Message("arc4d3", "slack://arc", "Approve this held opening."),
+        "Approve this held opening.",
+    )
+    waived = GATED | {"prosody": {"waive": [{"check": "opening", "reason": reason, "approval": d.record()}]}}
+    r = master_gate.judge("New", clips["late"], waived, scope="production")
     assert not r.refused and r.lines()[0] == "master New: passes on its waivers"
     assert "(waived: the cold open is a held beat)" in r.lines()[1]
 
@@ -193,7 +208,7 @@ def test_a_master_the_gate_cannot_measure_refuses_a_reel_recorded_to_it(clips):
     r = master_gate.judge("New", clips["mute"], GATED)
     assert r.refused and r.lines()[0].startswith("master New: REFUSED, mute.mp4: silencedetect")
     old = master_gate.judge("Old", clips["mute"], None)
-    assert not old.refused and old.lines()[0].startswith("master Old: unmeasured, mute.mp4")
+    assert old.refused and old.lines()[0].startswith("master Old: REFUSED, mute.mp4")
 
 
 def test_read_finds_the_master_the_timeline_and_the_bed(clips, tmp_path):
@@ -206,10 +221,10 @@ def test_read_finds_the_master_the_timeline_and_the_bed(clips, tmp_path):
     (episodes / "new-reel" / "timeline.json").write_text(json.dumps(timeline))
     release = Release("new-reel", InstagramPost(title="t", description="d"), video="New_Reel")
     readings = master_gate.read({"new-reel": release}, episodes, renders, {"new-reel": "New_Reel"})
-    assert master_gate.lines(readings) == [
-        "master New_Reel: clean",
-        "  info: constant bed: no gap of 0.5 s 10 dB down in the music",
-    ]
+    r = readings["new-reel"]
+    assert r.refused  # this minimal timeline has no usable C7 word recording
+    assert any(c.check == "c7" and c.verdict == "MISSING" for c in r.checks)
+    assert "  info: constant bed: no gap of 0.5 s 10 dB down in the music" in r.lines()
 
 
 def test_a_missing_tool_or_an_unusual_bed_is_an_error_not_a_pass(clips, tmp_path):
@@ -224,14 +239,14 @@ def test_a_missing_tool_or_an_unusual_bed_is_an_error_not_a_pass(clips, tmp_path
         master_gate.constant_bed(tmp_path / "b.wav")
 
 
-def test_a_timeline_that_cannot_be_read_leaves_the_master_advisory_for_the_prosody_gate_to_refuse(clips, tmp_path):
+def test_a_timeline_that_cannot_be_read_refuses_release(clips, tmp_path):
     (tmp_path / "renders").mkdir()
     (tmp_path / "renders" / "V.mp4").write_bytes(clips["clean"].read_bytes())
     (tmp_path / "eps" / "s").mkdir(parents=True)
     (tmp_path / "eps" / "s" / "timeline.json").write_text("{not json")
     release = Release("s", InstagramPost(title="t", description="d"), video="V")
     (r,) = master_gate.read({"s": release}, tmp_path / "eps", tmp_path / "renders", {"s": "V"}).values()
-    assert not r.binding and r.lines() == ["master V: clean (recorded before the gate: advisory)"]
+    assert not r.binding and r.refused and any(c.verdict == "MISSING" for c in r.checks)
 
 
 def test_the_master_checks_are_waived_on_the_script_with_a_reason_and_no_bounds():
@@ -244,3 +259,189 @@ def test_the_master_checks_are_waived_on_the_script_with_a_reason_and_no_bounds(
         Waiver("frozen", "the held frame is the joke", (0.0, 3.0))
     with pytest.raises(DirectionError, match="at least 3 words"):
         Waiver("opening", "because")
+
+
+def test_legacy_master_is_binding(clips):
+    assert master_gate.judge("old", clips["late"], None).refused
+
+
+def test_reason_only_cannot_change_acceptance(clips):
+    t = {"prosody": {"waive": [{"check": "opening", "reason": "the held beat matters"}]}}
+    assert master_gate.judge("new", clips["late"], t).refused
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), -float("inf")])
+def test_nonfinite_master_measure_is_refused(clips, monkeypatch, value):
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: Measured((), (), 0.0, value))
+    assert master_gate.judge("new", clips["clean"], GATED).refused
+
+
+def test_release_api_reports_missing_c7_with_hash(clips, tmp_path):
+    from srstudio.master_gate import evaluate_release
+
+    result = evaluate_release(clips["clean"], tmp_path)
+    assert result.refused and len(result.master_sha256) == 64
+    assert any(c.check == "c7" and c.verdict == "MISSING" for c in result.checks)
+    assert "legacy=True" in "\n".join(result.lines())
+
+
+def c7_result(**changes):
+    from srstudio.craft_bar import Measure, Result
+
+    values = dict(integrated_lufs=-16.0, lra=9.0, first_word=0.1, constant_bed=False)
+    values.update(changes)
+    return Result(tuple(Measure(k, v, "explicit fixture bar", "PASS", "master fixture") for k, v in values.items()))
+
+
+def test_complete_c7_passes_and_reports_every_value(clips, tmp_path, monkeypatch):
+    from srstudio import craft_bar
+
+    monkeypatch.setattr(craft_bar, "measure", lambda *a: c7_result())
+    r = master_gate.evaluate_release(clips["clean"], tmp_path)
+    assert not r.refused
+    assert {c.check for c in r.checks} >= {"c7.lra", "c7.first_word", "c7.constant_bed", "c7.integrated_lufs"}
+    assert all(c.limit and c.measured is not None for c in r.checks)
+    assert "legacy=True" in "\n".join(r.lines())
+    assert r.master_sha256 in "\n".join(r.lines())
+
+
+@pytest.mark.parametrize("value", [None, float("nan"), float("inf"), True])
+def test_missing_and_nonfinite_c7_cannot_pass(clips, tmp_path, monkeypatch, value):
+    from srstudio import craft_bar
+
+    monkeypatch.setattr(craft_bar, "measure", lambda *a: c7_result(lra=value))
+    r = master_gate.evaluate_release(clips["clean"], tmp_path)
+    assert r.refused
+    assert next(c for c in r.checks if c.check == "c7.lra").verdict == "MISSING"
+
+
+def test_c7_failure_requires_exact_pedro_disposition_for_pilot(clips, tmp_path, monkeypatch):
+    from dataclasses import replace
+
+    from srstudio import craft_bar
+    from srstudio.authority import Disposition, Message
+    from srstudio.digest import sha256
+
+    bad = c7_result()
+    bad = replace(bad, measures=tuple(replace(m, status="FAIL") if m.name == "lra" else m for m in bad.measures))
+    monkeypatch.setattr(craft_bar, "measure", lambda *a: bad)
+    assert master_gate.evaluate_release(clips["clean"], tmp_path, scope="new_pilot").refused
+    d = Disposition(
+        sha256(clips["clean"]),
+        "c7.lra",
+        None,
+        "the held level matters",
+        None,
+        "new_pilot",
+        "builder",
+        Message("Pedro", "slack://pedro", "Approved this measured master."),
+        "Approved this measured master.",
+    )
+    r = master_gate.evaluate_release(clips["clean"], tmp_path, scope="new_pilot", dispositions=(d,))
+    assert not r.refused
+    c = next(c for c in r.checks if c.check == "c7.lra")
+    assert c.approver == "Pedro" and c.evidence == "slack://pedro" and c.disabled
+    assert c.measured == 9.0 and c.limit == "explicit fixture bar"
+    assert "Approved this measured master." in "\n".join(r.lines())
+    assert d.reason in "\n".join(r.lines())
+    stale = replace(d, master_sha256="a" * 64)
+    assert master_gate.evaluate_release(clips["clean"], tmp_path, scope="new_pilot", dispositions=(stale,)).refused
+
+
+def test_prosody_bound_change_is_visible_and_hash_bound():
+    from srstudio import prosody
+    from srstudio.authority import Disposition, Message
+    from support.prosody import timeline
+
+    t = timeline()
+    t["duration"] = 9.0
+    reason = "the final held silence matters"
+    d = Disposition(
+        "a" * 64,
+        "end_breath",
+        "04",
+        reason,
+        (0.3, 4.0),
+        "production",
+        "builder",
+        Message("arc4d3", "slack://arc", "Approved this longer ending."),
+        "Approved this longer ending.",
+    )
+    t["items"][3]["direction"]["waive"] = [
+        {"check": "end_breath", "reason": reason, "bounds": [0.3, 4.0], "approval": d.record()}
+    ]
+    (f,) = prosody.gate(t, master_sha256="a" * 64, scope="production")
+    assert f.measured == 3.3 and f.default_bounds == (0.3, 1.2) and f.changed_bound == (0.3, 4.0)
+    assert f.waived and f.approver == "arc4d3" and f.evidence == "slack://arc"
+    with pytest.raises(prosody.ProsodyError, match="stale"):
+        prosody.gate(t, master_sha256="b" * 64, scope="production")
+
+
+def test_outbox_cannot_stage_a_delivered_file_without_c7_project(clips, tmp_path, monkeypatch):
+    from srstudio import outbox
+    from srstudio.social import Item
+
+    monkeypatch.setattr(outbox, "check_delivery", lambda *a, **kw: [])
+    package = tmp_path / "reel.vpkg.zip"
+    package.write_bytes(b"fixture package")
+    items = {"already-delivered": Item(InstagramPost(title="t", description="d"), clips["clean"])}
+    bundles, drift = outbox.ready(items, tmp_path, font=tmp_path / "font.ttf", packages={"already-delivered": package})
+    assert not bundles and "missing recording project" in drift[0].reason
+
+
+def test_outbox_reports_the_shared_gate_and_holds_a_c7_failure(clips, tmp_path, monkeypatch):
+    from srstudio import outbox
+    from srstudio.social import Item
+
+    monkeypatch.setattr(outbox, "check_delivery", lambda *a, **kw: [])
+    reading = master_gate.Reading(
+        "reel", False, master_sha256="a" * 64, checks=(master_gate.CheckVerdict("c7.pace:01", 5.0, "<= 4.2", "FAIL"),)
+    )
+    calls = []
+
+    def gate(master, project, **kwargs):
+        calls.append((master, project, kwargs))
+        return reading
+
+    monkeypatch.setattr(master_gate, "evaluate_release", gate)
+    package = tmp_path / "reel.vpkg.zip"
+    package.write_bytes(b"fixture package")
+    items = {"reel": Item(InstagramPost(title="t", description="d"), clips["clean"])}
+    report = []
+    bundles, drift = outbox.ready(
+        items,
+        tmp_path,
+        font=tmp_path / "font.ttf",
+        packages={"reel": package},
+        projects={"reel": tmp_path},
+        scopes={"reel": "new_pilot"},
+        release_reports=report,
+    )
+    assert not bundles and drift and report == reading.lines()
+    assert calls == [(clips["clean"], tmp_path, {"scope": "new_pilot", "dispositions": ()})]
+
+
+def test_authority_is_not_evaluated_when_master_measurement_is_missing(clips, monkeypatch):
+    events = []
+
+    def missing(*a, **kw):
+        events.append("measure")
+        raise MasterError("missing measured master")
+
+    def authority(*a, **kw):
+        events.append("authority")
+        raise AssertionError("must measure first")
+
+    monkeypatch.setattr(master_gate, "measure", missing)
+    monkeypatch.setattr(master_gate, "_waivers", authority)
+    r = master_gate.judge("reel", clips["clean"], GATED)
+    assert r.refused and events == ["measure"]
+    assert {c.check for c in r.checks} == set(master_gate.CHECKS)
+    assert all(c.verdict == "MISSING" for c in r.checks)
+
+
+def test_master_changed_during_measurement_refuses(clips, monkeypatch):
+    hashes = iter(["a" * 64, "b" * 64])
+    monkeypatch.setattr(master_gate, "sha256", lambda path: next(hashes))
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: Measured((), (), 0.0, 9.0))
+    assert "changed during measurement" in master_gate.judge("reel", clips["clean"], GATED).error

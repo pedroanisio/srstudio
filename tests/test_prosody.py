@@ -22,7 +22,7 @@ from support.takes import DEV, script
 
 def harmonic(f: float, seconds: float, amp: float, rate: int = RATE) -> np.ndarray:
     t = np.arange(round(seconds * rate)) / rate
-    return amp * sum(np.sin(2 * np.pi * f * k * t) / k for k in range(1, 6)) / 2.3
+    return np.asarray(amp * sum(np.sin(2 * np.pi * f * k * t) / k for k in range(1, 6)) / 2.3)
 
 
 def write(path: Path, x: np.ndarray, rate: int = RATE) -> Path:
@@ -299,10 +299,34 @@ def test_one_emotional_hold_per_reel_is_allowed_after_a_question():
     assert gate(t) == []
 
 
+def approved_gate(t):
+    """Synthetic evidence for this fixture master; authoring alone never approves."""
+    from srstudio.authority import Disposition, Message
+
+    locations = [(None, t.get("prosody", {}))]
+    locations += [(it["id"], it.get("direction", {})) for it in t["items"] if it.get("actor") != "sfx"]
+    for line, location in locations:
+        for w in location.get("waive", ()):
+            bounds = tuple(w["bounds"]) if "bounds" in w else None
+            d = Disposition(
+                "a" * 64,
+                w["check"],
+                line,
+                w["reason"],
+                bounds,
+                "production",
+                "fixture-builder",
+                Message("arc4d3", "fixture://approval", "Approved this fixture disposition."),
+                "Approved this fixture disposition.",
+            )
+            w["approval"] = d.record()
+    return gate(t, master_sha256="a" * 64, scope="production")
+
+
 def test_a_waiver_states_its_reason_and_keeps_the_finding_visible():
     t = words_of(3, [(-14, 165), (-22, 150)])(timeline())
     t["items"][3]["direction"]["waive"] = [{"check": "stress", "reason": "the deadpan is the joke here"}]
-    (finding,) = gate(t)
+    (finding,) = approved_gate(t)
     assert finding.waived == "the deadpan is the joke here" and prosody.failing([finding]) == []
     assert "waived: the deadpan is the joke here" in finding.line()
 
@@ -310,17 +334,18 @@ def test_a_waiver_states_its_reason_and_keeps_the_finding_visible():
 def test_a_waiver_with_bounds_moves_the_target_and_a_value_outside_them_still_fails():
     t = shift(timeline(), 2, 0.5)  # 02 -> 03: 1.05 s
     t["items"][2]["direction"] = {"waive": [{"check": "turn_gap", "reason": "he lets it hang", "bounds": [0.9, 1.2]}]}
-    assert gate(t) == []  # a waived gap leaves the reel's median too
+    (accepted,) = approved_gate(t)
+    assert accepted.waived and accepted.changed_bound == (0.9, 1.2)
     t = shift(t, 2, 0.5)
-    (finding,) = gate(t)
-    assert finding.bounds == (0.9, 1.2) and not finding.waived
+    (finding,) = approved_gate(t)
+    assert finding.changed_bound == (0.9, 1.2) and finding.default_bounds == (0.0, 0.7) and not finding.waived
 
 
 @pytest.mark.parametrize(("spoil", "check"), [(fast_reel, "reel_pace"), (lambda t: shift(t, 2, -0.5), "turn_median")])
 def test_the_reels_own_targets_are_waived_on_the_reel(spoil, check):
     t = spoil(timeline())
     t["prosody"] = {"waive": [{"check": check, "reason": "an auctioneer sketch is fast"}]}
-    (finding,) = gate(t)
+    (finding,) = approved_gate(t)
     assert finding.check == check and finding.waived
 
 
@@ -413,7 +438,8 @@ class Provider:
     them."""
 
     def __init__(self, root: Path, stressed_seeds=(8,)):
-        self.root, self.stressed_seeds, self.calls = root, stressed_seeds, []
+        self.root, self.stressed_seeds = root, stressed_seeds
+        self.calls: list[dict[str, object]] = []
         self.words: dict[str, list[Word]] = {}
 
     def synthesize(self, text, voice, settings, **kw):

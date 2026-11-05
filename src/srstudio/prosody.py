@@ -39,13 +39,14 @@ import math
 import sys
 import wave
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 from scipy.signal import resample_poly
 
+from .checks import number
 from .direction import MAX_HOLD
 from .errors import SrstudioError
 from .voice import Word, normalize_words
@@ -353,14 +354,28 @@ class Finding:
     bounds: tuple[float, float] | None
     note: str = ""
     waived: str = ""
+    default_bounds: tuple[float, float] | None = None
+    changed_bound: tuple[float, float] | None = None
+    disabled: bool = False
+    approver: str = ""
+    evidence: str = ""
+    approval_message: str = ""
 
     def line(self) -> str:
         where = f"take {self.take}" if self.take else "reel"
         value = "" if self.measured is None else f" {self.measured:.3f}"
-        bounds = "" if self.bounds is None else f" outside {self.bounds[0]:g}..{self.bounds[1]:g}"
+        bounds = "" if self.bounds is None or self.approver else f" outside {self.bounds[0]:g}..{self.bounds[1]:g}"
         why = f" (waived: {self.waived})" if self.waived else ""
         note = f": {self.note}" if self.note else ""
-        return f"{where}: {self.check}{value}{bounds}{note}{why}"
+        authority = (
+            (
+                f"; default_limit={self.default_bounds}; changed_bound={self.changed_bound}; disabled={self.disabled}; "
+                f"approver={self.approver}; evidence={self.evidence}; approval_message={self.approval_message!r}"
+            )
+            if self.approver
+            else ""
+        )
+        return f"{where}: {self.check}{value}{bounds}{note}{why}{authority}"
 
 
 @dataclass(frozen=True)
@@ -402,7 +417,7 @@ class _Item:
 def _number(where: str, value: object, optional: bool = False) -> float | None:
     if value is None and optional:
         return None
-    if isinstance(value, bool) or not isinstance(value, int | float) or not math.isfinite(value):
+    if not number(value):
         raise ProsodyError(f"{where} is not a finite number: {value!r}")
     return float(value)
 
@@ -422,6 +437,8 @@ def _parse_item(i: int, item: object) -> _Item | None:
         raise ProsodyError(f"{where} is not an object")
     if item.get("actor") == "sfx":
         return None
+    if not isinstance(item.get("id"), str) or not item["id"].strip():
+        raise ProsodyError(f"{where}: missing or invalid line id")
     p = item.get("prosody")
     if not isinstance(p, Mapping):
         raise ProsodyError(f"{where} (take {item.get('id')}) is not measured: record it with this kit")
@@ -460,15 +477,29 @@ def _range(check: str, item: _Item | None, measured: float, default: tuple[float
            note: str = "") -> Finding | None:  # fmt: skip
     waiver = (item.waivers if item is not None else reel_waivers).get(check)
     bounds = tuple(waiver["bounds"]) if waiver and "bounds" in waiver else default
+    _number(check, measured)
     measured = round(measured, 3)  # judged as reported: word times are 10 ms steps or coarser
     if bounds[0] - 1e-6 <= measured <= bounds[1] + 1e-6:
+        if waiver:
+            return Finding(
+                check,
+                item.id if item else None,
+                measured,
+                (bounds[0], bounds[1]),
+                note,
+                waiver["reason"],
+                default_bounds=default,
+            )
         return None
     reason = waiver["reason"] if waiver and "bounds" not in waiver else ""
-    return Finding(check, item.id if item else None, measured, (bounds[0], bounds[1]), note, reason)
+    return Finding(
+        check, item.id if item else None, measured, (bounds[0], bounds[1]), note, reason, default_bounds=default
+    )
 
 
 def _found(check: str, item: _Item, measured: float | None, note: str, bounds: tuple[float, float] | None = None
            ) -> Finding:  # fmt: skip
+    _number(check, measured, optional=True)
     waiver = item.waivers.get(check)
     return Finding(check, item.id, None if measured is None else round(measured, 3), bounds, note,
                    waiver["reason"] if waiver else "")  # fmt: skip
@@ -530,7 +561,7 @@ def _delivery(key: _Item, others: Sequence[_Item]) -> Finding | None:
                                          f"line, wants +{DELIVERY_ST:g} st and +{DELIVERY_DB:g} dB")  # fmt: skip
 
 
-def gate(timeline: Mapping[str, Any]) -> list[Finding]:
+def gate(timeline: Mapping[str, Any], *, master_sha256: str = "", scope: str = "reserved") -> list[Finding]:
     """Every target the recorded ``timeline`` misses, waived ones included with their reasons."""
     if not isinstance(timeline, Mapping) or not isinstance(timeline.get("items"), list):
         raise ProsodyError("not a timeline: no items")
@@ -538,8 +569,40 @@ def gate(timeline: Mapping[str, Any]) -> list[Finding]:
     reel = timeline.get("prosody", {})
     if not isinstance(reel, Mapping):
         raise ProsodyError("prosody is not an object")
-    reel_waivers = {w["check"]: w for w in reel.get("waive", ())}
+    from .authority import AuthorityError, authorize
+
+    pending_authority: list[Finding] = []
+
+    def approved(rows: object, line: str | None) -> list[dict[str, Any]]:
+        if not isinstance(rows, list | tuple):
+            raise ProsodyError("waivers must be a list")
+        out = []
+        seen: set[str] = set()
+        for w in rows:
+            if not isinstance(w, Mapping) or not isinstance(w.get("check"), str):
+                raise ProsodyError("waiver must name its check")
+            check = w["check"]
+            if check in seen:
+                raise ProsodyError(f"duplicate waiver: {check}")
+            seen.add(check)
+            try:
+                authorize(w, master_sha256, check, line, scope)
+            except AuthorityError as exc:
+                if not master_sha256:
+                    pending_authority.append(Finding("authority", line, None, None, f"{check}: {exc}"))
+                    continue
+                raise ProsodyError(f"{check}: {exc}") from exc
+            out.append(dict(w))
+        return out
+
+    reel_waivers = {w["check"]: w for w in approved(reel.get("waive", ()), None)}
     sequence: list[_Item | None] = [_parse_item(i, item) for i, item in enumerate(timeline["items"])]
+    sequence = [
+        replace(it, direction=dict(it.direction) | {"waive": approved(it.direction.get("waive", ()), it.id)})
+        if it is not None
+        else None
+        for it in sequence
+    ]
     spoken = [it for it in sequence if it is not None]
     if not spoken:
         raise ProsodyError("the timeline has no spoken take")
@@ -558,6 +621,8 @@ def gate(timeline: Mapping[str, Any]) -> list[Finding]:
         if it.first is None or it.last is None:
             out.append(Finding("heard", it.id, None, None, "no word was heard"))
             continue
+        if it.pace is None:
+            out.append(Finding("line_pace", it.id, None, (0.0, LINE_PACE), "missing pace measurement"))
         if it.pace is not None:
             out.append(_range("line_pace", it, it.pace, (0.0, LINE_PACE), reel_waivers))
         hold = it.waivers.get("hold")
@@ -608,7 +673,27 @@ def gate(timeline: Mapping[str, Any]) -> list[Finding]:
                 turns.append(gap)
     if turns:
         out.append(_range("turn_median", None, _median(turns), TURN_GAP, reel_waivers))
-    return [f for f in out if f is not None]
+    from .authority import Disposition
+
+    reported = []
+    by_id = {it.id: it for it in spoken}
+    for f in out:
+        if f is None:
+            continue
+        waiver = (by_id[f.take].waivers if f.take is not None else reel_waivers).get(f.check)
+        if waiver:
+            d = Disposition.parse(waiver["approval"])
+            f = replace(
+                f,
+                default_bounds=f.default_bounds if f.default_bounds is not None else f.bounds,
+                changed_bound=d.bounds,
+                disabled=d.bounds is None,
+                approver=d.message.author,
+                evidence=d.message.reference,
+                approval_message=d.exact_message,
+            )
+        reported.append(f)
+    return [*pending_authority, *reported]
 
 
 def targets() -> dict[str, Any]:
