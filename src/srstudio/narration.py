@@ -465,7 +465,10 @@ ITEM_FIELDS: dict[str, object] = dict(
     audio=str,
     sha256=str,
 )
-OPTIONAL_ITEM_FIELDS: dict[str, object] = dict(lag=_Number)  # written by the relaxed policy only
+OPTIONAL_ITEM_FIELDS: dict[str, object] = dict(
+    lag=_Number,  # written by the relaxed policy only
+    stress=dict,  # the dB each stressed word was raised by on the clip (srstudio.emphasis), written by a sketch record
+)
 EFFECT_FIELDS: dict[str, object] = dict(id=str, start=_Number, gain_db=_Number, audio=str, sha256=str)
 OPTIONAL_EFFECT_FIELDS: dict[str, object] = dict(taps=list, role=str)
 EFFECT_ROLES = ("effects", "music")
@@ -518,6 +521,9 @@ def narration_cues(path: Path, root: Path) -> list[Cue]:
         q = _checked(item, where, ITEM_FIELDS, OPTIONAL_ITEM_FIELDS)
         if not (checks.number(q["duration"]) and q["duration"] > 0 and checks.number(q["start"]) and q["start"] >= 0):
             raise NarrationError(f"{where}: duration must be positive and start non-negative")
+        for word, gain in q.get("stress", {}).items():
+            if not (word and checks.number(gain) and gain >= 0):
+                raise NarrationError(f"{where}: stress maps each word to the dB it was raised, got {word!r}: {gain!r}")
         _clip(root, q, where)
         cues.append(Cue(q["id"], q["text"], float(q["start"]), float(q["duration"]), q["audio"], q["sha256"]))
     return cues
