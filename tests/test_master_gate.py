@@ -206,10 +206,12 @@ def test_read_finds_the_master_the_timeline_and_the_bed(clips, tmp_path):
     (episodes / "new-reel" / "timeline.json").write_text(json.dumps(timeline))
     release = Release("new-reel", InstagramPost(title="t", description="d"), video="New_Reel")
     readings = master_gate.read({"new-reel": release}, episodes, renders, {"new-reel": "New_Reel"})
-    assert master_gate.lines(readings) == [
+    assert master_gate.lines(readings)[:2] == [
         "master New_Reel: clean",
         "  info: constant bed: no gap of 0.5 s 10 dB down in the music",
     ]
+    assert readings['new-reel'].refused
+    assert 'REFUSED sha256=' in master_gate.lines(readings)[2]
 
 
 def test_a_missing_tool_or_an_unusual_bed_is_an_error_not_a_pass(clips, tmp_path):
@@ -231,7 +233,8 @@ def test_a_timeline_that_cannot_be_read_leaves_the_master_advisory_for_the_proso
     (tmp_path / "eps" / "s" / "timeline.json").write_text("{not json")
     release = Release("s", InstagramPost(title="t", description="d"), video="V")
     (r,) = master_gate.read({"s": release}, tmp_path / "eps", tmp_path / "renders", {"s": "V"}).values()
-    assert not r.binding and r.lines() == ["master V: clean (recorded before the gate: advisory)"]
+    assert not r.binding and r.lines()[0] == "master V: clean (recorded before the gate: advisory)"
+    assert r.refused  # the full-size review requirement is independent of prosody's advisory policy
 
 
 def test_the_master_checks_are_waived_on_the_script_with_a_reason_and_no_bounds():

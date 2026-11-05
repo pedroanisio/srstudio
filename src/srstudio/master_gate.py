@@ -26,13 +26,14 @@ import re
 import subprocess
 import wave
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 
 from .errors import SrstudioError
+from .final_frame_gate import RECORD, FinalFrameError, FinalFrameResult, check_master
 from .prosody import Finding
 from .releases import Release
 from .social import Drift
@@ -270,6 +271,8 @@ class Reading:
     findings: tuple[Finding, ...] = ()
     info: tuple[str, ...] = ()
     error: str = ""
+    final_frames: FinalFrameResult | None = None
+    frame_error: str = ""
 
     @property
     def failing(self) -> tuple[Finding, ...]:
@@ -277,9 +280,18 @@ class Reading:
 
     @property
     def refused(self) -> bool:
-        return self.binding and bool(self.error or self.failing)
+        return bool(self.frame_error or (self.final_frames is not None and self.final_frames.refused)) or (
+            self.binding and bool(self.error or self.failing)
+        )
 
     def lines(self) -> list[str]:
+        return (
+            self._measure_lines()
+            + (self.final_frames.lines() if self.final_frames is not None else [])
+            + ([f'frames {self.video}: REFUSED {self.frame_error}'] if self.frame_error else [])
+        )
+
+    def _measure_lines(self) -> list[str]:
         head = f"master {self.video}"
         policy = "" if self.binding else " (recorded before the gate: advisory)"
         if self.error:
@@ -359,16 +371,26 @@ def read(
     for slug, video in sorted(first.items()):
         project = Path(episodes) / releases[slug].slug
         timeline = _timeline(project)
-        out[slug] = judge(video, Path(renders) / f"{video}.mp4", timeline, stem=_stem(project, timeline),
-                          ffmpeg=ffmpeg, ffprobe=ffprobe)  # fmt: skip
+        master = Path(renders) / f"{video}.mp4"
+        reading = judge(video, master, timeline, stem=_stem(project, timeline), ffmpeg=ffmpeg, ffprobe=ffprobe)
+        try:
+            frames = check_master(master, slug=slug, review_path=project / RECORD, ffmpeg=ffmpeg, ffprobe=ffprobe)
+            reading = replace(reading, final_frames=frames)
+        except FinalFrameError as exc:
+            reading = replace(reading, frame_error=str(exc))
+        out[slug] = reading
     return out
 
 
 def refusals(readings: Mapping[str, Reading]) -> list[Drift]:
     """A :class:`~srstudio.social.Drift` for each reel recorded to the gate whose master it refuses."""
     return [
-        Drift(r.video, f"master: {r.error or '; '.join(f.line() for f in r.failing)} (waive a check with its reason "
-                       "on the script)")
+        Drift(r.video, 'master: ' + '; '.join(
+            [*([r.error] if r.binding and r.error else []),
+             *(f.line() for f in r.failing if r.binding),
+             *([r.frame_error] if r.frame_error else []),
+             *(r.final_frames.lines() if r.final_frames is not None and r.final_frames.refused else [])]
+        ))
         for r in readings.values()
         if r.refused
     ]  # fmt: skip

@@ -33,6 +33,7 @@ import numpy as np
 from . import figure_record, fonts, framegraph, gpu, show, show_numbers
 from .figure_gates import figures_on
 from .figure_record import Figure
+from .final_frame_gate import CLEARANCE, _edge_gap
 from .frame_gates import FrameGateError, _duration, _fps, sample_times
 from .framegraph import Box, Drawing, Frame, FrameGraphError
 from .releases import Release
@@ -190,7 +191,7 @@ def _covers_face(frame: Frame, drawn: Mapping[str, Drawing], face: Box, members:
     return bool(framegraph.fill(outlines, zone, _FACE_SCALE).any())
 
 
-def _on_frame(frame: Frame, number: int, drawn, figures, texts) -> Iterator[str]:
+def _on_frame(frame: Frame, number: int, drawn, figures, texts, story_props: Sequence[str] = ()) -> Iterator[str]:
     index = next((i for i, n in enumerate(frame.nodes) if n.id == show.bug_id(number)), None)
     if index is None:
         yield "missing"
@@ -207,8 +208,20 @@ def _on_frame(frame: Frame, number: int, drawn, figures, texts) -> Iterator[str]
     for i, other in enumerate(frame.nodes):
         if _MARK.match(other.id) and other.kind == "group" and other.draw:
             box = frame.box(i, drawn)
-            if box is not None and _meets(box, _BOX):
-                yield "over a signature mark"
+            if box is not None:
+                _edge_gap(box, _BOX)  # reject non-finite geometry before clipping
+                visible = box.within(frame.width, frame.height)
+                if visible.area > 0:
+                    gap = _edge_gap(visible, _BOX)
+                    if gap < CLEARANCE:
+                        yield f"over a signature mark or too near {other.id}: {gap:g} px gap, needs 24 px"
+                    for p, prop in enumerate(frame.nodes):
+                        if prop.id in story_props and prop.draw:
+                            region = frame.box(p, drawn)
+                            if region is not None:
+                                _edge_gap(region, visible)
+                                if _meets(visible, region.within(frame.width, frame.height)):
+                                    yield f'obstructing story prop {prop.id} with signature {other.id}'
         if other.id in texts and other.draw and other.opacity > _LIVE:
             box = frame.box(i, drawn)
             if box is not None and _meets(_text_box(box, other.world[0], *texts[other.id]), _BOX):
@@ -230,6 +243,8 @@ def frame_defects(
     number: int,
     figures: Sequence[Figure],
     texts: Mapping[str, tuple[float, str]],
+    *,
+    story_props: Sequence[str] = (),
 ) -> list[str]:
     """What the bug of reel ``number`` does wrong across ``frames``: each kind once, with its count and first time."""
     counts: Counter[str] = Counter()
@@ -237,7 +252,7 @@ def frame_defects(
     total = 0
     for frame in frames:
         total += 1
-        for kind in set(_on_frame(frame, number, drawn, figures, texts)):
+        for kind in set(_on_frame(frame, number, drawn, figures, texts, story_props)):
             counts[kind] += 1
             first.setdefault(kind, frame.time)
     return [
@@ -307,14 +322,34 @@ def show_defects(
     engine: str | Path,
     ledger: Path,
     font: Path,
+    *,
+    final_masters: Mapping[str, Path] | None = None,
 ) -> list[Drift]:
     """What each reel on its ``first`` delivery does against the look, for those on the show's cover; the ``ledger`` is
     only read if one is. A reel that opted in with no scene or no record of its figures is refused, not skipped."""
+    from .final_frame_gate import RECORD, check_master
+
+    drift: list[Drift] = []
+    if final_masters is not None:
+        for slug, video in first.items():
+            master = final_masters.get(slug)
+            if master is None:
+                drift.append(Drift(video, 'missing final master for signature/bug/prop review'))
+                continue
+            result = check_master(master, slug=slug, review_path=Path(episodes) / slug / RECORD)
+            drift += [
+                Drift(
+                    video,
+                    f'{c.check}: {c.reason}; master sha256={c.master_sha256}; '
+                    f'review={c.review}; observations={c.observations}',
+                )
+                for c in result.checks
+                if c.check in ('show', 'signature_clearance', 'signature_props') and c.verdict == 'FAIL'
+            ]
     shown = {slug: video for slug, video in first.items() if _cover(releases[slug]) is not None}
     if not shown:
-        return []
+        return drift
     numbers = show_numbers.read(ledger)
-    drift: list[Drift] = []
     for slug, video in shown.items():
         release = releases[slug]
         cover = _cover(release)
