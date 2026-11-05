@@ -446,3 +446,16 @@ def test_the_library_raises_its_own_error_type_and_takes_no_episode_defaults(nar
     with pytest.raises(TypeError):  # the base speed is the episode's choice, never a library default
         narration.plan_narration([], lambda i, s: 0.0)  # type: ignore[call-arg]
     assert narration.plan_narration([], lambda i, s: 0.0, BASE) == []
+
+
+def test_a_line_stressed_by_gain_keeps_its_gains_in_the_manifest(narration, tmp_path):
+    path = manifest(tmp_path, stress={"weeks": 4.2, "months": 0.0})
+    assert len(narration.narration_cues(path, tmp_path)) == 1
+
+
+@pytest.mark.parametrize(
+    "stress", [["weeks"], {"weeks": "loud"}, {"weeks": -1.0}, {"weeks": float("inf")}, {"": 2.0}, {"weeks": True}]
+)
+def test_a_stress_record_that_is_not_words_and_their_gains_is_refused(narration, tmp_path, stress):
+    with pytest.raises(narration.NarrationError, match="stress"):
+        narration.narration_cues(manifest(tmp_path, stress=stress), tmp_path)
