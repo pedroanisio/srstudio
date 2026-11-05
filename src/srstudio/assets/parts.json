@@ -16065,6 +16065,108 @@
           "rig": null
         }
       ]
+    },
+    "smallprint-feather": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-04",
+          "note": "A plain coral feather held up in his frame-right fist with its tip under his jaw, in two places to cut between as a wiggle, or laid on the worktop, as replacement plates; his own rig is not changed. First drawn for Small Print's tickle-yourself question.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "38aba0493f27f0601f5474f8a27b24665c4de0e1c7e10524882d5d75ab101a1e",
+          "rig": null
+        }
+      ]
+    },
+    "smallprint-mint": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-04",
+          "note": "An open, unlettered tin of plain white mints and a glass of water, standing on the worktop or lifted in his hand, as replacement plates; his own rig is not changed. First drawn for Small Print's mint-water question.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "16b5cd5a8c4ecd759fc3bcff15955ce293a62d3e3d06fd9f28a0d48b4c931746",
+          "rig": null
+        }
+      ]
+    },
+    "smallprint-bread": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-04",
+          "note": "A plain loaf on a board, stale with a dull cracked crust and crumbs and knocked on by his fist high or low, or warmed with three thin wisps of steam, as replacement plates; his own rig is not changed. First drawn for Small Print's bread question.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "46af2848cafda1f985784f7d47f3001c39f727359f98aaf853f9eab77c862a15",
+          "rig": null
+        }
+      ]
+    },
+    "smallprint-horse": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-04",
+          "note": "A toy horse on the worktop with three horse flies on its back, or in a white coat ringed with black stripes with the flies hovering over it, not landing, as replacement plates. First drawn for Small Print's zebra-stripes question.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "207d8cfc56a257a83d69c5e61d4458927e3689285eb10e17499b0e83a2073383",
+          "rig": null
+        }
+      ]
+    },
+    "smallprint-sunflower": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-04",
+          "note": "A grown sunflower in a terracotta pot, its open head facing east (frame left), a small desk lamp at its west side, off or lit, the flower facing east either way, as replacement plates. First drawn for Small Print's sunflower question.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3668961e3cda25c66d11f03f333d0649453d9a84267b8d9e7f2bb45ca9c2be95",
+          "rig": null
+        }
+      ]
+    },
+    "smallprint-mars": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-04",
+          "note": "A clay globe of Mars on a small stand, rust-red with darker ground and a white polar cap, plain or with a grey gouge on its side to the lens and grey crumbs in front of it, as replacement plates. First drawn for Small Print's Mars question.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "8eb22b78ce237439ec0c88158d49c36599fbb11f1e5c13243a5f8040a451a742",
+          "rig": null
+        }
+      ]
     }
   }
 }

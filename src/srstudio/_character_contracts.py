@@ -193,11 +193,14 @@ def soft(
     mouths: tuple[str, ...],
     feet: tuple[str, ...],
     visemes: tuple[str, ...],
+    *,
+    gazes: tuple[str, ...],
 ) -> PartContract:
     fields = (
         ('time', seconds('canvas', 'start')),
         ('pose', P(enum=poses)),
         ('eyes', P(enum=eyes)),
+        ('gaze', P(enum=gazes)),
         ('mouth', P(enum=mouths)),
         ('x', P(unit='rig units')),
         ('y', P(unit='rig units')),
@@ -219,11 +222,19 @@ def soft(
             ('radius', P(unit='rig units')),
         ),
         capabilities=(('pose_tweening', True), ('foot_pinning', True)),
-        vocabularies=(('poses', poses), ('eyes', eyes), ('mouths', mouths), ('feet', feet), ('visemes', visemes)),
+        vocabularies=(
+            ('poses', poses),
+            ('eyes', eyes),
+            ('gazes', gazes),
+            ('mouths', mouths),
+            ('feet', feet),
+            ('visemes', visemes),
+        ),
         operations=(Operation('cue', cue, PartContract(parameters=fields)),),
         constraints=(
             'The first cue is at zero. ease is the interval before arrival; the expression changes on arrival.',
             'A pinned foot solves translation; pin cannot be combined with cue x/y/lift.',
             'mouth_states drive only sing mouths; pose coordinates are scaled into parent units.',
+            'gaze turns only the look eyes, to a screen side that flip does not change; it defaults to left.',
         ),
     )

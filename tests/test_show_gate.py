@@ -5,7 +5,7 @@ import dataclasses
 import numpy as np
 import pytest
 
-from srstudio import show, show_numbers
+from srstudio import show, show_numbers, thumbnail
 from srstudio.figure_record import Figure
 from srstudio.frame_gates import FrameGateError
 from srstudio.framegraph import Drawing, Frame, Node
@@ -103,6 +103,40 @@ def test_a_series_says_its_place_after_the_question():
     for title in ("Who said this was fine?", "Saga #19 Who said this was fine?", "This was fine. Saga #19"):
         reel = dataclasses.replace(good, post=post(title, SAGA))
         assert any("first line" in why for why in number_defects(reel, LEDGER, {"a": reel}))
+
+
+SHOW_LEDGER = Ledger(base=200, series={"juno-and-pip": 0}, reels={"jp-two": Claim(216, "juno-and-pip", 2, "series-v1")})
+JP = ShowCover("READY IN FIVE MINUTES", 1.0, number=216, series="Juno & Pip", series_number=2)
+
+
+def jp(description="Juno & Pip, episode 2.\nA Soft sketch.", cover=JP):
+    return Release("jp-two", InstagramPost("I'll be ready in five minutes.", description, thumbnail=cover), cover=True)
+
+
+def test_a_show_named_in_more_words_matches_its_ledger_slug_and_opens_the_description_with_its_episode():
+    reel = jp()
+    assert number_defects(reel, SHOW_LEDGER, {"a": reel}) == []
+
+
+@pytest.mark.parametrize("description", ["A Soft sketch.", "Juno & Pip, episode 3.", "Juno and Pip, episode 2."])
+def test_a_show_episode_without_its_episode_line_is_refused(description):
+    reel = jp(description)
+    assert any("episode line" in why for why in number_defects(reel, SHOW_LEDGER, {"a": reel}))
+
+
+def test_a_show_episode_the_ledger_places_elsewhere_is_refused():
+    reel = jp(description="Juno & Pip, episode 3.", cover=dataclasses.replace(JP, series_number=3))
+    assert any(
+        "the ledger gives it #216, juno-and-pip #2" in why for why in number_defects(reel, SHOW_LEDGER, {"a": reel})
+    )
+    unplaced = Ledger(base=200, series={"juno-and-pip": 0}, reels={"jp-two": Claim(216)})
+    assert any("the ledger gives it #216," in why for why in number_defects(jp(), unplaced, {"a": jp()}))
+
+
+def test_a_show_whose_name_is_no_name_is_refused_not_matched():
+    reel = jp(cover=dataclasses.replace(JP, series="juno-and-pip"))
+    found = number_defects(reel, SHOW_LEDGER, {"a": reel})
+    assert any("capitalised words" in why for why in found)
 
 
 def test_the_show_s_cover_needs_its_cover_variant():
@@ -301,3 +335,36 @@ def test_a_gate_that_cannot_run_the_engine_stops_the_delivery(tmp_path):
             tmp_path / "n",
             FONT,
         )
+
+
+def test_episode_four_claimed_before_its_show_is_placed_as_ep_4_and_keeps_its_number(tmp_path):
+    """ADR 0233, the Juno & Pip case: #215-#218 were claimed with no series, the show's base came later, and each
+    episode's place comes from the release, never from the ledger's order."""
+
+    path = tmp_path / "numbers.json"
+    show_numbers.set_base(path, 214)
+    for n in range(1, 5):
+        show_numbers.claim(path, f"jp-ep{n}", brief="series-v1")
+    show_numbers.set_base(path, 0, series="Juno & Pip")
+    placed = show_numbers.place(path, "jp-ep4", "Juno & Pip", 4, delivered=())
+    assert placed == Claim(218, "juno-and-pip", 4, "series-v1")
+    assert show_numbers.episode_document(placed) == {
+        "number": 218,
+        "series": "juno-and-pip",
+        "series_number": 4,
+        "brief": "series-v1",
+    }
+    cover = ShowCover("A NEW NUMBER", 1.0, number=218, series="Juno & Pip", series_number=4)
+    reel = Release(
+        "jp-ep4", InstagramPost("Hi Mum, this is my new number.", "Juno & Pip, episode 4.", thumbnail=cover), cover=True
+    )
+    assert number_defects(reel, show_numbers.read(path), {"jp-ep4": reel}) == []
+    font = next(f for f in SYSTEM_FONTS if f.exists())
+    document = thumbnail.compose(
+        cover, backdrop="b.png", font="f.ttf", font_bytes=font.read_bytes(), width=1080, height=1920
+    ).to_bytes()
+    assert "#218" in document.decode() and "JUNO &amp; PIP · EP 4" in document.decode()
+    assert [show_numbers.read(path).reels[f"jp-ep{n}"].number for n in range(1, 5)] == [215, 216, 217, 218]
+    for n in range(1, 4):
+        assert show_numbers.place(path, f"jp-ep{n}", "Juno & Pip", n, delivered=()).number == 214 + n
+    assert show_numbers.claim(path, "jp-ep5", series="Juno & Pip") == Claim(219, "juno-and-pip", 5)

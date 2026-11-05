@@ -536,11 +536,18 @@ def home_fridge(
     end: float,
     off: float | None = None,
     scale: float = 1,
+    light: bool = True,
     id: str = "soft-home-fridge",
 ):
-    """A fridge 300 x 760 px at ``scale`` 1, its feet at (``x``, ``y``); its light is on until ``off``."""
+    """A fridge 300 x 760 px at ``scale`` 1, its feet at (``x``, ``y``); its light is on until ``off``. With ``light``
+    False the fridge is drawn without its light, for a shot where the small green dot would read as a mark among other
+    things, and it then takes no ``off``."""
     _place("a fridge", x, y, scale)
     checks.positive(end, SoftOddError, f"a fridge's end must be a positive number of seconds, got {end!r}")
+    if type(light) is not bool:
+        raise SoftOddError(f"a fridge's light is True or False, got {light!r}")
+    if not light and off is not None:
+        raise SoftOddError(f"a fridge drawn without its light has no light to switch off, got off={off!r}")
     last = end if off is None else off
     if not (checks.number(last) and 0 < last <= end):
         raise SoftOddError(f"a fridge dies within {end}, got {off!r}")
@@ -551,9 +558,10 @@ def home_fridge(
     cv.rect(g, -124, -610, 16, 64, "#9AA3A8", ink, 3, radius=6)
     cv.rect(g, -124, -490, 16, 90, "#9AA3A8", ink, 3, radius=6)
     cv.rect(g, 40, -440, 60, 46, "#F2A93B", ink, 3, radius=4)  # a magnet and its note
-    light = cv.group(g, f"{id}-light")
-    cv.gate(light, [(0.0, last)])
-    cv.ellipse(light, 100, -730, 22, 22, "#6BD08A", ink, 3)
+    if light:
+        lamp = cv.group(g, f"{id}-light")
+        cv.gate(lamp, [(0.0, last)])
+        cv.ellipse(lamp, 100, -730, 22, 22, "#6BD08A", ink, 3)
     return g
 
 

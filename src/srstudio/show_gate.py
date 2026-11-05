@@ -4,7 +4,8 @@ The look is opt-in, by a release whose cover is a :class:`~srstudio.thumbnail.Sh
 meets this gate. On the first delivery of a reel that opted in, :func:`show_defects` holds:
 
 - the number: the ledger's claim says what the release says (:mod:`srstudio.show_numbers`), no other release holds it,
-  and a series episode says its place on the caption's first line, after the question;
+  and a series episode says its place on the caption's first line, after the question, or, in a show named in more
+  words, opens the description with it, as "Juno & Pip, episode 2." (ADR 0233);
 - the bug, read from the scene: drawn for this number, last, so above the camera, and hidden on the cover;
 - the bug, measured on the engine's frames from the first to the last: live, unmoved, and clear of the signature's
   marks, of text and of a face;
@@ -71,6 +72,15 @@ def _cover(release: Release) -> ShowCover | None:
     return cover if isinstance(cover, ShowCover) else None
 
 
+def _key(cover: ShowCover) -> str:
+    """The ledger's key of the series ``cover`` names; the name itself when it is no name, which the cover's own
+    problems report."""
+    try:
+        return show_numbers.series_key(cover.series) if cover.series else ""
+    except show_numbers.NumberError:
+        return cover.series
+
+
 def number_defects(release: Release, ledger: Ledger, releases: Mapping[str, Release]) -> list[str]:
     """What is wrong with the number of ``release``, a reel on the show's cover, against ``ledger`` and ``releases``."""
     cover = _cover(release)
@@ -82,7 +92,7 @@ def number_defects(release: Release, ledger: Ledger, releases: Mapping[str, Rele
     claim = ledger.reels.get(release.slug)
     if claim is None:
         out.append(f"#{cover.number} is not in the ledger; claim it with srstudio number claim {release.slug}")
-    elif (claim.number, claim.series, claim.series_number) != (cover.number, cover.series, cover.series_number):
+    elif (claim.number, claim.series, claim.series_number) != (cover.number, _key(cover), cover.series_number):
         said = f"#{claim.number}" + (f", {claim.series} #{claim.series_number}" if claim.series else "")
         out.append(f"the ledger gives it {said}, and its cover says #{cover.number} {cover.tag}".rstrip())
     others = [c for r in releases.values() if r.slug != release.slug and (c := _cover(r)) is not None]
@@ -90,7 +100,11 @@ def number_defects(release: Release, ledger: Ledger, releases: Mapping[str, Rele
         out.append(f"another release holds #{cover.number}")
     if cover.series and any(c.tag == cover.tag for c in others):
         out.append(f"another release is {cover.tag}")
-    if cover.series:
+    if cover.episodic:
+        line = f"{cover.series}, episode {cover.series_number}."
+        if release.post.description.strip().split("\n", 1)[0] != line:
+            out.append(f"the description must open with {line!r}, the show's episode line")
+    elif cover.series:
         head = release.post.title.removesuffix(cover.tag).rstrip()
         if not release.post.title.endswith(cover.tag) or not head.endswith("?"):
             out.append(f"the caption's first line must be the question and then {cover.tag}")

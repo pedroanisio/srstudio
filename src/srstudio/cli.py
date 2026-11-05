@@ -181,11 +181,13 @@ def main(argv=None):
     detail.add_argument('--fields', help='comma-separated fields, including dotted dictionary paths; requires --json')
     detail.add_argument("--plugins", nargs="*", default=(), help="extra modules to import before inspection")
     number = sub.add_parser(
-        "number", help="the show's numbers: set the count, claim or release a reel's number, list (ADR 0074, ADR 0080)"
+        "number",
+        help="the show's numbers: set the count, claim, place or release a reel's number, list (ADR 0074, 0080, 0233)",
     )
-    number.add_argument("action", choices=("list", "base", "claim", "release"))
-    number.add_argument("value", nargs="?", help="base: the count; claim, release: the reel's slug")
-    number.add_argument("--series", default="", help="the series, as Saga")
+    number.add_argument("action", choices=("list", "base", "claim", "place", "release"))
+    number.add_argument("value", nargs="?", help="base: the count; claim, place, release: the reel's slug")
+    number.add_argument("--series", default="", help="the series as a cover names it, as Saga or 'Juno & Pip'")
+    number.add_argument("--series-number", type=int, default=0, help="place: the reel's place in --series, from 1")
     number.add_argument("--brief", default="", help="claim: the brief the reel was made to, as send-v1")
     number.add_argument("--post-by", default="", help="claim: the day a timely reel is due, as 2026-11-02")
     number.add_argument("--not-before", default="", help="claim: the first day a timely reel may post, as 2026-11-20")
@@ -960,6 +962,8 @@ def _master(args: argparse.Namespace) -> int:
     print(done.output.rstrip())
     for path in done.paths:
         print(f"master: {path}")
+    for path in done.report:
+        print(f"report: {path}")
     return done.returncode
 
 
@@ -1126,11 +1130,17 @@ def _number(args: argparse.Namespace) -> int:
             held = show_numbers.claim(args.ledger, args.value, args.series, args.brief, args.post_by, args.not_before)
             print(_claimed(args.value, held))
             return 0
-        elif args.action == "release":
+        elif args.action in ("release", "place"):
             if not args.value:
-                raise show_numbers.NumberError("release takes the reel's slug")
+                raise show_numbers.NumberError(f"{args.action} takes the reel's slug")
             root = args.ledger.resolve().parent.parent  # the ledger sits under the folder the renders and outbox are in
             shown = outbox.delivered_names(root / "renders" / "ig", root / "outbox")
+            if args.action == "place":
+                if not args.series or args.series_number < 1:
+                    raise show_numbers.NumberError("place takes --series and --series-number")
+                placed = show_numbers.place(args.ledger, args.value, args.series, args.series_number, shown)
+                print(_claimed(args.value, placed))
+                return 0
             print(f"released {_claimed(args.value, show_numbers.release_claim(args.ledger, args.value, shown))}")
             return 0
         ledger = show_numbers.read(args.ledger)

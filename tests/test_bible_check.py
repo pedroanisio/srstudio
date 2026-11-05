@@ -259,3 +259,19 @@ def test_a_cover_with_no_sealed_series_leaves_the_world_to_the_slug(tmp_path, lo
     r = Release("plain-slug", post, tags=Tags("epic-world", "other-person", "recognition", recurring=("saga-juno",)))
     found = bible_check.check_release(loaded, r, tmp_path, characters=CHARACTERS)
     assert [f.kind for f in found] == ["world"]
+
+
+@pytest.mark.parametrize(
+    ("series", "number", "world"),
+    [("Saga", 19, "saga"), ("Gloss", 3, "gloss"), ("Juno & Pip", 2, "okayville"), ("", 0, "okayville")],
+)
+def test_a_cover_s_world_is_read_through_its_series_slug(series, number, world):
+    cover = ShowCover("GOOD", 1.0, number=216, series=series, series_number=number)
+    release = Release("jp-ready-in-five", InstagramPost("Title?", "Words.", thumbnail=cover), cover=True)
+    assert bible_check.world_of_release(release) == world
+
+
+def test_a_cover_whose_series_is_no_name_keeps_the_lower_cased_world_it_had():
+    cover = ShowCover("GOOD", 1.0, number=216, series="SAGA", series_number=2)
+    release = Release("saga-reel", InstagramPost("Title?", "Words.", thumbnail=cover), cover=True)
+    assert bible_check.world_of_release(release) == "saga"

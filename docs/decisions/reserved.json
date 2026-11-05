@@ -7,6 +7,9 @@
     {"number": "0212", "name": "fein-moves-transcribed", "owner": "worskpace-fein-moves", "reserved": "2026-11-02"},
     {"number": "0214", "name": "dance-2d-skeleton-bridge", "owner": "worskpace-db", "reserved": "2026-11-02"},
     {"number": "0219", "name": "planted-feet-leg-solve", "owner": "worskpace-fein-moves", "reserved": "2026-11-03"},
-    {"number": "0223", "name": "held-keys-on-the-reels-frames", "owner": "worskpace-stall-rebuilds", "reserved": "2026-11-03"}
+    {"number": "0223", "name": "held-keys-on-the-reels-frames", "owner": "worskpace-stall-rebuilds", "reserved": "2026-11-03"},
+    {"number": "0234", "name": "voice-direction-per-line", "owner": "worskpace-sdk-voice", "reserved": "2026-11-04"},
+    {"number": "0237", "name": "master-checks-at-first-delivery", "owner": "worskpace-sdk-voice", "reserved": "2026-11-04"},
+    {"number": "0233", "name": "a-show-named-in-more-words", "owner": "worskpace-sdk-series", "reserved": "2026-11-04"}
   ]
 }

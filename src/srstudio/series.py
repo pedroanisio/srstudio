@@ -32,11 +32,12 @@ from pathlib import Path
 from typing import Any, ClassVar
 
 from . import native, takes
+from .direction import Direction, Waiver
 from .episode import Episode, EpisodeSpec
 from .errors import SrstudioError
 from .layout import VERTICAL, SafeArea
 from .styles import Style
-from .takes import Script
+from .takes import Exchange, Script
 from .voice import Voice, VoiceSettings
 
 __all__ = ["SeriesError", "Series", "Reel", "line", "effect", "word_at", "record", "build", "MAX_CRF"]
@@ -68,8 +69,12 @@ class Series:
     language: str = "en-US"
     safe_area: SafeArea = field(default=VERTICAL)
     captions: native.CaptionLook = native.CAPTION_LOOK  # every reel's caption look unless the reel names its own
+    models: Mapping[str, str] = field(default_factory=dict)  # a voice's speech model by role (ADR 0234); absent: MODEL
 
     def __post_init__(self) -> None:
+        unknown = sorted(set(self.models) - set(self.voices))
+        if unknown:
+            raise SeriesError(f"a model for {unknown}, who have no voice")
         missing = sorted(set(self.voices) - set(self.settings))
         if missing:
             raise SeriesError(f"a series needs settings for every voice; none for {missing}")
@@ -100,6 +105,8 @@ class Reel:
     bed: bool = True  # False: this reel goes without the series' music bed
     loudness: str | None = None  # None: the style's; the mix's integrated target, in LUFS
     foley: Foley | None = None  # the sounds under the takes, written from the recording when the reel is built
+    exchanges: tuple[Exchange, ...] = ()  # runs of takes said as one dialogue (ADR 0234)
+    waive: tuple[Waiver, ...] = ()  # the reel's prosody targets it does not keep (reel_pace), each with its reason
     series: ClassVar[Series | None] = None
 
     def __post_init__(self) -> None:
@@ -140,15 +147,25 @@ class Reel:
             bed=s.bed if self.bed else None,
             font=s.font,
             still=self.still,
+            models={r: s.models[r] for r in roles if r in s.models},
+            exchanges=self.exchanges,
+            waive=self.waive,
         )
 
 
 def line(
-    id: str, actor: str, text: str, hold: float = 0.2, mood: str = "calm", heard: tuple[str, ...] = ()
+    id: str,
+    actor: str,
+    text: str,
+    hold: float = 0.2,
+    mood: str = "calm",
+    heard: tuple[str, ...] = (),
+    direction: Direction | None = None,
 ) -> takes.Take:
     """A spoken take: ``actor``'s voice says ``text``, then ``hold`` seconds of silence; ``heard`` lists the
-    transcripts the operator accepted for it (:attr:`srstudio.takes.Take.heard`)."""
-    return takes.Take(id, actor, text, hold, mood=mood, heard=heard)
+    transcripts the operator accepted for it (:attr:`srstudio.takes.Take.heard`); ``direction`` is how it is said
+    (:class:`srstudio.direction.Direction`, ADR 0234; a ``post_hold`` there replaces ``hold``, so pass ``hold=0``)."""
+    return takes.Take(id, actor, text, hold, mood=mood, heard=heard, direction=direction)
 
 
 def effect(id: str, caption: str, prompt: str, seconds: float, hold: float = 0.2, peak: float = 0.5) -> takes.Take:

@@ -204,6 +204,36 @@ def test_a_tv_flickers_until_it_goes_off_and_a_fridge_light_dies():
     assert len(steps) == 6 and steps[-1][0] <= 2.0 and len({v for _, v in steps}) > 1
 
 
+def _fridge(**kwargs) -> bytes:
+    cv = canvas()
+    soft_odds.home_fridge(cv, cv.comp, 800, 1500, end=END, **kwargs)
+    return cv.scene.to_bytes(layout="pretty")
+
+
+def test_a_fridge_draws_its_light_by_default_byte_for_byte_as_before():
+    assert _fridge(light=True) == _fridge()
+    assert _fridge(light=True, off=3.0) == _fridge(off=3.0)
+
+
+def test_a_fridge_without_its_light_draws_the_same_fridge_and_no_light():
+    cv = canvas()
+    soft_odds.home_fridge(cv, cv.comp, 800, 1500, end=END, light=False)
+    lit = canvas()
+    soft_odds.home_fridge(lit, lit.comp, 800, 1500, end=END)
+    dark, bright = groups(cv), groups(lit)
+    assert "soft-home-fridge-light" not in dark
+    assert set(dark) == set(bright) - {"soft-home-fridge-light"}
+    assert len(list(dark["soft-home-fridge"])) == len(list(bright["soft-home-fridge"])) - 1
+    assert "#6BD08A" not in cv.scene.to_bytes().decode()
+
+
+@pytest.mark.parametrize("light", [False, 0, None, "no"])
+def test_a_fridge_without_a_light_has_none_to_switch_off_and_takes_only_a_bool(light):
+    cv = canvas()
+    with pytest.raises(SoftOddError, match="light"):
+        soft_odds.home_fridge(cv, cv.comp, 800, 1500, end=END, light=light, off=3.0 if light is False else None)
+
+
 @pytest.mark.parametrize("draw", [soft_odds.tv, soft_odds.home_fridge])
 def test_a_set_dies_within_the_reel(draw):
     cv = canvas()

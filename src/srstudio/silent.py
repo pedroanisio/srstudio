@@ -24,6 +24,8 @@ import wave
 from collections.abc import Sequence
 from pathlib import Path
 
+from .dialogue import Said, Turn
+from .direction import Direction
 from .errors import SrstudioError
 from .takes import Script
 from .takes import record as record_takes
@@ -57,7 +59,19 @@ class SilentClient:
         self.work = work
         self.lines: dict[Path, str] = {}
 
-    def synthesize(self, text: str, voice: Voice, settings: VoiceSettings) -> SpokenLine:
+    def synthesize(
+        self,
+        text: str,
+        voice: Voice,
+        settings: VoiceSettings,
+        *,
+        direction: Direction | None = None,
+        seed: int | None = None,
+        previous_text: str = "",
+        next_text: str = "",
+    ) -> SpokenLine:
+        """A tone as long as the line would take; a direction's holds are cut in by the recording, its tags and stress
+        have no sound here."""
         seconds = LEAD + SECONDS_PER_CHARACTER * len(text) / settings.speed
         wav = _tone(self.work / f"speech-{len(self.lines) + 1:03d}.wav", seconds)
         self.lines[wav] = text
@@ -65,6 +79,15 @@ class SilentClient:
         starts = tuple(i * step for i in range(len(text)))
         alignment = Alignment(tuple(text), starts, tuple(start + step for start in starts))
         return SpokenLine(text, voice, settings, alignment, wav, self.work / "timing.json", seconds)
+
+    def converse(self, turns: Sequence[Turn], model: str, settings: VoiceSettings, seed: int) -> list[Said]:
+        """An exchange: each turn a tone, laid end to end on the dialogue's clock."""
+        out, clock = [], 0.0
+        for turn in turns:
+            line = self.synthesize(turn.text, turn.voice, settings)
+            out.append(Said(line, clock, clock + line.duration))
+            clock += line.duration
+        return out
 
     def transcribe(self, audio: str | Path, language: str = "en") -> Transcript:
         text = self.lines[Path(audio)]
@@ -87,7 +110,8 @@ def record(script: Script, root: Path, *, font: Path | None = None, ffmpeg: str 
     if font is not None:
         for name in script.font:
             shutil.copyfile(font / name, root / "assets" / name)
-    made = record_takes(script, root, client=SilentClient(work), confirm=_confirm, ffmpeg=ffmpeg)
+    client = SilentClient(work)
+    made = record_takes(script, root, client=client, confirm=_confirm, ffmpeg=ffmpeg, converse=client.converse)
     made |= {MARK: True, "tts_engine": "none", "voice_note": "Tones, not voices: for staging only."}
     timeline.write_text(json.dumps(made, indent=2) + "\n")
     return made
