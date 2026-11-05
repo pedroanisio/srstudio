@@ -317,15 +317,15 @@ def test_exception_is_typed_hash_and_check_specific(tmp_path, monkeypatch, accep
     video.write_bytes(b'master')
     sha = hashlib.sha256(video.read_bytes()).hexdigest()
     monkeypatch.setattr(master_gate, 'measure', lambda *a, **kw: replace(accepted_measure, lufs=-16.6))
-    approval = master_gate.MasterApproval(sha, 'integrated_lufs', 'arc4d3', 'case reason', 'case stress evidence')
+    approval = approval_fixture(sha, 'integrated_lufs')
     result = master_gate.accept_master(video, tmp_path, approvals=(approval,))
     assert result.ok and result.checks[0].verdict == 'APPROVED'
     assert result.checks[0].approval == approval
     for invalid in (
         replace(approval, master_sha256='0' * 64),
         replace(approval, check='speech'),
-        replace(approval, authorized_by='unknown'),
-        replace(approval, evidence=''),
+        replace(approval, scope='production'),
+        replace(approval, line='other'),
     ):
         assert not master_gate.accept_master(video, tmp_path, approvals=(invalid,)).ok
     monkeypatch.setattr(master_gate, 'measure', lambda *a, **kw: replace(accepted_measure, lufs=-16.61))
@@ -421,9 +421,9 @@ def test_authorized_exception_does_not_hide_other_failures(tmp_path, monkeypatch
     video = tmp_path / 'm.mp4'
     video.write_bytes(b'master')
     sha = hashlib.sha256(video.read_bytes()).hexdigest()
-    m = replace(accepted_measure, first_word=None, speech_evidence=(), frozen=(Run(0, 2),))
+    m = replace(accepted_measure, first_word=0.6, frozen=(Run(0, 2),))
     monkeypatch.setattr(master_gate, 'measure', lambda *a, **kw: m)
-    approval = master_gate.MasterApproval(sha, check, 'arc4d3', 'case reason', 'case evidence')
+    approval = approval_fixture(sha, check)
     result = master_gate.accept_master(video, tmp_path, approvals=(approval,))
     assert not result.ok
     assert next(c for c in result.checks if c.check == check).verdict == 'APPROVED'
@@ -500,3 +500,302 @@ def test_actual_passing_master_and_shared_delivery_result(clips, tmp_path):
     ]
     assert not reading.refused
     assert master_gate.findings(acceptance.measured)[0] == []
+
+
+def test_legacy_master_is_binding(clips):
+    assert master_gate.judge("old", clips["late"], None).refused
+
+
+def test_reason_only_cannot_change_acceptance(clips):
+    t = {"prosody": {"waive": [{"check": "opening", "reason": "the held beat matters"}]}}
+    assert master_gate.judge("new", clips["late"], t).refused
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), -float("inf")])
+def test_nonfinite_master_measure_is_refused(clips, monkeypatch, value):
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: master_gate.Measured((), (), 0.0, value))
+    assert master_gate.judge("new", clips["clean"], GATED).refused
+
+
+def test_release_api_reports_missing_c7_with_hash(clips, tmp_path):
+    from srstudio.master_gate import evaluate_release
+
+    result = evaluate_release(clips["clean"], tmp_path)
+    assert result.refused and len(result.master_sha256) == 64
+    assert any(c.check == "c7" and c.verdict == "MISSING" for c in result.checks)
+    assert "legacy=True" in "\n".join(result.lines())
+
+
+def c7_result(**changes):
+    from srstudio.craft_bar import Measure, Result
+
+    values = dict(integrated_lufs=-16.0, lra=9.0, first_word=0.1, constant_bed=False)
+    values.update(changes)
+    return Result(tuple(Measure(k, v, "explicit fixture bar", "PASS", "master fixture") for k, v in values.items()))
+
+
+def test_complete_c7_passes_and_reports_every_value(clips, tmp_path, monkeypatch, accepted_measure):
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: accepted_measure)
+    from srstudio import craft_bar
+
+    monkeypatch.setattr(craft_bar, "measure", lambda *a: c7_result())
+    r = master_gate.evaluate_release(clips["clean"], tmp_path)
+    assert not r.refused
+    assert {c.check for c in r.checks} >= {"c7.lra", "c7.first_word", "c7.constant_bed", "c7.integrated_lufs"}
+    assert all(c.limit and c.measured is not None for c in r.checks)
+    assert "legacy=True" in "\n".join(r.lines())
+    assert r.master_sha256 in "\n".join(r.lines())
+
+
+@pytest.mark.parametrize("value", [None, float("nan"), float("inf"), True])
+def test_missing_and_nonfinite_c7_cannot_pass(clips, tmp_path, monkeypatch, value):
+    from srstudio import craft_bar
+
+    monkeypatch.setattr(craft_bar, "measure", lambda *a: c7_result(lra=value))
+    r = master_gate.evaluate_release(clips["clean"], tmp_path)
+    assert r.refused
+    assert next(c for c in r.checks if c.check == "c7.lra").verdict == "MISSING"
+
+
+def test_c7_failure_requires_exact_pedro_disposition_for_pilot(clips, tmp_path, monkeypatch, accepted_measure):
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: accepted_measure)
+    from dataclasses import replace
+
+    from srstudio import craft_bar
+    from srstudio.authority import Disposition, Message
+    from srstudio.digest import sha256
+
+    bad = c7_result()
+    bad = replace(bad, measures=tuple(replace(m, status="FAIL") if m.name == "lra" else m for m in bad.measures))
+    monkeypatch.setattr(craft_bar, "measure", lambda *a: bad)
+    assert master_gate.evaluate_release(clips["clean"], tmp_path, scope="new_pilot").refused
+    d = Disposition(
+        sha256(clips["clean"]),
+        "c7.lra",
+        None,
+        "the held level matters",
+        None,
+        "new_pilot",
+        "builder",
+        Message("Pedro", "slack://pedro", "Approved this measured master."),
+        "Approved this measured master.",
+    )
+    r = master_gate.evaluate_release(clips["clean"], tmp_path, scope="new_pilot", dispositions=(d,))
+    assert not r.refused
+    c = next(c for c in r.checks if c.check == "c7.lra")
+    assert c.approver == "Pedro" and c.evidence == "slack://pedro" and c.disabled
+    assert c.measured == 9.0 and c.limit == "explicit fixture bar"
+    assert "Approved this measured master." in "\n".join(r.lines())
+    assert d.reason in "\n".join(r.lines())
+    stale = replace(d, master_sha256="a" * 64)
+    assert master_gate.evaluate_release(clips["clean"], tmp_path, scope="new_pilot", dispositions=(stale,)).refused
+
+
+def test_prosody_bound_change_is_visible_and_hash_bound():
+    from srstudio import prosody
+    from srstudio.authority import Disposition, Message
+    from support.prosody import timeline
+
+    t = timeline()
+    t["duration"] = 9.0
+    reason = "the final held silence matters"
+    d = Disposition(
+        "a" * 64,
+        "end_breath",
+        "04",
+        reason,
+        (0.3, 4.0),
+        "production",
+        "builder",
+        Message("arc4d3", "slack://arc", "Approved this longer ending."),
+        "Approved this longer ending.",
+    )
+    t["items"][3]["direction"]["waive"] = [
+        {"check": "end_breath", "reason": reason, "bounds": [0.3, 4.0], "approval": d.record()}
+    ]
+    (f,) = prosody.gate(t, master_sha256="a" * 64, scope="production")
+    assert f.measured == 3.3 and f.default_bounds == (0.3, 1.2) and f.changed_bound == (0.3, 4.0)
+    assert f.waived and f.approver == "arc4d3" and f.evidence == "slack://arc"
+    with pytest.raises(prosody.ProsodyError, match="stale"):
+        prosody.gate(t, master_sha256="b" * 64, scope="production")
+
+
+def test_outbox_cannot_stage_a_delivered_file_without_c7_project(clips, tmp_path, monkeypatch):
+    from srstudio import outbox
+    from srstudio.social import Item
+
+    monkeypatch.setattr(outbox, "check_delivery", lambda *a, **kw: [])
+    package = tmp_path / "reel.vpkg.zip"
+    package.write_bytes(b"fixture package")
+    items = {"already-delivered": Item(InstagramPost(title="t", description="d"), clips["clean"])}
+    bundles, drift = outbox.ready(items, tmp_path, font=tmp_path / "font.ttf", packages={"already-delivered": package})
+    assert not bundles and "missing recording project" in drift[0].reason
+
+
+def test_outbox_reports_the_shared_gate_and_holds_a_c7_failure(clips, tmp_path, monkeypatch):
+    from srstudio import outbox
+    from srstudio.social import Item
+
+    monkeypatch.setattr(outbox, "check_delivery", lambda *a, **kw: [])
+    reading = master_gate.Reading(
+        "reel", False, master_sha256="a" * 64, checks=(master_gate.CheckVerdict("c7.pace:01", 5.0, "<= 4.2", "FAIL"),)
+    )
+    calls = []
+
+    def gate(master, project, **kwargs):
+        calls.append((master, project, kwargs))
+        return reading
+
+    monkeypatch.setattr(master_gate, "evaluate_release", gate)
+    package = tmp_path / "reel.vpkg.zip"
+    package.write_bytes(b"fixture package")
+    items = {"reel": Item(InstagramPost(title="t", description="d"), clips["clean"])}
+    report = []
+    bundles, drift = outbox.ready(
+        items,
+        tmp_path,
+        font=tmp_path / "font.ttf",
+        packages={"reel": package},
+        projects={"reel": tmp_path},
+        scopes={"reel": "new_pilot"},
+        release_reports=report,
+    )
+    assert not bundles and drift and report == reading.lines()
+    assert calls == [(clips["clean"], tmp_path, {"scope": "new_pilot", "dispositions": ()})]
+
+
+def test_authority_is_not_evaluated_when_master_measurement_is_missing(clips, monkeypatch):
+    events = []
+
+    def missing(*a, **kw):
+        events.append("measure")
+        raise MasterError("missing measured master")
+
+    def authority(*a, **kw):
+        events.append("authority")
+        raise AssertionError("must measure first")
+
+    monkeypatch.setattr(master_gate, "measure", missing)
+    monkeypatch.setattr(master_gate, "_checks", authority)
+    r = master_gate.judge("reel", clips["clean"], GATED)
+    assert r.refused and events == ["measure"]
+    assert {c.check for c in r.checks} == set(master_gate._LIMITS)
+    assert all(c.verdict == "FAIL" for c in r.checks)
+
+
+def test_master_changed_during_measurement_refuses(clips, monkeypatch):
+    hashes = iter(["a" * 64, "b" * 64])
+    monkeypatch.setattr(master_gate, "sha256", lambda path: next(hashes))
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: master_gate.Measured((), (), 0.0, 9.0))
+    assert "changed during measurement" in master_gate.judge("reel", clips["clean"], GATED).error
+
+
+def approval_fixture(sha, check, scope="reserved", author="Pedro"):
+    from srstudio.authority import Disposition, Message
+
+    return Disposition(
+        sha,
+        check,
+        None,
+        "this measured case approved",
+        None,
+        scope,
+        "fixture-builder",
+        Message(author, "fixture://retained-message", "Approved this measured fixture."),
+        "Approved this measured fixture.",
+    )
+
+
+@pytest.mark.parametrize("scope,author", [("production", "arc4d3"), ("new_pilot", "Pedro")])
+def test_acceptance_and_c7_share_one_disposition(tmp_path, monkeypatch, accepted_measure, scope, author):
+    from srstudio import craft_bar
+    from srstudio.digest import sha256
+
+    video = tmp_path / "master.mp4"
+    video.write_bytes(b"fixture master")
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: replace(accepted_measure, lufs=-16.5))
+    bad = c7_result(integrated_lufs=-16.5)
+    bad = replace(
+        bad, measures=tuple(replace(m, status="FAIL") if m.name == "integrated_lufs" else m for m in bad.measures)
+    )
+    monkeypatch.setattr(craft_bar, "measure", lambda *a: bad)
+    disposition = approval_fixture(sha256(video), "integrated_lufs", scope, author)
+    result = master_gate.evaluate_release(video, tmp_path, scope=scope, dispositions=(disposition,))
+    assert not result.refused and result.acceptance.ok
+    assert result.acceptance.checks[0].approval is disposition
+    by = {c.check: c for c in result.checks}
+    assert by["integrated_lufs"].verdict == by["c7.integrated_lufs"].verdict == "WAIVED"
+    assert by["c7.integrated_lufs"].approver == author
+    assert by["c7.integrated_lufs"].measured == -16.5
+    if scope == "production":
+        assert master_gate.evaluate_release(video, tmp_path, scope="new_pilot", dispositions=(disposition,)).refused
+
+
+@pytest.mark.parametrize(
+    "field,value,check",
+    [
+        ("first_word", None, "speech"),
+        ("crop", None, "frozen"),
+        ("lufs", None, "integrated_lufs"),
+        ("lufs", -16.7, "integrated_lufs"),
+    ],
+)
+def test_disposition_cannot_approve_missing_or_ineligible_master(
+    tmp_path, monkeypatch, accepted_measure, field, value, check
+):
+    from srstudio.digest import sha256
+
+    video = tmp_path / "master.mp4"
+    video.write_bytes(b"fixture master")
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: replace(accepted_measure, **{field: value}))
+    d = approval_fixture(sha256(video), check)
+    assert not master_gate.accept_master(video, tmp_path, approvals=(d,)).ok
+
+
+def test_disposition_cannot_approve_missing_c7(tmp_path, monkeypatch, accepted_measure):
+    from srstudio import craft_bar
+    from srstudio.digest import sha256
+
+    video = tmp_path / "master.mp4"
+    video.write_bytes(b"fixture master")
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: accepted_measure)
+    monkeypatch.setattr(craft_bar, "measure", lambda *a: c7_result(lra=None))
+    d = approval_fixture(sha256(video), "c7.lra")
+    result = master_gate.evaluate_release(video, tmp_path, dispositions=(d,))
+    assert result.refused
+    assert next(c for c in result.checks if c.check == "c7.lra").verdict == "MISSING"
+    assert "missing measurements cannot be approved" in result.error
+
+
+def test_c7_exception_cannot_bypass_accept_master_limit(tmp_path, monkeypatch, accepted_measure):
+    from srstudio import craft_bar
+    from srstudio.digest import sha256
+
+    video = tmp_path / "master.mp4"
+    video.write_bytes(b"fixture master")
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: replace(accepted_measure, lra=3.0))
+    monkeypatch.setattr(craft_bar, "measure", lambda *a: c7_result(lra=3.0))
+    d = approval_fixture(sha256(video), "c7.lra")
+    result = master_gate.evaluate_release(video, tmp_path, dispositions=(d,))
+    assert result.refused and not result.acceptance.ok
+    assert next(c for c in result.checks if c.check == "lra").verdict == "FAIL"
+
+
+@pytest.mark.parametrize("invalid", ["stale", "duplicate", "scope", "line", "unknown"])
+def test_unused_master_dispositions_still_validate(tmp_path, monkeypatch, accepted_measure, invalid):
+    from srstudio.digest import sha256
+
+    video = tmp_path / "master.mp4"
+    video.write_bytes(b"fixture master")
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: accepted_measure)
+    d = approval_fixture(sha256(video), "speech")
+    changes = {
+        "stale": {"master_sha256": "a" * 64},
+        "scope": {"scope": "production"},
+        "line": {"line": "01"},
+        "unknown": {"check": "unknown"},
+    }
+    approvals = (d, d) if invalid == "duplicate" else (replace(d, **changes[invalid]),)
+    result = master_gate.accept_master(video, tmp_path, approvals=approvals)
+    assert not result.ok and "authority:" in result.error
+    assert all(c.verdict == "PASS" for c in result.checks)

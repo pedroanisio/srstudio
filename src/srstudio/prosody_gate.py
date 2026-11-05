@@ -1,18 +1,7 @@
-"""The prosody gate at first delivery (ADR 0234 d): advisory for every reel, refusing only a reel recorded to it.
+"""Recorded prosody evidence at delivery (ADR 0246).
 
-arc4d3's ruling of 4 Nov 2026: the prosody findings are listed in every first-delivery report from today, and they
-refuse only scripts started after the gate landed. The marker for "started after" is the ``prosody`` section of the
-reel's ``timeline.json``: :func:`srstudio.takes.record` writes it since slice (c), and nothing before it did, so every
-recording made before the gate reads :data:`UNMEASURED` and is listed, never refused.
-
-The gate does not trust the section's ``passed`` field: it runs :func:`srstudio.prosody.gate` on the timeline again,
-with today's targets, and refuses on any finding no stated reason waives. A recorded verdict could be stale (made on
-targets that have since moved) or edited by hand; the recorded words and timings are what was heard. A section the
-gate cannot read refuses the reel, since a check that passes because its input is broken cannot fail.
-
-Every waived finding is listed with its reason, so the reason reaches the delivery report (``deliver``'s output) that
-the delivery post to the reviewer quotes. The Instagram caption is public and never carries it.
-"""
+Missing prosody is a refusal. Historical recording labels grant no release exemption.
+Final-master C7 measurement and authority belong to master_gate.evaluate_release."""
 
 from __future__ import annotations
 
@@ -49,14 +38,14 @@ class Reading:
 
     @property
     def refused(self) -> bool:
-        return self.measured and bool(self.error or self.failing)
+        return not self.measured or bool(self.error or self.failing)
 
     def lines(self) -> list[str]:
         """The report's lines for this reel: one when it is unmeasured, clean or unreadable, else one per finding,
         waived findings with their reasons."""
         head = f"prosody {self.video}"
         if not self.measured:
-            return [f"{head}: {UNMEASURED} ({self.why}), advisory"]
+            return [f"{head}: {UNMEASURED} ({self.why}), REFUSED: missing C7 evidence"]
         if self.error:
             return [f"{head}: REFUSED, {self.error}"]
         if not self.findings:
@@ -106,7 +95,7 @@ def refusals(readings: Mapping[str, Reading]) -> list[Drift]:
     for r in readings.values():
         if r.refused:
             why = r.error or "; ".join(f.line() for f in r.failing)
-            out.append(Drift(r.video, f"prosody: {why} (waive a target with its reason in the line's direction)"))
+            out.append(Drift(r.video, f"prosody: {why} (requires a final-master/check-specific authority disposition)"))
     return out
 
 

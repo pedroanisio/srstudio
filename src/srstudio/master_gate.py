@@ -2,19 +2,20 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import math
 import re
 import subprocess
 import wave
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Literal, TypeGuard
 
 import numpy as np
 
+from .authority import AuthorityError, Disposition
+from .digest import sha256
 from .errors import SrstudioError
 from .prosody import Finding
 from .releases import Release
@@ -31,6 +32,8 @@ __all__ = [
     "STILL_RUN",
     "STILL_SHARE",
     "MasterError",
+    "CheckVerdict",
+    "evaluate_release",
     "MasterAcceptance",
     "MasterApproval",
     "MasterCheck",
@@ -392,15 +395,8 @@ def measure(
     )
 
 
-@dataclass(frozen=True)
-class MasterApproval:
-    """Caller-supplied authorized evidence, bound to one exact master and check; never created by the gate."""
-
-    master_sha256: str
-    check: str
-    authorized_by: str
-    reason: str
-    evidence: str
+# Compatibility name; every master exception uses the shared typed authority model.
+MasterApproval = Disposition
 
 
 @dataclass(frozen=True)
@@ -449,7 +445,9 @@ def _finite(value: float | None) -> TypeGuard[float]:
     return isinstance(value, int | float) and not isinstance(value, bool) and math.isfinite(value)
 
 
-def _checks(m: Measured, sha: str, approvals: Sequence[MasterApproval]) -> tuple[MasterCheck, ...]:
+def _checks(
+    m: Measured, sha: str, approvals: Sequence[MasterApproval], scope: str = "reserved"
+) -> tuple[MasterCheck, ...]:
     values = (
         m.lufs,
         m.peak_dbtp,
@@ -480,27 +478,25 @@ def _checks(m: Measured, sha: str, approvals: Sequence[MasterApproval]) -> tuple
     )
     out = []
     for (check, limit), value, passed, raw in zip(_LIMITS.items(), values, passes, evidence, strict=True):
-        approval = next(
-            (
-                a
-                for a in approvals
-                if isinstance(a, MasterApproval)
-                and a.master_sha256 == sha
-                and a.check == check
-                and a.authorized_by == "arc4d3"
-                and isinstance(a.reason, str)
-                and a.reason.strip()
-                and isinstance(a.evidence, str)
-                and a.evidence.strip()
-            ),
-            None,
-        )
-        eligible = check in ("speech", "frozen") or (
-            check == "integrated_lufs"
-            and _finite(value)
-            and -16.6 <= value < -16
-            and bool(m.loudness_raw)
-            and not m.loudness_error
+        matches = [a for a in approvals if isinstance(a, Disposition) and a.check == check]
+        approval = None
+        if len(matches) == 1:
+            candidate = matches[0]
+            try:
+                candidate.validate(sha, check, None, candidate.reason, None, scope)
+                approval = candidate
+            except AuthorityError:
+                pass
+        eligible = (
+            (check == "speech" and _finite(value) and value >= 0 and bool(m.speech_evidence) and not m.speech_error)
+            or (check == "frozen" and _finite(value) and valid_runs and not m.frozen_error)
+            or (
+                check == "integrated_lufs"
+                and _finite(value)
+                and -16.6 <= value < -16
+                and bool(m.loudness_raw)
+                and not m.loudness_error
+            )
         )
         approved = approval if not passed and eligible else None
         out.append(
@@ -516,6 +512,7 @@ def accept_master(
     project: Path | None = None,
     *,
     approvals: Sequence[MasterApproval] = (),
+    scope: str = "reserved",
     crop: tuple[int, int, int, int] | None = None,
     stem: Path | None = None,
     fade: float = 0.0,
@@ -525,13 +522,25 @@ def accept_master(
     """Public delivery/pilot acceptance API. No staging, recording, network or approval writes."""
     sha = ""
     try:
-        sha = hashlib.sha256(master.read_bytes()).hexdigest()
+        sha = sha256(master)
         measured = measure(
             master, project=project, crop=crop, stem=stem, fade=fade, ffmpeg=ffmpeg, ffprobe=ffprobe, strict=False
         )
-        if hashlib.sha256(master.read_bytes()).hexdigest() != sha:
+        if sha256(master) != sha:
             raise MasterError("master changed during measurement")
-        return MasterAcceptance(sha, _checks(measured, sha, approvals), measured)
+        checks = _checks(measured, sha, approvals, scope)
+        try:
+            seen: set[str] = set()
+            for approval in approvals:
+                if not isinstance(approval, Disposition):
+                    raise AuthorityError("master approval must be a Disposition")
+                if approval.check not in _LIMITS or approval.check in seen:
+                    raise AuthorityError("unknown or duplicate master disposition")
+                seen.add(approval.check)
+                approval.validate(sha, approval.check, None, approval.reason, None, scope)
+        except AuthorityError as exc:
+            return MasterAcceptance(sha, checks, measured, f"authority: {exc}")
+        return MasterAcceptance(sha, checks, measured)
     except (OSError, MasterError) as exc:
         return MasterAcceptance(
             sha,
@@ -551,6 +560,36 @@ def findings(m: Measured, waivers: Mapping[str, str] | None = None) -> tuple[lis
 
 
 @dataclass(frozen=True)
+class CheckVerdict:
+    """A final-master value with its default limit and any bound authority."""
+
+    check: str
+    measured: float | bool | None
+    limit: str
+    verdict: Literal["PASS", "SHIP", "FAIL", "MISSING", "WAIVED"]
+    changed_bound: tuple[float, float] | None = None
+    disabled: bool = False
+    approver: str = ""
+    evidence: str = ""
+    approval_message: str = ""
+    missing_evidence: str = ""
+    line_id: str | None = None
+    reason: str = ""
+
+    @property
+    def refused(self) -> bool:
+        return self.verdict in ("FAIL", "MISSING")
+
+    def line(self) -> str:
+        return (
+            f"{self.check}: {self.verdict}; line={self.line_id}; measured={self.measured}; default_limit={self.limit}; "
+            f"changed_bound={self.changed_bound}; disabled={self.disabled}; approver={self.approver}; "
+            f"evidence={self.evidence}; approval_message={self.approval_message!r}; "
+            f"missing_evidence={self.missing_evidence}; reason={self.reason!r}"
+        )
+
+
+@dataclass(frozen=True)
 class Reading:
     """Delivery reading, retaining legacy report fields; judge always returns binding common acceptance."""
 
@@ -560,6 +599,9 @@ class Reading:
     info: tuple[str, ...] = ()
     error: str = ""
     acceptance: MasterAcceptance | None = None
+    master_sha256: str = ""
+    checks: tuple[CheckVerdict, ...] = ()
+    legacy: bool = False
 
     @property
     def failing(self) -> tuple[Finding, ...]:
@@ -567,23 +609,27 @@ class Reading:
 
     @property
     def refused(self) -> bool:
-        return self.binding and bool(self.error or self.failing)
+        return (
+            not self.master_sha256
+            or not self.checks
+            or bool(self.error or self.failing or any(c.refused for c in self.checks))
+        )
 
     def lines(self) -> list[str]:
         if self.acceptance is not None:
-            return [f"master {self.video}", *self.acceptance.lines()]
-        head = f"master {self.video}"
-        policy = "" if self.binding else " (recorded before the gate: advisory)"
-        if self.error:
-            return [f"{head}: {'REFUSED' if self.binding else 'unmeasured'}, {self.error}{policy}"]
-        if not self.findings:
-            verdict = "clean"
-        elif self.failing:
-            verdict = "REFUSED" if self.binding else "findings"
-        else:
-            verdict = "passes on its waivers"
-        return [f"{head}: {verdict}{policy}", *(f"  {f.line()}" for f in self.findings),
-                *(f"  info: {i}" for i in self.info)]  # fmt: skip
+            return [
+                f"master {self.video}: {'REFUSED' if self.refused else 'clean'}; legacy={self.legacy}",
+                *self.acceptance.lines(),
+                *(f"  info: {i}" for i in self.info),
+                *(f"  {c.line()}" for c in self.checks),
+            ]
+        return [
+            f"master {self.video}: {'REFUSED' if self.refused else 'clean'}; legacy={self.legacy}",
+            f"  master_sha256={self.master_sha256}; error={self.error}",
+            *(f"  {f.line()}" for f in self.findings),
+            *(f"  info: {i}" for i in self.info),
+            *(f"  {c.line()}" for c in self.checks),
+        ]
 
 
 def _fade(timeline: Mapping[str, Any]) -> float:
@@ -600,6 +646,7 @@ def judge(
     stem: Path | None = None,
     project: Path | None = None,
     approvals: Sequence[MasterApproval] = (),
+    scope: str = "reserved",
     crop: tuple[int, int, int, int] | None = None,
     ffmpeg: str = "ffmpeg",
     ffprobe: str = "ffprobe",
@@ -607,14 +654,172 @@ def judge(
     """Every delivered master is binding; legacy script waivers cannot authorize master exceptions."""
     known = timeline if isinstance(timeline, Mapping) else {}
     result = accept_master(
-        master, project, approvals=approvals, crop=crop, stem=stem, fade=_fade(known), ffmpeg=ffmpeg, ffprobe=ffprobe
+        master,
+        project,
+        approvals=approvals,
+        scope=scope,
+        crop=crop,
+        stem=stem,
+        fade=_fade(known),
+        ffmpeg=ffmpeg,
+        ffprobe=ffprobe,
     )
     found = tuple(
         Finding(c.check, None, c.value, None, c.limit, c.approval.reason if c.approval else "")
         for c in result.checks
         if c.verdict != "PASS"
     )
-    return Reading(video, True, found, error=result.error, acceptance=result)
+    checks = tuple(
+        CheckVerdict(
+            c.check,
+            c.value,
+            c.limit,
+            "WAIVED" if c.verdict == "APPROVED" else c.verdict,
+            disabled=c.approval is not None,
+            approver=c.approval.message.author if c.approval else "",
+            evidence=c.approval.message.reference if c.approval else "",
+            approval_message=c.approval.exact_message if c.approval else "",
+            reason=c.approval.reason if c.approval else "",
+        )
+        for c in result.checks
+    )
+    info = tuple(findings(result.measured)[1]) if result.measured is not None else ()
+    return Reading(
+        video,
+        True,
+        found,
+        info,
+        error=result.error,
+        acceptance=result,
+        master_sha256=result.master_sha256,
+        checks=checks,
+        legacy="prosody" not in known,
+    )
+
+
+def evaluate_release(
+    master: Path,
+    project: Path | None,
+    *,
+    scope: str = "reserved",
+    dispositions: tuple[Disposition, ...] = (),
+    crop: tuple[int, int, int, int] | None = None,
+    ffmpeg: str = "ffmpeg",
+    ffprobe: str = "ffprobe",
+) -> Reading:
+    """Public release gate shared with pilot publishing.
+
+    Read-only: measures the supplied final master and cached recording on every call.
+    Drive presence and script age have no effect. Published-file exclusion belongs
+    to callers with verified platform publication evidence, never delivery manifests.
+    Missing measurements fail closed. Dispositions are exact check/master records,
+    supplied from authoritative evidence by the caller; no records are created here.
+    """
+    from . import craft_bar
+
+    timeline = _timeline(project) if project is not None else None
+    stem = _stem(project, timeline) if project is not None else None
+    reading = judge(
+        master.stem,
+        master,
+        timeline,
+        stem=stem,
+        project=project,
+        approvals=tuple(d for d in dispositions if not d.check.startswith("c7.")),
+        scope=scope,
+        crop=crop,
+        ffmpeg=ffmpeg,
+        ffprobe=ffprobe,
+    )
+    identity = reading.master_sha256
+    checks = list(reading.checks)
+    try:
+        # craft_bar samples the actual master at cached word placements, never requests speech.
+        if project is None:
+            raise MasterError("missing recording project for final-master measurement")
+        measured = craft_bar.measure(master, project)
+        if not identity or sha256(master) != identity:
+            raise MasterError("master changed during C7 measurement")
+        c7 = [m for m in measured.measures if m.name != "frozen"]
+        required = {"integrated_lufs", "lra", "first_word", "constant_bed"}
+        if not required <= {m.name for m in c7}:
+            raise MasterError("missing required C7 measures")
+        seen: set[str] = set()
+        for m in c7:
+            if m.name in seen:
+                raise MasterError(f"duplicate C7 measurement: {m.name}")
+            seen.add(m.name)
+            valid = (
+                isinstance(m.value, bool)
+                if m.name == "constant_bed"
+                else (isinstance(m.value, int | float) and not isinstance(m.value, bool) and math.isfinite(m.value))
+            )
+            status: Literal["PASS", "SHIP", "FAIL", "MISSING", "WAIVED"] = m.status if valid else "MISSING"
+            common_name = {"first_word": "speech"}.get(m.name, m.name)
+            common = next((c for c in reading.checks if c.check == common_name), None)
+            if valid and common is not None and common.verdict == "WAIVED":
+                checks.append(replace(common, check="c7." + m.name))
+                continue
+            checks.append(
+                CheckVerdict(
+                    "c7." + m.name,
+                    m.value,
+                    m.bar,
+                    status,
+                    missing_evidence=("no master/check-specific disposition" if m.status == "FAIL" else "")
+                    if valid
+                    else "missing/non-finite measurement",
+                    line_id=m.name.split(":")[1] if ":" in m.name else None,
+                )
+            )
+    except (craft_bar.CraftError, MasterError, OSError) as exc:
+        checks.append(CheckVerdict("c7", None, "all C7 measures required", "MISSING", missing_evidence=str(exc)))
+    applied: list[CheckVerdict] = []
+    errors = []
+    for check in checks:
+        if not check.check.startswith("c7."):
+            applied.append(check)
+            continue
+        matches = [d for d in dispositions if d.check == check.check]
+        if len(matches) > 1:
+            errors.append(f"duplicate disposition for {check.check}")
+        elif matches:
+            d = matches[0]
+            try:
+                d.validate(identity, check.check, check.line_id, d.reason, d.bounds, scope)
+                if d.bounds is not None:
+                    raise AuthorityError("C7 dispositions disable an exact check; numeric bound changes use Waiver")
+                if check.verdict == "MISSING":
+                    raise AuthorityError("missing measurements cannot be approved")
+                check = replace(
+                    check,
+                    verdict="WAIVED",
+                    disabled=True,
+                    approver=d.message.author,
+                    evidence=d.message.reference,
+                    approval_message=d.exact_message,
+                    reason=d.reason,
+                    missing_evidence=""
+                    if check.missing_evidence == "no master/check-specific disposition"
+                    else check.missing_evidence,
+                )
+            except AuthorityError as exc:
+                errors.append(str(exc))
+        applied.append(check)
+    unknown = {d.check for d in dispositions} - {c.check for c in checks}
+    if unknown:
+        errors.append(f"dispositions name unmeasured checks: {sorted(unknown)}")
+    waived = {c.check: c for c in applied if c.verdict == "WAIVED"}
+    found = tuple(
+        replace(f, waived=waived[f.check].approval_message) if f.check in waived else f for f in reading.findings
+    )
+    return replace(
+        reading,
+        findings=found,
+        checks=tuple(applied),
+        info=(*reading.info, "publication evidence not supplied; treated as unpublished"),
+        error="; ".join(filter(None, (reading.error, *errors))),
+    )
 
 
 def _timeline(project: Path) -> Mapping[str, Any] | None:
@@ -632,38 +837,45 @@ def _stem(project: Path, timeline: Mapping[str, Any] | None) -> Path | None:
 
 
 def read(
-    releases: Mapping[str, Release], episodes: Path, renders: Path, first: Mapping[str, str], *, ffmpeg: str = "ffmpeg",
-    ffprobe: str = "ffprobe", approvals: Sequence[MasterApproval] = (),
+    releases: Mapping[str, Release],
+    episodes: Path,
+    renders: Path,
+    first: Mapping[str, str],
+    *,
+    ffmpeg: str = "ffmpeg",
+    ffprobe: str = "ffprobe",
+    approvals: Sequence[MasterApproval] = (),
     crops: Mapping[str, tuple[int, int, int, int]] | None = None,
-) -> dict[str, Reading]:  # fmt: skip
-    """Each reel on its ``first`` delivery (slug to video name): its master ``renders/<video>.mp4``, its timeline and
-    bed in ``episodes/<slug>``."""
+    scopes: Mapping[str, str] | None = None,
+    dispositions: Mapping[str, tuple[Disposition, ...]] | None = None,
+) -> dict[str, Reading]:
+    """Evaluate every supplied final master, including legacy and delivered candidates."""
     out = {}
     for slug, video in sorted(first.items()):
         project = Path(episodes) / releases[slug].slug
-        timeline = _timeline(project)
-        out[slug] = judge(
-            video,
-            Path(renders) / f"{video}.mp4",
-            timeline,
-            stem=_stem(project, timeline),
-            project=project,
-            approvals=approvals,
-            crop=crops.get(slug) if crops is not None else None,
-            ffmpeg=ffmpeg,
-            ffprobe=ffprobe,
+        out[slug] = replace(
+            evaluate_release(
+                Path(renders) / f"{video}.mp4",
+                project,
+                scope=(scopes or {}).get(slug, "reserved"),
+                dispositions=(*approvals, *(dispositions or {}).get(slug, ())),
+                crop=crops.get(slug) if crops is not None else None,
+                ffmpeg=ffmpeg,
+                ffprobe=ffprobe,
+            ),
+            video=video,
         )
     return out
 
 
 def refusals(readings: Mapping[str, Reading]) -> list[Drift]:
     """A delivery drift for every refused final master."""
-    return [
-        Drift(r.video, f"master: {r.error or '; '.join(f.line() for f in r.failing)} "
-              "(authorized master hash/check exception required)")
-        for r in readings.values()
-        if r.refused
-    ]  # fmt: skip
+    out = []
+    for r in readings.values():
+        if r.refused:
+            details = r.error or "; ".join([*(f.line() for f in r.failing), *(c.line() for c in r.checks if c.refused)])
+            out.append(Drift(r.video, f"master: {details} (requires exact master/check-bound authority evidence)"))
+    return out
 
 
 def lines(readings: Mapping[str, Reading]) -> list[str]:

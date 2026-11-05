@@ -26,6 +26,7 @@ import re
 from dataclasses import dataclass, replace
 
 from . import checks
+from .authority import AuthorityError, Disposition
 from .voice import Alignment, VoiceOutputError, VoiceRequestError
 
 __all__ = [
@@ -162,6 +163,7 @@ class Waiver:
     check: str
     reason: str
     bounds: tuple[float, float] | None = None
+    approval: Disposition | None = None
 
     def __post_init__(self) -> None:
         if self.check not in (*LINE_CHECKS, *REEL_CHECKS):
@@ -175,6 +177,20 @@ class Waiver:
                 f"waiver of {self.check}: the reason is a sentence of at least {MIN_REASON_WORDS} words and at most "
                 f"{MAX_REASON} characters, got {self.reason!r}"
             )
+        if self.approval is not None:
+            if not isinstance(self.approval, Disposition):
+                raise DirectionError("waiver approval must be a Disposition")
+            try:
+                self.approval.validate(
+                    self.approval.master_sha256,
+                    self.check,
+                    self.approval.line,
+                    self.reason,
+                    self.bounds,
+                    self.approval.scope,
+                )
+            except AuthorityError as exc:
+                raise DirectionError(str(exc)) from exc
         if self.bounds is None:
             return
         if self.check not in RANGED:
@@ -190,8 +206,10 @@ class Waiver:
             )
 
     def record(self) -> dict:
-        return {"check": self.check, "reason": self.reason} | (
-            {"bounds": list(self.bounds)} if self.bounds is not None else {}
+        return (
+            {"check": self.check, "reason": self.reason}
+            | ({"bounds": list(self.bounds)} if self.bounds is not None else {})
+            | ({"approval": self.approval.record()} if self.approval is not None else {})
         )
 
 

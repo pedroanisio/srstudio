@@ -68,7 +68,8 @@ class Transport:
     """Answers each request with audio and an alignment of exactly the text it was sent, as the API does."""
 
     def __init__(self, audio: bytes, step: float = 0.03):
-        self.audio, self.step, self.calls = audio, step, []
+        self.audio, self.step = audio, step
+        self.calls: list[tuple[str, dict[str, object]]] = []
 
     def __call__(self, url, payload, headers):
         self.calls.append((url, payload))
@@ -343,3 +344,85 @@ def test_a_tag_spoken_aloud_still_fails_the_speech_check():
         check_transcript(heard("Size allergies?"), "Allergies.", events=True)
     with pytest.raises(TranscriptMismatch):
         check_transcript(heard("sighs Allergies."), "Allergies.", events=True)
+
+
+def test_authority_is_bound_to_master_check_line_bounds_and_message():
+    from dataclasses import replace
+
+    from srstudio.authority import AuthorityError, Disposition, Message
+
+    d = Disposition(
+        master_sha256="a" * 64,
+        check="opening",
+        line=None,
+        reason="a deliberately held opening",
+        bounds=None,
+        scope="production",
+        requester="builder",
+        message=Message("arc4d3", "slack://approval", "Approved this held opening."),
+        exact_message="Approved this held opening.",
+    )
+    d.validate("a" * 64, "opening", None, "a deliberately held opening", None, "production")
+    for changes in (
+        {"master_sha256": "b" * 64},
+        {"check": "lra"},
+        {"line": "01"},
+        {"reason": "another held opening reason"},
+        {"bounds": (0.0, 1.0)},
+        {"scope": "rafa"},
+    ):
+        with pytest.raises(AuthorityError):
+            replace(d, **changes).validate("a" * 64, "opening", None, "a deliberately held opening", None, "production")
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"requester": "arc4d3"},
+        {"exact_message": "a different approval"},
+        {"master_sha256": ""},
+        {"message_author": "builder"},
+        {"reference": ""},
+        {"scope": "rafa"},
+        {"bounds": (0.0, float("nan"))},
+    ],
+)
+def test_missing_stale_self_authored_and_reserved_authority_refuses(changes):
+    from srstudio.authority import AuthorityError, Disposition, Message
+
+    kw = dict(
+        master_sha256="a" * 64,
+        check="opening",
+        line=None,
+        reason="a deliberately held opening",
+        bounds=None,
+        scope="production",
+        requester="builder",
+        message=Message(
+            changes.pop("message_author", "arc4d3"),
+            changes.pop("reference", "slack://approval"),
+            "Approved this held opening.",
+        ),
+        exact_message="Approved this held opening.",
+    )
+    kw.update(changes)
+    with pytest.raises(AuthorityError):
+        d = Disposition(**kw)
+        d.validate("a" * 64, "opening", None, "a deliberately held opening", None, "production")
+
+
+def test_reserved_scope_requires_pedro():
+    from srstudio.authority import Disposition, Message
+
+    d = Disposition(
+        "a" * 64,
+        "c7",
+        None,
+        "accept this measured master",
+        None,
+        "new_pilot",
+        "builder",
+        Message("Pedro", "slack://pedro", "Approved this master."),
+        "Approved this master.",
+    )
+    d.validate("a" * 64, "c7", None, d.reason, None, "new_pilot")
