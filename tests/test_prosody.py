@@ -22,7 +22,7 @@ from support.takes import DEV, script
 
 def harmonic(f: float, seconds: float, amp: float, rate: int = RATE) -> np.ndarray:
     t = np.arange(round(seconds * rate)) / rate
-    return amp * sum(np.sin(2 * np.pi * f * k * t) / k for k in range(1, 6)) / 2.3
+    return np.asarray(amp * sum(np.sin(2 * np.pi * f * k * t) / k for k in range(1, 6)) / 2.3)
 
 
 def write(path: Path, x: np.ndarray, rate: int = RATE) -> Path:
@@ -231,8 +231,6 @@ def lively_rest(t):
 @pytest.mark.parametrize(
     ("spoil", "check", "take"),
     [
-        (edit(("items", 0, "prosody", "words_per_second"), 5.0), "line_pace", "01"),
-        (fast_reel, "reel_pace", None),
         (first_word_late, "first_word", "01"),
         (lambda t: shift(t, 2, 0.2), "turn_gap", "03"),
         (lambda t: shift(t, 2, -0.5), "turn_median", None),
@@ -316,7 +314,7 @@ def test_a_waiver_with_bounds_moves_the_target_and_a_value_outside_them_still_fa
     assert finding.bounds == (0.9, 1.2) and not finding.waived
 
 
-@pytest.mark.parametrize(("spoil", "check"), [(fast_reel, "reel_pace"), (lambda t: shift(t, 2, -0.5), "turn_median")])
+@pytest.mark.parametrize(("spoil", "check"), [(lambda t: shift(t, 2, -0.5), "turn_median")])
 def test_the_reels_own_targets_are_waived_on_the_reel(spoil, check):
     t = spoil(timeline())
     t["prosody"] = {"waive": [{"check": check, "reason": "an auctioneer sketch is fast"}]}
@@ -413,7 +411,8 @@ class Provider:
     them."""
 
     def __init__(self, root: Path, stressed_seeds=(8,)):
-        self.root, self.stressed_seeds, self.calls = root, stressed_seeds, []
+        self.root, self.stressed_seeds = root, stressed_seeds
+        self.calls: list[dict] = []
         self.words: dict[str, list[Word]] = {}
 
     def synthesize(self, text, voice, settings, **kw):
@@ -526,3 +525,16 @@ def test_a_finding_reads_as_one_line():
     f = Finding("turn_gap", "03", 0.2, (0.3, 0.65))
     assert f.line() == "take 03: turn_gap 0.200 outside 0.3..0.65"
     assert Finding("reel_pace", None, 4.0, (0.0, 3.6), waived="fast on purpose").line().startswith("reel: reel_pace")
+
+
+def test_no_independent_reel_pace_ceiling():
+    assert not any(f.check == 'reel_pace' for f in gate(fast_reel(timeline())))
+
+
+def test_stale_reported_pace_does_not_replace_both_clocks():
+    assert gate(edit(('items', 0, 'prosody', 'words_per_second'), 5.0)(timeline())) == []
+
+
+def test_both_pace_clocks_refuse_excessive_speed():
+    found = gate(edit(('items', 0, 'prosody', 'words'), [{'text': 'w', 'db': -20, 'hz': 150}] * 12)(timeline()))
+    assert [(f.check, f.take) for f in found] == [('line_pace', '01'), ('pace_span', '01')]

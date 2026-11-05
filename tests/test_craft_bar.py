@@ -45,7 +45,7 @@ def master(tmp_path):
     return video
 
 
-def project(tmp_path, kind):
+def project(tmp_path, kind, master=None):
     p = tmp_path / kind
     ws = [
         {'text': x, 'start': a, 'end': b, 'type': 'word'}
@@ -95,12 +95,31 @@ def project(tmp_path, kind):
                 ]
             },
         )
+    if master is not None:
+        bind(p, master)
     return p
+
+
+def bind(project, master):
+    from dataclasses import asdict
+
+    lines = craft_bar.recorded_lines(project)
+    write(
+        project / 'master-voice.json',
+        {
+            'master_sha256': hashlib.sha256(master.read_bytes()).hexdigest(),
+            'source': 'synthetic master word alignment',
+            'lines': [
+                dict(id=line.id, start=line.start, duration=line.duration, words=[asdict(w) for w in line.words])
+                for line in lines
+            ],
+        },
+    )
 
 
 @pytest.mark.parametrize('kind', ['flat', 'narration'])
 def test_both_layouts_measure_master_mix(tmp_path, master, kind):
-    result = craft_bar.measure(master, project(tmp_path, kind))
+    result = craft_bar.measure(master, project(tmp_path, kind, master))
     by = {m.name: m for m in result.measures}
     assert by['first_word'].value == pytest.approx(0.1)
     assert by['pace:line-1'].value == pytest.approx(3 / 1.0)
@@ -132,7 +151,7 @@ def test_no_audio(tmp_path, master):
 
 
 def test_cli_project_json(tmp_path, master, capsys):
-    p = project(tmp_path, 'narration')
+    p = project(tmp_path, 'narration', master)
     assert cli.main(['proof', str(master), '--project', str(p), '--json']) == 0
     data = json.loads(capsys.readouterr().out)
     assert data['craft_bar']['passed'] is True
@@ -233,21 +252,22 @@ def test_silent_mix_words_are_unheard(tmp_path, master):
     subprocess.run(
         ['ffmpeg', '-v', 'error', '-i', str(master), '-af', 'volume=0', '-c:v', 'copy', str(silent)], check=True
     )
-    with pytest.raises(craft_bar.WordsNotHeard, match='not audible'):
-        craft_bar.measure(silent, project(tmp_path, 'narration'))
+    result = craft_bar.measure_voice(silent, project(tmp_path, 'narration', silent))
+    assert not result.ok and result.fail_retakes
 
 
 def test_cli_failed_bar_returns_one(tmp_path, master, capsys):
-    p = project(tmp_path, 'narration')
+    p = project(tmp_path, 'narration', master)
     d = json.loads((p / 'voiced/speech.json').read_text())
     d['takes'][0]['at'] = 0.3
     write(p / 'voiced/speech.json', d)
+    bind(p, master)
     assert cli.main(['proof', str(master), '--project', str(p), '--json']) == 1
     assert not json.loads(capsys.readouterr().out)['craft_bar']['passed']
 
 
 def test_constant_declared_music_fails(tmp_path, master):
-    p = project(tmp_path, 'narration')
+    p = project(tmp_path, 'narration', master)
     bed = p / 'music.wav'
     subprocess.run(
         ['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i', 'sine=frequency=220:duration=3', '-c:a', 'pcm_s16le', str(bed)],
@@ -346,11 +366,13 @@ def test_phrase_pace_and_word_span_guard(tmp_path, master, count, duration, span
         tmp_path / 'timeline.json',
         {'items': [{'id': 'take', 'start': 0, 'duration': duration, 'prosody': {'words': words}}]},
     )
+    bind(tmp_path, master)
     result = craft_bar.measure(master, tmp_path)
     by = {m.name: m for m in result.measures}
     if count < 3:
         assert not any('pace' in m.name for m in result.measures)
-        assert not any('pace' in line for line in result.lines())
+        assert result.voices[0].pace_status == 'exempt'
+        assert not result.ok  # exemption does not waive missing key-word stress
         return
     phrase = by['pace:take']
     assert phrase.value == pytest.approx(count / duration)
@@ -364,7 +386,7 @@ def test_phrase_pace_and_word_span_guard(tmp_path, master, count, duration, span
     assert guard.bar == '<= 4.5 words/s'
     assert 'word span' in guard.source
     assert any(line.startswith(f"{'PASS' if span_passed else 'FAIL'} pace_span:take:") for line in result.lines())
-    assert result.passed is (phrase_passed and span_passed)
+    assert result.voices[0].pace_status == ('FAIL' if not span_passed else 'PASS' if phrase_passed else 'SHIP')
 
 
 def test_ship_phrase_can_still_fail_span_guard(tmp_path, master):
@@ -372,6 +394,7 @@ def test_ship_phrase_can_still_fail_span_guard(tmp_path, master):
     write(
         tmp_path / 'timeline.json', {'items': [{'id': 'take', 'start': 0, 'duration': 1, 'prosody': {'words': words}}]}
     )
+    bind(tmp_path, master)
     result = craft_bar.measure(master, tmp_path)
     by = {m.name: m for m in result.measures}
     assert by['pace:take'].status == 'SHIP'

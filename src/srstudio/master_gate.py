@@ -28,7 +28,10 @@ import wave
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from .craft_bar import Result
 
 import numpy as np
 
@@ -270,6 +273,7 @@ class Reading:
     findings: tuple[Finding, ...] = ()
     info: tuple[str, ...] = ()
     error: str = ""
+    voice: Result | None = None
 
     @property
     def failing(self) -> tuple[Finding, ...]:
@@ -321,17 +325,31 @@ def _waivers(timeline: Mapping[str, Any]) -> dict[str, str]:
 
 def judge(
     video: str, master: Path, timeline: Mapping[str, Any] | None, *, stem: Path | None = None, ffmpeg: str = "ffmpeg",
-    ffprobe: str = "ffprobe",
+    ffprobe: str = "ffprobe", project: Path | None = None,
 ) -> Reading:  # fmt: skip
     """Measure ``master`` and judge it; ``timeline`` (None: none) says whether the reel is recorded to the gate, its
     waivers and its first word."""
-    binding = isinstance(timeline, Mapping) and "prosody" in timeline
+    binding = project is not None or isinstance(timeline, Mapping) and "prosody" in timeline
     known = timeline if isinstance(timeline, Mapping) else {}
     try:
         m = measure(master, stem=stem, fade=_fade(known), first_word=_first_word(known), ffmpeg=ffmpeg, ffprobe=ffprobe)
     except MasterError as exc:
         return Reading(video, binding, error=str(exc))
     found, info = findings(m, _waivers(known))
+    if project is not None:
+        from .craft_bar import CraftError, measure_voice
+
+        try:
+            voice = measure_voice(master, project)
+        except CraftError as exc:
+            return Reading(video, True, tuple(found), tuple(info), error=str(exc))
+        info.extend(voice.lines())
+        found.extend(
+            Finding(v.name, None, v.value if isinstance(v.value, float) else None, None, v.bar + '; ' + v.source)
+            for v in voice.measures
+            if not v.ok
+        )
+        return Reading(video, True, tuple(found), tuple(info), voice=voice)
     return Reading(video, binding, tuple(found), tuple(info))
 
 
@@ -360,15 +378,14 @@ def read(
         project = Path(episodes) / releases[slug].slug
         timeline = _timeline(project)
         out[slug] = judge(video, Path(renders) / f"{video}.mp4", timeline, stem=_stem(project, timeline),
-                          ffmpeg=ffmpeg, ffprobe=ffprobe)  # fmt: skip
+                          ffmpeg=ffmpeg, ffprobe=ffprobe, project=project)  # fmt: skip
     return out
 
 
 def refusals(readings: Mapping[str, Reading]) -> list[Drift]:
     """A :class:`~srstudio.social.Drift` for each reel recorded to the gate whose master it refuses."""
     return [
-        Drift(r.video, f"master: {r.error or '; '.join(f.line() for f in r.failing)} (waive a check with its reason "
-                       "on the script)")
+        Drift(r.video, f"master: {r.error or '; '.join(f.line() for f in r.failing)}")
         for r in readings.values()
         if r.refused
     ]  # fmt: skip

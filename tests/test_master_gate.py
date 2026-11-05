@@ -196,7 +196,10 @@ def test_a_master_the_gate_cannot_measure_refuses_a_reel_recorded_to_it(clips):
     assert not old.refused and old.lines()[0].startswith("master Old: unmeasured, mute.mp4")
 
 
-def test_read_finds_the_master_the_timeline_and_the_bed(clips, tmp_path):
+def test_read_finds_the_master_the_timeline_and_the_bed(clips, tmp_path, monkeypatch):
+    from srstudio import craft_bar
+
+    monkeypatch.setattr(craft_bar, "measure_voice", lambda *a: craft_bar.Result(()))
     renders, episodes = tmp_path / "renders", tmp_path / "episodes"
     renders.mkdir()
     (renders / "New_Reel.mp4").write_bytes(clips["clean"].read_bytes())
@@ -224,14 +227,14 @@ def test_a_missing_tool_or_an_unusual_bed_is_an_error_not_a_pass(clips, tmp_path
         master_gate.constant_bed(tmp_path / "b.wav")
 
 
-def test_a_timeline_that_cannot_be_read_leaves_the_master_advisory_for_the_prosody_gate_to_refuse(clips, tmp_path):
+def test_a_timeline_that_cannot_be_read_refuses_delivery(clips, tmp_path):
     (tmp_path / "renders").mkdir()
     (tmp_path / "renders" / "V.mp4").write_bytes(clips["clean"].read_bytes())
     (tmp_path / "eps" / "s").mkdir(parents=True)
     (tmp_path / "eps" / "s" / "timeline.json").write_text("{not json")
     release = Release("s", InstagramPost(title="t", description="d"), video="V")
     (r,) = master_gate.read({"s": release}, tmp_path / "eps", tmp_path / "renders", {"s": "V"}).values()
-    assert not r.binding and r.lines() == ["master V: clean (recorded before the gate: advisory)"]
+    assert r.refused and "cannot read" in r.error
 
 
 def test_the_master_checks_are_waived_on_the_script_with_a_reason_and_no_bounds():
