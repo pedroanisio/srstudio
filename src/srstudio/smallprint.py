@@ -128,7 +128,8 @@ class Beat:
     """One line of the script: its ``id``, the words, his ``mood``, the worktop ``prop`` and its ``state`` when the
     line starts (empty: as the beat before left them), the ``steps`` it moves through after that (seconds into the
     line, state), the ``framing``, the seconds he holds after it, a ``panel`` that takes the frame, the ``stamp`` on it,
-    whether he is crying, and the line's ``gain`` in dB."""
+    whether he is crying, the line's ``gain`` in dB, and the ``speed`` its take is asked at when Will's own pace says
+    it faster than it can be read (:attr:`srstudio.sketch.Line.speed`)."""
 
     id: str
     line: str
@@ -142,6 +143,7 @@ class Beat:
     stamp: Stamp | None = None
     tears: bool = False
     gain: float = 0.0
+    speed: float | None = None
 
 
 @dataclass(frozen=True)
@@ -179,7 +181,7 @@ class Show:
 
     @property
     def lines(self) -> tuple[Line, ...]:
-        return tuple(Line(HOST, beat.line, gain=beat.gain) for beat in self.beats)
+        return tuple(Line(HOST, beat.line, gain=beat.gain, speed=beat.speed) for beat in self.beats)
 
     def spoken_words(self) -> int:
         return sum(len(beat.line.split()) for beat in self.beats)

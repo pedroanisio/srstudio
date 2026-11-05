@@ -126,6 +126,7 @@ LIP_SYNCED = (
 )  # the brush-drawn characters, whose mouths follow a viseme track
 MIN_STEP = 0.15  # the least a beat may be held, seconds
 LINE_LEVELS = (-12.0, 0.0)  # (dB) how far a line may sit under the others in the mix: interview.LEVELS, for a sketch
+SPEEDS = (0.7, 1.2)  # the pace a take may be asked at: the voice's own range (voice.VoiceSettings)
 BLANK_GAP = 0.25  # a silent beat starts this long after the line before it ends
 BLANK_MARGIN = 0.30  # and this long before the next spoken beat at the latest
 CAPTION_MIN = 0.85  # a caption is held at least this long when the next change can wait for it
@@ -181,7 +182,10 @@ class Line:
     as it was said, and only the audio in the reel is band-limited.
 
     ``together``: another speaker says this line on the first word of the line before it, two voices on one beat. It
-    is its own take, heard back alone, and no beat starts it: the caption is the line it joins."""
+    is its own take, heard back alone, and no beat starts it: the caption is the line it joins.
+
+    ``speed``: this line's take is asked at this pace instead of its speaker's (the voice's own range,
+    :data:`SPEEDS`), for a line that came out faster than a listener reads it; None keeps the speaker's."""
 
     speaker: str
     text: str
@@ -189,6 +193,7 @@ class Line:
     gain: float = 0.0  # dB against the others in the mix
     phone: bool = False
     together: bool = False
+    speed: float | None = None
 
 
 @dataclass(frozen=True)
@@ -284,6 +289,8 @@ def check(sketch: Sketch) -> None:
     for i, line in enumerate(sketch.lines):
         if not (checks.number(line.gain) and LINE_LEVELS[0] <= line.gain <= LINE_LEVELS[1]):
             raise SketchError(f"line {i}: gain {line.gain!r} is outside {LINE_LEVELS}")
+        if line.speed is not None and not (checks.number(line.speed) and SPEEDS[0] <= line.speed <= SPEEDS[1]):
+            raise SketchError(f"line {i}: speed {line.speed!r} is outside the voice's {SPEEDS}")
         if line.together:
             before = sketch.lines[i - 1] if i else None
             if before is None or before.together:
@@ -872,6 +879,11 @@ def _placed(lines: Sequence[Line], plan: Sequence[Slot], speeches: Sequence[floa
     return out, needed
 
 
+def _settings(speaker: Speaker, line: Line) -> VoiceSettings:
+    """The voice settings ``line``'s take is asked with: its speaker's, at the line's own ``speed`` when it has one."""
+    return speaker.settings if line.speed is None else replace(speaker.settings, speed=line.speed)
+
+
 def record(
     sketch: Sketch,
     root: Path,
@@ -905,7 +917,7 @@ def record(
     takes = []
     for line in sketch.lines:
         speaker = speakers[line.speaker]
-        spoken = client.synthesize(line.text, speaker.voice, speaker.settings)
+        spoken = client.synthesize(line.text, speaker.voice, _settings(speaker, line))
         takes.append((spoken, trim_speech(spoken.wav, lead=SPEECH_LEAD, tail=SPEECH_TAIL)))
     placed, needed = _placed(sketch.lines, plan, [trim.clip_out - trim.clip_in for _, trim in takes])
     items, heard, failures, word_starts, kept_takes = [], [], [], [], []
@@ -953,7 +965,7 @@ def record(
                 "start": start,
                 "duration": kept,
                 "speech_duration": round(trim.clip_out - trim.clip_in, 6),
-                "speed": speakers[line.speaker].settings.speed,
+                "speed": _settings(speakers[line.speaker], line).speed,
                 "lead": 0.0,
                 "tempo": 1.0,
                 "lag": round(at.lag, 6),
