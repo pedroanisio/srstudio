@@ -28,11 +28,17 @@ __all__ = [
     "CALENDAR",
     "DIAL_HOURS",
     "FED_HOUR",
+    "GLYPH",
+    "HAND_TIP",
+    "MARKS",
+    "NUMBER_AT",
+    "NUMBER_SIZE",
     "PAGE",
     "PRESS",
     "PUSH",
     "TANK",
     "TIP",
+    "WEDGE",
     "Box",
     "FishPose",
     "LabError",
@@ -46,18 +52,19 @@ __all__ = [
     "dial_print",
     "finished",
     "goldfish",
-    "lamp",
     "keyed",
+    "lamp",
     "lever",
     "lever_tip",
-    "nose_to_middle",
-    "pellet_at",
-    "pellets",
     "materials",
+    "nose_to_middle",
+    "numbers_inside",
     "page_material",
     "page_name",
     "page_print",
     "parts",
+    "pellet_at",
+    "pellets",
     "scales",
     "swim",
     "swim_room",
@@ -425,6 +432,17 @@ def chute_mouth() -> tuple[float, float, float]:
 
 FEEDER = (36.0, 34.0, 30.0)  # the feeder box on the lid: wide, tall, deep
 DIAL_R = 13.0
+NUMBER_AT = 0.72  # the printed hours' centres, as a share of the face's radius: a ring outside the hand's reach
+NUMBER_SIZE = 56  # their size on the face's 512 px print
+GLYPH = 0.62  # the most of its size a printed number reaches from its centre, any way (a two-digit "24" across)
+HAND_TIP = 0.42  # the hand's reach as a share of the radius: short of the printed hours
+MARKS = (0.88, 0.97)  # the hour marks' ring, outside the hours
+WEDGE = (0.9, 0.99)  # the fed-hour wedge's ring: the "24" under it stays clear
+
+
+def numbers_inside() -> float:
+    """The innermost reach of a printed hour, as a share of the face's radius: the hand stays inside it."""
+    return NUMBER_AT - GLYPH * NUMBER_SIZE / 256
 
 
 def feeder_centre() -> tuple[float, float, float]:
@@ -449,11 +467,12 @@ def hopper_centre() -> tuple[float, float, float]:
 
 @lru_cache(maxsize=1)
 def dial_print() -> Print:
-    """The timer's face: the hours of the day at the quarters, inside the hour marks."""
-    s, mid, r = 512, 256, 118
-    ink = "#1C2A4A"
-    lines = (Line("24", mid, mid - r, 66, ink), Line("6", mid + r, mid, 66, ink), Line("12", mid, mid + r, 66, ink),
-             Line("18", mid - r, mid, 66, ink))  # fmt: skip
+    """The timer's face: the hours of the day at the quarters, in a ring outside the hand's reach and inside the hour
+    marks."""
+    s, mid = 512, 256
+    r, size, ink = NUMBER_AT * mid, NUMBER_SIZE, "#1C2A4A"
+    lines = (Line("24", mid, mid - r, size, ink), Line("6", mid + r, mid, size, ink),
+             Line("12", mid, mid + r, size, ink), Line("18", mid - r, mid, size, ink))  # fmt: skip
     return Print("#FFF6E4", s, s, lines)
 
 
@@ -479,21 +498,22 @@ def _hand(m: Model, hour: float, still: bool) -> None:
     if still:
         start = FED_HOUR * wedge - wedge / 2
         arc = np.linspace(start, start + wedge, 8)  # one hour of the day: the fed hour, as the test fed them
-        pts = [(cx + DIAL_R * r * math.sin(a), cy - DIAL_R * r * math.cos(a), cz - 0.05) for r in (0.6, 0.98)
+        pts = [(cx + DIAL_R * r * math.sin(a), cy - DIAL_R * r * math.cos(a), cz - 0.05) for r in WEDGE
                for a in arc]  # fmt: skip
         k = len(arc)
         band = [t for i in range(k - 1) for t in ((i, k + i, k + i + 1), (i, k + i + 1, i + 1))]
         m.surface("fedhour", pts, [(0.0, 0.0, -1.0)] * len(pts), band)  # a ring's slice: the number stays clear
-        for k in range(1, DIAL_HOURS):  # the fed hour is its wedge, not a mark
+        for k in range(1, DIAL_HOURS):  # the fed hour is its wedge, and a printed hour is its own mark
+            if k % 6 == 0:
+                continue
             a = k * wedge
-            r0 = DIAL_R * (0.8 if k % 6 else 0.72)
+            r0, r1 = (DIAL_R * f for f in MARKS)
             m.rod("dialhand", (cx + r0 * math.sin(a), cy - r0 * math.cos(a), cz - 0.2),
-                  (cx + DIAL_R * 0.95 * math.sin(a), cy - DIAL_R * 0.95 * math.cos(a), cz - 0.2),
-                  0.3 if k % 6 else 0.45)  # fmt: skip
+                  (cx + r1 * math.sin(a), cy - r1 * math.cos(a), cz - 0.2), 0.3)  # fmt: skip
         return
     a = hour * wedge
-    tip = (cx + DIAL_R * 0.84 * math.sin(a), cy - DIAL_R * 0.84 * math.cos(a), cz - 1.0)
-    tail = (cx - DIAL_R * 0.18 * math.sin(a), cy + DIAL_R * 0.18 * math.cos(a), cz - 1.0)
+    tip = (cx + DIAL_R * HAND_TIP * math.sin(a), cy - DIAL_R * HAND_TIP * math.cos(a), cz - 1.0)
+    tail = (cx - DIAL_R * 0.12 * math.sin(a), cy + DIAL_R * 0.12 * math.cos(a), cz - 1.0)
     m.capsule("dialhand", tail, tip, 0.8)
     m.ell("dialhand", (cx, cy, cz - 1.0), (1.7, 1.7, 0.9))
 
