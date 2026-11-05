@@ -1562,6 +1562,13 @@ def blob(
         colour = outfit.top if limb in ("torso", *ARMS) else outfit.trousers
         if limb == "torso":
             keyed(g, [s.widened(wider).outline() for s in strokes], colour, cv.clear, 0)
+            hems = []
+            for s in strokes:
+                rim, start = s._rim(14, 8)
+                # The hip is the lower end, regardless of the torso's direction.
+                hem = rim[14:23] if s.p3[1] > s.p0[1] else [rim[-1], *start, rim[0]]
+                hems.append("M " + _points(hem))
+            keyed(g, hems, cv.clear, cv.ink, o)
             return
         keyed(g, [cut(clothed(s, outfit, limb).widened(wider)) for s in strokes], colour, cv.clear, 0)
         cuffs = [_cuff(s, outfit, limb) for s in strokes]
@@ -1569,11 +1576,27 @@ def blob(
         keyed(g, [_across(c, 1.0, wider) for c in cuffs], cv.clear, cv.ink, o)  # the cuff line, at the skin
         keyed(g, [_across(c, 0.0, wider) for c in cuffs], cv.clear, cv.ink, 0.6 * o)  # the cuff's seam, finer
 
+    def front_limb(parent, limb):
+        g = cv.group(parent, f"{id}-front-{limb}")
+        _show(cv, g, _changes(fronts[limb], True))
+        fills = [d.pose.limbs[limb].widened(o).outline() for d in frames]
+        traces = [d.pose.limbs[limb].widened(o).contour() for d in frames]
+        fill = cv.path(g, fills[0], body_fill, cv.clear, 0)
+        cv.keys(fill, "path", list(zip(times, fills, strict=True)))
+        if outfit is not None:
+            dress(g, limb, o)
+        trace = cv.path(g, traces[0], cv.clear, cv.ink, o)
+        cv.keys(trace, "path", list(zip(times, traces, strict=True)))
+
     # Dressed, an arm held behind the body is drawn behind it: one colour never showed a hand over the body, a top does.
     order = LIMBS if outfit is None else (*ARMS, *FEET, "torso")
     for pass_name, fill, stroke, sw in (("outline", cv.ink, cv.ink, 2 * o), ("fill", body_fill, cv.clear, 0)):
         g = cv.group(root, f"{id}-{pass_name}")
         for limb in order:
+            if pass_name == "fill" and outfit is not None and limb == "torso":
+                for leg in FEET:
+                    if any(v for _, v in fronts[leg]):
+                        front_limb(g, leg)
             shape = limb_shape(g, limb, fill, stroke, sw)
             front = limb in fronts and any(v for _, v in fronts[limb])
             if front:
@@ -1597,20 +1620,10 @@ def blob(
             look.topper(cv, head_at(cv.group(root, f"{id}-{look.topper_id}")), radius)
     if look.hair is not None:
         look.hair(cv, head_at(cv.group(root, f"{id}-hair")), radius)
-    # A front limb is filled, then traced along its sides and tip only: the root stays open inside the body, so
-    # the limb grows out of it instead of sitting on it. Widened by the outline so it matches the silhouette's edge.
+    # Dressed front legs are already under the top; arms still sit over it.
     for limb in FRONTABLE:
-        if any(v for _, v in fronts[limb]):
-            g = cv.group(root, f"{id}-front-{limb}")
-            _show(cv, g, _changes(fronts[limb], True))
-            fills = [d.pose.limbs[limb].widened(o).outline() for d in frames]
-            traces = [d.pose.limbs[limb].widened(o).contour() for d in frames]
-            fill = cv.path(g, fills[0], body_fill, cv.clear, 0)
-            cv.keys(fill, "path", list(zip(times, fills, strict=True)))
-            if outfit is not None:
-                dress(g, limb, o)
-            trace = cv.path(g, traces[0], cv.clear, cv.ink, o)
-            cv.keys(trace, "path", list(zip(times, traces, strict=True)))
+        if any(v for _, v in fronts[limb]) and (outfit is None or limb in ARMS):
+            front_limb(root, limb)
     face = cv.group(root, f"{id}-face")
     cv.keys(face, "x", [(d.time, round(d.pose.head[0] + d.pose.face[0], 3)) for d in frames])
     cv.keys(face, "y", [(d.time, round(d.pose.head[1] + d.pose.face[1], 3)) for d in frames])

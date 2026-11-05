@@ -236,3 +236,51 @@ def test_juno_two_has_a_specimen_and_its_record_is_its_drawing():
     assert "juno@2" in specimens.SPECIMENS
     assert parts.get("juno").version(2).drawing  # a record to hold, not a blank that checks nothing
     specimens.check_record("juno", 2)
+
+
+@pytest.mark.parametrize("pose", blob.POSES)
+def test_top_draws_over_every_trouser_group_with_an_ink_hem(pose):
+    _, root = drawn(blob.juno_v2, [blob.cue(0, pose, (540, 1400), scale=SCALE)], end=0.2)
+    ordered = list(root.iter())
+    top = group(root, "juno-fill-torso-cloth")
+    for node in root.iter("group"):
+        if any(s.get("fill") == blob.JUNO_HOME.trousers for s in node.findall("shape")):
+            assert ordered.index(node) < ordered.index(top), pose
+    seam = [s for s in shapes(top) if s.get("stroke") == "#231E19"]
+    assert seam, f"{pose}: ink at the waist"
+    assert float(seam[0].get("strokeWidth")) > 0
+
+
+def _contains(poly, x, y):
+    inside = False
+    for (ax, ay), (bx, by) in zip(poly, poly[1:] + poly[:1], strict=True):
+        if (ay > y) != (by > y) and x < (bx - ax) * (y - ay) / (by - ay) + ax:
+            inside = not inside
+    return inside
+
+
+@pytest.mark.parametrize("pose", ["sit", "lounge", "floor"])
+def test_no_trouser_fill_above_the_seated_hem_across_the_lap(pose):
+    _, root = drawn(blob.juno_v2, [blob.cue(0, pose, (540, 1400), scale=SCALE)], end=0.2)
+    # Evaluate the actual garment polygons in painter order at the hip and across the lap.
+    polygons = []
+
+    def visit(node, visible=True):
+        visible = visible and node.get("opacity") != "0"
+        if not visible:
+            return
+        if node.tag == "shape" and node.get("fill") in (blob.JUNO_HOME.top, blob.JUNO_HOME.trousers):
+            polygons.append((node.get("fill"), points(path_keys(node)[0][1])))
+        for child in node:
+            visit(child, visible)
+
+    visit(root)
+    top = points(path_keys(shapes(group(root, "juno-fill-torso-cloth"))[0])[0][1])
+    checked = 0
+    for x in range(int(min(x for x, _ in top)), int(max(x for x, _ in top)), 3):
+        for y in range(int(sum(y for _, y in top) / len(top)), int(max(y for _, y in top)), 3):
+            if _contains(top, x, y):
+                colours = [colour for colour, poly in polygons if _contains(poly, x, y)]
+                assert colours[-1] == blob.JUNO_HOME.top, (pose, x, y)
+                checked += 1
+    assert checked > 0
