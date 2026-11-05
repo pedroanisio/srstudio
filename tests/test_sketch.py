@@ -611,3 +611,54 @@ def test_placing_again_refuses_a_recording_that_ends_before_the_beats(tmp_path):
 def test_a_caption_minimum_is_a_positive_number(bad):
     with pytest.raises(sketch.SketchError, match="caption_min"):
         sketch.check(replace(SK, caption_min=bad))
+
+
+def _trim_clip(src, dst, clip_in, clip_out, length, gain_db, ffmpeg):
+    """The kept part of the take, as conform cuts it (no level, no pad): word times on it are the take's - clip_in."""
+    import wave
+
+    with wave.open(str(src), "rb") as r:
+        rate, frames = r.getframerate(), r.readframes(r.getnframes())
+    a, b = round(clip_in * rate) * 2, round(clip_out * rate) * 2
+    with wave.open(str(dst), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        w.writeframes(frames[a:b])
+    return length
+
+
+def test_a_line_at_its_own_speed_is_asked_at_it_and_the_others_at_their_speakers(tmp_path):
+    client = FakeClient(tmp_path)
+    lines = (LINES[0], replace(LINES[1], speed=0.9), LINES[2])
+    rec = sketch.record(replace(SK, lines=lines), tmp_path, client, confirm=confirm_stub, conform_clip=copy_clip)
+    assert [s for _, _, s in client.requests] == [1.0, 0.9, 1.0]
+    assert [item["speed"] for item in rec.items] == [1.0, 0.9, 1.0]
+
+
+def test_a_stressed_word_said_flat_is_raised_on_the_take_and_recorded(tmp_path):
+    from srstudio import prosody
+
+    lines = (replace(LINES[0], stress=("nine",)), LINES[1], LINES[2])
+    rec = sketch.record(replace(SK, lines=lines), tmp_path, FakeClient(tmp_path), confirm=confirm_stub,
+                        conform_clip=_trim_clip)  # fmt: skip
+    first = rec.items[0]
+    assert first["stress"]["nine"] >= prosody.STRESS_DB  # the fake says every word alike: all of it is gain
+    assert "stress" not in rec.items[1]
+    assert first["sha256"] == narration.sha256_of(tmp_path / first["audio"])  # the manifest names the raised clip
+
+
+@pytest.mark.parametrize(
+    "change, match",
+    [
+        (dict(speed=0.6), "speed 0.6 is outside"),
+        (dict(speed=1.3), "speed 1.3 is outside"),
+        (dict(speed=float("nan")), "speed nan is outside"),
+        (dict(stress=("months",)), "'months' is not one word of the line"),
+        (dict(stress=("due at",)), "'due at' is not one word of the line"),
+    ],
+)
+def test_a_line_speed_or_stress_the_take_cannot_have_is_refused(change, match):
+    lines = (replace(LINES[0], **change), *LINES[1:])
+    with pytest.raises(sketch.SketchError, match=match):
+        sketch.check(replace(SK, lines=lines))
