@@ -1,25 +1,8 @@
-"""Three measured checks on a finished master at first delivery (ADR 0237): frozen picture, opening silence and
-loudness range. They follow the prosody gate's policy (ADR 0234 d): listed for every reel, refusing only a reel
-recorded to the gate, and waived only on the script with a written reason.
-
-- **Frozen run.** The master decoded at :data:`FPS` frames a second in greyscale; between two frames, the share of
-  pixels whose level changes by at least :data:`PIXEL_STEP` (of 255). A frame changing under :data:`FROZEN_SHARE` of
-  its pixels is frozen, and a frozen run over :data:`FROZEN_RUN` fails. A run under :data:`STILL_SHARE` over
-  :data:`STILL_RUN` is reported as information.
-- **Opening silence.** The first audible sound after 0, from ffmpeg ``silencedetect`` at :data:`SILENCE_DB`; over
-  :data:`OPENING` fails. Where the reel's takes are recorded, the first word's time in ``timeline.json`` is shown
-  beside it, and a first word inside the measured silence is reported.
-- **Loudness range.** The LRA from ffmpeg ``ebur128``; under :data:`MIN_LRA` fails. A recorded music bed with no gap
-  of at least :data:`BED_GAP` that is :data:`BED_DROP` under its own median level, across the whole runtime, is
-  reported as a constant bed.
-
-The checks are waived on ``Script.waive`` or ``Reel.waive`` (``frozen``, ``opening``, ``lra``) and the waivers are
-read from the timeline's ``prosody`` section, the marker of a reel recorded to the gate. A master the gate cannot
-measure refuses a reel recorded to it.
-"""
+"""Final-master acceptance shared by delivery and pilot callers (ADR 0244)."""
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import re
@@ -28,7 +11,7 @@ import wave
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal, TypeGuard
 
 import numpy as np
 
@@ -48,6 +31,10 @@ __all__ = [
     "STILL_RUN",
     "STILL_SHARE",
     "MasterError",
+    "MasterAcceptance",
+    "MasterApproval",
+    "MasterCheck",
+    "accept_master",
     "Measured",
     "Reading",
     "Run",
@@ -68,10 +55,10 @@ PIXEL_STEP = 8  # grey levels (of 255) a pixel moves by to count as changed: x26
 FROZEN_SHARE = 0.0005  # under 0.05% of the pixels changed: a frozen frame
 FROZEN_RUN = 1.5  # seconds of frozen frames that fail
 STILL_SHARE = 0.005  # under 0.5%: a still frame
-STILL_RUN = 2.0  # seconds of still frames reported
+STILL_RUN = FROZEN_RUN  # compatibility name; still content has the same blocking limit
 SILENCE_DB = -45.0  # silencedetect's floor
 SILENCE_MIN = 0.02  # seconds: the shortest silence silencedetect reports
-OPENING = 0.25  # seconds to the first audible sound
+OPENING = 0.25  # seconds to first audible speech; sound onset is diagnostic
 MIN_LRA = 4.5  # LU
 BED_WINDOW = 0.1  # seconds per level window of the bed
 BED_GAP = 0.5  # seconds a gap in the bed lasts at least
@@ -104,18 +91,29 @@ class Measured:
     frozen: tuple[Run, ...]
     still: tuple[Run, ...]
     first_sound: float | None
-    lra: float
+    lra: float | None
     constant_bed: bool | None = None
     first_word: float | None = None
+    lufs: float | None = None
+    peak_dbtp: float | None = None
+    crop: tuple[int, int, int, int] | None = None
+    detector: str = ""
+    loudness_raw: str = ""
+    freeze_raw: str = ""
+    speech_evidence: tuple[str, ...] = ()
+    speech_error: str = ""
+    frozen_error: str = ""
+    loudness_error: str = ""
+    sound_error: str = ""
 
 
 def _run(cmd: Sequence[str], what: str) -> subprocess.CompletedProcess:
     try:
-        return subprocess.run(list(cmd), capture_output=True, check=True)
+        return subprocess.run(list(cmd), capture_output=True, check=True, timeout=300)
     except subprocess.CalledProcessError as exc:
         said = [line for line in exc.stderr.decode(errors="replace").splitlines() if line.strip()]
         raise MasterError(f"{what}: {said[-1].strip()[-300:] if said else f'exit {exc.returncode}'}") from None
-    except OSError as exc:
+    except (OSError, subprocess.TimeoutExpired) as exc:
         raise MasterError(f"{what}: {exc}") from None
 
 
@@ -218,58 +216,350 @@ def constant_bed(stem: Path, *, fade: float = 0.0) -> bool:
     return longest < need
 
 
+def content_crop(width: int, height: int, crop: tuple[int, int, int, int] | None = None) -> tuple[int, int, int, int]:
+    """Scale the established portrait content region; other layouts must name their content rectangle."""
+    if crop is None:
+        if abs(width / height - 9 / 16) < 0.01:
+            crop = (width, round(height * 1340 / 1920) // 2 * 2, 0, 0)
+        elif abs(width / height - 1080 / 1340) < 0.01:
+            crop = (width, height, 0, 0)
+        else:
+            raise MasterError(f"{width}x{height}: explicit content crop required for this format")
+    if (
+        len(crop) != 4
+        or any(type(n) is not int for n in crop)
+        or crop[0] <= 0
+        or crop[1] <= 0
+        or min(crop[2:]) < 0
+        or crop[0] + crop[2] > width
+        or crop[1] + crop[3] > height
+    ):
+        raise MasterError(f"invalid content crop {crop!r} for {width}x{height}")
+    return crop
+
+
+def frozen_content(
+    video: Path, *, crop: tuple[int, int, int, int] | None = None, ffmpeg: str = "ffmpeg", ffprobe: str = "ffprobe"
+) -> tuple[tuple[Run, ...], tuple[int, int, int, int], str, str]:
+    """C4 detector evidence, with unfinished runs closed at decoded video EOF."""
+    rectangle = content_crop(*_size(video, ffprobe), crop)
+    detector = "crop=" + ":".join(str(n) for n in rectangle) + ",freezedetect=n=0.003:d=1.5"
+    done = _run(
+        [
+            ffmpeg,
+            "-hide_banner",
+            "-nostats",
+            "-i",
+            str(video),
+            "-an",
+            "-vf",
+            detector,
+            "-progress",
+            "pipe:1",
+            "-f",
+            "null",
+            "-",
+        ],
+        "C4 freezedetect",
+    )
+    raw = done.stderr.decode(errors="replace")
+    # out_time_us is the decoded video timeline, not an audio/container tail.
+    progress = done.stdout.decode(errors="replace")
+    times = re.findall(r"out_time_us=(\d+)", progress)
+    if "progress=end" not in progress or not times or int(times[-1]) <= 0:
+        raise MasterError("C4: missing decoded EOF measurement")
+    end = int(times[-1]) / 1_000_000
+    marks = re.findall(r"freeze_(start|end): ([^\s]+)", raw)
+    found: list[Run] = []
+    start: float | None = None
+    for kind, value in marks:
+        try:
+            at = float(value)
+        except ValueError:
+            raise MasterError("C4: unreadable freeze timestamp") from None
+        if not math.isfinite(at) or at < 0 or at > end + 0.001:
+            raise MasterError("C4: invalid freeze timestamp")
+        if kind == "start" and start is None:
+            start = at
+        elif kind == "end" and start is not None and at >= start:
+            if at - start > FROZEN_RUN + 1e-9:
+                found.append(Run(start, at))
+            start = None
+        else:
+            raise MasterError("C4: unordered freeze timestamps")
+    if start is not None and end - start > FROZEN_RUN + 1e-9:
+        found.append(Run(start, end))
+    return tuple(found), rectangle, detector, raw + "\n" + progress
+
+
+def audio_levels(video: Path, *, ffmpeg: str = "ffmpeg") -> tuple[float, float, float, str]:
+    """Integrated LUFS, LRA and oversampled true peak, plus raw ebur128 evidence."""
+    from . import proof
+
+    raw = _run(
+        [
+            ffmpeg,
+            "-hide_banner",
+            "-nostats",
+            "-i",
+            str(video),
+            "-map",
+            "0:a:0",
+            "-vn",
+            "-af",
+            "ebur128=peak=true:framelog=quiet",
+            "-f",
+            "null",
+            "-",
+        ],
+        "master ebur128",
+    ).stderr
+    evidence = raw.decode(errors="replace")
+    try:
+        lufs, lra, peak = proof.loudness(evidence)
+    except proof.ProofError as exc:
+        raise MasterError(str(exc)) from exc
+    if not all(math.isfinite(v) for v in (lufs, lra, peak)):
+        raise MasterError("ebur128: nonfinite measurement")
+    return lufs, lra, peak, evidence
+
+
 def measure(
-    video: Path, *, stem: Path | None = None, fade: float = 0.0, first_word: float | None = None,
-    ffmpeg: str = "ffmpeg", ffprobe: str = "ffprobe",
-) -> Measured:  # fmt: skip
-    """Every measure of the master ``video``; ``stem`` is the recorded music bed, if any, faded out over ``fade``."""
-    shares = changes(video, ffmpeg=ffmpeg, ffprobe=ffprobe)
+    video: Path,
+    *,
+    stem: Path | None = None,
+    fade: float = 0.0,
+    first_word: float | None = None,
+    project: Path | None = None,
+    crop: tuple[int, int, int, int] | None = None,
+    ffmpeg: str = "ffmpeg",
+    ffprobe: str = "ffprobe",
+    strict: bool = True,
+) -> Measured:
+    """Measure the actual master. A metadata-only first_word is never accepted as speech evidence."""
+    from . import craft_bar
+
+    frozen: tuple[Run, ...] = ()
+    rectangle = None
+    detector = freeze_raw = loudness_raw = ""
+    frozen_error = loudness_error = sound_error = ""
+    sound = lufs = lra = peak = None
+    try:
+        frozen, rectangle, detector, freeze_raw = frozen_content(video, crop=crop, ffmpeg=ffmpeg, ffprobe=ffprobe)
+    except MasterError as exc:
+        if strict:
+            raise
+        frozen_error = str(exc)
+    try:
+        sound = opening(video, ffmpeg=ffmpeg)
+    except MasterError as exc:
+        if strict:
+            raise
+        sound_error = str(exc)
+    try:
+        lufs, lra, peak, loudness_raw = audio_levels(video, ffmpeg=ffmpeg)
+    except MasterError as exc:
+        if strict:
+            raise
+        loudness_error = str(exc)
+    speech_evidence: tuple[str, ...] = ()
+    speech_error = "missing recorded alignment/project"
+    first_word = None
+    if project is not None:
+        try:
+            first_word, speech_evidence = craft_bar.first_speech(video, project, ffmpeg=ffmpeg)
+            speech_error = ""
+        except craft_bar.CraftError as exc:
+            speech_error = str(exc)
     return Measured(
-        tuple(runs(shares, FROZEN_SHARE, FROZEN_RUN)),
-        tuple(runs(shares, STILL_SHARE, STILL_RUN)),
-        opening(video, ffmpeg=ffmpeg),
-        loudness_range(video, ffmpeg=ffmpeg),
+        frozen,
+        (),
+        sound,
+        lra,
         None if stem is None else constant_bed(stem, fade=fade),
         first_word,
+        lufs,
+        peak,
+        rectangle,
+        detector,
+        loudness_raw,
+        freeze_raw,
+        speech_evidence,
+        speech_error,
+        frozen_error,
+        loudness_error,
+        sound_error,
     )
 
 
+@dataclass(frozen=True)
+class MasterApproval:
+    """Caller-supplied authorized evidence, bound to one exact master and check; never created by the gate."""
+
+    master_sha256: str
+    check: str
+    authorized_by: str
+    reason: str
+    evidence: str
+
+
+@dataclass(frozen=True)
+class MasterCheck:
+    check: str
+    value: float | None
+    limit: str
+    verdict: Literal["PASS", "APPROVED", "FAIL"]
+    master_sha256: str
+    evidence: tuple[str, ...]
+    approval: MasterApproval | None = None
+
+
+@dataclass(frozen=True)
+class MasterAcceptance:
+    master_sha256: str
+    checks: tuple[MasterCheck, ...]
+    measured: Measured | None = None
+    error: str = ""
+
+    @property
+    def ok(self) -> bool:
+        return bool(self.checks) and not self.error and all(c.verdict != "FAIL" for c in self.checks)
+
+    def lines(self) -> list[str]:
+        return [
+            f"master sha256={self.master_sha256}: {'PASS' if self.ok else 'REFUSED'} {self.error}",
+            *(
+                f"  {c.check}: {c.verdict} measured={c.value} target={c.limit} "
+                f"approval={c.approval!r} evidence={c.evidence!r}"
+                for c in self.checks
+            ),
+        ]
+
+
+_LIMITS = {
+    "integrated_lufs": "-16..-14 LUFS; approved lower bound -16.6",
+    "true_peak": "<= -1 dBTP",
+    "lra": ">= 4.5 LU",
+    "speech": "<= 0.25 s; usable alignment and audible words on master",
+    "frozen": "content freeze/still <= 1.5 s; freezedetect n=0.003:d=1.5",
+}
+
+
+def _finite(value: float | None) -> TypeGuard[float]:
+    return isinstance(value, int | float) and not isinstance(value, bool) and math.isfinite(value)
+
+
+def _checks(m: Measured, sha: str, approvals: Sequence[MasterApproval]) -> tuple[MasterCheck, ...]:
+    values = (
+        m.lufs,
+        m.peak_dbtp,
+        m.lra,
+        m.first_word,
+        max((r.end - r.start for r in (*m.frozen, *m.still)), default=0.0)
+        if m.crop is not None and m.detector and m.freeze_raw and not m.frozen_error
+        else None,
+    )
+    valid_runs = all(_finite(r.start) and _finite(r.end) and 0 <= r.start <= r.end for r in (*m.frozen, *m.still))
+    passes = (
+        _finite(m.lufs) and -16 <= m.lufs <= -14 and bool(m.loudness_raw) and not m.loudness_error,
+        _finite(m.peak_dbtp) and m.peak_dbtp <= -1 and bool(m.loudness_raw) and not m.loudness_error,
+        _finite(m.lra) and m.lra >= MIN_LRA and bool(m.loudness_raw) and not m.loudness_error,
+        _finite(m.first_word) and 0 <= m.first_word <= OPENING and bool(m.speech_evidence) and not m.speech_error,
+        m.crop is not None
+        and not m.frozen_error
+        and bool(m.detector and m.freeze_raw)
+        and valid_runs
+        and all(r.end - r.start <= FROZEN_RUN + 1e-9 for r in (*m.frozen, *m.still)),
+    )
+    evidence = (
+        (m.loudness_raw, m.loudness_error),
+        (m.loudness_raw, m.loudness_error),
+        (m.loudness_raw, m.loudness_error),
+        (*m.speech_evidence, f"first sound={m.first_sound}; sound diagnostic={m.sound_error}; {m.speech_error}"),
+        (f"crop={m.crop}; detector={m.detector}; runs={(*m.frozen, *m.still)!r}", m.freeze_raw, m.frozen_error),
+    )
+    out = []
+    for (check, limit), value, passed, raw in zip(_LIMITS.items(), values, passes, evidence, strict=True):
+        approval = next(
+            (
+                a
+                for a in approvals
+                if isinstance(a, MasterApproval)
+                and a.master_sha256 == sha
+                and a.check == check
+                and a.authorized_by == "arc4d3"
+                and isinstance(a.reason, str)
+                and a.reason.strip()
+                and isinstance(a.evidence, str)
+                and a.evidence.strip()
+            ),
+            None,
+        )
+        eligible = check in ("speech", "frozen") or (
+            check == "integrated_lufs"
+            and _finite(value)
+            and -16.6 <= value < -16
+            and bool(m.loudness_raw)
+            and not m.loudness_error
+        )
+        approved = approval if not passed and eligible else None
+        out.append(
+            MasterCheck(
+                check, value, limit, "PASS" if passed else "APPROVED" if approved else "FAIL", sha, raw, approved
+            )
+        )
+    return tuple(out)
+
+
+def accept_master(
+    master: Path,
+    project: Path | None = None,
+    *,
+    approvals: Sequence[MasterApproval] = (),
+    crop: tuple[int, int, int, int] | None = None,
+    stem: Path | None = None,
+    fade: float = 0.0,
+    ffmpeg: str = "ffmpeg",
+    ffprobe: str = "ffprobe",
+) -> MasterAcceptance:
+    """Public delivery/pilot acceptance API. No staging, recording, network or approval writes."""
+    sha = ""
+    try:
+        sha = hashlib.sha256(master.read_bytes()).hexdigest()
+        measured = measure(
+            master, project=project, crop=crop, stem=stem, fade=fade, ffmpeg=ffmpeg, ffprobe=ffprobe, strict=False
+        )
+        if hashlib.sha256(master.read_bytes()).hexdigest() != sha:
+            raise MasterError("master changed during measurement")
+        return MasterAcceptance(sha, _checks(measured, sha, approvals), measured)
+    except (OSError, MasterError) as exc:
+        return MasterAcceptance(
+            sha,
+            tuple(MasterCheck(c, None, limit, "FAIL", sha, (str(exc),)) for c, limit in _LIMITS.items()),
+            error=str(exc),
+        )
+
+
 def findings(m: Measured, waivers: Mapping[str, str] | None = None) -> tuple[list[Finding], list[str]]:
-    """The failing measures as findings, each waived with its reason when the script waives it, and the information
-    lines (still runs, a constant bed, a first word inside the measured silence)."""
-    waivers = waivers or {}
-    out: list[Finding] = []
-    for run in m.frozen:
-        out.append(Finding("frozen", None, run.seconds, (0.0, FROZEN_RUN),
-                           f"frozen from {run.start:g} s to {run.end:g} s", waivers.get("frozen", "")))  # fmt: skip
-    if m.first_sound is None:
-        out.append(Finding("opening", None, None, (0.0, OPENING), "no sound over the silence floor at all",
-                           waivers.get("opening", "")))  # fmt: skip
-    elif m.first_sound > OPENING + 1e-9:
-        out.append(Finding("opening", None, m.first_sound, (0.0, OPENING), "silence before the first sound",
-                           waivers.get("opening", "")))  # fmt: skip
-    if m.lra < MIN_LRA - 1e-9:
-        out.append(Finding("lra", None, m.lra, (MIN_LRA, math.inf), "loudness range (LU)", waivers.get("lra", "")))
-    info = [f"still {run.seconds:g} s from {run.start:g} s (under {STILL_SHARE:.1%} of pixels)" for run in m.still]
+    """Common acceptance failures plus sound/bed diagnostics. Legacy waiver strings do not authorize exceptions."""
+    checks = _checks(m, "", ())
+    out = [Finding(c.check, None, c.value, None, c.limit) for c in checks if c.verdict == "FAIL"]
+    info = [f"first sound at {m.first_sound}; first speech at {m.first_word}"]
     if m.constant_bed:
         info.append(f"constant bed: no gap of {BED_GAP:g} s {BED_DROP:g} dB down in the music")
-    if m.first_word is not None:
-        heard = "silent" if m.first_sound is None else f"{m.first_sound:g} s"
-        if m.first_sound is None or m.first_word < m.first_sound - WORD_SLACK:
-            info.append(f"first word at {m.first_word:g} s in the takes, first sound at {heard} on the master")
     return out, info
 
 
 @dataclass(frozen=True)
 class Reading:
-    """The gate's reading of one master: ``binding`` when the reel is recorded to the gate (its timeline has a
-    ``prosody`` section), its findings and information lines, and ``error`` when it cannot be measured."""
+    """Delivery reading, retaining legacy report fields; judge always returns binding common acceptance."""
 
     video: str
     binding: bool
     findings: tuple[Finding, ...] = ()
     info: tuple[str, ...] = ()
     error: str = ""
+    acceptance: MasterAcceptance | None = None
 
     @property
     def failing(self) -> tuple[Finding, ...]:
@@ -280,6 +570,8 @@ class Reading:
         return self.binding and bool(self.error or self.failing)
 
     def lines(self) -> list[str]:
+        if self.acceptance is not None:
+            return [f"master {self.video}", *self.acceptance.lines()]
         head = f"master {self.video}"
         policy = "" if self.binding else " (recorded before the gate: advisory)"
         if self.error:
@@ -294,45 +586,35 @@ class Reading:
                 *(f"  info: {i}" for i in self.info)]  # fmt: skip
 
 
-def _first_word(timeline: Mapping[str, Any]) -> float | None:
-    for item in timeline.get("items", ()):
-        p = item.get("prosody") if isinstance(item, Mapping) else None
-        if isinstance(p, Mapping) and isinstance(p.get("first"), int | float):
-            start = item.get("start", 0.0)
-            return round(float(start) + float(p["first"]), 3) if isinstance(start, int | float) else None
-    return None
-
-
 def _fade(timeline: Mapping[str, Any]) -> float:
     music = timeline.get("music")
     fade = music.get("fade") if isinstance(music, Mapping) else None
     return float(fade) if isinstance(fade, int | float) and not isinstance(fade, bool) and fade > 0 else 0.0
 
 
-def _waivers(timeline: Mapping[str, Any]) -> dict[str, str]:
-    section = timeline.get("prosody")
-    waive = section.get("waive", ()) if isinstance(section, Mapping) else ()
-    return {
-        w["check"]: w["reason"]
-        for w in waive
-        if isinstance(w, Mapping) and w.get("check") in CHECKS and isinstance(w.get("reason"), str) and w["reason"]
-    }
-
-
 def judge(
-    video: str, master: Path, timeline: Mapping[str, Any] | None, *, stem: Path | None = None, ffmpeg: str = "ffmpeg",
+    video: str,
+    master: Path,
+    timeline: Mapping[str, Any] | None,
+    *,
+    stem: Path | None = None,
+    project: Path | None = None,
+    approvals: Sequence[MasterApproval] = (),
+    crop: tuple[int, int, int, int] | None = None,
+    ffmpeg: str = "ffmpeg",
     ffprobe: str = "ffprobe",
-) -> Reading:  # fmt: skip
-    """Measure ``master`` and judge it; ``timeline`` (None: none) says whether the reel is recorded to the gate, its
-    waivers and its first word."""
-    binding = isinstance(timeline, Mapping) and "prosody" in timeline
+) -> Reading:
+    """Every delivered master is binding; legacy script waivers cannot authorize master exceptions."""
     known = timeline if isinstance(timeline, Mapping) else {}
-    try:
-        m = measure(master, stem=stem, fade=_fade(known), first_word=_first_word(known), ffmpeg=ffmpeg, ffprobe=ffprobe)
-    except MasterError as exc:
-        return Reading(video, binding, error=str(exc))
-    found, info = findings(m, _waivers(known))
-    return Reading(video, binding, tuple(found), tuple(info))
+    result = accept_master(
+        master, project, approvals=approvals, crop=crop, stem=stem, fade=_fade(known), ffmpeg=ffmpeg, ffprobe=ffprobe
+    )
+    found = tuple(
+        Finding(c.check, None, c.value, None, c.limit, c.approval.reason if c.approval else "")
+        for c in result.checks
+        if c.verdict != "PASS"
+    )
+    return Reading(video, True, found, error=result.error, acceptance=result)
 
 
 def _timeline(project: Path) -> Mapping[str, Any] | None:
@@ -351,7 +633,8 @@ def _stem(project: Path, timeline: Mapping[str, Any] | None) -> Path | None:
 
 def read(
     releases: Mapping[str, Release], episodes: Path, renders: Path, first: Mapping[str, str], *, ffmpeg: str = "ffmpeg",
-    ffprobe: str = "ffprobe",
+    ffprobe: str = "ffprobe", approvals: Sequence[MasterApproval] = (),
+    crops: Mapping[str, tuple[int, int, int, int]] | None = None,
 ) -> dict[str, Reading]:  # fmt: skip
     """Each reel on its ``first`` delivery (slug to video name): its master ``renders/<video>.mp4``, its timeline and
     bed in ``episodes/<slug>``."""
@@ -359,16 +642,25 @@ def read(
     for slug, video in sorted(first.items()):
         project = Path(episodes) / releases[slug].slug
         timeline = _timeline(project)
-        out[slug] = judge(video, Path(renders) / f"{video}.mp4", timeline, stem=_stem(project, timeline),
-                          ffmpeg=ffmpeg, ffprobe=ffprobe)  # fmt: skip
+        out[slug] = judge(
+            video,
+            Path(renders) / f"{video}.mp4",
+            timeline,
+            stem=_stem(project, timeline),
+            project=project,
+            approvals=approvals,
+            crop=crops.get(slug) if crops is not None else None,
+            ffmpeg=ffmpeg,
+            ffprobe=ffprobe,
+        )
     return out
 
 
 def refusals(readings: Mapping[str, Reading]) -> list[Drift]:
-    """A :class:`~srstudio.social.Drift` for each reel recorded to the gate whose master it refuses."""
+    """A delivery drift for every refused final master."""
     return [
-        Drift(r.video, f"master: {r.error or '; '.join(f.line() for f in r.failing)} (waive a check with its reason "
-                       "on the script)")
+        Drift(r.video, f"master: {r.error or '; '.join(f.line() for f in r.failing)} "
+              "(authorized master hash/check exception required)")
         for r in readings.values()
         if r.refused
     ]  # fmt: skip

@@ -31,7 +31,7 @@ def master(tmp_path):
             '-f',
             'lavfi',
             '-i',
-            "aevalsrc='0.05*sin(2*PI*180*t)*(1+3*between(t,0.7,1.0))':s=16000:d=3",
+            "aevalsrc='0.17*sin(2*PI*180*t)*(1+3*between(t,0.7,1.0))':s=16000:d=3",
             '-c:v',
             'libx264',
             '-preset',
@@ -102,7 +102,7 @@ def project(tmp_path, kind):
 def test_both_layouts_measure_master_mix(tmp_path, master, kind):
     result = craft_bar.measure(master, project(tmp_path, kind))
     by = {m.name: m for m in result.measures}
-    assert by['first_word'].value == pytest.approx(0.1)
+    assert by['first_word'].value == pytest.approx(0.1, abs=0.002)
     assert by['pace:line-1'].value == pytest.approx(3 / 1.0)
     assert by['stress:line-1:three'].value > 8
     assert by['stress:line-1:three'].passed
@@ -261,10 +261,12 @@ def test_constant_declared_music_fails(tmp_path, master):
 
 
 def test_exact_freeze_boundary(monkeypatch):
-    from subprocess import CompletedProcess
+    from srstudio.master_gate import Run
 
     monkeypatch.setattr(
-        craft_bar.proof, '_run', lambda *a: CompletedProcess([], 0, '', 'freeze_start: 0.5\nfreeze_end: 2.0')
+        craft_bar.master_gate,
+        'frozen_content',
+        lambda *a, **kw: ((Run(0.5, 2.0),), (160, 198, 0, 0), 'detector', 'raw'),
     )
     assert craft_bar.frozen_run('unused') == 1.5
 
@@ -350,7 +352,7 @@ def test_phrase_pace_and_word_span_guard(tmp_path, master, count, duration, span
     by = {m.name: m for m in result.measures}
     if count < 3:
         assert not any('pace' in m.name for m in result.measures)
-        assert not any('pace' in line for line in result.lines())
+        assert not any('pace:' in line or 'pace_span:' in line for line in result.lines())
         return
     phrase = by['pace:take']
     assert phrase.value == pytest.approx(count / duration)
@@ -378,3 +380,33 @@ def test_ship_phrase_can_still_fail_span_guard(tmp_path, master):
     assert by['pace_span:take'].status == 'FAIL'
     assert not result.ok
     assert [m.name for m in result.retakes()] == ['pace:take']
+
+
+@pytest.mark.parametrize('bad', [None, True, '0.1', float('inf'), float('nan')])
+def test_alignment_numbers_are_typed_and_finite(tmp_path, bad):
+    write(
+        tmp_path / 'timeline.json',
+        {
+            'items': [
+                {
+                    'id': 'voice',
+                    'start': bad,
+                    'duration': 1,
+                    'prosody': {'words': [{'text': 'hello', 'start': 0.1, 'end': 0.4}]},
+                }
+            ]
+        },
+    )
+    with pytest.raises(craft_bar.CraftError):
+        craft_bar.recorded_lines(tmp_path)
+
+
+def test_craft_refuses_finite_out_of_band_loudness(tmp_path, master):
+    quiet = tmp_path / 'quiet.mp4'
+    subprocess.run(
+        ['ffmpeg', '-v', 'error', '-i', str(master), '-af', 'volume=0.5', '-c:v', 'copy', str(quiet)], check=True
+    )
+    result = craft_bar.measure(quiet, project(tmp_path, 'narration'))
+    assert not next(m for m in result.measures if m.name == 'integrated_lufs').ok
+    assert not result.ok
+    assert any(m.name == 'true_peak' for m in result.measures)

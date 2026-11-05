@@ -9,11 +9,12 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-import re
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
+
+import numpy as np
 
 from . import master_gate, proof, prosody
 from .phrasing import words_of
@@ -102,12 +103,26 @@ def _marks(item: dict[str, Any]) -> tuple[str, ...]:
     return (value,) if isinstance(value, str) else tuple(value)
 
 
+def _number(value: object, where: str) -> float:
+    if not isinstance(value, int | float) or isinstance(value, bool) or not math.isfinite(value):
+        raise WordsNotHeard(f'{where}: expected a finite number')
+    return float(value)
+
+
 def _words(rows: list[dict[str, Any]], clip_in: float, duration: float) -> tuple[Word, ...]:
-    return tuple(
-        Word(w['text'], max(0, float(w['start']) - clip_in), min(duration, float(w['end']) - clip_in), 'word')
-        for w in rows
-        if w.get('type', 'word') == 'word' and float(w['end']) > clip_in and float(w['start']) < clip_in + duration
-    )
+    out = []
+    previous = 0.0
+    for row in rows:
+        if row.get('type', 'word') != 'word':
+            continue
+        start = _number(row['start'], 'word start')
+        end = _number(row['end'], 'word end')
+        if not isinstance(row['text'], str) or not row['text'].strip() or start < previous or end <= start:
+            raise WordsNotHeard('unusable ordered word alignment')
+        previous = end
+        if end > clip_in and start < clip_in + duration:
+            out.append(Word(row['text'], max(0, start - clip_in), min(duration, end - clip_in), 'word'))
+    return tuple(out)
 
 
 def _cached_words(project: Path, generated: dict[str, Any], language: str) -> list[dict[str, Any]]:
@@ -138,11 +153,11 @@ def recorded_lines(project: Path) -> tuple[RecordedLine, ...]:
                 if item.get('actor') == 'sfx':
                     continue
                 p = item.get('prosody', {})
-                duration = float(item['duration'])
+                duration = _number(item['duration'], 'duration')
                 out.append(
                     RecordedLine(
                         str(item['id']),
-                        float(item['start']),
+                        _number(item['start'], 'placement start'),
                         duration,
                         _words(p.get('words', []), 0, duration),
                         _marks(item),
@@ -158,7 +173,7 @@ def recorded_lines(project: Path) -> tuple[RecordedLine, ...]:
                 if g.get('kind') != 'speech':
                     continue
                 pl = clip['placement']
-                duration = float(pl['clip_out']) - float(pl['clip_in'])
+                duration = _number(pl['clip_out'], 'clip out') - _number(pl['clip_in'], 'clip in')
                 language = g.get('language', data.get('language', 'en').split('-')[0])
                 timing = g
                 source = sources.get(g['cache'])
@@ -172,9 +187,9 @@ def recorded_lines(project: Path) -> tuple[RecordedLine, ...]:
                 out.append(
                     RecordedLine(
                         g['id'],
-                        float(pl['start']),
+                        _number(pl['start'], 'placement start'),
                         duration,
-                        _words(rows, float(pl['clip_in']), duration),
+                        _words(rows, _number(pl['clip_in'], 'clip in'), duration),
                         stresses.get(g['id'], _marks(clip)),
                         'cached transcript + dialogue placement',
                     )
@@ -186,13 +201,13 @@ def recorded_lines(project: Path) -> tuple[RecordedLine, ...]:
             for take in data.get('takes', ()):
                 alignment = Alignment(tuple(take['characters']), tuple(take['starts']), tuple(take['ends']))
                 rows = [dict(text=t, start=a, end=b) for t, a, b in words_of(alignment)]
-                duration = float(take['kept'])
+                duration = _number(take['kept'], 'kept duration')
                 out.append(
                     RecordedLine(
                         str(take['id']),
-                        float(take['at']),
+                        _number(take['at'], 'placement start'),
                         duration,
-                        _words(rows, float(take.get('clip_in', 0)), duration),
+                        _words(rows, _number(take.get('clip_in', 0), 'clip in'), duration),
                         _marks(take) or _marks(items.get(take['id'], {})),
                         'speech.json kept alignment',
                     )
@@ -226,36 +241,83 @@ def pace_measure(line: str, value: float) -> Measure:
     )
 
 
-def frozen_run(video: Path) -> float:
-    """Longest detected C4 run, including EOF; zero means none reached the detector duration.
+def first_speech(video: Path, project: Path, *, ffmpeg: str = "ffmpeg") -> tuple[float, tuple[str, ...]]:
+    """Validate cached words against placed windows in the mixed master; earlier effects are not speech.
 
-    master_gate.changes/runs use different pixel-share criteria and are not C4.
+    This verifies audibility, not lexical identity or source separation. An audible effect inside an incorrectly
+    labelled speech window cannot be distinguished from speech without independent recognition/source evidence.
     """
-    done = proof._run(
-        [
-            'ffmpeg',
-            '-hide_banner',
-            '-nostats',
-            '-i',
-            str(video),
-            '-an',
-            '-vf',
-            'crop=1080:1340:0:0,freezedetect=n=0.003:d=1.5',
-            '-f',
-            'null',
-            '-',
-        ],
-        'C4 freezedetect',
-    )
-    starts = re.findall(r'freeze_start: ([\d.]+)', done.stderr)
-    ends = re.findall(r'freeze_end: ([\d.]+)', done.stderr)
-    if len(ends) < len(starts):
-        probe = proof._run(
-            ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', str(video)],
-            'freeze EOF duration',
-        )
-        ends.append(probe.stdout.strip())
-    return max((float(b) - float(a) for a, b in zip(starts, ends, strict=True)), default=0.0)
+    lines = recorded_lines(project)
+    evidence = []
+    first = math.inf
+    try:
+        for line in lines:
+            raw = master_gate._run(
+                [
+                    ffmpeg,
+                    '-v',
+                    'error',
+                    '-i',
+                    str(video),
+                    '-ss',
+                    str(line.start),
+                    '-t',
+                    str(line.duration),
+                    '-map',
+                    '0:a:0',
+                    '-vn',
+                    '-ac',
+                    '1',
+                    '-ar',
+                    '16000',
+                    '-f',
+                    's16le',
+                    '-',
+                ],
+                f'{line.id}: master word audibility',
+            ).stdout
+            if not raw or len(raw) % 2:
+                raise WordsNotHeard(f'{line.id}: unreadable master audio')
+            pcm = np.frombuffer(raw, dtype='<i2').astype(np.float64) / 32768
+            previous = 0.0
+            for word in line.words:
+                if (
+                    not word.text.strip()
+                    or word.start < previous
+                    or word.end > line.duration
+                    or word.start < 0
+                    or word.end <= word.start
+                ):
+                    raise WordsNotHeard(f'{line.id}: unusable ordered alignment/placement')
+                previous = word.end
+                a, b = round(word.start * 16000), round(word.end * 16000)
+                if b > pcm.size or a >= b:
+                    raise WordsNotHeard(f'{line.id}: alignment outside mixed audio')
+                window = pcm[a:b]
+                rms = float(np.sqrt(np.mean(window * window)))
+                db = 20 * math.log10(rms) if rms > 0 else -math.inf
+                if not math.isfinite(db) or db <= master_gate.SILENCE_DB:
+                    raise WordsNotHeard(f'{line.id}: words not audible on master at cached timing')
+                audible = np.flatnonzero(np.abs(window) > 10 ** (master_gate.SILENCE_DB / 20))
+                if not audible.size:
+                    raise WordsNotHeard(f'{line.id}: no audible speech samples')
+                at = line.start + word.start + int(audible[0]) / 16000
+                first = min(first, at)
+                evidence.append(
+                    f'{line.id}:{word.text!r}: placement={line.start}; '
+                    f'word={word.start}..{word.end}; rms={db:g} dBFS; audible={at:g}; {line.source}'
+                )
+    except master_gate.MasterError as exc:
+        raise CraftError(str(exc)) from exc
+    if not math.isfinite(first):
+        raise WordsNotHeard('no audible aligned speech')
+    return first, tuple(evidence)
+
+
+def frozen_run(video: Path) -> float:
+    """The common final-content C4 detector, with runs closed at decoded video EOF."""
+    runs, _, _, _ = master_gate.frozen_content(Path(video))
+    return max((r.end - r.start for r in runs), default=0.0)
 
 
 def _beds(project: Path) -> list[tuple[Path, float]]:
@@ -277,7 +339,7 @@ def _beds(project: Path) -> list[tuple[Path, float]]:
 
 
 def measure(video: Path, project: Path, *, loudness: proof.Measures | None = None) -> Result:
-    """Measure C4/C7. Integrated loudness is reported with a finite-value bar: no LUFS target was specified."""
+    """Measure C4/C7 using the same final-master acceptance bars as delivery (ADR 0244)."""
     try:
         lines = recorded_lines(project)
         probe = proof._run(
@@ -299,7 +361,6 @@ def measure(video: Path, project: Path, *, loudness: proof.Measures | None = Non
             raise NoAudio(f'{video}: no audio stream')
         values: list[Measure] = []
         with tempfile.TemporaryDirectory(prefix='craft-bar-') as tmp:
-            first = math.inf
             for line in lines:
                 wav = Path(tmp) / 'line.wav'
                 proof._run(
@@ -329,7 +390,6 @@ def measure(video: Path, project: Path, *, loudness: proof.Measures | None = Non
                 measured = prosody.measure(wav, line.words, line.stress)
                 if measured.pace is None or any(w.db is None or w.db <= -119 for w in measured.words):
                     raise WordsNotHeard(f'{line.id}: words not audible on master at cached timing')
-                first = min(first, line.start + (measured.first or 0))
                 count = len(measured.words)
                 if count >= 3:
                     values.append(pace_measure(line.id, count / line.duration))
@@ -355,32 +415,20 @@ def measure(video: Path, project: Path, *, loudness: proof.Measures | None = Non
                             'prosody.measure on master mix; ' + line.source,
                         )
                     )
-        loudness = loudness or proof.measure(video)
+        acceptance = master_gate.accept_master(video, project)
+        if acceptance.error:
+            raise CraftError(acceptance.error)
+        names = {'speech': 'first_word', 'true_peak': 'true_peak'}
         values[0:0] = [
             Measure(
-                'integrated_lufs',
-                loudness.lufs,
-                'finite (no LUFS target specified)',
-                'PASS' if math.isfinite(loudness.lufs) else 'FAIL',
-                'master ebur128',
-            ),
-            Measure(
-                'lra',
-                loudness.range_lu,
-                '>= 4.5 LU',
-                'PASS' if loudness.range_lu >= master_gate.MIN_LRA else 'FAIL',
-                'master ebur128',
-            ),
-        ]
-        values.append(
-            Measure(
-                'first_word',
-                round(first, 6),
-                '<= 0.25 s',
-                'PASS' if first <= 0.25 else 'FAIL',
-                'cached word timing + placement; audibility checked on master',
+                names.get(c.check, c.check),
+                c.value,
+                c.limit,
+                'PASS' if c.verdict == 'PASS' else 'FAIL',
+                f'master sha256={c.master_sha256}; ' + '; '.join(c.evidence),
             )
-        )
+            for c in acceptance.checks
+        ]
         beds = _beds(project)
         constant = any(master_gate.constant_bed(p, fade=f) for p, f in beds)
         values.append(
@@ -390,16 +438,6 @@ def measure(video: Path, project: Path, *, loudness: proof.Measures | None = Non
                 'false',
                 'FAIL' if constant else 'PASS',
                 'master_gate.constant_bed on declared music stems' if beds else 'no declared music stem',
-            )
-        )
-        frozen = frozen_run(video)
-        values.append(
-            Measure(
-                'frozen',
-                frozen,
-                '< 1.5 s',
-                'PASS' if frozen < 1.5 else 'FAIL',
-                'crop=1080:1340:0:0,freezedetect=n=0.003:d=1.5; EOF closed at duration',
             )
         )
         return Result(tuple(values))

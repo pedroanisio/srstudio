@@ -15,6 +15,7 @@
     {"number": "0239", "name": "proof-project-craft-bar", "owner": "worskpace-measure-bar", "reserved": "2026-11-05"},
     {"number": "0241", "name": "stress-preserving-master-gain", "owner": "codex-builder", "reserved": "2026-11-05"},
     {"number": "0240", "name": "small-print-explainers-in-clay", "owner": "worskpace-sp-v2", "reserved": "2026-11-04"},
+    {"number": "0244", "name": "final-master-acceptance", "owner": "codex-builder", "reserved": "2026-11-05"},
     {"number": "0242", "name": "juno-v2-a-home-outfit", "owner": "worskpace-juno-v2", "reserved": "2026-11-05"}
   ]
 }
