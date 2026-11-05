@@ -247,6 +247,27 @@ def test_an_overlay_is_drawn_once_over_every_shot_and_under_the_captions(pinned_
     assert [n for n in xml.iter() if n.get("id") == "over-every-shot"]
 
 
+def test_an_overlay_can_read_the_takes_the_heads_read(pinned_fonts, tmp_path, monkeypatch):
+    takes = [("bear", "a take")]
+    monkeypatch.setattr(toon_sketch, "spoken_takes", lambda root, sk, voiced: takes)
+    seen = []
+
+    def overlay(cv, parent, beats, end, measure, said):
+        seen.append((parent, len(beats), end, said))
+        cv.group(parent, "over-every-shot")
+
+    st = replace(silent(stage_sketch()), overlay_said=overlay)
+    ep, xml = built(tmp_path, st, pinned_fonts)
+    assert seen == [(ep.comp, 2, END, takes)]
+    assert [n for n in xml.iter() if n.get("id") == "over-every-shot"]
+
+
+def test_a_staging_takes_one_overlay_or_the_other(pinned_fonts, tmp_path):
+    st = replace(silent(stage_sketch()), overlay=lambda *a: None, overlay_said=lambda *a: None)
+    with pytest.raises(toon_sketch.StagingError, match="one overlay"):
+        built(tmp_path, st, pinned_fonts)
+
+
 def test_an_opening_line_is_drawn_over_every_shot_until_the_first_line_ends_and_kept_off_the_cover(
     pinned_fonts, tmp_path
 ):

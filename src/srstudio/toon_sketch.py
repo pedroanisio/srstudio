@@ -63,6 +63,8 @@ from .staging import StagingError
 from .styles import Style
 from .voice import MODEL, ElevenLabsClient
 
+Said = Sequence[tuple[str | None, head_motion.Speech]]  # each take: who said it, and the take
+
 TYPING_PEAK = 0.70
 TYPING_GAIN_DB = -2.0  # the keys only play between the lines
 BUZZ_GAIN_DB = -4.0
@@ -142,6 +144,10 @@ class Staging:
     overlay: Callable[[Canvas, object, Sequence[Any], float, Callable[..., float]], None] | None = None
     """``(cv, parent, beats, end, measure)`` draws what stays over every shot, under the captions and out of the
     camera's reach, from the beats the build placed: a show's graphics."""
+    overlay_said: Callable[[Canvas, object, Sequence[Any], float, Callable[..., float], Said], None] | None = None
+    """An ``overlay`` that also reads the takes, ``(cv, parent, beats, end, measure, said)``: each take of the
+    recording with who said it, as the heads read them (:func:`spoken_takes`; none in a silent build), for graphics
+    that make way for what a line brings up. A staging has one overlay or the other."""
     opening: Callable[[Canvas, object, float, Callable[..., float]], Any] | None = None
     """``(cv, parent, said, measure)`` draws the reel's opening line (:mod:`srstudio.opener`) over every shot, out of
     the camera's reach, from the first frame until ``said``, when the first spoken line stops
@@ -253,6 +259,8 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
     flags = errors.flags(flags, BUILD_FLAGS)
     sk = staging.sketch
     check_heads(sk, staging.heads, staging.versions)
+    if staging.overlay is not None and staging.overlay_said is not None:
+        raise StagingError("a staging takes one overlay: overlay, or overlay_said to read the takes too")
     if "--init" in flags:
         sketch.write_project(root, sk, staging.style.google_font())
         return None
@@ -353,6 +361,8 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
     lines = toon.load_script(root / ep.spec.dialogue)
     if staging.overlay is not None:
         staging.overlay(cv, ep.comp, sk.beats, sk.end, measure)
+    if staging.overlay_said is not None:
+        staging.overlay_said(cv, ep.comp, sk.beats, sk.end, measure, said())
     if staging.opening is not None:
         drawn = staging.opening(cv, ep.comp, sketch.first_line_end(root, sk, voiced), measure)
         if drawn is not None:
