@@ -261,3 +261,62 @@ def test_a_stamp_placed_over_its_own_ceiling_is_refused():
     cv = Canvas(scene, font_asset="fraunces")
     with pytest.raises(ScriptError, match="over its ceiling"):
         stamp(cv, cv.comp, FOUND, 0.5, 2.0, measure, top=sc.STAMP_TOP, ceiling=sc.SAFE_TOP)
+
+
+# -- a cut inside a shot, to the one part it is about -----------------------------------------------------------------
+CLOSE = Camera((0.0, -290.0, -224.0), (0.0, -290.0, -215.0), 33.0, 4.0)  # a hand's width from the pellet
+PELLET = frozenset({"pellet"})
+
+
+def _nudging(t: float) -> float:
+    return round(math.sin(t * 3.0) * 0.6, 2)
+
+
+def _cut(at: float = 1.0, lens: Camera = CLOSE, **changes) -> sc.Cut:
+    return replace(sc.Cut(at, lens, hero=PELLET), **changes)
+
+
+def test_a_shot_cut_in_two_sees_the_rest_through_the_close_lens():
+    s = shot(pose=_nudging, cuts=(_cut(1.0),))
+    (a, a0, a1), (b, b0, b1) = sc.pieces(s, 0.0, 2.0)
+    assert (a.lens, a0, a1, a.cuts, a.hero) == (LENS, 0.0, 1.0, (), frozenset())
+    assert (b.lens, b0, b1, b.cuts, b.hero, b.panel) == (CLOSE, 1.0, 2.0, (), PELLET, "test-tank-1")
+    assert b.moves == (sc.Move(1.0),)
+    assert sc.pieces(shot(), 0.0, 2.0) == [(shot(), 0.0, 2.0)]
+
+
+def test_the_part_a_close_shot_is_about_is_measured_alone():
+    s = shot(pose=_nudging, cuts=(_cut(1.0),))
+    wide, close = (piece for piece, _, _ in sc.pieces(s, 0.0, 2.0))
+    assert sc.hero_share(close, 1.5) >= sc.SHARE
+    assert sc.hero_share(replace(wide, hero=PELLET), 0.5) < 0.05
+    assert sc.hero_share(wide, 0.5) == sc.share(wide, 0.5)  # no hero: the whole subject
+
+
+@pytest.mark.parametrize(
+    ("changes", "stamp_at", "match"),
+    [
+        ({"cuts": (_cut(1.0, LENS),)}, None, "the pellet covers"),
+        ({"cuts": (_cut(2.5),)}, None, "outside the shot"),
+        ({"cuts": (_cut(1.0),)}, 0.5, "lands before the last cut"),
+    ],
+)
+def test_a_cut_that_misses_the_bar_is_refused(changes, stamp_at, match):
+    with pytest.raises(ScriptError, match=match):
+        sc.check(shot(pose=_nudging, stamp_at=stamp_at, **changes), 0.0, 2.0, FOUND if stamp_at else None, measure)
+
+
+def test_cuts_go_forward_in_time():
+    with pytest.raises(ScriptError, match="cuts go forward"):
+        shot(cuts=(_cut(1.5), _cut(1.0)))
+
+
+def test_a_shot_with_a_cut_passes_and_draws_both_sides_with_one_headline(tmp_path):
+    s = shot(pose=_nudging, stamp_at=1.0, cuts=(_cut(1.0),))
+    sc.check(s, 0.0, 2.0, FOUND, measure)
+    root, renders = _drawn(s, tmp_path)
+    ids = {e.get("id") for e in root.iter()}
+    assert {"test-tank-room-angle", "test-tank-1-room-angle"} <= ids
+    assert {p.camera for p in renders.asked} == {LENS, CLOSE}
+    texts = [e.get("text") for e in root.iter() if e.tag.endswith("text")]
+    assert texts.count("A TEST") == 1 and FOUND.text in texts
