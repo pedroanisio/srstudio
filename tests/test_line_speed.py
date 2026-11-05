@@ -58,7 +58,7 @@ def test_the_range_is_the_voices_own():
 def test_a_small_print_beat_asks_its_take_at_its_own_speed_and_only_that_one():
     from dataclasses import replace
 
-    from test_smallprint import BEATS, SHOW
+    from support.smallprint import BEATS, SHOW
 
     beats = (BEATS[0], replace(BEATS[1], speed=0.88), *BEATS[2:])
     show = replace(SHOW, beats=beats)
