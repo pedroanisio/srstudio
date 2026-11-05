@@ -11,8 +11,9 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import anatomy_gate, anatomy_ledger, cli, figure_record, text_rules
+from srstudio import anatomy_gate, anatomy_ledger, build_report, cli, figure_record, text_rules
 from srstudio.anatomy_ledger import BUST_OPEN
+from srstudio.errors import SrstudioError
 from srstudio.figure_record import Figure
 from srstudio.framegraph import Drawing, Frame, FrameGraphError, Node
 from srstudio.layout import LayoutError
@@ -63,6 +64,29 @@ def test_the_build_command_fails_on_an_open_bust(built, monkeypatch, capsys):
     monkeypatch.setattr(cli, "find_engine", lambda: Path("engine"))
     assert cli._anatomy_frames(project) == 1
     assert BUST_OPEN in capsys.readouterr().err
+
+
+@pytest.mark.parametrize('missing', ['figures.json', 'anatomy.json'])
+def test_missing_anatomy_provenance_is_skipped_and_cannot_satisfy_required_check(built, monkeypatch, missing):
+    _, _, project = built
+    _open_scene(project, monkeypatch)
+    (project / missing).unlink()
+    monkeypatch.setattr(text_rules, 'after_build', lambda *args: [])
+    with build_report.capture() as report:
+        cli._measured(project, next(project.glob('*.scene.xml')), Path('engine'))
+    checks = report.to_dict()['checks']
+    assert checks['anatomy']['status'] == 'skipped'
+    assert missing in checks['anatomy']['results'][0]['reason']
+    assert checks['text']['status'] == 'passed'
+    with pytest.raises(SrstudioError, match='Required build checks'):
+        report.require(['anatomy'])
+
+
+def test_explicit_empty_anatomy_records_can_pass(built, monkeypatch):
+    _, _, project = built
+    _open_scene(project, monkeypatch)
+    figure_record.write(project, [])
+    assert anatomy_gate.after_build(project, 'empty', next(project.glob('*.scene.xml')), 'engine') == []
 
 
 def test_the_build_command_says_when_it_could_not_measure(built, monkeypatch, capsys):

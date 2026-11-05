@@ -35,6 +35,19 @@ class BuildReport:
         return {'artifacts': list(self.artifacts), 'checks': checks}
 
     def require(self, names: Sequence[str]) -> None:
+        if (
+            not isinstance(names, Sequence)
+            or isinstance(names, (str, bytes))
+            or any(not isinstance(name, str) or name not in CHECKS for name in names)
+        ):
+            raise SrstudioError(
+                'Required checks must be a sequence of supported check names.',
+                code='build.check',
+                path='require_check',
+                actual=names,
+                expected=list(CHECKS),
+                remedy='Pass a list of supported names; use motion-quality, with a hyphen.',
+            )
         checks = self.to_dict()['checks']
         unmet = {name: checks[name]['status'] for name in names if checks[name]['status'] != 'passed'}
         if unmet:

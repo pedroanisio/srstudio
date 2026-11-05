@@ -352,6 +352,10 @@ and the distinction between sampled limits and visual review.
 `srstudio.limbs.calibration.list_presets()` describes two frozen numeric regression envelopes:
 `toon-human-conversation/1.0.0` and `gloss-human-deliberate/1.0.0`. Both apply to the unchanged
 `ArmProfile()` and `calibration.CALIBRATED_HAND` at exactly 24 Hz, with the named style adapter.
+The discovery field `scope.hand_profile.symbol` gives the authoritative import path
+`srstudio.limbs.calibration.CALIBRATED_HAND`; `thumb_segments` gives its segment lengths
+in world units. The legacy `scope.hand: "human"` is a display name, not a constructor
+or a claim that the current `HUMAN` profile is compatible.
 `CALIBRATED_HAND` is the human hand the envelopes were measured with, with its two-segment thumb; the current
 `HUMAN`, whose thumb has three segments, is outside their scope until a new version is measured and reviewed
 ([ADR 0213](../decisions/0213-calibration-keeps-its-measured-hand.md)). Mirrored sides and shoulder

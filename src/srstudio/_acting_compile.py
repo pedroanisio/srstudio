@@ -271,13 +271,11 @@ def compile_score(rig: ActingRig, score: ActingScore) -> PerformancePlan:
         if rig.family == 'gloss' and (beat.head is not None or beat.gaze is not None or beat.breath is not None):
             raise _error(path, rig.name, 'a rig supporting head, gaze and breath controls', 'acting.unsupported')
         if beat.reset and any(
-            c.start + t.options.offset <= beat.at < c.end + t.options.offset for t in limbs for c in t.motion.contacts
+            c.start <= t._source_time(beat.at, end=duration) < c.end for t in limbs for c in t.motion.contacts
         ):
             raise _error(path, beat.at, 'explicit contact release before a reset', 'acting.conflict')
         if beat.reset and any(
-            a.attach + t.options.offset <= beat.at < a.release + t.options.offset
-            for t in limbs
-            for a in t.motion.attachments
+            a.attach <= t._source_time(beat.at, end=duration) < a.release for t in limbs for a in t.motion.attachments
         ):
             raise _error(path, beat.at, 'explicit prop release before a reset', 'acting.conflict')
         assignments: dict[str, Any] = {}
@@ -335,9 +333,13 @@ def compile_score(rig: ActingRig, score: ActingScore) -> PerformancePlan:
             start = min(w.start for w in windows.values())
             end = max(w.end for w in windows.values())
             for track in limbs:
-                offset = track.options.offset
-                intervals = [(c.start + offset, c.end + offset) for c in track.motion.contacts]
-                intervals += [(a.attach + offset, a.release + offset) for a in track.motion.attachments]
+                source_intervals = [(c.start, c.end) for c in track.motion.contacts]
+                source_intervals += [(a.attach, a.release) for a in track.motion.attachments]
+                intervals = [
+                    interval
+                    for a, b in source_intervals
+                    if (interval := track._held_interval(a, b, end=duration)) is not None
+                ]
                 if any(a <= start < b or start <= a < end for a, b in intervals):
                     raise _error(
                         path + '.policy', (start, end), 'explicit release before all reset phases', 'acting.conflict'

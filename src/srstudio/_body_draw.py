@@ -166,21 +166,24 @@ def place(window: BodyWindow, cv: Canvas, parent, *, camera: Camera, at: float, 
     # before one frame, the frame shows the later.
     changes = {0.0, *(i / fps for i in range(math.ceil(plan.duration * fps)))}
     changes.update(t for step in plan.score.steps for t in (step.start, step.end) if 0 <= t < plan.duration)
-    shown = {clock.held(t, rate, local=True): t for t in sorted(changes)}
-    keys = sorted(k for k in shown if k < plan.duration)
-    if len(keys) > MAX_FRAMES:
-        raise fail('frames', len(keys), f'at most {MAX_FRAMES} body frames', 'body.budget')
-    edges = [*keys, plan.duration]
-    frames, count = [], 0
+    if len(changes) > MAX_FRAMES:
+        raise fail('frames', len(changes), f'at most {MAX_FRAMES} body frames', 'body.budget')
+    # Validate and budget every source sample, including those hidden by a cut or
+    # collapsed onto one reel frame. Placement must not weaken source preflight.
+    projected, count = {}, 0
     try:
-        for a, b in zip(edges, edges[1:], strict=False):
-            primitives = geometry(plan.sample(shown[a]), plan.profile, camera, style)
+        for t in sorted(changes):
+            primitives = geometry(plan.sample(t), plan.profile, camera, style)
             count += 1 + sum(2 if p.kind == 'line' else 1 for p in primitives)
             if count > MAX_NODES:
                 raise fail('nodes', count, f'at most {MAX_NODES} emitted nodes', 'body.budget')
-            frames.append((a, b, primitives))
+            projected[t] = primitives
     except LimbError as exc:
         raise fail('camera', str(exc), 'all body geometry in front of the near plane', 'body.projection') from exc
+    shown = {clock.held(t, rate, local=True): t for t in projected}
+    keys = sorted(k for k in shown if k < plan.duration)
+    edges = [*keys, plan.duration]
+    frames = [(a, b, projected[shown[a]]) for a, b in zip(edges, edges[1:], strict=False)]
     with scene_transaction(cv.scene, cv):
         group = cv.group(
             parent, id or cv.uid('body'), start=at, end=at + window.end - window.start, timeOffset=at - window.start

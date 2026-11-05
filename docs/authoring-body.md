@@ -160,7 +160,9 @@ or offset key time never repeats the previous drawing; the canvas's project must
 state its frame rate. Cuts reuse those samples instead of restarting a step. The complete
 source is revalidated and projected before mutation, with limits of 1,000 frames
 and 100,000 nodes. A short window still retains its complete source clock and
-counts the full source toward those budgets. Invalid style, camera, projection,
+counts every source-grid sample and exact contact boundary toward those budgets,
+before placement clocks merge samples onto reel frames. Hidden source samples
+must also project successfully. Invalid style, camera, projection,
 IDs or budgets fail before any scene change; unexpected drawing failures roll back.
 
 Run the six-second weight-shift and two-step study:
