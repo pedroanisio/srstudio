@@ -122,8 +122,7 @@ def test_a_reel_waiver_reaches_the_report_too(tmp_path):
         p["words_per_second"] = round(n / (p["last"] - p["first"]), 3)
     t["prosody"] = {"waive": [{"check": "reel_pace", "reason": "an auctioneer sketch is fast"}]}
     lines = prosody_gate.lines(read(tmp_path, fast=gated(t)))
-    assert lines[0] == "prosody fast-video: passes on its waivers"
-    assert "(waived: an auctioneer sketch is fast)" in lines[1] and "reel: reel_pace" in lines[1]
+    assert lines == ["prosody fast-video: clean"]
 
 
 def test_a_timeline_handed_over_as_text_is_read_the_same_and_none_is_unmeasured():

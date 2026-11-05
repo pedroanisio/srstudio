@@ -949,6 +949,10 @@ def _proof(args: argparse.Namespace) -> int:
                 "passed": craft.passed,
                 "ok": craft.ok,
                 "retakes": [m.name for m in craft.retakes()],
+                "master_sha256": craft.master_sha256,
+                "voices": [asdict(v) for v in craft.voices],
+                "ship_retakes": list(craft.ship_retakes),
+                "fail_retakes": list(craft.fail_retakes),
             }
     except proof.ProofError as exc:
         _error("proof", exc, getattr(args, "json", False))

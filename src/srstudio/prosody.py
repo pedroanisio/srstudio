@@ -3,8 +3,8 @@
 The targets and their definitions are arc4d3's, from 126 Okayville reels (1,745 lines, all ``eleven_multilingual_v2``;
 the voice analysis of 4 Nov 2026):
 
-- **pace**, words per second of speech (first word's start to last word's end, summed over the lines): the reel at
-  most :data:`REEL_PACE`, no line over :data:`LINE_PACE` unless the rush is the joke;
+- **pace** (ADR 0245): phrase pace passes through 3.6 words/s, ships through 4.2 and fails above;
+  word-span pace above 4.5 fails. Lines under three words are exempt; there is no reel ceiling;
 - **opening**: the first word by :data:`FIRST_WORD`;
 - **change of speaker**: the reel's median gap inside :data:`TURN_GAP`, and no default gap over :data:`TURN_CEILING`;
 - **punchline or button** (a line marked ``punchline``, and the reel's last line): the hold before it aims at
@@ -63,7 +63,6 @@ __all__ = [
     "FIRST_WORD",
     "LINE_PACE",
     "PUNCH_GAP",
-    "REEL_PACE",
     "STRESS_DB",
     "STRESS_ST",
     "TURN_GAP",
@@ -78,7 +77,6 @@ __all__ = [
     "weight",
 ]
 
-REEL_PACE = 3.6  # words per second of speech, the reel's
 LINE_PACE = 4.3  # words per second of speech, any one line's
 FIRST_WORD = 0.25  # seconds into the reel by which the first word starts
 TURN_GAP = (0.3, 0.65)  # the reel's median gap at a change of speaker, seconds
@@ -558,8 +556,17 @@ def gate(timeline: Mapping[str, Any]) -> list[Finding]:
         if it.first is None or it.last is None:
             out.append(Finding("heard", it.id, None, None, "no word was heard"))
             continue
-        if it.pace is not None:
-            out.append(_range("line_pace", it, it.pace, (0.0, LINE_PACE), reel_waivers))
+        if it.duration <= 0 or not 0 <= it.first < it.last <= it.duration:
+            raise ProsodyError(f'{it.id}: invalid phrase or word timing')
+        if it.words >= 3:
+            phrase_pace = it.words / it.duration
+            span_pace = it.words / (it.last - it.first)
+            from .craft_bar import pace_measure
+
+            if not pace_measure(it.id, phrase_pace).ok:
+                out.append(Finding('line_pace', it.id, phrase_pace, (0.0, 4.2), 'phrase clock FAIL'))
+            if span_pace > 4.5:
+                out.append(Finding('pace_span', it.id, span_pace, (0.0, 4.5), 'word-span clock FAIL'))
         hold = it.waivers.get("hold")
         pre, post = float(it.direction.get("pre_hold", 0.0)), float(it.direction.get("post_hold", 0.0))
         if pre and it.first < pre - HOLD_SLACK:
@@ -577,10 +584,6 @@ def gate(timeline: Mapping[str, Any]) -> list[Finding]:
         out.append(_range("first_word", first, first.start + (first.first or 0.0), (0.0, FIRST_WORD), reel_waivers))
         last = measured[-1]
         out.append(_range("end_breath", last, duration - (last.start + (last.last or 0.0)), END_BREATH, reel_waivers))
-        span = sum((it.last or 0.0) - (it.first or 0.0) for it in measured)
-        if span > 0:
-            reel_pace = sum(it.words for it in measured) / span
-            out.append(_range("reel_pace", None, reel_pace, (0.0, REEL_PACE), reel_waivers))
         for it in measured:
             if punch(it):
                 out.append(_delivery(it, [o for o in measured if o is not it]))
@@ -614,7 +617,8 @@ def gate(timeline: Mapping[str, Any]) -> list[Finding]:
 def targets() -> dict[str, Any]:
     """The gate's targets as a timeline records them."""
     return {
-        "reel_pace": REEL_PACE, "line_pace": LINE_PACE, "first_word": FIRST_WORD, "turn_median": list(TURN_GAP),
+        "phrase_pace_pass": 3.6, "phrase_pace_ship": 4.2, "word_span_pace": 4.5,
+        "first_word": FIRST_WORD, "turn_median": list(TURN_GAP),
         "turn_gap": [0.0, TURN_CEILING], "punch_gap": list(PUNCH_FLAG), "punch_aim": list(PUNCH_GAP),
         "answer_gap": list(ANSWER_GAP), "emotional_hold": EMOTIONAL_HOLD, "end_breath": list(END_BREATH),
         "stress_db": STRESS_DB, "stress_st": STRESS_ST, "spread_st": SPREAD_ST, "flat_st": FLAT_ST,

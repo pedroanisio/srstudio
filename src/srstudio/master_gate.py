@@ -11,7 +11,10 @@ import wave
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal, TypeGuard
+from typing import TYPE_CHECKING, Any, Literal, TypeGuard
+
+if TYPE_CHECKING:
+    from .craft_bar import VoiceLine
 
 import numpy as np
 
@@ -408,7 +411,7 @@ class MasterCheck:
     check: str
     value: float | None
     limit: str
-    verdict: Literal["PASS", "APPROVED", "FAIL"]
+    verdict: Literal["PASS", "SHIP", "APPROVED", "FAIL"]
     master_sha256: str
     evidence: tuple[str, ...]
     approval: MasterApproval | None = None
@@ -420,6 +423,15 @@ class MasterAcceptance:
     checks: tuple[MasterCheck, ...]
     measured: Measured | None = None
     error: str = ""
+    voices: tuple[VoiceLine, ...] = ()
+
+    @property
+    def ship_retakes(self) -> tuple[str, ...]:
+        return tuple(v.id for v in self.voices if v.pace_status == "SHIP")
+
+    @property
+    def fail_retakes(self) -> tuple[str, ...]:
+        return tuple(v.id for v in self.voices if v.pace_status == "FAIL" or v.stress_status == "FAIL")
 
     @property
     def ok(self) -> bool:
@@ -428,6 +440,8 @@ class MasterAcceptance:
     def lines(self) -> list[str]:
         return [
             f"master sha256={self.master_sha256}: {'PASS' if self.ok else 'REFUSED'} {self.error}",
+            *(str(v) for v in self.voices),
+            f"SHIP retakes: {self.ship_retakes}; FAIL retakes: {self.fail_retakes}",
             *(
                 f"  {c.check}: {c.verdict} measured={c.value} target={c.limit} "
                 f"approval={c.approval!r} evidence={c.evidence!r}"
@@ -523,15 +537,32 @@ def accept_master(
     ffprobe: str = "ffprobe",
 ) -> MasterAcceptance:
     """Public delivery/pilot acceptance API. No staging, recording, network or approval writes."""
+    from . import craft_bar
+
     sha = ""
     try:
         sha = hashlib.sha256(master.read_bytes()).hexdigest()
         measured = measure(
             master, project=project, crop=crop, stem=stem, fade=fade, ffmpeg=ffmpeg, ffprobe=ffprobe, strict=False
         )
+        voice_checks: tuple[MasterCheck, ...]
+        voices: tuple[VoiceLine, ...] = ()
+        try:
+            if project is None:
+                raise craft_bar.NoRecordedLines('missing recording project')
+            voice = craft_bar.measure_voice(master, project, ffmpeg=ffmpeg)
+            voices = voice.voices
+            voice_checks = tuple(
+                MasterCheck(c.name, c.value, c.bar, c.status, sha, (c.source,)) for c in voice.measures
+            )
+        except craft_bar.CraftError as exc:
+            voice_checks = tuple(
+                MasterCheck(c, None, 'usable recorded alignment and master mix', 'FAIL', sha, (str(exc),))
+                for c in ('pace', 'stress')
+            )
         if hashlib.sha256(master.read_bytes()).hexdigest() != sha:
             raise MasterError("master changed during measurement")
-        return MasterAcceptance(sha, _checks(measured, sha, approvals), measured)
+        return MasterAcceptance(sha, _checks(measured, sha, approvals) + voice_checks, measured, voices=voices)
     except (OSError, MasterError) as exc:
         return MasterAcceptance(
             sha,
@@ -612,7 +643,7 @@ def judge(
     found = tuple(
         Finding(c.check, None, c.value, None, c.limit, c.approval.reason if c.approval else "")
         for c in result.checks
-        if c.verdict != "PASS"
+        if c.verdict not in ("PASS", "SHIP")
     )
     return Reading(video, True, found, error=result.error, acceptance=result)
 
