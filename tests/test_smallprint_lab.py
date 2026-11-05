@@ -142,6 +142,28 @@ def test_the_timer_hand_points_at_the_fed_hour_at_the_top_and_goes_round_once_a_
     assert six[0] > cx and abs(six[1] - cy) < abs(six[0] - cx)
 
 
+@pytest.mark.parametrize("hour", [h / 4 for h in range(96)])
+def test_the_hand_never_covers_an_hour_printed_on_the_face(hour):
+    """The hours are printed in a ring outside the hand's reach, so no hour is under it at any time of day."""
+    cx, cy, _ = lab.dial_centre()
+    hand = _meshes(lambda m: lab.parts(m, lab.Rig(hour=hour), None))["dialhand"]
+    reach = float(np.max(np.hypot(hand[:, 0] - cx, hand[:, 1] - cy)))
+    assert reach < lab.numbers_inside() * lab.DIAL_R
+
+
+def test_the_hours_and_the_fed_wedge_sit_in_rings_of_their_own():
+    mid = 256
+    for line in lab.dial_print().lines:
+        r = math.hypot(line.x - mid, line.y - mid) / mid
+        assert r == pytest.approx(lab.NUMBER_AT)
+        assert (r * mid - lab.GLYPH * line.size) / mid >= lab.numbers_inside() - 1e-9
+    face = _meshes(lambda m: lab.bench(m, 1.0))
+    cx, cy, _ = lab.dial_centre()
+    wedge = face["fedhour"]
+    outside = (lab.NUMBER_AT + lab.GLYPH * lab.NUMBER_SIZE / 256) * lab.DIAL_R  # the printed hours' outer reach
+    assert np.min(np.hypot(wedge[:, 0] - cx, wedge[:, 1] - cy)) >= outside
+
+
 def test_glass_is_only_thin_panes_facing_the_lens_and_the_water_only_its_top():
     """A transmissive surface with the plate's clear background behind it renders opaque: no glass box, no water
     volume, and the tank closed at the sides and back."""
@@ -182,3 +204,39 @@ def test_a_page_prints_its_word_over_its_number():
     word, number = lab.page_print("WEEK", "3").lines
     assert (word.text, number.text) == ("WEEK", "3") and word.y < number.y and number.size > word.size
     assert lab.page_material("WEEK", "3").print == lab.page_print("WEEK", "3")
+
+
+def test_the_dial_ticks_inside_its_spans_on_the_beat():
+    assert lab.tick_times([(1.0, 2.0)]) == [1.0, 1.5]
+    assert lab.tick_times([(3.0, 3.6), (0.0, 0.4)], every=0.25) == [0.0, 0.25, 3.0, 3.25, 3.5]
+    assert lab.tick_times([]) == []
+
+
+def test_the_bubbles_rise_inside_their_spans_the_same_for_a_seed_and_never_blur():
+    spans = [(0.0, 4.0), (6.0, 9.5)]
+    got = lab.bubble_times(spans, 7)
+    assert got == lab.bubble_times(spans, 7) and got != lab.bubble_times(spans, 8)
+    assert all(any(a <= t < b for a, b in spans) for t in got)
+    assert all(b - a >= lab.BUBBLE_GAP for a, b in zip(got, got[1:], strict=False))
+    assert 12 <= len(got) <= 17  # about one each 0.45 s over 7.5 s
+
+
+@pytest.mark.parametrize(
+    "call, match",
+    [
+        (lambda: lab.tick_times([(2.0, 1.0)]), "runs forward"),
+        (lambda: lab.tick_times([(-1.0, 1.0)]), "runs forward"),
+        (lambda: lab.tick_times([(0.0, 1.0)], every=0.0), "positive number"),
+        (lambda: lab.bubble_times([(0.0, float("nan"))], 1), "runs forward"),
+        (lambda: lab.bubble_times([(0.0, 1.0)], 1, every=0.05), "more than 0.08"),
+    ],
+)
+def test_sound_times_out_of_any_span_are_refused(call, match):
+    with pytest.raises(lab.LabError, match=match):
+        call()
+
+
+def test_the_tank_sounds_are_short_and_bright_enough_to_sit_over_a_voice():
+    for burst in (lab.BUBBLE, lab.LEVER_CLICK, lab.TICK):
+        assert burst.seconds <= 0.1
+    assert lab.RATTLE.flutter_hz > 0  # the hopper rattles, it does not thump

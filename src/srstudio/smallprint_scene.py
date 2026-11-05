@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Callable, Hashable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -63,6 +63,7 @@ __all__ = [
     "LANDS",
     "stamp_row",
     "Box",
+    "Cut",
     "Move",
     "Shot",
     "BAND",
@@ -74,7 +75,9 @@ __all__ = [
     "words",
     "frames",
     "headline_box",
+    "hero_share",
     "longest_still",
+    "pieces",
     "printed_boxes",
     "room_plate",
     "share",
@@ -123,6 +126,19 @@ class Move:
 
 
 @dataclass(frozen=True)
+class Cut:
+    """A cut inside a shot at second ``at``, to ``lens``: from it to the shot's end (or the next cut) the camera keys
+    ``moves`` about ``pivot`` (none: held as it lands), and ``hero`` names the materials of the one part this side of
+    the cut is about, which alone covers :data:`SHARE` of the frame: a push in on the fish, not the tank."""
+
+    at: float
+    lens: Camera
+    moves: tuple[Move, ...] = ()
+    pivot: tuple[float, float] = (W / 2, H / 2)
+    hero: frozenset[str] = field(default_factory=frozenset)
+
+
+@dataclass(frozen=True)
 class Shot:
     """One explainer shot. ``panel`` names the beats' panel it draws; ``lens`` sees his worktop; ``headline`` is the
     one short line over it. ``still`` draws what stands still, ``pose(t)`` is what the moving parts are doing at second
@@ -147,6 +163,8 @@ class Shot:
     printed: frozenset[str] = field(default_factory=frozenset)  # materials whose print is lettering
     lamps: tuple[Light, ...] = ()  # the subject's own lights, as a tank's lamp, added to his worktop's
     stamp_top: float = STAMP_TOP  # where the stamp lands: in the headline's place, or low when the top is busy
+    cuts: tuple[Cut, ...] = ()  # cuts inside the shot to a closer lens (:func:`pieces`)
+    hero: frozenset[str] = field(default_factory=frozenset)  # the part that alone fills the frame, set by a cut
 
     def __post_init__(self) -> None:
         if not self.panel or not self.headline.strip():
@@ -157,6 +175,8 @@ class Shot:
             raise ScriptError(f"{self.panel}: the camera's keys go forward in time")
         if not TOP_ROW <= self.stamp_top <= LOW_ROW:
             raise ScriptError(f"{self.panel}: a stamp lands from row {TOP_ROW} to {LOW_ROW}, got {self.stamp_top}")
+        if [c.at for c in self.cuts] != sorted({c.at for c in self.cuts}):
+            raise ScriptError(f"{self.panel}: the cuts go forward in time, one a second")
         if self.room not in rafa.ROOMS:
             raise ScriptError(f"{self.panel}: his rooms are {tuple(rafa.ROOMS)}, got {self.room!r}")
 
@@ -243,6 +263,11 @@ def _seen_mask(shot: Shot, t: float, pose: Hashable | None) -> np.ndarray:
     times coarser than the frame, moved as the camera moves the plates."""
     pose = shot.pose(t) if pose is None else pose
     mask = Image.fromarray(np.maximum(np.asarray(_still_mask(shot)), np.asarray(_raster(shot, _moving(shot, pose)))))
+    return _moved(shot, t, mask)
+
+
+def _moved(shot: Shot, t: float, mask: Image.Image) -> np.ndarray:
+    """A raster of the plate moved as the camera moves the plates at ``t``: where it is in the frame."""
     zoom, dx, dy = camera_at(shot, t)
     px, py = shot.pivot[0] / MASK, shot.pivot[1] / MASK
     # a frame point q shows the plate's point pivot + (q - pivot - d) / zoom
@@ -254,6 +279,31 @@ def _seen_mask(shot: Shot, t: float, pose: Hashable | None) -> np.ndarray:
 def share(shot: Shot, t: float, pose: Hashable | None = None) -> float:
     """The share of the frame the subject covers at second ``t``."""
     return float(_seen_mask(shot, t, pose).mean())
+
+
+def hero_share(shot: Shot, t: float, pose: Hashable | None = None) -> float:
+    """The share of the frame the shot's ``hero`` alone covers at ``t``, or :func:`share` when it names none."""
+    if not shot.hero:
+        return share(shot, t, pose)
+    pose = shot.pose(t) if pose is None else pose
+    mine = [mesh for mesh in subject(shot, pose) if mesh.material in shot.hero]
+    return float(_moved(shot, t, _raster(shot, mine)).mean())
+
+
+def pieces(shot: Shot, first: float, last: float) -> list[tuple[Shot, float, float]]:
+    """The shot from ``first`` to ``last`` cut at its :attr:`Shot.cuts`: each piece a shot of its own with no cuts,
+    the first through the shot's own lens, each after a cut through the cut's lens, named ``<panel>-<k>``. A cut
+    outside the shot's frames is :class:`ScriptError`."""
+    for c in shot.cuts:
+        if not first < c.at < last:
+            raise ScriptError(f"{shot.panel}: a cut at {c.at} s is outside the shot's {first:.2f} to {last:.2f} s")
+    bounds = [first, *(c.at for c in shot.cuts), last]
+    out = [(replace(shot, cuts=()), bounds[0], bounds[1])]
+    for k, c in enumerate(shot.cuts, 1):
+        side = replace(shot, panel=f"{shot.panel}-{k}", lens=c.lens, moves=c.moves or (Move(c.at),), pivot=c.pivot,
+                       hero=c.hero, cuts=())  # fmt: skip
+        out.append((side, bounds[k], bounds[k + 1]))
+    return out
 
 
 def empty_band(shot: Shot, t: float, pose: Hashable | None = None, words: Sequence[Box] = ()) -> float:
@@ -363,6 +413,15 @@ def check(shot: Shot, first: float, last: float, stamped: Stamp | None, measure:
     """The bar on the shot from ``first`` to ``last``, or :class:`ScriptError` naming every miss: the subject's
     share and the bare band on every ``every``-th plate and the last, the longest still, the words that touch, and a
     stamp up long enough to read."""
+    if shot.cuts:
+        landed = stamp_time(shot, said, first)
+        if stamped is not None and landed < shot.cuts[-1].at:
+            raise ScriptError(f"{shot.panel}: the stamp lands before the last cut, at {landed:.2f} s")
+        split = pieces(shot, first, last)
+        for k, (piece, a, b) in enumerate(split):
+            final = k == len(split) - 1
+            check(piece, a, b, stamped if final else None, measure, said=said if final else None, every=every)
+        return
     misses = []
     rows = frames(shot, first, last)
     picked = [*rows[:: STEP * every], rows[-1]]
@@ -372,6 +431,9 @@ def check(shot: Shot, first: float, last: float, stamped: Stamp | None, measure:
         got = share(shot, t, pose)
         if got < SHARE:
             misses.append(f"{shot.panel}: at {t:.2f} s the subject covers {got:.0%} of the frame, under {SHARE:.0%}")
+        if shot.hero and (alone := hero_share(shot, t, pose)) < SHARE:
+            part = "/".join(sorted(shot.hero))
+            misses.append(f"{shot.panel}: at {t:.2f} s the {part} covers {alone:.0%} of the frame, under {SHARE:.0%}")
         bare = empty_band(shot, t, pose, [box for _, box, since, until in on if since <= t < until])
         if bare > BAND:
             misses.append(f"{shot.panel}: at {t:.2f} s a bare band {bare:.0%} of the frame tall, over {BAND:.0%}")
@@ -448,11 +510,20 @@ def _shelf(cv, root: Path) -> rafa_host._Shelf:
 
 
 def draw(cv, parent, shot: Shot, first: float, last: float, renders: Renders, root: Path, measure: Measure,
-         stamped: Stamp | None = None, said: float | None = None) -> Any:  # fmt: skip
+         stamped: Stamp | None = None, said: float | None = None, *, headline: bool = True) -> Any:  # fmt: skip
     """The shot over the frame from ``first`` to ``last``: his room out of focus, his worktop with the still part,
     the moving parts a plate every :data:`STEP` frames, the camera's move with the room moving less than the worktop,
-    the headline, and the stamp on its word. Checks the bar first. Returns the shot's group."""
+    the headline, and the stamp on its word. Checks the bar first. A shot with cuts draws each of its :func:`pieces`,
+    the headline only on the first (``headline``) and the stamp on the last. Returns the shot's group."""
     check(shot, first, last, stamped, measure, said=said)
+    if shot.cuts:
+        whole = cv.group(parent, cv.uid(f"smallprint-scene-{shot.panel}"), start=first, end=last)
+        split = pieces(shot, first, last)
+        for k, (piece, a, b) in enumerate(split):
+            final = k == len(split) - 1
+            draw(cv, whole, piece, a, b, renders, root, measure, stamped if final else None, said if final else None,
+                 headline=k == 0)  # fmt: skip
+        return whole
     shelf = _shelf(cv, Path(root))
     w, h = _size()
     g = cv.group(parent, cv.uid(f"smallprint-scene-{shot.panel}"), start=first, end=last)
@@ -480,7 +551,8 @@ def draw(cv, parent, shot: Shot, first: float, last: float, renders: Renders, ro
         layer.add_layer(id=cv.uid("sp-part-layer"), asset=shelf.name(renders.plate(moving_plate(shot, pose)), w, h),
                         x=0, y=0)  # fmt: skip
     landed = stamp_time(shot, said, first) if stamped is not None else last
-    _headline(cv, g, shot, first, landed, measure)
+    if headline and landed > first:
+        _headline(cv, g, shot, first, landed, measure)
     if stamped is not None:
         top = stamp_row(shot, stamped, measure)
         stamp(cv, g, stamped, landed, last, measure, top=top, chip=True, ceiling=SAFE_TOP)

@@ -252,6 +252,22 @@ def test_the_shared_sounds_are_the_room_the_bed_a_page_and_a_stamp(tmp_path):
     assert all((tmp_path / row["audio"]).exists() for row in rows)
 
 
+def test_a_show_without_the_bed_keeps_the_room_up_as_its_floor_and_no_music(tmp_path):
+    sk = SHOW.sketch
+    rows = sp.shared_sounds(replace(SHOW, bed=False), sk.beats, sk.end, tmp_path, 7)
+    assert [row["id"] for row in rows] == ["room", "page", "stamp"]
+    assert not any(row.get("role") == "music" for row in rows)
+    with_bed = sp.shared_sounds(SHOW, sk.beats, sk.end, tmp_path, 7)
+    assert rows[0]["gain_db"] == sp.ROOM_ALONE > with_bed[0]["gain_db"]
+
+
+def test_a_beat_s_speed_and_stressed_words_reach_its_line():
+    beats = (replace(SHOW.beats[0], speed=0.9, stress=(SHOW.beats[0].line.split()[0],)), *SHOW.beats[1:])
+    line = replace(SHOW, beats=beats).lines[0]
+    assert (line.speed, line.stress) == (0.9, (SHOW.beats[0].line.split()[0],))
+    assert (SHOW.lines[1].speed, SHOW.lines[1].stress) == (None, ())
+
+
 def test_the_sketch_matches_the_script():
     sketch.check(SHOW.sketch)
     with pytest.raises((ScriptError, sketch.SketchError), match="beats for|every line"):
@@ -1111,3 +1127,35 @@ def test_the_cuttings_heap_reads_at_phone_size_beside_the_drill_and_under_its_la
     left, top, wide = float(layer.get("x")), float(layer.get("y")), float(text.get("width"))
     assert top + float(text.get("height")) <= peak - 10.0, "its label sits over the heap, not on it"
     assert left <= (x0 + x1) / 2 <= left + wide, "and names the heap it is over"
+
+
+# -- a stamp says what the caption does not ---------------------------------------------------------------------------
+@pytest.mark.parametrize(
+    ("text", "line", "share"),
+    [
+        ("THEY LEARNED THE FEEDING HOUR", "Food came one hour a day. They learned the hour.", 2 / 3),
+        ("WEEKS, EVEN MONTHS", "How long can they remember? A fish expert says weeks. Even months.", 1.0),
+        ("THE LAB TEST", "Goldfish were trained to press a lever.", 0.0),
+        ("THEY ANTICIPATED FEEDING TIME", "Food came one hour a day. They learned the hour.", 0.0),
+        ("TOP SPEED 25 MPH", "It is flat, so it tumbles. It tops out around 25 miles an hour.", 0.5),
+        ("LEARNS, LEARNING", "He learned.", 1.0),
+    ],
+)
+def test_a_stamp_s_share_of_words_the_caption_already_says(text, line, share):
+    assert kit.repeats(text, line) == pytest.approx(share)
+
+
+def test_a_stamp_of_no_word_of_its_own_is_refused():
+    with pytest.raises(ScriptError, match="no word of its own"):
+        kit.repeats("THE AND", "Anything at all.")
+
+
+def test_an_explainer_shot_s_stamp_that_says_its_caption_again_is_refused():
+    again = Stamp("TUMBLES, TOPS OUT AT 25", "Louis Bloomfield, Live Science, 2012")
+    with pytest.raises(ScriptError, match="says its caption again"):
+        _with_shot(beats=tuple(replace(b, stamp=again) if b.id == "why" else b for b in _with_shot().beats)).validate()
+    _with_shot().validate()  # "TOP SPEED 25 MPH" says half of it again: allowed
+
+
+def test_a_paper_panel_s_stamp_is_held_to_nothing_new():
+    with_beat(4, stamp=Stamp("BUSTED", "MythBusters, 2003")).validate()  # published shows keep their stamps

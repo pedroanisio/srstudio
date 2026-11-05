@@ -21,24 +21,36 @@ import numpy as np
 from . import checks, clay, plates, rafa, smallprint_props
 from .clay import Mesh, Model
 from .errors import SrstudioError
+from .foley import Burst
 from .plates import Line, Material, Print, Texture
 
 __all__ = [
     "BENCH",
+    "BUBBLE",
+    "LEVER_CLICK",
+    "TICK",
     "CALENDAR",
     "DIAL_HOURS",
     "FED_HOUR",
+    "GLYPH",
+    "HAND_TIP",
+    "MARKS",
+    "NUMBER_AT",
+    "NUMBER_SIZE",
     "PAGE",
     "PRESS",
     "PUSH",
+    "RATTLE",
     "TANK",
     "TIP",
+    "WEDGE",
     "Box",
     "FishPose",
     "LabError",
     "Mark",
     "Rig",
     "bench",
+    "bubble_times",
     "calendar_pages",
     "calendar_stand",
     "chute_mouth",
@@ -46,22 +58,24 @@ __all__ = [
     "dial_print",
     "finished",
     "goldfish",
-    "lamp",
     "keyed",
+    "lamp",
     "lever",
     "lever_tip",
-    "nose_to_middle",
-    "pellet_at",
-    "pellets",
     "materials",
+    "nose_to_middle",
+    "numbers_inside",
     "page_material",
     "page_name",
     "page_print",
     "parts",
+    "pellet_at",
+    "pellets",
     "scales",
     "swim",
     "swim_room",
     "tank",
+    "tick_times",
 ]
 
 TOP = -248.0  # the worktop's top
@@ -425,6 +439,17 @@ def chute_mouth() -> tuple[float, float, float]:
 
 FEEDER = (36.0, 34.0, 30.0)  # the feeder box on the lid: wide, tall, deep
 DIAL_R = 13.0
+NUMBER_AT = 0.72  # the printed hours' centres, as a share of the face's radius: a ring outside the hand's reach
+NUMBER_SIZE = 56  # their size on the face's 512 px print
+GLYPH = 0.62  # the most of its size a printed number reaches from its centre, any way (a two-digit "24" across)
+HAND_TIP = 0.42  # the hand's reach as a share of the radius: short of the printed hours
+MARKS = (0.88, 0.97)  # the hour marks' ring, outside the hours
+WEDGE = (0.9, 0.99)  # the fed-hour wedge's ring: the "24" under it stays clear
+
+
+def numbers_inside() -> float:
+    """The innermost reach of a printed hour, as a share of the face's radius: the hand stays inside it."""
+    return NUMBER_AT - GLYPH * NUMBER_SIZE / 256
 
 
 def feeder_centre() -> tuple[float, float, float]:
@@ -449,11 +474,12 @@ def hopper_centre() -> tuple[float, float, float]:
 
 @lru_cache(maxsize=1)
 def dial_print() -> Print:
-    """The timer's face: the hours of the day at the quarters, inside the hour marks."""
-    s, mid, r = 512, 256, 118
-    ink = "#1C2A4A"
-    lines = (Line("24", mid, mid - r, 66, ink), Line("6", mid + r, mid, 66, ink), Line("12", mid, mid + r, 66, ink),
-             Line("18", mid - r, mid, 66, ink))  # fmt: skip
+    """The timer's face: the hours of the day at the quarters, in a ring outside the hand's reach and inside the hour
+    marks."""
+    s, mid = 512, 256
+    r, size, ink = NUMBER_AT * mid, NUMBER_SIZE, "#1C2A4A"
+    lines = (Line("24", mid, mid - r, size, ink), Line("6", mid + r, mid, size, ink),
+             Line("12", mid, mid + r, size, ink), Line("18", mid - r, mid, size, ink))  # fmt: skip
     return Print("#FFF6E4", s, s, lines)
 
 
@@ -479,21 +505,22 @@ def _hand(m: Model, hour: float, still: bool) -> None:
     if still:
         start = FED_HOUR * wedge - wedge / 2
         arc = np.linspace(start, start + wedge, 8)  # one hour of the day: the fed hour, as the test fed them
-        pts = [(cx + DIAL_R * r * math.sin(a), cy - DIAL_R * r * math.cos(a), cz - 0.05) for r in (0.6, 0.98)
+        pts = [(cx + DIAL_R * r * math.sin(a), cy - DIAL_R * r * math.cos(a), cz - 0.05) for r in WEDGE
                for a in arc]  # fmt: skip
         k = len(arc)
         band = [t for i in range(k - 1) for t in ((i, k + i, k + i + 1), (i, k + i + 1, i + 1))]
         m.surface("fedhour", pts, [(0.0, 0.0, -1.0)] * len(pts), band)  # a ring's slice: the number stays clear
-        for k in range(1, DIAL_HOURS):  # the fed hour is its wedge, not a mark
+        for k in range(1, DIAL_HOURS):  # the fed hour is its wedge, and a printed hour is its own mark
+            if k % 6 == 0:
+                continue
             a = k * wedge
-            r0 = DIAL_R * (0.8 if k % 6 else 0.72)
+            r0, r1 = (DIAL_R * f for f in MARKS)
             m.rod("dialhand", (cx + r0 * math.sin(a), cy - r0 * math.cos(a), cz - 0.2),
-                  (cx + DIAL_R * 0.95 * math.sin(a), cy - DIAL_R * 0.95 * math.cos(a), cz - 0.2),
-                  0.3 if k % 6 else 0.45)  # fmt: skip
+                  (cx + r1 * math.sin(a), cy - r1 * math.cos(a), cz - 0.2), 0.3)  # fmt: skip
         return
     a = hour * wedge
-    tip = (cx + DIAL_R * 0.84 * math.sin(a), cy - DIAL_R * 0.84 * math.cos(a), cz - 1.0)
-    tail = (cx - DIAL_R * 0.18 * math.sin(a), cy + DIAL_R * 0.18 * math.cos(a), cz - 1.0)
+    tip = (cx + DIAL_R * HAND_TIP * math.sin(a), cy - DIAL_R * HAND_TIP * math.cos(a), cz - 1.0)
+    tail = (cx - DIAL_R * 0.12 * math.sin(a), cy + DIAL_R * 0.12 * math.cos(a), cz - 1.0)
     m.capsule("dialhand", tail, tip, 0.8)
     m.ell("dialhand", (cx, cy, cz - 1.0), (1.7, 1.7, 0.9))
 
@@ -736,3 +763,44 @@ def calendar_pages(m: Model, page: tuple[str, str], under: tuple[str, str] | Non
         normal = normal / np.linalg.norm(normal)
         uvs = [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)]
         m.surface(page_name(*page), corners, [normal] * 4, [(0, 1, 2), (0, 2, 3)], uvs)
+
+
+# -- the tank's sounds --------------------------------------------------------------------------------------------
+# the hopper's rattle is RATTLE; HOPPER is the hopper itself
+BUBBLE = Burst(0.06, 1200.0, attack=0.002, decay=0.25, tone_hz=650.0, tone_end_hz=1400.0, tone=0.8)  # one, rising
+LEVER_CLICK = Burst(0.04, 6000.0, attack=0.001, decay=0.2, tone_hz=2000.0, tone_end_hz=1500.0, tone=0.5)
+RATTLE = Burst(0.35, 4500.0, attack=0.005, decay=0.5, tone_hz=900.0, tone_end_hz=700.0, tone=0.2, flutter_hz=37.0)
+TICK = Burst(0.02, 8000.0, attack=0.001, decay=0.15, tone_hz=3200.0, tone_end_hz=3200.0, tone=0.6)  # the dial
+BUBBLE_GAP = 0.08  # seconds: two bubbles closer than this blur into one
+
+
+def _spans(spans: Sequence[tuple[float, float]]) -> list[tuple[float, float]]:
+    for a, b in spans:
+        if not (checks.number(a) and checks.number(b) and 0 <= a < b):
+            raise LabError(f"a span runs forward from 0 or later, got {(a, b)!r}")
+    return sorted(spans)
+
+
+def tick_times(spans: Sequence[tuple[float, float]], every: float = 0.5) -> list[float]:
+    """The dial's ticks: one each ``every`` seconds inside each span, from its start."""
+    if not (checks.number(every) and every > 0):
+        raise LabError(f"ticks come a positive number of seconds apart, got {every!r}")
+    out: list[float] = []
+    for a, b in _spans(spans):
+        out.extend(round(a + k * every, 6) for k in range(math.ceil((b - a) / every - 1e-9)))
+    return out
+
+
+def bubble_times(spans: Sequence[tuple[float, float]], seed: int, every: float = 0.45) -> list[float]:
+    """The tank's bubbles inside each span: about one each ``every`` seconds, each pushed off its slot by up to half
+    of it, the same for one ``seed``; none within :data:`BUBBLE_GAP` of the one before."""
+    if not (checks.number(every) and every > BUBBLE_GAP):
+        raise LabError(f"bubbles come more than {BUBBLE_GAP} s apart, got {every!r}")
+    rng = np.random.default_rng(seed)
+    out: list[float] = []
+    for a, b in _spans(spans):
+        for k in range(math.ceil((b - a) / every - 1e-9)):
+            t = round(min(b - 0.01, a + (k + rng.uniform(0.0, 0.5)) * every), 6)
+            if not out or t - out[-1] >= BUBBLE_GAP:
+                out.append(t)
+    return out
