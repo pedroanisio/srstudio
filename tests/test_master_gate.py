@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 import wave
 from pathlib import Path
 
@@ -257,32 +258,51 @@ def _noise(path: Path, seconds: float, level: float, seed: int) -> None:
         w.writeframes((samples * 32767).astype("<i2").tobytes())
 
 
-def _narration(root: Path, levels: list[float]) -> Path:
-    """A narration project of one 4 s line per level, back to back, and a room under all of them."""
-    (root / "audio").mkdir(parents=True)
-    items = []
-    for k, level in enumerate(levels):
-        _noise(root / "audio" / f"vo-{k}.wav", 4.0, level, k)
-        items.append({"id": f"{k:02d}", "phase": "line", "start": 4.0 * k, "audio": f"audio/vo-{k}.wav"})
-    _noise(root / "audio" / "room.wav", 4.0 * len(levels), 0.2, 99)
-    effects = [{"id": "room", "start": 0.0, "gain_db": -30.0, "audio": "audio/room.wav"}]
-    (root / "narration.json").write_text(
-        json.dumps({"duration": 4.0 * len(levels), "items": items, "effects": effects})
+def _engine(root: Path, *, fails: bool = False, silent: bool = False) -> Path:
+    """A stand-in for ``scene-render encode SCENE -o WAV``: it writes the WAV the scene file names (a test scene is
+    one path), or exits 1, or writes nothing. The real engine reads the same on shaken-soda v4 as its master."""
+    script = root / "engine"
+    script.write_text(
+        f"#!{sys.executable}\n"
+        "import shutil, sys\n"
+        "assert sys.argv[1] == 'encode' and sys.argv[3] == '-o', sys.argv\n"
+        f"if {fails!r}: sys.exit('error: the scene does not validate')\n"
+        f"if not {silent!r}: shutil.copyfile(open(sys.argv[2]).read().strip(), sys.argv[4])\n"
     )
-    return root
+    script.chmod(0o700)
+    return script
 
 
-def test_the_mix_range_reads_the_line_levels_before_any_render(tmp_path):
-    flat = master_gate.mix_range(_narration(tmp_path / "flat", [0.2] * 6))
+def _scene(root: Path, levels: list[float]) -> Path:
+    """A scene whose engine mix is one 4 s line per level, back to back."""
+    root.mkdir(parents=True)
+    rate = 48000
+    mix = np.concatenate([np.random.default_rng(k).uniform(-level, level, 4 * rate) for k, level in enumerate(levels)])
+    with wave.open(str(root / "mix-source.wav"), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        w.writeframes((mix * 32767).astype("<i2").tobytes())
+    scene = root / "reel.scene.xml"
+    scene.write_text(str(root / "mix-source.wav"))
+    return scene
+
+
+def test_the_scene_range_reads_the_engine_s_own_mix_before_any_render(tmp_path):
+    engine = _engine(tmp_path)
+    flat = master_gate.scene_range(_scene(tmp_path / "flat", [0.2] * 6), engine=engine)
     under = 0.2 * 10 ** (-6 / 20)  # two lines said 6 dB under the rest
-    quiet = master_gate.mix_range(_narration(tmp_path / "quiet", [0.2, under, 0.2, 0.2, under, 0.2]))
+    quiet = master_gate.scene_range(_scene(tmp_path / "quiet", [0.2, under, 0.2, 0.2, under, 0.2]), engine=engine)
     assert flat < 1.0 <= master_gate.MIN_LRA <= quiet
 
 
-def test_a_mix_range_with_no_manifest_or_a_missing_take_is_refused(tmp_path):
-    with pytest.raises(MasterError, match="narration.json"):
-        master_gate.mix_range(tmp_path)
-    root = _narration(tmp_path / "gone", [0.2, 0.2, 0.2])
-    (root / "audio" / "vo-1.wav").unlink()
-    with pytest.raises(MasterError, match="vo-1.wav"):
-        master_gate.mix_range(root)
+def test_a_scene_range_with_no_scene_a_failed_encode_or_no_audio_is_refused(tmp_path):
+    with pytest.raises(MasterError, match="no scene"):
+        master_gate.scene_range(tmp_path / "gone.scene.xml", engine=_engine(tmp_path))
+    scene = _scene(tmp_path / "reel", [0.2, 0.2])
+    (tmp_path / "bad").mkdir()
+    with pytest.raises(MasterError, match="does not validate"):
+        master_gate.scene_range(scene, engine=_engine(tmp_path / "bad", fails=True))
+    (tmp_path / "mute").mkdir()
+    with pytest.raises(MasterError, match="wrote no audio"):
+        master_gate.scene_range(scene, engine=_engine(tmp_path / "mute", silent=True))
