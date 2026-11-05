@@ -13,6 +13,7 @@
     {"number": "0233", "name": "a-show-named-in-more-words", "owner": "worskpace-sdk-series", "reserved": "2026-11-04"},
     {"number": "0238", "name": "news-template-one-band", "owner": "worskpace-news-template", "reserved": "2026-11-04"},
     {"number": "0239", "name": "proof-project-craft-bar", "owner": "worskpace-measure-bar", "reserved": "2026-11-05"},
-    {"number": "0241", "name": "stress-preserving-master-gain", "owner": "codex-builder", "reserved": "2026-11-05"}
+    {"number": "0241", "name": "stress-preserving-master-gain", "owner": "codex-builder", "reserved": "2026-11-05"},
+    {"number": "0240", "name": "small-print-explainers-in-clay", "owner": "worskpace-sp-v2", "reserved": "2026-11-04"}
   ]
 }
