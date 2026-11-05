@@ -13,7 +13,7 @@ import re
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from . import master_gate, proof, prosody
 from .phrasing import words_of
@@ -43,8 +43,18 @@ class Measure:
     name: str
     value: float | bool | None
     bar: str
-    passed: bool
+    status: Literal['PASS', 'SHIP', 'FAIL']
     source: str
+
+    @property
+    def passed(self) -> bool:
+        """Strict PASS; SHIP still needs a later re-take."""
+        return self.status == 'PASS'
+
+    @property
+    def ok(self) -> bool:
+        """Eligible to ship; callers needing a strict pass must use passed."""
+        return self.status in ('PASS', 'SHIP')
 
 
 @dataclass(frozen=True)
@@ -55,8 +65,16 @@ class Result:
     def passed(self) -> bool:
         return all(m.passed for m in self.measures)
 
+    @property
+    def ok(self) -> bool:
+        return all(m.ok for m in self.measures)
+
+    def retakes(self) -> tuple[Measure, ...]:
+        """SHIP rows to list for the next re-takes, even when proof exits zero."""
+        return tuple(m for m in self.measures if m.status == 'SHIP')
+
     def lines(self) -> list[str]:
-        return [f"{'PASS' if m.passed else 'FAIL'} {m.name}: {m.value} | {m.bar} | {m.source}" for m in self.measures]
+        return [f"{m.status} {m.name}: {m.value} | {m.bar} | {m.source}" for m in self.measures]
 
 
 @dataclass(frozen=True)
@@ -202,9 +220,9 @@ def pace_measure(line: str, value: float) -> Measure:
     return Measure(
         f'pace:{line}',
         value,
-        '<= 3.6 words/s; retake required' if value > 4.2 else '<= 3.6 words/s',
-        value <= 3.6,
-        'prosody.Measure.pace; cached word span',
+        'PASS <= 3.6; SHIP <= 4.2; FAIL > 4.2 words/s',
+        'PASS' if value <= 3.6 else 'SHIP' if value <= 4.2 else 'FAIL',
+        'heard word count / phrase duration (edge silences included)',
     )
 
 
@@ -312,7 +330,19 @@ def measure(video: Path, project: Path, *, loudness: proof.Measures | None = Non
                 if measured.pace is None or any(w.db is None or w.db <= -119 for w in measured.words):
                     raise WordsNotHeard(f'{line.id}: words not audible on master at cached timing')
                 first = min(first, line.start + (measured.first or 0))
-                values.append(pace_measure(line.id, measured.pace))
+                count = len(measured.words)
+                if count >= 3:
+                    values.append(pace_measure(line.id, count / line.duration))
+                    span_pace = count / measured.span
+                    values.append(
+                        Measure(
+                            f'pace_span:{line.id}',
+                            span_pace,
+                            '<= 4.5 words/s',
+                            'PASS' if span_pace <= 4.5 else 'FAIL',
+                            'heard word count / cached first-to-last word span',
+                        )
+                    )
                 for stress in measured.stressed:
                     if not stress.heard:
                         raise WordsNotHeard(f'{line.id}: stressed word {stress.word!r} not heard')
@@ -321,7 +351,7 @@ def measure(video: Path, project: Path, *, loudness: proof.Measures | None = Non
                             f'stress:{line.id}:{stress.word}',
                             stress.db,
                             f'>= {prosody.STRESS_DB:g} dB',
-                            stress.db is not None and stress.db >= prosody.STRESS_DB,
+                            'PASS' if stress.db is not None and stress.db >= prosody.STRESS_DB else 'FAIL',
                             'prosody.measure on master mix; ' + line.source,
                         )
                     )
@@ -331,17 +361,23 @@ def measure(video: Path, project: Path, *, loudness: proof.Measures | None = Non
                 'integrated_lufs',
                 loudness.lufs,
                 'finite (no LUFS target specified)',
-                math.isfinite(loudness.lufs),
+                'PASS' if math.isfinite(loudness.lufs) else 'FAIL',
                 'master ebur128',
             ),
-            Measure('lra', loudness.range_lu, '>= 4.5 LU', loudness.range_lu >= master_gate.MIN_LRA, 'master ebur128'),
+            Measure(
+                'lra',
+                loudness.range_lu,
+                '>= 4.5 LU',
+                'PASS' if loudness.range_lu >= master_gate.MIN_LRA else 'FAIL',
+                'master ebur128',
+            ),
         ]
         values.append(
             Measure(
                 'first_word',
                 round(first, 6),
                 '<= 0.25 s',
-                first <= 0.25,
+                'PASS' if first <= 0.25 else 'FAIL',
                 'cached word timing + placement; audibility checked on master',
             )
         )
@@ -352,7 +388,7 @@ def measure(video: Path, project: Path, *, loudness: proof.Measures | None = Non
                 'constant_bed',
                 constant,
                 'false',
-                not constant,
+                'FAIL' if constant else 'PASS',
                 'master_gate.constant_bed on declared music stems' if beds else 'no declared music stem',
             )
         )
@@ -362,7 +398,7 @@ def measure(video: Path, project: Path, *, loudness: proof.Measures | None = Non
                 'frozen',
                 frozen,
                 '< 1.5 s',
-                frozen < 1.5,
+                'PASS' if frozen < 1.5 else 'FAIL',
                 'crop=1080:1340:0:0,freezedetect=n=0.003:d=1.5; EOF closed at duration',
             )
         )

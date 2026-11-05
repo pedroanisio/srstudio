@@ -944,7 +944,12 @@ def _proof(args: argparse.Namespace) -> int:
         if craft is not None:
             from dataclasses import asdict
 
-            made["craft_bar"] = asdict(craft) | {"passed": craft.passed}
+            made["craft_bar"] = {
+                "measures": [asdict(m) | {"passed": m.passed, "ok": m.ok} for m in craft.measures],
+                "passed": craft.passed,
+                "ok": craft.ok,
+                "retakes": [m.name for m in craft.retakes()],
+            }
     except proof.ProofError as exc:
         _error("proof", exc, getattr(args, "json", False))
         return 1
@@ -954,7 +959,9 @@ def _proof(args: argparse.Namespace) -> int:
         print(" ".join(f"{k}={v}" for k, v in made.items() if k != "craft_bar"))
         if craft is not None:
             print("\n".join(craft.lines()))
-    return 1 if craft is not None and not craft.passed else 0
+            if craft.retakes():
+                print("Next re-takes: " + ", ".join(m.name for m in craft.retakes()))
+    return 1 if craft is not None and not craft.ok else 0
 
 
 def _master(args: argparse.Namespace) -> int:

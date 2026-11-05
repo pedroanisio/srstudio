@@ -103,7 +103,7 @@ def test_both_layouts_measure_master_mix(tmp_path, master, kind):
     result = craft_bar.measure(master, project(tmp_path, kind))
     by = {m.name: m for m in result.measures}
     assert by['first_word'].value == pytest.approx(0.1)
-    assert by['pace:line-1'].value == pytest.approx(3 / 0.9, abs=0.001)
+    assert by['pace:line-1'].value == pytest.approx(3 / 1.0)
     assert by['stress:line-1:three'].value > 8
     assert by['stress:line-1:three'].passed
     assert by['frozen'].value == 0
@@ -139,11 +139,52 @@ def test_cli_project_json(tmp_path, master, capsys):
     assert data['craft_bar']['measures']
 
 
-def test_thresholds():
-    assert craft_bar.pace_measure('x', 3.6).passed
-    assert not craft_bar.pace_measure('x', 3.601).passed
-    assert 'retake' in craft_bar.pace_measure('x', 4.201).bar
-    assert craft_bar.pace_measure('x', 4.2).bar != craft_bar.pace_measure('x', 4.201).bar
+@pytest.mark.parametrize(
+    ('pace', 'status'),
+    [(3.599999, 'PASS'), (3.6, 'PASS'), (3.600001, 'SHIP'), (4.199999, 'SHIP'), (4.2, 'SHIP'), (4.200001, 'FAIL')],
+)
+def test_thresholds(pace, status):
+    measured = craft_bar.pace_measure('x', pace)
+    assert measured.status == status
+    assert measured.passed is (status == 'PASS')
+    assert measured.ok is (status != 'FAIL')
+    assert craft_bar.Result((measured,)).lines()[0].startswith(f'{status} pace:x:')
+
+
+@pytest.mark.parametrize('json_output', [False, True])
+@pytest.mark.parametrize(('pace', 'code'), [(3.6, 0), (3.600001, 0), (4.2, 0), (4.200001, 1)])
+def test_cli_band_exit_and_retakes(monkeypatch, capsys, json_output, pace, code):
+    measured = craft_bar.pace_measure('NN', pace)
+    result = craft_bar.Result((measured,))
+    monkeypatch.setattr(craft_bar, 'measure', lambda *a: result)
+    monkeypatch.setattr(cli.proof, 'report', lambda *a, **kw: {'video': 'unused.mp4'})
+    flags = ['--json'] if json_output else []
+    assert cli.main(['proof', 'unused.mp4', '--project', 'unused', *flags]) == code
+    output = capsys.readouterr().out
+    retakes = ['pace:NN'] if 3.6 < pace <= 4.2 else []
+    assert [m.name for m in result.retakes()] == retakes
+    assert result.passed is (pace <= 3.6)
+    assert result.ok is (code == 0)
+    if json_output:
+        craft = json.loads(output)['craft_bar']
+        assert craft['ok'] is (code == 0)
+        assert craft['passed'] is (pace <= 3.6)
+        assert craft['retakes'] == retakes
+        assert craft['measures'][0]['status'] == measured.status
+        assert craft['measures'][0]['passed'] is measured.passed
+    else:
+        assert f'{measured.status} pace:NN:' in output
+        if retakes:
+            assert 'Next re-takes: pace:NN' in output
+
+
+def test_ship_does_not_mask_other_failure():
+    ship = craft_bar.pace_measure('ship', 4.0)
+    failed = craft_bar.pace_measure('failed', 4.3)
+    result = craft_bar.Result((ship, failed))
+    assert not result.ok
+    assert not result.passed
+    assert result.retakes() == (ship,)
 
 
 def test_trailing_freeze(master, tmp_path):
@@ -271,3 +312,69 @@ def test_timeline_records_use_master_placement(tmp_path):
     (line,) = craft_bar.recorded_lines(tmp_path)
     assert line.start + line.words[0].start == pytest.approx(0.3)
     assert line.stress == ('two',)
+
+
+@pytest.mark.parametrize(
+    ('count', 'duration', 'span', 'phrase_passed', 'span_passed'),
+    [
+        (3, 2.0, 0.9, True, True),
+        (1, 1.0, 0.1, None, None),
+        (2, 1.0, 0.2, None, None),
+        (3, 2.0, 0.6, True, False),
+        (9, 2.5, 2.0, True, True),
+        (9, 2.5, 1.9999, True, False),
+        (9, 2.4, 2.0, False, True),
+        (9, 2.5, 2.0001, True, True),
+    ],
+    ids=[
+        'phrase-edges',
+        'one-word',
+        'two-words',
+        'span-guard',
+        'boundaries',
+        'span-just-over',
+        'phrase-ship',
+        'span-just-under',
+    ],
+)
+def test_phrase_pace_and_word_span_guard(tmp_path, master, count, duration, span, phrase_passed, span_passed):
+    words = [
+        {'text': f'word-{i}', 'start': 0.1 + i * span / count, 'end': 0.1 + (i + 1) * span / count}
+        for i in range(count)
+    ]
+    write(
+        tmp_path / 'timeline.json',
+        {'items': [{'id': 'take', 'start': 0, 'duration': duration, 'prosody': {'words': words}}]},
+    )
+    result = craft_bar.measure(master, tmp_path)
+    by = {m.name: m for m in result.measures}
+    if count < 3:
+        assert not any('pace' in m.name for m in result.measures)
+        assert not any('pace' in line for line in result.lines())
+        return
+    phrase = by['pace:take']
+    assert phrase.value == pytest.approx(count / duration)
+    assert phrase.passed is phrase_passed
+    assert '<= 3.6' in phrase.bar
+    assert phrase.status == ('PASS' if phrase_passed else 'SHIP')
+    assert 'phrase duration' in phrase.source
+    guard = by['pace_span:take']
+    assert guard.value == pytest.approx(count / span)
+    assert guard.passed is span_passed
+    assert guard.bar == '<= 4.5 words/s'
+    assert 'word span' in guard.source
+    assert any(line.startswith(f"{'PASS' if span_passed else 'FAIL'} pace_span:take:") for line in result.lines())
+    assert result.passed is (phrase_passed and span_passed)
+
+
+def test_ship_phrase_can_still_fail_span_guard(tmp_path, master):
+    words = [{'text': f'w{i}', 'start': i * 0.19, 'end': (i + 1) * 0.19} for i in range(4)]
+    write(
+        tmp_path / 'timeline.json', {'items': [{'id': 'take', 'start': 0, 'duration': 1, 'prosody': {'words': words}}]}
+    )
+    result = craft_bar.measure(master, tmp_path)
+    by = {m.name: m for m in result.measures}
+    assert by['pace:take'].status == 'SHIP'
+    assert by['pace_span:take'].status == 'FAIL'
+    assert not result.ok
+    assert [m.name for m in result.retakes()] == ['pace:take']

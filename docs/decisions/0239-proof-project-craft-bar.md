@@ -53,3 +53,29 @@ by this check. Ambient effects are not assumed to be music.
 Tests use synthetic masters, word caches and both recording layouts, without
 network access. They cover CLI success/failure, legacy proof behavior, trim
 mapping, missing evidence, silence, music continuity and freezes through EOF.
+
+
+## Revision — 2026-11-05
+
+The C7 pace ruling supersedes the word-span pace bar above:
+
+> B. C7 pace, measured on the phrase: <=3.6 w/s PASS, 3.6–4.2 SHIP (reported, and listed for the next re-takes), over
+> 4.2 FAIL. Lines of 3+ words also fail over 4.5 on the word span, and lines under 3 words have no pace bar.
+
+For lines with at least three heard words, `pace:ID` divides the heard word count
+by the kept phrase duration, including edge silences. Rates `<= 3.6 words/s`
+are PASS, `3.6 < rate <= 4.2` are SHIP, and rates `> 4.2` are FAIL. A separate
+`pace_span:ID` divides the same count by the cached first-to-last word span,
+with PASS `<= 4.5 words/s` and FAIL above it. Comparisons use unrounded rates.
+Each row names its method. Lines with fewer than three heard words emit neither
+pace row, while retaining audibility, stress and other craft checks.
+
+`Measure.status` names PASS, SHIP or FAIL. `Measure.passed` and `Result.passed`
+remain strict: SHIP is not PASS. `Measure.ok` and `Result.ok` express shipping
+eligibility (no FAIL rows). Proof uses `Result.ok` for its exit code, so a SHIP
+row alone does not fail proof, while any FAIL row, including the span guard,
+still does. `Result.retakes()` returns every SHIP measure for the next re-takes.
+The text report prints `SHIP pace:ID: ...` and a `Next re-takes:` list; JSON
+includes each status, strict `passed`, shipping `ok`, and the `retakes` names.
+Local caller inspection found only `srstudio.cli._proof` consuming craft verdicts;
+the repository gate scripts do not consume `craft_bar.Measure` directly.
