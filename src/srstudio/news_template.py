@@ -27,7 +27,8 @@ the same anchors, rig and set:
 * **Gus's phone is a run of short cutaways** (:func:`phone_insert`): its screen fills the whole frame over a backdrop
   that hides the shot, the signature's cactus and code on its chrome; each cutaway lands a message and the chat builds
   across them, a face's reaction (:func:`reaction`) between each, Gus's after the last. No flat insert stays up over
-  :data:`INSERT_MOST` and all of them take at most :data:`INSERT_SHARE` of the reel (:func:`flat_inserts`).
+  :data:`INSERT_MOST` and all of them take at most :data:`INSERT_SHARE` of the reel (:func:`flat_inserts`). The last
+  cutaway, the payoff, holds its new message at least :data:`PAYOFF_READ` before the cut back, to find it and read it.
 * **Gus holds his phone up** in his close shot (:data:`GRIP`) in one hand beside his face, its screen to the camera,
   clear of his eyes and mouth and of the band; the other hand rests.
 * **The body moves on every line** (:func:`body`): a lean toward the other anchor, both hands up from the desk beside
@@ -115,6 +116,7 @@ __all__ = [
     "insert",
     "INSERT_MOST",
     "INSERT_SHARE",
+    "PAYOFF_READ",
     "flat_inserts",
     "insert_reach",
     "mouth_low",
@@ -186,6 +188,12 @@ _HANDSET_MID = ((_HANDSET[0] + _HANDSET[2]) / 2, (_HANDSET[1] + _HANDSET[3]) / 2
 # -- the phone cutaway -------------------------------------------------------------------------------------------------
 INSERT_MOST = 2.0  # seconds a flat insert may stay up before the reel cuts back to a face (C2)
 INSERT_SHARE = 0.15  # the most of a reel's running time its flat inserts may take together (C2)
+# Seconds the last insert, the payoff, stays up from its new message's landing to the cut back (arc4d3, 5 Nov, L25):
+# time to find the new bubble on a full chat and read it. Set from "Also booked 3 backups!", which needed about 1.4 s.
+# A constant, not :func:`srstudio.opener.seconds`: the kit has no reading time for a message that has to be found
+# first, and that helper's 17 characters a second gives these 22 characters 1.29 s, short of L25's. The inserts
+# before the payoff keep the engine's least (:data:`srstudio.craft.MIN_DISPLAY`): arc4d3 passed them at 0.85-1.1 s.
+PAYOFF_READ = 1.4
 SCREEN_TOP, SCREEN_FOOT = -10.0, FRAME_H + 10.0  # the screen fills the frame's height: no empty band over or under it
 STATUS_FOOT = _SAFE.y0  # the phone's status bar, over the safe area: the signature code is its carrier name
 CUT_TOP = round(CAPTION_FOOT + 12.0)  # the chat's name, just under two lines of caption
@@ -1028,19 +1036,34 @@ class _Row:
     h: float
 
 
-def flat_inserts(spans: Sequence[Span], runtime: float) -> None:
+def flat_inserts(spans: Sequence[Span], runtime: float, payoff: float | None = None) -> None:
     """Refuse flat inserts (``spans``) that hold the screen too long (C2): any one up longer than
-    :data:`INSERT_MOST`, or all of them more than :data:`INSERT_SHARE` of the reel's ``runtime``."""
+    :data:`INSERT_MOST`, or all of them more than :data:`INSERT_SHARE` of the reel's ``runtime``; and, given the
+    second its ``payoff`` message lands, a last insert that cuts back sooner than :data:`PAYOFF_READ` after it."""
     for a, b in spans:
         if b - a > INSERT_MOST + 1e-9:
             raise NewsKitError(
                 f"the insert {a:.2f}-{b:.2f} s is up {b - a:.2f} s, longer than {INSERT_MOST} s: split it, cutting "
                 "back to a face between the parts"
             )
+    if payoff is not None and spans:
+        _payoff_read(max(spans), payoff)
     total = sum(b - a for a, b in spans)
     if total > INSERT_SHARE * runtime + 1e-9:
         raise NewsKitError(
             f"the inserts take {total:.2f} s of {runtime:.2f} s, {total / runtime:.0%}: at most {INSERT_SHARE:.0%}"
+        )
+
+
+def _payoff_read(span: Span, landing: float, text: str = "") -> None:
+    """Refuse a payoff insert ``span`` that cuts back sooner than :data:`PAYOFF_READ` after its message lands at
+    ``landing``: the viewer has to find the new bubble and read it (arc4d3, L25)."""
+    start, end = span
+    if end - landing < PAYOFF_READ - 1e-9:
+        what = f"message {text!r}" if text else "message"
+        raise NewsKitError(
+            f"the payoff insert {start:.2f}-{end:.2f} s cuts back {end - landing:.2f} s after its {what} lands at "
+            f"{landing:.2f} s: hold it at least {PAYOFF_READ} s, to find the new bubble and read it"
         )
 
 
@@ -1060,8 +1083,9 @@ def _visits(spans: Sequence[Span]) -> list[Span]:
 def _landings(bubbles: Sequence[news_kit.Bubble], spans: Sequence[Span]) -> None:
     """Refuse a chat that does not build across ``spans``: every message after the first span's start lands while
     the phone is up, every later span shows one more, and each span cuts back to a face no sooner than
-    :data:`srstudio.craft.MIN_DISPLAY` and no later than :data:`STILL_MOST` after the last message it shows lands.
-    Inside a span of :data:`INSERT_MOST` the screen so never waits :data:`STILL_MOST` for a message."""
+    :data:`srstudio.craft.MIN_DISPLAY` and no later than :data:`STILL_MOST` after the last message it shows lands; the
+    last span, the payoff, no sooner than :data:`PAYOFF_READ` (:func:`_payoff_read`). Inside a span of
+    :data:`INSERT_MOST` the screen so never waits :data:`STILL_MOST` for a message."""
     arrivals = [max(b.at, spans[0][0]) for b in bubbles]
     if any(b < a for a, b in zip(arrivals, arrivals[1:], strict=False)):
         raise NewsKitError(f"the messages must arrive in the order they stack, got {arrivals}")
@@ -1075,6 +1099,9 @@ def _landings(bubbles: Sequence[news_kit.Bubble], spans: Sequence[Span]) -> None
         if n and not landing:
             raise NewsKitError(f"the insert {start}-{end} s shows no new message: the chat builds across its inserts")
         last = landing[-1] if landing else start
+        if n == len(spans) - 1 and landing:
+            shown = max(k for k, at in enumerate(arrivals) if start <= at < end)
+            _payoff_read((start, end), last, bubbles[shown].text)
         if end - last < craft.MIN_DISPLAY:
             raise NewsKitError(
                 f"the last message the insert {start}-{end} s shows is up {end - last:.3f} s: too short to read, the "
@@ -1181,7 +1208,8 @@ def phone_insert(
     at its head. The reel cuts back to a face between the spans and the chat builds across them: each span shows
     every message landed before it and slides in its own, and the last span ends on the whole chat, filled down to
     :data:`CHAT_FOOT`. No span stays up longer than :data:`INSERT_MOST` (:func:`flat_inserts`), and each cuts back
-    within :data:`STILL_MOST` of its last message (:func:`_landings`); the spans' share of the reel is
+    within :data:`STILL_MOST` of its last message (:func:`_landings`), the last, the payoff, no sooner than
+    :data:`PAYOFF_READ` after it, so its new message can be found and read; the spans' share of the reel is
     :func:`band`'s to check. Each span pushes in from :data:`CUT_FROM` to :data:`CUT_TO` about :data:`CUT_AT`, keyed
     at least every :data:`STILL_MOST`. Returns each span's pushing group."""
     if not bubbles:

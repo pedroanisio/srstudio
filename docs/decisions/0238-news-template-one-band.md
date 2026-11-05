@@ -69,9 +69,14 @@ delivered on it renders the same; a new reel opts in by staging with `news_templ
   so nothing of the shot shows and nobody holds it, and the reel cuts back to a face between them. The chat builds
   across them: every message after the first span's start lands inside a span, each later span lands one more, each
   slides in over 0.2 s, and the last span ends on the whole chat, its last message at `CHAT_FOOT`. Each span's last
-  message stays up at least `craft.MIN_DISPLAY` (0.83 s) and at most 1.5 s. `flat_inserts` refuses an insert over
-  `INSERT_MOST` (2 s) or inserts that take more than `INSERT_SHARE` (15 %) of the reel; `phone_insert` runs the first
-  and `band` both. `reaction(shots, end, who)` refuses an insert whose next shot is not one of `who`'s: Gus or Vera
+  message stays up at least `craft.MIN_DISPLAY` (0.83 s) and at most 1.5 s; the last span, the payoff, at least
+  `PAYOFF_READ` (1.4 s) from its new message's landing to the cut back, the time to find the new bubble and read it
+  (arc4d3, 5 Nov, L25: "Also booked 3 backups!" at 1.0 s was too short). It is a constant: the kit's one reading
+  time, `opener.seconds` (17 characters a second), gives those 22 characters 1.29 s and has no time to find a new
+  bubble, and the inserts before the payoff, which arc4d3 passed at 0.85-1.1 s, keep the engine's least.
+  `flat_inserts` refuses an insert over `INSERT_MOST` (2 s) or inserts that take more than `INSERT_SHARE` (15 %) of
+  the reel, and, given the payoff's landing, a last insert under `PAYOFF_READ`; `phone_insert` runs the 2 s limit
+  and the payoff's floor, and `band` the 2 s limit and the share. `reaction(shots, end, who)` refuses an insert whose next shot is not one of `who`'s: Gus or Vera
   between two, Gus after the last.
 - **The phone fills the frame.** The handset's screen runs the frame's whole height (C1: no empty dark band): a status
   bar over the safe area with the signature code as the carrier's name, the chat's head under the captions with the

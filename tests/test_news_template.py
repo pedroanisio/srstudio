@@ -421,7 +421,7 @@ CHAT = (
     news_kit.Bubble("6:02", "Booked! Pickup: Tuesday", out=False, at=4.4),
     news_kit.Bubble("6:02", "Also booked 3 backups!", out=False, at=6.8),
 )
-SPANS = ((2.0, 3.6), (4.2, 5.4), (6.6, 7.8))  # three inserts, a face between each
+SPANS = ((2.0, 3.6), (4.2, 5.4), (6.6, 8.2))  # three inserts, a face between each; the payoff up 1.4 s from 6.8
 
 
 def _cutaway(bubbles=CHAT, spans=SPANS, signed: bool = True):
@@ -510,9 +510,10 @@ def test_an_insert_over_two_seconds_is_refused():
 
 
 def test_inserts_over_fifteen_percent_of_the_reel_are_refused():
-    news_template.flat_inserts(SPANS, 4.0 / news_template.INSERT_SHARE)
+    total = sum(b - a for a, b in SPANS)
+    news_template.flat_inserts(SPANS, total / news_template.INSERT_SHARE)
     with pytest.raises(NewsKitError, match="at most 15%"):
-        news_template.flat_inserts(SPANS, 4.0 / news_template.INSERT_SHARE - 0.1)
+        news_template.flat_inserts(SPANS, total / news_template.INSERT_SHARE - 0.1)
 
 
 def test_the_band_refuses_inserts_over_their_share():
@@ -534,8 +535,42 @@ def test_each_insert_cuts_back_within_one_and_a_half_seconds_of_its_last_message
 
 def test_the_last_message_of_each_insert_stays_up_long_enough_to_be_read():
     with pytest.raises(NewsKitError, match="read"):
-        _cutaway(spans=((2.0, 3.6), (4.2, 4.4 + craft.MIN_DISPLAY - 0.1), (6.6, 7.8)))
-    _cutaway(spans=((2.0, 3.6), (4.2, 4.4 + craft.MIN_DISPLAY + 0.01), (6.6, 7.8)))
+        _cutaway(spans=((2.0, 3.6), (4.2, 4.4 + craft.MIN_DISPLAY - 0.1), SPANS[2]))
+    _cutaway(spans=((2.0, 3.6), (4.2, 4.4 + craft.MIN_DISPLAY + 0.01), SPANS[2]))
+
+
+# -- the payoff's reading time (arc4d3, 5 Nov, L25) --------------------------------------------------------------------
+def test_the_payoff_floor_is_about_1_4_seconds_and_fits_the_other_limits():
+    assert news_template.PAYOFF_READ == pytest.approx(1.4)
+    assert craft.MIN_DISPLAY < news_template.PAYOFF_READ <= news_template.STILL_MOST  # a window is left to cut in
+    assert news_template.PAYOFF_READ < news_template.INSERT_MOST
+
+
+def test_the_payoff_insert_is_refused_when_it_cuts_before_its_message_can_be_read():
+    with pytest.raises(NewsKitError, match="payoff") as refused:
+        _cutaway(spans=((2.0, 3.6), (4.2, 5.4), (6.6, 6.8 + news_template.PAYOFF_READ - 0.05)))
+    assert "Also booked 3 backups!" in str(refused.value)
+    with pytest.raises(NewsKitError, match="payoff"):
+        _cutaway(spans=((2.0, 3.6), (4.2, 5.4), (6.6, 7.8)))  # v9's 1.0 s: too short to find the bubble and read it
+    _cutaway(spans=((2.0, 3.6), (4.2, 5.4), (6.6, 6.8 + news_template.PAYOFF_READ)))
+
+
+def test_the_payoff_floor_runs_from_the_messages_landing_not_the_inserts_start():
+    with pytest.raises(NewsKitError, match="payoff"):
+        _cutaway(spans=((2.0, 3.6), (4.2, 5.4), (6.3, 8.1)))  # up 1.8 s would pass a span floor; 1.3 s from 6.8
+    with pytest.raises(NewsKitError, match="payoff"):
+        news_template.flat_inserts(((1.0, 2.0),), 60.0, payoff=1.0)  # the payoff lands at the cut's 1.0 s before
+    news_template.flat_inserts(((1.0, 2.5),), 60.0, payoff=1.0)
+
+
+def test_the_payoff_floor_holds_for_a_single_insert_too():
+    with pytest.raises(NewsKitError, match="payoff"):
+        _cutaway(CHAT[:2], ((2.0, 3.6),))  # "Sure! Which home?" lands at 2.6 and is up 1.0 s
+    _cutaway(CHAT[:2], ((2.0, 2.6 + news_template.PAYOFF_READ),))
+
+
+def test_the_inserts_before_the_payoff_keep_the_engines_reading_least():
+    _cutaway(spans=((2.0, 3.6), (4.2, 4.4 + craft.MIN_DISPLAY + 0.01), SPANS[2]))  # insert 2 at 0.84 s is fine
 
 
 def test_both_signature_marks_are_on_every_inserts_chrome():
