@@ -184,7 +184,10 @@ def test_a_missing_lock_file_has_no_holders(tmp_path):
 # -- the call sites ---------------------------------------------------------------------------------------------------
 REPO = Path(__file__).resolve().parents[1]
 GPU_VERBS = {"render", "encode"}  # measured: validate, eval, resolve, captions, inspect and scopes open no GPU device
-UNDER_LOCK = {("src/srstudio/plates.py", "_invoke_renderer")}  # called only from _engine_render, inside the lock
+UNDER_LOCK = {
+    ("src/srstudio/plates.py", "_invoke_renderer"),  # called only from _engine_render, inside the lock
+    ("src/srstudio/_stress_mix.py", "constrained"),  # entered only from master.encode, inside the lock (ADR 0241)
+}
 
 
 def _held(node: ast.With) -> bool:
