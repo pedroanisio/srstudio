@@ -8,7 +8,7 @@ import re
 import subprocess
 import wave
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, replace
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypeGuard
 
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 import numpy as np
 
-from .authority import AuthorityError, Disposition
+from .authority import AuthorityError, Disposition, Message
 from .digest import sha256
 from .errors import SrstudioError
 from .final_frame_gate import RECORD, FinalFrameError, FinalFrameResult, check_master
@@ -44,6 +44,7 @@ __all__ = [
     "accept_master",
     "Measured",
     "Reading",
+    "ReleaseApproval",
     "Run",
     "constant_bed",
     "findings",
@@ -404,6 +405,53 @@ MasterApproval = Disposition
 
 
 @dataclass(frozen=True)
+class ReleaseApproval:
+    """Explicit whole-master legacy review evidence supplied by a trusted caller (ADR 0248).
+
+    This validates structure, not source authenticity or historical eligibility.
+    The caller must retain the source message and classify the master as reviewed legacy.
+    """
+
+    master_sha256: str
+    approver: str
+    approval_message: Message
+    scope: Literal["legacy_reviewed"]
+    reason: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.master_sha256, str) or not re.fullmatch(r"[a-fA-F0-9]{64}", self.master_sha256):
+            raise AuthorityError("release approval needs an exact 64-hex master sha256")
+        if self.scope != "legacy_reviewed":
+            raise AuthorityError("release approval scope must be legacy_reviewed")
+        if not isinstance(self.approver, str) or self.approver not in ("arc4d3", "Pedro"):
+            raise AuthorityError("legacy release approval requires arc4d3 or Pedro")
+        msg = self.approval_message
+        if not isinstance(msg, Message) or not all(
+            isinstance(v, str) and v.strip() for v in (msg.author, msg.reference, msg.text, self.reason)
+        ):
+            raise AuthorityError("release approval needs a source message, reference and reason")
+        if msg.author != self.approver:
+            raise AuthorityError("release approval approver must match source message author")
+
+    def validate(self, master_sha256: str) -> None:
+        self.__post_init__()
+        if self.master_sha256.lower() != master_sha256:
+            raise AuthorityError("stale release approval: master sha256 differs")
+
+    def record(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def parse(cls, value: object) -> ReleaseApproval:
+        if not isinstance(value, Mapping) or set(value) != set(cls.__dataclass_fields__):
+            raise AuthorityError("release approval fields are missing or unknown")
+        msg = value["approval_message"]
+        if not isinstance(msg, Mapping) or set(msg) != {"author", "reference", "text"}:
+            raise AuthorityError("release approval needs source message author, reference and text")
+        return cls(**(dict(value) | {"approval_message": Message(**msg)}))
+
+
+@dataclass(frozen=True)
 class MasterCheck:
     check: str
     value: float | None
@@ -636,6 +684,8 @@ class Reading:
     legacy: bool = False
     final_frames: FinalFrameResult | None = None
     frame_error: str = ""
+    release_approval: ReleaseApproval | None = None
+    release_approval_error: str = ""
 
     @property
     def failing(self) -> tuple[Finding, ...]:
@@ -643,6 +693,14 @@ class Reading:
 
     @property
     def refused(self) -> bool:
+        if self.release_approval_error:
+            return True
+        if self.release_approval is not None:
+            try:
+                self.release_approval.validate(self.master_sha256)
+            except AuthorityError:
+                return True
+            return False
         return (
             bool(self.frame_error)
             or (self.final_frames is not None and self.final_frames.refused)
@@ -654,6 +712,12 @@ class Reading:
     def lines(self) -> list[str]:
         return (
             self._measure_lines()
+            + (
+                [f"whole-master release: RELEASED by {self.release_approval!r}"]
+                if self.release_approval is not None and not self.refused
+                else []
+            )
+            + ([f"whole-master release: REFUSED {self.release_approval_error}"] if self.release_approval_error else [])
             + (self.final_frames.lines() if self.final_frames is not None else [])
             + ([f"frames {self.video}: REFUSED {self.frame_error}"] if self.frame_error else [])
         )
@@ -746,6 +810,7 @@ def evaluate_release(
     *,
     scope: str = "reserved",
     dispositions: tuple[Disposition, ...] = (),
+    release_approval: ReleaseApproval | None = None,
     crop: tuple[int, int, int, int] | None = None,
     ffmpeg: str = "ffmpeg",
     ffprobe: str = "ffprobe",
@@ -755,7 +820,9 @@ def evaluate_release(
     Read-only: measures the supplied final master and cached recording on every call.
     Drive presence and script age have no effect. Published-file exclusion belongs
     to callers with verified platform publication evidence, never delivery manifests.
-    Missing measurements fail closed. Dispositions are exact check/master records,
+    Missing measurements fail closed unless explicit legacy ReleaseApproval releases
+    these exact bytes. Every check and error remains in the report (ADR 0248).
+    Dispositions are exact check/master records,
     supplied from authoritative evidence by the caller; no records are created here.
     """
     from . import craft_bar
@@ -859,13 +926,28 @@ def evaluate_release(
     found = tuple(
         replace(f, waived=waived[f.check].approval_message) if f.check in waived else f for f in reading.findings
     )
-    return replace(
+    result = replace(
         reading,
         findings=found,
         checks=tuple(applied),
         info=(*reading.info, "publication evidence not supplied; treated as unpublished"),
         error="; ".join(filter(None, (reading.error, *errors))),
     )
+
+    if release_approval is None:
+        return result
+    try:
+        if not isinstance(release_approval, ReleaseApproval):
+            raise AuthorityError("release approval must be a ReleaseApproval")
+        release_approval.validate(identity)
+        # Recheck even when C7 could not measure: missing evidence is approvable,
+        # replacement during this call is not.
+        if sha256(master) != identity or "master changed during" in result.error:
+            raise AuthorityError("release approval: master changed during evaluation")
+    except (AuthorityError, OSError) as exc:
+        message = f"release approval: {exc}"
+        return replace(result, error="; ".join(filter(None, (result.error, message))), release_approval_error=message)
+    return replace(result, release_approval=release_approval)
 
 
 def _timeline(project: Path) -> Mapping[str, Any] | None:

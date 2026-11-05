@@ -17,6 +17,7 @@
     {"number": "0240", "name": "small-print-explainers-in-clay", "owner": "worskpace-sp-v2", "reserved": "2026-11-04"},
     {"number": "0244", "name": "final-master-acceptance", "owner": "codex-builder", "reserved": "2026-11-05"},
     {"number": "0242", "name": "juno-v2-a-home-outfit", "owner": "worskpace-juno-v2", "reserved": "2026-11-05"},
+    {"number": "0248", "name": "whole-master-release-approval", "owner": "codex-builder", "reserved": "2026-11-05"},
     {"number": "0247", "name": "final-master-frame-review", "owner": "codex-builder", "reserved": "2026-11-05"}
   ]
 }

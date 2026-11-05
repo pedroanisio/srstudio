@@ -808,3 +808,211 @@ def test_unused_master_dispositions_still_validate(tmp_path, monkeypatch, accept
     result = master_gate.accept_master(video, tmp_path, approvals=approvals)
     assert not result.ok and "authority:" in result.error
     assert all(c.verdict == "PASS" for c in result.checks)
+
+
+def release_approval(sha):
+    from srstudio.authority import Message
+
+    return master_gate.ReleaseApproval(
+        master_sha256=sha,
+        approver="arc4d3",
+        approval_message=Message("arc4d3", "slack://1793906449.811309", "Reviewed legacy master stays ready."),
+        scope="legacy_reviewed",
+        reason="Legacy master already reviewed by arc4d3",
+    )
+
+
+@pytest.mark.parametrize("missing", [False, True])
+def test_whole_master_approval_retains_every_check(tmp_path, monkeypatch, accepted_measure, missing):
+    from srstudio import craft_bar
+    from srstudio.digest import sha256
+
+    master = tmp_path / "legacy.mp4"
+    master.write_bytes(b"reviewed master")
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: replace(accepted_measure, lra=1.0))
+    monkeypatch.setattr(craft_bar, "measure", lambda *a: c7_result(lra=None if missing else 1.0))
+    project = None if missing else tmp_path
+    before = master_gate.evaluate_release(master, project)
+    approval = release_approval(sha256(master))
+    after = master_gate.evaluate_release(master, project, release_approval=approval)
+    assert before.refused and not after.refused
+    assert after.checks == before.checks
+    assert after.acceptance == before.acceptance
+    assert after.findings == before.findings and after.error == before.error
+    assert after.release_approval is approval
+    report = "\n".join(after.lines())
+    assert "RELEASED" in report and "arc4d3" in report
+    assert approval.master_sha256 in report and approval.approval_message.reference in report
+    assert approval.reason in report and approval.approval_message.text in report
+    master.write_bytes(b"replacement")
+    stale = master_gate.evaluate_release(master, project, release_approval=approval)
+    assert stale.refused and "release approval" in stale.error
+
+
+@pytest.mark.parametrize("frame_state", ["missing", "refused"])
+def test_whole_master_approval_releases_despite_frame_review(tmp_path, monkeypatch, accepted_measure, frame_state):
+    from srstudio import craft_bar
+    from srstudio.digest import sha256
+    from srstudio.final_frame_gate import CheckResult, FinalFrameResult
+
+    master = tmp_path / "legacy.mp4"
+    master.write_bytes(b"reviewed legacy master")
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: accepted_measure)
+    monkeypatch.setattr(craft_bar, "measure", lambda *a: c7_result())
+    approval = release_approval(sha256(master))
+    before = master_gate.evaluate_release(master, tmp_path)
+    after = master_gate.evaluate_release(master, tmp_path, release_approval=approval)
+    frame_error = "missing final-frame-review.json" if frame_state == "missing" else ""
+    final_frames = (
+        None
+        if frame_state == "missing"
+        else FinalFrameResult(
+            "legacy",
+            sha256(master),
+            64,
+            64,
+            (),
+            (CheckResult("legacy", "anatomy", "FAIL", 1, 0, sha256(master), "reviewed anatomy defect", None),),
+        )
+    )
+    before = replace(before, frame_error=frame_error, final_frames=final_frames)
+    after = replace(after, frame_error=frame_error, final_frames=final_frames)
+    assert before.refused
+    assert not after.refused
+    assert after.frame_error == before.frame_error and after.final_frames == before.final_frames
+    report = "\n".join(after.lines())
+    assert f"whole-master release: RELEASED by {approval!r}" in report
+    if frame_state == "missing":
+        assert f"frames {after.video}: REFUSED {frame_error}" in report
+    else:
+        assert "frames legacy: REFUSED" in report
+        assert "anatomy: FAIL" in report and "reviewed anatomy defect" in report
+
+
+def test_stale_approval_refuses_even_clean_master(tmp_path, monkeypatch, accepted_measure):
+    from srstudio import craft_bar
+
+    master = tmp_path / "master.mp4"
+    master.write_bytes(b"clean master")
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: accepted_measure)
+    monkeypatch.setattr(craft_bar, "measure", lambda *a: c7_result())
+    assert not master_gate.evaluate_release(master, tmp_path).refused
+    assert master_gate.evaluate_release(master, tmp_path, release_approval=release_approval("a" * 64)).refused
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"master_sha256": "a" * 63},
+        {"master_sha256": "g" * 64},
+        {"approver": " "},
+        {"approver": "stranger"},
+        {"approval_message": None},
+        {"scope": "production"},
+        {"reason": " "},
+    ],
+)
+def test_release_approval_rejects_malformed_fields(changes):
+    from srstudio.authority import AuthorityError
+
+    with pytest.raises(AuthorityError):
+        replace(release_approval("a" * 64), **changes)
+
+
+def test_release_approval_parse_is_strict():
+    from srstudio.authority import AuthorityError
+
+    approval = release_approval("a" * 64)
+    record = approval.record()
+    assert master_gate.ReleaseApproval.parse(record) == approval
+    for changed in (record | {"extra": True}, {k: v for k, v in record.items() if k != "scope"}):
+        with pytest.raises(AuthorityError):
+            master_gate.ReleaseApproval.parse(changed)
+    for key in ("author", "reference", "text"):
+        with pytest.raises(AuthorityError):
+            master_gate.ReleaseApproval.parse(record | {"approval_message": record["approval_message"] | {key: " "}})
+    with pytest.raises(AuthorityError):
+        master_gate.ReleaseApproval.parse(record | {"approval_message": record["approval_message"] | {"extra": 1}})
+
+
+def test_untyped_release_approval_refuses(tmp_path, monkeypatch, accepted_measure):
+    from srstudio import craft_bar
+
+    master = tmp_path / "master.mp4"
+    master.write_bytes(b"clean master")
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: accepted_measure)
+    monkeypatch.setattr(craft_bar, "measure", lambda *a: c7_result())
+    result = master_gate.evaluate_release(master, tmp_path, release_approval={"approved": True})
+    assert result.refused and "release approval" in result.error
+
+
+def test_release_approval_never_inferred_from_project(tmp_path, monkeypatch, accepted_measure):
+    from srstudio import craft_bar
+    from srstudio.digest import sha256
+
+    master = tmp_path / "legacy.mp4"
+    master.write_bytes(b"delivered master")
+    approval = release_approval(sha256(master))
+    (tmp_path / "timeline.json").write_text(
+        json.dumps({"release_approval": approval.record(), "waivers": [approval.record()], "delivered": True})
+    )
+    (tmp_path / "delivery.json").write_text(json.dumps({"drive_id": "present", "approval": approval.record()}))
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: replace(accepted_measure, lra=None))
+    monkeypatch.setattr(craft_bar, "measure", lambda *a: c7_result(lra=None))
+    result = master_gate.evaluate_release(master, tmp_path)
+    assert result.refused and result.release_approval is None
+
+
+@pytest.mark.parametrize("phase", ["master", "c7"])
+def test_release_approval_refuses_replacement_during_evaluation(tmp_path, monkeypatch, accepted_measure, phase):
+    from srstudio import craft_bar
+    from srstudio.digest import sha256
+
+    master = tmp_path / "legacy.mp4"
+    master.write_bytes(b"reviewed master")
+    approval = release_approval(sha256(master))
+
+    def measured(*args, **kwargs):
+        if phase == "master":
+            master.write_bytes(b"replaced master")
+        return accepted_measure
+
+    def c7(*args):
+        if phase == "c7":
+            master.write_bytes(b"replaced master")
+        return c7_result()
+
+    monkeypatch.setattr(master_gate, "measure", measured)
+    monkeypatch.setattr(craft_bar, "measure", c7)
+    result = master_gate.evaluate_release(master, tmp_path, release_approval=approval)
+    assert result.refused and "release approval" in result.error
+
+
+def test_release_approval_retains_measurement_errors(tmp_path, monkeypatch):
+    from srstudio import craft_bar
+    from srstudio.digest import sha256
+
+    master = tmp_path / "legacy.mp4"
+    master.write_bytes(b"reviewed master")
+
+    def unavailable(*args, **kwargs):
+        raise master_gate.MasterError("fixture measurement unavailable")
+
+    def c7_unavailable(*args):
+        raise craft_bar.CraftError("fixture C7 unavailable")
+
+    monkeypatch.setattr(master_gate, "measure", unavailable)
+    monkeypatch.setattr(craft_bar, "measure", c7_unavailable)
+    before = master_gate.evaluate_release(master, tmp_path)
+    after = master_gate.evaluate_release(master, tmp_path, release_approval=release_approval(sha256(master)))
+    assert before.refused and not after.refused
+    assert before.error == after.error and before.checks == after.checks
+    assert "fixture measurement unavailable" in "\n".join(after.lines())
+    assert "fixture C7 unavailable" in "\n".join(after.lines())
+
+
+def test_release_approval_source_author_must_match():
+    from srstudio.authority import AuthorityError, Message
+
+    with pytest.raises(AuthorityError):
+        replace(release_approval("a" * 64), approval_message=Message("Pedro", "source://1", "approved"))
