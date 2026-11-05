@@ -222,7 +222,12 @@ def body_defects(
 
 def after_build(project: Path, reel: str, scene: Path, engine: str | Path) -> list[Note]:
     """What the frames of the scene just built show against rule 2 and no row excuses: for ``srstudio build``."""
-    figures = figure_record.read(project) or []
+    figures = figure_record.read(project)
+    if figures is None or anatomy_ledger.read(project) is None:
+        missing = figure_record.RECORD if figures is None else anatomy_ledger.RECORD
+        raise FrameGateError(
+            f'{project / missing}: missing build anatomy provenance; rebuild inside srstudio.usage.recorded(project).'
+        )
     return anatomy_ledger.unexcused(reel, _frames(scene, engine, figures, anatomy_ledger.read_limbs(project)))
 
 

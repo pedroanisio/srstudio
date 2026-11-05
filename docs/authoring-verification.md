@@ -34,6 +34,17 @@ Inspect the build result's `checks` mapping. Each entry has `status: passed|fail
 `results` with paths, reasons and findings. `skipped` is not evidence of success. Missing engines, unavailable
 frame measurements, and checks never invoked by the builder remain skipped. A required check must pass for
 every recorded execution. The command exits nonzero if a required check fails or is skipped.
+
+Anatomy verification requires both `figures.json` and `anatomy.json` from the build.
+Missing records produce `skipped` with a rebuild remedy; explicit empty records can
+verify a scene without registered figures or limbs. Rebuild inside
+`srstudio.usage.recorded(project)` to regenerate these records.
+
+Python callers can use `BuildReport.require(["sdk", "motion-quality"])` from
+`srstudio.build_report`. Pass a sequence of names from that module's `CHECKS`.
+An unknown name or malformed argument raises a structured `SrstudioError` with
+code `build.check`, path `require_check`, and the supported names in `expected`.
+Supported checks that failed or were skipped raise `build.required_checks`.
 This also applies to builders that finish with `sys.exit(0)` or `sys.exit()`.
 
 | Check | Evidence and limits |

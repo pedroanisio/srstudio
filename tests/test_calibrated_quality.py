@@ -2,7 +2,7 @@
 
 import json
 from dataclasses import replace
-from importlib import resources
+from importlib import import_module, resources
 
 import pytest
 from sr_core.scene import Scene
@@ -15,6 +15,20 @@ from srstudio.limbs.errors import LimbError
 from srstudio.limbs.motion import Action, Motion, Target
 
 IDS = ('toon-human-conversation/1.0.0', 'gloss-human-deliberate/1.0.0')
+
+
+@pytest.mark.parametrize('name', IDS)
+def test_discovered_hand_profile_identifies_the_exact_accepted_anatomy(name):
+    preset = get_preset(name)
+    declared = preset.describe()['scope']['hand_profile']
+    module, symbol = declared['symbol'].rsplit('.', 1)
+    hand = getattr(import_module(module), symbol)
+    assert hand == CALIBRATED_HAND and hand != HUMAN
+    assert declared['thumb_segments'] == list(hand.digits[0].lengths)
+    motion = Motion(ArmProfile(), hand, (Action('point', duration=2),))
+    assert preset.options_for(motion, style=preset.style, fps=24).quality is not None
+    declared['thumb_segments'].append(99)
+    assert preset.describe()['scope']['hand_profile']['thumb_segments'] == list(hand.digits[0].lengths)
 
 
 def canvas():
