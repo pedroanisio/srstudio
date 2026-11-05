@@ -395,7 +395,7 @@ SPECIMENS: dict[str, Callable[[registry.Entry], Canvas]] = {
     **{f"collage-{name}": _paper for name in collage.LOOKS},
     **{f"gloss-{name}": _guest for name in ("nadia", "gus", "tamsin", "sunny")},
     **{f"saga-{name}": _space for name in ("gloom", "enforcer", "droid", "juno", "rook", "mabel")},
-    **dict.fromkeys(("pip", "bo", "juno", "remy"), _blob),
+    **dict.fromkeys(("pip", "bo", "juno", "remy", "juno@2"), _blob),
     **dict.fromkeys(("manager", "candidate", "rosa", "barista", "customer"), _actor),
     "pigeon": _pigeon,
     **dict.fromkeys(
