@@ -196,7 +196,11 @@ def test_read_finds_the_master_the_timeline_and_the_bed(clips, tmp_path):
     r = readings['new-reel']
     assert r.refused and r.acceptance.measured.constant_bed is True
     assert r.acceptance.measured.first_word == pytest.approx(0.5, abs=0.02)
-    assert 'sha256=' in '\n'.join(master_gate.lines(readings))
+    report = master_gate.lines(readings)
+    assert 'sha256=' in '\n'.join(report)
+    assert 'constant bed: no gap of 0.5 s 10 dB down in the music' in '\n'.join(report)
+    assert r.final_frames.refused
+    assert any('REFUSED sha256=' in line for line in report)
 
 
 def test_a_missing_tool_or_an_unusual_bed_is_an_error_not_a_pass(clips, tmp_path):
@@ -220,6 +224,7 @@ def test_unreadable_timeline_refuses_speech(clips, tmp_path):
     (r,) = master_gate.read({"s": release}, tmp_path / "eps", tmp_path / "renders", {"s": "V"}).values()
     assert r.binding and r.refused
     assert any(f.check == "speech" for f in r.failing)
+    assert r.final_frames.refused  # frame review also refuses without usable timeline evidence
 
 
 def test_the_master_checks_are_waived_on_the_script_with_a_reason_and_no_bounds():

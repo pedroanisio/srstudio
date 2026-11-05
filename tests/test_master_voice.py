@@ -285,3 +285,106 @@ def test_release_keeps_voice_verdicts_and_first_key_na(voice, monkeypatch, statu
     assert by['c7.preceding:line:one'].verdict == 'PASS'
     assert by['c7.preceding:line:one'].measured is None
     assert result.refused is (status == 'FAIL')
+
+
+@pytest.mark.parametrize(
+    ('frame_status', 'voice_status', 'stale_authority'),
+    [
+        ('PASS', 'SHIP', False),
+        ('FAIL', 'SHIP', False),
+        ('error', 'SHIP', False),
+        ('PASS', 'FAIL', False),
+        ('PASS', 'SHIP', True),
+    ],
+)
+def test_read_combines_accept_master_voice_authority_and_frames(
+    voice, monkeypatch, frame_status, voice_status, stale_authority
+):
+    from srstudio import final_frame_gate
+    from srstudio.authority import Disposition, Message
+    from srstudio.releases import Release
+    from srstudio.social import InstagramPost
+
+    master, project = voice
+    duration, end = (0.75, 0.7) if voice_status == 'SHIP' else (0.65, 0.64)
+    evidence(project, master, duration=duration, end=end)
+    sha = hashlib.sha256(master.read_bytes()).hexdigest()
+    measured = master_gate.Measured(
+        (),
+        (),
+        0,
+        5,
+        first_word=0.1,
+        lufs=-16.5,
+        peak_dbtp=-1.1,
+        crop=(64, 64, 0, 0),
+        detector='fixture detector',
+        freeze_raw='fixture EOF',
+        loudness_raw='fixture loudness',
+        speech_evidence=('fixture alignment',),
+    )
+    monkeypatch.setattr(master_gate, 'measure', lambda *a, **kw: measured)
+    common = tuple(
+        craft_bar.Measure(k, v, 'fixture bar', 'PASS', 'fixture')
+        for k, v in dict(integrated_lufs=-16.5, lra=5, first_word=0.1, constant_bed=False).items()
+    )
+    monkeypatch.setattr(craft_bar, 'measure', lambda *a: craft_bar.Result(common))
+    approval = Disposition(
+        'a' * 64 if stale_authority else sha,
+        'integrated_lufs',
+        None,
+        'approve measured fixture',
+        None,
+        'production',
+        'fixture-builder',
+        Message('arc4d3', 'fixture://approval', 'Approved this fixture.'),
+        'Approved this fixture.',
+    )
+    frames = final_frame_gate.FinalFrameResult(
+        'project',
+        sha,
+        64,
+        64,
+        (),
+        (final_frame_gate.CheckResult('project', 'anatomy', frame_status, 0, 0, sha, 'fixture frame review', None),),
+    )
+    calls = []
+
+    def review(path, **kwargs):
+        calls.append((path, kwargs))
+        if frame_status == 'error':
+            raise final_frame_gate.FinalFrameError('unreadable fixture review')
+        return frames
+
+    monkeypatch.setattr(master_gate, 'check_master', review)
+    readings = master_gate.read(
+        {'project': Release('project', InstagramPost('t', 'd'))},
+        project.parent,
+        master.parent,
+        {'project': 'master'},
+        scopes={'project': 'production'},
+        dispositions={'project': (approval,)},
+    )
+    result = readings['project']
+    acceptance = result.acceptance
+    assert acceptance.voices[0].pace_status == voice_status
+    assert acceptance.ship_retakes == (('line',) if voice_status == 'SHIP' else ())
+    assert acceptance.fail_retakes == (('line',) if voice_status == 'FAIL' else ())
+    lufs = next(c for c in acceptance.checks if c.check == 'integrated_lufs')
+    assert lufs.verdict == ('FAIL' if stale_authority else 'APPROVED')
+    assert lufs.approval == (None if stale_authority else approval)
+    assert acceptance.ok is (voice_status != 'FAIL' and not stale_authority)
+    refused = frame_status != 'PASS' or voice_status == 'FAIL' or stale_authority
+    assert result.refused is refused
+    assert bool(master_gate.refusals(readings)) is refused
+    report = '\n'.join(master_gate.lines(readings))
+    assert 'VoiceLine(' in report and 'retakes:' in report
+    assert 'pace:line' in report and 'stress:line:three' in report
+    assert 'authority:' in report if stale_authority else 'fixture://approval' in report
+    assert ('unreadable fixture review' if frame_status == 'error' else 'fixture frame review') in report
+    assert calls == [
+        (
+            master,
+            dict(slug='project', review_path=project / final_frame_gate.RECORD, ffmpeg='ffmpeg', ffprobe='ffprobe'),
+        )
+    ]

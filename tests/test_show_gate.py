@@ -368,3 +368,29 @@ def test_episode_four_claimed_before_its_show_is_placed_as_ep_4_and_keeps_its_nu
     for n in range(1, 4):
         assert show_numbers.place(path, f"jp-ep{n}", "Juno & Pip", n, delivered=()).number == 214 + n
     assert show_numbers.claim(path, "jp-ep5", series="Juno & Pip") == Claim(219, "juno-and-pip", 5)
+
+
+@pytest.mark.parametrize('gap', [0.0, 23.99, 24.0])
+def test_signature_requires_edge_clearance(gap):
+    left, top, _, bottom = show.BUG_BOX
+    said = defects(*frame(('sig-code', rect(left - gap - 20, top, left - gap, bottom), 'group')))
+    assert bool(said) is (gap < 24.0)
+    if said:
+        assert '24 px' in said[0] and 'sig-code' in said[0]
+
+
+def test_signature_obstructs_story_prop_independently_of_bug():
+    shown, drawn = frame(('sig-code', rect(20, 20, 40, 40), 'group'), ('story-ledger', rect(30, 20, 50, 40), 'group'))
+    said = frame_defects([shown], drawn, 212, (), {}, story_props=('story-ledger',))
+    assert any('sig-code' in why and 'story-ledger' in why for why in said)
+
+
+def test_signature_clearance_is_measured_after_punch_in():
+    left, top, _, bottom = show.BUG_BOX
+    shown, drawn = frame(('sig-code', rect(left - 50, top, left - 30, bottom), 'group'))
+    assert not defects(shown, drawn)
+    nodes = tuple(
+        n._replace(world=(1.0, 0.0, 0.0, 1.0, 10.0, 0.0)) if n.id == 'sig-code' or n.id == 'sig-code-shape' else n
+        for n in shown.nodes
+    )
+    assert '20 px' in defects(dataclasses.replace(shown, nodes=nodes), drawn)[0]

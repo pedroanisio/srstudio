@@ -20,6 +20,7 @@ import numpy as np
 from .authority import AuthorityError, Disposition
 from .digest import sha256
 from .errors import SrstudioError
+from .final_frame_gate import RECORD, FinalFrameError, FinalFrameResult, check_master
 from .prosody import Finding
 from .releases import Release
 from .social import Drift
@@ -633,6 +634,8 @@ class Reading:
     master_sha256: str = ""
     checks: tuple[CheckVerdict, ...] = ()
     legacy: bool = False
+    final_frames: FinalFrameResult | None = None
+    frame_error: str = ""
 
     @property
     def failing(self) -> tuple[Finding, ...]:
@@ -641,12 +644,21 @@ class Reading:
     @property
     def refused(self) -> bool:
         return (
-            not self.master_sha256
+            bool(self.frame_error)
+            or (self.final_frames is not None and self.final_frames.refused)
+            or not self.master_sha256
             or not self.checks
             or bool(self.error or self.failing or any(c.refused for c in self.checks))
         )
 
     def lines(self) -> list[str]:
+        return (
+            self._measure_lines()
+            + (self.final_frames.lines() if self.final_frames is not None else [])
+            + ([f"frames {self.video}: REFUSED {self.frame_error}"] if self.frame_error else [])
+        )
+
+    def _measure_lines(self) -> list[str]:
         if self.acceptance is not None:
             return [
                 f"master {self.video}: {'REFUSED' if self.refused else 'clean'}; legacy={self.legacy}",
@@ -887,9 +899,10 @@ def read(
     out = {}
     for slug, video in sorted(first.items()):
         project = Path(episodes) / releases[slug].slug
-        out[slug] = replace(
+        master = Path(renders) / f"{video}.mp4"
+        reading = replace(
             evaluate_release(
-                Path(renders) / f"{video}.mp4",
+                master,
                 project,
                 scope=(scopes or {}).get(slug, "reserved"),
                 dispositions=(*approvals, *(dispositions or {}).get(slug, ())),
@@ -899,6 +912,12 @@ def read(
             ),
             video=video,
         )
+        try:
+            frames = check_master(master, slug=slug, review_path=project / RECORD, ffmpeg=ffmpeg, ffprobe=ffprobe)
+            reading = replace(reading, final_frames=frames)
+        except FinalFrameError as exc:
+            reading = replace(reading, frame_error=str(exc))
+        out[slug] = reading
     return out
 
 
@@ -907,7 +926,15 @@ def refusals(readings: Mapping[str, Reading]) -> list[Drift]:
     out = []
     for r in readings.values():
         if r.refused:
-            details = r.error or "; ".join([*(f.line() for f in r.failing), *(c.line() for c in r.checks if c.refused)])
+            details = "; ".join(
+                [
+                    *([r.error] if r.error else []),
+                    *(f.line() for f in r.failing),
+                    *(c.line() for c in r.checks if c.refused),
+                    *([r.frame_error] if r.frame_error else []),
+                    *(r.final_frames.lines() if r.final_frames is not None and r.final_frames.refused else []),
+                ]
+            )
             out.append(Drift(r.video, f"master: {details} (requires exact master/check-bound authority evidence)"))
     return out
 

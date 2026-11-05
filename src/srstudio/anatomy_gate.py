@@ -198,13 +198,40 @@ def _frames(scene: Path, engine: str | Path, figures: Sequence[Figure], limbs: S
 
 
 def body_defects(
-    releases: Mapping[str, Release], episodes: Path, first: Mapping[str, str], engine: str | Path
+    releases: Mapping[str, Release],
+    episodes: Path,
+    first: Mapping[str, str],
+    engine: str | Path,
+    *,
+    final_masters: Mapping[str, Path] | None = None,
 ) -> list[Drift]:
     """What the frames of each reel on its ``first`` delivery show against rule 2. A scene whose build left no record of
-    its figures cannot be read, and any note stands, as in :func:`hand_defects`."""
+    its figures cannot be read, and any note stands, as in :func:`hand_defects`.
+    ``final_masters`` binds the equivalent full-size body/staging/close-shot review
+    to explicit final masters, including formats with no engine-readable scene.
+    Delivery's master_gate.read always runs that suite, independently of this
+    scene-only build compatibility entry point (ADR 0247).
+    """
+    from .final_frame_gate import RECORD, check_master
+
     drift: list[Drift] = []
     for slug, video in first.items():
         project = Path(episodes) / slug
+        if final_masters is not None:
+            master = final_masters.get(slug)
+            if master is None:
+                drift.append(Drift(video, 'missing final master for mandatory close-shot review'))
+            else:
+                report = check_master(master, slug=slug, review_path=project / RECORD)
+                drift += [
+                    Drift(
+                        video,
+                        f'{c.check}: {c.reason}; master sha256={c.master_sha256}; '
+                        f'review={c.review}; observations={c.observations}',
+                    )
+                    for c in report.checks
+                    if c.check in ('anatomy', 'staging', 'close_shot') and c.verdict == 'FAIL'
+                ]
         scene = project / releases[slug].scene_file
         if not scene.is_file():
             continue
