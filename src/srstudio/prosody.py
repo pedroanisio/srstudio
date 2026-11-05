@@ -556,17 +556,20 @@ def gate(timeline: Mapping[str, Any]) -> list[Finding]:
         if it.first is None or it.last is None:
             out.append(Finding("heard", it.id, None, None, "no word was heard"))
             continue
-        if it.duration <= 0 or not 0 <= it.first < it.last <= it.duration:
+        if it.duration <= 0 or not 0 <= it.first <= it.last <= it.duration:
             raise ProsodyError(f'{it.id}: invalid phrase or word timing')
         if it.words >= 3:
             phrase_pace = it.words / it.duration
-            span_pace = it.words / (it.last - it.first)
             from .craft_bar import pace_measure
 
             if not pace_measure(it.id, phrase_pace).ok:
                 out.append(Finding('line_pace', it.id, phrase_pace, (0.0, 4.2), 'phrase clock FAIL'))
-            if span_pace > 4.5:
-                out.append(Finding('pace_span', it.id, span_pace, (0.0, 4.5), 'word-span clock FAIL'))
+            if it.last == it.first:
+                out.append(Finding('pace_span', it.id, None, None, 'word-span clock not measurable: zero span'))
+            else:
+                span_pace = it.words / (it.last - it.first)
+                if span_pace > 4.5:
+                    out.append(Finding('pace_span', it.id, span_pace, (0.0, 4.5), 'word-span clock FAIL'))
         hold = it.waivers.get("hold")
         pre, post = float(it.direction.get("pre_hold", 0.0)), float(it.direction.get("post_hold", 0.0))
         if pre and it.first < pre - HOLD_SLACK:

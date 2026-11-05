@@ -15,6 +15,10 @@ sampled from the current master mix. Phrase count/duration passes through 3.6,
 ships through 4.2, fails above 4.2; count/first-to-last-word span fails above 4.5.
 Lines under three words are pace exempt only. Missing, invalid, nonfinite or
 out-of-audio timing refuses. SHIP remains acceptable and names a future retake.
+The recorded-take prosody gate accepts equal first and last word times within a
+positive phrase duration. For pace-eligible lines it reports the zero word span
+as not measurable and still checks phrase pace; lines under three words remain
+pace exempt.
 The independent prosody reel ceiling is removed. Take pitch/ranking diagnostics
 remain separate from final-master level enforcement.
 

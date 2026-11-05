@@ -538,3 +538,26 @@ def test_stale_reported_pace_does_not_replace_both_clocks():
 def test_both_pace_clocks_refuse_excessive_speed():
     found = gate(edit(('items', 0, 'prosody', 'words'), [{'text': 'w', 'db': -20, 'hz': 150}] * 12)(timeline()))
     assert [(f.check, f.take) for f in found] == [('line_pace', '01'), ('pace_span', '01')]
+
+
+@pytest.mark.parametrize('at', [0.0, 0.5])
+@pytest.mark.parametrize('count', [2, 5, 12])
+def test_zero_word_span_is_unmeasurable_but_keeps_phrase_pace(at, count):
+    t = timeline()
+    item = t['items'][0]
+    item['prosody'].update(
+        first=at, last=at, words_per_second=None, words=[{'text': 'w', 'db': -20, 'hz': 150}] * count
+    )
+    found = [f for f in gate(t) if f.take == item['id'] and f.check in ('line_pace', 'pace_span')]
+    if count < 3:
+        assert found == []
+        return
+    span = next(f for f in found if f.check == 'pace_span')
+    assert span.measured is None
+    assert 'not measurable' in span.line()
+    phrase = [f for f in found if f.check == 'line_pace']
+    if count / item['duration'] > 4.2:
+        assert len(phrase) == 1
+        assert phrase[0].measured == pytest.approx(count / item['duration'])
+    else:
+        assert phrase == []
