@@ -155,8 +155,8 @@ def encode(
 
     A ``--report`` in ``args`` is read from the working folder when relative, and is write-once like the master.
 
-    Recorded named stress constrains integrated gain to measured true-peak headroom (ADR 0241); any lowered
-    loudness target is reported in ``Encoded.output``. The authored scene is preserved.
+    Recorded named stress ducks bed/foley over the words and verifies each staged master at the authored
+    integrated target (ADR 0241). Failed stress or loudness refuses installation. The authored scene is preserved.
 
     A place already taken, the master's or the report's, raises :class:`srstudio.files.WriteOnceError` before the
     engine starts, unless ``next_name``, which installs at the next free name. An engine that writes nothing raises
@@ -184,12 +184,13 @@ def encode(
         command = [str(engine), "encode", scene.name, *args, "--out-dir", str(stage.resolve())]
         try:
             with gpu.held():  # the engine renders every frame on the GPU, --hw software included (ADR 0171)
-                with _stress_mix.constrained(scene, out, str(engine), args, run) as (prepared, stress_note):
+                with _stress_mix.constrained(scene, out, str(engine), args, run) as (prepared, verify_stress):
                     command[2] = prepared.name
                     done = run(command, cwd=scene.parent.resolve(), capture_output=True, text=True)
+                    stress_note = verify_stress(stage)
         except OSError as e:
             raise MasterError(f"cannot run the engine {engine}: {e}") from None
-        said = (done.stdout + done.stderr + ("\n" + stress_note if stress_note else ""))[-_TAIL:]
+        said = (done.stdout + done.stderr)[-_TAIL:] + ("\n" + stress_note if stress_note else "")
         if not any(p.is_file() for p in stage.rglob("*")):
             raise MasterError(f"the engine wrote no master (exit {done.returncode}): {said}")
         installed, displaced = _install(stage, out, next_name)
