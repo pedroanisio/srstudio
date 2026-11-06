@@ -17,8 +17,25 @@ from .voice import normalize_words
 
 _AUDIO_ARGS = ('--start', '--end', '--param', '--row', '--data', '--representation', '--threads')
 DUCK_DB = -6.0
-LOUDNESS_TOLERANCE = 0.2  # LU; decoded ebur128 summary is rounded to one decimal
-PEAK_TOLERANCE = 0.1  # dB; same meter precision
+PEAK_TOLERANCE = 0.1  # dB; decoded ebur128 summary is rounded to one decimal
+# arc4d3's bar.audio.loudness: "-16 to -14 LUFS integrated ... -16.6 LUFS is the floor accepted case by case."
+BAND = (-16.0, -14.0)
+FLOOR = -16.6
+
+
+def loudness_verdict(lufs: float, peak: float, *, ceiling: float) -> str | None:
+    """None inside the band, a note between the band and the floor; CraftError outside, or over the ceiling."""
+    if not (math.isfinite(lufs) and math.isfinite(peak)):
+        raise craft_bar.CraftError(f'non-finite master meter: {lufs} LUFS, {peak} dBTP')
+    if peak > ceiling + PEAK_TOLERANCE:
+        raise craft_bar.CraftError(f'true peak {peak:g} dBTP over the {ceiling:g} dBTP ceiling')
+    if lufs > BAND[1]:
+        raise craft_bar.CraftError(f'{lufs:g} LUFS is above the {BAND[1]:g} LUFS band')
+    if lufs < FLOOR:
+        raise craft_bar.CraftError(f'{lufs:g} LUFS is below the {FLOOR:g} LUFS floor')
+    if lufs < BAND[0]:
+        return f'below the {BAND[0]:g} LUFS band, inside the {FLOOR:g} floor: accepted case by case'
+    return None
 
 
 def _audio_args(args: Sequence[str]) -> list[str]:
@@ -173,9 +190,11 @@ def constrained(
                             report + f'; requires >= {prosody.STRESS_DB:g} dB '
                             f'(take aim {prosody.STRESS_DB + emphasis.MARGIN:g} dB); failed: ' + '; '.join(failures)
                         )
-                    if abs(lufs - target) > LOUDNESS_TOLERANCE or peak > ceiling + PEAK_TOLERANCE:
-                        raise craft_bar.CraftError(report + '; master misses authored loudness/peak target')
-                    reports.append(report)
+                    try:
+                        note = loudness_verdict(lufs, peak, ceiling=ceiling)
+                    except craft_bar.CraftError as exc:
+                        raise craft_bar.CraftError(f'{report}; {exc}') from None
+                    reports.append(report + (f'; {note}' if note else ''))
                 return '\n'.join(reports)
 
             yield path, verify
