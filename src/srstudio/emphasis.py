@@ -19,7 +19,7 @@ from .errors import SrstudioError
 from .prosody import STRESS_DB, measure, weight
 from .voice import Word
 
-__all__ = ["MARGIN", "MOST", "RAMP", "TRIES", "EmphasisError", "lean"]
+__all__ = ["AIM", "MARGIN", "MOST", "RAMP", "TRIES", "EmphasisError", "lean"]
 
 MARGIN = 0.5  # dB the gain aims over the target, so the measure, taken again, lands on it
 RAMP = 0.015  # seconds the gain takes to rise before a word and to fall after it
@@ -79,11 +79,22 @@ def _gain(levels: Sequence[float | None], at: int, aim: float) -> float:
     return hi
 
 
-def lean(wav: Path, words: Sequence[Word], stressed: Sequence[str]) -> dict[str, float]:
+AIM = STRESS_DB + MARGIN  # dB a stressed word aims over the line's median word, by default
+
+
+def lean(wav: Path, words: Sequence[Word], stressed: Sequence[str], *, aim: float | None = None) -> dict[str, float]:
     """Each ``stressed`` word of the clip ``wav`` (``words`` its heard words, times on the clip) raised until it is
-    :data:`STRESS_DB` over the line's median word; ``wav`` rewritten in place when anything moved. Returns the dB each
-    word was raised (0 for one the take already stressed). :class:`EmphasisError` names a word not heard, one that
-    would need more than :data:`MOST`, or one still short after :data:`TRIES` passes."""
+    ``aim`` less :data:`MARGIN` over the line's median word (:data:`STRESS_DB` when ``aim`` is None); ``wav``
+    rewritten in place when anything moved. A higher ``aim`` is for a mix that takes contrast back (a bed, the
+    master limiter; ADR 0241).
+    Returns the dB each word was raised (0 for one the take already stressed). :class:`EmphasisError` names an aim under
+    :data:`AIM` or over :data:`MOST`, a word not heard, one that would need more than :data:`MOST`, or one still short
+    after :data:`TRIES` passes."""
+    if aim is None:
+        aim = STRESS_DB + MARGIN  # read now, not at import, so the module's own numbers decide
+    elif isinstance(aim, bool) or not isinstance(aim, (int, float)) or not AIM <= aim <= MOST:
+        raise EmphasisError(f"{wav.name}: stress aim {aim!r} must be a number from {AIM:g} to {MOST:g} dB")
+    floor = aim - MARGIN
     if not stressed:
         return {}
     x, rate = _read(wav)
@@ -96,14 +107,14 @@ def lean(wav: Path, words: Sequence[Word], stressed: Sequence[str]) -> dict[str,
         missing = [m.word for m in marks if not m.heard]
         if missing:
             raise EmphasisError(f"{wav.name}: the stressed word(s) {', '.join(missing)} are not heard in the take")
-        short = [m for m in marks if m.db is None or m.db < STRESS_DB]
+        short = [m for m in marks if m.db is None or m.db < floor]
         if not short:
             return {w: round(db, 3) for w, db in raised.items()}
         for m in short:
             if m.db is None or m.at is None:
                 raise EmphasisError(f"{wav.name}: {m.word!r} is too short to measure")
             heard = [w for w in words if w.type == "word"][m.at]
-            need = _gain(levels, m.at, STRESS_DB + MARGIN)  # the gain the word takes: MOST bounds this
+            need = _gain(levels, m.at, aim)  # the gain the word takes: MOST bounds this
             if raised[m.word] + need > MOST:
                 total = raised[m.word] + need
                 raise EmphasisError(
@@ -118,9 +129,8 @@ def lean(wav: Path, words: Sequence[Word], stressed: Sequence[str]) -> dict[str,
             x = x * (peak / top)
         _write(wav, x, rate)
     marks = measure(wav, words, stressed).stressed
-    left = [
-        f"{m.word} {m.db if m.db is None else round(m.db, 2)} dB" for m in marks if m.db is None or m.db < STRESS_DB
-    ]
+    left = [f"{m.word} {m.db if m.db is None else round(m.db, 2)} dB" for m in marks if m.db is None or m.db < floor]
     if left:
-        raise EmphasisError(f"{wav.name}: gain could not stress {', '.join(left)} to {STRESS_DB} dB in {TRIES} passes")
+        shown = round(floor, 2)
+        raise EmphasisError(f"{wav.name}: gain could not stress {', '.join(left)} to {shown} dB in {TRIES} passes")
     return {w: round(db, 3) for w, db in raised.items()}

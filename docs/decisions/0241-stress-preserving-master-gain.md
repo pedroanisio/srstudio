@@ -71,3 +71,10 @@ The engine's master limiter has no attack or release (scene-render 1.1 schema:
 `limiter` is a boolean), so the bar's "limiter attack" lever is not available
 on this engine. A word that the duck cannot keep above the stress bar is
 refused, as before.
+
+A line may set `Spoken.stress_aim` (dB over the line's median word, from
+`emphasis.AIM` 3.5 to `emphasis.MOST` 9) when its mix takes contrast back that
+the duck cannot return. On jp-leftovers line 10 the take held "salt" at 3.48 dB
+and the master at 2.62 dB. arc4d3 chose this route for that line (Slack
+1793954714.915059). The default stays `STRESS_DB + MARGIN`, and the master check
+still refuses a word under the bar.
