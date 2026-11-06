@@ -388,3 +388,53 @@ def test_read_combines_accept_master_voice_authority_and_frames(
             dict(slug='project', review_path=project / final_frame_gate.RECORD, ffmpeg='ffmpeg', ffprobe='ffprobe'),
         )
     ]
+
+
+def one_word(project, monkeypatch, *, stress=(), db=-14.0):
+    """A one-word line, "Okay.", 0.1 to 0.5 s in a 1 s phrase."""
+    words = [dict(text='okay', start=0.1, end=0.5)]
+    item = dict(id='line', start=0, duration=1, direction={'stress': list(stress)}, prosody={'words': words})
+    (project / 'timeline.json').write_text(json.dumps({'items': [item]}))
+    marks = tuple(prosody.Stress(w, True, 0, None, 0) for w in stress)
+    monkeypatch.setattr(
+        craft_bar.prosody,
+        'measure',
+        lambda *a: prosody.Measure((prosody.WordLevel('okay', 0.1, 0.5, db, None),), marks),
+    )
+
+
+@pytest.mark.parametrize('stress', [(), ('okay',)])
+def test_a_one_word_line_is_exempt_from_stress_not_missing(voice, monkeypatch, stress):
+    # videos.ruling.162 r4 (arc4d3, Slack 1793964550.718129): no median to stand over, so no stress bar.
+    master, project = voice
+    one_word(project, monkeypatch, stress=stress)
+    result = craft_bar.measure_voice(master, project)
+    assert result.ok and result.fail_retakes == ()
+    exempt = next(m for m in result.measures if m.name == 'stress:line')
+    assert exempt.value is None and exempt.status == 'PASS' and exempt.source.endswith('; N/A')
+    assert not [m for m in result.measures if m.name.startswith(('stress:line:', 'preceding:'))]
+
+
+def test_an_unheard_one_word_line_still_fails(voice, monkeypatch):
+    master, project = voice
+    one_word(project, monkeypatch, db=-90.0)
+    result = craft_bar.measure_voice(master, project)
+    assert not result.ok and result.fail_retakes == ('line',)
+    assert next(m for m in result.measures if m.name == 'stress:line').status == 'FAIL'
+
+
+def test_release_reads_a_one_word_line_as_exempt_not_missing(voice, monkeypatch):
+    master, project = voice
+    one_word(project, monkeypatch)
+    monkeypatch.setattr(master_gate, 'measure', lambda *a, **kw: master_gate.Measured((), (), 0, 5))
+    monkeypatch.setattr(master_gate, '_checks', lambda *a: ())
+    measured = craft_bar.measure_voice(master, project)
+    common = tuple(
+        craft_bar.Measure(k, v, 'fixture bar', 'PASS', 'fixture')
+        for k, v in dict(integrated_lufs=-16, lra=9, first_word=0.1, constant_bed=False).items()
+    )
+    monkeypatch.setattr(craft_bar, 'measure', lambda *a: craft_bar.Result(common + measured.measures))
+    result = master_gate.evaluate_release(master, project)
+    by = {c.check: c for c in result.checks}
+    assert by['c7.stress:line'].verdict == 'PASS' and by['c7.stress:line'].measured is None
+    assert not result.refused

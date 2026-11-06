@@ -493,7 +493,13 @@ def test_actual_master_missing_key_refuses_shared_delivery_result(clips, tmp_pat
                         'id': 'voice',
                         'start': 0,
                         'duration': 1,
-                        'prosody': {'words': [{'text': 'hello', 'start': 0.1, 'end': 0.4}]},
+                        # two words: a one-word line is exempt from the stress bar (videos.ruling.162)
+                        'prosody': {
+                            'words': [
+                                {'text': 'hello', 'start': 0.1, 'end': 0.4},
+                                {'text': 'there', 'start': 0.4, 'end': 0.7},
+                            ]
+                        },
                     }
                 ]
             }

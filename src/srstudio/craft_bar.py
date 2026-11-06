@@ -503,7 +503,19 @@ def measure_voice(video: Path, project: Path, *, ffmpeg: str = "ffmpeg") -> Resu
                 margins: list[float] = []
                 preceding: list[float] = []
                 marks = heard.stressed if line.stress else ()
-                if not audible or not marks or len(marks) != len(line.stress):
+                if audible and count == 1:
+                    # videos.ruling.162: a one-word line has no median to stand over, so no stress bar
+                    marks = ()
+                    values.append(
+                        Measure(
+                            f'stress:{line.id}',
+                            None,
+                            'one-word line: exempt, no median to stand over',
+                            'PASS',
+                            source + '; N/A',
+                        )
+                    )
+                elif not audible or not marks or len(marks) != len(line.stress):
                     stress_status = 'FAIL'
                     values.append(
                         Measure(f'stress:{line.id}', None, 'identified audible key word on every line', 'FAIL', source)

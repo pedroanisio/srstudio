@@ -865,7 +865,10 @@ def evaluate_release(
                 else (isinstance(m.value, int | float) and not isinstance(m.value, bool) and math.isfinite(m.value))
             )
             valid = valid or (
-                m.name.startswith("preceding:") and m.value is None and m.status == "PASS" and "; N/A" in m.source
+                (m.name.startswith("preceding:") or (m.name.startswith("stress:") and m.name.count(":") == 1))
+                and m.value is None
+                and m.status == "PASS"
+                and "; N/A" in m.source
             )
             status: Literal["PASS", "SHIP", "FAIL", "MISSING", "WAIVED"] = m.status if valid else "MISSING"
             common_name = {"first_word": "speech"}.get(m.name, m.name)
