@@ -193,3 +193,10 @@ does not confirm them.
   the intended pressure to decide who they are.
 - Each new recurring character, pair or fact is a minor version of both files, with a line in `CHANGELOG.md`.
 - The bible says nothing about reels not yet published. A reel becomes canon when it is published.
+
+## Amendment: an approved trait (2026-11-06)
+
+`comic.trait` is optional: `{"word": "Unbothered", "approval": "arc4d3, Slack 1793967529.705339"}`, one capitalised
+word and who approved it. It is the label a series shows on screen (Juno & Pip from episode 4), so it is an approval,
+not a persona fact a reel must bear out, and it stays out of `persona_fields`. The sheet prints it under the comic
+role. The loader still reads every 1.x file; a bible without traits is unchanged.

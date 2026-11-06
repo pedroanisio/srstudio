@@ -111,6 +111,7 @@ def sheet(character: Character, *, model: str, version: str, order: Sequence[str
         f"- Role: {_text(comic.role)}",
         f"- Under pressure: {_text(comic.under_pressure)}",
         f"- What always gets them: {_text(comic.always_gets_them)}",
+        *([f"- Trait: {comic.trait.word} (approved by {_text(comic.trait.approval)})"] if comic.trait else []),
         "",
         "## Canon",
         "",
