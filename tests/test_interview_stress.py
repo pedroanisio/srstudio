@@ -207,3 +207,27 @@ def test_a_build_places_the_stressed_clip_and_records_each_word_and_its_gain(tmp
     clip = next(c for c in data["clips"] if c["generated"]["id"] == "line-2")
     assert clip["generated"]["cache"] == "assets/stressed/line-2.wav" == entry["clip"]
     assert clip["sha256"] == entry["sha256"] == sha256_of(root / entry["clip"])
+
+
+def test_a_line_may_aim_its_stress_higher_than_the_bar(tmp_path):
+    line = I.Spoken("candidate", TEXT, TEXT, stress=("weeks",), stress_aim=5.0)
+    iv = make(lines=[I.Spoken("manager", "Why here?", "Why here?"), line])
+    pins, ears = pins_and_ears(tmp_path, iv)
+    out, record = I.stress(iv, tmp_path, pins, ears)
+    got = prosody.measure(out["line-2"].path, ears(pins["line-2"].path).words, ["weeks"]).stressed[0]
+    assert got.db >= 4.5 and record[0]["aim"] == 5.0
+    assert I.Spoken("x", "y z", "y z").stress_aim is None
+
+
+@pytest.mark.parametrize(
+    ("stress", "aim", "match"),
+    [((), 5.0, "stress_aim needs stressed words"), (("weeks",), 3.0, "stress_aim"), (("weeks",), "5", "stress_aim")],
+)
+def test_a_stress_aim_without_stress_or_under_the_default_is_refused(stress, aim, match):
+    with pytest.raises(I.InterviewError, match=match):
+        make(
+            lines=[
+                I.Spoken("manager", "Why here?", "Why here?"),
+                I.Spoken("candidate", TEXT, TEXT, stress=stress, stress_aim=aim),
+            ]
+        )

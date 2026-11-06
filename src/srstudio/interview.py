@@ -105,6 +105,7 @@ class Spoken:
     gain: float = 0.0  # dB against the others in the mix; the take stays the same (:data:`LEVELS`)
     phone: bool = False  # heard through a phone; the speech check still hears the clean take
     stress: tuple[str, ...] = ()  # key words, raised by gain on a derived clip; the take stays the same
+    stress_aim: float | None = None  # dB the stressed words aim for on the take; None is emphasis.AIM (ADR 0241)
 
 
 @dataclass(frozen=True)
@@ -231,6 +232,14 @@ def _check_stress(i: int, line: Spoken) -> None:
     one word."""
     if not isinstance(line.stress, tuple) or not all(isinstance(w, str) and w.strip() for w in line.stress):
         raise InterviewError(f"line {i}: stress must be a tuple of non-empty strings, got {line.stress!r}")
+    aim = line.stress_aim
+    if aim is not None:
+        if not line.stress:
+            raise InterviewError(f"line {i}: stress_aim needs stressed words")
+        if isinstance(aim, bool) or not isinstance(aim, (int, float)) or not emphasis.AIM <= aim <= emphasis.MOST:
+            raise InterviewError(
+                f"line {i}: stress_aim {aim!r} must be a number from {emphasis.AIM:g} to {emphasis.MOST:g} dB"
+            )
     if not line.stress:
         return
     said = normalize_words(line.text)
@@ -379,7 +388,7 @@ def stress(
         clip.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source.path, clip)  # every build leans from the take, never from an earlier lean
         try:
-            raised = emphasis.lean(clip, words, line.stress)
+            raised = emphasis.lean(clip, words, line.stress, aim=line.stress_aim)
         except EmphasisError as exc:
             raise StressError(f"line {i}: {exc}") from exc
         derived = Resolved(dataclasses.replace(item, cache=cache), clip, sha256_of(clip))
@@ -388,6 +397,7 @@ def stress(
             {
                 "line": i,
                 "words": raised,
+                **({"aim": line.stress_aim} if line.stress_aim is not None else {}),
                 "clip": cache,
                 "sha256": derived.sha256,
                 "source": item.cache,

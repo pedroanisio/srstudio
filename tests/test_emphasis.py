@@ -141,3 +141,26 @@ def test_a_longer_line_is_raised_as_it_was(tmp_path, levels, word, today):
     raised = emphasis.lean(wav, words, [word])
     assert raised[word] == pytest.approx(today, abs=0.1)  # what develop a455e253 raised it by
     assert prosody.measure(wav, words, [word]).stressed[0].db >= prosody.STRESS_DB
+
+
+def test_a_higher_aim_raises_a_word_the_default_aim_leaves_alone(tmp_path):
+    # A mix that flattens a stressed word (bed, limiter) needs the take to carry more than the bar (ADR 0241).
+    wav = tmp_path / "vo.wav"
+    words = _clip(wav)
+    emphasis.lean(wav, words, ["weeks"])
+    landed = prosody.measure(wav, words, ["weeks"]).stressed[0].db
+    assert prosody.STRESS_DB <= landed < 4.5
+    assert emphasis.lean(wav, words, ["weeks"]) == {"weeks": 0.0}
+    raised = emphasis.lean(wav, words, ["weeks"], aim=5.0)
+    assert raised["weeks"] > 0
+    assert prosody.measure(wav, words, ["weeks"]).stressed[0].db >= 4.5
+
+
+@pytest.mark.parametrize("aim", [3.4, 0.0, -1.0, float("nan"), float("inf"), 9.5])
+def test_an_aim_under_the_default_or_over_most_is_refused(tmp_path, aim):
+    wav = tmp_path / "vo.wav"
+    words = _clip(wav)
+    before = wav.read_bytes()
+    with pytest.raises(emphasis.EmphasisError, match="aim"):
+        emphasis.lean(wav, words, ["weeks"], aim=aim)
+    assert wav.read_bytes() == before
