@@ -890,6 +890,56 @@ def test_c7_exception_cannot_bypass_accept_master_limit(tmp_path, monkeypatch, a
     assert next(c for c in result.checks if c.check == "lra").verdict == "FAIL"
 
 
+def _voice_fail(name, value):
+    from srstudio.craft_bar import Measure, Result
+
+    return Result((Measure(name, value, "<= 4.5 words/s", "FAIL", "voice fixture"),))
+
+
+@pytest.mark.parametrize("name", ["pace_span:line-7", "preceding:line-1:five"])
+def test_c7_voice_disposition_waives_its_common_twin(tmp_path, monkeypatch, accepted_measure, name):
+    """A voice measure is reported twice (common and c7.); one exact disposition covers both copies."""
+    from srstudio import craft_bar
+    from srstudio.digest import sha256
+
+    video = tmp_path / "master.mp4"
+    video.write_bytes(b"fixture master")
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: accepted_measure)
+    monkeypatch.setattr(craft_bar, "measure_voice", lambda *a, **kw: _voice_fail(name, 4.65))
+    c7 = c7_result()
+    monkeypatch.setattr(
+        craft_bar, "measure", lambda *a: replace(c7, measures=(*c7.measures, *_voice_fail(name, 4.65).measures))
+    )
+    assert master_gate.evaluate_release(video, tmp_path, scope="production").refused
+    d = replace(approval_fixture(sha256(video), "c7." + name, "production", "arc4d3"), line=name.split(":")[1])
+    result = master_gate.evaluate_release(video, tmp_path, scope="production", dispositions=(d,))
+    by = {c.check: c for c in result.checks}
+    assert by[name].verdict == by["c7." + name].verdict == "WAIVED"
+    assert by[name].approver == "arc4d3" and by[name].evidence == "fixture://retained-message"
+    assert by[name].measured == 4.65 and by[name].disabled
+    assert not result.failing and not result.refused and not result.error
+
+
+def test_c7_voice_disposition_does_not_waive_a_twin_measured_differently(tmp_path, monkeypatch, accepted_measure):
+    from srstudio import craft_bar
+    from srstudio.digest import sha256
+
+    name = "pace_span:line-7"
+    video = tmp_path / "master.mp4"
+    video.write_bytes(b"fixture master")
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: accepted_measure)
+    monkeypatch.setattr(craft_bar, "measure_voice", lambda *a, **kw: _voice_fail(name, 5.4))
+    c7 = c7_result()
+    monkeypatch.setattr(
+        craft_bar, "measure", lambda *a: replace(c7, measures=(*c7.measures, *_voice_fail(name, 4.65).measures))
+    )
+    d = replace(approval_fixture(sha256(video), "c7." + name, "production", "arc4d3"), line=name.split(":")[1])
+    result = master_gate.evaluate_release(video, tmp_path, scope="production", dispositions=(d,))
+    by = {c.check: c for c in result.checks}
+    assert by["c7." + name].verdict == "WAIVED"
+    assert by[name].verdict == "FAIL" and result.refused
+
+
 @pytest.mark.parametrize("invalid", ["stale", "duplicate", "scope", "line", "unknown"])
 def test_unused_master_dispositions_still_validate(tmp_path, monkeypatch, accepted_measure, invalid):
     from srstudio.digest import sha256

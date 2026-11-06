@@ -959,6 +959,27 @@ def evaluate_release(
             except AuthorityError as exc:
                 errors.append(str(exc))
         applied.append(check)
+    # A voice measure is reported twice, common and c7.; the c7. disposition covers the common copy
+    # only when both copies measured the same value. _LIMITS checks keep their own approval path.
+    disposed = {c.check[3:]: c for c in applied if c.check.startswith("c7.") and c.verdict == "WAIVED" and c.disabled}
+    applied = [
+        replace(
+            c,
+            verdict="WAIVED",
+            disabled=True,
+            approver=t.approver,
+            evidence=t.evidence,
+            approval_message=t.approval_message,
+            reason=t.reason,
+            line_id=t.line_id,
+        )
+        if c.check not in _LIMITS
+        and c.verdict == "FAIL"
+        and (t := disposed.get(c.check)) is not None
+        and c.measured == t.measured
+        else c
+        for c in applied
+    ]
     unknown = {d.check for d in dispositions} - {c.check for c in checks}
     if unknown:
         errors.append(f"dispositions name unmeasured checks: {sorted(unknown)}")
