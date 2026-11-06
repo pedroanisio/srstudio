@@ -1116,3 +1116,81 @@ def test_release_approval_source_author_must_match():
 
     with pytest.raises(AuthorityError):
         replace(release_approval("a" * 64), approval_message=Message("Pedro", "source://1", "approved"))
+
+
+def full_size_look(sha):
+    from srstudio.authority import Message
+
+    return master_gate.ReleaseApproval(
+        master_sha256=sha,
+        approver="arc4d3",
+        approval_message=Message("arc4d3", "slack://1793967583.413699", "Full-size look done; approved for release."),
+        scope="reviewed_full_size",
+        reason="Full-size look by arc4d3 on this master",
+    )
+
+
+@pytest.mark.parametrize("frame_state", ["missing", "refused"])
+def test_a_full_size_look_releases_the_frame_review_of_a_measured_master(
+    tmp_path, monkeypatch, accepted_measure, frame_state
+):
+    from srstudio import craft_bar
+    from srstudio.digest import sha256
+    from srstudio.final_frame_gate import CheckResult, FinalFrameResult
+
+    master = tmp_path / "new.mp4"
+    master.write_bytes(b"new master, looked at full size")
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: accepted_measure)
+    monkeypatch.setattr(craft_bar, "measure", lambda *a: c7_result())
+    approval = full_size_look(sha256(master))
+    frames = {
+        "frame_error": "missing final-frame-review.json" if frame_state == "missing" else "",
+        "final_frames": None
+        if frame_state == "missing"
+        else FinalFrameResult(
+            "new",
+            sha256(master),
+            64,
+            64,
+            (),
+            (CheckResult("new", "anatomy", "FAIL", None, 0, sha256(master), "missing human review", None),),
+        ),
+    }
+    before = replace(master_gate.evaluate_release(master, tmp_path), **frames)
+    after = replace(master_gate.evaluate_release(master, tmp_path, release_approval=approval), **frames)
+    assert before.refused and not after.refused
+    report = "\n".join(after.lines())
+    assert f"final-frame review: RELEASED by {approval!r}" in report
+    assert "whole-master release" not in report  # it releases the frames, never the measures
+    assert ("frames new: REFUSED" if frame_state == "missing" else "anatomy: FAIL") in report  # diagnostics stay
+
+
+@pytest.mark.parametrize("missing", [False, True])
+def test_a_full_size_look_never_releases_a_failed_or_missing_measure(tmp_path, monkeypatch, accepted_measure, missing):
+    from srstudio import craft_bar
+    from srstudio.digest import sha256
+
+    master = tmp_path / "new.mp4"
+    master.write_bytes(b"new master, too narrow")
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: replace(accepted_measure, lra=1.0))
+    monkeypatch.setattr(craft_bar, "measure", lambda *a: c7_result(lra=None if missing else 1.0))
+    reading = master_gate.evaluate_release(master, tmp_path, release_approval=full_size_look(sha256(master)))
+    assert reading.refused and "final-frame review: RELEASED" in "\n".join(reading.lines())
+
+
+def test_a_full_size_look_on_another_master_refuses(tmp_path, monkeypatch, accepted_measure):
+    from srstudio import craft_bar
+
+    master = tmp_path / "new.mp4"
+    master.write_bytes(b"clean new master")
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: accepted_measure)
+    monkeypatch.setattr(craft_bar, "measure", lambda *a: c7_result())
+    reading = master_gate.evaluate_release(master, tmp_path, release_approval=full_size_look("b" * 64))
+    assert reading.refused and "stale release approval" in reading.error
+
+
+def test_a_full_size_look_parses_and_a_made_up_scope_is_refused():
+    approval = full_size_look("c" * 64)
+    assert master_gate.ReleaseApproval.parse(approval.record()) == approval
+    with pytest.raises(master_gate.AuthorityError, match="scope must be legacy_reviewed or reviewed_full_size"):
+        replace(approval, scope="frames_only")
