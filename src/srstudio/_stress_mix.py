@@ -45,12 +45,16 @@ def _contrasts(audio: Path, project: Path) -> dict[str, float | None]:
 def _duck(root: ET.Element, lines: Sequence[craft_bar.RecordedLine]) -> None:
     spans: list[tuple[float, float]] = []
     for line in lines:
+        if not line.stress:
+            continue
         # Same first-normalised-occurrence matching as prosody.measure.
         for named in line.stress:
-            word = next((w for w in line.words if normalize_words(w.text) == normalize_words(named)), None)
-            if word is None:
+            if not any(normalize_words(w.text) == normalize_words(named) for w in line.words):
                 raise craft_bar.CraftError(f'{line.id}: {named!r}: no timed stressed word')
-            spans.append((line.start + word.start, line.start + word.end))
+        # The stress meter weighs a word against the line's other words on the mixed master; a bed left under
+        # those words lifts them more than the loud one and flattens the contrast, so the duck spans the line.
+        timed = [w for w in line.words if w.type == 'word'] or list(line.words)
+        spans.append((line.start + min(w.start for w in timed), line.start + max(w.end for w in timed)))
     # Merge ramp extents: overlapping words must duck once, without a recovery between them.
     merged: list[tuple[float, float]] = []
     for start, end in sorted(spans):

@@ -119,6 +119,38 @@ def test_ducking_is_additive_and_merges_close_words():
     assert voice.find('animate') is None
 
 
+def test_ducking_covers_the_whole_stressed_line_so_the_bed_does_not_flatten_its_words():
+    # The stress meter compares each word with the line's other words on the mixed master. A bed under the
+    # unstressed words alone raises them more than the stressed word, so the duck spans the line's words.
+    import xml.etree.ElementTree as ET
+
+    from srstudio import _stress_mix
+    from srstudio.voice import Word
+
+    root = ET.fromstring('''<scene><audioMix>
+        <audioTrack id="bed" role="music"/><audioTrack id="voice" role="dialogue"/>
+    </audioMix></scene>''')
+    words = (Word('pass', 0.1, 0.3, 'word'), Word('the', 0.35, 0.45, 'word'), Word('salt', 0.6, 0.9, 'word'))
+    stressed = craft_bar.RecordedLine('one', 2, 1.2, words, ('salt',), 'test')
+    plain = craft_bar.RecordedLine('two', 5, 1, (Word('ok', 0.1, 0.3, 'word'),), (), 'test')
+    _stress_mix._duck(root, [stressed, plain])
+    keys = root.find('audioMix/audioTrack/animate').findall('key')
+    assert [float(k.get('time')) for k in keys] == pytest.approx([2.085, 2.1, 2.9, 2.915])
+    assert [float(k.get('value')) for k in keys] == [0, -6, -6, 0]
+
+
+def test_ducking_refuses_a_stressed_word_that_was_not_timed():
+    import xml.etree.ElementTree as ET
+
+    from srstudio import _stress_mix
+    from srstudio.voice import Word
+
+    root = ET.fromstring('<scene><audioMix><audioTrack id="bed" role="music"/></audioMix></scene>')
+    line = craft_bar.RecordedLine('one', 2, 1, (Word('pass', 0.1, 0.3, 'word'),), ('salt',), 'test')
+    with pytest.raises(craft_bar.CraftError, match="one: 'salt': no timed stressed word"):
+        _stress_mix._duck(root, [line])
+
+
 def test_engine_ducks_foley_only_during_word(tmp_path, scene_render):
     import xml.etree.ElementTree as ET
 
