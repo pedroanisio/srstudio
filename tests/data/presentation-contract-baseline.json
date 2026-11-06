@@ -19,7 +19,7 @@
     "map-ring": "5a0323ff4ab41f5e634b5ab29e399fcc9d88a891aa41417fc4be086a00a7ca90",
     "map-clock": "e63fd5dde6474be5927e19d772b6d3951223db9734ffe1881fad337bcf0bf01b",
     "map-daylight": "e465c1b5c9a1b3fceab45177258496c3ca5a7a14eccfe34d6414939d1b78fd10",
-    "host-punch": "33208c14d21b6e4f2f04ef3c3015dd7c8ba76e6e047473b05fee2623bd2e0f59",
+    "host-punch": "8b23c2fdc97f074fc7a31618c08d07c35dfc16f463d1a042347d4cf959c66fed",
     "host-label": "0e9b799bbd5da7afd0015bd1905ebd28cd155fa8cab5a78866f51850887c09c2",
     "host-captions": "830a2471255b99e5e47d45bfeb61274475248dc278c19e44677d802b9b407fdb",
     "host-sign-off": "57b14306732a752048cee4ebf1a0a054c4339c433834f5700860d2052aa6a164",
@@ -37,5 +37,8 @@
     "map-population": "3324f4ccd7dbea43485efba5d38defa5c7925dbce710830565cd528a11460f50",
     "map-stamp": "93b8aa73ae270e77b968f926978c85fa44d330ae31b500c2b75f0b2bc4b26541",
     "map-captions": "e14054a8feb255e768348a2dc9cb26aa33f715aab9e940ed7ef4d132c14ee08c"
+  },
+  "updates": {
+    "host-punch": "Default camera push now eases with sine-in-out. Exactly the scaleX/scaleY interpolation attributes changed from the source_commit baseline."
   }
 }

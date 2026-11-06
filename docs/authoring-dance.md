@@ -136,6 +136,13 @@ stay continuous, the loop's seam included. The head nod below eases out of the h
 its loop. `parse_moves` and `load_moves` refuse anything outside the schema; the [ADR](decisions/0186-dance-moves-on-the-beat.md)
 lists the fields.
 
+For generated inputs, export `srstudio schema dance-moves --version 1.1.0 --json`, or call
+`document_schemas.get("dance-moves", version="1.1.0")`. Version `1.0.0` is also available and excludes curve
+waveforms. The schema checks field shapes, enums and scalar bounds; `parse_moves` additionally checks relationships
+such as unique targets, loop timing, contact coverage and played spline limits. It takes JSON text or UTF-8 bytes,
+so serialize a validated dictionary with `json.dumps(document)` before parsing. Sampling then needs a `music.Groove`;
+skeleton limits and rendered quality remain separate checks.
+
 ## Choreograph a song
 
 Measure the track, then place moves on its bars:

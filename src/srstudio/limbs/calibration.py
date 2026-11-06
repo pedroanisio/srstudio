@@ -9,7 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from importlib import resources
 from typing import TypedDict
 
@@ -23,7 +23,11 @@ from .projection import Camera
 from .serialization import motion_dict
 from .validation import QualityProfile, QualityScope, audit
 
-_CONFIG = {'toon-human-conversation/1.0.0': ('toon', 2.0), 'gloss-human-deliberate/1.0.0': ('gloss', 3.0)}
+_CONFIG = {
+    f'{name}/{version}': (style, span)
+    for name, style, span in (('toon-human-conversation', 'toon', 2.0), ('gloss-human-deliberate', 'gloss', 3.0))
+    for version in ('1.0.0', '1.1.0')
+}
 _METRICS = (
     'max_speed',
     'max_acceleration',
@@ -32,7 +36,12 @@ _METRICS = (
     'max_hand_angular_speed',
     'max_hand_angular_acceleration',
 )
-_ASSET = 'assets/limbs/quality-calibration-1.0.0.json'
+
+
+def _asset(name: str) -> str:
+    return 'assets/limbs/quality-calibration-' + name.rsplit('/', 1)[1] + '.json'
+
+
 # The hand every 1.0.0 envelope was measured with, written out so a later change to HUMAN cannot move it (ADR 0089
 # fixes anatomy per version, ADR 0213): HUMAN before its thumb gained a third segment. The frozen source hashes in
 # the asset check it.
@@ -100,6 +109,20 @@ def reference_cases(name: str) -> tuple[ReferenceCase, ...]:
                 ),
             )
         )
+    if name.endswith('/1.0.0'):
+        cases = [
+            replace(
+                case,
+                motion=replace(
+                    case.motion,
+                    actions=tuple(
+                        replace(action, style=replace(action.style, envelope='legacy'))
+                        for action in case.motion.actions
+                    ),
+                ),
+            )
+            for case in cases
+        ]
     return tuple(cases)
 
 
@@ -170,11 +193,12 @@ class QualityPreset:
             },
             'limits': dict(self.limits),
             'calibration': {
-                'asset': _ASSET,
+                'asset': _asset(self.id),
                 'sha256': self.calibration,
                 'headroom': 1.25,
                 'derivation': 'ceil(reference maximum * 1.25 * 100) / 100; reach tolerance 1e-6',
             },
+            'gesture_envelope': 'legacy' if self.id.endswith('/1.0.0') else 'minimum-jerk',
             'perceptual_validation': 'not established by numeric calibration',
         }
 
@@ -199,11 +223,11 @@ class QualityPreset:
 
 def get_preset(name: str) -> QualityPreset:
     style, _ = _known(name)
-    raw = resources.files('srstudio').joinpath(_ASSET).read_bytes()
+    raw = resources.files('srstudio').joinpath(_asset(name)).read_bytes()
     document = json.loads(raw)
     data = next(row for row in document['profiles'] if row['id'] == name)
     return QualityPreset(name, style, tuple(data['limits'].items()), hashlib.sha256(raw).hexdigest())
 
 
-def list_presets() -> tuple[dict, ...]:
-    return tuple(get_preset(name).describe() for name in _CONFIG)
+def list_presets(*, latest: bool = False) -> tuple[dict, ...]:
+    return tuple(get_preset(name).describe() for name in _CONFIG if not latest or name.endswith('/1.1.0'))

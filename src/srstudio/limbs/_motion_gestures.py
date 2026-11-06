@@ -6,7 +6,7 @@ import math
 from dataclasses import fields, replace
 from typing import TYPE_CHECKING
 
-from ._motion_interpolation import smooth
+from ._motion_interpolation import accent, smooth
 from .errors import LimbError
 from .math3d import Vec3
 from .model import HandControl, HandProfile
@@ -94,6 +94,7 @@ def request(motion: Motion, time: float) -> tuple[Vec3, HandControl, Action | No
         return rest, HandControl(), None, "rest"
     if action.name == "rest":
         return rest, HandControl(), action, "rest"
+    envelope = (lambda u: math.sin(math.pi * u) ** 2) if action.style.envelope == 'legacy' else accent
     u = (time - action.start) / action.duration
     end_stroke = action.preparation + action.stroke
     end_hold = end_stroke + action.hold
@@ -105,7 +106,7 @@ def request(motion: Motion, time: float) -> tuple[Vec3, HandControl, Action | No
         warp = action.style.speed * v / (1 + (action.style.speed - 1) * v)
         anticipation = -0.05 if action.preparation else 0.0
         amount, phase = anticipation + (1 - anticipation) * smooth(warp), "stroke"
-        amount += action.style.overshoot * math.sin(math.pi * v) ** 2
+        amount += action.style.overshoot * envelope(v)
     elif u <= end_hold:
         amount, phase = 1.0, "hold"
     else:
@@ -120,7 +121,7 @@ def request(motion: Motion, time: float) -> tuple[Vec3, HandControl, Action | No
     distance = motion.arm.length
     if phase == "stroke":
         fraction = (u - action.preparation) / action.stroke
-        target_position += Vec3(0, -action.style.arc * distance * math.sin(math.pi * fraction) ** 2, 0)
+        target_position += Vec3(0, -action.style.arc * distance * envelope(fraction), 0)
     if phase == "hold" and action.style.settling and action.hold:
         elapsed = time - action.stroke_at
         # The wobble fades to rest by the end of the hold so recovery starts from the held pose.
@@ -128,7 +129,7 @@ def request(motion: Motion, time: float) -> tuple[Vec3, HandControl, Action | No
         onset = smooth(elapsed / min(1 / 18, action.hold * action.duration / 2))
         wobble = math.sin(elapsed * 18) * math.exp(-elapsed * 9) * fade * onset
         target_position += Vec3(0, wobble * action.style.settling * distance * 0.03, 0)
-    target_position += Vec3(action.style.asymmetry * distance * math.sin(math.pi * u) ** 2 * 0.05, 0, 0)
+    target_position += Vec3(action.style.asymmetry * distance * envelope(u) * 0.05, 0, 0)
     control = action.control or _recipe(action.name, motion.hand, time - action.start)
     control = replace(control, curl=control.curl + (1 - control.curl) * action.style.tension * 0.2)
     # Ease into and out of the clamp: anticipation and overshoot must not create finger velocity jumps.

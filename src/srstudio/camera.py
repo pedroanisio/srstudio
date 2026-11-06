@@ -7,6 +7,7 @@ import random
 from collections.abc import Sequence
 
 from . import checks
+from ._transaction import scene_transaction
 from .canvas import Canvas, Keys
 from .errors import SrstudioError
 
@@ -24,15 +25,34 @@ def anchor(group, x: float, y: float, *, place: bool = False):
         group.y = y
 
 
-def push_in(cv: Canvas, group, *, x: Keys = (), y: Keys = (), scale: Keys = (), hold_scale: bool = False):
-    """Keys for a push-in: position keys hold (a cut), scale keys ease unless ``hold_scale``."""
-    if x:
-        cv.keys(group, "x", x)
-    if y:
-        cv.keys(group, "y", y)
-    if scale:
-        cv.keys(group, "scaleX", scale, hold=hold_scale)
-        cv.keys(group, "scaleY", scale, hold=hold_scale)
+def push_in(
+    cv: Canvas,
+    group,
+    *,
+    x: Keys = (),
+    y: Keys = (),
+    scale: Keys = (),
+    hold_scale: bool = False,
+    curve: str = 'sine-in-out',
+):
+    """Position keys hold (a cut); scale keys use ``curve``, defaulting to sine-in-out easing.
+
+    ``curve='linear'`` retains the previous constant-speed behavior. ``hold_scale`` overrides the curve with
+    held scale keys. All keys follow the canvas clock; invalid input leaves the scene unchanged.
+    """
+    held_count = len(cv._held)
+    try:
+        with scene_transaction(cv.scene, cv):
+            if x:
+                cv.keys(group, "x", x)
+            if y:
+                cv.keys(group, "y", y)
+            if scale:
+                for prop in ('scaleX', 'scaleY'):
+                    cv.keys(group, prop, scale, kind='hold' if hold_scale else curve)
+    except Exception:
+        del cv._held[held_count:]
+        raise
 
 
 WHIP = 0.14  # seconds a whip pan takes to leave a shot, and to land in the next
@@ -119,9 +139,24 @@ def zoom_holds(cv: Canvas, group, scale: Keys):
 
 
 def reframe(cv: Canvas, group, moves: list[tuple[float, float, float, float]]):
-    """``(time, scale, x, y)`` rows applied as hold keys: the café's cut-to-cut reframing."""
-    for prop, column in [("scaleX", 1), ("scaleY", 1), ("x", 2), ("y", 3)]:
-        cv.keys(group, prop, [(row[0], row[column]) for row in moves])
+    """``(time, scale, x, y)`` rows applied as hold keys: the café's cut-to-cut reframing.
+
+    Keys follow the canvas clock. Invalid input leaves the scene and held-frame bookkeeping unchanged,
+    so callers can correct the moves and retry on the same group.
+    """
+    columns = [
+        (prop, [(row[0], row[column]) for row in moves])
+        for prop, column in [("scaleX", 1), ("scaleY", 1), ("x", 2), ("y", 3)]
+    ]
+    held_count, held_rate = len(cv._held), cv._held_rate
+    try:
+        with scene_transaction(cv.scene, cv):
+            for prop, keys in columns:
+                cv.keys(group, prop, keys)
+    except Exception:
+        del cv._held[held_count:]
+        cv._held_rate = held_rate
+        raise
 
 
 EDGE_ON = 0.03  # narrowest scaleX of a turn: a sliver, never a zero-width (singular) transform

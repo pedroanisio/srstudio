@@ -12,6 +12,7 @@ from typing import Any
 
 from .. import build_report
 from ..canvas import Canvas
+from ._sampling import coverage
 from .adapters import Appearance, adapter_for
 from .correctives import ContourCorrection
 from .errors import Diagnostic, LimbError
@@ -261,6 +262,7 @@ def bake(
         )
     if plan is None:
         times = tuple(i / options.fps for i in range(count)) + ((duration,) if trailing else ())
+        phase_diagnostics = coverage(motion, times, duration, options.fps)
         samples = tuple(prepared.sample(motion, t, track=id) for t in times)
         poses = tuple(prepared.project(motion, s, camera, parent_transform, correctives) for s in samples)
         names = {p.name for pose in poses for p in pose.parts}
@@ -288,7 +290,7 @@ def bake(
             poses,
             tuple(assignments_list),
             replace(report, hidden_parts=hidden),
-            motion_diagnostics(samples) + tuple(f.diagnostic() for f in report.quality_findings),
+            phase_diagnostics + motion_diagnostics(samples) + tuple(f.diagnostic() for f in report.quality_findings),
         )
         prepared.plans[plan_key] = plan
     samples, poses, assignments = plan.samples, plan.poses, plan.assignments
@@ -384,6 +386,7 @@ def compile_motion(
     adapter = adapter_for(style)
     if deformation == "skin" and "skin" not in adapter.capabilities.deformation:
         raise LimbError(f"adapter {style} does not support skin deformation", code="capability")
+    coverage(motion, tuple(i / options.fps for i in range(count)), duration, options.fps)
     samples = tuple(prepared.sample(motion, min(duration, i / options.fps), track=id) for i in range(count + 1))
     planar = camera.projection == "orthographic" and parent_transform == _PARENT and layers is None
     for s in samples:

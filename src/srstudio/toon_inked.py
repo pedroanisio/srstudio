@@ -62,7 +62,7 @@ from .toon_cast import (
     Mouths,
     figure,
 )
-from .toon_head import HeadRig
+from .toon_head import HeadRig, _head_operation
 from .toon_torso import arm_lines, depth_in
 
 if TYPE_CHECKING:
@@ -774,7 +774,7 @@ FOX_RIG = HeadRig(
     "toon-fox@2",
     summary="The fox drawn like the traced cat: pressed uneven ink, open fur lines, a shade tone, a tilted head, "
     "its own almond eyes and muzzle mouths; the whole brush contract",
-    contract=_CHARACTER_CONTRACT,
+    contract=replace(_CHARACTER_CONTRACT, operations=(*_CHARACTER_CONTRACT.operations, _head_operation(FOX_RIG))),
 )
 def fox_inked(
     cv: Canvas,

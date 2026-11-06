@@ -110,7 +110,7 @@ def test_overlapping_join_windows_are_refused():
 
 def test_join_documents_are_versioned_and_old_documents_keep_return_to_rest():
     document = motion_dict(gestures().chain())
-    assert document['schema'] == 'srstudio.limbs/1.3.0'
+    assert document['schema'] == 'srstudio.limbs/1.4.0'
     document['schema'] = 'srstudio.limbs/1.2.0'
     with pytest.raises(LimbError, match='1.3.0'):
         parse_motion(document)

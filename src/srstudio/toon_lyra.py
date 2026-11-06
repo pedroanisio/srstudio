@@ -35,7 +35,7 @@ from .head_motion import Channel, HeadPlan, HeadStyle, Spring
 from .registry import register
 from .toon import ARMS, Pose, ToonDataError
 from .toon_cast import CENTRE, Layer, Look, Mouths
-from .toon_head import HeadRig
+from .toon_head import HeadRig, _head_operation
 from .toon_head import figure as rig_figure
 from .toon_orbit import clicker_art
 from .toon_plate import (
@@ -700,6 +700,7 @@ def mood_plan(poses: Sequence[Pose], duration: float, rig: HeadRig = LYRA_RIG) -
 
 
 _CONTRACT = PartContract(
+    operations=(_head_operation(LYRA_RIG),),
     parameters=(
         (
             "poses",

@@ -1,0 +1,213 @@
+{
+  "schema": "srstudio.quality-calibration/1.1.0",
+  "generated_by": {
+    "model": "GPT-6",
+    "tool": "OpenAI Codex"
+  },
+  "profiles": [
+    {
+      "id": "toon-human-conversation/1.1.0",
+      "fps": 24,
+      "headroom": 1.25,
+      "cases": [
+        {
+          "name": "point-right",
+          "source_sha256": "b21588b6efea377a5a3fc48d71f8d450a68cb05f15d73f0a93f33523419d7971",
+          "samples": 49,
+          "metrics": {
+            "max_speed": 5.776531301618589,
+            "max_acceleration": 36.31457346087119,
+            "max_jerk": 430.10230903441493,
+            "max_elbow_speed": 5.071032554965359,
+            "max_hand_angular_speed": 6.291616558057199,
+            "max_hand_angular_acceleration": 47.777376714137276
+          }
+        },
+        {
+          "name": "present-right",
+          "source_sha256": "eb384df60cd471f3959f3b8694973cf789c3374ce2b42f0096d405040596aca3",
+          "samples": 49,
+          "metrics": {
+            "max_speed": 4.0570748226908675,
+            "max_acceleration": 26.277025464583488,
+            "max_jerk": 322.38208871452133,
+            "max_elbow_speed": 3.9430922885749062,
+            "max_hand_angular_speed": 6.946076245052664,
+            "max_hand_angular_acceleration": 72.2470628809223
+          }
+        },
+        {
+          "name": "joined-right",
+          "source_sha256": "938e9b1dd083d13accd0a1ceb4465167694d3a1312c2d127d9a6234427cc94d2",
+          "samples": 97,
+          "metrics": {
+            "max_speed": 5.776531301618589,
+            "max_acceleration": 36.31457346087119,
+            "max_jerk": 430.10230903441493,
+            "max_elbow_speed": 5.071032554965359,
+            "max_hand_angular_speed": 6.330422854655601,
+            "max_hand_angular_acceleration": 57.84257204185402
+          }
+        },
+        {
+          "name": "point-left",
+          "source_sha256": "8851d900a3298374d61580dfe63a1ca676c13aa31b725ab05c6ac8349ade95ff",
+          "samples": 49,
+          "metrics": {
+            "max_speed": 5.776531301618589,
+            "max_acceleration": 36.31457346087119,
+            "max_jerk": 430.10230903441493,
+            "max_elbow_speed": 5.071032554965359,
+            "max_hand_angular_speed": 6.291616558057199,
+            "max_hand_angular_acceleration": 47.777376714137276
+          }
+        },
+        {
+          "name": "present-left",
+          "source_sha256": "7e14c8edc6289d15d284b058877a361b2d12b50333a2b8c98752686fa38b66a4",
+          "samples": 49,
+          "metrics": {
+            "max_speed": 4.0570748226908675,
+            "max_acceleration": 26.277025464583488,
+            "max_jerk": 322.38208871452133,
+            "max_elbow_speed": 3.9430922885749062,
+            "max_hand_angular_speed": 7.653852804489608,
+            "max_hand_angular_acceleration": 75.9747690111197
+          }
+        },
+        {
+          "name": "joined-left",
+          "source_sha256": "ad11655b7c15ecba23974e54435f71829f88f38954db011329ed423de417ebfc",
+          "samples": 97,
+          "metrics": {
+            "max_speed": 5.776531301618589,
+            "max_acceleration": 36.31457346087119,
+            "max_jerk": 430.10230903441493,
+            "max_elbow_speed": 5.071032554965359,
+            "max_hand_angular_speed": 6.9022618734086425,
+            "max_hand_angular_acceleration": 60.643146408439286
+          }
+        }
+      ],
+      "peaks": {
+        "max_speed": 5.776531301618589,
+        "max_acceleration": 36.31457346087119,
+        "max_jerk": 430.10230903441493,
+        "max_elbow_speed": 5.071032554965359,
+        "max_hand_angular_speed": 7.653852804489608,
+        "max_hand_angular_acceleration": 75.9747690111197
+      },
+      "limits": {
+        "max_speed": 7.23,
+        "max_acceleration": 45.4,
+        "max_jerk": 537.63,
+        "max_elbow_speed": 6.34,
+        "max_hand_angular_speed": 9.57,
+        "max_hand_angular_acceleration": 94.97,
+        "max_reach_error": 1e-06
+      }
+    },
+    {
+      "id": "gloss-human-deliberate/1.1.0",
+      "fps": 24,
+      "headroom": 1.25,
+      "cases": [
+        {
+          "name": "point-right",
+          "source_sha256": "517a02ec3e1507c7043ad30de1e639afc6180f76971c80e1244b407401e1ddd9",
+          "samples": 73,
+          "metrics": {
+            "max_speed": 3.889982473035004,
+            "max_acceleration": 16.851068921167546,
+            "max_jerk": 173.90807423687008,
+            "max_elbow_speed": 3.4516802864682257,
+            "max_hand_angular_speed": 4.239550610308906,
+            "max_hand_angular_acceleration": 21.777127210301956
+          }
+        },
+        {
+          "name": "present-right",
+          "source_sha256": "04a51e2c105a377c30a4aa0edf63c3c4d88e7d1c0e43471992adb3342ee7faec",
+          "samples": 73,
+          "metrics": {
+            "max_speed": 2.708819985162807,
+            "max_acceleration": 12.194356558160504,
+            "max_jerk": 129.7733632151026,
+            "max_elbow_speed": 2.642074190575365,
+            "max_hand_angular_speed": 4.626184295774358,
+            "max_hand_angular_acceleration": 33.73251055674151
+          }
+        },
+        {
+          "name": "joined-right",
+          "source_sha256": "ebc6f4adbdf2571e79c94f10aaa38a0a14906fd8de351acade0d1dee240c5acc",
+          "samples": 145,
+          "metrics": {
+            "max_speed": 3.889982473035004,
+            "max_acceleration": 16.851068921167546,
+            "max_jerk": 173.90807423687008,
+            "max_elbow_speed": 3.4516802864682257,
+            "max_hand_angular_speed": 4.3539780703415705,
+            "max_hand_angular_acceleration": 29.562266364896693
+          }
+        },
+        {
+          "name": "point-left",
+          "source_sha256": "c69ce4a6af2eef31995f3d0d732416bffcd9f7bbf19c6ba0c094ba4570129e08",
+          "samples": 73,
+          "metrics": {
+            "max_speed": 3.889982473035004,
+            "max_acceleration": 16.851068921167546,
+            "max_jerk": 173.90807423687008,
+            "max_elbow_speed": 3.4516802864682257,
+            "max_hand_angular_speed": 4.239550610308906,
+            "max_hand_angular_acceleration": 21.777127210301956
+          }
+        },
+        {
+          "name": "present-left",
+          "source_sha256": "907a194202ed95c62a6c088a8e469ac84653866e48927953f2566776355699ab",
+          "samples": 73,
+          "metrics": {
+            "max_speed": 2.708819985162807,
+            "max_acceleration": 12.194356558160504,
+            "max_jerk": 129.7733632151026,
+            "max_elbow_speed": 2.642074190575365,
+            "max_hand_angular_speed": 5.078424917491471,
+            "max_hand_angular_acceleration": 35.44497775752521
+          }
+        },
+        {
+          "name": "joined-left",
+          "source_sha256": "2e983f12207b8f89b57ec1247964765df26e5b42a6cb5e68a1a8c525fe7c6fa1",
+          "samples": 145,
+          "metrics": {
+            "max_speed": 3.889982473035004,
+            "max_acceleration": 16.851068921167546,
+            "max_jerk": 173.90807423687008,
+            "max_elbow_speed": 3.4516802864682257,
+            "max_hand_angular_speed": 4.7550846277888095,
+            "max_hand_angular_acceleration": 30.86397683752384
+          }
+        }
+      ],
+      "peaks": {
+        "max_speed": 3.889982473035004,
+        "max_acceleration": 16.851068921167546,
+        "max_jerk": 173.90807423687008,
+        "max_elbow_speed": 3.4516802864682257,
+        "max_hand_angular_speed": 5.078424917491471,
+        "max_hand_angular_acceleration": 35.44497775752521
+      },
+      "limits": {
+        "max_speed": 4.87,
+        "max_acceleration": 21.07,
+        "max_jerk": 217.39,
+        "max_elbow_speed": 4.32,
+        "max_hand_angular_speed": 6.35,
+        "max_hand_angular_acceleration": 44.31,
+        "max_reach_error": 1e-06
+      }
+    }
+  ]
+}

@@ -53,7 +53,13 @@ assert len(shots.poses) == len(shots.times_s)
   `report.root_scale` gives the ratio.
 - **Limits.** A turn past the profile's limits raises `RetargetLimitError` listing every breach by time, control,
   value and limits. `clamp=True` holds those values at the limits instead, and `report.clamped` lists each control
-  with its sample count, worst value and first time.
+  with its sample count, worst correction in radians and first time on the clip clock.
+  Separately, spline overshoot between two legal source frames is always held inside the limits, even with
+  `clamp=False`. `report.interpolation_clamps` records these corrections with the same `Clamp` fields:
+  `key`, `samples`, `worst_rad`, and `first_s` (clip seconds). Inspect both collections when accepting a take.
+  `performance.sample(song_s)` reports one sample; `performance.frames(fps)` aggregates the samples it evaluates.
+  An empty collection certifies only those samples. Limit clipping can introduce velocity or acceleration jumps;
+  the unconstrained spline's continuity does not guarantee continuity after clipping or foot locking.
 - **Omitted joints.** A joint the profile omits (the stick figure's toes, eyes and jaw) is dropped and listed in
   `report.dropped` with the largest turn the clip gave it. Profiles omit whole subtrees, so no kept joint moves.
 - **Residuals.** A turn a joint's controls cannot make is listed in `report.residuals` in radians. Between frames, a
@@ -64,10 +70,38 @@ assert len(shots.poses) == len(shots.times_s)
   and `retarget.foot_slip(profile, poses, plants)` measures what a foot still slides. Pass `planted=` to use your own
   spans, or `lock_feet=False` to keep the raw rotations.
 - **The beat.** `beat_map(clip, beats, song, start=, end=, per=)` pairs the clip's beats, as seconds or as the
-  `Groove` the take was made to, with the song's from `start`, one per `per` song beats. The map is piecewise linear
-  and rises everywhere, so `clip_time` and `song_time` invert each other. It refuses beats out of order
+  `Groove` the take was made to, with the song's from `start`, one per `per` song beats. The map eases its rate
+  between beats and rises everywhere, so `clip_time` and `song_time` invert each other. It refuses beats out of order
   (`AnchorOrderError`), fewer than two beats in both spans (`EmptyOverlapError`), a stretch outside `MIN_RATE` to
   `MAX_RATE` (`WarpRateError`) and a start off the song's grid (`BeatWarpError`).
+
+### Check playback-rate continuity
+
+The permitted playback-rate range can leave a speed jump at an interior beat. `beats.rate_continuous` is false
+when this happens; `beats.rate_jumps` contains immutable `retarget.RateJump` records in song-time order, with
+`song_s`, `left_rate` and `right_rate`. Rates use clip seconds per song second. These are analytic one-sided
+limits, independent of render fps; differences within four ulps of the larger rate are treated as rounding noise.
+Only beats strictly inside `start_s..end_s` count, so this does not guarantee a smooth start or stop against a hold.
+
+`beats.max_rate_change` is a conservative absolute derivative bound in clip seconds per song second squared for
+a continuous map, and `math.inf` when a reported jump prevents a finite bound. For example, clip beats
+`[0, 0.25, 1.25]` on a 120 BPM song jump from 0.5 to 2.0 at song second 0.5 and have an infinite bound.
+An agent requiring continuous playback should reject such a map and revise its beat pairing, tempo or `per`,
+then inspect the rebuilt map. Continuity of the time map alone does not certify joints, foot locks or rendered motion.
+
+For strict JSON, preserve the continuity flag and jump evidence and encode the unbounded value as `null`:
+
+```python
+import json
+from dataclasses import asdict
+
+evidence = {
+    "rate_continuous": beats.rate_continuous,
+    "max_rate_change": beats.max_rate_change if beats.rate_continuous else None,
+    "rate_jumps": [asdict(jump) for jump in beats.rate_jumps],
+}
+print(json.dumps(evidence, allow_nan=False))
+```
 
 ## Repairing a refusal
 

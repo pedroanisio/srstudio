@@ -12,13 +12,16 @@ proportions, and moves the clip's beats onto a song's:
     dance = retarget.perform(clip, toon, beat)
     dance.pose(beat.start_s + 1.0)                    # the pose at a second of the song
 
-A performance plays each control and the hips' place between frames through a cubic spline with its velocity and
-acceleration continuous, and its beat map eases its rate between beats, so a gesture keeps its timing and acceleration
-on the song's clock (ADR 0204); ``to_pose`` at a time, a single moment, slerps between the frames either side.
+A performance plays each control and the hips' place between frames through a cubic spline, and its beat map eases
+its rate between beats (ADR 0204). Inspect ``beats.rate_continuous`` and ``beats.rate_jumps``: rate limits can leave
+speed jumps at beats, where ``beats.max_rate_change`` is infinite. Spline continuity also depends on joint limits
+and foot locking; ``to_pose`` at a time, a single moment, slerps between the frames either side.
 
 Values are absolute turns from the T-stance, the skeleton's zero, so a profile's ``rest`` is not added. A control the
 clip turns past the profile's limits is refused with every such value listed, unless ``clamp=True`` holds it at the
 limit and the report counts it. A joint the profile omits is dropped and reported; no kept joint is moved by that.
+Overshoot between legal source frames is held even with ``clamp=False`` and reported separately in
+``report.interpolation_clamps``. These sample-based corrections can break spline derivative continuity.
 """
 
 from __future__ import annotations
@@ -70,6 +73,7 @@ from ._retarget_warp import MAX_RATE as MAX_RATE
 from ._retarget_warp import MIN_PER as MIN_PER
 from ._retarget_warp import MIN_RATE as MIN_RATE
 from ._retarget_warp import BeatMap as BeatMap
+from ._retarget_warp import RateJump as RateJump
 from ._retarget_warp import beat_map as beat_map
 
 MAX_FPS = 120.0  # pictures a second a performance is sampled at
@@ -90,6 +94,7 @@ __all__ = [
     "RESIDUAL_FLOOR",
     "AnchorOrderError",
     "BeatMap",
+    "RateJump",
     "BeatWarpError",
     "Clamp",
     "Dropped",

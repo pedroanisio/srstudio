@@ -19,7 +19,9 @@ from an installed package outside the repository. Omitting the version selects t
 one; pin the version in reproducible agent workflows.
 
 The self-contained JSON Schema 2020-12 document describes the JSON accepted by `parse_score`,
-including closed objects, array limits, nested speech alignment and version-specific fields.
+including closed objects, array limits, nested speech alignment and version-specific fields. Duration is
+`0.0001..600` seconds and sample rate is `1..120`; policy versions, curves, channel names and phase bounds are
+enumerated before compilation. Rig-specific head limits and vocabulary still come from `rig.describe()`.
 Version 1.0.0 excludes transition policies and blends; 1.1.0 adds policies; 1.2.0 adds blends.
 This document schema is separate from `contracts.describe_callable(parse_score)`, which describes
 the Python function's arguments and runtime overrides.

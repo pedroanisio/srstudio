@@ -402,6 +402,7 @@ def describe_callable(
         'arguments': arguments,
         'returns': returns,
         'shape_complete': _complete(arguments),
+        'binding': binding_report(arguments),
         'validation': 'runtime-required',
         'capabilities': capabilities,
         'vocabularies': {name: list(values) for name, values in metadata.vocabularies},
@@ -410,6 +411,41 @@ def describe_callable(
             o.name: describe_callable(o.builder, o.contract, _depth=_depth + 1) for o in metadata.operations
         },
     }
+
+
+def binding_report(arguments: dict) -> dict:
+    """JSON pointers into the argument schema, distinguishing opaque bindings from data gaps.
+
+    Required means required along the entire object path. Union branches are conditional;
+    runtime-only objects are leaves, not permission to deserialize arbitrary Python types.
+    """
+    runtime: list[dict] = []
+    unknown: list[dict] = []
+
+    def visit(node, path, required, conditional=False):
+        if not isinstance(node, dict):
+            return
+        status = node.get('x-status')
+        if status in ('runtime', 'unknown'):
+            row = {
+                'path': path,
+                'required': required,
+                'conditional': conditional,
+                'python_type': node.get('x-python-type'),
+            }
+            (runtime if status == 'runtime' else unknown).append(row)
+            return
+        for name, child in node.get('properties', {}).items():
+            escaped = name.replace('~', '~0').replace('/', '~1')
+            visit(child, path + '/properties/' + escaped, required and name in node.get('required', ()), conditional)
+        for name in ('items', 'additionalProperties'):
+            visit(node.get(name), path + '/' + name, False, conditional)
+        for name in ('anyOf', 'oneOf', 'prefixItems'):
+            for i, child in enumerate(node.get(name, ())):
+                visit(child, f'{path}/{name}/{i}', False, conditional or name != 'prefixItems')
+
+    visit(arguments, '/arguments', True)
+    return {'data_shape_complete': not unknown, 'runtime_bindings': runtime, 'unresolved_fields': unknown}
 
 
 def describe_part(builder: Callable[..., Any], contract: PartContract | None = None) -> dict[str, Any]:

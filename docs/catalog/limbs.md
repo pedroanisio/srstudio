@@ -77,6 +77,11 @@ with explicit `arm`, `hand`, `played` and `fps` fields. Unit rotations are prese
 drift. The existing 5 MiB file limit also applies, so a large in-memory sequence may need splitting for persistence.
 Ordinary procedural motions retain `srstudio.limbs/1.3.0`.
 
+Export the procedural document shape with `srstudio schema limbs --version 1.3.0 --json`, or
+`document_schemas.get("limbs", version="1.3.0")`. Versions `1.0.0` through `1.3.0` are available: the schema
+excludes fields introduced after the requested version. Pass the validated dictionary to `parse_motion`, then
+compile or sample to check timing, geometry and reachability. List supported formats with `srstudio schema --json`.
+
 Export the keyed document shape with `srstudio schema limbs-keyed --version 1.0.0 --json`.
 The schema includes nested anatomy and solved-pose records, closed objects and array limits.
 Runtime parsing still checks sample times, unit quaternions, anatomical consistency
@@ -349,8 +354,10 @@ and the distinction between sampled limits and visual review.
 
 ### Versioned reference envelopes
 
-`srstudio.limbs.calibration.list_presets()` describes two frozen numeric regression envelopes:
-`toon-human-conversation/1.0.0` and `gloss-human-deliberate/1.0.0`. Both apply to the unchanged
+`srstudio.limbs.calibration.list_presets()` describes four frozen numeric regression envelopes:
+versions `1.0.0` and `1.1.0` of `toon-human-conversation` and `gloss-human-deliberate`.
+Version 1.0 retains legacy sin² gesture accents and its unchanged asset; 1.1 measures the new C2 envelope.
+Use `list_presets(latest=True)` for the two 1.1 presets. All apply to the unchanged
 `ArmProfile()` and `calibration.CALIBRATED_HAND` at exactly 24 Hz, with the named style adapter.
 The discovery field `scope.hand_profile.symbol` gives the authoritative import path
 `srstudio.limbs.calibration.CALIBRATED_HAND`; `thumb_segments` gives its segment lengths
@@ -381,7 +388,7 @@ scene = Scene(version="auto")
 scene.add_project(width=1280, height=720, fps="24", duration=2)
 cv = Canvas(scene, width=1280, height=720, font_asset=None)
 motion = Motion(ArmProfile(), CALIBRATED_HAND, (Action("point", duration=2),))
-preset = get_preset("toon-human-conversation/1.0.0")
+preset = get_preset("toon-human-conversation/1.1.0")
 compiled = compile_motion(
     cv, cv.comp, motion, id="calibrated-point", style="toon", backend="baked",
     camera=Camera(origin=(500, 180), scale=160),
@@ -401,7 +408,7 @@ samples and does not know the drawing style or full hand anatomy.
 calibration asset records source hashes, sample counts, measurements and limits; tests detect drift. Changes
 to the reference motions or limits require an explicitly reviewed new version, not automatic recalibration.
 
-The [quality study](../../examples/limbs_quality.py) builds all twelve references and two sixfold time-compressed
+The [quality study](../../examples/limbs_quality.py) builds the twelve latest-version references and two sixfold time-compressed
 failures. It first proves each failure is refused without drawing, then deliberately uses `policy="warn"` to
 render that rejected motion for inspection. Both members of an A/B pair have the same camera, appearance and
 video duration. Failed motions finish early and hold their resting pose. Use a fresh output directory:
@@ -643,12 +650,25 @@ in the wrist frame, including axial roll. FK and IK share one hand-frame convent
 lateral direction, as `reach` does with its default pole, so an FK pose solved back through `reach` with its
 elbow as the pole returns the same hand frame on both sides.
 
-The current writer emits `srstudio.limbs/1.3.0` motion documents. The reader also accepts `1.0.0`, `1.1.0` and `1.2.0`
+The current writer emits `srstudio.limbs/1.4.0` motion documents. Motions whose actions all use the legacy
+envelope retain a 1.3.0 document without the envelope field. The reader also accepts `1.0.0` through `1.3.0`
 documents and supplies the original smooth interpolation for tracks without the new fields. Documents without
 explicit axes retain their original +X default. Explicit axes require at least `1.1.0`; transform interpolation
 and velocity fields require `1.2.0`; action joins require `1.3.0`. Older documents without joins preserve their
 return-to-rest behavior. Unknown versions and fields are rejected. All accepted versions pass through
 the current numeric and resource validation.
+
+Version 1.4 adds `MotionStyle.envelope`: `minimum-jerk` (the new Python default) or `legacy`.
+The new arc, overshoot and asymmetry envelope is `64*u³*(1-u)³`, with unit peak and zero first and second
+derivatives at both endpoints. It removes the old sin² accent's acceleration discontinuity. Older JSON and
+pickled styles retain legacy behavior; an explicit envelope field requires 1.4. This guarantees only the
+accent's source derivatives: constraint transitions, IK, action joins and emitted sampling remain separate.
+For task-level selection, see [curve intents and agent requests](../authoring-agents.md).
+
+Compilation refuses a non-rest action without an interior output sample, or a contact with no active sample,
+using `motion.sampling` and a repair path. Fully cropped-away events are ignored. Missing action subphases
+are reported as `motion.phase-sampling`. Increase the rate or lengthen the event before relying on quality
+metrics; an unsampled gesture cannot establish zero speed, acceleration or jerk.
 Decoding errors retain the nested field path, including optional objects: an invalid target coordinate reports
 `motion.actions[0].target.position.x` and the expected finite number, so an authoring agent can repair that field.
 `load_motion` reads at most 5 MiB of UTF-8 and bounds array/object nesting to 64 levels before parsing, so

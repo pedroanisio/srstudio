@@ -15,8 +15,9 @@ and its integral over the stretch is 0, so every beat still lands on its beat an
 ``a`` and ``b`` bring the rate at each beat to the same value from both sides, the mean of the two stretches' rates
 where each stretch has room for it; a stretch moves its rate by at most half its room inside ``MIN_RATE``..``MAX_RATE``
 at either end, so the rate never leaves that range. Where two neighbours are too far apart for both, the rate steps at
-that beat by what is left, always less than a straight map's step. The first and last beats keep their stretch's rate,
-so the map runs straight past the ends.
+that beat by what is left, no greater than a straight map's step. The first and last beats keep their stretch's rate,
+so the map runs straight past the ends. ``rate_jumps`` reports residual jumps inside the playback interval;
+``max_rate_change`` is infinite when any such jump prevents a finite global bound.
 """
 
 from __future__ import annotations
@@ -64,6 +65,15 @@ def _seconds(value: object, path: str) -> float:
 
 
 @dataclass(frozen=True)
+class RateJump:
+    """A beat's one-sided playback rates, in clip seconds per song second, at ``song_s`` song seconds."""
+
+    song_s: float
+    left_rate: float
+    right_rate: float
+
+
+@dataclass(frozen=True)
 class BeatMap:
     """Song seconds to clip seconds through ``anchors`` (song, clip) pairs, over ``start_s``..``end_s`` of the song."""
 
@@ -88,8 +98,40 @@ class BeatMap:
         return tuple((b[1] - a[1]) / (b[0] - a[0]) for a, b in zip(pairs, pairs[1:], strict=False))
 
     @property
+    def rate_jumps(self) -> tuple[RateJump, ...]:
+        """Residual rate jumps at beats strictly inside ``start_s..end_s``, ordered by song time.
+
+        The limits come from the interval curves, not sampled differences. Differences of at most four ulps
+        of the larger rate are rounding noise; no perceptual tolerance hides small authored jumps.
+        """
+        rates = self.rates
+        jumps = []
+        for i, (song_s, _) in enumerate(self.anchors[1:-1], 1):
+            if not self.start_s < song_s < self.end_s:
+                continue
+            left = rates[i - 1] + self._ease[i - 1][1]
+            right = rates[i] + self._ease[i][0]
+            if abs(right - left) > 4 * max(math.ulp(left), math.ulp(right)):
+                jumps.append(RateJump(song_s, left, right))
+        return tuple(jumps)
+
+    @property
+    def rate_continuous(self) -> bool:
+        """Whether playback rate joins continuously at interior beats, within ``rate_jumps``' rounding tolerance.
+
+        This concerns the time map only, not joint limits, foot locking or rendered motion.
+        """
+        return not self.rate_jumps
+
+    @property
     def max_rate_change(self) -> float:
-        """The most the rate turns per song second anywhere on the map, in clip seconds per song second squared."""
+        """A conservative absolute rate-derivative bound, in clip seconds per song second squared.
+
+        Returns ``math.inf`` when an interior rate jump prevents a finite bound. Inspect ``rate_jumps`` for
+        repairable boundary evidence; encode an unbounded value as null when writing strict JSON.
+        """
+        if not self.rate_continuous:
+            return math.inf
         pairs = self.anchors
         return max(
             (abs(a) + abs(b)) * PHI_SLOPE / (right[0] - left[0])

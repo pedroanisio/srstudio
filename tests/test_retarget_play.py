@@ -56,7 +56,7 @@ def walk_peak(key: str) -> float:
     return max(rt.retarget(WALK, REAL, lock_feet=False).poses[i].value(key) for i in range(WALK.frame_count))
 
 
-def test_a_spline_passing_a_limit_its_frames_keep_is_held_there_and_not_counted():
+def test_a_spline_passing_a_limit_its_frames_keep_is_held_and_reported_separately():
     """The clip never put the control past the limit; only the curve between two frames did."""
     key = "left_upper_leg.front_back"
     top = walk_peak(key)
@@ -66,6 +66,7 @@ def test_a_spline_passing_a_limit_its_frames_keep_is_held_there_and_not_counted(
     shot = played.frames(rt.MAX_FPS)
     assert all(pose.value(key) <= top for pose in shot.poses)
     assert shot.report.clamped == ()
+    assert key in {row.key for row in shot.report.interpolation_clamps}
     free = rt.perform(WALK, REAL, rt.beat_map(WALK, Groove(120), Groove(129)), lock_feet=False).frames(rt.MAX_FPS)
     assert max(pose.value(key) for pose in free.poses) > top  # the spline does pass it where nothing holds it
 

@@ -92,7 +92,7 @@ def test_keyed_motion_serializes_as_a_closed_distinct_schema():
     data['motion']['played'][0]['untrusted'] = True
     with pytest.raises(LimbError):
         parse_motion(data)
-    assert motion_dict(original)['schema'] == 'srstudio.limbs/1.3.0'
+    assert motion_dict(original)['schema'] == 'srstudio.limbs/1.4.0'
 
 
 def test_keyed_motion_cannot_silently_retarget_fixed_world_geometry():

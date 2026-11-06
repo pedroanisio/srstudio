@@ -14,9 +14,10 @@ from typing import Any, Union, get_args, get_origin, get_type_hints
 
 from .errors import LimbError
 from .math3d import Quaternion, number
-from .motion import Motion
+from .motion import Action, Motion, MotionStyle
 
-SCHEMA = "srstudio.limbs/1.3.0"
+SCHEMA = "srstudio.limbs/1.4.0"
+JOIN_SCHEMA = "srstudio.limbs/1.3.0"
 TRANSFORM_SCHEMA = "srstudio.limbs/1.2.0"
 ANATOMY_SCHEMA = "srstudio.limbs/1.1.0"
 LEGACY_SCHEMA = "srstudio.limbs/1.0.0"
@@ -26,7 +27,16 @@ MAX_DEPTH = 64
 _STRUCTURE = re.compile(r'"(?:[^"\\]|\\.)*"?|[\[\]{}]', re.DOTALL)
 
 
-def _decode(kind: Any, value: object, where: str, budget: list[int], depth: int = 0, *, solved: bool = False) -> Any:
+def _decode(
+    kind: Any,
+    value: object,
+    where: str,
+    budget: list[int],
+    depth: int = 0,
+    *,
+    solved: bool = False,
+    legacy_envelope: bool = False,
+) -> Any:
     budget[0] -= 1
     if budget[0] < 0 or depth > 32:
         raise LimbError(f"{where}: motion document exceeds its decoding bound", code="budget")
@@ -38,10 +48,14 @@ def _decode(kind: Any, value: object, where: str, budget: list[int], depth: int 
                 return None
             non_null = tuple(candidate for candidate in args if candidate is not type(None))
             if len(non_null) == 1:
-                return _decode(non_null[0], value, where, budget, depth + 1, solved=solved)
+                return _decode(
+                    non_null[0], value, where, budget, depth + 1, solved=solved, legacy_envelope=legacy_envelope
+                )
         for candidate in args:
             try:
-                return _decode(candidate, value, where, budget, depth + 1, solved=solved)
+                return _decode(
+                    candidate, value, where, budget, depth + 1, solved=solved, legacy_envelope=legacy_envelope
+                )
             except LimbError as error:
                 if error.code == "budget":
                     raise
@@ -51,10 +65,25 @@ def _decode(kind: Any, value: object, where: str, budget: list[int], depth: int 
             raise LimbError(f"{where}: expected null")
         return None
     if kind is float:
-        return number(value, where)
+        try:
+            return number(value, where)
+        except LimbError as error:
+            raise LimbError(
+                str(error),
+                path=where,
+                actual=value,
+                expected='a finite number excluding booleans',
+                remedy='Replace this field with a finite numeric value.',
+            ) from error
     if kind in (str, int, bool):
         if type(value) is not kind:
-            raise LimbError(f"{where}: expected {kind.__name__}, got {type(value).__name__}")
+            raise LimbError(
+                f"{where}: expected {kind.__name__}, got {type(value).__name__}",
+                path=where,
+                actual=value,
+                expected=kind.__name__,
+                remedy='Use the declared JSON field type.',
+            )
         return value
     if origin is tuple:
         if not isinstance(value, (list, tuple)) or len(value) > 10000:
@@ -64,13 +93,15 @@ def _decode(kind: Any, value: object, where: str, budget: list[int], depth: int 
             )
         if len(args) == 2 and args[1] is Ellipsis:
             return tuple(
-                _decode(args[0], item, f"{where}[{i}]", budget, depth + 1, solved=solved)
+                _decode(
+                    args[0], item, f"{where}[{i}]", budget, depth + 1, solved=solved, legacy_envelope=legacy_envelope
+                )
                 for i, item in enumerate(value)
             )
         if len(value) != len(args):
             raise LimbError(f"{where}: expected {len(args)} array elements")
         return tuple(
-            _decode(t, item, f"{where}[{i}]", budget, depth + 1, solved=solved)
+            _decode(t, item, f"{where}[{i}]", budget, depth + 1, solved=solved, legacy_envelope=legacy_envelope)
             for i, (t, item) in enumerate(zip(args, value, strict=True))
         )
     if isinstance(kind, type) and is_dataclass(kind):
@@ -91,9 +122,17 @@ def _decode(kind: Any, value: object, where: str, budget: list[int], depth: int 
             raise LimbError(f"{where}: missing required fields {missing}")
         hints = get_type_hints(kind)
         decoded = {
-            name: _decode(hints[name], item, f"{where}.{name}", budget, depth + 1, solved=solved)
+            name: _decode(
+                hints[name], item, f"{where}.{name}", budget, depth + 1, solved=solved, legacy_envelope=legacy_envelope
+            )
             for name, item in value.items()
         }
+        if kind is MotionStyle and legacy_envelope:
+            if 'envelope' in value:
+                raise LimbError(f'{where}.envelope requires motion schema srstudio.limbs/1.4.0')
+            decoded['envelope'] = 'legacy'
+        if kind is Action and legacy_envelope and 'style' not in decoded:
+            decoded['style'] = MotionStyle(envelope='legacy')
         try:
             result = kind(**decoded)
             if solved and kind is Quaternion:
@@ -119,7 +158,13 @@ def motion_dict(motion: Motion) -> dict:
     # Decoding through the declared field types writes 0 for a float field as 0.0, so a saved file reloads and
     # saves again byte for byte.
     typed: Motion = _decode(Motion, asdict(motion), "motion", [MAX_ITEMS])
-    return {"schema": SCHEMA, "generatedBy": "srstudio.limbs", "motion": asdict(typed)}
+    payload = asdict(typed)
+    schema = SCHEMA
+    if typed.actions and all(a.style.envelope == 'legacy' for a in typed.actions):
+        schema = JOIN_SCHEMA
+        for action in payload['actions']:
+            del action['style']['envelope']
+    return {"schema": schema, "generatedBy": "srstudio.limbs", "motion": payload}
 
 
 def parse_motion(data: object) -> Motion:
@@ -134,7 +179,7 @@ def parse_motion(data: object) -> Motion:
     unknown = set(data) - {"schema", "generatedBy", "motion"}
     if unknown:
         raise LimbError(f"motion document has unknown fields {sorted(unknown)}")
-    if data.get("schema") not in (SCHEMA, TRANSFORM_SCHEMA, ANATOMY_SCHEMA, LEGACY_SCHEMA, KEYED_SCHEMA):
+    if data.get("schema") not in (SCHEMA, JOIN_SCHEMA, TRANSFORM_SCHEMA, ANATOMY_SCHEMA, LEGACY_SCHEMA, KEYED_SCHEMA):
         raise LimbError(f"motion document needs schema {SCHEMA}")
     if "generatedBy" in data and not isinstance(data["generatedBy"], str):
         raise LimbError("motion generatedBy must be a string")
@@ -144,7 +189,7 @@ def parse_motion(data: object) -> Motion:
         if not isinstance(data['motion'], dict) or set(data['motion']) != {'arm', 'hand', 'played', 'fps'}:
             raise LimbError('keyed motion requires exactly arm, hand, played and fps')
         return _decode(_KeyedMotion, data['motion'], 'motion', [KEYED_ITEMS], solved=True)
-    result: Motion = _decode(Motion, data["motion"], "motion", [MAX_ITEMS])
+    result: Motion = _decode(Motion, data["motion"], "motion", [MAX_ITEMS], legacy_envelope=data["schema"] != SCHEMA)
     if data["schema"] == LEGACY_SCHEMA and any("bend_axis" in digit for digit in data["motion"]["hand"]["digits"]):
         raise LimbError("custom bend axes require motion schema srstudio.limbs/1.1.0")
     if data['schema'] in (ANATOMY_SCHEMA, LEGACY_SCHEMA):
@@ -154,7 +199,7 @@ def parse_motion(data: object) -> Motion:
             for track in tracks
         ):
             raise LimbError('transform interpolation and velocities require motion schema srstudio.limbs/1.2.0')
-    if data['schema'] != SCHEMA and 'joins' in data['motion']:
+    if data['schema'] not in (SCHEMA, JOIN_SCHEMA) and 'joins' in data['motion']:
         raise LimbError('action joins require motion schema srstudio.limbs/1.3.0')
     return result
 

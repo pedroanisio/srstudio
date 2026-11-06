@@ -139,6 +139,9 @@ def main(argv=None):
 
     parser = Parser(prog="srstudio")
     sub = parser.add_subparsers(dest="cmd", required=True)
+    recipes = sub.add_parser('recipes', help='discover executable agent tasks and scoped preview evidence')
+    recipes.add_argument('name', nargs='?')
+    recipes.add_argument('--json', action='store_true')
     schema = sub.add_parser('schema', help='list data document formats or print a versioned JSON Schema')
     schema.add_argument('document', nargs='?')
     schema.add_argument('--version')
@@ -163,6 +166,7 @@ def main(argv=None):
     cat.add_argument('--search', help='search names, summaries and tags; returns a bounded page')
     cat.add_argument('--summary', action='store_true', help='compact first page (20 entries by default)')
     cat.add_argument('--capability', action='append', default=[], help='require explicit support; repeat for AND')
+    cat.add_argument('--operations', action='store_true', help='search declared helpers and their own capabilities')
     cat.add_argument('--limit', type=int, help='page size, 1..100')
     cat.add_argument('--offset', type=int, default=0, help='zero-based offset in stable kind/name order')
     cat.add_argument('--fields', help='comma-separated catalog fields; requires --json')
@@ -360,6 +364,31 @@ def main(argv=None):
     record.add_argument("slug")
     record.add_argument("options", nargs=argparse.REMAINDER, help="the project and the recorder's own options")
     args = parser.parse_args(arguments)
+    if args.cmd == 'recipes':
+        from . import authoring, curves
+
+        data = authoring.recipes()
+        if args.name:
+            found = next((r for r in data['items'] if r['id'] == args.name), None)
+            if found is None:
+                _error(
+                    'recipes',
+                    authoring.AuthoringError(
+                        'unknown authoring recipe',
+                        code='authoring.recipe',
+                        path='recipe',
+                        actual=args.name,
+                        expected=[r['id'] for r in data['items']],
+                        remedy='Choose a recipe from srstudio recipes --json.',
+                    ),
+                    args.json,
+                )
+                return 2
+            data = found
+        else:
+            data['curves'] = [curves.describe(intent) for intent in curves.INTENTS]
+        print(json.dumps(data, indent=2, ensure_ascii=False, allow_nan=False))
+        return 0
     if getattr(args, 'fields', None) is not None and not args.json:
         parser.error('--fields requires --json')
     if args.cmd == 'schema':
@@ -458,6 +487,7 @@ def main(argv=None):
             rows = registry.entries(args.kind, args.style)
             paged = (
                 args.summary
+                or args.operations
                 or args.search is not None
                 or args.capability
                 or args.limit is not None
@@ -472,6 +502,7 @@ def main(argv=None):
                     kind=args.kind,
                     style=args.style,
                     capabilities=tuple(args.capability),
+                    operations=args.operations,
                     limit=20 if args.limit is None else args.limit,
                     offset=args.offset,
                     fields=tuple(args.fields.split(','))
@@ -482,7 +513,8 @@ def main(argv=None):
                     print(json.dumps(page, ensure_ascii=False))
                 else:
                     for row in page['items']:
-                        print(f"{row['kind']} {row['name']} ({row['style'] or 'any'}): {row['summary']}")
+                        helper = f" operation={row['operation']}" if args.operations else ''
+                        print(f"{row['kind']} {row['name']}{helper} ({row['style'] or 'any'}): {row['summary']}")
                     print(f"{len(page['items'])} of {page['total']}; next offset: {page['next_offset']}")
                 return 0
         except registry.RegistryError as exc:

@@ -11,9 +11,9 @@ one cubic per frame interval whose first and second derivatives are continuous a
 is zero at the clip's two ends. At a frame it gives that frame's value exactly.
 
 A spline can pass between two frames a little beyond both. A control that passes its limit there, between two frames
-that keep it, is held at the limit, since the clip never put it there; a control past its limit at a frame either side
-is held and counted, or refused, as the frame itself would be. A frame's residual and dropped turns are carried to the
-moments around it.
+that keep it, is held at the limit and reported in ``interpolation_clamps``; a control past its limit at a frame
+either side is held and counted in ``clamped``, or refused, as the frame itself would be. Clipping can break spline
+derivative continuity. A frame's residual and dropped turns are carried to the moments around it.
 """
 
 from __future__ import annotations
@@ -125,7 +125,7 @@ class Tracks:
                 if any(key in notes.outside for notes in near):
                     value = tally.hold(key, value, (low, high), time_s)
                 else:
-                    value = max(low, min(high, value))
+                    value = tally.hold_interpolated(key, value, (low, high), time_s)
             found[key] = value
         for joint in {joint for notes in near for joint in notes.residuals}:
             tally.residual(joint, max(notes.residuals.get(joint, 0.0) for notes in near))

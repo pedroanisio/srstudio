@@ -8,10 +8,11 @@ from dataclasses import dataclass, replace
 from typing import Any, Protocol
 
 from ..canvas import Canvas
+from ._sampling import coverage
 from .adapters import Appearance, adapter_for
 from .compile import BakeOptions, _frame_count, _resolve_options, _scene_time
 from .correctives import ContourCorrection
-from .errors import LimbError
+from .errors import Diagnostic, LimbError
 from .geometry import ProjectedPose, path, project_pose
 from .math3d import Frame, Vec3
 from .motion import Motion, TransformTrack, sample_motion
@@ -105,6 +106,7 @@ class InteractionResult:
     reports: tuple[tuple[str, MotionReport], ...]
     nodes: int
     depth_orders: tuple[tuple[tuple[str, float], ...], ...]
+    diagnostics: tuple[Diagnostic, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -223,8 +225,13 @@ def bake_interaction(
         raise LimbError('camera/bake cuts must have distinct representable scene times', code='projection')
     inverse = parent_transform.inverse()
     reports = []
+    diagnostics: list[Diagnostic] = []
     frames: list[list[_Surface]] = [[] for _ in range(frame_total)]
     for participant in participants:
+        diagnostics.extend(
+            replace(d, message=f'{participant.name}: {d.message}')
+            for d in coverage(participant.motion, times, duration, options.fps)
+        )
         if options.quality is not None:
             options.quality.check_scope(participant.motion, participant.style, options.fps)
         adapter = adapter_for(participant.style)
@@ -316,4 +323,5 @@ def bake_interaction(
         tuple((name, replace(report, nodes=nodes)) for name, report in reports),
         nodes,
         tuple(tuple((surface.name, surface.depth) for surface in frame) for frame in frames),
+        tuple(diagnostics),
     )

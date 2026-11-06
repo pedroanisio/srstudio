@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import types
 from dataclasses import MISSING, fields, is_dataclass
-from typing import Any, get_args, get_origin, get_type_hints
+from typing import Any, Union, get_args, get_origin, get_type_hints
 
 from ._body_types import SIDES, BodyProfile
 from .document_schemas import _array, _object
 from .limbs.model import ArmProfile, HandProfile
-from .limbs.motion import Sample
+from .limbs.motion import ACTIONS, Motion, Sample
 
 
 def _vector(size: int) -> dict:
@@ -57,21 +58,25 @@ def body_schema(version: str) -> dict:
     }
 
 
-def keyed_schema(version: str) -> dict:
+def _record_shapes(*records: type, limit: int = 4096, string_limit: int | None = 1024) -> tuple[list[dict], dict]:
     definitions: dict[str, Any] = {}
 
     def shape(kind: Any) -> dict:
+        if get_origin(kind) in (types.UnionType, Union):
+            return {'anyOf': [shape(item) for item in get_args(kind)]}
+        if kind is type(None):
+            return {'type': 'null'}
         if kind in (float, int, bool, str):
             result: dict[str, Any] = {'type': {float: 'number', int: 'integer', bool: 'boolean', str: 'string'}[kind]}
-            if kind is str:
-                result['maxLength'] = 1024
+            if kind is str and string_limit is not None:
+                result['maxLength'] = string_limit
             if kind is int:
                 result['x-python-type'] = 'int'
             return result
         if get_origin(kind) is tuple:
             args = get_args(kind)
             if len(args) == 2 and args[1] is Ellipsis:
-                return _array(shape(args[0]), 4096)
+                return _array(shape(args[0]), limit)
             return {
                 'type': 'array',
                 'prefixItems': [shape(t) for t in args],
@@ -89,13 +94,54 @@ def keyed_schema(version: str) -> dict:
                 required = tuple(f.name for f in fields(kind) if f.default is MISSING and f.default_factory is MISSING)
                 definitions[name] = _object(properties, required)
             return {'$ref': f'#/$defs/{name}'}
-        raise TypeError(f'Unsupported keyed motion document type: {kind}')
+        raise TypeError(f'Unsupported motion document type: {kind}')
+
+    return [shape(record) for record in records], definitions
+
+
+def procedural_schema(version: str) -> dict:
+    shapes, definitions = _record_shapes(Motion, limit=10000, string_limit=None)
+    properties = definitions['Motion']['properties']
+    properties['reach_policy'] = {'enum': ['strict', 'clamp']}
+    definitions['Action']['properties']['name'] = {'enum': list(ACTIONS)}
+    definitions['ArmProfile']['properties']['side'] = {'enum': ['left', 'right']}
+    definitions['TransformTrack']['properties']['interpolation'] = {'enum': ['smooth', 'continuous']}
+    definitions['TransformTrack']['properties']['keys']['minItems'] = 1
+    if version != '1.4.0':
+        del definitions['MotionStyle']['properties']['envelope']
+    else:
+        definitions['MotionStyle']['properties']['envelope'] = {'enum': ['minimum-jerk', 'legacy']}
+    if version not in ('1.3.0', '1.4.0'):
+        del properties['joins']
+    if version in ('1.0.0', '1.1.0'):
+        del definitions['TransformTrack']['properties']['interpolation']
+        for name in ('velocity', 'angular_velocity'):
+            del definitions['TransformKey']['properties'][name]
+    if version == '1.0.0':
+        del definitions['DigitProfile']['properties']['bend_axis']
+    return {
+        **_object(
+            {'schema': {'const': f'srstudio.limbs/{version}'}, 'generatedBy': {'type': 'string'}, 'motion': shapes[0]},
+            ('schema', 'motion'),
+        ),
+        '$defs': definitions,
+        'x-runtime-constraints': [
+            'Finite numbers; decoding is bounded to 100000 items and 32 levels.',
+            'Times use motion seconds; canonical world units and radians follow the typed limb records.',
+            'Parse to check anatomy, joint limits, ordered actions/contacts and compatible transform controls.',
+            'Compile to check geometry, adapter capabilities, frame/node budgets and selected quality limits.',
+        ],
+    }
+
+
+def keyed_schema(version: str) -> dict:
+    (arm, hand, sample), definitions = _record_shapes(ArmProfile, HandProfile, Sample)
 
     motion = _object(
         {
-            'arm': shape(ArmProfile),
-            'hand': shape(HandProfile),
-            'played': {**_array(shape(Sample), 4096), 'minItems': 1},
+            'arm': arm,
+            'hand': hand,
+            'played': {**_array(sample, 4096), 'minItems': 1},
             'fps': {'type': 'integer', 'minimum': 1, 'maximum': 120, 'x-python-type': 'int'},
         },
         ('arm', 'hand', 'played', 'fps'),

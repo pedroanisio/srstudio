@@ -13,3 +13,9 @@ def smooth(value: float) -> float:
 def tangent_weights(u: float) -> tuple[float, float]:
     """Unit endpoint-velocity basis; callers retain their own vector multiplication order."""
     return u - 6 * u**3 + 8 * u**4 - 3 * u**5, -4 * u**3 + 7 * u**4 - 3 * u**5
+
+
+def accent(u: float) -> float:
+    """Unit-height arc with zero value, velocity and acceleration at either end."""
+    u = min(1.0, max(0.0, u))
+    return 64 * u**3 * (1 - u) ** 3

@@ -15,10 +15,17 @@ from ._body_parse import LEGACY_SCHEMA as BODY_LEGACY_SCHEMA
 from ._body_parse import SCHEMA as BODY_SCHEMA
 from .acting import HeadTarget
 from .errors import SrstudioError
+from .limbs import serialization as limb_documents
 from .limbs._motion_keyed import SCHEMA as KEYED_SCHEMA
 
 VERSIONS = tuple(s.rsplit('/', 1)[1] for s in (SCHEMA, POLICY_SCHEMA, BLEND_SCHEMA))
 _FORMATS = {
+    'authoring': (
+        ('1.0.0',),
+        'srstudio.authoring.parse_request',
+        'srstudio.authoring.compile_request',
+        'docs/authoring-agents.md',
+    ),
     'acting': (
         VERSIONS,
         'srstudio.acting.parse_score',
@@ -36,6 +43,27 @@ _FORMATS = {
         'srstudio.limbs.serialization.parse_motion',
         'srstudio.limbs.compile.compile_motion',
         'docs/catalog/limbs.md',
+    ),
+    'limbs': (
+        tuple(
+            s.rsplit('/', 1)[1]
+            for s in (
+                limb_documents.LEGACY_SCHEMA,
+                limb_documents.ANATOMY_SCHEMA,
+                limb_documents.TRANSFORM_SCHEMA,
+                limb_documents.JOIN_SCHEMA,
+                limb_documents.SCHEMA,
+            )
+        ),
+        'srstudio.limbs.serialization.parse_motion',
+        'srstudio.limbs.compile.compile_motion',
+        'docs/catalog/limbs.md',
+    ),
+    'dance-moves': (
+        ('1.0.0', '1.1.0'),
+        'srstudio.dance.parse_moves',
+        'srstudio.dance.sample',
+        'docs/authoring-dance.md',
     ),
 }
 
@@ -89,9 +117,17 @@ def get(name: str, *, version: str | None = None) -> dict[str, Any]:
             )
     assert version is not None
     if name != 'acting':
-        from ._motion_schemas import body_schema, keyed_schema
+        from ._dance_schema import moves_schema
+        from ._motion_schemas import body_schema, keyed_schema, procedural_schema
+        from .authoring import schema as authoring_schema
 
-        document = body_schema(version) if name == 'body' else keyed_schema(version)
+        document = {
+            'authoring': authoring_schema,
+            'body': body_schema,
+            'limbs-keyed': keyed_schema,
+            'limbs': procedural_schema,
+            'dance-moves': moves_schema,
+        }[name](version)
         return {
             '$schema': 'https://json-schema.org/draft/2020-12/schema',
             '$id': f'urn:srstudio:{name}:{version}',
@@ -100,7 +136,12 @@ def get(name: str, *, version: str | None = None) -> dict[str, Any]:
             'x-validation': 'runtime-required',
             **document,
         }
+    from ._acting_transitions import CURVES, VERSION
+    from .head_motion import CHANNELS
+
     number = {'type': 'number'}
+    seconds = {'type': 'number', 'minimum': 0, 'maximum': 600}
+    fraction = {'type': 'number', 'minimum': 0, 'maximum': 1}
     label = {'type': 'string', 'minLength': 1, 'maxLength': 128}
     expression = _object({'eyes': label, 'mouth': _nullable(label)}, ('eyes',))
     head = _object({f.name: _nullable(number) for f in fields(HeadTarget)})
@@ -111,29 +152,36 @@ def get(name: str, *, version: str | None = None) -> dict[str, Any]:
         },
         ('frequency', 'damping'),
     )
-    timing = _object({'channel': label, 'delay': number, 'duration': _nullable(number)}, ('channel',))
+    timing = _object(
+        {
+            'channel': {'enum': [*CHANNELS, 'expression', 'gesture', 'gaze']},
+            'delay': seconds,
+            'duration': _nullable(seconds),
+        },
+        ('channel',),
+    )
     policy = _object(
         {
-            'version': label,
-            'curve': label,
-            'anticipation': number,
-            'anticipation_amount': number,
-            'settle': number,
-            'overshoot': number,
+            'version': {'const': VERSION},
+            'curve': {'enum': list(CURVES)},
+            'anticipation': seconds,
+            'anticipation_amount': fraction,
+            'settle': seconds,
+            'overshoot': fraction,
             'spring': _nullable(spring),
             'timing': _array(timing, 11),
         },
         ('version',),
     )
     beat = {
-        'at': number,
+        'at': seconds,
         'emotion': _nullable(label),
         'expression': _nullable(expression),
         'gaze': _nullable(label),
         'gesture': _nullable(label),
         'head': _nullable(head),
         'breath': _nullable(number),
-        'transition': number,
+        'transition': seconds,
         'reset': {'type': 'boolean'},
     }
     if version != '1.0.0':
@@ -154,12 +202,12 @@ def get(name: str, *, version: str | None = None) -> dict[str, Any]:
     document = _object(
         {
             'schema': {'const': f'srstudio.acting/{version}'},
-            'duration': number,
+            'duration': {'type': 'number', 'minimum': 0.0001, 'maximum': 600},
             'beats': _array(_object(beat, ('at',))),
             'speech': _array(line),
             'heard': _array(line),
             'seed': {'type': 'integer', 'x-python-type': 'int'},
-            'sample_rate': {'type': 'integer', 'x-python-type': 'int'},
+            'sample_rate': {'type': 'integer', 'minimum': 1, 'maximum': 120, 'x-python-type': 'int'},
             'idle': {'type': 'boolean'},
         },
         ('schema', 'duration'),

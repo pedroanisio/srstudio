@@ -53,19 +53,24 @@ EMITTED_CASES = (
 )
 
 
+def _legacy_action(*args, **kwargs):
+    style = replace(kwargs.pop('style', MotionStyle()), envelope='legacy')
+    return Action(*args, style=style, **kwargs)
+
+
 def cases():
     result = {
-        f'{side}-{name}': Motion(ArmProfile(side=side), HUMAN, (Action(name, start=0.5, duration=2),))
+        f'{side}-{name}': Motion(ArmProfile(side=side), HUMAN, (_legacy_action(name, start=0.5, duration=2),))
         for side in ('left', 'right')
         for name in public.ACTIONS
     }
     for name, hand in HANDS.items():
-        result[f'anatomy-{name}'] = Motion(ArmProfile(), hand, (Action('grasp', duration=3),))
+        result[f'anatomy-{name}'] = Motion(ArmProfile(), hand, (_legacy_action('grasp', duration=3),))
     result['expressive'] = Motion(
         ArmProfile(),
         HUMAN,
         (
-            Action(
+            _legacy_action(
                 'wave',
                 duration=3,
                 style=MotionStyle(
@@ -81,11 +86,11 @@ def cases():
         ),
         'continuous',
     )
-    result['continuous-root'] = Motion(ArmProfile(), HUMAN, (Action('point', duration=3),), root=root)
+    result['continuous-root'] = Motion(ArmProfile(), HUMAN, (_legacy_action('point', duration=3),), root=root)
     result['joined'] = Motion(
-        ArmProfile(), HUMAN, (Action('present', duration=1.5), Action('point', start=1.5))
+        ArmProfile(), HUMAN, (_legacy_action('present', duration=1.5), _legacy_action('point', start=1.5))
     ).chain()
-    base = Motion(ArmProfile(), HUMAN, (Action('grasp', duration=3),))
+    base = Motion(ArmProfile(), HUMAN, (_legacy_action('grasp', duration=3),))
     grip = base.sample(1).hand.frame
     track = TransformTrack(
         (
@@ -98,14 +103,14 @@ def cases():
     result['moving-contact'] = replace(base, contacts=(Contact('cup', 1, 2, track),))
     offset = Frame(Vec3(0, 0.3, 0))
     result['attachment'] = replace(base, attachments=(Attachment('cup', 1, 2, grip.compose(offset), offset),))
-    press = Motion(ArmProfile(), HUMAN, (Action('press', duration=3),))
+    press = Motion(ArmProfile(), HUMAN, (_legacy_action('press', duration=3),))
     hand = press.sample(1).hand
     surface = TransformTrack.constant(Frame(hand.digit('index').points[-1], hand.frame.rotation))
     result['finger-contact'] = replace(press, contacts=(Contact('button', 1, 2, surface, digit='index'),))
-    result['pole'] = Motion(ArmProfile(), HUMAN, (Action('rest', duration=3, pole=Vec3(0, 1, 0)),))
+    result['pole'] = Motion(ArmProfile(), HUMAN, (_legacy_action('rest', duration=3, pole=Vec3(0, 1, 0)),))
     for side in ('left', 'right'):
         result[f'planar-{side}'] = Motion(
-            ArmProfile(side=side), HUMAN, (Action('point', duration=3, target=Target(Vec3(0.65, 0.3, 0))),)
+            ArmProfile(side=side), HUMAN, (_legacy_action('point', duration=3, target=Target(Vec3(0.65, 0.3, 0))),)
         )
     return result
 
@@ -155,7 +160,7 @@ def records():
         motion.root.keys[0],
         motion.root,
         Target(Vec3(1, 2, 3)),
-        MotionStyle(),
+        MotionStyle(envelope='legacy'),
         WordRef('take', 0),
         motion.actions[0],
         motion.contacts[0],
@@ -219,7 +224,12 @@ def test_record_identity_signatures_hints_and_old_pickles_are_preserved(record, 
     kind = type(record)
     assert getattr(public, kind.__name__) is kind
     assert kind.__module__ == 'srstudio.limbs.motion'
-    assert str(inspect.signature(kind)) == baseline['records'][kind.__name__]['signature']
+    signature = (
+        str(inspect.signature(kind))
+        .replace(", envelope: 'str' = 'minimum-jerk'", '')
+        .replace(", envelope='minimum-jerk'", '')
+    )
+    assert signature == baseline['records'][kind.__name__]['signature']
     assert set(get_type_hints(kind)) == {f.name for f in fields(kind)}
     old = pickle.loads(base64.b64decode(baseline['records'][kind.__name__]['pickle4']))
     assert type(old) is kind and old == record

@@ -155,7 +155,7 @@ def test_the_same_framing_stays_put_and_the_first_shot_can_push():
     assert not groups_with_keys(cv, "scaleX") and still.scaleX == host_kit.FRAMES["tight"]
     moving = cv.group(cv.comp, "shot-002")
     host_kit.punch(cv, moving, "lint", 0.0, "lint", (0.8, 1.08))
-    assert groups_with_keys(cv, "scaleX")[0].get("defaultInterpolation") == "linear"
+    assert groups_with_keys(cv, "scaleX")[0].get("defaultInterpolation") == "sine-in-out"
 
 
 def test_his_crown_clears_the_label_in_every_framing():

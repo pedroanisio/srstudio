@@ -20,8 +20,12 @@ a similar character or pass contract JSON directly to a builder.
 | --- | --- | --- |
 | Start a project and check its dependencies | `srstudio init ROOT --json`; `srstudio doctor --json` | Run the returned build argument array, including its explicit project root. |
 | Discover a bounded set of parts | `srstudio catalog --summary --json`; `registry.search()` | Page with `next_offset`; capability filters match explicit true declarations only. |
+| Author a character, gesture or carry task as JSON | `srstudio recipes --json`; [agent authoring](authoring-agents.md) | Parse a closed request, bind `cv`/`parent` separately, place `interval.start_s/end_s` once. |
+| Choose stopping, passing or impact motion | `srstudio.curves.track`; [curve intents](authoring-agents.md#choose-the-motion-intent) | Source derivative guarantees are separate from emitted samples and constrained geometry. |
 | Generate a JSON acting score | `srstudio schema acting --version 1.2.0 --json`; `document_schemas.get()` | Structural schema first, `srstudio.acting.parse_score` next, then rig-specific compilation. |
 | Generate a body or solved-limb document | `srstudio schema body --version 1.1.0 --json`; `srstudio schema limbs-keyed --version 1.0.0 --json` | Validate structure, parse with the catalog's named parser, then compile to check geometry and budgets. |
+| Generate procedural limbs or dance moves | `srstudio schema limbs --version 1.4.0 --json`; `srstudio schema dance-moves --version 1.1.0 --json` | Versioned shapes and bounds; runtime parsing and sampling still check motion semantics. |
+| Find a moving-head helper | `srstudio catalog --operations --kind character --capability head_motion --json`; [helper discovery](authoring-discovery.md) | Inspect and call the helper's own contract through `Entry.operation(name)`. |
 | Decide whether a build is sufficiently verified | [Agent verification recipes](authoring-verification.md) | Read `checks` and `artifacts`; use `--require-check` to refuse skipped or failed verification. |
 | Discover a character, prop or location | `srstudio inspect KIND NAME --json`; [agent contracts](authoring-discovery.md#agent-contracts) | Read declared units, vocabularies, versions and runtime bindings; unknown fields remain unknown. |
 | Place different character families | [Character clips](authoring-clips.md#character-clips-one-placement-and-timing-boundary) | One local performance clock and an explicit project interval; adapters enforce family capabilities. |

@@ -14,7 +14,11 @@ from srstudio.limbs.compile import compile_motion
 from srstudio.limbs.errors import LimbError
 from srstudio.limbs.motion import Action, Motion, Target
 
-IDS = ('toon-human-conversation/1.0.0', 'gloss-human-deliberate/1.0.0')
+IDS = tuple(
+    f'{name}/{version}'
+    for name in ('toon-human-conversation', 'gloss-human-deliberate')
+    for version in ('1.0.0', '1.1.0')
+)
 
 
 @pytest.mark.parametrize('name', IDS)
@@ -41,7 +45,7 @@ def canvas():
 def test_profiles_disclose_scope_calibration_and_missing_subjective_evidence(name):
     profile = get_preset(name)
     data = profile.describe()
-    assert data['version'] == '1.0.0'
+    assert data['version'] == name.rsplit('/', 1)[1]
     assert data['scope']['fps'] == 24
     assert data['scope']['clock'] == 'motion seconds'
     assert data['scope']['upper_arm'] == 1

@@ -137,8 +137,16 @@ class MotionStyle:
     asymmetry: float = 0.0
     settling: float = 0.0
     arc: float = 0.04
+    envelope: str = 'minimum-jerk'
+
+    def __setstate__(self, state: dict) -> None:
+        # Old pickles predate the envelope field and must keep their original trajectory.
+        for name, value in {**state, 'envelope': state.get('envelope', 'legacy')}.items():
+            object.__setattr__(self, name, value)
 
     def __post_init__(self) -> None:
+        if self.envelope not in ('minimum-jerk', 'legacy'):
+            raise LimbError('gesture envelope must be minimum-jerk or legacy')
         bounded(self.amplitude, 0, 2, "amplitude")
         bounded(self.speed, 0.25, 4, "speed")
         for name in ("tension", "overshoot", "asymmetry", "settling", "arc"):

@@ -10,6 +10,19 @@ Bind an `EpisodeSpec` to a declared style before choosing its parts, timeline an
 
 Run commands from the srstudio repository root.
 
+## Camera pushes and cuts
+
+`camera.push_in(cv, group, scale=[(0, 1), (2, 1.15)])` now defaults to `curve="sine-in-out"`: each scale
+segment eases from rest and comes to rest. Pass `curve="linear"` to preserve the previous constant-speed
+behavior, or another curve accepted by `Canvas.keys`. `hold_scale=True` overrides the curve with scale cuts.
+Position keys (`x`, `y`) remain cuts, and all keys follow `Canvas.local_time`. Set the group's pivot first with
+`camera.anchor(group, x, y, place=True)` to choose the point the camera pushes toward.
+
+Sine easing makes endpoint velocity zero, but does not guarantee acceleration continuity against a hold or
+across unequal segments. Choose timings and review the rendered move for the intended shot. Invalid key or
+curve input rolls back the entire push, including position keys.
+`host_kit.punch(..., push=(seconds, scale))` uses this eased default too.
+
 ## Styles
 
 `EpisodeSpec.with_style(style, **overrides)` switches an existing project to fresh style defaults.

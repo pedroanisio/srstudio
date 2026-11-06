@@ -126,7 +126,7 @@ def _encode(engine: str, out: Path, cases: list[dict]) -> dict:
 
 
 def build(out: Path, *, seed: str, engine: str | None = None, ratings: Path | None = None) -> Path:
-    profiles = list_presets()
+    profiles = list_presets(latest=True)
     pairs = tuple(
         Pair(
             p['scope']['style'],

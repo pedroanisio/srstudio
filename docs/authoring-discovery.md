@@ -10,12 +10,17 @@ Inspect capabilities before constructing a drawing. The recipes below import the
 
 Run commands from the srstudio repository root.
 
+For closed JSON tasks that construct typed records, start with `srstudio recipes --json`
+and the [agent authoring guide](authoring-agents.md). Supported character contracts link
+their `authoring` adapter and its local performance clock.
+
 For an installed SDK, discovery commands also work outside a repository. Start with a bounded summary:
 
 ```bash
 srstudio catalog --summary --json
 srstudio catalog --search coffee --kind prop --limit 10 --json
 srstudio catalog --kind character --capability limbs --limit 10 --json
+srstudio catalog --operations --kind character --capability head_motion --limit 10 --json
 srstudio inspect character manager --fields name,contract.capabilities --json
 ```
 
@@ -31,6 +36,40 @@ raise a structured field error. These selectors require JSON output. Paged disco
 with usage reports or contract-coverage reports. Plain `catalog --json` retains its full legacy listing.
 Python agents can call `registry.search(query, kind=..., capabilities=(...), limit=..., offset=...)`
 and `registry.select_fields(registry.describe(kind, name), ('name', 'contract.capabilities'))`.
+
+Use `--operations` (Python: `operations=True`) to search explicitly declared immediate helpers. Each row adds
+`operation`, the page adds `scope="operations"`, and ordering is by kind, name, then operation. Words also match
+the operation name. Capability filters apply to each helper independently. A character's static builder may
+declare `head_motion=false` while its `head_performance` helper declares it true. These helpers bind the correct
+rig for Bento v1/v2, Lyra, Fox v2, Sloth, Goat and Hamster. Inspect the helper's own contract and resolve it with
+`registry.get(kind, name).operation(operation)`; a missing helper raises a structured error listing valid names.
+
+<!-- helper-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry
+from srstudio.head_motion import Channel, HeadPlan
+
+page = registry.search("bento", kind="character", capabilities=("head_motion",), operations=True, limit=1)
+row = page["items"][0]
+entry = registry.get(row["kind"], row["name"])
+contract = entry.describe()["contract"]["operations"][row["operation"]]
+assert contract["arguments"]["properties"]["duration"]["x-role"] == "end"
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="24", duration=2)
+cv = Canvas(scene, font_asset=None)
+pose = entry.operation("pose_of")(0, "neutral")
+group = entry.operation(row["operation"])(
+    cv, cv.comp, [pose], duration=2,
+    plan=HeadPlan(nod=Channel(((0, 0), (1, 1)), curve="sine-in-out")),
+)
+assert not scene.check()
+```
+<!-- helper-discovery:end -->
+
+Here `duration` is the project exit time; pose starts are relative to `enter`, and head-plan keys use project
+seconds. Construct the typed `Pose` and `HeadPlan` records before calling the helper.
 
 Unknown kinds and style filters raise `RegistryError` with `path=kind` or `path=style`, the rejected
 value, valid choices and a repair instruction. Plugin-declared styles are valid after their modules are imported.
@@ -194,9 +233,24 @@ capabilities do not establish emotional readability, biomechanics, or rendered q
 
 ### Non-character discovery and drawing anchors
 
-Core Cutout and its extended families publish 113 prop, 16 location and 11 graphic contracts, including
-`reaching-hand`'s held-prop callback and the hiring, home, office, shop, handed, leak, lobby, locate, odds and
-reference modules. Coverage remains partial across the full catalog. Inspect it separately from ordinary listings:
+The default catalog's declaration coverage is generated from `registry.contract_coverage()` below.
+Explicit contracts can still have unknown units, clocks or capabilities. “With units/clocks/anchors” means at least
+one such annotation exists, not that every parameter is covered. Complete data shapes exclude known runtime
+bindings such as canvases. `contract.binding` lists runtime and unresolved data paths separately, including
+required and conditional status. “With examples” counts declared snippets, not executions or renders.
+Neither a declaration nor a complete shape certifies semantic validity.
+
+<!-- contract-coverage:start -->
+| Kind | Registered | Explicit contracts | Complete data shapes | Runtime bindings | With examples | With units | With clocks | With anchors |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| character | 80 | 80 | 7 | 80 | 5 | 80 | 78 | 0 |
+| location | 128 | 128 | 110 | 128 | 2 | 96 | 72 | 26 |
+| prop | 569 | 569 | 560 | 569 | 5 | 545 | 250 | 262 |
+| graphic | 88 | 88 | 74 | 88 | 1 | 88 | 82 | 15 |
+<!-- contract-coverage:end -->
+
+Contributors regenerate this table with `python tools/update_contract_coverage.py`; its `--check` mode and the
+documentation test detect drift. Plugin imports change the live registry, so inspect your installed environment:
 
 ```bash
 srstudio catalog --contract-coverage --json
@@ -204,7 +258,7 @@ srstudio catalog --style cutout --kind prop --contract-coverage
 srstudio inspect prop coffee-cup --json
 ```
 
-Forty Toon core, props, sets and world builders also declare their semantics,
+Toon core, props, sets and world builders also declare their semantics,
 including `toon-headset`. Toon positions use `toon-reference` space: `fx(x)` maps
 `x * 1080 / 592`, while `fy(y)` maps `(y - 70) * 1080 / 592`, both rounded to two
 decimals. Distances use `fh` without the y offset. Font sizes and measurement callback
@@ -455,8 +509,9 @@ marker_result = marker(
 <!-- toon-study-discovery:end -->
 
 `srstudio.contract_coverage(style=None, kind=None)` returns the same versioned coverage report. Per-kind counts
-separate explicit declarations, complete argument shapes, units, clocks and anchors; `undeclared_parts` names
-the gaps. A count of declarations does not certify complete semantics. Discovery never invokes a builder.
+separate explicit declarations, complete argument/data shapes, runtime bindings, examples, units, clocks and
+anchors. `undeclared_parts` names declaration gaps; `unresolved_parts` names incomplete data shapes.
+A count of declarations does not certify complete semantics. Discovery never invokes a builder.
 The regular `catalog` list retains its existing shape. Coverage and usage-ranking reports are separate modes.
 Directly replacing `Entry.builder` invalidates its previous declaration even if the new signature matches.
 Inspection marks that contract `declaration_status="builder-changed"`; coverage lists it under

@@ -6,6 +6,8 @@ The library builds and validates scene XML. Rendering that XML into video requir
 
 For AI coding agents, the [task-to-API entry points](docs/authoring-reference.md#agent-authoring-entry-points)
 link discovery, typed inputs, clocks, capabilities, executable recipes and repairable failures.
+The [JSON authoring guide](docs/authoring-agents.md) provides a closed request format for character,
+gesture and carry tasks. Start with `srstudio recipes --json` and `srstudio schema authoring --json`.
 The [authoring benchmark](docs/authoring-benchmark.md) measures discovery, planning, compilation,
 rendering and cold/warm cache work with pinned fixtures and output-equivalence checks.
 The [composition guide](docs/composition-preflight.md) covers strict scene manifests,
@@ -182,13 +184,17 @@ For bounded discovery, start with `catalog --summary --json` or
 Use `--capability limbs` to require declared support, and
 `inspect character manager --fields name,contract.capabilities --json` to retrieve only selected details.
 `registry.search()` provides the same paging in Python; the legacy unpaged catalog remains available.
+Use `catalog --operations --kind character --capability head_motion --json` to find moving-head helpers.
+Each helper has its own contract and resolves through `registry.get(kind, name).operation(operation)`;
+see the [executable discovery recipe](docs/authoring-discovery.md).
 
 JSON authoring documents have separate schemas: `srstudio schema --json` lists formats and versions;
 `srstudio schema acting --version 1.2.0 --json` exports the score's JSON Schema. Python callers use
 `srstudio.document_schemas.get('acting', version='1.2.0')`. Parse with `acting.parse_score`, then compile
 against the chosen rig: a structural schema cannot certify timing, alignment relationships or capabilities.
-The same discovery command exports `body` (1.0.0/1.1.0) and `limbs-keyed` (1.0.0), with parser and
-compiler entry points in the catalog. `ActingRig.describe()` supplies valid intent vocabularies
+The same discovery command exports `body` (1.0.0/1.1.0), `limbs-keyed` (1.0.0), procedural `limbs`
+(1.0.0–1.4.0), `dance-moves` (1.0.0/1.1.0), and `authoring` (1.0.0), with parser and compilation/sampling entry points in the catalog.
+Acting schemas publish duration, sample-rate and transition-policy bounds. `ActingRig.describe()` supplies valid intent vocabularies
 and numeric channel units/bounds for the selected rig.
 
 Core Cutout props, locations and graphics also declare placement units, clocks, return shapes and callback

@@ -31,6 +31,7 @@ from ._gaze_drawing import EyeLayers as EyeLayers
 from ._gaze_drawing import TrackingEyes as TrackingEyes
 from ._transaction import scene_transaction
 from .canvas import Canvas, _at_zero
+from .contracts import Operation, ParameterContract, PartContract
 from .face_blends import FaceBlender, FaceFrame, FaceTrack
 from .face_blends import segments as face_segments
 from .gaze import GazePlan
@@ -541,3 +542,37 @@ def _draw_figure(
         if on_face is not None:
             on_face(face)
         return lean
+
+
+_HEAD_CONTRACT = PartContract(
+    parameters=(
+        (
+            'poses',
+            ParameterContract(
+                items=ParameterContract(
+                    fields=(('start', ParameterContract(unit='seconds', timebase='relative:enter', minimum=0)),)
+                )
+            ),
+        ),
+        ('duration', ParameterContract(unit='seconds', timebase='project', role='end')),
+        ('enter', ParameterContract(unit='seconds', timebase='project', role='start', minimum=0)),
+        (
+            'plan',
+            ParameterContract(description='Typed HeadPlan on the project clock; checked against this version\'s rig.'),
+        ),
+    ),
+    capabilities=(('head_motion', True), ('expressions', True), ('limbs', False)),
+    constraints=('duration is the project exit time and must be after enter.',),
+)
+
+
+def _head_operation(rig: HeadRig) -> Operation:
+    """Explicit catalog helper bound to one character version's rig."""
+
+    def head_performance(
+        cv: Canvas, parent, poses: Sequence[Pose], duration: float, plan: HeadPlan, *, enter: float = 0
+    ):
+        """Draw a moving head. Pose starts are relative to enter; plan keys and exit use project seconds."""
+        return figure(cv, parent, rig, poses, duration, plan, enter=enter)
+
+    return Operation('head_performance', head_performance, _HEAD_CONTRACT)

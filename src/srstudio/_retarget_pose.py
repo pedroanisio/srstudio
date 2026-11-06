@@ -90,7 +90,9 @@ class Dropped:
 @dataclass(frozen=True)
 class RetargetReport:
     """What a retarget changed or could not hold. ``worst_residual_rad`` is over every kept joint and sample, including
-    residuals below ``RESIDUAL_FLOOR`` that ``residuals`` leaves out."""
+    residuals below ``RESIDUAL_FLOOR`` that ``residuals`` leaves out. ``interpolation_clamps`` counts spline overshoot
+    between legal source frames separately from ``clamped``. Both count only evaluated samples, with first times
+    on the clip clock and worst correction magnitudes in radians; neither certifies continuity between samples."""
 
     profile: str
     root_scale: float
@@ -98,6 +100,7 @@ class RetargetReport:
     residuals: tuple[Residual, ...]
     dropped: tuple[Dropped, ...]
     worst_residual_rad: float
+    interpolation_clamps: tuple[Clamp, ...] = ()
 
 
 @dataclass
@@ -114,6 +117,17 @@ class Tally:
     residuals: dict[str, list[float]] = field(default_factory=dict)
     dropped: dict[str, float] = field(default_factory=dict)
     worst_residual: float = 0.0
+    interpolation_clamps: dict[str, list[float]] = field(default_factory=dict)
+
+    def hold_interpolated(self, key: str, value: float, limits: tuple[float, float], time_s: float) -> float:
+        """Hold spline overshoot and record the correction separately, on the clip's clock."""
+        low, high = limits
+        held = max(low, min(high, value))
+        row = self.interpolation_clamps.setdefault(key, [0, 0.0, time_s])
+        row[0] += 1
+        row[1] = max(row[1], abs(value - held))
+        row[2] = min(row[2], time_s)
+        return held
 
     def hold(self, key: str, value: float, limits: tuple[float, float], time_s: float) -> float:
         """``value`` if inside ``limits``; otherwise clamped, and counted as a clamp or a breach."""
@@ -167,6 +181,10 @@ class Tally:
                 Dropped(joint, turn) for joint, turn in sorted(self.dropped.items(), key=lambda i: names.index(i[0]))
             ),
             self.worst_residual,
+            tuple(
+                Clamp(key, int(row[0]), row[1], row[2])
+                for key, row in sorted(self.interpolation_clamps.items(), key=lambda item: order[item[0]])
+            ),
         )
 
 

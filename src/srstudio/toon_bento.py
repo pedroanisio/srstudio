@@ -45,7 +45,7 @@ from .head_motion import HeadPlan, HeadStyle, Spring
 from .registry import register
 from .toon import ARMS, Pose, ToonDataError
 from .toon_cast import CENTRE, HEART, SHOULDERS, Layer, Look, Mouths, Ramp, _heart
-from .toon_head import HeadRig, figure
+from .toon_head import HeadRig, _head_operation, figure
 
 if TYPE_CHECKING:
     from .limbs.integration import LimbTrack
@@ -1836,6 +1836,8 @@ BENTO_RIG = HeadRig(
     drawn_as=("toon-bento", 1),
 )
 BENTO_RIG_2 = replace(BENTO_RIG, look=BENTO_2, drawn_as=("toon-bento", 2))
+
+
 _CONTRACT = PartContract(
     parameters=(
         (
@@ -1862,6 +1864,7 @@ _CONTRACT = PartContract(
         'For procedural head motion use toon_head.figure with BENTO_RIG and a HeadPlan.',
     ),
     operations=(
+        _head_operation(BENTO_RIG),
         Operation(
             'pose_of',
             pose_of,
@@ -1920,7 +1923,7 @@ def bento(
     "character",
     "toon-bento@2",
     summary="Bento with a pair of hands, the right the mirror of the left and each thumb on its own side",
-    contract=_CONTRACT,
+    contract=replace(_CONTRACT, operations=(_head_operation(BENTO_RIG_2), *_CONTRACT.operations[1:])),
 )
 def bento_2(
     cv: Canvas,

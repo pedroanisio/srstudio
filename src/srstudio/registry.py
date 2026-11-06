@@ -127,6 +127,14 @@ class Entry:
     def __call__(self, *args, **kwargs):
         return drawing_events.call(self.builder, *args, **kwargs)
 
+    def operation(self, name: str) -> Callable[..., Any]:
+        """Resolve an explicitly declared helper on the current builder; inspect its independent contract first."""
+        contract = self._current_contract
+        available = {op.name: op.builder for op in contract.operations} if contract else {}
+        if not isinstance(name, str) or name not in available:
+            raise _option('operation', name, sorted(available))
+        return available[name]
+
     @property
     def _current_contract(self) -> PartContract | None:
         """Authored metadata belongs to its registered callable, including when signatures happen to match."""
@@ -134,6 +142,12 @@ class Entry:
 
     def _describe_contract(self) -> dict[str, Any]:
         result = describe_part(self.builder, self._current_contract)
+        if self.kind == 'character' and self._current_contract is not None:
+            from .authoring import describe_character
+
+            adapter = describe_character(self.name)
+            if adapter is not None:
+                result['authoring'] = adapter
         if self.contract is not None and self._current_contract is None:
             result['declaration_status'] = 'builder-changed'
         return result
@@ -416,14 +430,19 @@ def search(
     limit: int = 20,
     offset: int = 0,
     fields: tuple[str, ...] = ('kind', 'name', 'style', 'summary'),
+    operations: bool = False,
 ) -> dict[str, Any]:
     """Bounded, stable discovery. Capabilities match explicit True declarations only.
 
-    Pages are sorted by (kind, name); offsets are relative to the current registry state.
+    Pages are sorted by (kind, name), then operation for helpers; offsets are relative to the current registry state.
     Import plugins before paging and keep that state unchanged until all pages are read.
+    ``operations=True`` searches explicitly declared immediate helpers, with AND filters on each helper's own
+    capabilities. Rows add ``operation``; resolve it through ``get(kind, name).operation(operation)``.
     """
     if not isinstance(query, str):
         raise _option('query', query, 'string')
+    if type(operations) is not bool:
+        raise _option('operations', operations, 'boolean')
     for name, value, low, high in (('limit', limit, 1, 100), ('offset', offset, 0, 1_000_000)):
         if type(value) is not int or not low <= value <= high:
             raise _option(name, value, f'integer in {low}..{high}')
@@ -433,7 +452,11 @@ def search(
         for group in _REGISTRY.values()
         for entry in group.values()
         if entry._current_contract
-        for name, _ in entry._current_contract.capabilities
+        for contract in (
+            entry._current_contract,
+            *(op.contract for op in entry._current_contract.operations if op.contract is not None),
+        )
+        for name, _ in contract.capabilities
     }
     for capability in capabilities:
         if capability not in known:
@@ -442,14 +465,27 @@ def search(
     if not fields or any(name not in allowed for name in fields):
         raise _option('fields', fields, sorted(allowed))
     words = query.casefold().split()
-    selected = [e for e in selected if all(word in ' '.join((e.name, e.summary, *e.tags)).casefold() for word in words)]
-    if capabilities:
-        selected = [
-            e for e in selected if all(e._describe_contract()['capabilities'].get(c) is True for c in capabilities)
-        ]
-    selected.sort(key=lambda e: (e.kind, e.name))
+    candidates: list[tuple[Entry, str]] = []
+    for entry in selected:
+        contract = entry._current_contract
+        if operations:
+            choices = (
+                [(op.name, dict(op.contract.capabilities) if op.contract else {}) for op in contract.operations]
+                if contract
+                else []
+            )
+        else:
+            haystack = ' '.join((entry.name, entry.summary, *entry.tags)).casefold()
+            if not all(word in haystack for word in words):
+                continue
+            choices = [('', entry._describe_contract()['capabilities'] if capabilities else {})]
+        for operation, supported in choices:
+            haystack = ' '.join((entry.name, entry.summary, *entry.tags, operation)).casefold()
+            if all(word in haystack for word in words) and all(supported.get(cap) is True for cap in capabilities):
+                candidates.append((entry, operation))
+    candidates.sort(key=lambda item: (item[0].kind, item[0].name, item[1]))
     rows = []
-    for entry in selected[offset : offset + limit]:
+    for entry, operation in candidates[offset : offset + limit]:
         row = {name: getattr(entry, name) for name in fields if name not in ('part_version', 'character_version')}
         if 'tags' in fields:
             row['tags'] = list(entry.tags)
@@ -457,14 +493,17 @@ def search(
             row['part_version'] = _part_version(entry)
         if 'character_version' in fields:
             row['character_version'] = _character_version(entry)
+        if operations:
+            row['operation'] = operation
         rows.append(row)
     return {
         'schema': 'srstudio.catalog-page/1.0.0',
         'items': rows,
-        'total': len(selected),
+        'total': len(candidates),
         'offset': offset,
         'limit': limit,
-        'next_offset': offset + limit if offset + limit < len(selected) else None,
+        'next_offset': offset + limit if offset + limit < len(candidates) else None,
+        **({'scope': 'operations'} if operations else {}),
     }
 
 
@@ -506,6 +545,12 @@ def contract_coverage(style: str | None = None, *, kind: str | None = None) -> d
             'registered': len(rows),
             'explicit_contracts': sum(e._current_contract is not None for e in rows),
             'shape_complete': sum(c['shape_complete'] for c in contracts),
+            'data_shape_complete': sum(c['binding']['data_shape_complete'] for c in contracts),
+            'with_runtime_bindings': sum(bool(c['binding']['runtime_bindings']) for c in contracts),
+            'with_examples': sum(bool(e.examples) for e in rows),
+            'unresolved_parts': sorted(
+                e.name for e, c in zip(rows, contracts, strict=True) if c['binding']['unresolved_fields']
+            ),
             'with_units': sum(contains(c, 'x-unit') for c in contracts),
             'with_clocks': sum(contains(c, 'x-timebase') for c in contracts),
             'with_anchors': sum(contains(c, 'x-anchors') for c in contracts),
