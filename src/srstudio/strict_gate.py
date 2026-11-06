@@ -561,15 +561,30 @@ def _proof_defects(
     return reasons
 
 
+def _reports(project: Path) -> list[Path]:
+    """The project's render reports, newest first: ``render-report.json`` is the first, and a master made again
+    installs its report write-once beside it as ``render-report-vN.json`` (ADR 0236)."""
+    base = project / ENGINE_REPORT
+    found = {1: base} if base.is_file() else {}
+    for path in base.parent.glob(f"{base.stem}-v*{base.suffix}"):
+        number = path.name.removeprefix(f"{base.stem}-v").removesuffix(base.suffix)
+        if number.isdigit() and int(number) > 1 and path.is_file():
+            found[int(number)] = path
+    return [found[n] for n in sorted(found, reverse=True)]
+
+
 def _reel_defects(release: Release, project: Path, video: Path, records: Path) -> list[str]:
-    scene, report_path = project / release.scene_file, project / ENGINE_REPORT
+    scene = project / release.scene_file
     if not scene.is_file():
         return [f"no built scene at {project.name}/{release.scene_file}"]
-    if not report_path.is_file():
+    paths = _reports(project)
+    if not paths:
         return [f"no render report at {project.name}/{ENGINE_REPORT}: encode it with --report"]
-    report = read_report(report_path)
     document = scene.read_bytes()
-    if report.scene_sha256 != hashlib.sha256(document).hexdigest():
+    digest = hashlib.sha256(document).hexdigest()
+    # The newest report of this scene: a newer one of another scene does not hide it, nor an older one stand for it.
+    report = next((r for r in map(read_report, paths) if r.scene_sha256 == digest), None)
+    if report is None:
         return ["the render report is of another scene: render it again"]
     duration = _duration(document)
     if abs(report.start) > _SAME or abs(report.end - duration) > _SAME:
