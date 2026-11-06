@@ -38,6 +38,35 @@ class NoAudio(CraftError):
     """The master has no audio stream."""
 
 
+SPAN_BAR = 4.5  # words a second from a line's first word to its last
+STRETCH_STEP = 0.05
+
+
+def stretch_for(rate: float, bar: float = SPAN_BAR) -> float | None:
+    """The smallest slowing of a take, in 0.05 steps, that brings its span ``rate`` to ``bar`` (ADR 0251).
+
+    Stretching a take by f divides its rate by f. None when the span already meets the bar, or when it would need
+    more than :data:`srstudio.interview.STRETCH_MOST`, past which a line needs a new take.
+    """
+    from .interview import STRETCH_MOST
+
+    if rate <= bar:
+        return None
+    factor = math.ceil(round(rate / bar / STRETCH_STEP, 9)) * STRETCH_STEP
+    return round(factor, 2) if factor <= STRETCH_MOST + 1e-9 else None
+
+
+def _stretch_hint(rate: float) -> str:
+    if rate <= SPAN_BAR:
+        return ''
+    from .interview import STRETCH_MOST
+
+    factor = stretch_for(rate)
+    if factor is None:
+        return f'; past the {STRETCH_MOST:g} stretch: a new take'
+    return f'; stretch the take by {factor:g} to reach {SPAN_BAR:g} words/s (ADR 0251)'
+
+
 @dataclass(frozen=True)
 class Measure:
     """One value, its explicit bar, and its verdict; source states its evidence."""
@@ -519,9 +548,9 @@ def measure_voice(video: Path, project: Path, *, ffmpeg: str = "ffmpeg", stress_
                     guard = Measure(
                         f'pace_span:{line.id}',
                         speech,
-                        '<= 4.5 words/s',
-                        'PASS' if speech <= 4.5 else 'FAIL',
-                        source + '; first-to-last word span',
+                        f'<= {SPAN_BAR:g} words/s',
+                        'PASS' if speech <= SPAN_BAR else 'FAIL',
+                        source + '; first-to-last word span' + _stretch_hint(speech),
                     )
                     values.extend((pace, guard))
                     pace_status = 'FAIL' if not guard.ok else pace.status
