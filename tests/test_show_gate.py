@@ -124,6 +124,26 @@ def test_a_show_episode_without_its_episode_line_is_refused(description):
     assert any("episode line" in why for why in number_defects(reel, SHOW_LEDGER, {"a": reel}))
 
 
+def test_the_episode_line_may_follow_the_okayville_show_line():
+    # videos.ruling.181: caption line 3 (the description's first) reads "Okayville: Juno & Pip".
+    reel = jp("Okayville: Juno & Pip\nJuno & Pip, episode 2.")
+    assert number_defects(reel, SHOW_LEDGER, {"a": reel}) == []
+
+
+@pytest.mark.parametrize(
+    "description",
+    [
+        "Okayville: Juno & Pip\nJuno & Pip, episode 3.",
+        "Okayville: Juno & Pip\nA Soft sketch.\nJuno & Pip, episode 2.",
+        "Okayville: Saga\nJuno & Pip, episode 2.",
+        "A Soft sketch.\nJuno & Pip, episode 2.",
+    ],
+)
+def test_only_the_show_line_may_stand_before_the_episode_line(description):
+    reel = jp(description)
+    assert any("episode line" in why for why in number_defects(reel, SHOW_LEDGER, {"a": reel}))
+
+
 def test_a_show_episode_the_ledger_places_elsewhere_is_refused():
     reel = jp(description="Juno & Pip, episode 3.", cover=dataclasses.replace(JP, series_number=3))
     assert any(

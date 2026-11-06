@@ -5,7 +5,8 @@ meets this gate. On the first delivery of a reel that opted in, :func:`show_defe
 
 - the number: the ledger's claim says what the release says (:mod:`srstudio.show_numbers`), no other release holds it,
   and a series episode says its place on the caption's first line, after the question, or, in a show named in more
-  words, opens the description with it, as "Juno & Pip, episode 2." (ADR 0233);
+  words, opens the description with it, as "Juno & Pip, episode 2." (ADR 0233), or puts it straight after the show
+  line "Okayville: Juno & Pip" (videos.ruling.181);
 - the bug, read from the scene: drawn for this number, last, so above the camera, and hidden on the cover;
 - the bug, measured on the engine's frames from the first to the last: live, unmoved, and clear of the signature's
   marks, of text and of a face;
@@ -103,7 +104,10 @@ def number_defects(release: Release, ledger: Ledger, releases: Mapping[str, Rele
         out.append(f"another release is {cover.tag}")
     if cover.episodic:
         line = f"{cover.series}, episode {cover.series_number}."
-        if release.post.description.strip().split("\n", 1)[0] != line:
+        lines = release.post.description.strip().split("\n")
+        # videos.ruling.181: the show line "Okayville: <series>" may stand first, the episode line straight after it
+        opening = lines[1:2] if lines[0] == f"Okayville: {cover.series}" else lines[:1]
+        if opening != [line]:
             out.append(f"the description must open with {line!r}, the show's episode line")
     elif cover.series:
         head = release.post.title.removesuffix(cover.tag).rstrip()

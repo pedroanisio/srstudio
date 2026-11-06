@@ -155,3 +155,31 @@ def test_a_scene_with_no_duration_cannot_be_sampled(tmp_path):
 
 def test_the_least_is_a_majority_of_the_running_time():
     assert frame_gates.MIN_SHOWN == 0.5 and Shown(10, 5, 5, 5).share == 0.5 and Shown(0, 0, 0, 0).share == 0.0
+
+
+def cactus_only(cactus=(100.0, 100.0)) -> Frame:
+    return Frame(0.0, 1080.0, 1920.0, tuple(mark([], "sig-cactus", "cactus-leaf", *cactus)))
+
+
+def test_a_scene_that_draws_no_code_needs_only_the_cactus():
+    # videos.ruling.179: new Okayville reels draw no SR-1028 code; the build refuses a missing code a spec names.
+    assert signature_shown([cactus_only()] * 2, DRAWN) == Shown(2, 2, 0, 2)
+    assert signature_shown([cactus_only(), cactus_only((0.0, 3000.0))], DRAWN) == Shown(2, 1, 0, 1)
+
+
+def test_a_code_drawn_in_any_frame_is_required_in_every_frame():
+    frames = [cactus_only(), scene_frame(code=(0.0, 3000.0))]
+    assert signature_shown(frames, DRAWN) == Shown(2, 2, 0, 0)
+
+
+def test_a_cactus_only_reel_names_the_cactus_when_it_is_hidden(tmp_path):
+    releases, episodes, engine = project(tmp_path, shown=False)
+    frames = json.loads((tmp_path / "frames.json").read_text())
+    frames["result"]["nodes"] = frames["result"]["nodes"][:2]
+    (tmp_path / "frames.json").write_text(json.dumps(frames))
+    [drift] = signature_hidden(releases, episodes, {"a-b": "The_Video"}, engine)
+    assert "the signature cactus is seen in 0% of the running time" in drift.reason
+    assert "code" not in drift.reason
+    frames["result"]["nodes"][0]["world"][5] = frames["result"]["nodes"][1]["world"][5] = 100
+    (tmp_path / "frames.json").write_text(json.dumps(frames))
+    assert signature_hidden(releases, episodes, {"a-b": "The_Video"}, engine) == []
