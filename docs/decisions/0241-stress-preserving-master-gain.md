@@ -51,3 +51,23 @@ an unattainable target verifies refusal before install, duck-envelope checks
 cover additive faders and overlapping words, and direct engine comparison
 checks byte identity without named stress. Only scratch copies may be used
 for real episode audio checks.
+
+## Amendment, 2026-11-06: duck span and loudness band
+
+The stress meter weighs a stressed word against the other words of its line on
+the mixed master (`craft_bar.measure_voice`, `prosody.measure`). A duck under
+the stressed word alone lowers that word's span and leaves the bed under the
+others: on jp-leftovers "salt" fell from 2.86 dB to 1.96 dB. The duck now spans
+the words of every line that names a stressed word.
+
+A master is judged by the bar's band, not by the authored target to within a
+tolerance. The engine's own AAC true-peak pass lowers a master by a few tenths
+of a dB (jp-ready-in-five: target -16, measured -16.3), so the target check
+refused masters the bar accepts. `loudness_verdict` passes -16 to -14 LUFS,
+notes -16.6 to -16 LUFS as "accepted case by case", and refuses below -16.6,
+above -14, or over the authored true-peak ceiling.
+
+The engine's master limiter has no attack or release (scene-render 1.1 schema:
+`limiter` is a boolean), so the bar's "limiter attack" lever is not available
+on this engine. A word that the duck cannot keep above the stress bar is
+refused, as before.

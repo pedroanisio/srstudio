@@ -193,3 +193,37 @@ def test_engine_ducks_foley_only_during_word(tmp_path, scene_render):
         a, b = round(start * rate), round(end * rate)
         delta = 20 * np.log10(np.linalg.norm(after[a:b]) / np.linalg.norm(before[a:b]))
         assert delta == pytest.approx(expected, abs=0.02)
+
+
+@pytest.mark.parametrize(
+    ('lufs', 'peak', 'verdict'),
+    [
+        (-15.0, -1.6, None),
+        (-14.0, -1.6, None),
+        (-16.0, -1.6, None),
+        (-16.3, -1.5, 'below the -16 LUFS band, inside the -16.6 floor: accepted case by case'),
+        (-16.6, -1.6, 'below the -16 LUFS band, inside the -16.6 floor: accepted case by case'),
+    ],
+)
+def test_loudness_is_judged_by_arc4d3_band_not_the_authored_target(lufs, peak, verdict):
+    from srstudio import _stress_mix
+
+    assert _stress_mix.loudness_verdict(lufs, peak, ceiling=-1.5) == verdict
+
+
+@pytest.mark.parametrize(
+    ('lufs', 'peak', 'reason'),
+    [
+        (-16.7, -1.6, 'below the -16.6 LUFS floor'),
+        (-19.5, -2.0, 'below the -16.6 LUFS floor'),
+        (-13.9, -1.6, 'above the -14 LUFS band'),
+        (-15.0, -1.3, 'true peak -1.3 dBTP over the -1.5 dBTP ceiling'),
+        (-15.0, -0.9, 'true peak -0.9 dBTP over the -1.5 dBTP ceiling'),
+        (float('nan'), -1.6, 'non-finite'),
+    ],
+)
+def test_loudness_outside_the_band_or_over_the_peak_is_refused(lufs, peak, reason):
+    from srstudio import _stress_mix
+
+    with pytest.raises(craft_bar.CraftError, match=reason):
+        _stress_mix.loudness_verdict(lufs, peak, ceiling=-1.5)
