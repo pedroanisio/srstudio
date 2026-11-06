@@ -96,6 +96,23 @@ def _duck(root: ET.Element, lines: Sequence[craft_bar.RecordedLine]) -> None:
             ET.SubElement(animation, 'key', time=str(time), value=str(db))
 
 
+def ducked_document(scene: Path) -> bytes | None:
+    """The scene the engine masters for ``scene``: its music, effects and ambience ducked under each stressed line
+    (:func:`_duck`), as :func:`constrained` writes it; None when the master renders ``scene`` itself (no recorded
+    line names a stress, or the master is not normalised to an integrated target). The engine's render report
+    names this document's hash, so a gate can derive it again rather than trust it."""
+    try:
+        lines = craft_bar.recorded_lines(scene.parent)
+    except craft_bar.NoRecordedLines:
+        return None
+    root = ET.parse(scene).getroot()
+    master = root.find('audioMix/master')
+    if not any(line.stress for line in lines) or master is None or master.get('normalize') != 'integrated':
+        return None
+    _duck(root, lines)
+    return ET.tostring(root, encoding='unicode').encode()
+
+
 @contextmanager
 def constrained(
     scene: Path, scratch: Path, engine: str, args: Sequence[str], run: Callable[..., subprocess.CompletedProcess[str]]
@@ -162,8 +179,11 @@ def constrained(
             except (ValueError, KeyError, IndexError, TypeError) as exc:
                 raise craft_bar.CraftError(f'stress mix analysis failed: {exc}') from exc
             before = _contrasts(Path(tmp) / 'mix.wav', scene.parent)
-            _duck(root, lines)
-            ET.ElementTree(root).write(path, encoding='unicode')
+            _duck(root, lines)  # the outputs verify() reads; the engine's document is the one derivation below
+            document = ducked_document(scene)
+            if document is None:
+                raise craft_bar.CraftError('stress mix: the scene changed while it was mastered')
+            path.write_bytes(document)  # the strict gate derives this hash again from the built scene
 
             def verify(stage: Path) -> str:
                 reports = []

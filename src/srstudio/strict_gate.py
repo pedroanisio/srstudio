@@ -34,6 +34,7 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from ._stress_mix import ducked_document
 from .cast_card import contrast
 from .frame_gates import _duration
 from .releases import SLUG, Release
@@ -581,9 +582,12 @@ def _reel_defects(release: Release, project: Path, video: Path, records: Path) -
     if not paths:
         return [f"no render report at {project.name}/{ENGINE_REPORT}: encode it with --report"]
     document = scene.read_bytes()
-    digest = hashlib.sha256(document).hexdigest()
+    # The engine reports the scene it rendered: the built one, or its stress-ducked copy (ADR 0241), derived again
+    # here rather than trusted.
+    ducked = ducked_document(scene)
+    digests = {hashlib.sha256(d).hexdigest() for d in (document, ducked) if d is not None}
     # The newest report of this scene: a newer one of another scene does not hide it, nor an older one stand for it.
-    report = next((r for r in map(read_report, paths) if r.scene_sha256 == digest), None)
+    report = next((r for r in map(read_report, paths) if r.scene_sha256 in digests), None)
     if report is None:
         return ["the render report is of another scene: render it again"]
     duration = _duration(document)

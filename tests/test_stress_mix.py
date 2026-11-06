@@ -227,3 +227,34 @@ def test_loudness_outside_the_band_or_over_the_peak_is_refused(lufs, peak, reaso
 
     with pytest.raises(craft_bar.CraftError, match=reason):
         _stress_mix.loudness_verdict(lufs, peak, ceiling=-1.5)
+
+
+def test_the_engine_reports_the_ducked_document_the_strict_gate_derives(tmp_path, monkeypatch, scene_render):
+    import hashlib
+
+    from srstudio import _stress_mix
+
+    monkeypatch.setenv('SRSTUDIO_GPU_LOCK', str(tmp_path / 'gpu.lock'))
+    scene, _ = project(tmp_path)
+    ducked = _stress_mix.ducked_document(scene)
+    assert ducked is not None and hashlib.sha256(ducked).hexdigest() != hashlib.sha256(scene.read_bytes()).hexdigest()
+    report = tmp_path / 'report.json'
+    master.encode(scene, tmp_path / 'out', engine=scene_render, args=['--no-upload', '--report', str(report)])
+    assert json.loads(report.read_text())['scene']['sha256'] == hashlib.sha256(ducked).hexdigest()
+
+
+def test_a_scene_with_no_named_stress_is_rendered_as_built(tmp_path):
+    from srstudio import _stress_mix
+
+    scene, _ = project(tmp_path, stress=False)
+    assert _stress_mix.ducked_document(scene) is None
+    (tmp_path / 'timeline.json').unlink()
+    assert _stress_mix.ducked_document(scene) is None
+
+
+def test_a_master_not_normalised_to_a_target_is_rendered_as_built(tmp_path):
+    from srstudio import _stress_mix
+
+    scene, _ = project(tmp_path)
+    scene.write_text(scene.read_text().replace('normalize="integrated"', 'normalize="none"'))
+    assert _stress_mix.ducked_document(scene) is None
