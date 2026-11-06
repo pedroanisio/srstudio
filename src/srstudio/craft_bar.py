@@ -10,6 +10,7 @@ import hashlib
 import json
 import math
 import tempfile
+import wave
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -61,6 +62,16 @@ class Measure:
 @dataclass(frozen=True)
 class Result:
     measures: tuple[Measure, ...]
+    master_sha256: str = ''
+    voices: tuple[VoiceLine, ...] = ()
+
+    @property
+    def fail_retakes(self) -> tuple[str, ...]:
+        return tuple(v.id for v in self.voices if v.pace_status == 'FAIL' or v.stress_status == 'FAIL')
+
+    @property
+    def ship_retakes(self) -> tuple[str, ...]:
+        return tuple(v.id for v in self.voices if v.pace_status == 'SHIP')
 
     @property
     def passed(self) -> bool:
@@ -75,7 +86,11 @@ class Result:
         return tuple(m for m in self.measures if m.status == 'SHIP')
 
     def lines(self) -> list[str]:
-        return [f"{m.status} {m.name}: {m.value} | {m.bar} | {m.source}" for m in self.measures]
+        return [f"{m.status} {m.name}: {m.value} | {m.bar} | {m.source}" for m in self.measures] + [
+            f'master sha256={self.master_sha256}',
+            *(str(v) for v in self.voices),
+            f'SHIP retakes: {self.ship_retakes}; FAIL retakes: {self.fail_retakes}',
+        ]
 
 
 @dataclass(frozen=True)
@@ -100,7 +115,11 @@ def _read(path: Path) -> dict[str, Any]:
 
 def _marks(item: dict[str, Any]) -> tuple[str, ...]:
     value = item.get('direction', {}).get('stress', item.get('stress', ()))
-    return (value,) if isinstance(value, str) else tuple(value)
+    if isinstance(value, str):
+        value = [value]
+    if not isinstance(value, list | tuple | dict) or any(not isinstance(v, str) or not v.strip() for v in value):
+        raise WordsNotHeard('invalid key word identification')
+    return tuple(value)
 
 
 def _number(value: object, where: str) -> float:
@@ -168,6 +187,7 @@ def recorded_lines(project: Path) -> tuple[RecordedLine, ...]:
             data = _read(project / 'dialogue.json')
             stresses = {f"line-{s['line']}": tuple(s['words']) for s in data.get('stress', ())}
             sources = {s['clip']: s for s in data.get('stress', ()) if 'source' in s}
+            slowed = {s['clip']: s for s in data.get('stretch', ())}
             for clip in data.get('clips', ()):
                 g = clip.get('generated', {})
                 if g.get('kind') != 'speech':
@@ -183,7 +203,25 @@ def recorded_lines(project: Path) -> tuple[RecordedLine, ...]:
                         if hashlib.sha256((project / source[field]).read_bytes()).hexdigest() != source[sha]:
                             raise WordsNotHeard(f"{g['id']}: emphasis source identity mismatch")
                     timing = g | {'cache': source['source']}
+                factor = 1.0
+                stretch = slowed.get(timing['cache'])
+                if stretch is not None:
+                    # interview.stretch slows the take. Require both identities, then read the take's words slowed.
+                    for field, sha in (('clip', 'sha256'), ('source', 'source_sha256')):
+                        if hashlib.sha256((project / stretch[field]).read_bytes()).hexdigest() != stretch[sha]:
+                            raise WordsNotHeard(f"{g['id']}: stretch source identity mismatch")
+                    factor = _number(stretch['factor'], 'stretch factor')
+                    timing = g | {'cache': stretch['source']}
                 rows = _cached_words(project, timing, language)
+                if factor != 1.0:
+                    rows = [
+                        row
+                        | {
+                            'start': _number(row['start'], 'word start') * factor,
+                            'end': _number(row['end'], 'word end') * factor,
+                        }
+                        for row in rows
+                    ]
                 out.append(
                     RecordedLine(
                         g['id'],
@@ -232,6 +270,8 @@ def recorded_lines(project: Path) -> tuple[RecordedLine, ...]:
 
 
 def pace_measure(line: str, value: float) -> Measure:
+    if _number(value, 'pace') <= 0:
+        raise CraftError('pace must be positive')
     return Measure(
         f'pace:{line}',
         value,
@@ -341,7 +381,6 @@ def _beds(project: Path) -> list[tuple[Path, float]]:
 def measure(video: Path, project: Path, *, loudness: proof.Measures | None = None) -> Result:
     """Measure C4/C7 using the same final-master acceptance bars as delivery (ADR 0244)."""
     try:
-        lines = recorded_lines(project)
         probe = proof._run(
             [
                 'ffprobe',
@@ -359,72 +398,17 @@ def measure(video: Path, project: Path, *, loudness: proof.Measures | None = Non
         )
         if not json.loads(probe.stdout)['streams']:
             raise NoAudio(f'{video}: no audio stream')
-        values: list[Measure] = []
-        with tempfile.TemporaryDirectory(prefix='craft-bar-') as tmp:
-            for line in lines:
-                wav = Path(tmp) / 'line.wav'
-                proof._run(
-                    [
-                        'ffmpeg',
-                        '-v',
-                        'error',
-                        '-y',
-                        '-i',
-                        str(video),
-                        '-ss',
-                        str(line.start),
-                        '-t',
-                        str(line.duration),
-                        '-map',
-                        '0:a:0',
-                        '-ac',
-                        '1',
-                        '-ar',
-                        '16000',
-                        '-c:a',
-                        'pcm_s16le',
-                        str(wav),
-                    ],
-                    f'{line.id}: master mix',
-                )
-                measured = prosody.measure(wav, line.words, line.stress)
-                if measured.pace is None or any(w.db is None or w.db <= -119 for w in measured.words):
-                    raise WordsNotHeard(f'{line.id}: words not audible on master at cached timing')
-                count = len(measured.words)
-                if count >= 3:
-                    values.append(pace_measure(line.id, count / line.duration))
-                    span_pace = count / measured.span
-                    values.append(
-                        Measure(
-                            f'pace_span:{line.id}',
-                            span_pace,
-                            '<= 4.5 words/s',
-                            'PASS' if span_pace <= 4.5 else 'FAIL',
-                            'heard word count / cached first-to-last word span',
-                        )
-                    )
-                for stress in measured.stressed:
-                    if not stress.heard:
-                        raise WordsNotHeard(f'{line.id}: stressed word {stress.word!r} not heard')
-                    values.append(
-                        Measure(
-                            f'stress:{line.id}:{stress.word}',
-                            stress.db,
-                            f'>= {prosody.STRESS_DB:g} dB',
-                            'PASS' if stress.db is not None and stress.db >= prosody.STRESS_DB else 'FAIL',
-                            'prosody.measure on master mix; ' + line.source,
-                        )
-                    )
         acceptance = master_gate.accept_master(video, project)
         if acceptance.error:
             raise CraftError(acceptance.error)
+        values: list[Measure] = []
         names = {'speech': 'first_word', 'true_peak': 'true_peak'}
         values[0:0] = [
             Measure(
                 names.get(c.check, c.check),
                 c.value,
                 c.limit,
-                'PASS' if c.verdict == 'PASS' else 'FAIL',
+                'SHIP' if c.verdict == 'SHIP' else 'FAIL' if c.verdict == 'FAIL' else 'PASS',
                 f'master sha256={c.master_sha256}; ' + '; '.join(c.evidence),
             )
             for c in acceptance.checks
@@ -440,8 +424,192 @@ def measure(video: Path, project: Path, *, loudness: proof.Measures | None = Non
                 'master_gate.constant_bed on declared music stems' if beds else 'no declared music stem',
             )
         )
-        return Result(tuple(values))
+        return Result(tuple(values), acceptance.master_sha256, acceptance.voices)
     except (proof.ProofError, master_gate.MasterError, prosody.ProsodyError) as exc:
         if isinstance(exc, CraftError):
             raise
         raise CraftError(str(exc)) from exc
+
+
+@dataclass(frozen=True)
+class VoiceLine:
+    id: str
+    start: float
+    count: int
+    phrase_duration: float
+    word_span: float
+    phrase_pace: float
+    span_pace: float
+    pace_status: Literal['PASS', 'SHIP', 'FAIL', 'exempt']
+    words: tuple[prosody.WordLevel, ...]
+    median_db: float | None
+    key_words: tuple[str, ...]
+    stress_margin: float | None
+    preceding_margin: float | None  # N/A when the key word has no predecessor
+    stress_status: Literal['PASS', 'FAIL']
+    source: str
+
+
+def _line_audio(source: Path, line: RecordedLine, wav: Path, ffmpeg: str, what: str) -> Path:
+    """``line``'s span of ``source`` as 16 kHz mono PCM at ``wav``; WordsNotHeard when the source ends inside it."""
+    proof._run(
+        [
+            ffmpeg,
+            '-v',
+            'error',
+            '-y',
+            '-i',
+            str(source),
+            '-ss',
+            str(line.start),
+            '-t',
+            str(line.duration),
+            '-map',
+            '0:a:0',
+            '-ac',
+            '1',
+            '-ar',
+            '16000',
+            '-c:a',
+            'pcm_s16le',
+            str(wav),
+        ],
+        f'{line.id}: {what}',
+    )
+    with wave.open(str(wav), 'rb') as audio:
+        if audio.getnframes() / audio.getframerate() + 1 / audio.getframerate() < line.duration:
+            raise WordsNotHeard(f'{line.id}: phrase extends past {what} audio')
+    return wav
+
+
+def measure_voice(video: Path, project: Path, *, ffmpeg: str = "ffmpeg", stress_from: Path | None = None) -> Result:
+    """Public delivery C7/stress check on the exact master bytes, using existing placed offline alignment.
+
+    ``stress_from`` is the master's authored mix, before its loudness stage (normalise and limiter): stress and the
+    preceding word are measured there (videos.ruling.162 r5, bar.audio.stress), pace on the master; every stress
+    measure names both digests. No recognition service or take-level measurements are used. Missing or invalid
+    alignment raises CraftError. Measured refusals are FAIL results; SHIP remains eligible.
+    """
+    try:
+        digest = hashlib.sha256(video.read_bytes()).hexdigest()
+        authored = None if stress_from is None else hashlib.sha256(stress_from.read_bytes()).hexdigest()
+        lines = recorded_lines(project)
+        values: list[Measure] = []
+        reports: list[VoiceLine] = []
+        with tempfile.TemporaryDirectory(prefix='voice-') as tmp:
+            for line in lines:
+                wav = _line_audio(video, line, Path(tmp) / 'line.wav', ffmpeg, 'master mix')
+                if stress_from is not None:
+                    wav = _line_audio(stress_from, line, Path(tmp) / 'authored.wav', ffmpeg, 'authored mix')
+                previous = 0.0
+                for word in line.words:
+                    if not 0 <= previous <= word.start < word.end <= line.duration:
+                        raise WordsNotHeard(f'{line.id}: unusable ordered alignment/placement')
+                    previous = word.end
+                heard = prosody.measure(wav, line.words, line.stress)
+                count = len(line.words)
+                span = line.words[-1].end - line.words[0].start
+                phrase, speech = count / line.duration, count / span
+                pace_status: Literal['PASS', 'SHIP', 'FAIL', 'exempt'] = 'exempt'
+                source = f'master mix sha256={digest}; {line.source}'
+                heard_in = source if authored is None else f'authored mix sha256={authored}; {source}'
+                if count >= 3:
+                    pace = pace_measure(line.id, phrase)
+                    pace = Measure(pace.name, pace.value, pace.bar, pace.status, source + '; ' + pace.source)
+                    guard = Measure(
+                        f'pace_span:{line.id}',
+                        speech,
+                        '<= 4.5 words/s',
+                        'PASS' if speech <= 4.5 else 'FAIL',
+                        source + '; first-to-last word span',
+                    )
+                    values.extend((pace, guard))
+                    pace_status = 'FAIL' if not guard.ok else pace.status
+                audible = len(heard.words) == count and all(
+                    w.db is not None and math.isfinite(w.db) and w.db > master_gate.SILENCE_DB for w in heard.words
+                )
+                median = prosody._median([w.db for w in heard.words if w.db is not None]) if audible else None
+                stress_status: Literal['PASS', 'FAIL'] = 'PASS'
+                margins: list[float] = []
+                preceding: list[float] = []
+                marks = heard.stressed if line.stress else ()
+                if audible and count == 1:
+                    # videos.ruling.162: a one-word line has no median to stand over, so no stress bar
+                    marks = ()
+                    values.append(
+                        Measure(
+                            f'stress:{line.id}',
+                            None,
+                            'one-word line: exempt, no median to stand over',
+                            'PASS',
+                            heard_in + '; N/A',
+                        )
+                    )
+                elif not audible or not marks or len(marks) != len(line.stress):
+                    stress_status = 'FAIL'
+                    values.append(
+                        Measure(
+                            f'stress:{line.id}', None, 'identified audible key word on every line', 'FAIL', heard_in
+                        )
+                    )
+                for mark in marks:
+                    at = mark.at
+                    margin = None
+                    before = None
+                    if audible and median is not None and mark.heard and at is not None and 0 <= at < count:
+                        db = heard.words[at].db
+                        margin = db - median if db is not None else None
+                        before_db = heard.words[at - 1].db if at else None
+                        before = before_db - median if before_db is not None else None
+                    good = margin is not None and margin >= 3
+                    previous_good = at == 0 or (before is not None and before >= -3)
+                    if not good or not previous_good:
+                        stress_status = 'FAIL'
+                    values.extend(
+                        (
+                            Measure(
+                                f'stress:{line.id}:{mark.word}',
+                                margin,
+                                '>= 3 dB over line median',
+                                'PASS' if good else 'FAIL',
+                                heard_in,
+                            ),
+                            Measure(
+                                f'preceding:{line.id}:{mark.word}',
+                                before,
+                                '>= -3 dB; N/A if no preceding word',
+                                'PASS' if previous_good else 'FAIL',
+                                heard_in + ('; N/A' if at == 0 else ''),
+                            ),
+                        )
+                    )
+                    if margin is not None:
+                        margins.append(margin)
+                    if before is not None:
+                        preceding.append(before)
+                reports.append(
+                    VoiceLine(
+                        line.id,
+                        line.start,
+                        count,
+                        line.duration,
+                        span,
+                        phrase,
+                        speech,
+                        pace_status,
+                        heard.words,
+                        median,
+                        line.stress,
+                        min(margins) if margins else None,
+                        min(preceding) if preceding else None,
+                        stress_status,
+                        heard_in,
+                    )
+                )
+        if hashlib.sha256(video.read_bytes()).hexdigest() != digest:
+            raise CraftError('master changed during voice measurement')
+        return Result(tuple(values), digest, tuple(reports))
+    except (OSError, ValueError, wave.Error, EOFError, proof.ProofError) as exc:
+        if isinstance(exc, CraftError):
+            raise
+        raise CraftError(f'final-master voice check: {exc}') from exc

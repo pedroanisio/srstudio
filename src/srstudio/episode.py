@@ -392,7 +392,7 @@ class EpisodeSpec:
     safe_area: SafeArea | None = FROM_STYLE
     # -- the signature marks (docs/decisions/0001-signature.md) ----------------------------------
     signature: bool = True  # False only for packages older than the convention
-    signature_code: str = "SR-1028"  # project-wide; changing it is a decision, not a per-episode choice
+    signature_code: str | None = "SR-1028"  # None keeps only the cactus (ADR 0250)
     # -- the frame's edge ---------------------------------------------------------------------------
     loudness: str | None = None  # the mix's integrated target for this reel; None: the style's
     bleed: bool = False  # far planes blurred past the frame's edge (srstudio.look.sheet); False redraws published reels
@@ -1128,10 +1128,11 @@ class Episode:
         from . import text_rules  # it reads the frame gates, which read the releases this module's callers load
 
         text_rules.refuse_captions(self.spec.slug, document, self.root)
-        if self.cv.signature is not None and (absent := signature.missing(document)):
+        if self.cv.signature is not None and (absent := signature.missing(document, code=self.spec.signature_code)):
             error = signature.SignatureError(
                 f"{self.spec.slug} is signed but its document has no {', '.join(absent)}: every location must draw "
-                "both marks (ADR 0001), or the episode passes signature=False because its package predates them"
+                "the requested marks (ADR 0001, ADR 0250), or the episode passes signature=False "
+                "because its package predates them"
             )
             report_rows.append({"severity": "error", "code": "srstudio:signature", "message": str(error)})
             try:

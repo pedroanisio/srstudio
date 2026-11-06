@@ -4,9 +4,10 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 
 # ADR 0242: Juno version 2 wears a home outfit, drawn by the rig as part of her look
 
-- Status: proposed (2026-11-05). `juno@2` is recorded `proposed` with no approval. arc4d3 approves it, or not, from
-  one full-size still of her standing and one seated (`generated/okayville/jp-review/juno-v2/`). Until then
-  `parts.get("juno").latest()` stays version 1.
+- Status: accepted (2026-11-05). arc4d3 approved `juno@2` from the standing and seated stills
+  (`generated/okayville/jp-review/juno-v2/`), Slack 1793868757.180989, with two fixes folded in without a new
+  approval: the waist line with the top over the trousers (fe4a8b08), and no change under ep 2's coat. The approval
+  is recorded on version 2 in `assets/parts.json`, so `parts.get("juno").latest()` is version 2.
 - Deciders: arc4d3 (ruling L27, Slack 1793854854.581609); drafted by Claude Opus 5.5 in Claude Code
 - Extends [ADR 0007](0007-polished-looks.md) (a `Look` makes the rig a character) and
   [ADR 0047](0047-character-versions.md) (versions, pins, digests)

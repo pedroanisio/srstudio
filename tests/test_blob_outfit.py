@@ -217,12 +217,14 @@ def test_an_arm_held_behind_the_body_is_drawn_behind_the_top():
 
 
 # -- the version record ---------------------------------------------------------------------------------------------
-def test_juno_two_is_a_proposed_version_and_version_one_stays_the_default():
+def test_juno_two_is_approved_by_arc4d3_and_becomes_the_default():
     juno = parts.get("juno")
     assert [v.number for v in juno.versions] == [1, 2]
-    assert juno.version(2).status == "proposed" and juno.version(2).approval is None
-    assert juno.latest().number == 1  # arc4d3 approves version 2, not the agent that drew it
-    assert "1793854854.581609" in juno.version(2).note
+    two = juno.version(2)
+    assert two.status == "approved" and two.approval is not None
+    assert two.approval.words.startswith("arc4d3") and "1793868757.180989" in two.approval.words
+    assert juno.latest().number == 2
+    assert "1793854854.581609" in two.note
 
 
 def test_juno_takes_a_second_version_because_a_reel_calls_it_by_name():

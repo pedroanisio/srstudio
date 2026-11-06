@@ -137,6 +137,9 @@ def test_cli_project_json(tmp_path, master, capsys):
     data = json.loads(capsys.readouterr().out)
     assert data['craft_bar']['passed'] is True
     assert data['craft_bar']['measures']
+    assert data['craft_bar']['master_sha256'] == hashlib.sha256(master.read_bytes()).hexdigest()
+    assert data['craft_bar']['voices'][0]['median_db'] is not None
+    assert data['craft_bar']['fail_retakes'] == []
 
 
 @pytest.mark.parametrize(
@@ -233,8 +236,8 @@ def test_silent_mix_words_are_unheard(tmp_path, master):
     subprocess.run(
         ['ffmpeg', '-v', 'error', '-i', str(master), '-af', 'volume=0', '-c:v', 'copy', str(silent)], check=True
     )
-    with pytest.raises(craft_bar.WordsNotHeard, match='not audible'):
-        craft_bar.measure(silent, project(tmp_path, 'narration'))
+    result = craft_bar.measure(silent, project(tmp_path, 'narration'))
+    assert not result.ok and result.fail_retakes == ('line-1',)
 
 
 def test_cli_failed_bar_returns_one(tmp_path, master, capsys):
@@ -366,7 +369,8 @@ def test_phrase_pace_and_word_span_guard(tmp_path, master, count, duration, span
     assert guard.bar == '<= 4.5 words/s'
     assert 'word span' in guard.source
     assert any(line.startswith(f"{'PASS' if span_passed else 'FAIL'} pace_span:take:") for line in result.lines())
-    assert result.passed is (phrase_passed and span_passed)
+    assert result.voices[0].pace_status == ('FAIL' if not span_passed else 'PASS' if phrase_passed else 'SHIP')
+    assert not result.ok  # no key word identified in this pace-only fixture
 
 
 def test_ship_phrase_can_still_fail_span_guard(tmp_path, master):
@@ -410,3 +414,83 @@ def test_craft_refuses_finite_out_of_band_loudness(tmp_path, master):
     assert not next(m for m in result.measures if m.name == 'integrated_lufs').ok
     assert not result.ok
     assert any(m.name == 'true_peak' for m in result.measures)
+
+
+@pytest.mark.parametrize('kind', ['flat', 'narration'])
+def test_actual_voice_passes_common_delivery(tmp_path, master, kind):
+    from srstudio import master_gate
+
+    p = project(tmp_path, kind)
+    result = master_gate.accept_master(master, p)
+    assert result.ok
+    assert result.voices[0].stress_margin > 3
+    assert result.voices[0].preceding_margin >= -3
+    assert not master_gate.judge('master', master, None, project=p).refused
+
+
+@pytest.mark.parametrize('kind', ['flat', 'narration'])
+def test_release_consumes_shared_voice_measures(tmp_path, master, kind):
+    from srstudio import master_gate
+
+    result = master_gate.evaluate_release(master, project(tmp_path, kind))
+    assert not result.refused
+    by = {c.check: c for c in result.checks}
+    for name in ('pace:line-1', 'pace_span:line-1', 'stress:line-1:three', 'preceding:line-1:three'):
+        assert by[name].measured == by['c7.' + name].measured
+        assert by[name].verdict == by['c7.' + name].verdict == 'PASS'
+    assert result.acceptance.voices[0].stress_status == 'PASS'
+
+
+def _slowed(tmp_path, *, stressed):
+    """A flat project whose line 1 plays its take 1.25 times slower (interview.stretch), leaned on top if
+    ``stressed``."""
+    p = project(tmp_path, 'flat')
+    d = json.loads((p / 'dialogue.json').read_text())
+    source = p / 'assets/generated/line-1.wav'
+    slowed = p / 'assets/stretched/line-1.wav'
+    slowed.parent.mkdir()
+    slowed.write_bytes(b'slowed take')
+
+    def digest(path):
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+
+    d['clips'][0]['placement']['clip_out'] = 1.25
+    d['stretch'] = [
+        {
+            'line': 1,
+            'factor': 1.25,
+            'clip': 'assets/stretched/line-1.wav',
+            'sha256': digest(slowed),
+            'source': 'assets/generated/line-1.wav',
+            'source_sha256': digest(source),
+        }
+    ]
+    d['clips'][0]['generated']['cache'] = 'assets/stretched/line-1.wav'
+    if stressed:
+        leaned = p / 'assets/stressed/line-1.wav'
+        leaned.parent.mkdir()
+        leaned.write_bytes(b'slowed and leaned')
+        d['clips'][0]['generated']['cache'] = 'assets/stressed/line-1.wav'
+        d['stress'][0].update(
+            clip='assets/stressed/line-1.wav',
+            source='assets/stretched/line-1.wav',
+            sha256=digest(leaned),
+            source_sha256=digest(slowed),
+        )
+    write(p / 'dialogue.json', d)
+    return p, slowed, source
+
+
+@pytest.mark.parametrize('stressed', [False, True])
+def test_a_slowed_line_reads_its_take_s_words_slowed_by_its_factor(tmp_path, stressed):
+    p, _, _ = _slowed(tmp_path, stressed=stressed)
+    (line,) = craft_bar.recorded_lines(p)
+    assert [t for w in line.words for t in (w.start, w.end)] == pytest.approx([0.125, 0.5, 0.5, 0.875, 0.875, 1.25])
+
+
+@pytest.mark.parametrize('changed', ['slowed', 'source'])
+def test_a_slowed_line_whose_clip_or_take_changed_is_refused(tmp_path, changed):
+    p, slowed, source = _slowed(tmp_path, stressed=False)
+    (slowed if changed == 'slowed' else source).write_bytes(b'changed')
+    with pytest.raises(craft_bar.WordsNotHeard, match='stretch source identity mismatch'):
+        craft_bar.recorded_lines(p)

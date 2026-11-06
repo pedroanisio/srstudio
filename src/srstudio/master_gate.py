@@ -8,15 +8,19 @@ import re
 import subprocess
 import wave
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, replace
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
-from typing import Any, Literal, TypeGuard
+from typing import TYPE_CHECKING, Any, Literal, TypeGuard
+
+if TYPE_CHECKING:
+    from .craft_bar import VoiceLine
 
 import numpy as np
 
-from .authority import AuthorityError, Disposition
+from .authority import AuthorityError, Disposition, Message
 from .digest import sha256
 from .errors import SrstudioError
+from .final_frame_gate import RECORD, FinalFrameError, FinalFrameResult, check_master
 from .prosody import Finding
 from .releases import Release
 from .social import Drift
@@ -40,6 +44,7 @@ __all__ = [
     "accept_master",
     "Measured",
     "Reading",
+    "ReleaseApproval",
     "Run",
     "constant_bed",
     "findings",
@@ -400,11 +405,58 @@ MasterApproval = Disposition
 
 
 @dataclass(frozen=True)
+class ReleaseApproval:
+    """Explicit whole-master legacy review evidence supplied by a trusted caller (ADR 0248).
+
+    This validates structure, not source authenticity or historical eligibility.
+    The caller must retain the source message and classify the master as reviewed legacy.
+    """
+
+    master_sha256: str
+    approver: str
+    approval_message: Message
+    scope: Literal["legacy_reviewed"]
+    reason: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.master_sha256, str) or not re.fullmatch(r"[a-fA-F0-9]{64}", self.master_sha256):
+            raise AuthorityError("release approval needs an exact 64-hex master sha256")
+        if self.scope != "legacy_reviewed":
+            raise AuthorityError("release approval scope must be legacy_reviewed")
+        if not isinstance(self.approver, str) or self.approver not in ("arc4d3", "Pedro"):
+            raise AuthorityError("legacy release approval requires arc4d3 or Pedro")
+        msg = self.approval_message
+        if not isinstance(msg, Message) or not all(
+            isinstance(v, str) and v.strip() for v in (msg.author, msg.reference, msg.text, self.reason)
+        ):
+            raise AuthorityError("release approval needs a source message, reference and reason")
+        if msg.author != self.approver:
+            raise AuthorityError("release approval approver must match source message author")
+
+    def validate(self, master_sha256: str) -> None:
+        self.__post_init__()
+        if self.master_sha256.lower() != master_sha256:
+            raise AuthorityError("stale release approval: master sha256 differs")
+
+    def record(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def parse(cls, value: object) -> ReleaseApproval:
+        if not isinstance(value, Mapping) or set(value) != set(cls.__dataclass_fields__):
+            raise AuthorityError("release approval fields are missing or unknown")
+        msg = value["approval_message"]
+        if not isinstance(msg, Mapping) or set(msg) != {"author", "reference", "text"}:
+            raise AuthorityError("release approval needs source message author, reference and text")
+        return cls(**(dict(value) | {"approval_message": Message(**msg)}))
+
+
+@dataclass(frozen=True)
 class MasterCheck:
     check: str
     value: float | None
     limit: str
-    verdict: Literal["PASS", "APPROVED", "FAIL"]
+    verdict: Literal["PASS", "SHIP", "APPROVED", "FAIL"]
     master_sha256: str
     evidence: tuple[str, ...]
     approval: MasterApproval | None = None
@@ -416,6 +468,15 @@ class MasterAcceptance:
     checks: tuple[MasterCheck, ...]
     measured: Measured | None = None
     error: str = ""
+    voices: tuple[VoiceLine, ...] = ()
+
+    @property
+    def ship_retakes(self) -> tuple[str, ...]:
+        return tuple(v.id for v in self.voices if v.pace_status == "SHIP")
+
+    @property
+    def fail_retakes(self) -> tuple[str, ...]:
+        return tuple(v.id for v in self.voices if v.pace_status == "FAIL" or v.stress_status == "FAIL")
 
     @property
     def ok(self) -> bool:
@@ -424,6 +485,8 @@ class MasterAcceptance:
     def lines(self) -> list[str]:
         return [
             f"master sha256={self.master_sha256}: {'PASS' if self.ok else 'REFUSED'} {self.error}",
+            *(str(v) for v in self.voices),
+            f"SHIP retakes: {self.ship_retakes}; FAIL retakes: {self.fail_retakes}",
             *(
                 f"  {c.check}: {c.verdict} measured={c.value} target={c.limit} "
                 f"approval={c.approval!r} evidence={c.evidence!r}"
@@ -507,6 +570,16 @@ def _checks(
     return tuple(out)
 
 
+AUTHORED_MIX = "qa/authored-mix-{sha}.wav"  # the master's mix before its loudness stage, named by the master's sha256
+
+
+def authored_mix(project: Path, master_sha256: str) -> Path:
+    """Where the master step keeps the authored mix of the master whose SHA-256 is ``master_sha256`` (ADR 0241): stress
+    is measured there (videos.ruling.162 r5). With no such file, stress is measured on the master, which only its
+    limiter can flatten further, so a missing mix is never a looser bar."""
+    return Path(project) / AUTHORED_MIX.format(sha=master_sha256)
+
+
 def accept_master(
     master: Path,
     project: Path | None = None,
@@ -520,15 +593,35 @@ def accept_master(
     ffprobe: str = "ffprobe",
 ) -> MasterAcceptance:
     """Public delivery/pilot acceptance API. No staging, recording, network or approval writes."""
+    from . import craft_bar
+
     sha = ""
     try:
         sha = sha256(master)
         measured = measure(
             master, project=project, crop=crop, stem=stem, fade=fade, ffmpeg=ffmpeg, ffprobe=ffprobe, strict=False
         )
+        voice_checks: tuple[MasterCheck, ...]
+        voices: tuple[VoiceLine, ...] = ()
+        try:
+            if project is None:
+                raise craft_bar.NoRecordedLines('missing recording project')
+            authored = authored_mix(project, sha)
+            voice = craft_bar.measure_voice(
+                master, project, ffmpeg=ffmpeg, stress_from=authored if authored.is_file() else None
+            )
+            voices = voice.voices
+            voice_checks = tuple(
+                MasterCheck(c.name, c.value, c.bar, c.status, sha, (c.source,)) for c in voice.measures
+            )
+        except craft_bar.CraftError as exc:
+            voice_checks = tuple(
+                MasterCheck(c, None, 'usable recorded alignment and master mix', 'FAIL', sha, (str(exc),))
+                for c in ('pace', 'stress')
+            )
         if sha256(master) != sha:
             raise MasterError("master changed during measurement")
-        checks = _checks(measured, sha, approvals, scope)
+        checks = _checks(measured, sha, approvals, scope) + voice_checks
         try:
             seen: set[str] = set()
             for approval in approvals:
@@ -539,8 +632,8 @@ def accept_master(
                 seen.add(approval.check)
                 approval.validate(sha, approval.check, None, approval.reason, None, scope)
         except AuthorityError as exc:
-            return MasterAcceptance(sha, checks, measured, f"authority: {exc}")
-        return MasterAcceptance(sha, checks, measured)
+            return MasterAcceptance(sha, checks, measured, f"authority: {exc}", voices)
+        return MasterAcceptance(sha, checks, measured, voices=voices)
     except (OSError, MasterError) as exc:
         return MasterAcceptance(
             sha,
@@ -602,6 +695,10 @@ class Reading:
     master_sha256: str = ""
     checks: tuple[CheckVerdict, ...] = ()
     legacy: bool = False
+    final_frames: FinalFrameResult | None = None
+    frame_error: str = ""
+    release_approval: ReleaseApproval | None = None
+    release_approval_error: str = ""
 
     @property
     def failing(self) -> tuple[Finding, ...]:
@@ -609,13 +706,36 @@ class Reading:
 
     @property
     def refused(self) -> bool:
+        if self.release_approval_error:
+            return True
+        if self.release_approval is not None:
+            try:
+                self.release_approval.validate(self.master_sha256)
+            except AuthorityError:
+                return True
+            return False
         return (
-            not self.master_sha256
+            bool(self.frame_error)
+            or (self.final_frames is not None and self.final_frames.refused)
+            or not self.master_sha256
             or not self.checks
             or bool(self.error or self.failing or any(c.refused for c in self.checks))
         )
 
     def lines(self) -> list[str]:
+        return (
+            self._measure_lines()
+            + (
+                [f"whole-master release: RELEASED by {self.release_approval!r}"]
+                if self.release_approval is not None and not self.refused
+                else []
+            )
+            + ([f"whole-master release: REFUSED {self.release_approval_error}"] if self.release_approval_error else [])
+            + (self.final_frames.lines() if self.final_frames is not None else [])
+            + ([f"frames {self.video}: REFUSED {self.frame_error}"] if self.frame_error else [])
+        )
+
+    def _measure_lines(self) -> list[str]:
         if self.acceptance is not None:
             return [
                 f"master {self.video}: {'REFUSED' if self.refused else 'clean'}; legacy={self.legacy}",
@@ -667,7 +787,7 @@ def judge(
     found = tuple(
         Finding(c.check, None, c.value, None, c.limit, c.approval.reason if c.approval else "")
         for c in result.checks
-        if c.verdict != "PASS"
+        if c.verdict not in ("PASS", "SHIP")
     )
     checks = tuple(
         CheckVerdict(
@@ -703,6 +823,7 @@ def evaluate_release(
     *,
     scope: str = "reserved",
     dispositions: tuple[Disposition, ...] = (),
+    release_approval: ReleaseApproval | None = None,
     crop: tuple[int, int, int, int] | None = None,
     ffmpeg: str = "ffmpeg",
     ffprobe: str = "ffprobe",
@@ -712,7 +833,9 @@ def evaluate_release(
     Read-only: measures the supplied final master and cached recording on every call.
     Drive presence and script age have no effect. Published-file exclusion belongs
     to callers with verified platform publication evidence, never delivery manifests.
-    Missing measurements fail closed. Dispositions are exact check/master records,
+    Missing measurements fail closed unless explicit legacy ReleaseApproval releases
+    these exact bytes. Every check and error remains in the report (ADR 0248).
+    Dispositions are exact check/master records,
     supplied from authoritative evidence by the caller; no records are created here.
     """
     from . import craft_bar
@@ -753,6 +876,12 @@ def evaluate_release(
                 isinstance(m.value, bool)
                 if m.name == "constant_bed"
                 else (isinstance(m.value, int | float) and not isinstance(m.value, bool) and math.isfinite(m.value))
+            )
+            valid = valid or (
+                (m.name.startswith("preceding:") or (m.name.startswith("stress:") and m.name.count(":") == 1))
+                and m.value is None
+                and m.status == "PASS"
+                and "; N/A" in m.source
             )
             status: Literal["PASS", "SHIP", "FAIL", "MISSING", "WAIVED"] = m.status if valid else "MISSING"
             common_name = {"first_word": "speech"}.get(m.name, m.name)
@@ -813,13 +942,28 @@ def evaluate_release(
     found = tuple(
         replace(f, waived=waived[f.check].approval_message) if f.check in waived else f for f in reading.findings
     )
-    return replace(
+    result = replace(
         reading,
         findings=found,
         checks=tuple(applied),
         info=(*reading.info, "publication evidence not supplied; treated as unpublished"),
         error="; ".join(filter(None, (reading.error, *errors))),
     )
+
+    if release_approval is None:
+        return result
+    try:
+        if not isinstance(release_approval, ReleaseApproval):
+            raise AuthorityError("release approval must be a ReleaseApproval")
+        release_approval.validate(identity)
+        # Recheck even when C7 could not measure: missing evidence is approvable,
+        # replacement during this call is not.
+        if sha256(master) != identity or "master changed during" in result.error:
+            raise AuthorityError("release approval: master changed during evaluation")
+    except (AuthorityError, OSError) as exc:
+        message = f"release approval: {exc}"
+        return replace(result, error="; ".join(filter(None, (result.error, message))), release_approval_error=message)
+    return replace(result, release_approval=release_approval)
 
 
 def _timeline(project: Path) -> Mapping[str, Any] | None:
@@ -853,9 +997,10 @@ def read(
     out = {}
     for slug, video in sorted(first.items()):
         project = Path(episodes) / releases[slug].slug
-        out[slug] = replace(
+        master = Path(renders) / f"{video}.mp4"
+        reading = replace(
             evaluate_release(
-                Path(renders) / f"{video}.mp4",
+                master,
                 project,
                 scope=(scopes or {}).get(slug, "reserved"),
                 dispositions=(*approvals, *(dispositions or {}).get(slug, ())),
@@ -865,6 +1010,12 @@ def read(
             ),
             video=video,
         )
+        try:
+            frames = check_master(master, slug=slug, review_path=project / RECORD, ffmpeg=ffmpeg, ffprobe=ffprobe)
+            reading = replace(reading, final_frames=frames)
+        except FinalFrameError as exc:
+            reading = replace(reading, frame_error=str(exc))
+        out[slug] = reading
     return out
 
 
@@ -873,7 +1024,15 @@ def refusals(readings: Mapping[str, Reading]) -> list[Drift]:
     out = []
     for r in readings.values():
         if r.refused:
-            details = r.error or "; ".join([*(f.line() for f in r.failing), *(c.line() for c in r.checks if c.refused)])
+            details = "; ".join(
+                [
+                    *([r.error] if r.error else []),
+                    *(f.line() for f in r.failing),
+                    *(c.line() for c in r.checks if c.refused),
+                    *([r.frame_error] if r.frame_error else []),
+                    *(r.final_frames.lines() if r.final_frames is not None and r.final_frames.refused else []),
+                ]
+            )
             out.append(Drift(r.video, f"master: {details} (requires exact master/check-bound authority evidence)"))
     return out
 

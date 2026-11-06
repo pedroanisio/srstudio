@@ -1,7 +1,9 @@
-"""An interview line's key words stressed by gain on a derived clip of its take (Spoken.stress, interview.stress)."""
+"""An interview line's key words stressed by gain on a derived clip of its take (Spoken.stress, interview.stress), and
+a line slowed on a derived clip of its take (Spoken.stretch, interview.stretch)."""
 
 from __future__ import annotations
 
+import hashlib
 import json
 import wave
 from pathlib import Path
@@ -13,6 +15,7 @@ from srstudio import interview as I
 from srstudio import prosody
 from srstudio.emphasis import EmphasisError
 from srstudio.generated import Resolved, sha256_of
+from srstudio.timeline import Phrase
 from srstudio.voice import Transcript, Word
 from support.interview import make
 from support.song import engine, tone
@@ -207,3 +210,189 @@ def test_a_build_places_the_stressed_clip_and_records_each_word_and_its_gain(tmp
     clip = next(c for c in data["clips"] if c["generated"]["id"] == "line-2")
     assert clip["generated"]["cache"] == "assets/stressed/line-2.wav" == entry["clip"]
     assert clip["sha256"] == entry["sha256"] == sha256_of(root / entry["clip"])
+
+
+def test_a_line_may_aim_its_stress_higher_than_the_bar(tmp_path):
+    line = I.Spoken("candidate", TEXT, TEXT, stress=("weeks",), stress_aim=5.0)
+    iv = make(lines=[I.Spoken("manager", "Why here?", "Why here?"), line])
+    pins, ears = pins_and_ears(tmp_path, iv)
+    out, record = I.stress(iv, tmp_path, pins, ears)
+    got = prosody.measure(out["line-2"].path, ears(pins["line-2"].path).words, ["weeks"]).stressed[0]
+    assert got.db >= 4.5 and record[0]["aim"] == 5.0
+    assert I.Spoken("x", "y z", "y z").stress_aim is None
+
+
+@pytest.mark.parametrize(
+    ("stress", "aim", "match"),
+    [((), 5.0, "stress_aim needs stressed words"), (("weeks",), 3.0, "stress_aim"), (("weeks",), "5", "stress_aim")],
+)
+def test_a_stress_aim_without_stress_or_under_the_default_is_refused(stress, aim, match):
+    with pytest.raises(I.InterviewError, match=match):
+        make(
+            lines=[
+                I.Spoken("manager", "Why here?", "Why here?"),
+                I.Spoken("candidate", TEXT, TEXT, stress=stress, stress_aim=aim),
+            ]
+        )
+
+
+def test_a_stressed_line_is_placed_on_its_take_s_trim_so_the_timing_holds(tmp_path):
+    # lean lifts "weeks" past the take's peak and scales the clip back down, so the quiet "A" falls under the trim
+    # threshold on the derived clip: placed from its own trim, the line would start later and run shorter
+    iv = stressed_interview()
+    pins, ears = pins_and_ears(tmp_path, iv)
+    path, transcript = take(pins["line-2"].path, TEXT, {"a": 0.005})
+    pins["line-2"] = Resolved(pins["line-2"].generated, path, sha256_of(path))
+    out, _ = I.stress(iv, tmp_path, pins, lambda p: transcript if p == path else ears(p))
+    assert I.trim_speech(out["line-2"].path) != I.trim_speech(path)  # the derived clip trims differently
+
+    fx = {"squeak": squeak(tmp_path, iv)}
+    plain = I.place(iv, {**pins, **fx}, back_to_back)
+    placed = I.place(iv, {**out, **fx}, back_to_back, takes=pins)
+
+    assert placed.timing == plain.timing  # every start, end, trim and the duration as the take gives them
+    got = {c.generated.id: c for c in placed.clips}
+    was = {c.generated.id: c for c in plain.clips}
+    assert got["line-2"].sha256 == out["line-2"].sha256 != was["line-2"].sha256  # the derived clip is what plays
+    assert got["line-2"].placement == was["line-2"].placement  # in the take's window, at the take's level
+
+
+def test_a_take_for_a_line_not_declared_is_refused(tmp_path):
+    iv = stressed_interview()
+    pins, ears = pins_and_ears(tmp_path, iv)
+    fx = {"squeak": squeak(tmp_path, iv)}
+    with pytest.raises(I.InterviewError, match="takes for line-1, not for the lines line-1, line-2"):
+        I.place(iv, {**pins, **fx}, back_to_back, takes={"line-1": pins["line-1"]})
+
+
+# -- a slowed line (Spoken.stretch, interview.stretch) -------------------------------------------------------------
+def seconds(path: Path) -> float:
+    with wave.open(str(path)) as f:
+        return f.getnframes() / f.getframerate()
+
+
+def slowed_interview(factor: float = 1.2, stress: tuple[str, ...] = ()) -> I.Interview:
+    line = I.Spoken("candidate", TEXT, TEXT, stretch=factor, stress=stress)
+    return make(lines=[I.Spoken("manager", "Why here?", "Why here?"), line])
+
+
+@pytest.mark.parametrize("factor", [0.9, 1.3, "1.1", True, float("nan")])
+def test_a_stretch_that_would_speed_up_or_smear_the_take_is_refused(factor):
+    with pytest.raises(I.InterviewError, match=r"line 2: stretch .* from 1 to 1.25") as caught:
+        slowed_interview(factor)
+    assert str(caught.value).startswith("line 2:")
+
+
+def test_a_slowed_line_plays_a_longer_copy_of_its_take_and_the_take_keeps_its_pin(tmp_path):
+    iv = slowed_interview(1.2)
+    pins, _ = pins_and_ears(tmp_path, iv)
+    source = pins["line-2"]
+    before = source.path.read_bytes()
+
+    out, record = I.stretch(iv, tmp_path, pins)
+
+    assert out["line-1"] is pins["line-1"]  # a line at its own pace keeps its take
+    derived = out["line-2"]
+    assert derived.generated.cache == "assets/stretched/line-2.wav" and derived.sha256 == sha256_of(derived.path)
+    assert source.path.read_bytes() == before and sha256_of(source.path) == source.sha256
+    assert seconds(derived.path) == pytest.approx(1.2 * seconds(source.path), rel=0.02)
+    with wave.open(str(derived.path)) as got, wave.open(str(source.path)) as was:
+        assert (got.getframerate(), got.getnchannels()) == (was.getframerate(), was.getnchannels())
+    assert record == [
+        {
+            "line": 2,
+            "factor": 1.2,
+            "clip": "assets/stretched/line-2.wav",
+            "sha256": derived.sha256,
+            "source": "assets/generated/line-2.wav",
+            "source_sha256": source.sha256,
+            "measure": I.STRETCH_MEASURE,
+        }
+    ]
+    assert I.stretch(iv, tmp_path, pins)[1] == record  # the same take gives the same clip on every build
+
+
+def test_no_stretch_changes_nothing(tmp_path):
+    iv = stressed_interview()
+    pins, _ = pins_and_ears(tmp_path, iv)
+    out, record = I.stretch(iv, tmp_path, pins)
+    assert all(out[k] is pins[k] for k in pins) and record == []
+    assert not (tmp_path / "assets" / "stretched").exists()
+
+
+def test_a_slowed_line_is_stressed_on_its_take_s_words_slowed_by_the_same_factor(tmp_path):
+    iv = slowed_interview(1.2, stress=("weeks",))
+    pins, ears = pins_and_ears(tmp_path, iv)
+    slowed, _ = I.stretch(iv, tmp_path, pins)
+
+    out, record = I.stress(iv, tmp_path, slowed, ears, heard=pins)
+
+    words = [Word(w.text, w.start * 1.2, w.end * 1.2, w.type) for w in ears(pins["line-2"].path).words]
+    assert prosody.measure(out["line-2"].path, words, ["weeks"]).stressed[0].db >= prosody.STRESS_DB
+    [entry] = record
+    assert entry["source"] == "assets/stretched/line-2.wav" and entry["source_sha256"] == slowed["line-2"].sha256
+
+
+def test_a_slowed_line_stressed_without_the_takes_it_was_slowed_from_is_refused(tmp_path):
+    iv = slowed_interview(1.2, stress=("weeks",))
+    pins, ears = pins_and_ears(tmp_path, iv)
+    slowed, _ = I.stretch(iv, tmp_path, pins)
+    with pytest.raises(I.InterviewError, match="line 2: a slowed line is stressed on its take's words"):
+        I.stress(iv, tmp_path, slowed, ears)
+
+
+def test_a_build_places_the_slowed_clip_and_records_its_factor(tmp_path, fake_env):
+    def lines(factor):
+        return [
+            I.Spoken("manager", "Sit down.", "Sit down."),
+            I.Spoken("candidate", "Sit down.", "Sit.", stretch=factor),
+        ]
+
+    plain = json.loads(
+        I.build(
+            make(lines=lines(1.0)), tmp_path / "a", engine=engine(), key="sk-test", env=fake_env, schedule=back_to_back
+        ).read_text()
+    )
+    root = tmp_path / "b"
+    data = json.loads(
+        I.build(
+            make(lines=lines(1.2)), root, engine=engine(), key="sk-test", env=fake_env, schedule=back_to_back
+        ).read_text()
+    )
+    [entry] = data["stretch"]
+    assert entry["line"] == 2 and entry["factor"] == 1.2 and entry["source"] == "assets/generated/line-2.wav"
+    assert entry["source_sha256"] == sha256_of(root / "assets" / "generated" / "line-2.wav")
+    assert "stretch" not in plain and all("stretch" not in p for p in plain["phrases"])
+    assert data["phrases"][1]["stretch"] == 1.2 and "stretch" not in data["phrases"][0]
+    clip = next(c for c in data["clips"] if c["generated"]["id"] == "line-2")
+    assert clip["generated"]["cache"] == "assets/stretched/line-2.wav" == entry["clip"]
+    assert clip["sha256"] == entry["sha256"] == sha256_of(root / entry["clip"])
+
+    def length(d):
+        return d["phrases"][1]["end"] - d["phrases"][1]["start"]
+
+    assert length(data) == pytest.approx(1.2 * length(plain), rel=0.05)
+
+
+def test_said_finds_a_slowed_line_s_word_at_its_slowed_time(tmp_path):
+    path, transcript = take(tmp_path / "assets" / "generated" / "line-2.wav")
+    body = {
+        "text": TEXT,
+        "language_code": "en",
+        "language_probability": 1.0,
+        "words": [{"text": w.text, "start": w.start, "end": w.end, "type": "word"} for w in transcript.words],
+    }
+    key = {"stt": {"model_id": I.STT_MODEL, "language_code": "en"}, "audio": sha256_of(path)}
+    digest = hashlib.sha256(json.dumps(key, sort_keys=True).encode()).hexdigest()[:20]
+    record = tmp_path / "assets" / "elevenlabs" / f"stt-{digest}.json"
+    record.parent.mkdir(parents=True)
+    record.write_text(json.dumps({"response": body}))
+    weeks = transcript.words[-1].start
+
+    def phrase(factor: float) -> Phrase:
+        return Phrase(
+            index=1, role="candidate", text=TEXT, caption=TEXT, start=2.0, end=4.2, trim_seconds=0.04, stretch=factor
+        )
+
+    assert I.said(tmp_path, phrase(1.0), "weeks") == pytest.approx(2.0 + weeks - 0.04)
+    assert I.said(tmp_path, phrase(1.2), "weeks") == pytest.approx(2.0 + weeks * 1.2 - 0.04)

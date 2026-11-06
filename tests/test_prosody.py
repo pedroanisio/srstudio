@@ -231,8 +231,6 @@ def lively_rest(t):
 @pytest.mark.parametrize(
     ("spoil", "check", "take"),
     [
-        (edit(("items", 0, "prosody", "words_per_second"), 5.0), "line_pace", "01"),
-        (fast_reel, "reel_pace", None),
         (first_word_late, "first_word", "01"),
         (lambda t: shift(t, 2, 0.2), "turn_gap", "03"),
         (lambda t: shift(t, 2, -0.5), "turn_median", None),
@@ -341,7 +339,7 @@ def test_a_waiver_with_bounds_moves_the_target_and_a_value_outside_them_still_fa
     assert finding.changed_bound == (0.9, 1.2) and finding.default_bounds == (0.0, 0.7) and not finding.waived
 
 
-@pytest.mark.parametrize(("spoil", "check"), [(fast_reel, "reel_pace"), (lambda t: shift(t, 2, -0.5), "turn_median")])
+@pytest.mark.parametrize(("spoil", "check"), [(lambda t: shift(t, 2, -0.5), "turn_median")])
 def test_the_reels_own_targets_are_waived_on_the_reel(spoil, check):
     t = spoil(timeline())
     t["prosody"] = {"waive": [{"check": check, "reason": "an auctioneer sketch is fast"}]}
@@ -552,3 +550,39 @@ def test_a_finding_reads_as_one_line():
     f = Finding("turn_gap", "03", 0.2, (0.3, 0.65))
     assert f.line() == "take 03: turn_gap 0.200 outside 0.3..0.65"
     assert Finding("reel_pace", None, 4.0, (0.0, 3.6), waived="fast on purpose").line().startswith("reel: reel_pace")
+
+
+def test_no_independent_reel_pace_ceiling():
+    assert not any(f.check == 'reel_pace' for f in gate(fast_reel(timeline())))
+
+
+def test_stale_reported_pace_does_not_replace_both_clocks():
+    assert gate(edit(('items', 0, 'prosody', 'words_per_second'), 5.0)(timeline())) == []
+
+
+def test_both_pace_clocks_refuse_excessive_speed():
+    found = gate(edit(('items', 0, 'prosody', 'words'), [{'text': 'w', 'db': -20, 'hz': 150}] * 12)(timeline()))
+    assert [(f.check, f.take) for f in found] == [('line_pace', '01'), ('pace_span', '01')]
+
+
+@pytest.mark.parametrize('at', [0.0, 0.5])
+@pytest.mark.parametrize('count', [2, 5, 12])
+def test_zero_word_span_is_unmeasurable_but_keeps_phrase_pace(at, count):
+    t = timeline()
+    item = t['items'][0]
+    item['prosody'].update(
+        first=at, last=at, words_per_second=None, words=[{'text': 'w', 'db': -20, 'hz': 150}] * count
+    )
+    found = [f for f in gate(t) if f.take == item['id'] and f.check in ('line_pace', 'pace_span')]
+    if count < 3:
+        assert found == []
+        return
+    span = next(f for f in found if f.check == 'pace_span')
+    assert span.measured is None
+    assert 'not measurable' in span.line()
+    phrase = [f for f in found if f.check == 'line_pace']
+    if count / item['duration'] > 4.2:
+        assert len(phrase) == 1
+        assert phrase[0].measured == pytest.approx(count / item['duration'])
+    else:
+        assert phrase == []

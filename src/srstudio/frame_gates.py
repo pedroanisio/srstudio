@@ -244,8 +244,20 @@ def _seen(frame: Frame, index: int, drawn: Mapping[str, Drawing]) -> bool:
     return inside.area * (1.0 - float(hidden.mean())) >= MARK_SEEN * box.area
 
 
+def _marks(frames: Sequence[Frame]) -> set[str]:
+    """The marks a reel must show: the cactus always, and the code when any frame has it. A reel that draws no code
+    (videos.ruling.179, ADR 0250) owes only the cactus; a spec that names a code and loses it fails its build."""
+    named = {
+        m.group(1) for frame in frames for node in frame.nodes if node.kind == "group" and (m := _MARK.match(node.id))
+    }
+    return {"cactus", *named}
+
+
 def signature_shown(frames: Iterable[Frame], drawn: Mapping[str, Drawing]) -> Shown:
-    """How much of ``frames`` shows the signature's two marks, wherever the location put them."""
+    """How much of ``frames`` shows the signature's marks, wherever the location put them: ``both`` counts the frames
+    that show every mark the reel draws (:func:`_marks`)."""
+    frames = list(frames)
+    owed = _marks(frames)
     total = cactus = code = both = 0
     for frame in frames:
         seen: set[str] = set()
@@ -256,7 +268,7 @@ def signature_shown(frames: Iterable[Frame], drawn: Mapping[str, Drawing]) -> Sh
         total += 1
         cactus += "cactus" in seen
         code += "code" in seen
-        both += len(seen) == 2
+        both += owed <= seen
     return Shown(total, cactus, code, both)
 
 
@@ -272,11 +284,19 @@ def signature_hidden(
             continue
         document = scene.read_bytes()
         try:
-            frames = framegraph.evaluate(engine, scene, sample_times(_duration(document), fps=_fps(document)))
+            frames = list(framegraph.evaluate(engine, scene, sample_times(_duration(document), fps=_fps(document))))
             shown = signature_shown(frames, framegraph.drawings(document))
         except FrameGraphError as e:
             raise FrameGateError(f"{video}: {e}") from e
-        if shown.share < MIN_SHOWN:
+        if shown.share < MIN_SHOWN and "code" not in _marks(frames):
+            drift.append(
+                Drift(
+                    video,
+                    f"the signature cactus is seen in {shown.share:.0%} of the running time, the least is "
+                    f"{MIN_SHOWN:.0%} (of {shown.frames} frames); move it where the framing sees it",
+                )
+            )
+        elif shown.share < MIN_SHOWN:
             drift.append(
                 Drift(
                     video,

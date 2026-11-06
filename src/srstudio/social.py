@@ -323,6 +323,7 @@ class InstagramPost:
     language: str = "en-US"
     extra: dict = field(default_factory=dict)  # anything a publisher wants to carry along (alt text...)
     thumbnail: Thumbnail | None = None  # the designed cover; needed to deliver
+    credit_last: bool = False  # new deliveries may put credit after hashtags (ADR 0250)
 
     def problems(self) -> list[str]:
         out = []
@@ -358,10 +359,12 @@ class InstagramPost:
 
     def text(self) -> str:
         blocks = [self.title.strip(), self.description.strip()]
-        if self.credit.strip():
+        if self.credit.strip() and not self.credit_last:
             blocks.append(self.credit.strip())
         if self.hashtags:
             blocks.append(" ".join(self.hashtags))
+        if self.credit.strip() and self.credit_last:
+            blocks.append(self.credit.strip())
         return "\n\n".join(blocks) + "\n"
 
     def write(self, folder: Path, name: str = FILE_NAME) -> Path:

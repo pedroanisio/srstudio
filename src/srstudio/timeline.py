@@ -126,6 +126,7 @@ class Phrase:
     speed: float = 1.0
     timing_file: str | None = None
     trim_seconds: float = 0.0
+    stretch: float = 1.0  # the take played this many times as long (interview.stretch)
 
     @property
     def span(self) -> tuple[float, float]:
@@ -283,6 +284,7 @@ class Timeline:
                 trim_seconds=_number(
                     p.get("trim_seconds", 0.0), f"phrase {i}.trim_seconds", path=f'phrases[{i}].trim_seconds'
                 ),
+                stretch=_number(p.get("stretch", 1.0), f"phrase {i}.stretch", path=f'phrases[{i}].stretch'),
             )
             for i, p in enumerate(phrase_rows)
         ]
