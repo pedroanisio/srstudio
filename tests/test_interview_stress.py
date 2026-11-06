@@ -231,3 +231,32 @@ def test_a_stress_aim_without_stress_or_under_the_default_is_refused(stress, aim
                 I.Spoken("candidate", TEXT, TEXT, stress=stress, stress_aim=aim),
             ]
         )
+
+
+def test_a_stressed_line_is_placed_on_its_take_s_trim_so_the_timing_holds(tmp_path):
+    # lean lifts "weeks" past the take's peak and scales the clip back down, so the quiet "A" falls under the trim
+    # threshold on the derived clip: placed from its own trim, the line would start later and run shorter
+    iv = stressed_interview()
+    pins, ears = pins_and_ears(tmp_path, iv)
+    path, transcript = take(pins["line-2"].path, TEXT, {"a": 0.005})
+    pins["line-2"] = Resolved(pins["line-2"].generated, path, sha256_of(path))
+    out, _ = I.stress(iv, tmp_path, pins, lambda p: transcript if p == path else ears(p))
+    assert I.trim_speech(out["line-2"].path) != I.trim_speech(path)  # the derived clip trims differently
+
+    fx = {"squeak": squeak(tmp_path, iv)}
+    plain = I.place(iv, {**pins, **fx}, back_to_back)
+    placed = I.place(iv, {**out, **fx}, back_to_back, takes=pins)
+
+    assert placed.timing == plain.timing  # every start, end, trim and the duration as the take gives them
+    got = {c.generated.id: c for c in placed.clips}
+    was = {c.generated.id: c for c in plain.clips}
+    assert got["line-2"].sha256 == out["line-2"].sha256 != was["line-2"].sha256  # the derived clip is what plays
+    assert got["line-2"].placement == was["line-2"].placement  # in the take's window, at the take's level
+
+
+def test_a_take_for_a_line_not_declared_is_refused(tmp_path):
+    iv = stressed_interview()
+    pins, ears = pins_and_ears(tmp_path, iv)
+    fx = {"squeak": squeak(tmp_path, iv)}
+    with pytest.raises(I.InterviewError, match="takes for line-1, not for the lines line-1, line-2"):
+        I.place(iv, {**pins, **fx}, back_to_back, takes={"line-1": pins["line-1"]})

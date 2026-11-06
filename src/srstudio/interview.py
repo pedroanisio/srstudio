@@ -418,11 +418,22 @@ class Placed:
 ScheduleFn = Callable[[list[float], dict[str, float]], Schedule]
 
 
-def place(iv: Interview, pins: Mapping[str, Resolved], schedule: ScheduleFn) -> Placed:
+def place(
+    iv: Interview, pins: Mapping[str, Resolved], schedule: ScheduleFn, *, takes: Mapping[str, Resolved] | None = None
+) -> Placed:
     """Trim and level every clip, ask ``schedule(line lengths, effect lengths)`` where each goes, and refuse a
-    schedule that overlaps two lines, misses or invents an effect, or plays anything past the end card."""
+    schedule that overlaps two lines, misses or invents an effect, or plays anything past the end card.
+
+    ``takes`` are the lines' own takes when ``pins`` carry stressed clips (:func:`stress`): each line is trimmed and
+    levelled on its take, so a stress changes no start, end, trim or level. :func:`srstudio.emphasis.lean` scales a
+    clip back to the take's peak, which can drop a quiet edge under the trim threshold; trimmed on the derived clip,
+    the line would run shorter and move every line after it."""
     lines, effects = declarations(iv)
-    trims = [trim_speech(pins[item.id].path) for item in lines]
+    if takes is not None and set(takes) != {item.id for item in lines}:
+        raise InterviewError(
+            f"{iv.slug}: takes for {', '.join(sorted(takes))}, not for the lines {', '.join(item.id for item in lines)}"
+        )
+    trims = [trim_speech((takes or pins)[item.id].path) for item in lines]
     voice_gain = gain_to_peak(max(t.peak for t in trims), VOICE_PEAK)
     if voice_gain > MAX_GAIN:
         raise InterviewError(
@@ -563,12 +574,13 @@ def build(
         raise InterviewError("speech check failed:\n" + "\n".join(failures))
 
     # 3. A line's stressed words raised by gain on a derived clip, measured on the take (the take keeps its pin).
+    takes = {item.id: pins[item.id] for item in lines}
     pins, stressed = stress(iv, root, pins, ElevenLabsClient(cache, key="").transcribe)
     for entry in stressed:
         print(f"line {entry['line']}: stressed " + ", ".join(f"{w} +{db:.2f} dB" for w, db in entry["words"].items()))
 
     # 4. Trim, level and place every clip where the schedule says.
-    placed = place(iv, pins, schedule)
+    placed = place(iv, pins, schedule, takes=takes)
     t = placed.timing
     for entry in stressed:
         t.phrases[entry["line"] - 1]["stress"] = entry["words"]
