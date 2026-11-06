@@ -1,39 +1,53 @@
 # 0241 — Stress-preserving master gain
 
-An emphasized take can pass the word stress bar and lose it on the master.
-The news-ai-hostage button measured 3.49593166972576 dB on the clip,
-3.49605693528634 dB on the unmastered engine mix, and 2.5461492909116963 dB
-on the delivered master. The authored integrated gain reaches the true-peak
-limiter; its time-varying attenuation reduces the stressed word's contrast.
-Word placement and the unmastered mix preserve that contrast.
+Status: amended 2026-11-06. The former whole-master gain cap is withdrawn.
 
-For `master.encode` projects with recorded named stress and integrated
-normalization, run an audio-only engine analysis with normalization and
-limiting disabled. Keep the authored tracks, effects, fader and programme
-selection. Read the engine's full-precision integrated LUFS and true peak.
-Cap the requested integrated target at:
+The original headroom policy reduced jp-leftovers' requested -15 LUFS target
+rather than retaining it. It contradicted the supplied arc4d3
+`bar.audio.loudness` (canais store; `videos.craft.c7-loudness`):
 
-    unmastered LUFS + declared true-peak ceiling - unmastered true peak
+> Loudness band for every master: -16 to -14 LUFS integrated, true peak at most
+> -1 dBTP. Stress contrast comes from ducking bed and foley under stressed words
+> and from limiter attack, never from lowering the whole master. -16.6 LUFS is
+> the floor accepted case by case.
 
-This bounds constant master gain by the available peak headroom. Keep the
-limiter as a ceiling guard. The engine's limiter has a small internal safety
-factor; no extra word margin is added. `emphasis.lean`, its existing margin,
-and `emphasis.MOST` remain unchanged. A sufficiently quiet requested target
-keeps its authored value. Report any reduction in the encode result.
+## Decision
 
-Use a temporary sibling scene so relative asset and report paths retain their
-meaning; never rewrite the source. Analysis audio stays outside the install
-stage. Analysis failure refuses the encode. Program range, data, representation,
-parameters and thread arguments pass through to analysis. Analysis never uploads.
+For recorded named stress with integrated normalization, keep the authored
+integrated target, true-peak ceiling and dialogue gain. Encode the authored
+analysis mix without normalization or the final limiter and measure named
+words using `craft_bar.measure_voice` and the cached placement/alignment.
 
-This policy trades integrated loudness for preserved dynamics; the craft bar
-specifies no integrated loudness target. It applies to the SDK master path,
-not direct engine calls, dynamic normalization, or unrecorded projects. It
-cannot repair contrast already lost to overlapping tracks, authored effects,
-or a take that fails stress. Cached timing still must match the source.
-Lossy encoding can perturb word levels; proof on the delivered mix remains
-necessary, especially when a take only barely passes.
+Add -6 dB of gain automation to music, effects and ambience over each named
+word's span. Use `emphasis.RAMP` (15 ms) on either side; merge overlapping
+ramp extents. Composition-time additive gain automation preserves existing
+faders and animations. Match words exactly as `prosody.measure` does: the
+first normalized occurrence. The engine schema permits effect `attack` and
+`release`, but the engine's effect limiter ignores attack, and the final
+true-peak limiter has fixed lookahead/attack and a 50 ms release. Do not
+invent master timing attributes or claim adjustable final limiter timing.
 
-Synthetic integration tests reproduce limiter loss and check both peak-limited
-and unconstrained gain through PCM and AAC outputs, source preservation and
-scratch cleanup. The real project is rebuilt only from a scratch copy.
+Measure each staged, encoded output before installing any output or report.
+Every named word must reach `prosody.STRESS_DB` (3 dB above the line median);
+`emphasis.MARGIN` remains the take's 0.5 dB production allowance, not a lower
+acceptance bar. Failure raises `craft_bar.CraftError` with line, word, before
+and after measurements and target. There is no quieter fallback and no lift
+of the spoken word. A bad take or contrast lost to limiting needs a remix or
+retake. Also refuse decoded loudness farther than 0.2 LU from target or true
+peak more than 0.1 dB above the authored ceiling (ebur128 summary precision).
+Report one line per output with target, decoded integrated loudness, true peak
+and every named word's analysis/master contrast. Keep the whole report rather
+than truncating it with the engine output tail.
+
+Temporary sibling scenes retain relative asset references. Analysis products
+stay outside the install stage. Source documents are unchanged; failures
+clean stages and install nothing. Projects without recorded named stress keep
+the existing engine command and bytes. Programme ranges and output segments
+are refused for named stress until cached word timings can be remapped;
+parameters, data, representations and thread arguments pass to analysis.
+
+The synthetic peak-driving recording verifies target loudness and stress,
+an unattainable target verifies refusal before install, duck-envelope checks
+cover additive faders and overlapping words, and direct engine comparison
+checks byte identity without named stress. Only scratch copies may be used
+for real episode audio checks.
