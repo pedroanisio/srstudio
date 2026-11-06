@@ -404,27 +404,32 @@ def measure(
 MasterApproval = Disposition
 
 
+RELEASE_SCOPES = ("legacy_reviewed", "reviewed_full_size")
+
+
 @dataclass(frozen=True)
 class ReleaseApproval:
-    """Explicit whole-master legacy review evidence supplied by a trusted caller (ADR 0248).
+    """Explicit hash-bound review evidence supplied by a trusted caller (ADR 0248).
 
-    This validates structure, not source authenticity or historical eligibility.
-    The caller must retain the source message and classify the master as reviewed legacy.
+    ``legacy_reviewed`` releases a whole legacy master; ``reviewed_full_size`` releases only the final-frame review
+    (ADR 0247) of a master the approver looked at full size, and every measure must still pass or carry its own
+    disposition (videos.ruling.185). This validates structure, not source authenticity or historical eligibility.
+    The caller must retain the source message and classify the master.
     """
 
     master_sha256: str
     approver: str
     approval_message: Message
-    scope: Literal["legacy_reviewed"]
+    scope: Literal["legacy_reviewed", "reviewed_full_size"]
     reason: str
 
     def __post_init__(self) -> None:
         if not isinstance(self.master_sha256, str) or not re.fullmatch(r"[a-fA-F0-9]{64}", self.master_sha256):
             raise AuthorityError("release approval needs an exact 64-hex master sha256")
-        if self.scope != "legacy_reviewed":
-            raise AuthorityError("release approval scope must be legacy_reviewed")
+        if self.scope not in RELEASE_SCOPES:
+            raise AuthorityError("release approval scope must be legacy_reviewed or reviewed_full_size")
         if not isinstance(self.approver, str) or self.approver not in ("arc4d3", "Pedro"):
-            raise AuthorityError("legacy release approval requires arc4d3 or Pedro")
+            raise AuthorityError("release approval requires arc4d3 or Pedro")
         msg = self.approval_message
         if not isinstance(msg, Message) or not all(
             isinstance(v, str) and v.strip() for v in (msg.author, msg.reference, msg.text, self.reason)
@@ -713,23 +718,42 @@ class Reading:
                 self.release_approval.validate(self.master_sha256)
             except AuthorityError:
                 return True
-            return False
+            if self.release_approval.scope == "legacy_reviewed":
+                return False
+            return self._measures_refused  # a full-size look releases the frame review, never a measure
         return (
-            bool(self.frame_error)
-            or (self.final_frames is not None and self.final_frames.refused)
-            or not self.master_sha256
+            bool(self.frame_error) or (self.final_frames is not None and self.final_frames.refused)
+        ) or self._measures_refused
+
+    @property
+    def _measures_refused(self) -> bool:
+        return (
+            not self.master_sha256
             or not self.checks
             or bool(self.error or self.failing or any(c.refused for c in self.checks))
         )
+
+    @property
+    def _frames_released(self) -> bool:
+        if self.release_approval is None or self.release_approval.scope != "reviewed_full_size":
+            return False
+        try:
+            self.release_approval.validate(self.master_sha256)
+        except AuthorityError:
+            return False
+        return True
 
     def lines(self) -> list[str]:
         return (
             self._measure_lines()
             + (
                 [f"whole-master release: RELEASED by {self.release_approval!r}"]
-                if self.release_approval is not None and not self.refused
+                if self.release_approval is not None
+                and self.release_approval.scope == "legacy_reviewed"
+                and not self.refused
                 else []
             )
+            + ([f"final-frame review: RELEASED by {self.release_approval!r}"] if self._frames_released else [])
             + ([f"whole-master release: REFUSED {self.release_approval_error}"] if self.release_approval_error else [])
             + (self.final_frames.lines() if self.final_frames is not None else [])
             + ([f"frames {self.video}: REFUSED {self.frame_error}"] if self.frame_error else [])
