@@ -175,7 +175,8 @@ def run(engine: Path, fonts: Path, out: Path, scratch: Path) -> None:
 h1{font-size:40px}p{line-height:1.5}figure{margin:40px 0}img{width:100%;height:auto}
 video{width:min(100%,450px);display:block;margin:auto}a{color:#b5d9f5}figcaption{margin:12px 0}</style>
 <h1>Visor chibi <small>· proposed</small></h1>
-<p>A clay puppet with white armor over a black suit, a dark glossy visor and glowing white eye shapes.
+<p>An original clay puppet with soft terracotta body shells, an orange chest accent, mitten hands,
+a dark visor and glowing white eye shapes.
 Inspired design under videos.op.inspired.001. Look approval is pending arc4d3's review of this animation.
 There is no approval record.</p>
 <video controls loop playsinline preload="metadata" src="proof.mp4"></video>
@@ -192,8 +193,8 @@ alt="Neutral, presenting, hands on hips, wave, shrug and point"></figure>
 <figure><figcaption>Rafa and Visor · same world units, lens, baseline and scale, then filled silhouettes</figcaption>
 <img src="lineup.png" alt="Rafa beside Visor, in clay and in black silhouette"></figure>
 <details><summary>Source reference</summary><img src="reference.png" alt="Supplied armored chibi reference"></details>
-<p>Differences retained for review: fewer armor seams and simpler glove articulation;
-the reference has more finely sculpted compound curves and finger poses.
+<p>Body revision for review: continuous rounded shells in one warm color family, no utility belt,
+and one-piece mittens with thumbs. The approved helmet geometry and palette are preserved.
 The animated transitions use discrete replacement poses.</p>
 <p>Rafa's body and head are path-traced in separate passes through this same camera to fit the software adapter's
 primitive-buffer limit. World scale is preserved; shadows between those passes are absent.</p></html>''')

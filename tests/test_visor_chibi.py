@@ -182,7 +182,7 @@ def test_plate_digest_is_identical_in_an_independent_process():
     assert result.stdout.strip() == expected
 
 
-def test_gloves_mirror_the_thumb_and_fingers_between_wrists():
+def test_mittens_mirror_between_wrists():
     from scipy.spatial import cKDTree
 
     from srstudio import visor_chibi_geometry as geometry
@@ -240,7 +240,7 @@ def test_emissive_finish_adds_warm_bloom_without_changing_silhouette(tmp_path):
 
 
 @pytest.mark.parametrize('name', ('presenting', 'hands_on_hips'))
-def test_hip_hand_lands_at_the_belt_instead_of_the_chest(name):
+def test_hip_hand_lands_at_the_pelvis(name):
     positions = vc.joint_positions(vc.pose(name))
     assert abs(positions[vc.JointName.LEFT_WRIST][1] - positions[vc.JointName.PELVIS][1]) < 15
 
@@ -252,15 +252,15 @@ def test_point_is_a_straight_arm_distinct_from_the_bent_wave():
     assert np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)) > 0.99
 
 
-def test_black_cuffs_bridge_the_forearm_to_each_wrist_joint():
+def test_warm_sleeves_bridge_the_forearm_to_each_wrist_joint():
     from srstudio import visor_chibi_geometry as geometry
 
     for side in ('left', 'right'):
         forearm = clay.Model()
         geometry.piece(forearm, f'{side}_elbow')
-        suit = next(mesh for mesh in forearm.meshes() if mesh.material == 'suit')
+        sleeve = next(mesh for mesh in forearm.meshes() if mesh.material == 'shell')
         wrist = next(joint for joint in vc.JOINTS if joint.name.value == f'{side}_wrist')
-        assert suit.vertices[:, 1].max() >= wrist.offset[1]
+        assert sleeve.vertices[:, 1].max() >= wrist.offset[1]
 
 
 def test_every_video_inbetween_keeps_the_whole_glove_inside_the_frame():
@@ -332,3 +332,106 @@ def test_third_pass_rendered_neutral_head_is_forty_percent(scene_render, tmp_pat
     print(f'Neutral alpha bounds: head={bounds[0]}, body={bounds[1]}, head ratio={ratio:.6f}')
     # Third-pass 1080x1920 alpha measurement: 500 px head / 1238 px figure = 0.403877.
     assert ratio == pytest.approx(0.403877, abs=0.005)
+
+
+def test_approved_56e4363b_head_geometry_palette_and_every_face_are_pinned():
+    import hashlib
+
+    digest = hashlib.sha256()
+    for eyes in vc.EYES:
+        for gaze in vc.GAZES:
+            digest.update(plates.digest(vc.plate(face=vc.Face(eyes, gaze), head_only=True)).encode())
+    assert digest.hexdigest() == 'fbab3aa7d2e5c4186365fa96f016f5bd64e4ff92c36ed5a88f9954c0d5aae94a'
+
+
+class BodyPrimitives(clay.Model):
+    """Record authored solids, excluding each solid's internal tessellation."""
+
+    def __init__(self):
+        super().__init__()
+        self.calls = []
+        self.depth = 0
+
+
+def body_primitives(joints):
+    from srstudio import visor_chibi_geometry as geometry
+
+    model = BodyPrimitives()
+    for name in ('ell', 'box', 'capsule', 'sweep', 'cylinder', 'surface', 'ribbon'):
+        original = getattr(model, name)
+
+        def record(*args, _name=name, _original=original, **kwargs):
+            if model.depth == 0:
+                model.calls.append((_name, args))
+            model.depth += 1
+            try:
+                return _original(*args, **kwargs)
+            finally:
+                model.depth -= 1
+
+        setattr(model, name, record)
+    for joint in joints:
+        geometry.piece(model, joint)
+    return model
+
+
+def test_body_has_no_belt_or_boxed_waist_parts():
+    pelvis = body_primitives(('pelvis',))
+    assert [kind for kind, _ in pelvis.calls] == ['ell']
+
+
+@pytest.mark.parametrize('side', ('left', 'right'))
+def test_hand_is_one_round_mitt_and_one_thumb_without_fingers(side):
+    hand = body_primitives((f'{side}_wrist',))
+    assert [kind for kind, _ in hand.calls] == ['ell', 'capsule']
+    assert {mesh.material for mesh in hand.meshes()} == {'shell'}
+    # The mitt is a single rounded volume; the shorter thumb branches inward.
+    _, mitt = hand.calls[0]
+    _, thumb = hand.calls[1]
+    assert mitt[2][1] > mitt[2][0]
+    assert thumb[1][1] < thumb[2][1] < mitt[1][1] + mitt[2][1]
+    assert abs(thumb[2][0]) > mitt[2][0]
+
+
+def test_body_palette_matches_cream_head_with_one_small_orange_accent():
+    import colorsys
+
+    from srstudio import visor_chibi_geometry as geometry
+
+    body = body_primitives(j.name.value for j in vc.JOINTS if j.name != vc.JointName.HEAD)
+    assert {m.material for m in body.meshes()} == {'armor', 'shell', 'accent'}
+    assert geometry.MATERIALS['armor'].color == '#EAE8E3'
+    assert geometry.MATERIALS['accent'].color == '#F1A44F'
+    suit = geometry.MATERIALS['shell'].color
+    rgb = tuple(int(suit[i : i + 2], 16) / 255 for i in (1, 3, 5))
+    hue, saturation, value = colorsys.rgb_to_hsv(*rgb)
+    assert 0.07 < hue < 0.14 and 0.1 < saturation < 0.35 and 0.55 < value < 0.8
+    accents = [args for _, args in body.calls if args[0] == 'accent']
+    assert len(accents) == 5  # chest light, two shoulder stripes, two soles
+    assert accents[0][2][0] <= 8 and accents[0][2][1] <= 6
+
+
+def test_body_has_five_to_seven_separate_round_cream_shells():
+    joints = [j.name.value for j in vc.JOINTS if j.name != vc.JointName.HEAD]
+    shells = []
+    for joint in joints:
+        for kind, args in body_primitives((joint,)).calls:
+            if args[0] == 'armor':
+                shells.append((joint, kind, args))
+    assert 5 <= len(shells) <= 7
+    assert [joint for joint, _, _ in shells] == [
+        'chest', 'left_shoulder', 'left_ankle', 'right_shoulder', 'right_ankle'
+    ]
+    assert all(kind == 'ell' for _, kind, _ in shells)
+    assert all(min(args[2]) >= 10 for _, _, args in shells)
+    chest = shells[0][2]
+    assert chest[1][2] < -15 and chest[2][2] < chest[2][0]
+    for joint, _, args in shells:
+        if joint.endswith('ankle'):
+            assert args[1][1] - args[2][1] <= -45  # reaches up the shin
+            assert args[1][1] + args[2][1] <= 19  # original sole plane
+
+
+def test_body_uses_only_rounded_solids_without_segmented_panels():
+    body = body_primitives(j.name.value for j in vc.JOINTS if j.name != vc.JointName.HEAD)
+    assert {kind for kind, _ in body.calls} <= {'ell', 'capsule'}

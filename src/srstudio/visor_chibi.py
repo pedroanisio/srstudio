@@ -190,7 +190,7 @@ def eyes(m: clay.Model, face: Face = REST_FACE) -> None:
 
 @lru_cache(maxsize=96)
 def _base_meshes(state: Pose) -> tuple[clay.Mesh, ...]:
-    """Reuse the unchanged suit, armor and glass across replacement eye states."""
+    """Reuse the unchanged body shells, helmet and glass across replacement eye states."""
     result = clay.Model()
     frames = transforms(state)
     for joint in JOINTS:
@@ -276,7 +276,7 @@ def part_plates(name: str) -> tuple[plates.Plate, ...]:
     'character',
     'visor-chibi',
     style='toon',
-    summary='Proposed clay chibi: white armor, black suit and glowing visor eyes',
+    summary='Proposed clay chibi: terracotta shells, orange accent and glowing visor eyes',
     contract=cc.character(
         limbs=False,
         expressions=False,

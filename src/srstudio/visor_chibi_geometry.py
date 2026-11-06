@@ -1,7 +1,7 @@
 """Clay parts in local joint frames for the proposed visor chibi.
 
 The face uses thin emissive surfaces following the visor curvature, never balls
-or a mouth. Armor is rounded clay over a continuous dark undersuit.
+or a mouth. The body wears five rounded cream shells over a warm suit, with small orange details.
 """
 
 from __future__ import annotations
@@ -20,6 +20,8 @@ MATERIALS = {
     'armor': Material('armor', '#EAE8E3', roughness=0.18),
     'edge': Material('edge', '#C1C4C5', roughness=0.48),
     'suit': Material('suit', '#161B22', roughness=0.65, normal_map=_CLAY, normal_scale=0.3),
+    'shell': Material('shell', '#B8A68D', roughness=0.48),
+    'accent': Material('accent', '#F1A44F', roughness=0.4),
     'visor': Material('visor', '#010309', roughness=0.85, metallic=1.0),
     'eye': Material('eye', '#FFF7E8', roughness=0.5, emissive='#FFF6E4'),
 }
@@ -106,29 +108,6 @@ def _panel(m: clay.Model, material: str, outline, depth: float = 5) -> None:
         m.surface(material, face, np.tile(normal, (len(face), 1)), [(0, i, i + 1) for i in range(1, len(face) - 1)])
 
 
-def _chest(m: clay.Model) -> None:
-    """A convex shield with a rolled edge and continuous sculpted normals."""
-    outline = np.array(((-42, -27), (-23, -36), (23, -36), (42, -27), (38, 14), (23, 25), (-23, 25), (-38, 14)), float)
-    centre = np.array((0, -5))
-    rings = np.linspace(0, 1, 13)
-    xy = centre + rings[:, None, None] * (outline - centre)
-    z = np.broadcast_to((-42 + 17 * rings**2)[:, None], xy.shape[:2])
-    vertices = np.dstack((xy, z)).reshape(-1, 3)
-    normals = np.column_stack((vertices[:, 0] / 68, (vertices[:, 1] + 5) / 52, -np.ones(len(vertices))))
-    normals /= np.linalg.norm(normals, axis=1, keepdims=True)
-    count = len(outline)
-    triangles: list[tuple[int, int, int]] = []
-    for row in range(len(rings) - 1):
-        for col in range(count):
-            a, b = row * count + col, row * count + (col + 1) % count
-            triangles.extend(((a, b + count, b), (a, a + count, b + count)))
-    m.surface('armor', vertices, normals, triangles)
-    for a, b in zip(outline, np.roll(outline, -1, axis=0), strict=True):
-        _panel(
-            m, 'armor', [(a[0], a[1], -25), (b[0], b[1], -25), (b[0] * 0.96, b[1], -13), (a[0] * 0.96, a[1], -13)], 1
-        )
-
-
 def _helmet(m: clay.Model) -> None:
     # 128 meridians and 64 polar intervals: subpixel chords at 1080 px,
     # with analytic shared normals so highlights flow across every triangle.
@@ -178,13 +157,9 @@ def _helmet(m: clay.Model) -> None:
 
 
 def _hand(m: clay.Model, side: int) -> None:
-    m.ell('suit', (0, 10, 0), (12, 14, 7))
-    for i in range(4):
-        x = (-10 + i * 6.6) * side
-        tip = 31 - abs(i - 1) * 3
-        m.capsule('suit', (x, 14, -1), (x + side * (i - 1.5), tip, -5), 2.7)
-    m.capsule('suit', (-10 * side, 3, 0), (-18 * side, 15, -2), 4)
-    m.box('armor', (0, 3, 4), (20, 13, 6), 3)
+    """One soft mitt and an inward thumb; the same shape serves all six poses."""
+    m.ell('shell', (0, 15, -1), (13, 19, 9))
+    m.capsule('shell', (-9 * side, 5, 0), (-18 * side, 16, -2), 5)
 
 
 def piece(m: clay.Model, joint: str) -> None:
@@ -192,45 +167,27 @@ def piece(m: clay.Model, joint: str) -> None:
         with m.at(scale=HEAD_SCALE):
             _helmet(m)
     elif joint == 'neck':
-        m.cylinder('suit', (0, 8, 0), 15, 20)
-        for y in (1, 7, 13):
-            m.cylinder('edge', (0, y, 0), 15.5, 1)
+        m.ell('shell', (0, 8, 0), (15, 10, 15))
     elif joint == 'chest':
-        m.ell('suit', (0, 15, 0), (42, 49, 24))
-        m.ell('armor', (0, -6, 8), (49, 36, 24))
-        _chest(m)
-        m.box('armor', (0, 39, -20), (31, 33, 15), 8)
-        for x in (-9, 0, 9):
-            m.box('suit', (x, -15, -42), (3, 9, 2), 1)
+        # A soft suit bridges the hips; a separate oval chest shell sits forward.
+        m.ell('shell', (0, 12, 0), (46, 51, 30))
+        m.ell('armor', (0, 8, -24), (40, 38, 14))
+        m.ell('accent', (0, -10, -37), (7, 5, 3))
     elif joint == 'pelvis':
-        m.ell('suit', (0, 9, 0), (41, 29, 24))
-        m.box('suit', (0, -1, -1), (88, 16, 47), 5)
-        m.box('armor', (0, -1, -27), (20, 16, 8), 3)
-        for x in (-36, -18, 18, 36):
-            m.box('armor', (x, -1, -25), (15, 19, 9), 2)
-        m.sweep('armor', [(0, 9, -15), (0, 23, -17), (0, 38, -10)], [20, 18, 11], depth=0.6)
+        m.ell('shell', (0, 9, 0), (41, 29, 26))
     elif joint.endswith('shoulder'):
-        side = -1 if joint.startswith('left') else 1
-        m.ell('suit', (0, 13, 0), (17, 23, 17))
-        m.ell('armor', (side * 3, 1, 0), (25, 20, 25))
-        m.capsule('suit', (0, 19, 0), (0, 56, 0), 13)
-        for y in (26, 32, 38):
-            m.cylinder('edge', (0, y, 0), 13.3, 1)
+        m.capsule('shell', (0, 3, 0), (0, 54, 0), 19)
+        m.ell('armor', (0, 1, 0), (23, 21, 22))
+        m.ell('accent', (0, -3, -20), (13, 3, 4))
     elif joint.endswith('elbow'):
-        m.ell('suit', (0, 1, 0), (14, 13, 14))
-        m.capsule('suit', (0, 44, 0), (0, 56, 0), 9)
-        m.sweep('armor', [(0, 12, 0), (0, 28, -3), (0, 48, -1)], [16, 18, 12], depth=0.9)
-        m.box('edge', (0, 32, -18), (13, 27, 2), 1)
+        m.capsule('shell', (0, 0, 0), (0, 55, 0), 16)
     elif joint.endswith('wrist'):
         _hand(m, -1 if joint.startswith('left') else 1)
     elif joint.endswith('hip'):
-        m.capsule('suit', (0, 2, 0), (0, 63, 0), 16)
-        m.sweep('armor', [(0, 8, -5), (0, 29, -7), (0, 51, -6)], [17, 18, 14], depth=0.85)
+        m.capsule('shell', (0, 2, 0), (0, 63, 0), 19)
     elif joint.endswith('knee'):
-        m.capsule('suit', (0, 0, 0), (0, 63, 0), 12)
-        m.ell('armor', (0, 1, -9), (16, 15, 11))
-        m.sweep('armor', [(0, 16, -2), (0, 37, -3), (0, 58, -1)], [16, 17, 13], depth=0.95)
+        m.capsule('shell', (0, 0, 0), (0, 60, 0), 16)
     elif joint.endswith('ankle'):
-        m.box('suit', (0, 13, -10), (38, 12, 58), 4)
-        m.ell('armor', (0, 3, -8), (19, 13, 29))
-        m.box('armor', (0, 4, -29), (32, 18, 22), 6)
+        # One continuous shin/boot shell per leg, ending at the original sole plane.
+        m.ell('armor', (0, -17, -8), (20, 34, 29))
+        m.ell('accent', (0, 17, -8), (19, 2, 28))
