@@ -50,6 +50,7 @@ NO_EPISODE = [
     "news-vera@6",
     "pedro",
     "rafa",
+    "visor-chibi",
     "rafa-bills",
     "rafa-breakroom",
     "rafa-kitchen",

@@ -243,7 +243,7 @@ Neither a declaration nor a complete shape certifies semantic validity.
 <!-- contract-coverage:start -->
 | Kind | Registered | Explicit contracts | Complete data shapes | Runtime bindings | With examples | With units | With clocks | With anchors |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| character | 80 | 80 | 7 | 80 | 5 | 80 | 78 | 0 |
+| character | 81 | 81 | 8 | 81 | 5 | 81 | 78 | 0 |
 | location | 128 | 128 | 110 | 128 | 2 | 96 | 72 | 26 |
 | prop | 569 | 569 | 560 | 569 | 5 | 545 | 250 | 262 |
 | graphic | 88 | 88 | 74 | 88 | 1 | 88 | 82 | 15 |

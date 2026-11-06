@@ -322,8 +322,10 @@ def _moth(entry: registry.Entry) -> Canvas:
 
 def _clay(entry: registry.Entry) -> Canvas:
     """Every face of a character shot on plates, one plate at a time (ADR 0068)."""
-    from . import pedro_host, rafa_host
+    from . import pedro_host, rafa_host, visor_chibi
 
+    if entry.name == "visor-chibi":
+        return visor_chibi.specimen(entry)
     host = pedro_host if entry.name == "pedro" else rafa_host
     cv = _stage("toon", HOLD)
     faces = host.part_plates(entry.name)
@@ -419,6 +421,7 @@ SPECIMENS: dict[str, Callable[[registry.Entry], Canvas]] = {
     "friends-sam": _anchor,
     "host-lint": _moth,
     "rafa": _clay,
+    "visor-chibi": _clay,
     "pedro": _clay,
     "doodle": _inked,
     **{f"talking-{name}": _inked for name in ("printer", "router", "doorbell", "meter", "vacuum")},
