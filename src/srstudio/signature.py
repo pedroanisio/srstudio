@@ -83,10 +83,14 @@ class Act:
             )
 
 
-def missing(document: bytes) -> list[str]:
-    """The marks (:data:`MARKS`) no group of the scene ``document`` carries; paints and other elements do not count."""
+def missing(document: bytes, *, code: str | None = "SR-1028") -> list[str]:
+    """The requested marks no group carries; ``code=None`` requires only the cactus (ADR 0250).
+
+    Paints and other elements do not count.
+    """
     ids = {el.get("id") or "" for el in ET.fromstring(document).iter("group")}
-    return [m for m in MARKS if not any(i == m or re.fullmatch(rf"{m}-\d+", i) for i in ids)]
+    marks = MARKS if code is not None else ("sig-cactus",)
+    return [m for m in marks if not any(i == m or re.fullmatch(rf"{m}-\d+", i) for i in ids)]
 
 
 def without(document: bytes, mark: str) -> bytes:
@@ -182,7 +186,7 @@ def code(
     Raises :class:`SignatureError` (a ``ValueError``) when the code holds a character the glyph set lacks, so a typo in
     ``EpisodeSpec.signature_code`` fails the build instead of printing a gap.
     """
-    if cv.signature is None:
+    if cv.signature is None or cv.signature.code is None:
         return None
     text = cv.signature.code
     missing = sorted({c for c in text if c not in GLYPHS})
@@ -281,7 +285,7 @@ def cactus(cv: Canvas, parent, x, y, scale: float = 1, *, act: Act | None = None
     cv.path(g, "M-30 0 L-36 -42 L36 -42 L30 0 Z", pot, ink, sw)
     cv.ellipse(g, -32, -58, 64, 12, soil, ink, 1.6)
     cv.rect(g, -40, -54, 80, 12, rim, ink, sw, radius=3)
-    if act is not None and act.code:
+    if act is not None and act.code and cv.signature.code is not None:
         code(cv, g, -text_width(cv.signature.code, POT_CODE) / 2, -30, POT_CODE, color=ink if pen else "#FBEBD8")
     return g
 

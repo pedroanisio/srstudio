@@ -73,9 +73,9 @@ PLASTIC = Palette(ink="#2a1f3d", white="#fff8ee", shade="#ff5fa2", name="plastic
 
 @dataclass(frozen=True)
 class Signature:
-    """What signs an episode (ADR 0001): the recurring code; the cactus needs no parameter."""
+    """What signs an episode (ADR 0001): the recurring code, or None for cactus only."""
 
-    code: str = "SR-1028"
+    code: str | None = "SR-1028"
 
 
 def shared_counter(start: int = 0) -> Callable[[str], str]:
