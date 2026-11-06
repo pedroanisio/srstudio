@@ -2318,9 +2318,9 @@
           "number": 2,
           "date": "2026-11-05",
           "note": "Dressed at home: a teal top and mustard trousers with a cream collar and cuffs, drawn by the rig (ADR 0242); arc4d3's ruling 1793854854.581609, Juno reads as naked.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "generated/okayville/jp-review/juno-v2/",
-          "approval": null,
+          "approval": {"date": "2026-11-05", "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793868757.180989: \"Approved: Okayville character juno v2 (juno@2, SDK a0b8a4da: teal top #3F8F8A, mustard trousers #D29B2A, cream collar and cuffs), as drawn in the standing and seated stills, with the two fixes below folded in.\" Fix 1 (waist line, top over trousers) is fe4a8b08; fix 2 asked for no change. \"Fold in before the rebuild (no new approval needed).\""},
           "drawing": "1f3f37e9a44e3004ca4092820c166b119858575b31eab642ad26cb339ea12237",
           "rig": null
         }
