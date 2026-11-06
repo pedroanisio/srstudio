@@ -184,7 +184,7 @@ def joint_positions(state: Pose = REST) -> dict[JointName, np.ndarray]:
 
 def eyes(m: clay.Model, face: Face = REST_FACE) -> None:
     """Emissive shapes on the curved visor, in the same neck frame as the helmet."""
-    with m.at(scale=0.75):
+    with m.at(scale=geometry.HEAD_SCALE):
         geometry.eyes(m, face.eyes, face.gaze)
 
 
@@ -233,7 +233,7 @@ CAMERA = plates.Camera((65, -228, -820), (0, -196, 0), 27, 6)
 def plate(
     state: Pose = REST, face: Face = REST_FACE, *, width: int = 1080, height: int = 1920, head_only: bool = False
 ) -> plates.Plate:
-    camera = plates.Camera((22, -333, -510), (0, -331, 0), 23, 4) if head_only else CAMERA
+    camera = plates.Camera((22, -350, -620), (0, -348, 0), 23, 4) if head_only else CAMERA
     if head_only:
         local = clay.Model()
         geometry.piece(local, 'head')

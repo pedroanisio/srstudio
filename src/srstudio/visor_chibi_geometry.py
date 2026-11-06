@@ -13,9 +13,11 @@ import numpy as np
 from . import clay
 from .plates import Material, Texture
 
+HEAD_SCALE = 0.94
+
 _CLAY = Texture(clay.normal_tile(clay.thumbed(256, 29), 1.3))
 MATERIALS = {
-    'armor': Material('armor', '#EAE8E3', roughness=0.38, normal_map=_CLAY, normal_scale=0.16, sheen='#ECE5DA'),
+    'armor': Material('armor', '#EAE8E3', roughness=0.18),
     'edge': Material('edge', '#C1C4C5', roughness=0.48),
     'suit': Material('suit', '#161B22', roughness=0.65, normal_map=_CLAY, normal_scale=0.3),
     'visor': Material('visor', '#010309', roughness=0.85, metallic=1.0),
@@ -128,32 +130,34 @@ def _chest(m: clay.Model) -> None:
 
 
 def _helmet(m: clay.Model) -> None:
-    # Broad crown planes and clipped sides, rather than an uninterrupted bubble.
-    theta = np.linspace(0, 2 * math.pi, 25)
-    rings = [(-188, 0.02), (-182, 0.35), (-164, 0.66), (-132, 0.9), (-94, 1.0), (-52, 0.94), (-20, 0.7), (0, 0.35)]
-    for (y0, r0), (y1, r1) in zip(rings[:-1], rings[1:], strict=True):
-        for a, b in zip(theta[:-1], theta[1:], strict=True):
-            points = np.array(
-                [
-                    (np.clip(103 * r * math.sin(t), -95, 95), y, max(-66, 74 * r * math.cos(t)))
-                    for y, r, t in ((y0, r0, a), (y0, r0, b), (y1, r1, b), (y1, r1, a))
-                ]
-            )
-            normal = np.cross(points[1] - points[0], points[2] - points[0])
-            normal /= np.linalg.norm(normal)
-            if np.dot(normal, points.mean(0) - (0, -94, 0)) < 0:
-                normal = -normal
-            m.surface('armor', points, np.tile(normal, (4, 1)), [(0, 1, 2), (0, 2, 3)])
+    # 128 meridians and 64 polar intervals: subpixel chords at 1080 px,
+    # with analytic shared normals so highlights flow across every triangle.
+    rows, cols = 65, 128
+    polar = np.linspace(0, math.pi, rows)[:, None]
+    around = np.linspace(0, math.tau, cols, endpoint=False)[None, :]
+    unit = np.stack(
+        (np.sin(polar) * np.sin(around), -np.cos(polar) * np.ones_like(around), np.sin(polar) * np.cos(around)), axis=2
+    ).reshape(-1, 3)
+    radii = np.array((103, 94, 66))
+    vertices = unit * radii + (0, -94, 0)
+    normals = unit / radii
+    normals /= np.linalg.norm(normals, axis=1, keepdims=True)
+    triangles: list[tuple[int, int, int]] = []
+    for row in range(rows - 1):
+        for col in range(cols):
+            a, b = row * cols + col, row * cols + (col + 1) % cols
+            triangles.extend(((a, b, b + cols), (a, b + cols, a + cols)))
+    m.surface('armor', vertices, normals, triangles)
     u, v = clay.superellipse(128, 4.0)
     _patch(m, 'visor', u * 91, -94 + v * 38)
     x = np.linspace(-89, 89, 60)
     y = -94 - 38 * np.maximum(0, 1 - (x / 91) ** 4) ** 0.25
     m.ribbon('armor', np.stack((x, y - 1, front(x, y) - 1), axis=1), 3)
-    # Wide cheek planes and a raised central jaw; the dark chin notch is exposed.
+    # Slim cheek plates taper into the chin notch beneath the wider visor band.
     for side in (-1, 1):
         outline = [
             (side * x, y, float(front(x, y)) - 10)
-            for x, y in ((0, -69), (35, -62), (88, -59), (93, -25), (48, -7), (25, -5), (18, -22), (0, -24))
+            for x, y in ((0, -69), (30, -62), (83, -59), (81, -25), (42, -7), (25, -5), (18, -22), (0, -24))
         ]
         _panel(m, 'armor', outline, 13)
         for yy in (-42, -32):
@@ -162,7 +166,7 @@ def _helmet(m: clay.Model) -> None:
                 'suit',
                 [
                     (side * x, y, float(front(x, y)) - 10.6)
-                    for x, y in ((58, yy), (81, yy - 3), (81, yy + 3), (58, yy + 6))
+                    for x, y in ((53, yy), (74, yy - 3), (74, yy + 3), (53, yy + 6))
                 ],
                 1,
             )
@@ -185,7 +189,7 @@ def _hand(m: clay.Model, side: int) -> None:
 
 def piece(m: clay.Model, joint: str) -> None:
     if joint == 'head':
-        with m.at(scale=0.75):
+        with m.at(scale=HEAD_SCALE):
             _helmet(m)
     elif joint == 'neck':
         m.cylinder('suit', (0, 8, 0), 15, 20)

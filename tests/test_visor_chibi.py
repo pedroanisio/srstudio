@@ -197,7 +197,7 @@ def test_gloves_mirror_the_thumb_and_fingers_between_wrists():
         assert distances.max() < 1e-6
 
 
-def test_second_pass_head_is_one_third_of_height_and_visor_is_a_band():
+def test_head_is_two_fifths_of_height_and_visor_is_a_band():
     from srstudio import visor_chibi_geometry as geometry
 
     head = clay.Model()
@@ -206,7 +206,7 @@ def test_second_pass_head_is_one_third_of_height_and_visor_is_a_band():
     head_height = np.ptp(np.concatenate([m.vertices for m in parts])[:, 1])
     total_height = np.ptp(np.concatenate([m.vertices for m in vc.meshes()])[:, 1])
     visor = next(m for m in parts if m.material == 'visor')
-    assert 0.29 < head_height / total_height < 0.37
+    assert 0.39 < head_height / total_height < 0.42
     assert 0.28 < np.ptp(visor.vertices[:, 1]) / head_height < 0.45
 
 
@@ -271,3 +271,64 @@ def test_every_video_inbetween_keeps_the_whole_glove_inside_the_frame():
         xy = rafa_host.project(points, lens=vc.CAMERA)
         assert np.all(xy.min(0) > 16)
         assert np.all(xy.max(0) < (1064, 1904))
+
+
+def test_third_pass_dome_has_dense_smooth_normals_and_gloss(monkeypatch):
+    from srstudio import visor_chibi_geometry as geometry
+
+    surfaces = []
+    original = clay.Model.surface
+
+    def record(self, material, vertices, normals, triangles, uvs=None):
+        surfaces.append((material, np.asarray(vertices), np.asarray(normals)))
+        original(self, material, vertices, normals, triangles, uvs)
+
+    monkeypatch.setattr(clay.Model, 'surface', record)
+    geometry._helmet(clay.Model())
+    material, vertices, normals = surfaces[0]
+    assert material == 'armor'
+    assert len(vertices) >= 8192
+    assert len(np.unique(np.round(normals, 5), axis=0)) > 8000
+    armor = geometry.MATERIALS['armor']
+    assert armor.roughness <= 0.22
+    assert armor.normal_map is None  # glossy plastic has an uninterrupted highlight
+
+
+def test_third_pass_jaw_is_slimmer_than_the_visor(monkeypatch):
+    from srstudio import visor_chibi_geometry as geometry
+
+    panels = []
+    original = geometry._panel
+
+    def record(model, material, outline, depth=5):
+        panels.append((material, np.asarray(outline)))
+        original(model, material, outline, depth)
+
+    monkeypatch.setattr(geometry, '_panel', record)
+    model = clay.Model()
+    geometry._helmet(model)
+    jaw = np.concatenate([v for material, v in panels if material == 'armor' and v[:, 1].min() > -100])
+    visor = next(m for m in model.meshes() if m.material == 'visor')
+    assert np.ptp(jaw[:, 0]) <= np.ptp(visor.vertices[:, 0]) * 0.94
+    slots = [v for material, v in panels if material == 'suit' and -60 < v[:, 1].min() < -25]
+    assert len(slots) == 4  # two slots on each cheek
+
+
+def test_third_pass_rendered_neutral_head_is_forty_percent(scene_render, tmp_path):
+    from dataclasses import replace
+
+    from PIL import Image
+
+    drawing = vc.plate()
+    head = vc.plate(head_only=True)
+    head = replace(head, camera=drawing.camera)
+    bounds = []
+    for plate in (head, drawing):
+        source = plates.render(plate, engine=scene_render, cache=tmp_path, fonts=tmp_path)
+        alpha = np.asarray(Image.open(source).convert('RGBA'))[:, :, 3]
+        yy = np.nonzero(alpha >= 128)[0]
+        bounds.append((int(yy.min()), int(yy.max()) + 1))
+    ratio = (bounds[0][1] - bounds[0][0]) / (bounds[1][1] - bounds[1][0])
+    print(f'Neutral alpha bounds: head={bounds[0]}, body={bounds[1]}, head ratio={ratio:.6f}')
+    # Third-pass 1080x1920 alpha measurement: 500 px head / 1238 px figure = 0.403877.
+    assert ratio == pytest.approx(0.403877, abs=0.005)
