@@ -187,6 +187,7 @@ def recorded_lines(project: Path) -> tuple[RecordedLine, ...]:
             data = _read(project / 'dialogue.json')
             stresses = {f"line-{s['line']}": tuple(s['words']) for s in data.get('stress', ())}
             sources = {s['clip']: s for s in data.get('stress', ()) if 'source' in s}
+            slowed = {s['clip']: s for s in data.get('stretch', ())}
             for clip in data.get('clips', ()):
                 g = clip.get('generated', {})
                 if g.get('kind') != 'speech':
@@ -202,7 +203,25 @@ def recorded_lines(project: Path) -> tuple[RecordedLine, ...]:
                         if hashlib.sha256((project / source[field]).read_bytes()).hexdigest() != source[sha]:
                             raise WordsNotHeard(f"{g['id']}: emphasis source identity mismatch")
                     timing = g | {'cache': source['source']}
+                factor = 1.0
+                stretch = slowed.get(timing['cache'])
+                if stretch is not None:
+                    # interview.stretch slows the take. Require both identities, then read the take's words slowed.
+                    for field, sha in (('clip', 'sha256'), ('source', 'source_sha256')):
+                        if hashlib.sha256((project / stretch[field]).read_bytes()).hexdigest() != stretch[sha]:
+                            raise WordsNotHeard(f"{g['id']}: stretch source identity mismatch")
+                    factor = _number(stretch['factor'], 'stretch factor')
+                    timing = g | {'cache': stretch['source']}
                 rows = _cached_words(project, timing, language)
+                if factor != 1.0:
+                    rows = [
+                        row
+                        | {
+                            'start': _number(row['start'], 'word start') * factor,
+                            'end': _number(row['end'], 'word end') * factor,
+                        }
+                        for row in rows
+                    ]
                 out.append(
                     RecordedLine(
                         g['id'],

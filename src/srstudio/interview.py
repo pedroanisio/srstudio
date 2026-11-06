@@ -33,6 +33,7 @@ import os
 import random
 import re
 import shutil
+import subprocess
 import sys
 import wave
 from collections.abc import Callable, Mapping, Sequence
@@ -80,6 +81,9 @@ VOICE_PEAK = 0.78  # the loudest moment of the dialogue, before the master's lou
 ROOM_TONE = 0.00018  # standard deviation of the room tone
 _ID = re.compile(r"[a-z][a-z0-9-]*\Z")
 STRESSED_DIR = "stressed"  # a stressed line's derived clip, under the project's assets, beside the takes' own cache
+STRETCHED_DIR = "stretched"  # a slowed line's derived clip (:func:`stretch`), beside the stressed ones
+STRETCH_MOST = 1.25  # the slowest a take is played: further, a time-stretch smears its consonants
+STRETCH_MEASURE = "ffmpeg rubberband: tempo 1/factor, pitch kept"
 
 
 class InterviewError(SrstudioError, ValueError):
@@ -106,6 +110,7 @@ class Spoken:
     phone: bool = False  # heard through a phone; the speech check still hears the clean take
     stress: tuple[str, ...] = ()  # key words, raised by gain on a derived clip; the take stays the same
     stress_aim: float | None = None  # dB the stressed words aim for on the take; None is emphasis.AIM (ADR 0241)
+    stretch: float = 1.0  # the take played this many times as long, pitch kept, on a derived clip (:func:`stretch`)
 
 
 @dataclass(frozen=True)
@@ -206,6 +211,7 @@ class Interview:
             if not (checks.number(line.gain) and LEVELS[0] <= line.gain <= LEVELS[1]):
                 raise InterviewError(f"line {i}: gain {line.gain!r} must lie in {LEVELS}")
             _check_stress(i, line)
+            _check_stretch(i, line)
             try:
                 self.voices[line.role].voice_settings(line.speed)
             except SongError as exc:
@@ -225,6 +231,13 @@ class Interview:
                 raise InterviewError(f"effect {fx.id}: longest {fx.longest} must lie in (0, {fx.seconds}]")
             if not (0 < fx.peak <= 1):
                 raise InterviewError(f"effect {fx.id}: peak {fx.peak} must lie in (0, 1]")
+
+
+def _check_stretch(i: int, line: Spoken) -> None:
+    """``line``'s stretch: a number from 1 (the take as recorded) to :data:`STRETCH_MOST`; a take is never sped up."""
+    factor = line.stretch
+    if isinstance(factor, bool) or not isinstance(factor, (int, float)) or not 1 <= factor <= STRETCH_MOST:
+        raise InterviewError(f"line {i}: stretch {factor!r} must be a number from 1 to {STRETCH_MOST:g}")
 
 
 def _check_stress(i: int, line: Spoken) -> None:
@@ -347,14 +360,19 @@ def said(root: Path, phrase: Phrase, word: str, which: int = 0) -> float:
         raise InterviewError(
             f"line {phrase.index + 1}: {word!r} is not heard {which + 1} time(s) in {transcript.text!r}"
         )
-    at = phrase.start + starts[which] - phrase.trim_seconds
+    at = phrase.start + starts[which] * phrase.stretch - phrase.trim_seconds
     if not phrase.start <= at <= phrase.end:
         raise InterviewError(f"line {phrase.index + 1}: {word!r} is heard at {at:.3f} s, outside {phrase.span}")
     return at
 
 
 def stress(
-    iv: Interview, root: Path, pins: Mapping[str, Resolved], transcribe: Callable[[Path], Transcript]
+    iv: Interview,
+    root: Path,
+    pins: Mapping[str, Resolved],
+    transcribe: Callable[[Path], Transcript],
+    *,
+    heard: Mapping[str, Resolved] | None = None,
 ) -> tuple[dict[str, Resolved], list[dict]]:
     """The pins with each stressed line's take replaced by a derived clip, and the record of what was raised.
 
@@ -364,7 +382,11 @@ def stress(
     :data:`~srstudio.emphasis.TRIES` passes. The copy keeps the take's length, so word times, the trim and :func:`said`
     hold. The take itself and its pin are never touched; the clip is pinned by its own SHA-256, and the record names
     its source take and digest. A line with no ``stress`` keeps its pin. A word not heard, one gain cannot lift, or a
-    take heard as one word raises :class:`StressError`."""
+    take heard as one word raises :class:`StressError`.
+
+    A slowed line (:func:`stretch`) is stressed on its slowed clip in ``pins``, with the words ``transcribe`` hears in
+    its take in ``heard`` slowed by the same factor: the slowed clip has no transcript of its own, and none is asked
+    for. A slowed line stressed without ``heard`` raises :class:`InterviewError`."""
     root = Path(root)
     lines, _ = declarations(iv)
     out, record = dict(pins), []
@@ -372,12 +394,19 @@ def stress(
         if not line.stress:
             continue
         source = pins[item.id]
+        if line.stretch != 1 and heard is None:
+            raise InterviewError(
+                f"line {i}: a slowed line is stressed on its take's words, slowed by its factor: pass the takes it "
+                "was slowed from"
+            )
+        factor = line.stretch if heard is not None else 1.0
         trim = trim_speech(source.path)
         words = [
-            w
-            for w in transcribe(source.path).words
-            if w.type == "word" and w.end > trim.clip_in and w.start < trim.clip_out
+            dataclasses.replace(w, start=w.start * factor, end=w.end * factor)
+            for w in transcribe((heard or pins)[item.id].path).words
+            if w.type == "word"
         ]
+        words = [w for w in words if w.end > trim.clip_in and w.start < trim.clip_out]
         if len(words) < 2:
             raise StressError(
                 f"line {i}: the take is heard as {len(words)} word(s): a stressed word is measured over the line's "
@@ -400,12 +429,72 @@ def stress(
                 **({"aim": line.stress_aim} if line.stress_aim is not None else {}),
                 "clip": cache,
                 "sha256": derived.sha256,
-                "source": item.cache,
+                "source": source.generated.cache,
                 "source_sha256": source.sha256,
                 "measure": "srstudio.emphasis.lean on the take's trim",
             }
         )
     return out, record
+
+
+def stretch(
+    iv: Interview, root: Path, pins: Mapping[str, Resolved], *, ffmpeg: str = "ffmpeg"
+) -> tuple[dict[str, Resolved], list[dict]]:
+    """The pins with each slowed line's take replaced by a derived clip ``stretch`` times as long, pitch kept, and the
+    record of what was slowed.
+
+    The take is played through ffmpeg's rubberband filter into ``assets/stretched/line-N.wav``, at the take's own rate
+    and channels. The take and its pin are never touched; the clip is pinned by its own SHA-256, and the record names
+    the factor, the source take and its digest, from which the take's cached word times are read slowed
+    (:func:`stress`, :func:`said`, :func:`srstudio.craft_bar.recorded_lines`). A line at its own pace keeps its pin.
+    An ffmpeg that fails raises :class:`InterviewError`."""
+    root = Path(root)
+    lines, _ = declarations(iv)
+    out, record = dict(pins), []
+    for i, (line, item) in enumerate(zip(iv.lines, lines, strict=True), 1):
+        if line.stretch == 1:
+            continue
+        source = pins[item.id]
+        cache = f"assets/{STRETCHED_DIR}/{item.id}.wav"
+        clip = root / cache
+        clip.parent.mkdir(parents=True, exist_ok=True)
+        _slow(source.path, clip, line.stretch, ffmpeg, f"line {i}")
+        derived = Resolved(dataclasses.replace(item, cache=cache), clip, sha256_of(clip))
+        out[item.id] = derived
+        record.append(
+            {
+                "line": i,
+                "factor": line.stretch,
+                "clip": cache,
+                "sha256": derived.sha256,
+                "source": item.cache,
+                "source_sha256": source.sha256,
+                "measure": STRETCH_MEASURE,
+            }
+        )
+    return out, record
+
+
+def _slow(take: Path, out: Path, factor: float, ffmpeg: str, what: str) -> None:
+    """``take`` played ``factor`` times as long, pitch kept, written to ``out`` as 16-bit PCM at the take's rate and
+    channels, through a partial file so a failed run leaves no clip."""
+    with wave.open(str(take)) as w:
+        rate, channels = w.getframerate(), w.getnchannels()
+    partial = out.with_name(out.name + ".partial.wav")
+    run = subprocess.run(
+        [
+            ffmpeg, "-hide_banner", "-loglevel", "error", "-nostdin", "-y", "-i", str(take),
+            "-af", f"rubberband=tempo={1 / factor!r}", "-ar", str(rate), "-ac", str(channels),
+            "-c:a", "pcm_s16le", "-map_metadata", "-1", "-fflags", "+bitexact", "-flags:a", "+bitexact", str(partial),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )  # fmt: skip
+    if run.returncode != 0:
+        partial.unlink(missing_ok=True)
+        raise InterviewError(f"{what}: ffmpeg could not slow {take.name}: {run.stderr.strip()[-300:]}")
+    os.replace(partial, out)
 
 
 @dataclass(frozen=True)
@@ -573,9 +662,14 @@ def build(
     if failures:
         raise InterviewError("speech check failed:\n" + "\n".join(failures))
 
-    # 3. A line's stressed words raised by gain on a derived clip, measured on the take (the take keeps its pin).
-    takes = {item.id: pins[item.id] for item in lines}
-    pins, stressed = stress(iv, root, pins, ElevenLabsClient(cache, key="").transcribe)
+    # 3. A slowed line played from a derived clip; then its stressed words raised by gain on a derived clip,
+    #    measured on the take's words (every take keeps its pin).
+    recorded = {item.id: pins[item.id] for item in lines}
+    pins, slowed = stretch(iv, root, pins)
+    for entry in slowed:
+        print(f"line {entry['line']}: slowed x{entry['factor']:g}")
+    takes = {item.id: pins[item.id] for item in lines}  # what each line is trimmed on: its take, slowed if it is
+    pins, stressed = stress(iv, root, pins, ElevenLabsClient(cache, key="").transcribe, heard=recorded)
     for entry in stressed:
         print(f"line {entry['line']}: stressed " + ", ".join(f"{w} +{db:.2f} dB" for w, db in entry["words"].items()))
 
@@ -584,6 +678,8 @@ def build(
     t = placed.timing
     for entry in stressed:
         t.phrases[entry["line"] - 1]["stress"] = entry["words"]
+    for entry in slowed:
+        t.phrases[entry["line"] - 1]["stretch"] = entry["factor"]
     for phrase in t.phrases:
         print(f"{phrase['voice_name']:>4} {phrase['start']:6.3f}-{phrase['end']:6.3f}  {phrase['text']}")
 
@@ -599,7 +695,8 @@ def build(
         "duration": t.duration,
         "phrases": t.phrases,
         "sound_effects": placed.sound_effects,
-        "clips": [c.to_dict() for c in _clips_of(placed.clips, pins, stressed)],
+        "clips": [c.to_dict() for c in _clips_of(placed.clips, pins, [*slowed, *stressed])],
+        **({"stretch": slowed} if slowed else {}),
         **({"stress": stressed} if stressed else {}),
         **extra(t),
     }
@@ -609,9 +706,12 @@ def build(
     return out
 
 
-def _clips_of(clips: Sequence[PlacedClip], pins: Mapping[str, Resolved], stressed: Sequence[dict]) -> list[PlacedClip]:
-    """``clips`` with each stressed line's item naming its derived clip (:func:`stress`), whose digest it carries."""
-    derived = {f"line-{entry['line']}" for entry in stressed}
+def _clips_of(
+    clips: Sequence[PlacedClip], pins: Mapping[str, Resolved], derived_by: Sequence[dict]
+) -> list[PlacedClip]:
+    """``clips`` with each slowed or stressed line's item naming its derived clip (:func:`stretch`, :func:`stress`),
+    whose digest it carries."""
+    derived = {f"line-{entry['line']}" for entry in derived_by}
     return [
         dataclasses.replace(c, generated=pins[c.generated.id].generated) if c.generated.id in derived else c
         for c in clips
@@ -665,7 +765,9 @@ def rehearse(
     lines, effects = declarations(iv)
     pins: dict[str, Resolved] = {}
     for item, line in zip(lines, iv.lines, strict=True):
-        path = _write_tone(folder / f"{item.id}.wav", spoken_estimate(line.text, line.speed), syllables=True)
+        path = _write_tone(
+            folder / f"{item.id}.wav", spoken_estimate(line.text, line.speed) * line.stretch, syllables=True
+        )
         pins[item.id] = Resolved(item, path, sha256_of(path))
     for item, fx in zip(effects, iv.effects, strict=True):
         path = _write_tone(folder / f"{item.id}.wav", fx.longest, syllables=False)

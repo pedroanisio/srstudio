@@ -439,3 +439,58 @@ def test_release_consumes_shared_voice_measures(tmp_path, master, kind):
         assert by[name].measured == by['c7.' + name].measured
         assert by[name].verdict == by['c7.' + name].verdict == 'PASS'
     assert result.acceptance.voices[0].stress_status == 'PASS'
+
+
+def _slowed(tmp_path, *, stressed):
+    """A flat project whose line 1 plays its take 1.25 times slower (interview.stretch), leaned on top if
+    ``stressed``."""
+    p = project(tmp_path, 'flat')
+    d = json.loads((p / 'dialogue.json').read_text())
+    source = p / 'assets/generated/line-1.wav'
+    slowed = p / 'assets/stretched/line-1.wav'
+    slowed.parent.mkdir()
+    slowed.write_bytes(b'slowed take')
+
+    def digest(path):
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+
+    d['clips'][0]['placement']['clip_out'] = 1.25
+    d['stretch'] = [
+        {
+            'line': 1,
+            'factor': 1.25,
+            'clip': 'assets/stretched/line-1.wav',
+            'sha256': digest(slowed),
+            'source': 'assets/generated/line-1.wav',
+            'source_sha256': digest(source),
+        }
+    ]
+    d['clips'][0]['generated']['cache'] = 'assets/stretched/line-1.wav'
+    if stressed:
+        leaned = p / 'assets/stressed/line-1.wav'
+        leaned.parent.mkdir()
+        leaned.write_bytes(b'slowed and leaned')
+        d['clips'][0]['generated']['cache'] = 'assets/stressed/line-1.wav'
+        d['stress'][0].update(
+            clip='assets/stressed/line-1.wav',
+            source='assets/stretched/line-1.wav',
+            sha256=digest(leaned),
+            source_sha256=digest(slowed),
+        )
+    write(p / 'dialogue.json', d)
+    return p, slowed, source
+
+
+@pytest.mark.parametrize('stressed', [False, True])
+def test_a_slowed_line_reads_its_take_s_words_slowed_by_its_factor(tmp_path, stressed):
+    p, _, _ = _slowed(tmp_path, stressed=stressed)
+    (line,) = craft_bar.recorded_lines(p)
+    assert [t for w in line.words for t in (w.start, w.end)] == pytest.approx([0.125, 0.5, 0.5, 0.875, 0.875, 1.25])
+
+
+@pytest.mark.parametrize('changed', ['slowed', 'source'])
+def test_a_slowed_line_whose_clip_or_take_changed_is_refused(tmp_path, changed):
+    p, slowed, source = _slowed(tmp_path, stressed=False)
+    (slowed if changed == 'slowed' else source).write_bytes(b'changed')
+    with pytest.raises(craft_bar.WordsNotHeard, match='stretch source identity mismatch'):
+        craft_bar.recorded_lines(p)
