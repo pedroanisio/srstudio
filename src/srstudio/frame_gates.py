@@ -284,8 +284,7 @@ def signature_hidden(
             continue
         document = scene.read_bytes()
         try:
-            frames = framegraph.evaluate(engine, scene, sample_times(_duration(document), fps=_fps(document)))
-            frames = list(frames)
+            frames = list(framegraph.evaluate(engine, scene, sample_times(_duration(document), fps=_fps(document))))
             shown = signature_shown(frames, framegraph.drawings(document))
         except FrameGraphError as e:
             raise FrameGateError(f"{video}: {e}") from e
