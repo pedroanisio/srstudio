@@ -258,3 +258,37 @@ def test_a_master_not_normalised_to_a_target_is_rendered_as_built(tmp_path):
     scene, _ = project(tmp_path)
     scene.write_text(scene.read_text().replace('normalize="integrated"', 'normalize="none"'))
     assert _stress_mix.ducked_document(scene) is None
+
+
+def contrasts(monkeypatch, authored: float, mastered: float) -> None:
+    """The stressed word's margin as measured on the authored mix (the analysis render) and on the staged master."""
+    from srstudio import _stress_mix
+
+    monkeypatch.setattr(
+        _stress_mix,
+        '_contrasts',
+        lambda audio, project: {'line-1:weeks': authored if '.stress-mix-' in str(audio) else mastered},
+    )
+
+
+def test_stress_is_judged_on_the_authored_mix_and_the_mix_is_kept_by_the_master_sha(
+    tmp_path, monkeypatch, scene_render
+):
+    # videos.ruling.162 r5: the bar stands before the loudness stage; the master's limiter may take some back
+    monkeypatch.setenv('SRSTUDIO_GPU_LOCK', str(tmp_path / 'gpu.lock'))
+    scene, _ = project(tmp_path)
+    contrasts(monkeypatch, authored=4.0, mastered=1.0)
+    made = master.encode(scene, tmp_path / 'out', engine=scene_render, args=['--no-upload'])
+    assert 'line-1:weeks before=4.0 dB after=1.0 dB' in made.output
+    kept = master_gate.authored_mix(tmp_path, master_gate.sha256(made.paths[0]))
+    assert kept.is_file() and master_gate.audio_levels(kept)[0] < -15  # the mix before normalising, not the master
+    assert kept.stat().st_mode & 0o777 == 0o600
+
+
+def test_a_word_short_on_the_authored_mix_is_refused_however_the_master_reads(tmp_path, monkeypatch, scene_render):
+    monkeypatch.setenv('SRSTUDIO_GPU_LOCK', str(tmp_path / 'gpu.lock'))
+    scene, _ = project(tmp_path)
+    contrasts(monkeypatch, authored=2.0, mastered=4.0)
+    with pytest.raises(craft_bar.CraftError, match=r'failed: line-1:weeks before=2.0 dB after=4.0 dB'):
+        master.encode(scene, tmp_path / 'out', engine=scene_render, args=['--no-upload'])
+    assert not list((tmp_path / 'qa').glob('authored-mix-*')) if (tmp_path / 'qa').exists() else True

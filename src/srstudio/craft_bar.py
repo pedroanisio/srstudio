@@ -431,47 +431,57 @@ class VoiceLine:
     source: str
 
 
-def measure_voice(video: Path, project: Path, *, ffmpeg: str = "ffmpeg") -> Result:
+def _line_audio(source: Path, line: RecordedLine, wav: Path, ffmpeg: str, what: str) -> Path:
+    """``line``'s span of ``source`` as 16 kHz mono PCM at ``wav``; WordsNotHeard when the source ends inside it."""
+    proof._run(
+        [
+            ffmpeg,
+            '-v',
+            'error',
+            '-y',
+            '-i',
+            str(source),
+            '-ss',
+            str(line.start),
+            '-t',
+            str(line.duration),
+            '-map',
+            '0:a:0',
+            '-ac',
+            '1',
+            '-ar',
+            '16000',
+            '-c:a',
+            'pcm_s16le',
+            str(wav),
+        ],
+        f'{line.id}: {what}',
+    )
+    with wave.open(str(wav), 'rb') as audio:
+        if audio.getnframes() / audio.getframerate() + 1 / audio.getframerate() < line.duration:
+            raise WordsNotHeard(f'{line.id}: phrase extends past {what} audio')
+    return wav
+
+
+def measure_voice(video: Path, project: Path, *, ffmpeg: str = "ffmpeg", stress_from: Path | None = None) -> Result:
     """Public delivery C7/stress check on the exact master bytes, using existing placed offline alignment.
 
-    No recognition service or take-level measurements are used. Missing or invalid alignment
-    raises CraftError. Measured refusals are FAIL results; SHIP remains eligible.
+    ``stress_from`` is the master's authored mix, before its loudness stage (normalise and limiter): stress and the
+    preceding word are measured there (videos.ruling.162 r5, bar.audio.stress), pace on the master; every stress
+    measure names both digests. No recognition service or take-level measurements are used. Missing or invalid
+    alignment raises CraftError. Measured refusals are FAIL results; SHIP remains eligible.
     """
     try:
         digest = hashlib.sha256(video.read_bytes()).hexdigest()
+        authored = None if stress_from is None else hashlib.sha256(stress_from.read_bytes()).hexdigest()
         lines = recorded_lines(project)
         values: list[Measure] = []
         reports: list[VoiceLine] = []
         with tempfile.TemporaryDirectory(prefix='voice-') as tmp:
             for line in lines:
-                wav = Path(tmp) / 'line.wav'
-                proof._run(
-                    [
-                        ffmpeg,
-                        '-v',
-                        'error',
-                        '-y',
-                        '-i',
-                        str(video),
-                        '-ss',
-                        str(line.start),
-                        '-t',
-                        str(line.duration),
-                        '-map',
-                        '0:a:0',
-                        '-ac',
-                        '1',
-                        '-ar',
-                        '16000',
-                        '-c:a',
-                        'pcm_s16le',
-                        str(wav),
-                    ],
-                    f'{line.id}: master mix',
-                )
-                with wave.open(str(wav), 'rb') as audio:
-                    if audio.getnframes() / audio.getframerate() + 1 / audio.getframerate() < line.duration:
-                        raise WordsNotHeard(f'{line.id}: phrase extends past master audio')
+                wav = _line_audio(video, line, Path(tmp) / 'line.wav', ffmpeg, 'master mix')
+                if stress_from is not None:
+                    wav = _line_audio(stress_from, line, Path(tmp) / 'authored.wav', ffmpeg, 'authored mix')
                 previous = 0.0
                 for word in line.words:
                     if not 0 <= previous <= word.start < word.end <= line.duration:
@@ -483,6 +493,7 @@ def measure_voice(video: Path, project: Path, *, ffmpeg: str = "ffmpeg") -> Resu
                 phrase, speech = count / line.duration, count / span
                 pace_status: Literal['PASS', 'SHIP', 'FAIL', 'exempt'] = 'exempt'
                 source = f'master mix sha256={digest}; {line.source}'
+                heard_in = source if authored is None else f'authored mix sha256={authored}; {source}'
                 if count >= 3:
                     pace = pace_measure(line.id, phrase)
                     pace = Measure(pace.name, pace.value, pace.bar, pace.status, source + '; ' + pace.source)
@@ -512,13 +523,15 @@ def measure_voice(video: Path, project: Path, *, ffmpeg: str = "ffmpeg") -> Resu
                             None,
                             'one-word line: exempt, no median to stand over',
                             'PASS',
-                            source + '; N/A',
+                            heard_in + '; N/A',
                         )
                     )
                 elif not audible or not marks or len(marks) != len(line.stress):
                     stress_status = 'FAIL'
                     values.append(
-                        Measure(f'stress:{line.id}', None, 'identified audible key word on every line', 'FAIL', source)
+                        Measure(
+                            f'stress:{line.id}', None, 'identified audible key word on every line', 'FAIL', heard_in
+                        )
                     )
                 for mark in marks:
                     at = mark.at
@@ -540,14 +553,14 @@ def measure_voice(video: Path, project: Path, *, ffmpeg: str = "ffmpeg") -> Resu
                                 margin,
                                 '>= 3 dB over line median',
                                 'PASS' if good else 'FAIL',
-                                source,
+                                heard_in,
                             ),
                             Measure(
                                 f'preceding:{line.id}:{mark.word}',
                                 before,
                                 '>= -3 dB; N/A if no preceding word',
                                 'PASS' if previous_good else 'FAIL',
-                                source + ('; N/A' if at == 0 else ''),
+                                heard_in + ('; N/A' if at == 0 else ''),
                             ),
                         )
                     )
@@ -571,7 +584,7 @@ def measure_voice(video: Path, project: Path, *, ffmpeg: str = "ffmpeg") -> Resu
                         min(margins) if margins else None,
                         min(preceding) if preceding else None,
                         stress_status,
-                        source,
+                        heard_in,
                     )
                 )
         if hashlib.sha256(video.read_bytes()).hexdigest() != digest:

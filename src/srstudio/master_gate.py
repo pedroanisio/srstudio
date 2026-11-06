@@ -570,6 +570,16 @@ def _checks(
     return tuple(out)
 
 
+AUTHORED_MIX = "qa/authored-mix-{sha}.wav"  # the master's mix before its loudness stage, named by the master's sha256
+
+
+def authored_mix(project: Path, master_sha256: str) -> Path:
+    """Where the master step keeps the authored mix of the master whose SHA-256 is ``master_sha256`` (ADR 0241): stress
+    is measured there (videos.ruling.162 r5). With no such file, stress is measured on the master, which only its
+    limiter can flatten further, so a missing mix is never a looser bar."""
+    return Path(project) / AUTHORED_MIX.format(sha=master_sha256)
+
+
 def accept_master(
     master: Path,
     project: Path | None = None,
@@ -596,7 +606,10 @@ def accept_master(
         try:
             if project is None:
                 raise craft_bar.NoRecordedLines('missing recording project')
-            voice = craft_bar.measure_voice(master, project, ffmpeg=ffmpeg)
+            authored = authored_mix(project, sha)
+            voice = craft_bar.measure_voice(
+                master, project, ffmpeg=ffmpeg, stress_from=authored if authored.is_file() else None
+            )
             voices = voice.voices
             voice_checks = tuple(
                 MasterCheck(c.name, c.value, c.bar, c.status, sha, (c.source,)) for c in voice.measures

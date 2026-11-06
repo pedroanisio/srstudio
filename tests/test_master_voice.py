@@ -438,3 +438,71 @@ def test_release_reads_a_one_word_line_as_exempt_not_missing(voice, monkeypatch)
     by = {c.check: c for c in result.checks}
     assert by['c7.stress:line'].verdict == 'PASS' and by['c7.stress:line'].measured is None
     assert not result.refused
+
+
+def by_source(monkeypatch, margins):
+    """Each line's audio cut from one source; the stressed word stands ``margins[source name]`` dB over the median."""
+    seen = {}
+
+    def extract(cmd, *args):
+        seen['src'] = cmd[cmd.index('-i') + 1]
+        with wave.open(cmd[-1], 'wb') as audio:
+            audio.setnchannels(1)
+            audio.setsampwidth(2)
+            audio.setframerate(16000)
+            audio.writeframes(bytes(16000 * 2 * 3))
+
+    def measured(*args):
+        db = -20 + margins[seen['src'].rsplit('/', 1)[-1]]
+        return prosody.Measure(
+            tuple(
+                prosody.WordLevel(t, a, b, d, None)
+                for t, a, b, d in [('one', 0, 0.3, -20), ('two', 0.3, 0.6, -20), ('three', 0.6, 0.9, db)]
+            ),
+            (prosody.Stress('three', True, db + 20, None, 2),),
+        )
+
+    monkeypatch.setattr(craft_bar.proof, '_run', extract)
+    monkeypatch.setattr(craft_bar.prosody, 'measure', measured)
+
+
+def test_stress_is_measured_on_the_authored_mix_and_pace_on_the_master(voice, monkeypatch, tmp_path):
+    # videos.ruling.162 r5: the bar stands before the master's loudness stage, which can flatten a lifted word
+    master, project = voice
+    mix = tmp_path / 'authored.wav'
+    mix.write_bytes(b'authored mix')
+    by_source(monkeypatch, {'master.mp4': 0.5, 'authored.wav': 4.0})
+    assert not craft_bar.measure_voice(master, project).ok  # on the master the limiter took it back
+    result = craft_bar.measure_voice(master, project, stress_from=mix)
+    assert result.ok and result.voices[0].stress_margin == 4.0
+    assert result.master_sha256 == hashlib.sha256(b'master').hexdigest()
+    stress = next(m for m in result.measures if m.name == 'stress:line:three')
+    assert f'authored mix sha256={hashlib.sha256(b"authored mix").hexdigest()}' in stress.source
+    assert f'master mix sha256={result.master_sha256}' in stress.source
+    pace = next(m for m in result.measures if m.name == 'pace:line')
+    assert 'authored mix' not in pace.source
+
+
+def test_an_authored_mix_shorter_than_a_line_is_refused(voice, monkeypatch, tmp_path):
+    master, project = voice
+    mix = tmp_path / 'authored.wav'
+    mix.write_bytes(b'authored mix')
+    by_source(monkeypatch, {'master.mp4': 4.0, 'authored.wav': 4.0})
+    evidence(project, master, duration=4)
+    with pytest.raises(craft_bar.WordsNotHeard, match='past the authored mix|past master'):
+        craft_bar.measure_voice(master, project, stress_from=mix)
+
+
+def test_acceptance_reads_the_authored_mix_named_by_the_master_sha(voice, monkeypatch):
+    master, project = voice
+    monkeypatch.setattr(master_gate, 'measure', lambda *a, **kw: master_gate.Measured((), (), 0, 5))
+    monkeypatch.setattr(master_gate, '_checks', lambda *a: ())
+    sha = hashlib.sha256(master.read_bytes()).hexdigest()
+    by_source(monkeypatch, {'master.mp4': 0.5, f'authored-mix-{sha}.wav': 4.0, 'authored-mix-other.wav': 4.0})
+    assert not master_gate.accept_master(master, project).ok  # no authored mix: the master itself, stricter
+    (project / 'qa').mkdir()
+    (project / 'qa' / 'authored-mix-other.wav').write_bytes(b'another master')
+    assert not master_gate.accept_master(master, project).ok  # another master's mix is not this one's
+    (project / 'qa' / f'authored-mix-{sha}.wav').write_bytes(b'authored mix')
+    result = master_gate.accept_master(master, project)
+    assert result.ok and result.voices[0].stress_margin == 4.0

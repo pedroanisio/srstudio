@@ -78,3 +78,31 @@ the duck cannot return. On jp-leftovers line 10 the take held "salt" at 3.48 dB
 and the master at 2.62 dB. arc4d3 chose this route for that line (Slack
 1793954714.915059). The default stays `STRESS_DB + MARGIN`, and the master check
 still refuses a word under the bar.
+
+## Amendment: stress is judged on the authored mix (videos.ruling.162 r5)
+
+The stress bar now stands on the authored mix, before the master's loudness
+stage (normalise and limiter). The loudness band is still judged on the
+finished master. arc4d3 revised bar.audio.stress to this (Slack
+1793966507.709759).
+
+The measures that led to it were taken on jp-leftovers and jp-no-pressure:
+
+- On these takes the key word is often one of the quietest, so it needs +5 to
+  +8.5 dB.
+- Each lifted word becomes its line's peak. jp-leftovers' raw mix was -26.8 LUFS
+  with a -7.6 dB peak. At -15 LUFS and a -1.5 dBTP ceiling, every line peaking
+  above about -13.3 dB met the limiter, and the limiter flattened exactly the
+  lifted word ("not" 3.48 dB before, 0.00 dB after).
+- New takes, read with the word stressed, did not help: the voice stresses by
+  pitch and length, not level.
+
+How the change works:
+
+- `constrained` refuses a word on the authored mix's margin and reports the
+  master's margin beside it.
+- It keeps the authored mix as `qa/authored-mix-<master sha256>.wav`, mode 600.
+- `accept_master` measures stress there (`craft_bar.measure_voice(stress_from=)`),
+  and pace on the master. Every stress measure names both digests.
+- A master with no kept mix is measured on itself, so the bar never becomes
+  looser.

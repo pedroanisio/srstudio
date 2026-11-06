@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import json
 import math
+import shutil
 import subprocess
 import tempfile
 import xml.etree.ElementTree as ET
@@ -13,6 +14,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from . import craft_bar, emphasis, master_gate, prosody
+from .digest import sha256
 from .voice import normalize_words
 
 _AUDIO_ARGS = ('--start', '--end', '--param', '--row', '--data', '--representation', '--threads')
@@ -94,6 +96,18 @@ def _duck(root: ET.Element, lines: Sequence[craft_bar.RecordedLine]) -> None:
                 keys[time] = db
         for time, db in sorted(keys.items()):
             ET.SubElement(animation, 'key', time=str(time), value=str(db))
+
+
+def _keep_authored(mix: Path, target: Path) -> None:
+    """The authored mix the stress was judged on, kept beside the project under the master's SHA-256, mode 600; a
+    master already kept is left as it is (the same master bytes come from the same mix)."""
+    if target.exists():
+        return
+    target.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    partial = target.with_suffix('.partial')
+    shutil.copyfile(mix, partial)
+    partial.chmod(0o600)
+    partial.replace(target)
 
 
 def ducked_document(scene: Path) -> bytes | None:
@@ -196,7 +210,9 @@ def constrained(
                         final = after.get(name)
                         evidence = f'{name} before={initial} dB after={final} dB'
                         words.append(evidence)
-                        if initial is None or final is None or not math.isfinite(final) or final < prosody.STRESS_DB:
+                        # videos.ruling.162 r5: the bar stands on the authored mix, before the loudness stage;
+                        # the master's figure is reported beside it, and loudness is judged on the master below
+                        if initial is None or not math.isfinite(initial) or initial < prosody.STRESS_DB:
                             failures.append(evidence)
                     if not words:
                         raise craft_bar.CraftError('stress mix: no measured named words')
@@ -214,7 +230,8 @@ def constrained(
                         note = loudness_verdict(lufs, peak, ceiling=ceiling)
                     except craft_bar.CraftError as exc:
                         raise craft_bar.CraftError(f'{report}; {exc}') from None
-                    reports.append(report + (f'; {note}' if note else ''))
+                    _keep_authored(Path(tmp) / 'mix.wav', master_gate.authored_mix(scene.parent, sha256(audio)))
+                    reports.append(report + (f'; {note}' if note else '') + '; stress judged on the authored mix')
                 return '\n'.join(reports)
 
             yield path, verify
