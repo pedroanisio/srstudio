@@ -207,7 +207,7 @@ from .styles import (
 from .thumbnail import Thumbnail, ThumbnailError
 from .timeline import Take, Timeline, TimelineError
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __all__ = [
     "Episode",
     "SrstudioError",
