@@ -8,21 +8,24 @@ from __future__ import annotations
 
 import math
 import re
-from dataclasses import dataclass, fields
+from dataclasses import asdict, dataclass, fields
 from typing import Any
 
 from sr_core.scene import Composition, Group
 
 from . import registry
+from ._authoring_contracts import argument_constraints, validate_vocabularies
 from ._authoring_records import FAMILIES, ActorInputs, GlossInputs, InkInputs, SagaInputs, SoftInputs, StickInputs
 from ._transaction import scene_transaction
 from .canvas import Canvas
 from .character_clips import ActorClip, GlossClip, Interval, Placement, _local_keys, place_character
 from .errors import SrstudioError
 from .limbs.compile import BakeOptions, compile_motion
+from .limbs.errors import Diagnostic
 from .limbs.interaction import AttachedProp, Participant, PropDrawing, PropMesh, bake_interaction
 from .limbs.motion import Motion
 from .limbs.serialization import MAX_ITEMS, _decode, parse_motion
+from .limbs.validation import MotionReport
 from .rig import Performance
 from .timeline import Take
 
@@ -90,6 +93,28 @@ class Request:
     fps: int | None = None
 
 
+@dataclass(frozen=True)
+class CompiledRequest:
+    """A drawn group plus source sampling evidence; numeric reports are not perceptual approval."""
+
+    group: Group
+    diagnostics: tuple[Diagnostic, ...] = ()
+    motion_reports: tuple[tuple[str, MotionReport], ...] = ()
+    frames: int | None = None
+    backend: str = 'character'
+
+    def to_dict(self) -> dict:
+        """Serializable evidence without embedding a runtime scene object."""
+        return {
+            'schema': 'srstudio.authoring-result/1.0.0',
+            'group_id': self.group.id,
+            'backend': self.backend,
+            'frames': self.frames,
+            'diagnostics': [asdict(d) for d in self.diagnostics],
+            'motion_reports': [{'track': name, 'report': report.to_dict()} for name, report in self.motion_reports],
+        }
+
+
 def parse_request(document: object) -> Request:
     """Decode a closed JSON task, without drawing or reading files. All motion clocks start at zero."""
     _bounded(document)
@@ -126,6 +151,7 @@ def parse_request(document: object) -> Request:
             if choice is None:
                 raise _fail('character', data['character'], [n for _, names in FAMILIES.values() for n in names])
             arguments = _decode(choice, data.get('arguments', {}), 'arguments', [MAX_ITEMS])
+            validate_vocabularies(asdict(arguments), argument_constraints(data['character']), _fail)
             # All source key schedules are local. The adapters own their lifetime fields.
             for name in (
                 'cues',
@@ -211,8 +237,8 @@ def _character(cv, parent, request):
         entry(cv, parent, **kwargs, enter=0, duration=end)
 
 
-def compile_request(cv: Canvas, parent: Composition | Group, request: Request, *, id: str) -> Group:
-    """Bind a parsed request atomically. Interval seconds use the parent clock; performance seconds start at zero."""
+def compile_request(cv: Canvas, parent: Composition | Group, request: Request, *, id: str) -> CompiledRequest:
+    """Bind atomically and return the group and evidence. Interval is parent-clock; performance starts at zero."""
     if not isinstance(request, Request):
         raise _fail('request', request, 'parse_request(document)')
     if not isinstance(parent, (Composition, Group)) or not any(n is parent for n in cv.scene.iter()):
@@ -245,16 +271,26 @@ def compile_request(cv: Canvas, parent: Composition | Group, request: Request, *
             )
             if request.task == 'character':
                 _character(cv, group, request)
+                result = CompiledRequest(group)
             else:
                 if request.motion is None:
                     raise _fail('motion', None, 'a parsed motion')
                 options = BakeOptions(fps=request.fps, duration=span.duration)
                 if request.task == 'gesture':
-                    compile_motion(cv, group, request.motion, id=id + '-motion', style=request.style, options=options)
+                    motion_result = compile_motion(
+                        cv, group, request.motion, id=id + '-motion', style=request.style, options=options
+                    )
+                    result = CompiledRequest(
+                        group,
+                        motion_result.diagnostics,
+                        ((id + '-motion', motion_result.report),),
+                        motion_result.frames,
+                        motion_result.backend,
+                    )
                 else:
                     if request.mesh is None or request.attachment is None:
                         raise _fail('mesh/attachment', None, 'a parsed mesh and named attachment')
-                    bake_interaction(
+                    interaction_result = bake_interaction(
                         cv,
                         group,
                         (Participant('hand', request.motion, request.style),),
@@ -262,11 +298,27 @@ def compile_request(cv: Canvas, parent: Composition | Group, request: Request, *
                         id=id + '-carry',
                         options=options,
                     )
-            _local_keys(group)
-            return group
-    except Exception:
+                    result = CompiledRequest(
+                        group,
+                        interaction_result.diagnostics,
+                        interaction_result.reports,
+                        interaction_result.frames,
+                        'interaction',
+                    )
+            _local_keys(group, cv)
+            return result
+    except Exception as exc:
         del cv._held[held:]
         cv._held_rate = rate
+        if isinstance(exc, SrstudioError):
+            details = exc.to_dict()
+            if not all(details.get(key) is not None for key in ('path', 'expected', 'remedy')):
+                path = 'arguments' if request.task == 'character' else 'motion'
+                raise _fail(
+                    details['path'] or path,
+                    details['actual'] if details['actual'] is not None else str(exc),
+                    details['expected'] or f'valid {request.character or request.task} input: {exc}',
+                ) from exc
         raise
     finally:
         cv.local_time = local
@@ -281,19 +333,22 @@ def recipes() -> dict:
 
 def describe_character(name: str) -> dict | None:
     """Link supported registered characters to their exact JSON adapter, without guessing capabilities."""
-    for i, (family, (_, names)) in enumerate(FAMILIES.items()):
+    index = 0
+    for family, (_, names) in FAMILIES.items():
         if name in names:
             return {
                 'schema': SCHEMA,
                 'family': family,
                 'parser': 'srstudio.authoring.parse_request',
                 'compiler': 'srstudio.authoring.compile_request',
-                'arguments_schema_pointer': f'/oneOf/{i}/properties/arguments',
+                'arguments_schema_pointer': f'/oneOf/{index + names.index(name)}/properties/arguments',
                 'clock': 'relative:interval.start_s',
                 'placement_clock': 'parent',
                 'runtime_bindings': ['cv', 'parent'],
                 'guide': 'docs/authoring-agents.md',
+                'result': 'srstudio.authoring.CompiledRequest',
             }
+        index += len(names)
     return None
 
 

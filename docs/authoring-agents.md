@@ -42,7 +42,9 @@ request = authoring.parse_request(document)
 scene = Scene(version="auto")
 scene.add_project(width=1080, height=1920, fps="24", duration=6)
 cv = Canvas(scene, font_asset=None)
-group = authoring.compile_request(cv, cv.comp, request, id="speaker")
+compiled = authoring.compile_request(cv, cv.comp, request, id="speaker")
+group = compiled.group
+evidence = compiled.to_dict()
 assert not scene.check()
 ```
 <!-- agent-request:end -->
@@ -58,6 +60,9 @@ Use the names and closed argument shapes from discovery. Family records share a
 clock, but pose vocabularies remain rig-specific: for example, Gloss Sunny's face
 states differ from Nadia's. The adapters own legacy `enter`, `end`, `duration` and
 position arguments; those fields are rejected in `arguments`.
+Each character's schema carries its declared vocabulary, and parsing checks it,
+including defaulted record fields. Invalid values identify an exact repair path
+such as `arguments.cues[0].pose` and list the accepted choices.
 
 `gesture` takes a versioned `motion` document, optional `style` and `fps`.
 `carry` additionally takes a typed prop `mesh` and a matching named `attachment`.
@@ -65,6 +70,16 @@ Both use the same interval and placement. Procedural limbs versions 1.0–1.4 an
 keyed limbs 1.0 are accepted. Source motion extending beyond the interval is
 refused instead of silently cropped. Carry follows the attachment frame during
 the grip and holds the final world frame after release; it does not simulate a fall.
+`limbs.serialization.motion_dict(motion)` returns JSON-shaped dictionaries and
+lists that can be assigned directly to a request's `motion`; no JSON round trip is needed.
+
+`compile_request` returns `CompiledRequest`: use `.group` as a scene parent,
+`.diagnostics` for sampling warnings, and `.motion_reports` for named numeric
+measurements. `.frames` and `.backend` identify the emitted motion; characters
+without a limb audit have no motion reports and a null frame count. `to_dict()`
+exports the evidence without runtime objects. Migrate earlier group-returning
+calls by selecting `.group`. No quality profile or perceptual approval is implied
+by a successful compilation or a numeric measurement.
 
 The JSON boundary permits at most 100,000 values, 32 nested levels, 16,384
 characters per string and finite numbers. Intervals are at most 600 seconds;
@@ -72,6 +87,9 @@ emission rates are integers from 1 to 120 Hz. Geometry and compiler budgets stil
 apply. Structural schema validation does not replace parsing or rig validation.
 Failures expose `code`, `path`, `actual`, `expected` and `remedy`. A failed compile
 restores scene mutations and held-frame bookkeeping so a corrected request can retry.
+On `Canvas(held_frames=True)`, call `cv.place_held()` after placing all clips;
+`Episode.finish()` does this automatically. Clip-local conversion preserves its
+bookkeeping, including when intervals or ancestor clocks start between project frames.
 
 ## Choose the motion intent
 
@@ -109,7 +127,7 @@ scene-render render /tmp/agent-previews/pip.xml --frames 0..48 \
 ```
 
 Use a fresh output directory. The example writes nine two-second, 24 fps scenes
-and adjacent JSON reports with source requests, scene hashes and scope. It validates
+and adjacent JSON reports with source requests, scene hashes, compilation evidence and scope. It validates
 the SDK scene but does not render; `rendered_review="not-run"` is intentional.
 The optional `--recipe ID` builds one study. Recipe render commands cover 48 frames.
 
@@ -120,6 +138,10 @@ rollback; pixel tests check Pip's framing and the carry prop's visibility at thr
 times. Neither those tests nor numeric calibration proves full-body balance,
 heel-strike/toe-off realism, emotional readability or human preference. Retain
 actual renderer responses and independent perceptual ratings when those are required.
+
+The carry study reaches, translates the rooted arm while gripping the prop, then
+releases it. Spatial tests verify travel, hand-relative attachment and the held
+world frame after release; the study remains an isolated arm, without a body or a physical fall.
 
 ## Read contract coverage accurately
 

@@ -23,7 +23,7 @@ from sr_core.scene import Animate, Composition, Group, Key
 
 from . import checks, gloss
 from ._transaction import scene_transaction
-from .canvas import Canvas
+from .canvas import Canvas, _written
 from .errors import SrstudioError
 from .face_blends import FaceTrack
 from .gaze import GazePlan
@@ -430,7 +430,7 @@ def _draw(cv: Canvas, parent: Group, clip: CharacterClip, end: float) -> None:
                 group.add_layer(id=cv.uid('plate-layer'), asset=layer.asset, x=layer.at[0], y=layer.at[1])
 
 
-def _local_keys(group: Group) -> None:
+def _local_keys(group: Group, cv: Canvas) -> None:
     """Keep source keys aligned when the engine shifts a sequence shot's node starts.
 
     Group clocks retime both clocks, but sequence placement shifts node lifetimes without
@@ -438,6 +438,7 @@ def _local_keys(group: Group) -> None:
     original start; the engine then carries both together. Existing local/normalized
     channels retain their semantics, interpolation and spring context.
     """
+    tracked = {id(a): i for i, (a, _, _, _) in enumerate(cv._held)}
     for animation in group.iter('animate'):
         assert isinstance(animation, Animate)
         if animation.timeBase not in (None, 'composition'):
@@ -446,11 +447,18 @@ def _local_keys(group: Group) -> None:
         while owner is not None and not hasattr(type(owner), 'start'):
             owner = owner.owner
         start = float(owner.attributes().get('start', 0)) if owner is not None else 0
+        index = tracked.get(id(animation))
+        entry = cv._held[index] if index is not None else None
+        # Preserve the finalizer's ownership check: do not adopt externally edited keys.
+        owned = entry is not None and _written(animation) == entry[3]
         for key in animation.find_all('key'):
             assert isinstance(key, Key)
             assert key.time is not None
             key.time = round(float(key.time) - start, 6)
         animation.timeBase = 'local'
+        if owned and entry is not None and index is not None:
+            _, node, asked, _ = entry
+            cv._held[index] = (animation, node, [(t - start, value) for t, value in asked], _written(animation))
 
 
 def place_character(
@@ -501,7 +509,7 @@ def place_character(
                 rotation=placement.rotation,
             )
             _draw(cv, group, clip, interval.duration)
-            _local_keys(group)
+            _local_keys(group, cv)
             ids = [node.attributes()['id'] for node in cv.scene.iter() if 'id' in node.attributes()]
             if len(ids) != len(set(ids)):
                 raise _fail('id', group.id, 'unique IDs throughout the completed drawing')

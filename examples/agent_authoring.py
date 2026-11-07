@@ -21,7 +21,7 @@ def build(output: Path, *, recipe: str | None = None) -> list[Path]:
         scene = Scene(version='auto')
         scene.add_project(width=1080, height=1920, fps='24', duration=2, background='#f4f0e9')
         cv = Canvas(scene, width=1080, height=1920, font_asset=None)
-        authoring.compile_request(cv, cv.comp, authoring.parse_request(row['request']), id=row['id'])
+        compiled = authoring.compile_request(cv, cv.comp, authoring.parse_request(row['request']), id=row['id'])
         findings = scene.check(schema=True)
         if findings:
             raise ValueError(str(findings))
@@ -33,6 +33,7 @@ def build(output: Path, *, recipe: str | None = None) -> list[Path]:
             'recipe': row['id'],
             'scope': row['scope'],
             'sdk_findings': [],
+            'compilation': compiled.to_dict(),
             'scene_sha256': hashlib.sha256(raw).hexdigest(),
             'request': row['request'],
         }

@@ -6,7 +6,7 @@ from . import registry
 from .limbs import HUMAN, ArmProfile
 from .limbs.interaction import Face, PropMesh
 from .limbs.math3d import Frame, Vec3
-from .limbs.motion import Action, Attachment, Motion
+from .limbs.motion import Action, Attachment, Motion, TransformKey, TransformTrack
 from .limbs.serialization import motion_dict
 
 
@@ -70,7 +70,16 @@ def catalog():
             'scope': 'isolated arm; acceleration-safe gesture envelope',
         }
     )
-    grip = Motion(ArmProfile(), HUMAN, (Action('grasp', duration=2),))
+    # Reach first, then translate the rooted arm while the fingers maintain their grip.
+    # Zero-velocity root keys stop the prop at acquisition and release.
+    grip = Motion(
+        ArmProfile(),
+        HUMAN,
+        (Action('grasp', duration=2),),
+        root=TransformTrack(
+            (TransformKey(0, Frame()), TransformKey(0.8, Frame()), TransformKey(1.3, Frame(Vec3(0.6, -0.25, 0))))
+        ),
+    )
     offset = Frame(Vec3(0, 0.3, 0))
     grip = replace(
         grip, attachments=(Attachment('box', 0.8, 1.3, grip.sample(0.8).hand.frame.compose(offset), offset),)
@@ -91,7 +100,7 @@ def catalog():
                 'placement': {'x': 340, 'y': 600, 'scale': 2},
             },
             'style': 'toon',
-            'scope': 'isolated hand and attached flat prop; release holds its last world frame',
+            'scope': 'isolated rooted arm moves an attached flat prop; release holds its last world frame',
         }
     )
     # Fresh JSON-shaped values, including tuple fields from dataclass serialization.

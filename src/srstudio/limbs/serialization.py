@@ -164,7 +164,15 @@ def motion_dict(motion: Motion) -> dict:
         schema = JOIN_SCHEMA
         for action in payload['actions']:
             del action['style']['envelope']
-    return {"schema": schema, "generatedBy": "srstudio.limbs", "motion": payload}
+
+    def json_data(value):
+        if isinstance(value, dict):
+            return {key: json_data(child) for key, child in value.items()}
+        if isinstance(value, tuple):
+            return [json_data(child) for child in value]
+        return value
+
+    return {"schema": schema, "generatedBy": "srstudio.limbs", "motion": json_data(payload)}
 
 
 def parse_motion(data: object) -> Motion:

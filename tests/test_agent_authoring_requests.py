@@ -27,7 +27,9 @@ def test_every_discovered_character_recipe_decodes_draws_and_keeps_one_clock(loc
         data['interval'] = {'start_s': 3, 'end_s': 5}
         Draft202012Validator(document_schemas.get('authoring')).validate(data)
         cv = canvas(local)
-        group = authoring.compile_request(cv, cv.comp, authoring.parse_request(data), id='character')
+        compiled = authoring.compile_request(cv, cv.comp, authoring.parse_request(data), id='character')
+        group = compiled.group
+        assert compiled.diagnostics == () and compiled.motion_reports == ()
         assert group.attributes()['start'] == '3'
         assert group.attributes()['end'] == '5'
         assert group.attributes()['timeOffset'] == '3'
@@ -43,7 +45,8 @@ def test_spatial_recipe_binds_typed_motion_and_draws_it(task):
     data = recipe['request']
     Draft202012Validator(document_schemas.get('authoring')).validate(data)
     cv = canvas()
-    group = authoring.compile_request(cv, cv.comp, authoring.parse_request(data), id=task)
+    compiled = authoring.compile_request(cv, cv.comp, authoring.parse_request(data), id=task)
+    group = compiled.group
     assert list(group.iter('shape'))
     assert cv.scene.check() == []
     assert recipe['evidence']['limitations']
@@ -114,6 +117,7 @@ def test_preview_example_builds_all_recipes_and_preserves_existing_outputs(tmp_p
         report = json.loads(path.with_suffix('.json').read_text())
         assert report['sdk_findings'] == []
         assert report['rendered_review'] == 'not-run'
+        assert report['compilation']['group_id'] == path.stem
     before = paths[0].read_bytes()
     with pytest.raises(FileExistsError):
         namespace['build'](tmp_path / 'previews')
@@ -136,6 +140,7 @@ def test_all_advertised_character_variants_execute_their_family_recipe():
             data['character'] = name
             if name == 'gloss-sunny':
                 data['arguments'] = {'face': [[0, 'smile'], [1, 'alert']]}
+            Draft202012Validator(document_schemas.get('authoring')).validate(data)
             cv = canvas()
             authoring.compile_request(cv, cv.comp, authoring.parse_request(data), id='variant')
             assert cv.scene.check() == [], name

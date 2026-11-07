@@ -15,9 +15,11 @@ from srstudio._composition_png import decode
 def test_recipe_subject_is_in_frame_and_carry_prop_is_visible(scene_render, tmp_path, recipe):
     build = runpy.run_path(str(Path(__file__).parents[1] / 'examples/agent_authoring.py'))['build']
     scene = build(tmp_path / 'preview', recipe=recipe)[0]
+    prop_centres = []
     for time in (0, 1, 1.75):
         output = tmp_path / f'{time}.png'
-        with gpu.held(wait=30):
+        # Respect the shared runner's configured GPU queue budget.
+        with gpu.held():
             subprocess.run(
                 [
                     str(scene_render),
@@ -44,3 +46,7 @@ def test_recipe_subject_is_in_frame_and_carry_prop_is_visible(scene_render, tmp_
         if recipe == 'carry':
             prop = np.max(np.abs(rgb - (108, 154, 188)), axis=2) < 5
             assert np.count_nonzero(prop) > 100, 'the attached prop must remain visibly distinct from the hand'
+            prop_y, prop_x = np.nonzero(prop)
+            prop_centres.append(np.array((prop_x.mean(), prop_y.mean())))
+    if recipe == 'carry':
+        assert np.linalg.norm(prop_centres[-1] - prop_centres[0]) > 30, 'the rendered study must visibly carry the prop'

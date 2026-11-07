@@ -1,4 +1,4 @@
-# 0247: Agent authoring and motion evidence
+# 0252: Agent authoring and motion evidence
 
 Date: 2026-11-06
 
@@ -12,6 +12,12 @@ parent and identifier remain caller-owned runtime bindings. Placement uses a
 parent-clock `start_s`/`end_s` interval and local performance seconds from zero.
 Legacy builder signatures remain available. Compilation rolls back scene and
 held-frame state on failure.
+
+Compilation returns `CompiledRequest`, retaining the group, motion reports and
+diagnostics. Source-key conversion updates held-frame bookkeeping so final reel
+placement remains correct at fractional starts. Vocabulary constraints share one
+source between per-character JSON schemas and parsing. Procedural motion exports
+contain JSON arrays directly. The carry study includes actual travel during grip.
 
 Contract discovery reports unresolved data independently from runtime bindings,
 and counts declared examples independently from executed evidence. Nine executable

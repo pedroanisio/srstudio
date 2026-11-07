@@ -1,5 +1,6 @@
 """Authoring schemas share their closed record shapes with the executable adapters."""
 
+from ._authoring_contracts import argument_constraints
 from ._authoring_records import FAMILIES
 from ._motion_schemas import _record_shapes, keyed_schema, procedural_schema
 from .character_clips import Placement
@@ -48,12 +49,18 @@ def document():
         required = ('schema', 'task', 'interval', 'character')
         if definitions[shape['$ref'].removeprefix('#/$defs/')].get('required'):
             required += ('arguments',)
-        branches.append(
-            _object(
-                {**base, 'task': {'const': 'character'}, 'character': {'enum': list(names)}, 'arguments': shape},
-                required,
+        for name in names:
+            branches.append(
+                _object(
+                    {
+                        **base,
+                        'task': {'const': 'character'},
+                        'character': {'const': name},
+                        'arguments': {'allOf': [shape, argument_constraints(name)]},
+                    },
+                    required,
+                )
             )
-        )
     for task in ('gesture', 'carry'):
         props = {
             **base,
