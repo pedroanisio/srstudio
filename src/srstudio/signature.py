@@ -83,7 +83,7 @@ class Act:
             )
 
 
-def missing(document: bytes, *, code: str | None = None) -> list[str]:
+def missing(document: bytes, *, code: str | None = "SR-1028") -> list[str]:
     """The requested marks no group carries; ``code=None`` requires only the cactus (ADR 0250).
 
     Paints and other elements do not count.

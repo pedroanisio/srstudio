@@ -404,11 +404,11 @@ def show_defects(
             drift.append(Drift(video, f"{figure_record.RECORD} is missing: build it with srstudio build"))
             continue
         document = scene.read_bytes()
-        said = (
-            new_reel_defects(release, document, new_policy)
-            if new_policy is not None
-            else scene_defects(document, cover.number)
-        )
+        if new_policy is not None:
+            said = new_reel_defects(release, document, new_policy)
+        else:
+            assert cover is not None  # shown holds only reels with a cover or a policy
+            said = scene_defects(document, cover.number)
         drift += [Drift(video, why) for why in said]
         if said:
             continue

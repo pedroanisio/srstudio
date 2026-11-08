@@ -16,8 +16,9 @@ def episode(root, **kw):
     return Episode(EpisodeSpec(slug='t', title='t', description='t', root=root, seed=1, audio=None, font=None, **kw))
 
 
-def test_default_episode_document_keeps_pre_change_bytes(tmp_path):
-    ep = episode(tmp_path)
+def test_explicit_code_keeps_pre_change_bytes(tmp_path):
+    """Published reels pass SR-1028 explicitly since the default became None (ADR 0253); their bytes hold."""
+    ep = episode(tmp_path, signature_code='SR-1028')
     locations.office_wide(ep.cv, ep.comp)
     assert ep.scene.to_bytes() == (Path(__file__).parent / 'data/okay-default.scene.xml').read_bytes()
 
@@ -42,8 +43,8 @@ def test_cactus_only_still_requires_the_cactus(tmp_path):
         ep.finish(tmp_path / 't.scene.xml')
 
 
-def test_default_still_requires_requested_code(tmp_path):
-    ep = episode(tmp_path / 'project')
+def test_explicit_code_still_requires_requested_code(tmp_path):
+    ep = episode(tmp_path / 'project', signature_code='SR-1028')
     signature.cactus(ep.cv, ep.comp, 500, 900)
     with pytest.raises(signature.SignatureError, match='sig-code'):
         ep.finish(tmp_path / 't.scene.xml')

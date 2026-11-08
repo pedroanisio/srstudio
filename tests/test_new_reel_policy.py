@@ -81,7 +81,8 @@ def test_frame_zero_title_must_equal_expected_and_be_live():
 
 
 def test_default_is_cactus_only_and_explicit_legacy_code_still_draws(project):
-    assert Signature().code is None
+    # The episode default changed; a bare Canvas Signature keeps SR-1028 so style drawings stay byte-stable.
+    assert Signature().code == "SR-1028"
     ep = Episode(EpisodeSpec(slug="new-reel", title="t", description="d", root=project, seed=1))
     assert ep.spec.signature_code is None
     locations.office_wide(ep.cv, ep.comp)
@@ -129,11 +130,14 @@ def test_series_title_comes_from_spec_and_must_match_policy(project):
         wrong.title_card(reel("Saga").post)
 
 
-def test_default_signature_gate_requires_cactus_only():
+def test_episode_default_signature_gate_requires_cactus_only(project, tmp_path):
     from srstudio import signature
 
-    assert signature.missing(b'<scene><group id="sig-cactus"/></scene>') == []
-    assert signature.missing(b'<scene/>') == ["sig-cactus"]
+    assert signature.missing(b'<scene><group id="sig-cactus"/></scene>', code=None) == []
+    assert signature.missing(b'<scene/>', code=None) == ["sig-cactus"]
+    ep = Episode(EpisodeSpec(slug="new-reel", title="t", description="d", root=project, seed=1))
+    signature.cactus(ep.cv, ep.comp, 500, 900)
+    assert b"sig-code" not in ep.finish(tmp_path / "t.scene.xml").read_bytes()
     assert signature.missing(b'<scene><group id="sig-cactus"/></scene>', code="SR-1028") == ["sig-code"]
 
 
