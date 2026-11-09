@@ -20,6 +20,7 @@
     {"number": "0242", "name": "juno-v2-a-home-outfit", "owner": "worskpace-juno-v2", "reserved": "2026-11-05"},
     {"number": "0248", "name": "whole-master-release-approval", "owner": "codex-builder", "reserved": "2026-11-05"},
     {"number": "0249", "name": "outbox-published-and-reviewed-masters", "owner": "codex-builder", "reserved": "2026-11-05"},
-    {"number": "0247", "name": "final-master-frame-review", "owner": "codex-builder", "reserved": "2026-11-05"}
+    {"number": "0247", "name": "final-master-frame-review", "owner": "codex-builder", "reserved": "2026-11-05"},
+    {"number": "0254", "name": "build-a-scene-from-sreditors-export", "owner": "studio-build-export", "reserved": "2026-11-09"}
   ]
 }

@@ -19,6 +19,7 @@ a similar character or pass contract JSON directly to a builder.
 | Task | Entry point | Clock and capability checks |
 | --- | --- | --- |
 | Start a project and check its dependencies | `srstudio init ROOT --json`; `srstudio doctor --json` | Run the returned build argument array, including its explicit project root. |
+| Build a scene from sreditor's export | `srstudio build-export EXPORT SCENE --json` | Default staging only: captions, audio and the cactus, no cast ([ADR 0254](decisions/0254-build-a-scene-from-sreditors-export.md)). |
 | Discover a bounded set of parts | `srstudio catalog --summary --json`; `registry.search()` | Page with `next_offset`; capability filters match explicit true declarations only. |
 | Author a character, gesture or carry task as JSON | `srstudio recipes --json`; [agent authoring](authoring-agents.md) | Parse a closed request, bind `cv`/`parent` separately, place `interval.start_s/end_s` once. |
 | Choose stopping, passing or impact motion | `srstudio.curves.track`; [curve intents](authoring-agents.md#choose-the-motion-intent) | Source derivative guarantees are separate from emitted samples and constrained geometry. |
