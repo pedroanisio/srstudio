@@ -392,13 +392,16 @@ class EpisodeSpec:
     safe_area: SafeArea | None = FROM_STYLE
     # -- the signature marks (docs/decisions/0001-signature.md) ----------------------------------
     signature: bool = True  # False only for packages older than the convention
-    signature_code: str | None = "SR-1028"  # None keeps only the cactus (ADR 0250)
+    signature_code: str | None = None  # None keeps only the cactus (ADR 0250)
     # -- the frame's edge ---------------------------------------------------------------------------
     loudness: str | None = None  # the mix's integrated target for this reel; None: the style's
     bleed: bool = False  # far planes blurred past the frame's edge (srstudio.look.sheet); False redraws published reels
     # held keys half a frame before the frame that first shows them (srstudio.held_keys, ADR 0216): every new reel
     # sets it; False keeps the six-decimal key times every reel built so far was drawn with, frozen with them
     held_frames: bool = False
+
+    situation_title: str | None = None  # series frame-zero situation (ADR 0253)
+    new_reel_policy: show.NewReelPolicy | None = None
 
     def __post_init__(self) -> None:
         st = self.style
@@ -555,6 +558,33 @@ class Episode:
         self.caption_specs: list[tuple[float, float, str, str]] = []
         self._input_manifests: list[Path] = []
         self.cast: dict[str, Actor] = {}
+
+    def title_card(self, post: InstagramPost):
+        """Draw the opted-in reel's opening line last, after scene and camera authoring (ADR 0253)."""
+        policy = self.spec.new_reel_policy
+        if policy is None:
+            raise show.NewReelPolicyError("title_card needs EpisodeSpec.new_reel_policy")
+        if self.spec.signature_code is not None:
+            raise show.NewReelPolicyError("new reels require signature_code=None")
+        from .social import require_disclosure
+        from .thumbnail import ShowCover
+
+        require_disclosure(post, policy.voices)
+        if isinstance(post.thumbnail, ShowCover) and post.thumbnail.series:
+            if self.spec.situation_title != policy.situation_title:
+                raise show.NewReelPolicyError("spec situation title must equal the policy's situation title")
+        if self.spec.safe_area is None or self.spec.font is None:
+            raise show.NewReelPolicyError("a title needs a safe area and a caption font")
+        floor = str((self.spec.accessibility or {}).get("minTextSize", "2%"))
+        minimum = float(floor[:-1]) * self.spec.height / 100 if floor.endswith("%") else float(floor)
+        return show.title_card(
+            self.cv,
+            self.comp,
+            policy.expected_title(post),
+            font=self.root / self.spec.font,
+            safe_area=self.spec.safe_area,
+            min_size=max(minimum, self.spec.height * 0.02),
+        )
 
     def _add_font(self, font: str) -> None:
         spec = self.spec
@@ -993,6 +1023,10 @@ class Episode:
 
     def instagram(self, post: InstagramPost) -> Path:
         """Validate the Instagram caption of this episode and write it as ``<root>/ig.txt``."""
+        if self.spec.new_reel_policy is not None:
+            from .social import require_disclosure
+
+            require_disclosure(post, self.spec.new_reel_policy.voices)
         return post.write(self.root)
 
     def hide_on_cover(self, *nodes) -> None:
@@ -1092,7 +1126,7 @@ class Episode:
         noted = anatomy_ledger.notes(self.cv)
         anatomy_ledger.refuse(self.spec.slug, noted)
         number = show.active()
-        if number is not None and not self._show_stamped:
+        if number is not None and self.spec.new_reel_policy is None and not self._show_stamped:
             self._show_stamped = True
             self.hide_on_cover(show.bug(self.cv, self.comp, number))  # last, so above the camera and all else
         if len(self._cover_hidden) > self._cover_written:

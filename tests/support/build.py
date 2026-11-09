@@ -4,7 +4,17 @@ from srstudio import Episode, EpisodeSpec, camera, cast, graphics, locations, pr
 
 
 def office_episode(project, out):
-    ep = Episode(EpisodeSpec(slug="t-office", title="t", description="t", root=project, seed=1, background="#D5DFDF"))
+    ep = Episode(
+        EpisodeSpec(
+            slug="t-office",
+            title="t",
+            description="t",
+            root=project,
+            seed=1,
+            background="#D5DFDF",
+            signature_code="SR-1028",
+        )
+    )
     t, P = ep.t, ep.P
     wide = ep.setup(
         locations.office_wide,

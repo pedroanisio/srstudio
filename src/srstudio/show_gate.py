@@ -21,6 +21,7 @@ for.
 
 from __future__ import annotations
 
+import math
 import re
 import subprocess
 import tempfile
@@ -39,10 +40,12 @@ from .frame_gates import FrameGateError, _duration, _fps, sample_times
 from .framegraph import Box, Drawing, Frame, FrameGraphError
 from .releases import Release
 from .show_numbers import Ledger
-from .social import COVER_VARIANT, Drift
+from .social import COVER_VARIANT, Drift, require_disclosure
 from .thumbnail import ShowCover, ThumbnailError, covered
 
 __all__ = [
+    "new_reel_defects",
+    "title_frame_defects",
     "FACE_SHARE",
     "PIXEL_COUNT",
     "PIXEL_STEP",
@@ -318,6 +321,36 @@ def _render_corner(scene: Path, video: Path, engine: str | Path, frame: Frame) -
         )
 
 
+def new_reel_defects(release: Release, document: bytes, policy: show.NewReelPolicy) -> list[str]:
+    """Static new-reel gates; incomplete disclosure raises its typed error before any engine call."""
+    require_disclosure(release.post, policy.voices)
+    policy.expected_title(release.post)
+    root = ET.fromstring(document)
+    out = []
+    duration = _duration(document)
+    if not math.isfinite(duration) or not 0 < duration <= 24.0:
+        out.append("new reel runtime must be positive and at most 24.0 s")
+    if any(re.fullmatch(r"sig-code(?:-\d+)?", el.get("id", "")) for el in root.iter()):
+        out.append("new reel contains a signature code: set signature_code=None")
+    if any(el.get("id", "").startswith(show.BUG_ID + "-") for el in root.iter("group")):
+        out.append("new reel must contain no OK-eye chip")
+    return out
+
+
+def title_frame_defects(frame: Frame, expected: str) -> list[str]:
+    """The evaluated frame-zero document must show exactly the expected title layer, fully opaque."""
+    titles = [n for n in frame.nodes if n.id == show.TITLE_ID + "-layer"]
+    if (
+        frame.time != 0
+        or len(titles) != 1
+        or not titles[0].draw
+        or titles[0].opacity != 1
+        or titles[0].text != expected
+    ):
+        return [f"frame 0 must draw title {expected!r}"]
+    return []
+
+
 def show_defects(
     releases: Mapping[str, Release],
     episodes: Path,
@@ -328,12 +361,14 @@ def show_defects(
     font: Path,
     *,
     final_masters: Mapping[str, Path] | None = None,
+    policy: Mapping[str, show.NewReelPolicy] | None = None,
 ) -> list[Drift]:
     """What each reel on its ``first`` delivery does against the look, for those on the show's cover; the ``ledger`` is
     only read if one is. A reel that opted in with no scene or no record of its figures is refused, not skipped."""
     from .final_frame_gate import RECORD, check_master
 
     drift: list[Drift] = []
+    policies = policy or {}
     if final_masters is not None:
         for slug, video in first.items():
             master = final_masters.get(slug)
@@ -350,14 +385,14 @@ def show_defects(
                 for c in result.checks
                 if c.check in ('show', 'signature_clearance', 'signature_props') and c.verdict == 'FAIL'
             ]
-    shown = {slug: video for slug, video in first.items() if _cover(releases[slug]) is not None}
+    shown = {slug: video for slug, video in first.items() if _cover(releases[slug]) is not None or slug in policies}
     if not shown:
         return drift
-    numbers = show_numbers.read(ledger)
+    numbers = show_numbers.read(ledger) if any(_cover(releases[s]) is not None for s in shown) else Ledger()
     for slug, video in shown.items():
         release = releases[slug]
         cover = _cover(release)
-        assert cover is not None
+        new_policy = policies.get(slug)
         drift += [Drift(video, why) for why in number_defects(release, numbers, releases)]
         project = Path(episodes) / slug
         scene = project / release.scene_file
@@ -369,24 +404,35 @@ def show_defects(
             drift.append(Drift(video, f"{figure_record.RECORD} is missing: build it with srstudio build"))
             continue
         document = scene.read_bytes()
-        said = scene_defects(document, cover.number)
+        if new_policy is not None:
+            said = new_reel_defects(release, document, new_policy)
+        else:
+            assert cover is not None  # shown holds only reels with a cover or a policy
+            said = scene_defects(document, cover.number)
         drift += [Drift(video, why) for why in said]
         if said:
             continue
         try:
             drawn = framegraph.drawings(document)
-            frames = list(framegraph.evaluate(engine, scene, sample_times(_duration(document), fps=_fps(document))))
-            drift += [
-                Drift(video, w) for w in frame_defects(frames, drawn, cover.number, figures, _texts(document, project))
-            ]
-            at_cover = next(iter(framegraph.evaluate(engine, scene, [cover.at])))
-            hidden = cover_faces(cover, at_cover, drawn, figures, Path(font).read_bytes())
-            drift += [Drift(video, f"the band hides the face of {part}: move the cover") for part in hidden]
+            if new_policy is None:
+                assert cover is not None
+                frames = list(framegraph.evaluate(engine, scene, sample_times(_duration(document), fps=_fps(document))))
+                drift += [
+                    Drift(video, w)
+                    for w in frame_defects(frames, drawn, cover.number, figures, _texts(document, project))
+                ]
+            else:
+                zero = next(iter(framegraph.evaluate(engine, scene, [0.0])))
+                drift += [Drift(video, w) for w in title_frame_defects(zero, new_policy.expected_title(release.post))]
+            if cover is not None:
+                at_cover = next(iter(framegraph.evaluate(engine, scene, [cover.at])))
+                hidden = cover_faces(cover, at_cover, drawn, figures, Path(font).read_bytes())
+                drift += [Drift(video, f"the band hides the face of {part}: move the cover") for part in hidden]
         except (FrameGraphError, ThumbnailError) as e:
             raise FrameGateError(f"{video}: {e}") from e
         film = Path(renders) / f"{video}.mp4"
         if not film.is_file():
             drift.append(Drift(video, f"{film.name} is missing"))
-        elif why := _render_corner(scene, film, engine, frames[0]):
+        elif new_policy is None and (why := _render_corner(scene, film, engine, frames[0])):
             drift.append(Drift(video, why))
     return drift

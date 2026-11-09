@@ -25,4 +25,4 @@ SPAN = 6.0
 def _canvas(palette=OFFICE, signed=True) -> Canvas:
     scene = Scene(version="auto")
     scene.add_project(width=1080, height=1920, fps="30", duration=SPAN, background=palette.background)
-    return Canvas(scene, palette, signature=Signature() if signed else None)
+    return Canvas(scene, palette, signature=Signature("SR-1028") if signed else None)

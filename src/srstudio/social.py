@@ -43,6 +43,10 @@ from .errors import SrstudioError
 from .thumbnail import Thumbnail, ThumbnailError, covered, render
 
 __all__ = [
+    "DISCLOSURE_LINE",
+    "DisclosureError",
+    "disclosure",
+    "require_disclosure",
     "InstagramPost",
     "InstagramPostError",
     "CoverError",
@@ -312,6 +316,32 @@ def hashtag_excess(caption: str) -> str:
     text counts, as it does for Instagram: a tag in the description is a tag."""
     count = len(_TAG_IN_TEXT.findall(caption))
     return f"{count} hashtags; Instagram accepts {HASHTAG_LIMIT}" if count > HASHTAG_LIMIT else ""
+
+
+DISCLOSURE_LINE = "Synthetic voices: {voices}; drawn in code."
+
+
+class DisclosureError(SrstudioError, ValueError):
+    """A new reel lacks complete synthetic voice and code drawing credit."""
+
+
+def disclosure(voices: Iterable[str]) -> str:
+    """One shared caption line naming the synthetic voices and how the picture was drawn."""
+    if isinstance(voices, str):
+        raise DisclosureError("voices must be a collection of synthetic voice names")
+    names = tuple(voices)
+    if not names or any(
+        not isinstance(v, str) or not v.strip() or v != v.strip() or "\n" in v or "\r" in v for v in names
+    ):
+        raise DisclosureError("every synthetic voice needs a nonempty, one-line name")
+    return DISCLOSURE_LINE.format(voices=", ".join(names))
+
+
+def require_disclosure(post: InstagramPost, voices: Iterable[str]) -> None:
+    """Refuse empty or partial credit on an opted-in reel; legacy posts keep their contract."""
+    line = disclosure(voices)
+    if line not in post.credit.splitlines() or line not in post.text().splitlines():
+        raise DisclosureError(f"new reel credit must contain {line!r}")
 
 
 @dataclass(frozen=True)

@@ -414,3 +414,69 @@ def test_signature_clearance_is_measured_after_punch_in():
         for n in shown.nodes
     )
     assert '20 px' in defects(dataclasses.replace(shown, nodes=nodes), drawn)[0]
+
+
+@pytest.mark.parametrize("series", [False, True])
+@pytest.mark.parametrize("bad_title", [False, True])
+def test_new_reel_policy_routes_to_frame_zero_without_bug_or_render(tmp_path, monkeypatch, series, bad_title):
+    from srstudio import show_gate
+    from srstudio.social import disclosure
+
+    cover = dataclasses.replace(JP, series_number=1, headline="GOOD") if series else ShowCover("GOOD", 1.0, number=212)
+    slug = "saga-reel" if series else "good-reel"
+    title = "What happened?"
+    policy = show.NewReelPolicy(("Alice",), "Ready in five" if series else None)
+    reel = Release(
+        slug,
+        InstagramPost(
+            title, "Juno & Pip, episode 1." if series else "Words.", credit=disclosure(("Alice",)), thumbnail=cover
+        ),
+        cover=True,
+    )
+    project = tmp_path / slug
+    project.mkdir()
+    (project / reel.scene_file).write_bytes(
+        b'<scene><project width="1080" height="1920" duration="24" fps="24"/><composition/></scene>'
+    )
+    (project / "figures.json").write_text('{"schema": "1.0.0", "figures": []}')
+    (tmp_path / (slug + ".mp4")).write_bytes(b"existing-video")
+    show_numbers.set_base(tmp_path / "n", cover.number - 1)
+    if series:
+        show_numbers.set_base(tmp_path / "n", 0, series="Juno & Pip")
+    show_numbers.claim(tmp_path / "n", slug, series="Juno & Pip" if series else "")
+    calls = []
+
+    def evaluate(engine, scene, times):
+        calls.append(tuple(times))
+        text = "wrong" if bad_title else policy.expected_title(reel.post)
+        return iter([Frame(0, 1080, 1920, (Node(show.TITLE_ID + "-layer", None, "layer", PLACE, 1, True, text),))])
+
+    def refuse_render(*args, **kwargs):
+        pytest.fail("new reel must not render a bug corner")
+
+    monkeypatch.setattr(show_gate.framegraph, "evaluate", evaluate)
+    monkeypatch.setattr(show_gate, "_render_corner", refuse_render)
+    said = show_defects(
+        {slug: reel}, tmp_path, tmp_path, {slug: slug}, "unused", tmp_path / "n", FONT, policy={slug: policy}
+    )
+    assert bool(said) is bad_title
+    assert (0.0,) in calls
+    if bad_title:
+        assert "frame 0" in said[0].reason
+
+
+def test_policy_does_not_apply_outside_first_deliveries(tmp_path):
+    # No scene, ledger or engine can be read for a reel outside the first-delivery set.
+    assert (
+        show_defects(
+            {"good-reel": release()},
+            tmp_path,
+            tmp_path,
+            {},
+            "none",
+            tmp_path / "n",
+            FONT,
+            policy={"good-reel": show.NewReelPolicy(("Alice",))},
+        )
+        == []
+    )

@@ -16,7 +16,11 @@ import math
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
+from dataclasses import dataclass
+from pathlib import Path
+from typing import TYPE_CHECKING
 
+from . import fonts
 from ._remaining_part_contracts import contract
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -24,7 +28,16 @@ from .registry import register
 from .signature import ADVANCE, GLYPHS
 from .thumbnail import INK
 
+if TYPE_CHECKING:
+    from .layout import SafeArea
+    from .social import InstagramPost
+
 __all__ = [
+    "NewReelPolicy",
+    "NewReelPolicyError",
+    "TITLE_ID",
+    "TITLE_HOLD",
+    "title_card",
     "BUG_BOX",
     "BUG_ID",
     "CLEAR",
@@ -151,3 +164,75 @@ def bug(cv: Canvas, parent, number: int):
     y = top + _DIGIT_TOP + (_DIGIT_HEIGHT - 16 * scale) / 2
     _glyphs(cv, g, f"{bug_id(number)}-n", label, left + (width - wide) / 2, y, scale, INK.white)
     return g
+
+
+TITLE_ID = "new-reel-title"
+TITLE_HOLD = 2.5  # seconds the opening title stays before the picture is clear (ADR 0253)
+
+
+class NewReelPolicyError(ShowError):
+    """A new reel cannot satisfy its explicit authoring policy (ADR 0253)."""
+
+
+@dataclass(frozen=True)
+class NewReelPolicy:
+    """Opt-in contract for a new Okayville reel, never inferred from a published reel's cover.
+
+    Series use ``situation_title`` (also set on EpisodeSpec); one-offs use the caption's first line.
+    Voice names identify the synthetic voices actually used by the author.
+    """
+
+    voices: tuple[str, ...]
+    situation_title: str | None = None
+
+    def __post_init__(self) -> None:
+        from .social import disclosure
+
+        disclosure(self.voices)
+        object.__setattr__(self, "voices", tuple(self.voices))
+        if self.situation_title is not None:
+            _title_line(self.situation_title)
+
+    def expected_title(self, post: InstagramPost) -> str:
+        from .thumbnail import ShowCover
+
+        cover = post.thumbnail
+        if isinstance(cover, ShowCover) and cover.series:
+            if self.situation_title is None:
+                raise NewReelPolicyError("a series needs a one-line situation title")
+            return self.situation_title
+        return _title_line(post.text().splitlines()[0])
+
+
+def _title_line(line: str) -> str:
+    if not isinstance(line, str) or not line.strip() or line != line.strip() or "\n" in line or "\r" in line:
+        raise NewReelPolicyError("a situation title must be a nonempty single line without edge whitespace")
+    return line
+
+
+def title_card(
+    cv: Canvas, parent, line: str, *, font: Path, safe_area: SafeArea, min_size: float, hold: float = TITLE_HOLD
+):
+    """Draw an opaque opening title at the safe area's top for ``hold`` seconds; refuse lines under the floor.
+
+    Call on the composition after drawing the scene, so frame zero carries the title above the camera.
+    """
+    line = _title_line(line)
+    if not math.isfinite(min_size) or min_size <= 0:
+        raise NewReelPolicyError("title legibility floor must be finite and positive")
+    area = safe_area.region(cv.width, cv.height)
+    pad = 16.0
+    room = math.floor(area.x1 - area.x0 - 2 * pad)
+    data = Path(font).read_bytes()
+    width_at_one = fonts.text_width(data, line, 1)
+    size = min(64.0, room / max(width_at_one, 1))
+    height = size * 1.5 + 2 * pad
+    if size < min_size or height > area.y1 - area.y0:
+        raise NewReelPolicyError("title does not fit the safe area at the legibility floor; shorten it")
+    group = cv.group(parent, TITLE_ID + "-panel")
+    cv.rect(group, area.x0, area.y0, area.x1 - area.x0, height, "#111111", radius=12)
+    cv.text(group, TITLE_ID, line, area.x0 + pad, area.y0 + pad, room, math.ceil(size * 1.5), size, "#FFFFFF")
+    if not math.isfinite(hold) or hold <= 0:
+        raise NewReelPolicyError("the title hold must be finite and positive")
+    cv.gate(group, [(0.0, hold)])  # an opening line, not a band over the whole reel
+    return group
