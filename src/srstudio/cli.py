@@ -155,7 +155,7 @@ def main(argv=None):
     starter.add_argument('--overwrite', action='store_true', help='replace existing starter files')
     starter.add_argument('--json', action='store_true')
     exported = sub.add_parser(
-        'build-export', help="build a scene from an unzipped sreditor export, with the default staging"
+        'build-export', help="build a scene from an unzipped sreditor export: a toon one with beats as a Toon sketch"
     )
     exported.add_argument('export', type=Path, help='the folder the export was unzipped into')
     exported.add_argument('scene', type=Path, help='where to write the scene (output id "main")')

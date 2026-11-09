@@ -1,18 +1,18 @@
-"""A scene from the folder sreditor exports, with a default staging: ``srstudio build-export EXPORT SCENE``.
+"""A scene from the folder sreditor exports: ``srstudio build-export EXPORT SCENE``.
 
 sreditor exports an episode as data: ``episode.json`` (slug, title, seed, frame, language), ``timeline.json`` (a
 shot sequence of takes with word timings), a WAV per take under ``audio/``, the bible, the beats and ``style.json``.
 It never sends code, so its render worker cannot run an episode script; this module is the one builder it calls.
 
-The staging is deliberately plain and the same for every exported style: the exported frame and rate, the stage in
-the exported palette's background, each take's own audio in the mix, every spoken word burned as the engine's own
-caption track in the bundled DejaVu Sans Bold inside the safe area, and the signature cactus at the top corner. It
-draws no cast or location, because the export names drawings (``toon-host``) that are parts of an episode's own
-build, and the styles' fonts are not bundled; an episode that needs them is built by its own script with
-``srstudio build``.
+A ``toon`` export with beats (``assets/poses.json``) is built as a Toon sketch by :mod:`srstudio.export_toon` (ADR
+0255): the bible's cast drawn on its beats, each take in the set ``assets/staging.json`` names, each prop on its event.
+Every other export gets the default staging, the same for every style: the exported frame and rate, the stage in the
+exported palette's background, each take's own audio in the mix, every spoken word burned as the engine's own caption
+track in the bundled DejaVu Sans Bold inside the safe area, and the signature cactus at the top corner (ADR 0254).
 
 The engine resolves a scene's files against the scene's folder, so the takes' audio and the font are copied beside
-the scene, at the paths the scene names; nothing else is written there but the scene and its validation report.
+the scene, at the paths the scene names; nothing else is written there but the scene, the files its build reads and
+its validation report.
 """
 
 from __future__ import annotations
@@ -161,6 +161,29 @@ def _spec(episode: dict[str, Any], root: Path, background: str | None) -> Episod
     )
 
 
+def _plain(stage: Path, episode: dict[str, Any], background: str | None) -> Episode:
+    """The default staging: the takes' audio, the engine's captions and the cactus on the exported stage."""
+    ep = Episode(_spec(episode, stage, background))
+    signed = ep.comp.add_group(id="signature")
+    cactus(ep.cv, signed, episode["width"] - CACTUS_INSET, CACTUS_INSET * 2, CACTUS_SCALE)
+    # the engine's own track, kept inside the safe area; a long take is split at its words into cues that fit
+    ep.native_captions(native.cues_from_takes(ep.takes, native.CAPTION_LOOK))
+    ep.audio()
+    return ep
+
+
+def _toon(export: Path, stage: Path, episode: dict[str, Any]) -> Episode | None:
+    """A toon export with beats: its cast, sets and props drawn as a Toon sketch (:mod:`srstudio.export_toon`);
+    None for any other export."""
+    from . import export_toon  # here, since it takes ExportError from this module
+
+    if not export_toon.is_toon(export, episode):
+        return None
+    timeline = _read(export, TIMELINE)
+    assert timeline is not None
+    return export_toon.build_toon(export, stage, episode, timeline)
+
+
 def build_export(export: Path, scene: Path) -> Path:
     """Write the scene of an unzipped sreditor export at ``scene`` (output id ``main``); return its path.
 
@@ -182,12 +205,7 @@ def build_export(export: Path, scene: Path) -> Path:
     with as_file(files("srstudio").joinpath(FONT)) as font, tempfile.TemporaryDirectory(prefix="srstudio-") as work:
         stage = Path(work)
         _stage(export, stage, audio, font)
-        ep = Episode(_spec(episode, stage, background))
-        signed = ep.comp.add_group(id="signature")
-        cactus(ep.cv, signed, episode["width"] - CACTUS_INSET, CACTUS_INSET * 2, CACTUS_SCALE)
-        # the engine's own track, kept inside the safe area; a long take is split at its words into cues that fit
-        ep.native_captions(native.cues_from_takes(ep.takes, native.CAPTION_LOOK))
-        ep.audio()
+        ep = _toon(export, stage, episode) or _plain(stage, episode, background)
         written = ep.finish(stage / scene.name, stage / "sdk-validation.json")
         root.mkdir(parents=True, exist_ok=True)
         for file in sorted(p for p in stage.rglob("*") if p.is_file() and p.name != TIMELINE):
