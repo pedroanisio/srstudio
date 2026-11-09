@@ -36,7 +36,7 @@ from functools import partial
 from pathlib import Path
 from typing import Any
 
-from . import fonts, registry, sketch, toon, toon_sketch
+from . import breaks, fonts, registry, sketch, toon, toon_sketch
 from .episode import Episode
 from .export_build import ExportError
 from .layout import Box
@@ -201,7 +201,8 @@ def _placed(word_at: float, after: float | None) -> tuple[float, bool]:
 def captions(take: Take, fits: Fits, after: float | None, until: float) -> list[Caption]:
     """The take's words cut into captions that each fit one pill (a word too wide alone stands alone), each appearing on
     its word or up to :data:`srstudio.sketch.CAPTION_LAG` later so the one before is read
-    :data:`srstudio.sketch.CAPTION_MIN` (as :func:`srstudio.sketch.place` times a recording); of those cuts, the one
+    :data:`srstudio.sketch.CAPTION_MIN` (as :func:`srstudio.sketch.place` times a recording), none past a sentence end
+    (ADR 0149); of those cuts, the one
     with the fewest captions read for less, the last one until ``until``, then the fewest captions. ``after`` is when
     the caption before the take appeared, if any."""
     words = [(text, round(take.start + a, 6)) for text, a, _ in take.words]
@@ -220,6 +221,8 @@ def captions(take: Take, fits: Fits, after: float | None, until: float) -> list[
                 held = states[j].get(at)
                 if held is None or key < held[0]:
                     states[j][at] = (key, [*cut, Caption(i, text, at)])
+                if breaks.ends_sentence(words[j - 1][0]):
+                    break  # a caption never runs on into the next sentence (ADR 0149)
 
     def total(entry: tuple[tuple[int, int], list[Caption]]) -> tuple[int, int]:
         (short, count), cut = entry

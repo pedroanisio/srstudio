@@ -160,6 +160,10 @@ def test_captions_cut_the_words_where_the_next_would_not_fit():
     assert _cut(_take(0.0, _words('aa', 'bb', 'cc', 'dd')), 5) == [(0, 'aa bb', 0.0), (2, 'cc dd', 2.0)]
 
 
+def test_captions_end_where_a_sentence_ends():
+    assert _cut(_take(0.0, _words('aa.', 'bb', 'cc')), 20) == [(0, 'aa.', 0.0), (1, 'bb cc', 1.0)]
+
+
 def test_captions_keep_a_word_too_wide_alone():
     assert _cut(_take(0.0, _words('abcdefgh', 'b')), 3) == [(0, 'abcdefgh', 0.0), (1, 'b', 1.0)]
 
