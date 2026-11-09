@@ -62,6 +62,8 @@ from . import (
 )
 from .episode import SceneCheckError
 from .errors import SrstudioError, diagnostic
+from .export_build import build_export
+from .export_build import result as export_result
 from .frame_gates import FrameGateError
 from .framegraph import FrameGraphError
 from .layout import LayoutError, find_engine
@@ -152,6 +154,12 @@ def main(argv=None):
     starter.add_argument('--font', type=Path, help='use an explicit DejaVu Sans Bold font')
     starter.add_argument('--overwrite', action='store_true', help='replace existing starter files')
     starter.add_argument('--json', action='store_true')
+    exported = sub.add_parser(
+        'build-export', help="build a scene from an unzipped sreditor export, with the default staging"
+    )
+    exported.add_argument('export', type=Path, help='the folder the export was unzipped into')
+    exported.add_argument('scene', type=Path, help='where to write the scene (output id "main")')
+    exported.add_argument('--json', action='store_true')
     doctor = sub.add_parser('doctor', help='check local build and render prerequisites without changing them')
     doctor.add_argument('--engine', type=Path)
     doctor.add_argument('--font', type=Path)
@@ -404,6 +412,16 @@ def main(argv=None):
             _error('schema', exc, args.json)
             return 2
         print(json.dumps(data, indent=2, ensure_ascii=False))
+        return 0
+    if args.cmd == 'build-export':
+        try:
+            # the build's summary goes to stderr, so stdout holds only the JSON result
+            with redirect_stdout(sys.stderr) if args.json else nullcontext():
+                scene = build_export(args.export, args.scene)
+        except (SrstudioError, OSError) as exc:
+            _error('build-export', exc, args.json)
+            return 2
+        print(json.dumps(export_result(scene), ensure_ascii=False) if args.json else f"Wrote {scene}")
         return 0
     if args.cmd == 'init':
         try:

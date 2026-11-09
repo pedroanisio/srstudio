@@ -71,6 +71,22 @@ scene-render encode examples/out/coffee-review/coffee-review.scene.xml
 
 See [the complete sample](examples/new_episode.py) for a custom registered prop and location.
 
+## Build from a sreditor export
+
+sreditor exports an episode as data: `episode.json`, `timeline.json` with its word timings, a WAV per take, the
+bible and `style.json`. `build-export` turns the unzipped folder into a scene whose output id is `main`, the command
+sreditor's render worker runs:
+
+```bash
+srstudio build-export path/to/export path/to/job/episode.scene.xml
+scene-render encode path/to/job/episode.scene.xml --output main
+```
+
+The staging is the same for every style: the exported frame, the palette's background, each take's audio, every
+spoken word as the engine's own captions inside the safe area, and the signature cactus. It draws no cast or
+location; an episode that needs them is built by its own script with `srstudio build`. The takes' audio and the
+caption font are copied beside the scene. See [ADR 0254](docs/decisions/0254-build-a-scene-from-sreditors-export.md).
+
 ## How an episode is built
 
 An `EpisodeSpec` describes the project and selects a style. `Episode` loads its timeline and assets, provides a canvas, and checks and writes the result. This complete example builds an office scene from synthetic input:
