@@ -53,7 +53,9 @@ __all__ = [
 
 MIN_COUNTERS = 0.025  # counter pixels per letter pixel; the masters measured in ADR 0048 set it
 MIN_FRAMES = 3  # frames with letters in them: fewer judge nothing, and a gate that judges nothing cannot pass
-FPS = 1  # frames measured per second of video
+# Frames measured per second of video. At 1 a send reel's one short line (captioned for under 3 s, Okayville
+# 10 Nov) left the gate fewer than MIN_FRAMES to judge; 4 sees a 0.75 s caption three times.
+FPS = 4
 BAND_PAD = 12  # pixels kept around the captions' box, so letters are not lost to the crop's edge
 FILL_TOLERANCE = 55.0  # RGB distance from a look's colours that still counts as letter, after the encoder
 MIN_BLOB = 25  # pixels: anything smaller is noise, not a letter
@@ -329,7 +331,7 @@ def measure_frames(frames: Iterable[np.ndarray], paint: _Paint) -> Legibility:
 def read_frames(
     video: Path, band: tuple[int, int], *, width: int | None = None, ffmpeg: str = "ffmpeg"
 ) -> Iterator[np.ndarray]:
-    """One frame per second of ``video``, cropped to ``band``, as RGB arrays. The crop snaps to even rows: the
+    """``FPS`` frames per second of ``video``, cropped to ``band``, as RGB arrays. The crop snaps to even rows: the
     decoder's chroma is shared between two."""
     top, bottom = band[0] - band[0] % 2, band[1] + band[1] % 2
     width = width if width is not None else video_size(video)[0]
