@@ -1004,3 +1004,15 @@ def test_a_decimal_does_not_pass_for_another_number(heard):
 @pytest.mark.parametrize(("text", "words"), [("$6.30", ["6", "30"]), ("1.2.3", ["1", "2", "3"])])
 def test_a_price_and_a_version_are_not_decimals(text, words):
     assert voice._tokens(text) == words
+
+
+def test_a_heard_clock_on_the_hour_reads_as_the_hour_word_by_word():
+    """J&P ep14 (10 Nov): Pip says "It's six, Juno!", speech-to-text writes "It's 6:00, Juno"; the transcript check
+    passed, and the stress on "six" was "not heard", because the heard word read as "six zero"."""
+    from srstudio.voice import heard_reading, normalize_words
+
+    assert heard_reading("6:00,") == ["six"] == normalize_words("six")
+    assert heard_reading("12:00") == ["twelve"]
+    assert heard_reading("6:30") == normalize_words("6:30")  # not on the hour: read as it is written
+    assert heard_reading("13:00") == normalize_words("13:00")  # no clock hour
+    assert heard_reading("Juno") == ["juno"]

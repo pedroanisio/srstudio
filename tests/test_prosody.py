@@ -586,3 +586,10 @@ def test_zero_word_span_is_unmeasurable_but_keeps_phrase_pace(at, count):
         assert phrase[0].measured == pytest.approx(count / item['duration'])
     else:
         assert phrase == []
+
+
+def test_a_stressed_number_is_heard_in_a_clock_the_recogniser_wrote(tmp_path):
+    """J&P ep14 (10 Nov): "It's six, Juno!" heard as "It's 6:00, Juno" left the stress on "six" unmatched."""
+    words = line_wav(tmp_path / "l.wav", [("It's", 0.1, 0.4), ("6:00,", 0.5, 0.9), ("Juno", 1.0, 1.4)], {})
+    (s,) = measure(tmp_path / "l.wav", words, ("six",)).stressed
+    assert s.heard and s.at == 1

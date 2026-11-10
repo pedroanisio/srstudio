@@ -15,7 +15,7 @@ from pathlib import Path
 
 from . import craft_bar, emphasis, master_gate, prosody
 from .digest import sha256
-from .voice import normalize_words
+from .voice import heard_reading, normalize_words
 
 _AUDIO_ARGS = ('--start', '--end', '--param', '--row', '--data', '--representation', '--threads')
 DUCK_DB = -6.0
@@ -68,7 +68,7 @@ def _duck(root: ET.Element, lines: Sequence[craft_bar.RecordedLine]) -> None:
             continue
         # Same first-normalised-occurrence matching as prosody.measure.
         for named in line.stress:
-            if not any(normalize_words(w.text) == normalize_words(named) for w in line.words):
+            if not any(heard_reading(w.text) == normalize_words(named) for w in line.words):
                 raise craft_bar.CraftError(f'{line.id}: {named!r}: no timed stressed word')
         # The stress meter weighs a word against the line's other words on the mixed master; a bed left under
         # those words lifts them more than the loud one and flattens the contrast, so the duck spans the line.
