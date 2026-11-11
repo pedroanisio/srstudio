@@ -382,6 +382,12 @@ class Show:
         for text in (self.post.title, self.post.description):
             host_kit.check_copy(text)
 
+    def carded(self) -> tuple[str, ...]:
+        """The lines a card already shows in words, which the caption track leaves out so the frame never says them
+        twice: the question, on the card that opens the reel and the one that closes it. A show whose overlay carries
+        another line on a card names it here too."""
+        return (self.question,)
+
     def spans(self, beats: Sequence[Any], end: float) -> list[tuple[float, float]]:
         """Each beat's frames: from the cut before its line to the cut before the next, the first from 0 s."""
         starts = [0.0, *(cut(b.start) for b in beats[1:])]
@@ -1837,11 +1843,14 @@ PANELS: dict[str, Callable[..., None]] = {
 
 
 # -- the captions, the sounds, the episode --------------------------------------------------------------------------
-def captions(ep: Any, lines: Sequence[toon.Line], measure: Measure, words: Sequence[Any] = ()):
+def captions(
+    ep: Any, lines: Sequence[toon.Line], measure: Measure, words: Sequence[Any] = (), skip: Sequence[str] = ()
+):
     """The engine's karaoke track on an ink band, in the safe area, under his chin in every framing. Returns the
-    bands' group and the track, both of which the cover leaves out. On a reel that holds its frames (ADR 0216) a band
+    bands' group and the track, both of which the cover leaves out. A line in ``skip`` (:meth:`Show.carded`) gets no
+    cue and no band: a card already shows it. On a reel that holds its frames (ADR 0216) a band
     comes and goes half a frame before the frame its cue starts or ends on, as every other held change does there."""
-    cues = host_kit.caption_cues(lines, words)
+    cues = host_kit.caption_cues(lines, words, skip=skip)
     rate = project_fps(ep.cv.scene) if ep.cv.held_frames else None
     region = ep.spec.safe_area.region(ep.spec.width, ep.spec.height)
     top = region.y1 - CAPTION_LOOK.block
@@ -1982,5 +1991,5 @@ def run(show: Show, argv: Sequence[str], env: Mapping[str, str] = os.environ) ->
         font = (root / ep.spec.font).read_bytes()
         words = host_kit.spoken(root, rafa_host.CAST) if voiced else ()
         lines = toon.load_script(root / ep.spec.dialogue)
-        ep.hide_on_cover(*captions(ep, lines, partial(text_width, font), words))
+        ep.hide_on_cover(*captions(ep, lines, partial(text_width, font), words, skip=show.carded()))
         ep.finish()

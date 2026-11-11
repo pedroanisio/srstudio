@@ -1137,3 +1137,31 @@ def test_an_explainer_shot_s_stamp_that_says_its_caption_again_is_refused():
 
 def test_a_paper_panel_s_stamp_is_held_to_nothing_new():
     with_beat(4, stamp=Stamp("BUSTED", "MythBusters, 2003")).validate()  # published shows keep their stamps
+
+
+def test_the_question_card_s_words_are_left_out_of_the_caption_track():
+    from types import SimpleNamespace
+
+    from srstudio import toon
+    from srstudio.layout import VERTICAL
+
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="30", duration=10.0)
+    cv = Canvas(scene, font_asset="fraunces")
+    spec = SimpleNamespace(safe_area=VERTICAL, width=1080, height=1920)
+    tracked = []
+    ep = SimpleNamespace(spec=spec, cv=cv, comp=cv.comp, native_captions=lambda cues, look, id: tracked.extend(cues))
+    lines = [
+        toon.Line("01", "Why do we yawn?", 0.0, 1.2),
+        toon.Line("02", "Not a chance.", 1.5, 2.5),
+        toon.Line("03", "Why is the sky blue?", 3.0, 4.2),
+    ]
+    sp.captions(ep, lines, lambda t, s: 0.52 * s * len(t), skip=("Why do we yawn?", "Why is the sky blue?"))
+    assert [cue.text for cue in tracked] == ["Not a chance."]
+    root = ET.fromstring(scene.to_bytes(layout="pretty"))
+    bands = [g for g in root.iter() if g.get("start") is not None]
+    assert [(g.get("start"), g.get("end")) for g in bands] == [("1.5", "2.5")]
+
+
+def test_a_show_s_cards_carry_its_question_so_its_caption_is_left_out():
+    assert SHOW.carded() == (SHOW.question,)
