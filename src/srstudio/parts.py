@@ -308,7 +308,10 @@ def _rig(where: str, value: Any) -> Rig | None:
 
 def _version(where: str, value: Any) -> Version:
     try:
-        fields = _fields(where, value, {"number", "date", "note", "status", "proof", "drawing", "approval", "rig"})
+        fields = _fields(
+            where, value, {"number", "date", "note", "status", "proof", "drawing", "rig"}, frozenset({"approval"})
+        )
+        fields = {"approval": None, **fields}
         approval, rig = _approval(f"{where}.approval", fields["approval"]), _rig(f"{where}.rig", fields["rig"])
         return Version(**{**fields, "approval": approval, "rig": rig})
     except PartError as exc:

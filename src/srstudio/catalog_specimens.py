@@ -69,6 +69,7 @@ from . import (
     toon_chat,
     toon_everyday,
     toon_props,
+    visor_chibi,
 )
 from .canvas import Canvas, Signature
 from .errors import SrstudioError
@@ -271,7 +272,12 @@ def _plated(cv: Canvas, g: object, e: registry.Entry, ctx: Context) -> None:
 
 def plates_of(name: str) -> tuple[plates.Plate, ...]:
     """Every path-traced plate the part ``name`` shows (ADR 0068): Rafa's, Pedro's or Small Print's (ADR 0195)."""
-    return (*rafa_host.part_plates(name), *pedro_host.part_plates(name), *smallprint_props.part_plates(name))
+    return (
+        *rafa_host.part_plates(name),
+        *pedro_host.part_plates(name),
+        *smallprint_props.part_plates(name),
+        *visor_chibi.part_plates(name),
+    )
 
 
 RECIPES: dict[str, Recipe] = {

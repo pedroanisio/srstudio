@@ -146,6 +146,7 @@ from . import (  # noqa: F401  (registers builders)
     toon_voices,
     toon_ward,
     toon_world,
+    visor_chibi,
     wire_car,
     wire_car_prop,
     wire_draw,
