@@ -45,7 +45,8 @@ def test_reset_uses_the_cropped_and_held_contact_or_prop_clock(kind, offset, cro
         motion = replace(track.motion, contacts=())
         motion = replace(motion, attachments=(Attachment('cup', 0.5, 3.5, motion.sample(0.5).hand.frame),))
         track = replace(track, motion=motion)
-    track = replace(track, options=replace(track.options, duration=crop, offset=offset))
+    # 24 fps: a 0.25 s crop keeps samples inside the press, which the sampling coverage rule requires (84520d7d)
+    track = replace(track, options=replace(track.options, duration=crop, offset=offset, fps=24))
     policy = TransitionPolicy(timing=(ChannelTiming('expression', delay=3.8),)) if delayed else None
     score = ActingScore(
         5, (ActingBeat(at, reset=True, transition=0, policy=policy),), overrides=Overrides(limbs=(track,))
