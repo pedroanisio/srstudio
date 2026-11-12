@@ -13,8 +13,8 @@ Library paths below are relative to the srstudio repository. Commands that read 
 
 ## Signature
 
-Every episode built with this library carries two recurring marks that sign the work. They are a convention
-decided on 2026-10-28 ([docs/decisions/0001-signature.md](../docs/decisions/0001-signature.md)) and implemented in
+Every signed episode carries the recurring cactus. The code stamp is now an explicit legacy option.
+The signature convention was decided on 2026-10-28 ([docs/decisions/0001-signature.md](../docs/decisions/0001-signature.md)) and implemented in
 [src/srstudio/signature.py](../src/srstudio/signature.py). Episode 06 (`five-years`) is the first signed episode; the
 seven shipped packages predate the convention and build with `signature=False`.
 
@@ -25,17 +25,18 @@ seven shipped packages predate the convention and build with `signature=False`.
 
 Rules:
 
-- Both marks are drawn by the location builders through `srstudio.signature.code(cv, parent, x, y, height, color=…)`
+- The requested marks are drawn by the location builders through `srstudio.signature.code(cv, parent, x, y, height, color=…)`
   and `srstudio.signature.cactus(cv, parent, x, y, scale)`, never by episode scripts, so a new location adds one call
   per mark and an episode cannot forget them. Both return `None` and draw nothing on an unsigned canvas.
 - `EpisodeSpec.signature` controls both and defaults to `True`. The seven shipped episode scripts pass
   `signature=False`, because their packages predate the convention and the fidelity tests reproduce them element for
   element; re-signing them is a new package version, not a rebuild.
-- The code is `EpisodeSpec.signature_code` (default `SR-1028`); changing it is a project-wide decision, not a
-  per-episode one. A character without a glyph (`A–Z`, `0–9`, `-`, `.`, space) raises `ValueError` at build time.
-  The groups are ided `sig-code`, `sig-cactus` (then `-2`, `-3`… per location) so `tests/test_signature.py` asserts
-  both are present in every location of a signed scene, absent when `signature=False`, and that the `MONO` variant
-  adds no gradient paints.
+- `EpisodeSpec.signature_code` defaults to `None`, retaining the cactus without an SR- stamp
+  ([ADR 0253](decisions/0253-new-okayville-reel-policy.md); `videos.doc.authoring-delivery.011` revision 2).
+  A caller reproducing a code-bearing drawing must explicitly pass `signature_code="SR-1028"`;
+  direct `canvas.Signature` construction and `signature.missing(document, code=...)` follow the same default.
+  Characters outside `A–Z`, `0–9`, `-`, `.`, and space raise `ValueError` at build time.
+  Location groups are named `sig-cactus` and, only when requested, `sig-code` (then `-2`, `-3`…).
 - The marks never carry story information unless an episode opts in (next rule), never sit inside a caption's box or
   on a face, and stay inside the engine's safe area. They must not trigger the legibility check: the code is at
   least the `minTextSize` of the episode's `<accessibility>` or is drawn as paths.
@@ -46,10 +47,35 @@ Rules:
   `signature.home_cactus`: on a signed canvas the slot must draw exactly one cactus, so a shot never loses or
   doubles the mark. Without `act=` or `cactus=` every drawing keeps its bytes, which `tests/test_signature.py` pins.
 
+## New Okayville reels
+
+Opt in only new reels with `show.NewReelPolicy(voices=("Alice",), situation_title="Ready in five")`.
+Set that same policy on `EpisodeSpec.new_reel_policy`, and, for a series, set
+`EpisodeSpec.situation_title` to the same one-line situation. Set the caption's
+`credit=social.disclosure(policy.voices)`; `credit_last=True` keeps that block after hashtags.
+For a one-off, omit the situation title: the caption's first line is its title card.
+`ShowCover.series` distinguishes these cases.
+
+After drawing the scene and its camera, call `episode.title_card(post)` to draw the
+opening title above them, inside the safe area and at the legibility floor. The
+helper refuses a line that cannot fit; shorten it. The title panel stays visible
+throughout the scene. Opted-in builds omit the OK-eye chip even under numbered
+build stamping. Keep `signature_code=None` and runtime at most 24.0 seconds.
+
+At first delivery pass `policy={slug: policy}` to `show_gate.show_defects` along
+with its existing arguments. The gate requires complete disclosure (typed
+`social.DisclosureError` on empty or partial credit), no signature code, no chip,
+runtime at most 24.0 seconds and exact, fully visible title text in the evaluated
+frame-zero document. Number/ledger and cover-face checks continue. It does not
+compare the title with pixels in a rendered master; existing final-master review
+is separate. Reels without this opt-in retain the old chip checks; published
+code-bearing builders must request their original signature code explicitly.
+
 ## Instagram captions
 
-Every episode ships with an `ig.txt`: title, description, credit and hashtags, in that order, separated by blank
-lines. The caption is data before it is text: `srstudio.social.InstagramPost` holds the four parts and refuses to
+Every episode ships with an `ig.txt`: title, description, credit and hashtags, separated by blank
+lines. `credit_last=True` moves the credit after hashtags for new deliveries. The caption is data before it is
+text: `srstudio.social.InstagramPost` holds the four parts and refuses to
 write when a limit is broken (title longer than the 125 characters the feed shows before folding, a malformed or
 duplicate hashtag, a caption over 2200 characters, an empty title or description). The error is `InstagramPostError`,
 with every problem listed.
@@ -93,9 +119,10 @@ still passes up to `social.PUBLISHED_HASHTAG_LIMIT`, and `check` does not ask.
 
 ### The Okayville show signature
 
-A reel in the show's look carries one cover and one corner bug ([ADR 0074](decisions/0074-okayville-show-signature.md)).
+A reel using the legacy show policy carries one cover and one corner bug ([ADR 0074](decisions/0074-okayville-show-signature.md)).
 The cover is a `srstudio.thumbnail.ShowCover`: a solid band with OKAYVILLE, `#N` and the premise in at most 5 words,
-over the reel's own art. The bug is the part `show-bug`, which `srstudio build` draws above the camera for a release on
+over the reel's own art. In that legacy policy the bug is the part `show-bug`, which `srstudio build` draws above
+the camera for a release on
 that cover and for no other. Numbers come from `srstudio number`: `base` sets the publishing side's count once, `claim`
 takes the next one before the final build, `list` prints the ledger at `generated/okayville/numbers.json`. A series has
 its own count with `--series`, and `outbox` writes `episode.json` beside the video, exactly `{"number": N, "series":

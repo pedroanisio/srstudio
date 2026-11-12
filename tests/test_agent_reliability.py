@@ -12,7 +12,7 @@ from srstudio.sample import SampleError
 
 
 def test_signature_failure_is_in_the_machine_readable_report(project, tmp_path):
-    ep = Episode(EpisodeSpec(slug="signed", title="t", description="t", root=project, seed=1))
+    ep = Episode(EpisodeSpec(slug="signed", title="t", description="t", root=project, seed=1, signature_code="SR-1028"))
     report, out = tmp_path / "report.json", tmp_path / "scene.xml"
     with pytest.raises(signature.SignatureError, match="sig-cactus, sig-code") as error:
         ep.finish(out=out, report=report)

@@ -311,7 +311,16 @@ def test_router_episode_builds_and_validates(tmp_path):
     (tmp_path / "assets").mkdir()
     (tmp_path / "assets" / "hand.ttf").write_bytes(b"\0")
     ep = Episode(
-        EpisodeSpec(slug="router", title="t", description="t", root=tmp_path, seed=2, style=INK, font="assets/hand.ttf")
+        EpisodeSpec(
+            slug="router",
+            title="t",
+            description="t",
+            root=tmp_path,
+            seed=2,
+            style=INK,
+            font="assets/hand.ttf",
+            signature_code="SR-1028",
+        )
     )
     shots = ep.sequence()
     ep.mix(loudness="-14", bit_depth=None)

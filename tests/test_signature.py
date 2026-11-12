@@ -56,7 +56,7 @@ def test_signature_code_is_configurable_and_typed(project):
 
 
 def test_mono_palette_uses_pen_stroke_without_paints():
-    cv = Canvas(Scene(version="auto"), palette=MONO, width=1080, height=1080, signature=Signature())
+    cv = Canvas(Scene(version="auto"), palette=MONO, width=1080, height=1080, signature=Signature("SR-1028"))
     signature.cactus(cv, cv.comp, 940, 986, 0.45)
     signature.code(cv, cv.comp, 330, 329, 11, angle=5)
     root = ET.fromstring(cv.scene.to_bytes())
@@ -67,25 +67,33 @@ def test_mono_palette_uses_pen_stroke_without_paints():
 
 
 def test_glyph_set_covers_the_default_code():
-    assert all(c in signature.GLYPHS for c in Signature().code)
+    assert all(c in signature.GLYPHS for c in Signature("SR-1028").code)
     assert signature.text_width("SR-1028", 16) == pytest.approx(7 * signature.ADVANCE - 3.5)
 
 
 # -- the gate: a signed episode is not written without both marks ------------------------------------------------
 def _bare(project, **spec):
     return Episode(
-        EpisodeSpec(slug="t", title="t", description="t", root=project, seed=1, background="#D5DFDF", **spec)
+        EpisodeSpec(
+            slug="t",
+            title="t",
+            description="t",
+            root=project,
+            seed=1,
+            background="#D5DFDF",
+            signature_code="SR-1028",
+            **spec,
+        )
     )
 
 
 def test_missing_names_each_mark_the_document_lacks():
     signed = b'<scene><group id="sig-code"/><group id="sig-cactus-2"/></scene>'
-    assert signature.missing(signed) == []
-    assert signature.missing(b'<scene><group id="sig-code"/></scene>') == ["sig-cactus"]
-    assert signature.missing(b'<scene><paints><linearGradient id="sig-cactus-paint"/></paints></scene>') == [
-        "sig-cactus",
-        "sig-code",
-    ]  # a paint is not a mark
+    assert signature.missing(signed, code="SR-1028") == []
+    assert signature.missing(b'<scene><group id="sig-code"/></scene>', code="SR-1028") == ["sig-cactus"]
+    assert signature.missing(
+        b'<scene><paints><linearGradient id="sig-cactus-paint"/></paints></scene>', code="SR-1028"
+    ) == ["sig-cactus", "sig-code"]  # a paint is not a mark
 
 
 def test_a_signed_episode_whose_locations_draw_no_marks_is_refused(project, tmp_path):
