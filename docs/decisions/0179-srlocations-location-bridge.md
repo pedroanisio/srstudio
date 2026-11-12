@@ -7,6 +7,9 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 - Status: proposed (2026-11-02)
 - Back to the [library README](../../README.md)
 - Extended by [ADR 0184](0184-srlocations-mannequin-blocking.md): a body blocked on the marks, schema 1.1.0
+- Corrected by [ADR 0256](0256-characters-and-location-looks-are-chosen-per-episode.md): the first condition of *What
+  renders next to our figures* answered the locations ordered that day and does not bind every reel that uses the
+  bridge; the other two conditions stand
 
 ## Context
 
@@ -75,6 +78,9 @@ Moving the pin is a commit that changes the constant, re-exports every recorded 
 These are arc4d3's conditions, and they bind every reel that uses the bridge:
 
 - A location rendered next to our figures is drawn in our cel/ink or clay look, never path-traced realism.
+  Corrected by [ADR 0256](0256-characters-and-location-looks-are-chosen-per-episode.md): this condition answered the
+  locations ordered that day. It does not bind every reel that uses the bridge, and the look of what renders beside
+  the figures is chosen per episode. The two conditions below stand.
 - No brands, badges, liveries or trade dress. A rebuilt airliner or car is generic.
 - Photographs are Pedro's only, and are never committed to this repository.
 

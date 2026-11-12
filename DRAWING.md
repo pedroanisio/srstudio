@@ -1,6 +1,6 @@
 ---
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
-updated-by: Codex (OpenAI); Claude Opus 5.5 (claude-opus-5-5) in Claude Code
+updated-by: Codex (OpenAI); Claude Opus 5.5 (claude-opus-5-5) in Claude Code; Claude Fable 5.2 (claude-fable-5-2) in Claude Code
 status: accepted
 ---
 
@@ -26,7 +26,7 @@ The schema establishes syntax, source code establishes implementation, and a pas
 
 Rigid objects seen from more than one angle can use 3D proxies: vehicles, buildings, furniture, machines, products and props. An object seen from one angle can stay a drawing. A proxy is modeled in `srstudio.clay` and rendered through `srstudio.plates`, within its declared camera/view envelope. Its style conversion preserves the approved palette and marks: flat, inked bands in Toon, paper in Collage, vinyl in Gloss. Each changed camera or object pose can require a new plate; caching does not turn a continuous camera move into one render. `srstudio.proxy` holds the conversion, and a `Recipe` holds a style's numbers. `srstudio.vehicle` adds tyres and rims: a rim stays a vector drawing on the disc `View.disc` gives, so a turning wheel needs no new plate.
 
-Characters stay on their style's rig: people, animals and creatures. The proposed `forms` module composes existing brush shading with rig anchors, shared lighting, and explicit shadow receivers. A rig declares supported views and poses; reusing its parametric parts does not synthesize an unseen back or profile. Form shading is opt-in per look, because a stick figure, a Soft blob and a traced Cel drawing are flat on purpose. Rafa stays on plates. Cross-surface shadows require the receiver representation described below before they can be promised.
+How a character is made is chosen per episode or style: a drawn rig of that style, or a 3D model ([ADR 0256](docs/decisions/0256-characters-and-location-looks-are-chosen-per-episode.md)). That holds for people, animals and creatures. For a drawn rig, the proposed `forms` module composes existing brush shading with rig anchors, shared lighting, and explicit shadow receivers. A rig declares supported views and poses; reusing its parametric parts does not synthesize an unseen back or profile. Form shading is opt-in per look, because a stick figure, a Soft blob and a traced Cel drawing are flat on purpose. A 3D model is built in the library, as Rafa is, who stays on plates, or outside it; a figure built outside reaches an episode as rendered material through a bridge, and none is built yet. Cross-surface shadows require the receiver representation described below before they can be promised.
 
 Environments can use painted plates arranged in depth layers. The proposed `paint` module extends `Canvas` with mesh- and conic-gradient wrappers and controlled texture from fractal noise and turbulent displacement. A parametric scenery kit starts with building facades, lit windows, and foliage. Its textures have stable surface coordinates and seeds. `look.depth` blur, `look.pool` light, and `look.fade` haze supply depth cues; a separate depth/ordering contract controls parallax and occlusion.
 
@@ -157,7 +157,7 @@ The [document tests](tests/test_drawing_document.py) execute this example, check
 
 ## Video types
 
-The table gives each type its default. Only the rigid-object layer is built, and each type's first use of a layer goes through the proof described below.
+The table gives each type its default. Only the rigid-object layer is built, and each type's first use of a layer goes through the proof described below. Where the Keeps column names rigs, figures or people, it records that type's choice today; an episode or a new style chooses how its own characters are made ([ADR 0256](docs/decisions/0256-characters-and-location-looks-are-chosen-per-episode.md)).
 
 | Type | Draws today | Takes first | Keeps |
 |---|---|---|---|

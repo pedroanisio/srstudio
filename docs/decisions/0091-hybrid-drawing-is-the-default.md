@@ -6,6 +6,9 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 
 - Status: accepted (2026-11-01), on the operator's word
 - Back to the [library README](../../README.md)
+- Corrected by [ADR 0256](0256-characters-and-location-looks-are-chosen-per-episode.md): "people stay on their rigs"
+  described the drawn styles taking the rigid-object layer and is no general rule; how a character is made is chosen
+  per episode or style
 
 ## Decision
 
