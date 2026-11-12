@@ -6,6 +6,7 @@ import json
 import math
 import re
 import subprocess
+import tempfile
 import wave
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, replace
@@ -56,6 +57,7 @@ __all__ = [
     "read",
     "refusals",
     "runs",
+    "scene_range",
 ]
 
 FPS = 10  # frames a second the picture is judged at
@@ -194,6 +196,24 @@ def loudness_range(video: Path, *, ffmpeg: str = "ffmpeg") -> float:
     if not found:
         raise MasterError(f"{video.name}: ebur128 printed no loudness range")
     return float(found[-1])
+
+
+def scene_range(scene: Path, *, engine: str | Path, ffmpeg: str = "ffmpeg") -> float:
+    """The loudness range, LU, of a built ``scene``'s audio as the engine mixes it, before any picture is rendered:
+    ``scene-render encode`` to a WAV (seconds, not a render) and measured as :func:`loudness_range` measures a master.
+    It is the engine's own mix, ducking, automation and limiter included, so it reads what the master will read
+    (shaken-soda v4: 4.1 here and on its master). A re-mix of ``narration.json`` outside the engine was rejected: it
+    read 5.6 and 5.9 LU for masters that measured 4.1 and 4.4. A missing scene, or an encode that fails or writes no
+    audio, is :class:`MasterError`."""
+    scene = Path(scene)
+    if not scene.is_file():
+        raise MasterError(f"{scene.name}: no scene to mix")
+    with tempfile.TemporaryDirectory(dir=scene.parent) as scratch:
+        mixed = Path(scratch) / "mix.wav"
+        _run([str(engine), "encode", str(scene), "-o", str(mixed)], f"{scene.name}: the engine's audio encode")
+        if not mixed.is_file() or mixed.stat().st_size == 0:
+            raise MasterError(f"{scene.name}: the engine's audio encode wrote no audio")
+        return loudness_range(mixed, ffmpeg=ffmpeg)
 
 
 def constant_bed(stem: Path, *, fade: float = 0.0) -> bool:
