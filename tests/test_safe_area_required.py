@@ -224,6 +224,7 @@ def test_the_exemptions_are_exactly_these():
         "examples/acting_continuity.py": "example",
         "examples/acting_gallery.py": "example",
         "examples/acting_transitions.py": "example",
+        "examples/agent_authoring.py": "example",
         "examples/body_steps.py": "example",
         "examples/composition_preflight.py": "example",
         "examples/drawing_figure.py": "example",

@@ -207,6 +207,7 @@ UNDELIVERED: tuple[Undelivered, ...] = (
     Undelivered("examples/acting_continuity.py", "example", "an SDK example rendered for its readers, never posted"),
     Undelivered("examples/acting_gallery.py", "example", "an SDK example rendered for its readers, never posted"),
     Undelivered("examples/acting_transitions.py", "example", "an SDK example rendered for its readers, never posted"),
+    Undelivered("examples/agent_authoring.py", "example", "an SDK example rendered for its readers, never posted"),
     Undelivered("examples/body_steps.py", "example", "an SDK example rendered for its readers, never posted"),
     Undelivered(
         "examples/composition_preflight.py", "example", "an SDK example rendered for its readers, never posted"
