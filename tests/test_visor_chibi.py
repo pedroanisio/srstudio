@@ -420,7 +420,11 @@ def test_body_has_five_to_seven_separate_round_cream_shells():
                 shells.append((joint, kind, args))
     assert 5 <= len(shells) <= 7
     assert [joint for joint, _, _ in shells] == [
-        'chest', 'left_shoulder', 'left_ankle', 'right_shoulder', 'right_ankle'
+        'chest',
+        'left_shoulder',
+        'left_ankle',
+        'right_shoulder',
+        'right_ankle',
     ]
     assert all(kind == 'ell' for _, kind, _ in shells)
     assert all(min(args[2]) >= 10 for _, _, args in shells)
