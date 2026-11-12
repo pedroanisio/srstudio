@@ -2,7 +2,7 @@
 generated-by: OpenAI Codex
 ---
 
-# ADR 0252: A proposed visor chibi, rigged in clay and performed on plates
+# ADR 0256: A proposed visor chibi, rigged in clay and performed on plates
 
 - Status: proposed (2026-11-06). Look approval belongs only to arc4d3 after the animated proof, under videos.op.looks.001.
 - Implementation: codex-builder, at the supplied operator request.
@@ -56,10 +56,9 @@ checkout. The standalone index presents expression, gaze, pose and scale boards
 and the animated proof. Tests cover state refusal, bone lengths, eye inheritance,
 repeatable plate digests and proposed status. The reference image was inspected.
 
-0252 is absent from this checkout's decisions/reservations and from decision files
-in the available worktrees. The task prohibits git and access to the main checkout;
-remote branch inspection therefore remains unverified. The existing duplicate
-0247 decision files are unrelated and left for their owners to resolve.
+Renumbered from 0252 on landing: develop recorded 0252 for agent authoring and motion
+evidence while this branch held the reservation, so the record takes 0256, the next
+number free on develop and in the reservations.
 
 ## Second look pass
 
