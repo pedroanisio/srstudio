@@ -87,7 +87,8 @@ def test_schema_cli_and_python_publish_the_same_document(capsys):
     assert json.loads(capsys.readouterr().out) == published('1.2.0')
     assert main(['schema', '--json']) == 0
     result = json.loads(capsys.readouterr().out)
-    assert result['documents'][0]['parser'] == 'srstudio.acting.parse_score'
+    by_name = {d['name']: d for d in result['documents']}
+    assert by_name['acting']['parser'] == 'srstudio.acting.parse_score'
 
 
 def test_schema_unknown_version_is_a_repairable_error(capsys):
