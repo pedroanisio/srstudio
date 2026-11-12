@@ -21,7 +21,8 @@ instead of a recording run:
   to the end of that take. A take with no set plays on the style's own room.
 
 The export carries no letters for the style, so the pills are set in the bundled DejaVu Sans Bold, and the signature
-(cactus and code) stands in the lower corner in place of the office desk, which a set of the export would not have.
+cactus (with the code only when the episode passes one, ADR 0253) stands in the lower corner in place of the office
+desk, which a set of the export would not have.
 Every input is checked: a cast, set or prop the catalogue does not draw is an :class:`ExportError` naming it.
 """
 
@@ -405,8 +406,8 @@ def dresser(
 
 
 def signed(cv, parent) -> None:
-    """The desk of an export's shots: only the signature (ADR 0001), the cactus and its code low in the right corner,
-    since the set is the room."""
+    """The desk of an export's shots: only the signature (ADR 0001), the cactus low in the right corner and the code
+    under it only when the episode passes one (ADR 0253), since the set is the room."""
     g = cv.group(parent, cv.uid("g"))
     cactus(cv, g, *CACTUS_AT, CACTUS_SCALE)
     code(cv, g, CODE_AT[0], CODE_AT[1], CODE_SIZE, opacity=CODE_OPACITY, align="end")

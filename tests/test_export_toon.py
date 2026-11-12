@@ -109,9 +109,10 @@ def test_toon_export_writes_the_recording_the_voiced_build_reads(tmp_path):
     assert narration['language'] == 'pt-BR'
 
 
-def test_toon_export_signs_every_shot_with_both_marks(tmp_path):
+def test_toon_export_signs_every_shot_with_the_cactus_and_no_code_stamp(tmp_path):
+    # videos.doc.authoring-delivery.011 (ADR 0253): no 'SR-' stamp unless a reel passes the code explicitly
     text = _build(tmp_path).read_text(encoding='utf-8')
-    assert 'sig-cactus' in text and 'sig-code' in text
+    assert 'sig-cactus' in text and 'sig-code' not in text
 
 
 def test_toon_export_with_a_set_the_catalogue_lacks_names_the_take(tmp_path):
