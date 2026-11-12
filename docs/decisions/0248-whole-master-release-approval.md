@@ -63,3 +63,33 @@ under a valid whole-master approval for those exact bytes.
   invalid supplied authority instead of refusing.
 - Adding publication exclusions or changing final-frame staging authority here:
   belongs to callers and exceeds this release API change.
+
+## Amendment: a full-size look releases the frame review only (videos.ruling.185)
+
+2026-11-06. ADR 0247 asks for a human observation on every decoded frame, with region boxes, for eleven checks;
+about 700 frames a reel cannot be reviewed that way by hand, and no tool writes the records, so no new master could
+pass. arc4d3 ruled (Slack 1793968116.391089) that their full-size look on a master, quoted exactly and bound to its
+sha256, releases its final-frame review.
+
+`ReleaseApproval.scope` takes a second value, `reviewed_full_size`, from the same approvers (arc4d3 or Pedro),
+validated the same way. It releases the frame terms of `Reading.refused` only (`frame_error` and a refused
+`final_frames`): every master measure must still pass or carry its own per-check C7 disposition (ADR 0246), and a
+missing measure still refuses. The report keeps every frame diagnostic and adds `final-frame review: RELEASED by
+...`; the `whole-master release` line stays reserved to `legacy_reviewed`. A re-mastered episode needs a look on
+its new sha256. The SDK still creates no evidence; the caller supplies the exact message.
+
+Rejected: writing per-frame Review records from the look post (agents write no human records, and the look did not
+cover every frame); widening `legacy_reviewed` to new masters (it would release failed measures too).
+
+## Amendment: one C7 disposition covers a voice measure's common copy
+
+2026-11-06. A voice measure (pace, pace span, stress, the word before the key word) is reported twice: once in the
+common acceptance (`pace_span:line-7`) and once as its C7 twin (`c7.pace_span:line-7`). A disposition can name only
+the C7 twin, so a waiver arc4d3 gave (Slack 1793967529.705339) left the common copy failing and the master refused.
+
+When an exact disposition waives `c7.X`, the common `X` takes the same record (approver, message, reason, line),
+but only when `X` is not a `_LIMITS` check (those keep their own approval path, and a `c7.lra` disposition still
+cannot pass a failing `lra`) and both copies measured the same value. A copy measured differently stays FAIL.
+
+Rejected: letting common voice checks be named in `approvals` (two records for one measurement could disagree);
+dropping the common copies (the report would lose the acceptance view).

@@ -44,3 +44,11 @@ never sped up, since a faster read is a new take's job.
   scaled by a known factor is exact for a uniform stretch.
 - **ffmpeg `atempo`.** It is also pitch-kept, but rubberband's transient handling keeps consonants cleaner at these
   factors.
+
+## Amendment: a failing span names its stretch
+
+2026-11-06. A `pace_span` FAIL now says how to fix it: `craft_bar.stretch_for` gives the smallest factor, in 0.05
+steps, that brings the span to 4.5 words/s (stretching by f divides the rate by f), and the measure's source reads
+"stretch the take by F to reach 4.5 words/s", or "past the 1.25 stretch: a new take" when the cap would not reach
+it. J&P ep1's three lines (5.36, 4.84, 4.84) needed 1.2, 1.1 and 1.1, worked out by hand; the next reel reads them
+from its report.

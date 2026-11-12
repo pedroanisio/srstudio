@@ -548,6 +548,13 @@ def normalize_words(text: str) -> list[str]:
     return [word for token in _tokens(text) for word in _word(token)]
 
 
+def heard_reading(text: str) -> list[str]:
+    """A heard word's reading, as :func:`check_transcript` reads it: :func:`normalize_words`, with a clock on the hour
+    read as the hour ("6:00" is "six", as "3:00 AM" is "three a.m."). For matching a scripted word, such as a stressed
+    one, to the word the recogniser wrote."""
+    return normalize_words(ON_THE_HOUR.sub(r"\1", text))
+
+
 def _hundreds(n: int) -> list[str]:
     """The ways a speaker says the hundreds of ``n``, 100..999, besides its cardinal: "and" after them, and "a" for
     "one" ("a hundred and eighty seven"). Empty outside that range: the number stays what it is."""

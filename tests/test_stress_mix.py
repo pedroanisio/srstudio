@@ -292,3 +292,15 @@ def test_a_word_short_on_the_authored_mix_is_refused_however_the_master_reads(tm
     with pytest.raises(craft_bar.CraftError, match=r'failed: line-1:weeks before=2.0 dB after=4.0 dB'):
         master.encode(scene, tmp_path / 'out', engine=scene_render, args=['--no-upload'])
     assert not list((tmp_path / 'qa').glob('authored-mix-*')) if (tmp_path / 'qa').exists() else True
+
+
+def test_ducking_finds_a_stressed_number_heard_as_a_clock():
+    import xml.etree.ElementTree as ET
+
+    from srstudio import _stress_mix
+    from srstudio.voice import Word
+
+    root = ET.fromstring('<scene><audioMix><audioTrack id="bed" role="music"/></audioMix></scene>')
+    words = (Word("It's", 0.1, 0.3, 'word'), Word('6:00,', 0.4, 0.8, 'word'), Word('Juno', 0.9, 1.2, 'word'))
+    _stress_mix._duck(root, [craft_bar.RecordedLine('three', 2, 1.4, words, ('six',), 'test')])
+    assert root.find('audioMix/audioTrack/animate') is not None

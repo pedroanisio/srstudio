@@ -228,3 +228,35 @@ def test_verify_accepts_a_name_a_speaker_or_a_line_gives_with_or_without_the_art
     loaded = bible.load(write(tmp_path / "bible", document))
     releases = {"cleaning-fee": release("cleaning-fee")}
     assert bible.verify(loaded, releases, {"cleaning-fee"}, episodes, characters=set()) == []
+
+
+TRAIT = {"word": "Unbothered", "approval": "arc4d3, Slack 1793967529.705339"}
+
+
+def test_an_approved_trait_loads_and_renders_with_its_approval(tmp_path):
+    """A trait is the one word the series puts on screen for a character, with who approved it (J&P, from ep4)."""
+    from srstudio import bible_render
+
+    loaded = bible.load(write(tmp_path, mutated(lambda d: d["characters"][0]["comic"].update(trait=TRAIT))))
+    rex = loaded.character("rex")
+    assert rex.comic.trait == bible.Trait("Unbothered", "arc4d3, Slack 1793967529.705339")
+    assert loaded.character("fern").comic.trait is None
+    assert "- Trait: Unbothered (approved by arc4d3, Slack 1793967529.705339)" in bible_render.sheet(
+        rex, model="fixture", version=loaded.version, order=[]
+    )
+
+
+@pytest.mark.parametrize(
+    "trait, message",
+    [
+        ({"word": "unbothered", "approval": "arc4d3"}, "one capitalised word"),
+        ({"word": "Very Calm", "approval": "arc4d3"}, "one capitalised word"),
+        ({"word": "Unbothered", "approval": "  "}, "nonempty text"),
+        ({"word": "Unbothered"}, "missing field"),
+        ({"word": "Unbothered", "approval": "arc4d3", "colour": "red"}, "unknown field"),
+        ("Unbothered", "expected an object"),
+    ],
+)
+def test_a_malformed_trait_is_refused(tmp_path, trait, message):
+    with pytest.raises(bible.BibleError, match=message):
+        bible.load(write(tmp_path, mutated(lambda d: d["characters"][0]["comic"].update(trait=trait))))

@@ -28,7 +28,7 @@ from . import bible_inventory
 from .errors import SrstudioError
 from .releases import Release
 
-__all__ = ["SCHEMA", "WORLDS", "Bible", "BibleError", "Character", "Fact", "Relationship", "load", "verify"]
+__all__ = ["SCHEMA", "WORLDS", "Bible", "BibleError", "Character", "Fact", "Relationship", "Trait", "load", "verify"]
 
 SCHEMA = "1.0.0"  # the format of both files; its major changes only when a field is removed or renamed
 WORLDS = ("okayville", "saga", "gloss", "news", "host", "mind", "maps")
@@ -205,10 +205,27 @@ class Who:
 
 
 @dataclass(frozen=True)
+class Trait:
+    """The one word a series puts on screen for a character, and who approved it; not a fact a reel stands behind."""
+
+    word: str
+    approval: str
+
+    @classmethod
+    def parse(cls, data: object, where: str) -> Trait:
+        d = _object(data, where, cls)
+        word = d["word"]
+        if not isinstance(word, str) or not re.fullmatch(r"[A-Z][a-z]+", word):
+            raise _fail(f"{where}.word", f"expected one capitalised word, got {word!r}")
+        return cls(word, _text(d["approval"], f"{where}.approval"))
+
+
+@dataclass(frozen=True)
 class Comic:
     role: str
     under_pressure: str
     always_gets_them: str
+    trait: Trait | None = None
 
 
 @dataclass(frozen=True)
@@ -287,6 +304,7 @@ class Character:
                 _role(comic["role"], f"{where}.comic.role"),
                 _text(comic["under_pressure"], f"{where}.comic.under_pressure"),
                 _text(comic["always_gets_them"], f"{where}.comic.always_gets_them"),
+                Trait.parse(comic["trait"], f"{where}.comic.trait") if "trait" in comic else None,
             ),
             _facts(d["canon"], f"{where}.canon"),
             never,

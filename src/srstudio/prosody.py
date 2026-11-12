@@ -49,7 +49,7 @@ from scipy.signal import resample_poly
 from .checks import number
 from .direction import MAX_HOLD
 from .errors import SrstudioError
-from .voice import Word, normalize_words
+from .voice import Word, heard_reading, normalize_words
 
 __all__ = [
     "ANSWER_GAP",
@@ -308,7 +308,8 @@ def pitch_track(x: np.ndarray, rate: int) -> tuple[np.ndarray, np.ndarray]:
 def measure(wav: Path, words: Sequence[Word], stressed: Sequence[str] = ()) -> Measure:
     """The heard ``words`` (speech-to-text, times on ``wav``) with each one's level and pitch, the line's median pitch
     and spread over the voiced frames inside its words, and each ``stressed`` word's weight and lift. A stressed word is
-    matched to the first heard word that is the same once normalised; one not heard is recorded as not heard."""
+    matched to the first heard word that reads the same (:func:`~srstudio.voice.heard_reading`, so "6:00" is "six");
+    one not heard is recorded as not heard."""
     x, rate = _samples(wav)
     times, f0 = pitch_track(x, rate)
     spoken = [w for w in words if w.type == "word"]
@@ -329,7 +330,7 @@ def measure(wav: Path, words: Sequence[Word], stressed: Sequence[str] = ()) -> M
     spread = 12 * math.log2(float(np.percentile(line, 75)) / float(np.percentile(line, 25))) if line.size >= 2 else None
     dbs = [w.db for w in levels]
     marks = []
-    keys = [normalize_words(w.text) for w in spoken]
+    keys = [heard_reading(w.text) for w in spoken]
     for word in stressed:
         target = normalize_words(word)
         at = next((i for i, k in enumerate(keys) if k == target), None)

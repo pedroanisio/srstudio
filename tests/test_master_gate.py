@@ -890,6 +890,56 @@ def test_c7_exception_cannot_bypass_accept_master_limit(tmp_path, monkeypatch, a
     assert next(c for c in result.checks if c.check == "lra").verdict == "FAIL"
 
 
+def _voice_fail(name, value):
+    from srstudio.craft_bar import Measure, Result
+
+    return Result((Measure(name, value, "<= 4.5 words/s", "FAIL", "voice fixture"),))
+
+
+@pytest.mark.parametrize("name", ["pace_span:line-7", "preceding:line-1:five"])
+def test_c7_voice_disposition_waives_its_common_twin(tmp_path, monkeypatch, accepted_measure, name):
+    """A voice measure is reported twice (common and c7.); one exact disposition covers both copies."""
+    from srstudio import craft_bar
+    from srstudio.digest import sha256
+
+    video = tmp_path / "master.mp4"
+    video.write_bytes(b"fixture master")
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: accepted_measure)
+    monkeypatch.setattr(craft_bar, "measure_voice", lambda *a, **kw: _voice_fail(name, 4.65))
+    c7 = c7_result()
+    monkeypatch.setattr(
+        craft_bar, "measure", lambda *a: replace(c7, measures=(*c7.measures, *_voice_fail(name, 4.65).measures))
+    )
+    assert master_gate.evaluate_release(video, tmp_path, scope="production").refused
+    d = replace(approval_fixture(sha256(video), "c7." + name, "production", "arc4d3"), line=name.split(":")[1])
+    result = master_gate.evaluate_release(video, tmp_path, scope="production", dispositions=(d,))
+    by = {c.check: c for c in result.checks}
+    assert by[name].verdict == by["c7." + name].verdict == "WAIVED"
+    assert by[name].approver == "arc4d3" and by[name].evidence == "fixture://retained-message"
+    assert by[name].measured == 4.65 and by[name].disabled
+    assert not result.failing and not result.refused and not result.error
+
+
+def test_c7_voice_disposition_does_not_waive_a_twin_measured_differently(tmp_path, monkeypatch, accepted_measure):
+    from srstudio import craft_bar
+    from srstudio.digest import sha256
+
+    name = "pace_span:line-7"
+    video = tmp_path / "master.mp4"
+    video.write_bytes(b"fixture master")
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: accepted_measure)
+    monkeypatch.setattr(craft_bar, "measure_voice", lambda *a, **kw: _voice_fail(name, 5.4))
+    c7 = c7_result()
+    monkeypatch.setattr(
+        craft_bar, "measure", lambda *a: replace(c7, measures=(*c7.measures, *_voice_fail(name, 4.65).measures))
+    )
+    d = replace(approval_fixture(sha256(video), "c7." + name, "production", "arc4d3"), line=name.split(":")[1])
+    result = master_gate.evaluate_release(video, tmp_path, scope="production", dispositions=(d,))
+    by = {c.check: c for c in result.checks}
+    assert by["c7." + name].verdict == "WAIVED"
+    assert by[name].verdict == "FAIL" and result.refused
+
+
 @pytest.mark.parametrize("invalid", ["stale", "duplicate", "scope", "line", "unknown"])
 def test_unused_master_dispositions_still_validate(tmp_path, monkeypatch, accepted_measure, invalid):
     from srstudio.digest import sha256
@@ -1116,3 +1166,81 @@ def test_release_approval_source_author_must_match():
 
     with pytest.raises(AuthorityError):
         replace(release_approval("a" * 64), approval_message=Message("Pedro", "source://1", "approved"))
+
+
+def full_size_look(sha):
+    from srstudio.authority import Message
+
+    return master_gate.ReleaseApproval(
+        master_sha256=sha,
+        approver="arc4d3",
+        approval_message=Message("arc4d3", "slack://1793967583.413699", "Full-size look done; approved for release."),
+        scope="reviewed_full_size",
+        reason="Full-size look by arc4d3 on this master",
+    )
+
+
+@pytest.mark.parametrize("frame_state", ["missing", "refused"])
+def test_a_full_size_look_releases_the_frame_review_of_a_measured_master(
+    tmp_path, monkeypatch, accepted_measure, frame_state
+):
+    from srstudio import craft_bar
+    from srstudio.digest import sha256
+    from srstudio.final_frame_gate import CheckResult, FinalFrameResult
+
+    master = tmp_path / "new.mp4"
+    master.write_bytes(b"new master, looked at full size")
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: accepted_measure)
+    monkeypatch.setattr(craft_bar, "measure", lambda *a: c7_result())
+    approval = full_size_look(sha256(master))
+    frames = {
+        "frame_error": "missing final-frame-review.json" if frame_state == "missing" else "",
+        "final_frames": None
+        if frame_state == "missing"
+        else FinalFrameResult(
+            "new",
+            sha256(master),
+            64,
+            64,
+            (),
+            (CheckResult("new", "anatomy", "FAIL", None, 0, sha256(master), "missing human review", None),),
+        ),
+    }
+    before = replace(master_gate.evaluate_release(master, tmp_path), **frames)
+    after = replace(master_gate.evaluate_release(master, tmp_path, release_approval=approval), **frames)
+    assert before.refused and not after.refused
+    report = "\n".join(after.lines())
+    assert f"final-frame review: RELEASED by {approval!r}" in report
+    assert "whole-master release" not in report  # it releases the frames, never the measures
+    assert ("frames new: REFUSED" if frame_state == "missing" else "anatomy: FAIL") in report  # diagnostics stay
+
+
+@pytest.mark.parametrize("missing", [False, True])
+def test_a_full_size_look_never_releases_a_failed_or_missing_measure(tmp_path, monkeypatch, accepted_measure, missing):
+    from srstudio import craft_bar
+    from srstudio.digest import sha256
+
+    master = tmp_path / "new.mp4"
+    master.write_bytes(b"new master, too narrow")
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: replace(accepted_measure, lra=1.0))
+    monkeypatch.setattr(craft_bar, "measure", lambda *a: c7_result(lra=None if missing else 1.0))
+    reading = master_gate.evaluate_release(master, tmp_path, release_approval=full_size_look(sha256(master)))
+    assert reading.refused and "final-frame review: RELEASED" in "\n".join(reading.lines())
+
+
+def test_a_full_size_look_on_another_master_refuses(tmp_path, monkeypatch, accepted_measure):
+    from srstudio import craft_bar
+
+    master = tmp_path / "new.mp4"
+    master.write_bytes(b"clean new master")
+    monkeypatch.setattr(master_gate, "measure", lambda *a, **kw: accepted_measure)
+    monkeypatch.setattr(craft_bar, "measure", lambda *a: c7_result())
+    reading = master_gate.evaluate_release(master, tmp_path, release_approval=full_size_look("b" * 64))
+    assert reading.refused and "stale release approval" in reading.error
+
+
+def test_a_full_size_look_parses_and_a_made_up_scope_is_refused():
+    approval = full_size_look("c" * 64)
+    assert master_gate.ReleaseApproval.parse(approval.record()) == approval
+    with pytest.raises(master_gate.AuthorityError, match="scope must be legacy_reviewed or reviewed_full_size"):
+        replace(approval, scope="frames_only")

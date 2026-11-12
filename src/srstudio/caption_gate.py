@@ -43,9 +43,11 @@ __all__ = [
     "Legibility",
     "MIN_COUNTERS",
     "MIN_FRAMES",
+    "UNJUDGEABLE",
     "band_of",
     "check_reel",
     "check_releases",
+    "has_counter_glyph",
     "measure_frames",
     "measure_reel",
     "read_frames",
@@ -53,7 +55,10 @@ __all__ = [
 
 MIN_COUNTERS = 0.025  # counter pixels per letter pixel; the masters measured in ADR 0048 set it
 MIN_FRAMES = 3  # frames with letters in them: fewer judge nothing, and a gate that judges nothing cannot pass
-FPS = 1  # frames measured per second of video
+UNJUDGEABLE = "the captions have no letter with a closed counter"
+# Frames measured per second of video. At 1 a send reel's one short line (captioned for under 3 s, Okayville
+# 10 Nov) left the gate fewer than MIN_FRAMES to judge; 4 sees a 0.75 s caption three times.
+FPS = 4
 BAND_PAD = 12  # pixels kept around the captions' box, so letters are not lost to the crop's edge
 FILL_TOLERANCE = 55.0  # RGB distance from a look's colours that still counts as letter, after the encoder
 MIN_BLOB = 25  # pixels: anything smaller is noise, not a letter
@@ -67,6 +72,15 @@ DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 class CaptionGateError(SrstudioError, ValueError):
     """A look cannot be recorded, or a scene cannot be read for its look."""
+
+
+def has_counter_glyph(text: str) -> bool:
+    """Whether ``text`` contains a glyph from the fixed set ``aAbBdDegOoPpqQR04689@&%``.
+
+    These letters, digits and symbols (including lowercase g) can have closed counters; this is a text eligibility
+    check, not a measurement of a particular font's shapes.
+    """
+    return any(char in "aAbBdDegOoPpqQR04689@&%" for char in text)
 
 
 def _colour(value: str) -> str:
@@ -329,7 +343,7 @@ def measure_frames(frames: Iterable[np.ndarray], paint: _Paint) -> Legibility:
 def read_frames(
     video: Path, band: tuple[int, int], *, width: int | None = None, ffmpeg: str = "ffmpeg"
 ) -> Iterator[np.ndarray]:
-    """One frame per second of ``video``, cropped to ``band``, as RGB arrays. The crop snaps to even rows: the
+    """``FPS`` frames per second of ``video``, cropped to ``band``, as RGB arrays. The crop snaps to even rows: the
     decoder's chroma is shared between two."""
     top, bottom = band[0] - band[0] % 2, band[1] + band[1] % 2
     width = width if width is not None else video_size(video)[0]
@@ -407,8 +421,8 @@ def _same_track(look: ApprovedLook, burned: TrackLook) -> bool:
     )
 
 
-def _layer_boxes(root: ET.Element, look: ApprovedLook) -> list[tuple[float, float]]:
-    """The boxes of the text layers painted as ``look``, inside its zone."""
+def _caption_layers(root: ET.Element, look: ApprovedLook) -> Iterator[tuple[ET.Element, float]]:
+    """The text assets and top rows of layers painted as ``look``, inside its zone."""
     painted = {}
     fills = {_colour(c) for c in look.fills}
     for text in root.iter("text"):
@@ -418,13 +432,23 @@ def _layer_boxes(root: ET.Element, look: ApprovedLook) -> list[tuple[float, floa
             and (_colour(stroke) if stroke and width else None) == (_colour(look.stroke) if look.stroke else None)
             and width == look.stroke_width
         ):
-            painted[text.get("id")] = _number(text.get("height"))
-    boxes = []
+            painted[text.get("id")] = text
     for layer in root.iter("layer"):
         y = _number(layer.get("y"))
         if layer.get("asset") in painted and look.zone[0] <= y < look.zone[1]:
-            boxes.append((y, y + painted[layer.get("asset")]))
-    return boxes
+            yield painted[layer.get("asset")], y
+
+
+def _layer_boxes(root: ET.Element, look: ApprovedLook) -> list[tuple[float, float]]:
+    """The boxes of the text layers painted as ``look``, inside its zone."""
+    return [(y, y + _number(text.get("height"))) for text, y in _caption_layers(root, look)]
+
+
+def _caption_texts(root: ET.Element, track: ET.Element | None, look: ApprovedLook) -> list[str]:
+    if track is not None:
+        return [cue.get("text") or " ".join(word.get("text", "") for word in cue.iter("word"))
+                for cue in track.iter("cue")]  # fmt: skip
+    return [text.get("text", "") for text, _ in _caption_layers(root, look)]
 
 
 def _pad(top: float, bottom: float) -> tuple[int, int]:
@@ -506,7 +530,11 @@ def check_reel(
             f"letters found in only {measured.frames} of {measured.sampled} frames: the gate needs {MIN_FRAMES}"
         )
     elif not measured.passes:
-        problems.append(f"the letters' counters are closed: ratio {measured.ratio:.4f}, minimum {MIN_COUNTERS}")
+        texts = _caption_texts(root, track, worn)
+        if texts and not any(has_counter_glyph(text) for text in texts):
+            problems.append(f"{UNJUDGEABLE}: {', '.join(repr(text) for text in texts)}; clear them at full size")
+        else:
+            problems.append(f"the letters' counters are closed: ratio {measured.ratio:.4f}, minimum {MIN_COUNTERS}")
     return problems
 
 

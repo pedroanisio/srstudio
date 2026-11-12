@@ -384,6 +384,27 @@ def test_ship_phrase_can_still_fail_span_guard(tmp_path, master):
     assert by['pace_span:take'].status == 'FAIL'
     assert not result.ok
     assert [m.name for m in result.retakes()] == ['pace:take']
+    assert 'stretch the take by 1.2 to reach 4.5 words/s (ADR 0251)' in by['pace_span:take'].source
+
+
+@pytest.mark.parametrize(
+    'rate,factor', [(4.5, None), (4.2, None), (4.55, 1.05), (4.84, 1.1), (5.36, 1.2), (5.625, 1.25), (5.7, None)]
+)
+def test_stretch_for_names_the_smallest_factor_that_meets_the_span_bar(rate, factor):
+    """The least slowing, in 0.05 steps, that brings a fast span to 4.5 words/s; none past the 1.25 cap."""
+    assert craft_bar.stretch_for(rate) == factor
+    if factor is not None:
+        assert rate / factor <= craft_bar.SPAN_BAR < rate / (factor - 0.05)
+
+
+def test_a_span_past_the_stretch_cap_asks_for_a_new_take(tmp_path, master):
+    words = [{'text': f'w{i}', 'start': i * 0.15, 'end': (i + 1) * 0.15} for i in range(4)]
+    write(
+        tmp_path / 'timeline.json', {'items': [{'id': 'take', 'start': 0, 'duration': 1, 'prosody': {'words': words}}]}
+    )
+    guard = {m.name: m for m in craft_bar.measure(master, tmp_path).measures}['pace_span:take']
+    assert guard.status == 'FAIL'
+    assert 'past the 1.25 stretch: a new take' in guard.source
 
 
 @pytest.mark.parametrize('bad', [None, True, '0.1', float('inf'), float('nan')])
